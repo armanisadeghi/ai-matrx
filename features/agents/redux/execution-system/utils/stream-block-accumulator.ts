@@ -485,9 +485,36 @@ export class StreamBlockAccumulator {
       const jsonType = detectJsonBlockType(this.currentBlockContent);
       if (jsonType) this.currentBlockType = jsonType;
     }
+
+    // An OPEN XML region (interleaved thinking: `<thinking>` … tool call …
+    // `</thinking>`) or code fence survives the tool boundary. Snapshot the
+    // sub-state BEFORE closeCurrentBlock resets things, close the current
+    // block at the boundary, then RE-ENTER the same region in a fresh block
+    // so the continuation keeps parsing as the same type. Without this, the
+    // region was abandoned (subState → none) and the continuation — including
+    // the literal closing tag / fence line — streamed on as plain text: the
+    // "`</thinking>` drops to the bottom of the message as text" bug.
+    const openRegion =
+      this.subState.kind === "xml_tag" || this.subState.kind === "code_fence"
+        ? this.subState
+        : null;
+
     this.closeCurrentBlock(dispatch);
-    this.subState = { kind: "none" };
-    this.openBlock("text", dispatch);
+
+    if (openRegion) {
+      this.openBlock(
+        openRegion.kind === "xml_tag"
+          ? mapXmlTagToBlockType(openRegion.tagName)
+          : this.currentBlockType,
+        dispatch,
+      );
+      // Same region, fresh block: the closing tag / fence detection in
+      // processSubStateLine picks up exactly where it left off.
+      this.subState = { ...openRegion };
+    } else {
+      this.subState = { kind: "none" };
+      this.openBlock("text", dispatch);
+    }
   }
 
   // ── Internal ────────────────────────────────────────────────────────────

@@ -699,6 +699,44 @@ function detectXmlBlockType(
   return null;
 }
 
+/**
+ * Detects an ORPHAN closing tag of the thinking family (`</thinking>`,
+ * `</think>`, `</reasoning>`) — a closer with no opener earlier in this
+ * content. That shape is the continuation half of a region that a mid-region
+ * structural boundary split across two persisted text parts (a tool call
+ * inside `<thinking>…</thinking>`): the part opens mid-region, so everything
+ * before the closer IS region body. Restricted to the thinking family — the
+ * misfire risk (prose that literally quotes the tag) is accepted because the
+ * pre-fix rendering (raw tag leaking to the user as text) was strictly worse.
+ *
+ * If an opener existed earlier in the content, the step-3b extractor would
+ * already have consumed through this closer — reaching the text path with a
+ * closer on the line proves it's orphan.
+ */
+function detectOrphanThinkingClose(trimmedLine: string): {
+  type: "thinking" | "reasoning";
+  /** Text on the same line BEFORE the closer — region body. */
+  before: string;
+  /** Text on the same line AFTER the closer — re-enters the main loop. */
+  remainder: string;
+} | null {
+  const CLOSERS: Array<["thinking" | "reasoning", string]> = [
+    ["thinking", "</thinking>"],
+    ["thinking", "</think>"],
+    ["reasoning", "</reasoning>"],
+  ];
+  for (const [type, closer] of CLOSERS) {
+    const idx = trimmedLine.indexOf(closer);
+    if (idx === -1) continue;
+    return {
+      type,
+      before: trimmedLine.slice(0, idx).trim(),
+      remainder: trimmedLine.slice(idx + closer.length).trim(),
+    };
+  }
+  return null;
+}
+
 function extractXmlBlock(
   type: keyof typeof XML_TAG_BLOCKS,
   matchedTag: string,
@@ -1916,6 +1954,30 @@ export const splitContentIntoBlocksV2 = (
       });
 
       i = extraction.nextIndex;
+      continue;
+    }
+
+    // 3c. Orphan closing tag (thinking family) — the continuation half of a
+    // region split across parts by a mid-region tool call. Text accumulated
+    // so far (plus anything before the closer on this line) is region body;
+    // the literal tag must never leak to the user as text.
+    const orphanClose = detectOrphanThinkingClose(trimmedLine);
+    if (orphanClose) {
+      const body = [currentText.trimEnd(), orphanClose.before]
+        .filter(Boolean)
+        .join("\n");
+      currentText = "";
+      if (body) {
+        blocks.push({
+          type: orphanClose.type,
+          content: body,
+          metadata: { isComplete: true, continuation: true },
+        });
+      }
+      if (orphanClose.remainder) {
+        lines.splice(i + 1, 0, orphanClose.remainder);
+      }
+      i++;
       continue;
     }
 
