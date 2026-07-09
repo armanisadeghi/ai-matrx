@@ -470,8 +470,20 @@ export type ResourceBlockType =
   | "input_transcript_session"
   | "input_workbook"
   | "input_document"
+  // A processed document (an OCR'd → AI-cleaned file) attached by REFERENCE +
+  // a chosen text representation. Unlike every block type above, it does NOT
+  // emit a content[] block — it emits a lazy context pointer into
+  // `request.context` (see processedDocumentContext.ts + RESOURCE_WIRE_SPEC.md).
+  | "processed_document"
   | "editor_error"
   | "editor_code_snippet";
+
+/**
+ * Which representation of a processed document is the PRIMARY one placed in the
+ * agent's context. The agent reaches the other formats (raw text, per-page,
+ * knowledge assets, PDF page images) on demand via the `document_content` tool.
+ */
+export type DocumentRepresentation = "clean" | "raw";
 
 export interface ResourceOptions {
   keepFresh: boolean;
@@ -479,6 +491,8 @@ export interface ResourceOptions {
   convertToText: boolean;
   optionalContext: boolean;
   template?: "full" | "compact" | "minimal";
+  /** For `processed_document` resources: the chosen primary representation. */
+  representation?: DocumentRepresentation;
 }
 
 export interface ManagedResource {

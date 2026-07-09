@@ -93,7 +93,7 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import { selectVariablesForRequest } from "../instance-variable-values/instance-variable-values.selectors";
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
-import { selectContextPayload } from "../instance-context/instance-context.selectors";
+import { selectRequestContextPayload } from "../instance-context/instance-context.selectors";
 import { selectResourcePayloads } from "../instance-resources/instance-resources.selectors";
 import { resolveBackendForConversation } from "./resolve-base-url";
 import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
@@ -328,7 +328,7 @@ export async function assembleManualRequest(
   );
 
   const variables = selectVariablesForRequest(conversationId)(state);
-  const context = selectContextPayload(conversationId)(state);
+  const context = selectRequestContextPayload(conversationId)(state);
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
   // agent.tools (UUID array) becomes seed RegisteredToolSpec entries with

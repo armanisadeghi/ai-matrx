@@ -18,6 +18,13 @@ import {
   isEditorXmlResource,
   serializeEditorResourcesAsXml,
 } from "@/features/agents/utils/editor-resource-xml";
+import {
+  attachedDocumentContextKey,
+  buildProcessedDocumentContextValue,
+  defaultRepresentation,
+  isProcessedDocumentResource,
+  isProcessedDocumentSource,
+} from "@/features/agents/utils/processedDocumentContext";
 
 const EMPTY_RESOURCES: ManagedResource[] = [];
 const EMPTY_EDITOR_RESOURCES: ManagedResource[] = [];
@@ -179,6 +186,10 @@ export const selectResourcePayloads = (conversationId: string) =>
         // so they're excluded from the API payload here. The XML weave
         // happens in `assembleRequest` via `selectEditorResourceXml`.
         .filter((r) => !isEditorXmlResource(r))
+        // Processed-document resources ride the CONTEXT channel
+        // (request.context, via selectResourceContextPayload), not content[].
+        // Excluded here so the binary and reference paths never cross.
+        .filter((r) => !isProcessedDocumentResource(r))
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((r): MessagePart => {
           if (r.finalPayload) return r.finalPayload;
@@ -310,4 +321,38 @@ export const selectEditorResources = (conversationId: string) =>
 export const selectEditorResourceXml = (conversationId: string) =>
   createSelector(selectEditorResources(conversationId), (resources) =>
     serializeEditorResourcesAsXml(resources),
+  );
+
+const EMPTY_CONTEXT_PAYLOAD: Record<string, unknown> = {};
+
+/**
+ * Context-channel payload for attached PROCESSED-DOCUMENT resources.
+ *
+ * Each ready `processed_document` resource emits ONE lazy context pointer keyed
+ * `attached_document_<id8>` (stable, like `user_scratchpad_<id8>`). Merged into
+ * `request.context` at assembly time (see `selectRequestContextPayload`), so a
+ * document rides the context channel while its chip lifecycle stays in
+ * `instanceResources` — one source of truth for the chip, bridged to context on
+ * send. Returns a stable empty object when there are none.
+ */
+export const selectResourceContextPayload = (conversationId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.instanceResources.byConversationId[conversationId],
+    (resources): Record<string, unknown> => {
+      if (!resources) return EMPTY_CONTEXT_PAYLOAD;
+      const payload: Record<string, unknown> = {};
+      for (const r of Object.values(resources)) {
+        if (r.status !== "ready") continue;
+        if (!isProcessedDocumentResource(r)) continue;
+        if (!isProcessedDocumentSource(r.source)) continue;
+        const representation =
+          r.options.representation ?? defaultRepresentation(r.source);
+        const label =
+          typeof r.preview === "string" && r.preview ? r.preview : "Document";
+        payload[attachedDocumentContextKey(r.source.processed_document_id)] =
+          buildProcessedDocumentContextValue(r.source, representation, label);
+      }
+      return Object.keys(payload).length === 0 ? EMPTY_CONTEXT_PAYLOAD : payload;
+    },
   );

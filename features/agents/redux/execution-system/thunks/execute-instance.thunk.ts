@@ -41,7 +41,7 @@ import {
 import { selectVariablesForRequest } from "../instance-variable-values/instance-variable-values.selectors";
 import { selectSettingsOverridesForApi } from "../instance-model-overrides/instance-model-overrides.selectors";
 import {
-  selectContextPayload,
+  selectRequestContextPayload,
   selectInstanceContextEntries,
 } from "../instance-context/instance-context.selectors";
 import {
@@ -159,7 +159,7 @@ export function assembleRequest(
   const config_overrides = selectSettingsOverridesForApi(conversationId)(state);
 
   // Context dict
-  const context = selectContextPayload(conversationId)(state);
+  const context = selectRequestContextPayload(conversationId)(state);
 
   // Tool injection (`tools` + `client` envelope) is layered on by the thunk
   // body via `buildToolInjection` after this sync assembly returns. Keeping

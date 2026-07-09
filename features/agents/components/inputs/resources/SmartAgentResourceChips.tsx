@@ -42,10 +42,17 @@ import {
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type {
+  DocumentRepresentation,
   ManagedResource,
   ResourceBlockType,
 } from "@/features/agents/types/instance.types";
 import type { ResourceEditableState } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
+import { DocumentRepresentationPill } from "@/features/agents/components/inputs/resources/DocumentRepresentationPill";
+import { switchAttachedDocumentToBinary } from "@/features/agents/components/inputs/resources/attach-resource";
+import {
+  defaultRepresentation,
+  isProcessedDocumentSource,
+} from "@/features/agents/utils/processedDocumentContext";
 import { NoteHoverPreview } from "@/features/agents/components/previews/NoteHoverPreview";
 import { TaskHoverPreview } from "@/features/agents/components/previews/TaskHoverPreview";
 import { WebpageHoverPreview } from "@/features/agents/components/previews/WebpageHoverPreview";
@@ -141,6 +148,10 @@ function getBlockTypeDisplay(blockType: ResourceBlockType) {
       icon: FileText,
       label: "Document",
     },
+    processed_document: {
+      icon: FileText,
+      label: "Document",
+    },
     editor_error: {
       icon: AlertCircle,
       label: "Error",
@@ -206,6 +217,8 @@ interface ResourceChipProps {
   onRemove: () => void;
   onToggleEditable: () => void;
   onOpen: () => void;
+  onChangeRepresentation: (rep: DocumentRepresentation) => void;
+  onAttachAsFile: () => void;
 }
 
 function ResourceChip({
@@ -213,6 +226,8 @@ function ResourceChip({
   onRemove,
   onToggleEditable,
   onOpen,
+  onChangeRepresentation,
+  onAttachAsFile,
 }: ResourceChipProps) {
   const isPending =
     resource.status === "pending" || resource.status === "resolving";
@@ -232,11 +247,20 @@ function ResourceChip({
         : "readonly"
       : null;
 
+  // A processed document rides the context channel with a chosen representation;
+  // show the quick Clean/Raw chooser (+ "attach as file") beside its chip.
+  const showRepresentationPill =
+    resource.blockType === "processed_document" &&
+    isProcessedDocumentSource(resource.source) &&
+    !isPending &&
+    !isError;
+
   const tile = (
     <motion.div
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.85 }}
+      className="inline-flex items-center gap-1"
     >
       <ResourceAttachmentTile
         typeLabel={display.label}
@@ -251,6 +275,18 @@ function ResourceChip({
         error={isError}
         variant="compact"
       />
+      {showRepresentationPill &&
+        isProcessedDocumentSource(resource.source) && (
+          <DocumentRepresentationPill
+            source={resource.source}
+            representation={
+              resource.options.representation ??
+              defaultRepresentation(resource.source)
+            }
+            onChange={onChangeRepresentation}
+            onAttachAsFile={onAttachAsFile}
+          />
+        )}
     </motion.div>
   );
 
@@ -380,6 +416,33 @@ export function SmartAgentResourceChips({
     [conversationId, dispatch],
   );
 
+  const handleChangeRepresentation = useCallback(
+    (resourceId: string, rep: DocumentRepresentation) => {
+      dispatch(
+        updateResourceOptions({
+          conversationId,
+          resourceId,
+          options: { representation: rep },
+        }),
+      );
+    },
+    [conversationId, dispatch],
+  );
+
+  const handleAttachAsFile = useCallback(
+    (resource: ManagedResource) => {
+      if (!isProcessedDocumentSource(resource.source)) return;
+      switchAttachedDocumentToBinary(
+        dispatch,
+        conversationId,
+        resource.resourceId,
+        resource.source,
+        getResourceLabel(resource),
+      );
+    },
+    [conversationId, dispatch],
+  );
+
   if (!showAttachments) return null;
   // Mirror the textarea: while a submit is in flight the attachments have
   // already been captured into the optimistic user bubble — hide them here so
@@ -403,6 +466,10 @@ export function SmartAgentResourceChips({
               )
             }
             onOpen={() => openDrawerForResource(resource.resourceId)}
+            onChangeRepresentation={(rep) =>
+              handleChangeRepresentation(resource.resourceId, rep)
+            }
+            onAttachAsFile={() => handleAttachAsFile(resource)}
           />
         ))}
       </AnimatePresence>

@@ -8,18 +8,30 @@
  * drifted.
  */
 
+import type { Dispatch } from "@reduxjs/toolkit";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   addResource,
+  removeResource,
   setResourcePreview,
+  setResourceStatus,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import {
   refineBlockType,
   resourceDataToSource,
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
+import { lookupFileDocument } from "@/features/files/api/document-lookup";
+import {
+  buildProcessedDocumentSource,
+  defaultRepresentation,
+  type ProcessedDocumentSource,
+} from "@/features/agents/utils/processedDocumentContext";
 import type { Resource } from "@/features/agents/resources/types";
-import type { ResourceBlockType } from "@/features/agents/types/instance.types";
+import type {
+  DocumentRepresentation,
+  ResourceBlockType,
+} from "@/features/agents/types/instance.types";
 
 /** Map prompt-system resource types to agent ResourceBlockType. */
 export function resourceTypeToBlockType(
@@ -86,12 +98,106 @@ export function resourceLabel(resource: Resource): string {
   }
 }
 
+function newResourceId(): string {
+  return `res_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Best-effort cld_files id from a picker payload (stored file / file_url). */
+function extractFileId(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+  if (typeof d.fileId === "string" && d.fileId) return d.fileId;
+  if (typeof d.id === "string" && d.id) return d.id;
+  return null;
+}
+
 /**
- * Returns a handler that attaches a picked Resource to the instance:
- * refines the block type from the data's real MIME (pickers deliver
- * `type = "file"` for any upload, so the naive map would send images as
- * documents), dispatches `addResource`, and immediately sets the chip
- * preview label. Closing the hosting popover is the CALLER's job.
+ * Attach a picked file as today's BINARY block (document / image / audio /
+ * video). The resource-resolution pipeline transitions it to `ready`.
+ */
+function attachBinary(
+  dispatch: Dispatch,
+  conversationId: string,
+  blockType: ResourceBlockType,
+  data: unknown,
+  label: string,
+): string {
+  const resourceId = newResourceId();
+  dispatch(
+    addResource({
+      conversationId,
+      blockType,
+      source: resourceDataToSource(blockType, data),
+      resourceId,
+      // Default editable-capable resources to EDITABLE. The server defaults
+      // to locked, so the FE must explicitly mark `editable: true` (which the
+      // payload selector then emits). The user opts OUT by clicking the lock.
+      options: isEditableCapableBlockType(blockType)
+        ? { editable: true }
+        : undefined,
+    }),
+  );
+  dispatch(setResourcePreview({ conversationId, resourceId, preview: label }));
+  return resourceId;
+}
+
+/**
+ * Attach a processed document by REFERENCE with a chosen text representation.
+ * Rides the context channel (not content[]). Like editor pills, it has no
+ * server-side resolution, so it's marked `ready` immediately.
+ */
+export function attachProcessedDocument(
+  dispatch: Dispatch,
+  conversationId: string,
+  source: ProcessedDocumentSource,
+  label: string,
+  representation?: DocumentRepresentation,
+): string {
+  const resourceId = newResourceId();
+  dispatch(
+    addResource({
+      conversationId,
+      blockType: "processed_document",
+      source,
+      resourceId,
+      options: {
+        representation: representation ?? defaultRepresentation(source),
+      },
+    }),
+  );
+  dispatch(setResourceStatus({ conversationId, resourceId, status: "ready" }));
+  dispatch(setResourcePreview({ conversationId, resourceId, preview: label }));
+  return resourceId;
+}
+
+/**
+ * Chip "Attach as file instead": drop the processed-document reference and
+ * re-add the origin binary file so the agent gets the raw bytes (vision / the
+ * model reads the PDF natively) instead of the extracted-text representation.
+ */
+export function switchAttachedDocumentToBinary(
+  dispatch: Dispatch,
+  conversationId: string,
+  resourceId: string,
+  source: ProcessedDocumentSource,
+  label: string,
+): void {
+  dispatch(removeResource({ conversationId, resourceId }));
+  if (source.file_id) {
+    attachBinary(dispatch, conversationId, "document", { id: source.file_id }, label);
+  }
+}
+
+/**
+ * Returns a handler that attaches a picked Resource to the instance.
+ *
+ * For a stored file (or file_url) that refines to a `document`, it PROBES
+ * whether the file has a processed document (OCR'd → AI-cleaned). If so, it
+ * attaches it by reference with the default representation (clean when ready,
+ * else raw) — the chip then offers the quick representation choice + an
+ * "Attach as file instead" escape. Otherwise it falls back to today's binary
+ * attach. Images/audio/video and non-file resources always take the binary /
+ * reference path unchanged. Closing the hosting popover is the CALLER's job.
  */
 export function useAttachResource(
   conversationId: string,
@@ -99,29 +205,40 @@ export function useAttachResource(
   const dispatch = useAppDispatch();
 
   return (resource: Resource) => {
-    const baseBlockType = resourceTypeToBlockType(resource.type);
-    const blockType = refineBlockType(baseBlockType, resource.data);
-    const label = resourceLabel(resource);
-    const resourceId = `res_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 8)}`;
-
-    dispatch(
-      addResource({
-        conversationId,
-        blockType,
-        source: resourceDataToSource(blockType, resource.data),
-        resourceId,
-        // Default editable-capable resources to EDITABLE. The server defaults
-        // to locked, so the FE must explicitly mark `editable: true` (which the
-        // payload selector then emits). The user opts OUT by clicking the lock.
-        options: isEditableCapableBlockType(blockType)
-          ? { editable: true }
-          : undefined,
-      }),
-    );
-    dispatch(
-      setResourcePreview({ conversationId, resourceId, preview: label }),
-    );
+    void attachResourceAsync(dispatch, conversationId, resource);
   };
+}
+
+async function attachResourceAsync(
+  dispatch: Dispatch,
+  conversationId: string,
+  resource: Resource,
+): Promise<void> {
+  const baseBlockType = resourceTypeToBlockType(resource.type);
+  const blockType = refineBlockType(baseBlockType, resource.data);
+  const label = resourceLabel(resource);
+
+  // Only a real (non-media) file document qualifies for representation-attach.
+  if (blockType === "document") {
+    const fileId = extractFileId(resource.data);
+    if (fileId) {
+      try {
+        const state = await lookupFileDocument(fileId);
+        if (state.kind === "found") {
+          attachProcessedDocument(
+            dispatch,
+            conversationId,
+            buildProcessedDocumentSource(state.doc, fileId),
+            label,
+          );
+          return;
+        }
+      } catch {
+        // Probe failed transiently — fall through to the binary path so the
+        // attach never silently drops.
+      }
+    }
+  }
+
+  attachBinary(dispatch, conversationId, blockType, resource.data, label);
 }
