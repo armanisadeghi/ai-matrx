@@ -25,8 +25,10 @@ listed but not created, and there is no `/administration` surface at all for thi
      stub; wire live when P1 ships.
    - **Access explorer**: reverse lookup — pick an org (or user) → which stores/documents they
      can reach and via which grant (industry/org/global); pick a store → which orgs are
-     entitled. Direct Supabase reads / a small SECURITY DEFINER RPC if needed (`iam.*`, `rag.*`
-     are PostgREST-reachable; the RLS + grants above are live).
+     entitled. Direct Supabase reads (`iam.*`, `rag.*` are PostgREST-reachable). For "which
+     grant reaches user X on store Y", CONSUME P3's `library_grant_provenance` contract
+     (README §2) — do NOT write your own provenance RPC; if you need an admin `_as(user)`
+     variant, extend P3's function family in coordination, one primitive.
 2. **`/rag/admin` FeatureAdminMap** page (doctrine: every Tier-1 feature has one; RAG is a
    conspicuous omission). Fill `FeatureAdminMap` config listing every rag route, panel, hook,
    RPC, and demo. Add the new admin routes to it.
@@ -59,9 +61,11 @@ fork). DB: read-only; at most one new SECURITY DEFINER read RPC for the access e
 
 ## Dependencies / contracts
 
-Consumes: industry + grant RPC family, grants HTTP API, P1 ingest stub (all in README §2).
-Blocked by nothing — build ingest UI against the stub. Honors admin-gate doctrine
-(`selectIsSuperAdmin` / `requireSuperAdmin`; never invent a new gate).
+Consumes: industry + grant RPC family, grants HTTP API, P1 ingest stub, P3's provenance RPC
+(all in README §2). Blocked by nothing — build ingest UI against the stub. Honors admin-gate
+doctrine (`selectIsSuperAdmin` / `requireSuperAdmin`; never invent a new gate). **You OWN
+`features/industries/service.ts`/`hooks.ts` this wave** (README file-ownership map) — P3 will
+not edit them.
 
 ## Verification
 

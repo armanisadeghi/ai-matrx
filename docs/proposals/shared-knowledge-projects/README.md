@@ -31,14 +31,21 @@ Writes never cascade from grants: viewer only; curation stays owner/curator.
 
 ### Fixed in this pass (2026-07-10, this session)
 
-- Extraction tables grant-aware SELECT (Extractions tab was empty for grant readers) — applied + ledgered + committed.
-- `GET /rag/data-stores/{id}/grants` was readable by any tenant (audience enumeration) — now owner/curator/admin (aidream `195ad916e`, **deploy pending**).
+- Extraction tables grant-aware SELECT (Extractions tab was empty for grant readers) — applied + ledgered + committed. **DB-read only**: aidream's extraction API (`page_extraction.py` `owner/ctx.is_admin` gate) still 403s grant readers on server-side extraction routes — P4 scope.
+- `GET /rag/data-stores/{id}/grants` was readable by any tenant (audience enumeration) — now owner/org-member, with `ctx.is_admin` (ANY admin tier, not just super) passing (aidream `195ad916e`, **deploy pending**).
 - Doc truth-ups: catalog mislabeled "Phase 2" (it's shipped); stale `public.*`→`iam.*` industries docstring; stale `cld_get_effective_permission` docstring.
 
 ### IN FLIGHT — owned elsewhere, do not absorb
 
 - `features/rag/api/ingest.ts` generic `ingestSource` refactor (uncommitted, another session).
 - aidream local main carries other sessions' commits ahead of origin (ai-catalog, cms, matrx-ai seam work).
+- aidream `sync_engine.py` hard-delete/purge refactor (`hard_delete_and_purge`, `_purge_uris_from`) — another session's work that rode along in commit `195ad916e`; complete and self-consistent, do not revert or re-commit.
+
+### File-ownership map (Wave 1 runs in parallel on main — respect this)
+
+- `features/industries/service.ts` + `hooks.ts` + taxonomy UI → **P2**. P3 touches only `OrgIndustriesSection.tsx` / org-settings surfaces; if P3 needs a new industries read, add a new file, don't edit P2's.
+- ALL trigger/DDL on `rag.*` and `docproc.*` tables → **P4**. P1 implements rehome in the `add_member` Python path + its new endpoint, never via a competing DB trigger.
+- Shared FEATURE.md change logs are append-only; merge conflicts there are expected and trivially resolved — keep entries one-line-per-change.
 
 ### MISSING — the four projects below
 
@@ -56,7 +63,8 @@ Writes never cascade from grants: viewer only; curation stays owner/curator.
 | Access judge | `iam.has_access(type,id,level)` (RLS/auth.uid) · `public.has_access_as(user,type,id,level)` (service-role only) | platform (frozen) |
 | Grant predicate | `public.user_can_read_data_store_via_grant(user,store)` · `public.can_read_processed_document(doc,user)` | platform (frozen) |
 | Edge dictionary | roles `library_member`, `source_file`, `page_image`; direction little→big; register `association_types` BEFORE writing a new edge shape | P4 extends |
-| Grants API | `GET/POST /rag/data-stores/{id}/grants`, `DELETE .../grants/{gid}` (audience `global|industry|organization`); `GET /rag/library-catalog`, `POST/DELETE .../subscribe` | exists; P2/P3 consume |
+| Grants API | `GET/POST /rag/data-stores/{id}/grants`, `DELETE .../grants/{gid}` (audience `global|industry|organization`); `GET /rag/library-catalog`, `POST/DELETE .../subscribe`. **The grants GET is owner/admin-only after `195ad916e` — tenant surfaces must NOT call it; tenant provenance uses the RPC below** | exists; P2 consumes |
+| Provenance RPC (NEW) | `public.library_grant_provenance(p_store uuid) → {audience, industry_id, industry_name, organization_id}[]` — grants on a store that REACH `auth.uid()` (never the full grant list). SECURITY DEFINER, authenticated. **P3 owns and ships it day 1; P2's access explorer consumes it (with an `_as(user)` variant if needed, service/admin-gated)** | **P3 publishes day 1** |
 | Industry RPCs | `industry_upsert`, `industry_assign_org`, `industry_unassign_org`, `library_grant_publish/revoke`, `library_subscribe/unsubscribe` (SECURITY DEFINER, super-admin/member-gated in-DB) | exists; P2 consumes |
 | Admin ingest (NEW) | `POST /rag/library/stores/{store_id}/ingest` `{file_id, profile?}` → `{processed_document_id, member_id}`; system-owned output; 202+stream per stream-everything | **P1 publishes stub day 1**; P2 wires UI against it |
 

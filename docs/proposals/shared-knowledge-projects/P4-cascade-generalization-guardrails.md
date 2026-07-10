@@ -27,7 +27,12 @@ sharing tomorrow).
    against the grant-reader matrix; add additive grant-aware SELECT (delegating to
    `iam.has_access('file', file_id)` or `can_read_processed_document`) where a Source-Inspector
    or file-detail surface reads them. Pattern reference:
-   `migrations/page_extraction_library_grant_read.sql`.
+   `migrations/page_extraction_library_grant_read.sql`. Consider folding the repeated
+   job-readability EXISTS into one `STABLE SECURITY DEFINER can_read_extraction_job(job_id)`
+   for plan caching (adversarial finding: per-row judge invocation on child-table lists).
+   **Also the server side:** aidream `aidream/api/routers/page_extraction.py` gates on
+   `owner/ctx.is_admin` only — grant readers 403 on extraction API routes even though direct
+   DB reads now pass. Bring those routes onto the judge (`has_access_as`, read-only).
 3. **Acceptance harness (the guard).** A repeatable script (`scripts/` in matrx-frontend or
    aidream — your call, one home) that runs the full matrix against live: for a
    parameterized (store, grant-user, stranger) — search hit, file download, doc meta, pages,
@@ -40,11 +45,14 @@ sharing tomorrow).
    - A dead-policy detector: RLS policy references a predicate but the role lacks table/column
      SELECT grant (the `processed_documents` near-miss found 2026-07-10 — column grants saved
      it; make the check so the next one isn't luck).
+   - A cycle check on `platform.entity_relationships` / `association_types` config —
+     `iam.has_access` recurses through component/containment parents with no depth guard; a
+     cyclic registry row would stack-overflow every RLS read at query time.
 5. **Perf sanity.** `iam.has_access` now runs per-row inside several RLS policies and loops
    reachability containers with per-container EXECUTEs. Measure on realistic volumes (13k
-   chunks, 232 reachable files); add indexes (e.g. `platform.reachability (item_type,item_id)`
-   — verify existing) or short-circuits if p95 direct-read latency regresses. Don't
-   micro-optimize past the measurement.
+   chunks, 232 reachable files). `platform.reachability (item_type,item_id)` index verified
+   present (`reachability_item_idx`, 2026-07-10). Add short-circuits/helper-fn folding if p95
+   direct-read latency regresses. Don't micro-optimize past the measurement.
 6. **Security hardening follow-ups** from the adversarial nits: dual read predicates
    (`can_read_processed_document` vs judge) — document the boundary or unify; `document.py`
    org-match trusts `ctx.organization_id` — verify membership server-side; broad
@@ -74,8 +82,10 @@ predicate unification notes, `document.py` org check.
 ## Dependencies / contracts
 
 Consumes frozen judge/predicates and the edge dictionary (README §2); REGISTERS new
-association rules before writing edges (auto-orient trigger enforces). Independent of P1–P3;
-Convergence A consumes your matrix script as its audit tool.
+association rules before writing edges (auto-orient trigger enforces). **You OWN all
+`rag.*`/`docproc.*` trigger DDL this wave** (README file-ownership map) — P1's rehome runs in
+Python `add_member`, so coordinate only if you change that trigger's table semantics.
+Independent of P1–P3; Convergence A consumes your matrix script as its audit tool.
 
 ## Verification
 

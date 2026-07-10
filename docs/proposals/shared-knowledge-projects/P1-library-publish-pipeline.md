@@ -21,14 +21,18 @@ admin console (P2) can call.
    mandate. Publish the route signature as a stub on day 1 (contract for P2).
 2. **Ownership rehome** — on member-add to a `kind='library'` store (or grant publish over one):
    set `files.files.organization_id` → Matrx Library org (`system_orgs.key='library'`), keep
-   `created_by` as contributor attribution. Implement at the spine (DB trigger on
-   `rag.data_store_members` or inside `add_member`), not per-route. Gate on decision #2 in the
+   `created_by` as contributor attribution. Implement in the `add_member` Python path (one
+   choke point all callers share) — **NOT a DB trigger: all `rag.*`/`docproc.*` trigger DDL is
+   reserved to P4 this wave** (README file-ownership map). Gate on decision #2 in the
    README — if PENDING when you start, build it behind a flag and ask.
 3. **Repair existing data** — re-own AMA: chunks `owner_id` → system owner; file org → Matrx
    Library; verify entitlement still passes for the grant user and that Arman's access now
    flows from super-admin/library membership, not ownership.
 4. **Non-file member ingest parity** — `ingest_source` for `note|transcript|scraped|research`
    into a library store must also produce system-owned chunks (same profile switches).
+   NOTE: a grant reader OPENING non-file members in their native viewers is **P4's job**
+   (association edges for non-cld_file members don't exist yet) — your DoD for this item is
+   system-owned chunks + search visibility only; do not chase the open path.
 5. Loud recovery: publishing/ingesting into a library store while any invariant is broken
    (missing library org, non-uuid source, owner drift) must scream, not silently degrade.
 
@@ -48,8 +52,9 @@ billing/entitlements (Wave 2).
 
 ## Surfaces
 
-aidream: `aidream/api/routers/rag.py`, `aidream/services/rag/library.py` (currently unused —
-this is your core), `library_grants.py`, `packages/matrx-rag/matrx_rag/data_stores.py`
+aidream: `aidream/api/routers/rag.py`, `packages/matrx-rag/matrx_rag/library.py` (the real
+module — `ingest_library_pdf` :191, `_system_owner_uuid` :290; `aidream/services/rag/library.py`
+is only a re-export shim), `library_grants.py`, `packages/matrx-rag/matrx_rag/data_stores.py`
 (`add_member`), `scripts/ingest_ama_guides_library.py` (retire or demote to a wrapper).
 DB: trigger/migration for rehome; repair script for AMA rows. FE: none (P2 owns UI).
 

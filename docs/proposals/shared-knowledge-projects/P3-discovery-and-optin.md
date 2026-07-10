@@ -23,9 +23,11 @@ org settings shows industries read-only, and provenance is invisible.
    entitlement state chip (subscribed / via industry / global / not entitled).
 3. **Provenance chips** — wherever granted content renders (RagHitCard, Source Inspector
    header, DataStoresPage 'granted' badge, file viewer redirect page): show the grant source
-   ("Shared library · via ca-workers-comp"). Data: the store + grant audience reaching the
-   caller — add one small read RPC if the existing responses don't carry it; thread it through
-   existing types, no parallel fetch layers.
+   ("Shared library · via ca-workers-comp"). **You OWN the provenance contract** (README §2):
+   ship `public.library_grant_provenance(p_store uuid)` (SECURITY DEFINER, authenticated,
+   returns only grants reaching `auth.uid()`) as a stub-with-real-signature on day 1 — P2's
+   access explorer consumes it. Do NOT call `GET /rag/data-stores/{id}/grants` from tenant
+   surfaces — it is owner/admin-only.
 4. **Empty-state education**: a user in an entitled org who visits `/rag` with no personal
    content should see their shared libraries, not an empty dashboard.
 
@@ -51,8 +53,11 @@ pane header, `app/(core)/files/f/[fileId]/page.tsx`.
 ## Dependencies / contracts
 
 Consumes the catalog/subscribe HTTP API and grant predicates (README §2) — no new mutation
-paths. Decision #1 gates only sub-item 1's shape; everything else proceeds regardless. Shares
-`RichMemberTable`/preview components with P2 — both consume, neither forks.
+paths. Publishes `library_grant_provenance` day 1 (one migration, applied + ledgered).
+Decision #1 gates only sub-item 1's shape; everything else proceeds regardless. Shares
+`RichMemberTable`/preview components with P2 — both consume, neither forks. **Do not edit
+`features/industries/service.ts`/`hooks.ts` (P2 owns them this wave)** — touch only
+`OrgIndustriesSection.tsx` / org-settings surfaces, or add new files.
 
 ## Verification
 
