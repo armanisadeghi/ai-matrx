@@ -126,6 +126,7 @@ Everything else closed — see Resolved (content-block menus, dead preloads, dea
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D41** — F1 rich card variants (cloze/matching) render correctly on the DESKTOP study deck (`StudyDeck` computes cloze faces via `studyFaces` + branches to `MatchingCardPlayer`), but the MOBILE fallback (`FlashcardMobileView` via `toFlashcardMobileCardsFromStudy`) shows a cloze card's raw `{{c1::…}}` markup and has no matching interaction — it degrades to a plain flip of the prompt. Fix: teach the mobile bridge/renderer the same `cardVariants` faces + a mobile matching player. Canvas inline `CanvasFlashcardsView` shares the gap. (2026-07-10, `features/flashcards/utils/cardVariants.ts` is the shared source of faces.)
 - **D38** — `learn_doc` registry `is_public_column='visibility'` (enum treated as boolean flag, same class as the assessment bug): nulled live + ledgered (`migrations/p7_fix_learn_doc_registry_is_public_column.sql`), snapshot + `registry.ts` regenned, parity 62/62 (2026-07-10).
 - **D34** — `pnpm dev` fatal (`opengraph-image.tsx` under `learn/[...slug]` — metadata-image conventions can't live in a catch-all): moved to `app/(core)/education/learn/og/[...slug]/route.tsx` + `generateMetadata` reference (2026-07-07, `9461f3b52`).
 - **D28** — `study_record_attempt` rejected NULL `result` (`item_mastery.struggle_flag` NOT NULL): live RPC has the ungraded early-branch + `coalesce(...,false)`, verified live 2026-07-07; client `source_kind='set'` halves landed earlier (`b9bab8309`).
