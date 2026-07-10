@@ -168,7 +168,7 @@ delete yours and extend ours.
 
 | If you need to… | Use | Located at |
 | --- | --- | --- |
-| Detect mobile (Drawer vs Dialog, stack vs tabs) | `useIsMobile` | `hooks/use-mobile.ts` |
+| Detect mobile (Drawer vs Dialog, stack vs tabs) | `useIsMobile` | `hooks/use-mobile.tsx` |
 | Call Python backend from client (auth + URL) | `useBackendApi` | `hooks/useBackendApi.ts` |
 | Auth headers for Next.js `/api/*` routes | `useApiAuth` | `hooks/useApiAuth.ts` |
 | Resolve durable media `src` from `file_id` | `useFileSrc` | `features/files/handler/hooks/useFileSrc.ts` |

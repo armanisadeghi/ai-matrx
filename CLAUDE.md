@@ -350,7 +350,7 @@ Chrome extension bridge for cross-surface workflows. Real bridge ships in Phase 
 
 - Connection map: [docs/MATRX_EXTEND_CONNECTION.md](./docs/MATRX_EXTEND_CONNECTION.md)
 - Skill: `connect-matrx-extend`
-- Master cross-repo doc (in matrx-extend): `/Users/armanisadeghi/code/matrx-extend/.claude/worktrees/exciting-moser-4b984f/docs/CROSS_REPO_INTEGRATION.md`
+- Master cross-repo doc (in matrx-extend): `/Users/armanisadeghi/code/matrx-extend/docs/CROSS_REPO_INTEGRATION.md`
 - Task pipeline: `.matrx/` (TASKS_FROM_USER → AGENT_TASKS → AGENT_INSTRUCTIONS)
 
 Pre-existing dead references that *look* like extension scaffolding but are not — do not touch in unrelated PRs:
