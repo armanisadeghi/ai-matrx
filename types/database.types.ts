@@ -1261,47 +1261,213 @@ export type Database = {
   }
   ai: {
     Tables: {
-      endpoint: {
+      api: {
         Row: {
-          additional_cost: boolean | null
-          cost_details: Json | null
+          created_at: string
           created_by: string | null
           deleted_at: string | null
           description: string | null
+          display_name: string
           id: string
+          is_system: boolean
+          metadata: Json
           name: string
-          organization_id: string | null
-          params: Json | null
-          provider: string | null
+          organization_id: string
+          request_defaults: Json
+          rules: Json
+          translator_key: string
+          transport: string
+          updated_at: string
+          updated_by: string | null
+          version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          additional_cost?: boolean | null
-          cost_details?: Json | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
+          display_name: string
           id?: string
+          is_system?: boolean
+          metadata?: Json
           name: string
-          organization_id?: string | null
-          params?: Json | null
-          provider?: string | null
+          organization_id: string
+          request_defaults?: Json
+          rules?: Json
+          translator_key: string
+          transport?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          additional_cost?: boolean | null
-          cost_details?: Json | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
+          display_name?: string
           id?: string
+          is_system?: boolean
+          metadata?: Json
           name?: string
-          organization_id?: string | null
-          params?: Json | null
-          provider?: string | null
+          organization_id?: string
+          request_defaults?: Json
+          rules?: Json
+          translator_key?: string
+          transport?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      endpoint: {
+        Row: {
+          auth_ref: Json
+          base_url: string | null
+          byok_secret_key: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string
+          id: string
+          internal_name: string
+          is_active: boolean
+          is_system: boolean
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          priority: number
+          updated_at: string
+          updated_by: string | null
+          vendor: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          auth_ref?: Json
+          base_url?: string | null
+          byok_secret_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name: string
+          id?: string
+          internal_name: string
+          is_active?: boolean
+          is_system?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          priority?: number
+          updated_at?: string
+          updated_by?: string | null
+          vendor: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          auth_ref?: Json
+          base_url?: string | null
+          byok_secret_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          id?: string
+          internal_name?: string
+          is_active?: boolean
+          is_system?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          priority?: number
+          updated_at?: string
+          updated_by?: string | null
+          vendor?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      model_alias: {
+        Row: {
+          alias: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_system: boolean
+          kind: string
+          metadata: Json
+          model_id: string
+          notes: string | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_system?: boolean
+          kind?: string
+          metadata?: Json
+          model_id: string
+          notes?: string | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_system?: boolean
+          kind?: string
+          metadata?: Json
+          model_id?: string
+          notes?: string | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_alias_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_alias_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_alias_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       model_definition: {
         Row: {
@@ -1311,6 +1477,7 @@ export type Database = {
           constraints: Json | null
           context_window: number | null
           controls: Json | null
+          cost_rating: number | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -1325,10 +1492,13 @@ export type Database = {
           metadata: Json
           mid_fallback_id: string | null
           model_class: string
-          model_provider: string | null
           name: string
           organization_id: string
+          provider_id: string | null
           release_date: string | null
+          retry_fallback_id: string | null
+          retry_max_attempts: number
+          speed_rating: number | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -1341,6 +1511,7 @@ export type Database = {
           constraints?: Json | null
           context_window?: number | null
           controls?: Json | null
+          cost_rating?: number | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -1355,10 +1526,13 @@ export type Database = {
           metadata?: Json
           mid_fallback_id?: string | null
           model_class: string
-          model_provider?: string | null
           name: string
           organization_id: string
+          provider_id?: string | null
           release_date?: string | null
+          retry_fallback_id?: string | null
+          retry_max_attempts?: number
+          speed_rating?: number | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -1371,6 +1545,7 @@ export type Database = {
           constraints?: Json | null
           context_window?: number | null
           controls?: Json | null
+          cost_rating?: number | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -1385,10 +1560,13 @@ export type Database = {
           metadata?: Json
           mid_fallback_id?: string | null
           model_class?: string
-          model_provider?: string | null
           name?: string
           organization_id?: string
+          provider_id?: string | null
           release_date?: string | null
+          retry_fallback_id?: string | null
+          retry_max_attempts?: number
+          speed_rating?: number | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -1439,20 +1617,42 @@ export type Database = {
           },
           {
             foreignKeyName: "ai_model_model_provider_fkey"
-            columns: ["model_provider"]
+            columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
             referencedColumns: ["id"]
           },
         ]
       }
       offering: {
         Row: {
+          api_id: string
           capabilities_override: Json
-          controls_override: Json
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          endpoint_id: string
           id: string
           is_available: boolean
           is_system: boolean
@@ -1460,10 +1660,10 @@ export type Database = {
           model_id: string
           notes: string | null
           organization_id: string
+          override: Json
           pricing: Json
           priority: number
           provider_model_id: string
-          service_id: string
           token_billed: boolean
           updated_at: string
           updated_by: string | null
@@ -1472,11 +1672,12 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          api_id: string
           capabilities_override?: Json
-          controls_override?: Json
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          endpoint_id: string
           id?: string
           is_available?: boolean
           is_system?: boolean
@@ -1484,10 +1685,10 @@ export type Database = {
           model_id: string
           notes?: string | null
           organization_id: string
+          override?: Json
           pricing?: Json
           priority?: number
           provider_model_id: string
-          service_id: string
           token_billed?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -1496,11 +1697,12 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          api_id?: string
           capabilities_override?: Json
-          controls_override?: Json
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          endpoint_id?: string
           id?: string
           is_available?: boolean
           is_system?: boolean
@@ -1508,10 +1710,10 @@ export type Database = {
           model_id?: string
           notes?: string | null
           organization_id?: string
+          override?: Json
           pricing?: Json
           priority?: number
           provider_model_id?: string
-          service_id?: string
           token_billed?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -1520,6 +1722,20 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
+          {
+            foreignKeyName: "offering_api_id_fkey"
+            columns: ["api_id"]
+            isOneToOne: false
+            referencedRelation: "api"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "endpoint"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "offering_model_id_fkey"
             columns: ["model_id"]
@@ -1539,13 +1755,6 @@ export type Database = {
             columns: ["model_id"]
             isOneToOne: false
             referencedRelation: "model_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "offering_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "service"
             referencedColumns: ["id"]
           },
         ]
@@ -1613,87 +1822,6 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           website_url?: string | null
-        }
-        Relationships: []
-      }
-      service: {
-        Row: {
-          auth_ref: Json
-          base_url: string | null
-          byok_secret_key: string | null
-          controls: Json
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          display_name: string
-          id: string
-          internal_name: string
-          is_active: boolean
-          is_system: boolean
-          metadata: Json
-          notes: string | null
-          organization_id: string
-          priority: number
-          request_defaults: Json
-          slug: string
-          updated_at: string
-          updated_by: string | null
-          vendor: string
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-          wire_format: string
-        }
-        Insert: {
-          auth_ref?: Json
-          base_url?: string | null
-          byok_secret_key?: string | null
-          controls?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          display_name: string
-          id?: string
-          internal_name: string
-          is_active?: boolean
-          is_system?: boolean
-          metadata?: Json
-          notes?: string | null
-          organization_id: string
-          priority?: number
-          request_defaults?: Json
-          slug: string
-          updated_at?: string
-          updated_by?: string | null
-          vendor: string
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-          wire_format: string
-        }
-        Update: {
-          auth_ref?: Json
-          base_url?: string | null
-          byok_secret_key?: string | null
-          controls?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          display_name?: string
-          id?: string
-          internal_name?: string
-          is_active?: boolean
-          is_system?: boolean
-          metadata?: Json
-          notes?: string | null
-          organization_id?: string
-          priority?: number
-          request_defaults?: Json
-          slug?: string
-          updated_at?: string
-          updated_by?: string | null
-          vendor?: string
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-          wire_format?: string
         }
         Relationships: []
       }
@@ -1863,10 +1991,17 @@ export type Database = {
     Views: {
       model_admin: {
         Row: {
+          api_id: string | null
+          api_name: string | null
           capabilities: Json | null
           common_name: string | null
           context_window: number | null
+          cost_rating: number | null
           description: string | null
+          endpoint_display_name: string | null
+          endpoint_has_base_url: boolean | null
+          endpoint_id: string | null
+          endpoint_internal_name: string | null
           guest_fallback_id: string | null
           id: string | null
           is_deprecated: boolean | null
@@ -1879,15 +2014,17 @@ export type Database = {
           name: string | null
           offering_id: string | null
           pricing: Json | null
+          provider_id: string | null
           provider_model_id: string | null
           release_date: string | null
-          service_display_name: string | null
-          service_has_base_url: boolean | null
-          service_internal_name: string | null
+          retry_fallback_id: string | null
+          retry_max_attempts: number | null
+          speed_rating: number | null
           token_billed: boolean | null
+          translator_key: string | null
+          transport: string | null
           usage_basis: string | null
           vendor: string | null
-          wire_format: string | null
         }
         Relationships: [
           {
@@ -1932,6 +2069,48 @@ export type Database = {
             referencedRelation: "model_public"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_model_model_provider_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_api_id_fkey"
+            columns: ["api_id"]
+            isOneToOne: false
+            referencedRelation: "api"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "endpoint"
+            referencedColumns: ["id"]
+          },
         ]
       }
       model_offering: {
@@ -1946,8 +2125,6 @@ export type Database = {
           points_per_million_input: number | null
           points_per_million_output: number | null
           priority: number | null
-          service_name: string | null
-          service_slug: string | null
           token_billed: boolean | null
           usage_basis: string | null
         }
@@ -1980,6 +2157,7 @@ export type Database = {
           capabilities: Json | null
           common_name: string | null
           context_window: number | null
+          cost_rating: number | null
           description: string | null
           guest_fallback_id: string | null
           id: string | null
@@ -1988,12 +2166,11 @@ export type Database = {
           maker: string | null
           max_tokens: number | null
           mid_fallback_id: string | null
-          model_class: string | null
           name: string | null
           points_per_million_input: number | null
           points_per_million_output: number | null
           release_date: string | null
-          service_name: string | null
+          speed_rating: number | null
           token_billed: boolean | null
           usage_basis: string | null
         }
@@ -2044,7 +2221,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      _validate_rules_envelope: {
+        Args: { p_doc: Json; p_where: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -12388,7 +12568,15 @@ export type Database = {
           id?: string
           notes?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_model_endpoint_ai_endpoint_id_fkey"
+            columns: ["ai_endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "endpoint_legacy"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_model_pricing: {
         Row: {
@@ -12501,6 +12689,87 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_service_legacy: {
+        Row: {
+          auth_ref: Json
+          base_url: string | null
+          byok_secret_key: string | null
+          controls: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string
+          id: string
+          internal_name: string
+          is_active: boolean
+          is_system: boolean
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          priority: number
+          request_defaults: Json
+          slug: string
+          updated_at: string
+          updated_by: string | null
+          vendor: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          wire_format: string
+        }
+        Insert: {
+          auth_ref?: Json
+          base_url?: string | null
+          byok_secret_key?: string | null
+          controls?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name: string
+          id?: string
+          internal_name: string
+          is_active?: boolean
+          is_system?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          priority?: number
+          request_defaults?: Json
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+          vendor: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wire_format: string
+        }
+        Update: {
+          auth_ref?: Json
+          base_url?: string | null
+          byok_secret_key?: string | null
+          controls?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          id?: string
+          internal_name?: string
+          is_active?: boolean
+          is_system?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          priority?: number
+          request_defaults?: Json
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+          vendor?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wire_format?: string
+        }
+        Relationships: []
+      }
       ai_settings: {
         Row: {
           ai_endpoint: string | null
@@ -12565,7 +12834,15 @@ export type Database = {
           tools?: Json | null
           top_p?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_settings_ai_endpoint_fkey"
+            columns: ["ai_endpoint"]
+            isOneToOne: false
+            referencedRelation: "endpoint_legacy"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_tasks: {
         Row: {
@@ -14154,6 +14431,48 @@ export type Database = {
           default_params?: Json | null
           id?: string
           name?: string | null
+        }
+        Relationships: []
+      }
+      endpoint_legacy: {
+        Row: {
+          additional_cost: boolean | null
+          cost_details: Json | null
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string | null
+          params: Json | null
+          provider: string | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          additional_cost?: boolean | null
+          cost_details?: Json | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id?: string | null
+          params?: Json | null
+          provider?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          additional_cost?: boolean | null
+          cost_details?: Json | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string | null
+          params?: Json | null
+          provider?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -18596,6 +18915,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_access_as: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user: string
+        }
+        Returns: boolean
+      }
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_admin: { Args: { p_org: string }; Returns: boolean }
       has_org_owner: { Args: { p_org: string }; Returns: boolean }
@@ -20607,6 +20935,10 @@ export type Database = {
           item_type: string
           max_level: Database["public"]["Enums"]["permission_level"]
         }[]
+      }
+      entity_row_access_attrs: {
+        Args: { p_id: string; p_schema: string; p_table: string }
+        Returns: Record<string, unknown>
       }
       log_activity:
         | {
@@ -24397,26 +24729,6 @@ export type Database = {
           transformer: string
         }[]
       }
-      add_one_ai_endpoint: {
-        Args: {
-          p_additional_cost?: boolean
-          p_cost_details?: Json
-          p_description?: string
-          p_id: string
-          p_name: string
-          p_params?: Json
-          p_provider?: string
-        }
-        Returns: {
-          additional_cost: boolean
-          cost_details: Json
-          description: string
-          id: string
-          name: string
-          params: Json
-          provider: string
-        }[]
-      }
       add_one_arg: {
         Args: {
           p_data_type?: Database["public"]["Enums"]["data_type"]
@@ -26712,18 +27024,6 @@ export type Database = {
           transformer: string
         }[]
       }
-      fetch_all_ai_endpoint: {
-        Args: never
-        Returns: {
-          additional_cost: boolean
-          cost_details: Json
-          description: string
-          id: string
-          name: string
-          params: Json
-          provider: string
-        }[]
-      }
       fetch_all_arg: {
         Args: never
         Returns: {
@@ -26893,18 +27193,6 @@ export type Database = {
           node_type: string
           reference_id: string
           transformer: string
-        }[]
-      }
-      fetch_by_id_ai_endpoint: {
-        Args: { record_id: string }
-        Returns: {
-          additional_cost: boolean
-          cost_details: Json
-          description: string
-          id: string
-          name: string
-          params: Json
-          provider: string
         }[]
       }
       fetch_by_id_arg: {
@@ -28267,6 +28555,15 @@ export type Database = {
         Returns: Json
       }
       hard_delete_file: { Args: { p_file_id: string }; Returns: Json }
+      has_access_as: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user: string
+        }
+        Returns: boolean
+      }
       has_permission: {
         Args: {
           p_required_permission: Database["public"]["Enums"]["permission_level"]
@@ -29842,18 +30139,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      upsert_ai_endpoint: {
-        Args: {
-          p_additional_cost?: boolean
-          p_cost_details?: Json
-          p_description?: string
-          p_id: string
-          p_name: string
-          p_params?: Json
-          p_provider?: string
-        }
-        Returns: undefined
-      }
       upsert_arg: {
         Args: {
           p_data_type?: Database["public"]["Enums"]["data_type"]
@@ -30025,6 +30310,10 @@ export type Database = {
           p_ourput_params?: Json
         }
         Returns: undefined
+      }
+      user_can_read_data_store_via_grant: {
+        Args: { p_store: string; p_user: string }
+        Returns: boolean
       }
       user_container_ids: {
         Args: { p_container_type: string; p_role_filter?: string[] }
@@ -30900,6 +31189,7 @@ export type Database = {
           settings: Json
           short_code: string | null
           updated_at: string
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
@@ -30914,6 +31204,7 @@ export type Database = {
           settings?: Json
           short_code?: string | null
           updated_at?: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -30928,6 +31219,7 @@ export type Database = {
           settings?: Json
           short_code?: string | null
           updated_at?: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }

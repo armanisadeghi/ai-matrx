@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 238 active entity tokens. A token here is FK-valid for
+// 242 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -48,10 +48,12 @@ export type EntityTypeToken =
   | "agent_template"
   | "agent_usage"
   | "agent_user_kv"
+  | "ai_api"
+  | "ai_endpoint"
   | "ai_model"
+  | "ai_model_alias"
   | "ai_offering"
   | "ai_provider"
-  | "ai_service"
   | "ai_setting"
   | "app"
   | "app_definition_version"
@@ -173,6 +175,8 @@ export type EntityTypeToken =
   | "pc_studio_run"
   | "pc_studio_run_asset"
   | "pdf_redaction_audit"
+  | "processed_document"
+  | "processed_document_page"
   | "profile"
   | "project"
   | "prompt"
@@ -320,6 +324,7 @@ export type ComponentEntityToken =
   | "global_meter_entry"
   | "message"
   | "pc_studio_run_asset"
+  | "processed_document_page"
   | "research_analysis"
   | "research_content"
   | "research_document"
@@ -364,10 +369,12 @@ export type ScopeableEntityToken =
   | "agent_template"
   | "agent_usage"
   | "agent_user_kv"
+  | "ai_api"
+  | "ai_endpoint"
   | "ai_model"
+  | "ai_model_alias"
   | "ai_offering"
   | "ai_provider"
-  | "ai_service"
   | "ai_setting"
   | "app"
   | "app_definition_version"
@@ -472,6 +479,8 @@ export type ScopeableEntityToken =
   | "pc_studio_run"
   | "pc_studio_run_asset"
   | "pdf_redaction_audit"
+  | "processed_document"
+  | "processed_document_page"
   | "profile"
   | "project"
   | "prompt"
@@ -577,6 +586,7 @@ export type ScopeableEntityToken =
 export type ListedEntityToken =
   | "agent"
   | "ai_model"
+  | "ai_model_alias"
   | "ai_provider"
   | "ai_setting"
   | "content_ir_kind"
@@ -609,10 +619,12 @@ export const ENTITY_TYPE_METADATA = {
   "agent_template": { token: "agent_template", schema: "agent", table: "template", label: "Agent Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents" },
   "agent_usage": { token: "agent_usage", schema: "agent", table: "usage", label: "Agent Usage", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents" },
   "agent_user_kv": { token: "agent_user_kv", schema: "public", table: "agent_user_kv", label: "Agent User KV", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "ai_api": { token: "ai_api", schema: "ai", table: "api", label: "AI API", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "ai_endpoint": { token: "ai_endpoint", schema: "ai", table: "endpoint", label: "AI Endpoint", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "ai_model": { token: "ai_model", schema: "ai", table: "model_definition", label: "AI Model", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
+  "ai_model_alias": { token: "ai_model_alias", schema: "ai", table: "model_alias", label: "AI Model Alias", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "ai_offering": { token: "ai_offering", schema: "ai", table: "offering", label: "AI Offering", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "ai_provider": { token: "ai_provider", schema: "ai", table: "provider", label: "AI Provider", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
-  "ai_service": { token: "ai_service", schema: "ai", table: "service", label: "AI Service", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "ai_setting": { token: "ai_setting", schema: "ai", table: "setting", label: "AI Setting", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "app": { token: "app", schema: "app", table: "definition", label: "App", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Apps" },
   "app_definition_version": { token: "app_definition_version", schema: "app", table: "definition_version", label: "App Definition Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Apps" },
@@ -734,6 +746,8 @@ export const ENTITY_TYPE_METADATA = {
   "pc_studio_run": { token: "pc_studio_run", schema: "podcast", table: "pc_studio_runs", label: "Podcast Studio Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "pc_studio_run_asset": { token: "pc_studio_run_asset", schema: "podcast", table: "pc_studio_run_assets", label: "Podcast Studio Run Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "pdf_redaction_audit": { token: "pdf_redaction_audit", schema: "pdf", table: "pdf_redaction_audits", label: "PDF Redaction Audit", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "profile": { token: "profile", schema: "user", table: "profiles", label: "User Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces" },
   "prompt": { token: "prompt", schema: "public", table: "prompts", label: "Prompt", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -851,10 +865,12 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "agent_template",
   "agent_usage",
   "agent_user_kv",
+  "ai_api",
+  "ai_endpoint",
   "ai_model",
+  "ai_model_alias",
   "ai_offering",
   "ai_provider",
-  "ai_service",
   "ai_setting",
   "app",
   "app_definition_version",
@@ -976,6 +992,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "pc_studio_run",
   "pc_studio_run_asset",
   "pdf_redaction_audit",
+  "processed_document",
+  "processed_document_page",
   "profile",
   "project",
   "prompt",
