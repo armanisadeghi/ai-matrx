@@ -68,10 +68,10 @@
     {
       "relation": "code_file_versions",
       "old": "public.code_file_versions",
-      "newSchema": "code",
-      "new": "code.code_file_versions",
+      "newSchema": "graveyard",
+      "new": "graveyard.code_file_versions",
       "since": "2026-06-27",
-      "reason": "moved to code schema (clean cut). Use .schema('code').from('code_file_versions')."
+      "reason": "moved to code schema 2026-06-27, then retired to graveyard (live location verified 2026-07-10). No app reads."
     },
     {
       "relation": "agent_run",
