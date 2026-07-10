@@ -68,7 +68,7 @@ function rowToFormData(row: AiModel): AiModelFormData {
     context_window:
       row.context_window != null ? String(row.context_window) : "",
     max_tokens: row.max_tokens != null ? String(row.max_tokens) : "",
-    model_provider: row.model_provider ?? "",
+    provider_id: row.provider_id ?? "",
     is_deprecated: row.is_deprecated ?? false,
     is_primary: row.is_primary ?? false,
     is_premium: row.is_premium ?? false,
@@ -83,7 +83,7 @@ const EMPTY_FORM: AiModelFormData = {
   model_class: "",
   context_window: "",
   max_tokens: "",
-  model_provider: "",
+  provider_id: "",
   is_deprecated: false,
   is_primary: false,
   is_premium: false,
@@ -94,8 +94,8 @@ const EMPTY_FORM: AiModelFormData = {
 // ─── Pricing (read-only, sourced from ai.offering) ────────────────────────
 
 /** Model-level pricing was removed — pricing lives on `ai.offering` (per model ×
- *  service) and is edited in the Offerings page. This tab shows those tiers
- *  read-only so an admin sees a model's real prices without a second editor. */
+ *  endpoint × api) and is edited in the Offerings page. This tab shows those
+ *  tiers read-only so an admin sees a model's real prices without a second editor. */
 function OfferingPricingReadOnly({
   offerings,
   error,
@@ -110,7 +110,7 @@ function OfferingPricingReadOnly({
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        Pricing is managed per offering (model × service) on the{" "}
+        Pricing is managed per offering (model × endpoint × api) on the{" "}
         <span className="font-medium text-foreground">Offerings</span> page. This
         view is read-only.
       </p>
@@ -295,8 +295,8 @@ function ProviderDataTab({
     "structured",
   );
 
-  // Find the provider (by the model_provider FK) and the matching cache entry
-  const matchedProvider = providers.find((p) => p.id === model.model_provider);
+  // Find the provider (by the provider_id FK) and the matching cache entry
+  const matchedProvider = providers.find((p) => p.id === model.provider_id);
   const providerEntry: ProviderModelEntry | undefined =
     matchedProvider?.provider_models_cache?.models.find(
       (m) => m.id === model.name,
@@ -518,7 +518,7 @@ const AI_MODEL_COLUMNS = new Set([
   "model_class",
   "context_window",
   "max_tokens",
-  "model_provider",
+  "provider_id",
   "is_deprecated",
   "is_primary",
   "is_premium",
@@ -904,7 +904,7 @@ export default function AiModelDetailPanel({
     [],
   );
 
-  // Pricing lives on ai.offering now (per model × service). This panel shows it
+  // Pricing lives on ai.offering now (per model × endpoint × api). This panel shows it
   // READ-ONLY — editing happens in the Offerings page. Load the model's
   // offerings so the Pricing tab can display their tiers.
   const [offerings, setOfferings] = useState<AiOffering[]>([]);
@@ -999,7 +999,7 @@ export default function AiModelDetailPanel({
           max_tokens: formData.max_tokens
             ? parseInt(formData.max_tokens)
             : null,
-          model_provider: formData.model_provider || null,
+          provider_id: formData.provider_id || null,
           is_deprecated: formData.is_deprecated,
           is_primary: formData.is_primary,
           is_premium: formData.is_premium,
@@ -1214,8 +1214,8 @@ export default function AiModelDetailPanel({
                       partial.common_name = cleaned.common_name;
                     if (typeof cleaned.model_class === "string")
                       partial.model_class = cleaned.model_class;
-                    if (typeof cleaned.model_provider === "string")
-                      partial.model_provider = cleaned.model_provider;
+                    if (typeof cleaned.provider_id === "string")
+                      partial.provider_id = cleaned.provider_id;
                     if (typeof cleaned.context_window === "number")
                       partial.context_window = String(cleaned.context_window);
                     if (typeof cleaned.max_tokens === "number")
@@ -1318,7 +1318,7 @@ export default function AiModelDetailPanel({
                   className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Provider Data
-                  {providers.find((p) => p.id === model?.model_provider)
+                  {providers.find((p) => p.id === model?.provider_id)
                     ?.provider_models_cache && (
                     <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
                   )}

@@ -16,12 +16,13 @@ import {
 import { useState } from "react";
 import { AdminAuditTable } from "@/features/administration/canonicalization/components/AdminAuditTable";
 import type { AuditColumnDef } from "@/features/administration/canonicalization/components/AdminAuditTable";
-import type { AiModel, AiOffering, AiService } from "../../types";
+import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
 
 interface OfferingTableProps {
   offerings: AiOffering[];
   models: AiModel[];
-  services: AiService[];
+  endpoints: AiEndpoint[];
+  apis: AiApi[];
   loading: boolean;
   onSelect: (offering: AiOffering) => void;
   onDelete: (offering: AiOffering) => void;
@@ -31,7 +32,8 @@ interface OfferingTableProps {
 export default function OfferingTable({
   offerings,
   models,
-  services,
+  endpoints,
+  apis,
   loading,
   onSelect,
   onDelete,
@@ -42,9 +44,13 @@ export default function OfferingTable({
     const m = models.find((x) => x.id === id);
     return m?.common_name || m?.name || id;
   };
-  const serviceName = (id: string) => {
-    const s = services.find((x) => x.id === id);
-    return s?.display_name || id;
+  const endpointName = (id: string) => {
+    const e = endpoints.find((x) => x.id === id);
+    return e?.display_name || id;
+  };
+  const apiName = (id: string) => {
+    const a = apis.find((x) => x.id === id);
+    return a?.display_name || id;
   };
 
   const columns: AuditColumnDef<AiOffering>[] = [
@@ -56,11 +62,18 @@ export default function OfferingTable({
       width: "minmax(180px,1.4fr)",
     },
     {
-      key: "service",
-      label: "Service",
+      key: "endpoint",
+      label: "Endpoint",
       type: "enum",
-      getValue: (o) => serviceName(o.service_id),
-      width: "160px",
+      getValue: (o) => endpointName(o.endpoint_id),
+      width: "150px",
+    },
+    {
+      key: "api",
+      label: "API",
+      type: "enum",
+      getValue: (o) => apiName(o.api_id),
+      width: "150px",
     },
     {
       key: "provider_model_id",
@@ -161,7 +174,7 @@ export default function OfferingTable({
               {pendingDelete && (
                 <>
                   This removes the{" "}
-                  <strong>{serviceName(pendingDelete.service_id)}</strong>{" "}
+                  <strong>{endpointName(pendingDelete.endpoint_id)}</strong>{" "}
                   offering for{" "}
                   <strong>{modelName(pendingDelete.model_id)}</strong>. This
                   cannot be undone.

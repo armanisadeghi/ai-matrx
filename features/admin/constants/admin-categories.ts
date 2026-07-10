@@ -265,16 +265,16 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/ai-models/providers",
       },
       {
-        title: "Services",
+        title: "Endpoints & APIs",
         description:
-          "Manage callable AI routes (ai.service) — wire format, base URL, auth, controls, and request defaults per service.",
+          "Manage serving vendors (ai.endpoint — base URL, auth, priority) and wire contracts (ai.api — translator key, transport, rules, request defaults). Admin-only facts, never user-facing.",
         iconName: "Plug",
-        link: "/administration/ai-models/services",
+        link: "/administration/ai-models/endpoints",
       },
       {
         title: "Offerings",
         description:
-          "Manage per-service model offerings (ai.offering) — pricing/capability/control overrides, plus a coverage report of which models have no offering yet.",
+          "Manage model offerings (ai.offering — model × endpoint × api) — pricing/capability/param overrides, plus a coverage report of which models have no offering yet.",
         iconName: "Layers",
         link: "/administration/ai-models/offerings",
       },

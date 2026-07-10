@@ -15,12 +15,18 @@ import {
 } from "@/components/ui/select";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
 import ModelPricingEditor from "@/features/ai-models/components/ModelPricingEditor";
-import type { AiModel, AiOfferingFormData, AiService } from "../../types";
+import type {
+  AiApi,
+  AiEndpoint,
+  AiModel,
+  AiOfferingFormData,
+} from "../../types";
 
 interface OfferingFormProps {
   data: AiOfferingFormData;
   models: AiModel[];
-  services: AiService[];
+  endpoints: AiEndpoint[];
+  apis: AiApi[];
   onChange: (data: AiOfferingFormData) => void;
 }
 
@@ -52,7 +58,8 @@ function FormField({
 export default function OfferingForm({
   data,
   models,
-  services,
+  endpoints,
+  apis,
   onChange,
 }: OfferingFormProps) {
   const set =
@@ -106,24 +113,50 @@ export default function OfferingForm({
             </SelectContent>
           </Select>
         </FormField>
-        <FormField label="Service" required description="The callable route this offering serves through">
+        <FormField
+          label="Endpoint"
+          required
+          description="The serving vendor this offering routes through (admin-only fact)"
+        >
           <Select
-            value={data.service_id || undefined}
-            onValueChange={(v) => onChange({ ...data, service_id: v })}
+            value={data.endpoint_id || undefined}
+            onValueChange={(v) => onChange({ ...data, endpoint_id: v })}
           >
             <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="Select service..." />
+              <SelectValue placeholder="Select endpoint..." />
             </SelectTrigger>
             <SelectContent>
-              {services.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.display_name}
+              {endpoints.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.display_name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </FormField>
       </div>
+
+      <FormField
+        label="API"
+        required
+        description="The wire contract (translator) used to call this offering"
+      >
+        <Select
+          value={data.api_id || undefined}
+          onValueChange={(v) => onChange({ ...data, api_id: v })}
+        >
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue placeholder="Select API..." />
+          </SelectTrigger>
+          <SelectContent>
+            {apis.map((a) => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.display_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FormField>
 
       <FormField
         label="Provider Model ID"
@@ -218,14 +251,21 @@ export default function OfferingForm({
 
       <div className="space-y-1">
         <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Controls Override
+          Param Overrides (override.params)
         </Label>
+        <p className="text-xs text-muted-foreground">
+          Edits the params half of the enveloped override; constraints are
+          preserved untouched.
+        </p>
         <EnhancedEditableJsonViewer
-          data={data.controls_override}
+          data={data.override.params}
           onChange={(v) =>
             onChange({
               ...data,
-              controls_override: v as Record<string, unknown>,
+              override: {
+                ...data.override,
+                params: v as Record<string, unknown>,
+              },
             })
           }
         />

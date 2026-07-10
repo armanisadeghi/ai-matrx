@@ -70,7 +70,7 @@ import {
   type FeatureBucket,
 } from "@/features/ai-models/capabilities/feature-map";
 import {
-  priceTier,
+  costRatingTier,
   type PriceTier,
 } from "@/features/ai-models/lab/modelDisplay";
 
@@ -300,17 +300,18 @@ function ModelDetailCard({
               Admin
             </div>
             {model.admin.vendor && <div>Vendor: {model.admin.vendor}</div>}
-            {model.admin.wireFormat && (
-              <div>Wire format: {model.admin.wireFormat}</div>
+            {model.admin.translatorKey && (
+              <div>Translator: {model.admin.translatorKey}</div>
             )}
-            {(model.admin.serviceDisplayName ||
-              model.admin.serviceInternalName) && (
+            {(model.admin.endpointDisplayName ||
+              model.admin.endpointInternalName) && (
               <div>
-                Service:{" "}
-                {model.admin.serviceDisplayName ||
-                  model.admin.serviceInternalName}
+                Endpoint:{" "}
+                {model.admin.endpointDisplayName ||
+                  model.admin.endpointInternalName}
               </div>
             )}
+            {model.admin.apiName && <div>API: {model.admin.apiName}</div>}
           </div>
         )}
 
@@ -677,7 +678,7 @@ export function ModelListDropdown({
         case "context":
           return (b.contextWindow ?? 0) - (a.contextWindow ?? 0);
         case "price":
-          return (a.outputCost ?? Infinity) - (b.outputCost ?? Infinity);
+          return (a.costRating ?? Infinity) - (b.costRating ?? Infinity);
         default:
           return a.name.localeCompare(b.name);
       }
@@ -850,7 +851,7 @@ export function ModelListDropdown({
             <ModelRow
               key={m.id}
               model={m}
-              tier={priceTier(m.outputCost)}
+              tier={costRatingTier(m.costRating)}
               selected={m.id === value}
               isFavorite={favoriteSet.has(m.id)}
               onToggleFavorite={() => toggleFavorite(m.id)}
@@ -897,7 +898,7 @@ export function ModelListDropdown({
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   <ModelDetailCard
                     model={mobileDetail}
-                    tier={priceTier(mobileDetail.outputCost)}
+                    tier={costRatingTier(mobileDetail.costRating)}
                     variant={variant}
                     onSelect={() => handleSelect(mobileDetail.id)}
                   />
@@ -962,7 +963,7 @@ export function ModelListDropdown({
               >
                 <ModelDetailCard
                   model={hovered}
-                  tier={priceTier(hovered.outputCost)}
+                  tier={costRatingTier(hovered.costRating)}
                   variant={variant}
                   onSelect={() => handleSelect(hovered.id)}
                 />

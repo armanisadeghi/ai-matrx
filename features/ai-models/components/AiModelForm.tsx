@@ -217,11 +217,11 @@ export default function AiModelForm({
                 </div>
             </div>
 
-            <FormField label="Provider" description="ai.provider record (model_provider FK) — the model's maker. The old free-text provider column is dropped and derived, never edited.">
+            <FormField label="Provider" description="ai.provider record (provider_id FK) — the model's maker. The old free-text provider column is dropped and derived, never edited.">
                 <Select
-                    value={data.model_provider || undefined}
+                    value={data.provider_id || undefined}
                     onValueChange={(v) => {
-                        onChange({ ...data, model_provider: v === '__none__' ? '' : v });
+                        onChange({ ...data, provider_id: v === '__none__' ? '' : v });
                     }}
                 >
                     <SelectTrigger className="h-8 text-sm">

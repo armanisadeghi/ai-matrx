@@ -146,7 +146,7 @@ export default function AuditRulesConfig({
             />
             <RuleSwitch
               label="Require maker"
-              description="Model must have a maker (model_provider FK)"
+              description="Model must have a maker (provider_id FK)"
               checked={rules.require_provider}
               onChange={(v) => set("require_provider", v)}
             />

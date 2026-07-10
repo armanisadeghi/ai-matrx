@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Search, Check, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@/utils/search-scoring";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { RootState } from "@/lib/redux/store";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -31,22 +30,11 @@ const AiModelsPreferences = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterView, setFilterView] = useState<FilterView>("all");
   const [filterProvider, setFilterProvider] = useState<string | null>(null);
-  const [filterClass, setFilterClass] = useState<string | null>(null);
 
   const providers = useMemo(
     () =>
       [
         ...new Set(models.map((m) => m.maker).filter(Boolean) as string[]),
-      ].sort(),
-    [models],
-  );
-
-  const modelClasses = useMemo(
-    () =>
-      [
-        ...new Set(
-          models.map((m) => m.model_class).filter(Boolean) as string[],
-        ),
       ].sort(),
     [models],
   );
@@ -98,10 +86,6 @@ const AiModelsPreferences = () => {
       result = result.filter((m) => m.maker === filterProvider);
     }
 
-    if (filterClass) {
-      result = result.filter((m) => m.model_class === filterClass);
-    }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -118,7 +102,6 @@ const AiModelsPreferences = () => {
     models,
     filterView,
     filterProvider,
-    filterClass,
     searchQuery,
     aiModels.activeModels,
     aiModels.inactiveModels,
@@ -127,12 +110,10 @@ const AiModelsPreferences = () => {
   const activeCount = models.filter((m) =>
     aiModels.activeModels.includes(m.id),
   ).length;
-  const hasFilters =
-    filterProvider !== null || filterClass !== null || filterView !== "all";
+  const hasFilters = filterProvider !== null || filterView !== "all";
 
   const clearFilters = () => {
     setFilterProvider(null);
-    setFilterClass(null);
     setFilterView("all");
     setSearchQuery("");
   };
@@ -225,21 +206,6 @@ const AiModelsPreferences = () => {
             ))}
           </select>
 
-          {/* Model class filter */}
-          {modelClasses.length > 1 && (
-            <select
-              value={filterClass ?? ""}
-              onChange={(e) => setFilterClass(e.target.value || null)}
-              className="h-6 px-1.5 rounded text-xs bg-muted/60 text-muted-foreground border-0 outline-none hover:bg-muted hover:text-foreground transition-colors cursor-pointer appearance-none"
-            >
-              <option value="">All Types</option>
-              {modelClasses.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          )}
         </div>
       </div>
 
@@ -281,14 +247,6 @@ const AiModelsPreferences = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {model.model_class && (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] px-1.5 py-0 h-4 font-normal hidden sm:inline-flex"
-                      >
-                        {model.model_class}
-                      </Badge>
-                    )}
                     {model.maker && (
                       <span className="text-[10px] text-muted-foreground/70 w-16 text-right truncate">
                         {model.maker}

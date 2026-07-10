@@ -23,16 +23,18 @@ import OfferingForm from "./OfferingForm";
 import { AdminAuditTable } from "@/features/administration/canonicalization/components/AdminAuditTable";
 import type { AuditColumnDef } from "@/features/administration/canonicalization/components/AdminAuditTable";
 import type {
+  AiApi,
+  AiEndpoint,
   AiModel,
   AiModelOfferingView,
   AiOffering,
   AiOfferingFormData,
-  AiService,
 } from "../../types";
 
 const EMPTY_FORM: AiOfferingFormData = {
   model_id: "",
-  service_id: "",
+  endpoint_id: "",
+  api_id: "",
   provider_model_id: "",
   priority: "100",
   is_available: true,
@@ -40,7 +42,7 @@ const EMPTY_FORM: AiOfferingFormData = {
   usage_basis: "",
   token_billed: false,
   capabilities_override: {},
-  controls_override: {},
+  override: { params: {}, constraints: [] },
   notes: "",
   visibility: "internal",
 };
@@ -48,7 +50,8 @@ const EMPTY_FORM: AiOfferingFormData = {
 function rowToFormData(row: AiOffering): AiOfferingFormData {
   return {
     model_id: row.model_id,
-    service_id: row.service_id,
+    endpoint_id: row.endpoint_id,
+    api_id: row.api_id,
     provider_model_id: row.provider_model_id,
     priority: String(row.priority ?? 100),
     is_available: row.is_available ?? true,
@@ -56,7 +59,11 @@ function rowToFormData(row: AiOffering): AiOfferingFormData {
     usage_basis: row.usage_basis ?? "",
     token_billed: row.token_billed,
     capabilities_override: row.capabilities_override ?? {},
-    controls_override: row.controls_override ?? {},
+    // Enveloped override — the form edits .params; .constraints pass through.
+    override: {
+      params: row.override?.params ?? {},
+      constraints: row.override?.constraints ?? [],
+    },
     notes: row.notes ?? "",
     visibility: row.visibility ?? "internal",
   };
@@ -65,7 +72,8 @@ function rowToFormData(row: AiOffering): AiOfferingFormData {
 export default function OfferingsContainer() {
   const [offerings, setOfferings] = useState<AiOffering[]>([]);
   const [models, setModels] = useState<AiModel[]>([]);
-  const [services, setServices] = useState<AiService[]>([]);
+  const [endpoints, setEndpoints] = useState<AiEndpoint[]>([]);
+  const [apis, setApis] = useState<AiApi[]>([]);
   const [coverage, setCoverage] = useState<AiModelOfferingView[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("manage");
@@ -85,16 +93,23 @@ export default function OfferingsContainer() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [fetchedOfferings, fetchedModels, fetchedServices, fetchedCoverage] =
-        await Promise.all([
-          aiModelService.fetchOfferings(),
-          aiModelService.fetchAll(),
-          aiModelService.fetchServices(),
-          aiModelService.fetchModelOfferingView(),
-        ]);
+      const [
+        fetchedOfferings,
+        fetchedModels,
+        fetchedEndpoints,
+        fetchedApis,
+        fetchedCoverage,
+      ] = await Promise.all([
+        aiModelService.fetchOfferings(),
+        aiModelService.fetchAll(),
+        aiModelService.fetchEndpoints(),
+        aiModelService.fetchApis(),
+        aiModelService.fetchModelOfferingView(),
+      ]);
       setOfferings(fetchedOfferings);
       setModels(fetchedModels);
-      setServices(fetchedServices);
+      setEndpoints(fetchedEndpoints);
+      setApis(fetchedApis);
       setCoverage(fetchedCoverage);
     } catch (err) {
       console.error("Failed to load offerings", extractErrorMessage(err));
@@ -154,7 +169,8 @@ export default function OfferingsContainer() {
 
   const canSave =
     formData.model_id.trim() &&
-    formData.service_id.trim() &&
+    formData.endpoint_id.trim() &&
+    formData.api_id.trim() &&
     formData.provider_model_id.trim();
 
   const handleSave = async (): Promise<AiOffering | null> => {
@@ -163,7 +179,8 @@ export default function OfferingsContainer() {
     try {
       const payload = {
         model_id: formData.model_id,
-        service_id: formData.service_id,
+        endpoint_id: formData.endpoint_id,
+        api_id: formData.api_id,
         provider_model_id: formData.provider_model_id.trim(),
         priority: parseInt(formData.priority, 10) || 100,
         is_available: formData.is_available,
@@ -171,7 +188,8 @@ export default function OfferingsContainer() {
         usage_basis: formData.usage_basis.trim() || null,
         token_billed: formData.token_billed,
         capabilities_override: formData.capabilities_override,
-        controls_override: formData.controls_override,
+        // Always write the full envelope (params edited, constraints preserved).
+        override: formData.override,
         notes: formData.notes.trim() || null,
         visibility: formData.visibility,
       };
@@ -179,7 +197,7 @@ export default function OfferingsContainer() {
       let saved: AiOffering;
       if (isNew) {
         // organization_id is required — every new offering is homed in the
-        // global system org (same pattern as Providers/Services).
+        // global system org (same pattern as Providers/Endpoints).
         const organization_id = await resolveSystemOrgId();
         saved = await aiModelService.createOffering({
           ...payload,
@@ -226,13 +244,6 @@ export default function OfferingsContainer() {
       type: "text",
       getValue: (r) => r.model_common_name ?? r.model_name ?? "",
       width: "minmax(180px,1.4fr)",
-    },
-    {
-      key: "service",
-      label: "Service",
-      type: "enum",
-      getValue: (r) => r.service_name ?? "",
-      width: "160px",
     },
     {
       key: "priority",
@@ -330,7 +341,8 @@ export default function OfferingsContainer() {
               <OfferingTable
                 offerings={offerings}
                 models={models}
-                services={services}
+                endpoints={endpoints}
+                apis={apis}
                 loading={loading}
                 onSelect={openOffering}
                 onDelete={handleDelete}
@@ -371,7 +383,8 @@ export default function OfferingsContainer() {
                   <OfferingForm
                     data={formData}
                     models={models}
-                    services={services}
+                    endpoints={endpoints}
+                    apis={apis}
                     onChange={setFormData}
                   />
                 </div>

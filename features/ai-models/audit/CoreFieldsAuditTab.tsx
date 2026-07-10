@@ -226,7 +226,7 @@ export default function CoreFieldsAuditTab({
                   />
                 </td>
                 <td className="px-3 py-1">
-                  {/* Maker is derived from the model_provider FK (the free-text
+                  {/* Maker is derived from the provider_id FK (the free-text
                       provider column is dropped) — read-only here; set the FK in
                       the model detail form. */}
                   <ProviderBadge provider={model.maker} />

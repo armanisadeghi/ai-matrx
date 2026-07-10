@@ -79,7 +79,7 @@ export default function AddProviderModelDialog({
   // Sort templates: same-provider first (by id match or by name match), then everything else.
   const templateOptions = useMemo(() => {
     const sameProvider = localModels.filter(
-      (m) => m.model_provider === providerId,
+      (m) => m.provider_id === providerId,
     );
     const otherProvider = localModels.filter((m) => !sameProvider.includes(m));
     const sortByName = (a: AiModel, b: AiModel) =>
@@ -147,7 +147,7 @@ export default function AddProviderModelDialog({
         name: nameOverride.trim(),
         common_name: commonNameOverride.trim() || null,
         model_class: modelClassOverride.trim(),
-        model_provider: providerId,
+        provider_id: providerId,
         context_window: ctxFromProvider ?? template.context_window ?? null,
         max_tokens: maxOutFromProvider ?? template.max_tokens ?? null,
         is_primary: false,
@@ -248,7 +248,7 @@ export default function AddProviderModelDialog({
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground">
-                    model_provider
+                    provider_id
                   </p>
                   <p
                     className="text-[10px] font-mono text-muted-foreground truncate"

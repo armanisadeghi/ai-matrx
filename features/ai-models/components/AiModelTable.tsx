@@ -183,7 +183,7 @@ const SORT_FIELDS = [
   "name",
   "provider",
   "model_class",
-  "model_provider",
+  "provider_id",
   "context_window",
   "max_tokens",
   "is_deprecated",
@@ -271,15 +271,15 @@ const COLUMNS: ColDef[] = [
     ),
   },
   {
-    key: "model_provider",
+    key: "provider_id",
     header: "Provider FK",
     width: "w-[120px] min-w-[100px]",
     sortable: true,
     render: (item, providerMap) => (
       <span className="text-xs text-muted-foreground font-mono">
-        {item.model_provider
-          ? (providerMap[item.model_provider] ??
-            item.model_provider.slice(0, 8) + "…")
+        {item.provider_id
+          ? (providerMap[item.provider_id] ??
+            item.provider_id.slice(0, 8) + "…")
           : "—"}
       </span>
     ),
@@ -534,7 +534,7 @@ function RowActions({
               summary: aiModelSummary(item),
               attributes: {
                 id: item.id,
-                provider: item.maker ?? item.model_provider ?? "",
+                provider: item.maker ?? item.provider_id ?? "",
               },
             })}
           />

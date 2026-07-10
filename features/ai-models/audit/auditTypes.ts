@@ -124,7 +124,7 @@ export interface AuditRuleConfig {
   require_context_window: boolean;
   /** Core fields: require max_tokens */
   require_max_tokens: boolean;
-  /** Core fields: require a maker (the model_provider FK) */
+  /** Core fields: require a maker (the provider_id FK) */
   require_provider: boolean;
   /** Core fields: require model_class */
   require_model_class: boolean;
@@ -216,11 +216,11 @@ export function auditModel(
       severity: "warning",
     });
   }
-  if (rules.require_provider && !model.model_provider) {
+  if (rules.require_provider && !model.provider_id) {
     issues.push({
       category: "core_fields",
       field: "provider",
-      message: "Missing maker (model_provider FK)",
+      message: "Missing maker (provider_id FK)",
       severity: "error",
     });
   }

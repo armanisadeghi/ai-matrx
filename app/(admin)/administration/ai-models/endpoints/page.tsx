@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import ServicesContainer from "@/features/ai-models/components/services/ServicesContainer";
+import EndpointsApisContainer from "@/features/ai-models/components/endpoints/EndpointsApisContainer";
 
-export default function AiServicesPage() {
+export default function AiEndpointsPage() {
   return (
     <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       <Suspense
@@ -11,7 +11,7 @@ export default function AiServicesPage() {
           </div>
         }
       >
-        <ServicesContainer />
+        <EndpointsApisContainer />
       </Suspense>
     </div>
   );
