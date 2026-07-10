@@ -1,6 +1,6 @@
 /**
- * Industries data access. Reads go direct to Supabase (`public.industries` /
- * `public.org_industries` are PostgREST-exposed, read-only taxonomy). WRITES go
+ * Industries data access. Reads go direct to Supabase (`iam.industries` /
+ * `iam.org_industries` are PostgREST-exposed, read-only taxonomy). WRITES go
  * through the SECURITY DEFINER RPCs (`industry_upsert`, `industry_assign_org`,
  * `industry_unassign_org`) — super-admin gated in the DB — never a raw insert.
  */

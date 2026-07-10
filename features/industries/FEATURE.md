@@ -44,4 +44,5 @@ Consumed by the RAG publish panel (`features/rag/components/data-stores/DataStor
 
 ## Change log
 
+- 2026-07-10 — Shared Knowledge open path: industry grants on a library store cascade via platform reachability (`file→data_store` Conveys viewer) into `iam.has_access` / file download / Source Inspector. See [`features/rag/FEATURE.md`](../rag/FEATURE.md#shared-knowledge-resources).
 - 2026-06-21 — v1: faceted `industries` + `org_industries`, RPC family, seed taxonomy (legal / workers-comp / ca-workers-comp / medical / us-ca), FE feature + org-assignment section. Powers Shared Knowledge Resources entitlement.
