@@ -5,8 +5,12 @@
 // bespoke generation path — for the whole note OR a highlighted passage, links a
 // note↔artifact `source` lineage edge, and shows the result inline with its P0
 // trust confidence. Targets light up automatically as owning projects register
-// their generators (isTargetAvailable); metered targets show remaining BEFORE
-// the action (TRUST mandate — no mid-workflow paywall).
+// their generators (isTargetAvailable).
+//
+// Metering uses the CANONICAL entitlement primitives (features/entitlements):
+// useEntitlementGuard (check-before-spend + Paywall) + EntitlementMeter (visible
+// limit BEFORE the action, TRUST mandate). No hand-rolled meter, no toast on a
+// cap-hit — the guard opens CapabilityPaywallDialog instead.
 
 "use client";
 
@@ -19,6 +23,7 @@ import {
   FileText,
   Network,
   Headphones,
+  NotebookPen,
   ArrowRight,
   Loader2,
   Sparkles,
@@ -39,8 +44,9 @@ import type {
   ConvertSource,
   TargetKind,
 } from "@/features/education/convert/types";
-import { useEntitlement } from "@/features/entitlements/hooks";
 import type { Capability } from "@/features/entitlements/registry";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { linkArtifactToNote } from "./service";
 
@@ -62,6 +68,13 @@ const TARGETS: TargetMeta[] = [
     blurb: "Grounded cards you can study in every mode",
     icon: Layers,
     capability: "education.generate_cards",
+  },
+  {
+    kind: "notes",
+    label: "Structured study notes",
+    blurb: "Clean, organized notes with key terms — a new note",
+    icon: NotebookPen,
+    capability: "education.notes_generate",
   },
   {
     kind: "quiz",
@@ -148,10 +161,7 @@ export function ConvertNoteDialog({
       setRows((r) => ({ ...r, [kind]: { status: "done", result } }));
       onConverted?.();
       toast.success(`Created "${result.title}"`, {
-        action: {
-          label: "Open",
-          onClick: () => router.push(result.href),
-        },
+        action: { label: "Open", onClick: () => router.push(result.href) },
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Generation failed";
@@ -230,15 +240,16 @@ function TargetRow({
   meta: TargetMeta;
   available: boolean;
   state: RowState;
-  onConvert: () => void;
+  onConvert: () => void | Promise<void>;
   onOpen: (href: string) => void;
 }) {
-  const ent = useEntitlement(meta.capability);
+  // Canonical check-before-spend + paywall. `guard()` awaits the server-truth
+  // verdict and opens CapabilityPaywallDialog on a block — never a toast.
+  const gen = useEntitlementGuard(meta.capability);
   const Icon = meta.icon;
   const running = state.status === "running";
   const done = state.status === "done";
-  const capReached = ent.remaining === 0;
-  const disabled = !available || running || (capReached && !done);
+  const disabled = !available || running || gen.isChecking;
 
   return (
     <div
@@ -262,15 +273,18 @@ function TargetRow({
             <ConfidenceBadge confidence={state.result.trust.confidence} />
           )}
         </div>
-        <p className="truncate text-[11px] text-muted-foreground">
-          {done
-            ? (state.result.detail ?? "Created")
-            : state.status === "error"
-              ? state.message
-              : available && ent.limit != null
-                ? `${meta.blurb} · ${ent.remaining ?? 0} of ${ent.limit} left`
-                : meta.blurb}
-        </p>
+        {done ? (
+          <p className="truncate text-[11px] text-muted-foreground">
+            {state.result.detail ?? "Created"}
+          </p>
+        ) : state.status === "error" ? (
+          <p className="truncate text-[11px] text-destructive">{state.message}</p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+            <span className="truncate">{meta.blurb}</span>
+            {available && <EntitlementMeter capability={meta.capability} />}
+          </div>
+        )}
       </div>
       {done ? (
         <Button size="sm" variant="secondary" onClick={() => onOpen(state.result.href)}>
@@ -282,25 +296,20 @@ function TargetRow({
           size="sm"
           variant="outline"
           disabled={disabled}
-          onClick={onConvert}
-          title={
-            !available
-              ? "This target isn't available yet"
-              : capReached
-                ? "You've reached this month's limit"
-                : `Convert to ${meta.label}`
-          }
+          onClick={() => void gen.guard(onConvert)}
+          title={!available ? "This target isn't available yet" : `Convert to ${meta.label}`}
         >
-          {running ? (
+          {running || gen.isChecking ? (
             <>
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              Working
+              {running ? "Working" : "Checking"}
             </>
           ) : (
             "Convert"
           )}
         </Button>
       )}
+      <gen.Paywall />
     </div>
   );
 }

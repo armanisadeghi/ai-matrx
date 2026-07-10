@@ -1,0 +1,83 @@
+# FEATURE.md — `education/notes` (Smart Notes, P4)
+
+**Status:** `live` (2026-07-10) · **Tier 2** · Education Hub tool at `/education/notes`.
+
+> Read [`../convert/FEATURE.md`](../convert/FEATURE.md) (the converter contract this
+> consumes) and [`features/notes/FEATURE.md`](../../notes/FEATURE.md) (the note engine
+> this skins) before touching this. This feature owns almost no storage — it is the
+> education skin + conversion + live-capture layer over canonical systems.
+
+## What it is
+
+A rich note surface inside the Education Hub where **every note is one click from becoming
+any other study artifact**, plus **live lecture capture** straight into the editor. Closes
+the "nothing is siloed" loop: note → deck / quiz / summary / mind map / audio, each linked
+back to the note so lineage is visible both directions.
+
+## The hard rule — thin skin, zero forks
+
+- **Storage + editor + autosave + sharing + RAG = `features/notes`.** Notes here ARE
+  platform notes (`workbench.notes`), created via `NotesAPI` and edited by `NotesView`
+  (single-note mode). Never fork the note store, the editor, or note sharing.
+- **Generation = the converter contract (`features/education/convert`).** One-click convert
+  drives `useContentConverter().convert` — never a bespoke generation path. Targets light
+  up automatically as owning projects register generators.
+- **Live capture = `features/audio` `useChunkedRecordAndTranscribe`.** The one canonical
+  streaming-transcription path (shared mic stream + Groq chunks). No second capture path.
+- **Lineage = `platform.associations`** via `associationsService` only (through
+  `service.ts`).
+
+## Surfaces
+
+| Route | Component | What |
+|---|---|---|
+| `/education/notes` | `EduNotesHome` | List-first "savior" home — the student's notes, search + visibility filter, New. |
+| `/education/notes/new` | `EduNoteNew` | Creates a note (`NotesAPI.create`) → redirects to it. |
+| `/education/notes/[id]` · `/[id]/edit` | `EduNoteWorkspace` | `EduNoteActionBar` + `NotesView` (single-note, no sidebar). |
+
+`EduNoteActionBar` = Back · **Live capture** (owners/editors) · **Convert** · canonical
+**Share** (`ShareButton`) · the **"generated from this"** lineage chips.
+
+## Key flows
+
+**Convert (note → artifact).** `ConvertNoteDialog` reads the note content (or the current
+in-editor text selection), calls `convert({ source: { text, title, ref:{kind:'note',...} },
+targetKind })`, then `linkArtifactToNote` writes an `artifact --source--> note` edge (role
+`source`, mirroring the generators' `artifact→origin` convention) with `{targetKind, href,
+detail}` on the edge metadata. Each metered target shows `remaining` BEFORE the action
+(`useEntitlement`, TRUST mandate). Result carries the P0 `TrustEnvelope` → `ConfidenceBadge`.
+
+**Reverse lineage.** `GeneratedArtifactsChips` reads incoming `source` edges on the note
+(`listGeneratedFromNote`) → clickable chips. The just-created artifact links back; the note
+lists its artifacts.
+
+**Live capture.** `LiveCaptureButton` records; each transcribed chunk is appended to the
+note's live Redux content (`updateNoteContent`), rendering in the editor as the lecturer
+speaks and autosaving through the notes middleware. Appends always target the freshest
+content, so simultaneous manual edits are never clobbered.
+
+## The `notes` converter target (owned here)
+
+P4 registers the converter's `notes` target — `notesGenerator.ts` (`agents.ts`
+`NOTES_AGENTS.studyNotes` = `f23562ce…`, a grounded Study-Notes agent, same TrustEnvelope
+contract as summary/deck). It runs the agent → creates a real platform note (folder
+"Study Notes") → links a `source` edge to the ingest anchor file. So P9's one-upload→kit
+fan-out can include a structured note, and it lands right back in this surface.
+
+## Invariants
+
+- Notes are platform notes — shareable, RAG-indexable, editable everywhere. No education
+  note table exists or should.
+- Lineage edges are `role='source'`, `artifact` (source) → `note` (target). The reverse
+  query filters `direction==='incoming' && role==='source'`.
+- The convert UI's target availability is read LIVE from the converter registry
+  (`isTargetAvailable`) — quiz/audio show "coming soon" until P1/P3 register, then light up
+  with no change here.
+
+## Change log
+
+- **2026-07-10** — Feature created (P4). Replaced the 4 `EduToolComingSoon` note-route stubs
+  with the real surface (home/new/[id]/[id]/edit); built the convert dialog + note↔artifact
+  lineage + reverse chips + live capture; authored the Study Notes agent + registered the
+  converter `notes` target; added `study_media`/`note` to `ASSOCIATION_TARGET_TYPES`; flipped
+  the tool `live`. Consumes P0 trust, P7 `useAccess`, P8 `useEntitlement`, P9's converter.

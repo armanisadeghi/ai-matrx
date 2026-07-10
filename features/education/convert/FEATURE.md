@@ -52,6 +52,7 @@ ingest pipeline normalizes EVERY input to a durable file.
 | `deck` | Kit Flashcard agent (`0de9ff99…`) → `fcService.createSetWithCards` | `fc_set` + `fc_card` | `education.generate_cards` |
 | `summary` | Study Summary agent (`92b607a4…`) → `studyMediaService` | `study_media` (`media_kind='summary'`) | `education.ingest_document` |
 | `mind_map` | Study Mind Map agent → `studyMediaService` | `study_media` (`media_kind='mind_map'`) | `education.mindmap_generate` |
+| `notes` | Study Notes agent (`f23562ce…`) → `NotesAPI.create` | `workbench.notes` (a real platform note) | `education.notes_generate` |
 
 Each generator: run the agent (`runAgentExtraction` — the shared launch+extract primitive),
 coerce, persist, add a `source` association edge to `ref.fileId`, return the result. Per-card
@@ -101,6 +102,10 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 
 ## Change log
 
+- **2026-07-10** — `notes` target went LIVE (P4 Smart Notes). `notesGenerator`
+  (`features/education/notes/notesGenerator.ts`, Study Notes agent `f23562ce…`) turns source
+  text into a real platform note (grounded, TrustEnvelope) and self-registers here.
+  Remaining placeholders: audio (P3), quiz/practice_test (P1).
 - **2026-07-07** — Contract published (P9). Live: deck, summary (new Study Summary agent +
   `study_media` `summary` kind), mind_map. Placeholders: audio (P3), quiz/practice_test (P1),
   notes (P4). Shared `runAgentExtraction` extracted from the flashcards/mindmap hooks' duplicated

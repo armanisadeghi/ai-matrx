@@ -267,9 +267,18 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/education/notes",
       label: "Smart Notes",
-      description: "App tool — placeholder.",
+      description:
+        "App tool — LIVE (P4). List-first home over the student's platform notes; New → creates a note. A THIN education skin over features/notes (canonical editor, autosave, sharing, RAG) — no forked note store.",
       filePath: "app/(core)/education/notes/page.tsx",
-      status: "Coming soon",
+      status: "Live",
+      notes: [
+        "Feature: features/education/notes/** (EduNotesHome · EduNoteWorkspace · EduNoteActionBar · ConvertNoteDialog · LiveCaptureButton · GeneratedArtifactsChips)",
+        "Sub-routes: /new (create+open), /[id] + /[id]/edit (EduNoteWorkspace = NotesView single-note + education action bar)",
+        "Convert: drives the canonical converter (features/education/convert) — note → deck/summary/mind_map live; quiz/audio light up as P1/P3 register their generators",
+        "Live capture: features/audio useChunkedRecordAndTranscribe → appends transcribed chunks to the note (one canonical mic path)",
+        "Lineage: artifact --source--> note edges via platform.associations (features/education/notes/service.ts); reverse-lineage chips on the note",
+        "Registers the converter `notes` target → Study Notes agent f23562ce (source → grounded structured note)",
+      ],
     },
     {
       url: "/education/planner",
