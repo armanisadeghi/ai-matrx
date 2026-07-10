@@ -4,6 +4,9 @@ import { supabase } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import type {
   AiModel,
+  AiModelAliasRow,
+  AiModelAliasInsert,
+  AiModelAliasUpdate,
   AiModelInsert,
   AiModelUpdate,
   AiModelOfferingView,
@@ -382,6 +385,54 @@ export const aiModelService = {
       .select("*");
     if (error) throw error;
     return data as unknown as AiModelOfferingView[];
+  },
+
+  // ── Model alias CRUD (ai.model_alias — alternate names → model row) ──
+
+  async fetchAliases(): Promise<AiModelAliasRow[]> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("model_alias")
+      .select("*")
+      .is("deleted_at", null)
+      .order("alias", { ascending: true });
+    if (error) throw error;
+    return data;
+  },
+
+  async createAlias(payload: AiModelAliasInsert): Promise<AiModelAliasRow> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("model_alias")
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateAlias(
+    id: string,
+    payload: AiModelAliasUpdate,
+  ): Promise<AiModelAliasRow> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("model_alias")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteAlias(id: string): Promise<void> {
+    const { error } = await supabase
+      .schema("ai")
+      .from("model_alias")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
   },
 
   // ── Setting CRUD (ai.setting — canonical settings vocabulary) ──

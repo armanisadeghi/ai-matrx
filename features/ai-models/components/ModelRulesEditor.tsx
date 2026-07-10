@@ -108,7 +108,10 @@ export default function ModelRulesEditor({
   }, [model.id]);
 
   useEffect(() => {
-    void refresh();
+    // Defer to a microtask so the effect body itself stays setState-free
+    // (react-hooks/set-state-in-effect) — refresh only writes after awaits.
+    const t = setTimeout(() => void refresh(), 0);
+    return () => clearTimeout(t);
   }, [refresh]);
 
   const afterRuleSave = useCallback(async () => {

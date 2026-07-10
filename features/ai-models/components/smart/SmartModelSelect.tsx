@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { costRatingTier, speedRatingLabel } from "@/features/ai-models/format";
 
 interface SmartModelSelectProps {
   value: string | null | undefined;
@@ -92,7 +93,16 @@ export function SmartModelSelect({
   const inOptions = value ? options.some((o) => o.value === value) : true;
   const withCurrent =
     value && !inOptions
-      ? [{ value, label: currentLabel ?? value, maker: null }, ...options]
+      ? [
+          {
+            value,
+            label: currentLabel ?? value,
+            maker: null,
+            costRating: null,
+            speedRating: null,
+          },
+          ...options,
+        ]
       : options;
   const orderedOptions = orderOptionsWithPriority(withCurrent, priorityValues);
 
@@ -122,11 +132,24 @@ export function SmartModelSelect({
         </SelectValue>
       </SelectTrigger>
       <SelectContent className="max-h-[400px]">
-        {orderedOptions.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value} className="text-xs">
-            {opt.label}
-          </SelectItem>
-        ))}
+        {orderedOptions.map((opt) => {
+          const tier = costRatingTier(opt.costRating);
+          const speed = speedRatingLabel(opt.speedRating);
+          return (
+            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+              <span className="flex w-full items-center gap-2">
+                <span className="truncate">{opt.label}</span>
+                {(tier || speed) && (
+                  <span className="ml-auto shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+                    {tier ?? ""}
+                    {tier && speed ? " · " : ""}
+                    {speed ? `spd ${speed}/5` : ""}
+                  </span>
+                )}
+              </span>
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );

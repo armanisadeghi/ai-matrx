@@ -249,6 +249,12 @@ export type AiModelFormData = {
   // model to substitute when the caller is at that tier.
   mid_fallback_id: string;
   guest_fallback_id: string;
+  // Curated ratings (1-6 smallints; 6 = the "5+" band). Empty string = NULL.
+  cost_rating: string;
+  speed_rating: string;
+  // Retry fallback: model to substitute after retry_max_attempts failures.
+  retry_fallback_id: string;
+  retry_max_attempts: string;
 };
 // NOTE: model-level `pricing` editing was removed — pricing lives on
 // `ai.offering` now (managed via OfferingForm/OfferingsContainer). Do not

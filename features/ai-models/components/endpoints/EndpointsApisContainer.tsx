@@ -44,6 +44,8 @@ import {
 } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { reloadAiCatalog } from "../../catalogReload";
 import { aiModelService } from "../../service";
 import type { AiApi, AiEndpoint } from "../../types";
 
@@ -639,6 +641,7 @@ function DetailPanel({
 // ─── Container ───────────────────────────────────────────────────────────────
 
 export default function EndpointsApisContainer() {
+  const dispatch = useAppDispatch();
   const [endpoints, setEndpoints] = useState<AiEndpoint[]>([]);
   const [apis, setApis] = useState<AiApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -785,6 +788,8 @@ export default function EndpointsApisContainer() {
           a.display_name.localeCompare(b.display_name),
         );
       });
+      // ai.api.rules drives live translation — reload the brain's catalog.
+      void dispatch(reloadAiCatalog());
     } catch (err) {
       setSaveError(extractErrorMessage(err));
     } finally {

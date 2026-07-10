@@ -98,6 +98,8 @@ type ModelOptionRow = {
   name: string;
   common_name: string | null;
   maker: string | null;
+  cost_rating: number | null;
+  speed_rating: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -146,7 +148,7 @@ export const fetchModelOptions = createAsyncThunk(
       const { data, error } = await supabase
         .schema("ai")
         .from("model_public")
-        .select("id, name, common_name, maker")
+        .select("id, name, common_name, maker, cost_rating, speed_rating")
         .in("id", routableIds)
         .order("common_name", { ascending: true, nullsFirst: false });
       if (error) throw error;
@@ -161,6 +163,8 @@ export const fetchModelOptions = createAsyncThunk(
             name: r.name,
             common_name: r.common_name,
             maker: r.maker,
+            cost_rating: r.cost_rating,
+            speed_rating: r.speed_rating,
           }),
         );
     } catch (err: unknown) {
@@ -512,6 +516,8 @@ export const selectModelOptions = createSelector(
       value: m.id,
       label: m.common_name || m.name || m.id,
       maker: m.maker,
+      costRating: m.cost_rating,
+      speedRating: m.speed_rating,
     })),
 );
 

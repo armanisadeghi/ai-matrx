@@ -285,6 +285,13 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "SlidersHorizontal",
         link: "/administration/ai-models/settings",
       },
+      {
+        title: "Aliases",
+        description:
+          "Manage model aliases (ai.model_alias) — alternate names, deprecated ids, and -latest pointers resolving to live model rows.",
+        iconName: "Link2",
+        link: "/administration/ai-models/aliases",
+      },
     ],
   },
   {

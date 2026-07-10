@@ -71,8 +71,9 @@ import {
 } from "@/features/ai-models/capabilities/feature-map";
 import {
   costRatingTier,
+  speedRatingLabel,
   type PriceTier,
-} from "@/features/ai-models/lab/modelDisplay";
+} from "@/features/ai-models/format";
 
 const PANEL_HEIGHT = 440;
 const LIST_MAX_HEIGHT = "min(440px, 70dvh)";
@@ -109,11 +110,12 @@ interface ModelListDropdownProps {
 // ── Small presentational bits ────────────────────────────────────────────────
 
 function SpeedDots({ value }: { value: number | null }) {
-  // No speed data yet — render an honest, empty 5-dot scale.
+  // Curated speed_rating: 1-5 dots; 6 renders as the "5+" band.
+  const label = speedRatingLabel(value);
   return (
     <span
       className="inline-flex items-center gap-0.5"
-      title={value == null ? "Speed rating coming soon" : `Speed ${value}/5`}
+      title={label == null ? "No speed rating yet" : `Speed ${label}/5`}
     >
       {[0, 1, 2, 3, 4].map((i) => (
         <span
@@ -126,6 +128,9 @@ function SpeedDots({ value }: { value: number | null }) {
           )}
         />
       ))}
+      {value != null && value >= 6 && (
+        <span className="text-[9px] leading-none text-amber-500">+</span>
+      )}
     </span>
   );
 }
@@ -275,6 +280,14 @@ function ModelDetailCard({
             </dt>
             <dd>
               <UsageTier tier={tier} />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Speed
+            </dt>
+            <dd>
+              <SpeedDots value={model.speedRating} />
             </dd>
           </div>
           <div>
@@ -598,7 +611,7 @@ function ModelRow({
           </span>
         )}
       </span>
-      <SpeedDots value={null} />
+      <SpeedDots value={model.speedRating} />
       <span className="w-10 text-right">
         <UsageTier tier={tier} />
       </span>

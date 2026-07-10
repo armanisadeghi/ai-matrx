@@ -295,6 +295,135 @@ export default function AiModelForm({
                 </div>
             </div>
 
+            {/* Curated ratings — drive the user-facing model pickers
+                ($-tier + speed dots). 1-5 scale; 6 is the "5+" outlier band. */}
+            <div className="border rounded-md p-3 space-y-3">
+                <div className="flex items-baseline justify-between">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Ratings
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                        1-5 scale; 6 renders as the &quot;5+&quot; band in pickers.
+                    </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                    <FormField label="Cost Rating" description="Renders as $ … $$$$$ (+)">
+                        <Select
+                            value={data.cost_rating || "__none__"}
+                            onValueChange={(v) =>
+                                onChange({ ...data, cost_rating: v === "__none__" ? "" : v })
+                            }
+                        >
+                            <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="No rating" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="__none__" className="italic text-muted-foreground">
+                                    — no rating —
+                                </SelectItem>
+                                {["1", "2", "3", "4", "5", "6"].map((v) => (
+                                    <SelectItem key={v} value={v} className="text-xs">
+                                        {v === "6" ? "5+ (outlier band)" : v}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
+                    <FormField label="Speed Rating" description="Renders as 5-dot speed scale">
+                        <Select
+                            value={data.speed_rating || "__none__"}
+                            onValueChange={(v) =>
+                                onChange({ ...data, speed_rating: v === "__none__" ? "" : v })
+                            }
+                        >
+                            <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="No rating" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="__none__" className="italic text-muted-foreground">
+                                    — no rating —
+                                </SelectItem>
+                                {["1", "2", "3", "4", "5", "6"].map((v) => (
+                                    <SelectItem key={v} value={v} className="text-xs">
+                                        {v === "6" ? "5+ (outlier band)" : v}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
+                </div>
+            </div>
+
+            {/* Retry fallback — model substituted after repeated call failures. */}
+            <div className="border rounded-md p-3 space-y-3">
+                <div className="flex items-baseline justify-between">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Retry Fallback
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                        Backend swaps to this model after the retry budget is exhausted.
+                    </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                        label="Retry Fallback Model"
+                        description="Substitute model when calls keep failing."
+                    >
+                        <Select
+                            value={data.retry_fallback_id || "__none__"}
+                            onValueChange={(v) =>
+                                onChange({ ...data, retry_fallback_id: v === "__none__" ? "" : v })
+                            }
+                        >
+                            <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Choose retry fallback…">
+                                    {data.retry_fallback_id
+                                        ? fallbackTargetLabel(data.retry_fallback_id)
+                                        : "— no swap —"}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="max-h-72">
+                                <SelectItem
+                                    value="__none__"
+                                    className="font-normal italic text-muted-foreground"
+                                >
+                                    — no swap —
+                                </SelectItem>
+                                {fallbackGroups.map(([provider, models]) => (
+                                    <div key={provider}>
+                                        <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 border-t mt-1 first:border-t-0 first:mt-0">
+                                            {provider}
+                                        </div>
+                                        {models.map((m) => (
+                                            <SelectItem
+                                                key={m.id}
+                                                value={m.id}
+                                                className="text-xs"
+                                            >
+                                                {m.common_name || m.name}
+                                            </SelectItem>
+                                        ))}
+                                    </div>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormField>
+                    <FormField
+                        label="Retry Max Attempts"
+                        description="Attempts on this model before swapping (0 = backend default)."
+                    >
+                        <Input
+                            type="number"
+                            min={0}
+                            value={data.retry_max_attempts}
+                            onChange={set('retry_max_attempts')}
+                            placeholder="0"
+                            className="h-8 text-sm"
+                        />
+                    </FormField>
+                </div>
+            </div>
+
             {/* Tier fallbacks — quota/guest-tier model substitution.
                 When set, the aidream backend substitutes this model when the
                 caller is at the matching tier. Leave at "no swap" for entry-

@@ -71,6 +71,11 @@ function rowToFormData(row: AiModel): AiModelFormData {
     is_premium: row.is_premium ?? false,
     mid_fallback_id: row.mid_fallback_id ?? "",
     guest_fallback_id: row.guest_fallback_id ?? "",
+    cost_rating: row.cost_rating != null ? String(row.cost_rating) : "",
+    speed_rating: row.speed_rating != null ? String(row.speed_rating) : "",
+    retry_fallback_id: row.retry_fallback_id ?? "",
+    retry_max_attempts:
+      row.retry_max_attempts != null ? String(row.retry_max_attempts) : "",
   };
 }
 
@@ -86,6 +91,10 @@ const EMPTY_FORM: AiModelFormData = {
   is_premium: false,
   mid_fallback_id: "",
   guest_fallback_id: "",
+  cost_rating: "",
+  speed_rating: "",
+  retry_fallback_id: "",
+  retry_max_attempts: "",
 };
 
 // ─── Pricing (read-only, sourced from ai.offering) ────────────────────────
@@ -993,10 +1002,20 @@ export default function AiModelDetailPanel({
           is_primary: formData.is_primary,
           is_premium: formData.is_premium,
           capabilities: model?.capabilities ?? null,
-          controls: pendingControls ?? model?.controls ?? null,
-          constraints: pendingConstraints ?? model?.constraints ?? null,
+          // controls/constraints are NOT model columns anymore — they resolve
+          // from ai.api.rules ⊕ ai.offering.override (see ModelRulesEditor).
           mid_fallback_id: formData.mid_fallback_id || null,
           guest_fallback_id: formData.guest_fallback_id || null,
+          cost_rating: formData.cost_rating
+            ? parseInt(formData.cost_rating)
+            : null,
+          speed_rating: formData.speed_rating
+            ? parseInt(formData.speed_rating)
+            : null,
+          retry_fallback_id: formData.retry_fallback_id || null,
+          retry_max_attempts: formData.retry_max_attempts
+            ? parseInt(formData.retry_max_attempts)
+            : 0,
         };
 
         // Cast through unknown — mid_fallback_id / guest_fallback_id aren't
@@ -1020,8 +1039,6 @@ export default function AiModelDetailPanel({
       const newBase = rowToFormData(saved);
       setBaseline(newBase);
       setFormData(newBase);
-      setPendingControls(null);
-      setPendingConstraints(null);
       setRawJsonText(JSON.stringify(saved, null, 2));
       setRawJsonError(null);
       setSaveError(null);
@@ -1055,9 +1072,11 @@ export default function AiModelDetailPanel({
     }
   };
 
-  // JsonFieldEditor still needs its own direct save (it uses EnhancedEditableJsonViewer internally)
+  // JsonFieldEditor still needs its own direct save (it uses EnhancedEditableJsonViewer internally).
+  // Only `capabilities` is still a model column — controls/constraints resolve
+  // from ai.api.rules ⊕ ai.offering.override (ModelRulesEditor).
   const handleJsonSave =
-    (field: "capabilities" | "controls" | "constraints") =>
+    (field: "capabilities") =>
     async (data: object) => {
       if (!model) return;
       const updated = await aiModelService.update(model.id, { [field]: data });
@@ -1256,28 +1275,12 @@ export default function AiModelDetailPanel({
                   className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Controls
-                  {model?.controls && (
-                    <Badge
-                      variant="outline"
-                      className="ml-1.5 text-xs h-4 px-1"
-                    >
-                      {Object.keys(model.controls as object).length}
-                    </Badge>
-                  )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="constraints"
                   className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Constraints
-                  {model?.constraints && model.constraints.length > 0 && (
-                    <Badge
-                      variant="outline"
-                      className="ml-1.5 text-xs h-4 px-1"
-                    >
-                      {model.constraints.length}
-                    </Badge>
-                  )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="pricing"
@@ -1348,46 +1351,32 @@ export default function AiModelDetailPanel({
                 description="Supported features (array or object)"
                 defaultExpanded
               />
-              <JsonFieldEditor
-                title="Constraints"
-                data={model?.constraints}
-                onSave={handleJsonSave("constraints")}
-                description="Validation constraints: [{key, rule, value?, message?}]"
-              />
             </TabsContent>
 
             <TabsContent
               value="controls"
               className="flex-1 m-0 overflow-auto p-3 min-h-0"
             >
-              <ControlsEditor
-                controls={(model?.controls as ControlsSchema) ?? null}
-                onSave={async (controls) => {
-                  if (!model) return;
-                  const updated = await aiModelService.update(model.id, {
-                    controls,
-                  });
-                  onSaved(updated);
-                }}
-                onChange={(controls) => setPendingControls(controls)}
-              />
+              {model && (
+                <ModelRulesEditor
+                  model={model}
+                  offerings={offerings}
+                  mode="controls"
+                />
+              )}
             </TabsContent>
 
             <TabsContent
               value="constraints"
               className="flex-1 m-0 overflow-auto p-3 min-h-0"
             >
-              <ConstraintsEditor
-                constraints={model?.constraints ?? null}
-                onSave={async (constraints) => {
-                  if (!model) return;
-                  const updated = await aiModelService.update(model.id, {
-                    constraints,
-                  });
-                  onSaved(updated);
-                }}
-                onChange={(constraints) => setPendingConstraints(constraints)}
-              />
+              {model && (
+                <ModelRulesEditor
+                  model={model}
+                  offerings={offerings}
+                  mode="constraints"
+                />
+              )}
             </TabsContent>
 
             <TabsContent

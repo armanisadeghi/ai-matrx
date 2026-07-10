@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { reloadAiCatalog } from "../../catalogReload";
 import { aiModelService } from "../../service";
 import OfferingTable from "./OfferingTable";
 import OfferingForm from "./OfferingForm";
@@ -70,6 +72,7 @@ function rowToFormData(row: AiOffering): AiOfferingFormData {
 }
 
 export default function OfferingsContainer() {
+  const dispatch = useAppDispatch();
   const [offerings, setOfferings] = useState<AiOffering[]>([]);
   const [models, setModels] = useState<AiModel[]>([]);
   const [endpoints, setEndpoints] = useState<AiEndpoint[]>([]);
@@ -223,6 +226,8 @@ export default function OfferingsContainer() {
       setFormData(nextForm);
       setBaseline(nextForm);
       void loadData(); // refresh coverage report
+      // Offerings carry rule overrides — the live brain must reload its catalog.
+      void dispatch(reloadAiCatalog());
       return saved;
     } catch (err) {
       setSaveError(extractErrorMessage(err));
