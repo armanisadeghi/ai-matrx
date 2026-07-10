@@ -1457,6 +1457,13 @@ export type Database = {
             foreignKeyName: "model_alias_model_id_fkey"
             columns: ["model_id"]
             isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_alias_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
             referencedRelation: "model_definition"
             referencedColumns: ["id"]
           },
@@ -1584,6 +1591,13 @@ export type Database = {
             foreignKeyName: "ai_model_guest_fallback_id_fkey"
             columns: ["guest_fallback_id"]
             isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
             referencedRelation: "model_definition"
             referencedColumns: ["id"]
           },
@@ -1599,6 +1613,13 @@ export type Database = {
             columns: ["mid_fallback_id"]
             isOneToOne: false
             referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
             referencedColumns: ["id"]
           },
           {
@@ -1627,6 +1648,13 @@ export type Database = {
             columns: ["retry_fallback_id"]
             isOneToOne: false
             referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
             referencedColumns: ["id"]
           },
           {
@@ -1741,6 +1769,13 @@ export type Database = {
             columns: ["model_id"]
             isOneToOne: false
             referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
             referencedColumns: ["id"]
           },
           {
@@ -2038,6 +2073,13 @@ export type Database = {
             foreignKeyName: "ai_model_guest_fallback_id_fkey"
             columns: ["guest_fallback_id"]
             isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
             referencedRelation: "model_definition"
             referencedColumns: ["id"]
           },
@@ -2053,6 +2095,13 @@ export type Database = {
             columns: ["mid_fallback_id"]
             isOneToOne: false
             referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
             referencedColumns: ["id"]
           },
           {
@@ -2087,6 +2136,13 @@ export type Database = {
             foreignKeyName: "model_definition_retry_fallback_id_fkey"
             columns: ["retry_fallback_id"]
             isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_definition_retry_fallback_id_fkey"
+            columns: ["retry_fallback_id"]
+            isOneToOne: false
             referencedRelation: "model_definition"
             referencedColumns: ["id"]
           },
@@ -2113,6 +2169,24 @@ export type Database = {
           },
         ]
       }
+      model_config: {
+        Row: {
+          capabilities: Json | null
+          common_name: string | null
+          constraints: Json | null
+          context_window: number | null
+          controls: Json | null
+          cost_rating: number | null
+          id: string | null
+          is_premium: boolean | null
+          is_primary: boolean | null
+          maker: string | null
+          max_tokens: number | null
+          name: string | null
+          speed_rating: number | null
+        }
+        Relationships: []
+      }
       model_offering: {
         Row: {
           effective_capabilities: Json | null
@@ -2134,6 +2208,13 @@ export type Database = {
             columns: ["model_id"]
             isOneToOne: false
             referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
             referencedColumns: ["id"]
           },
           {
@@ -2186,6 +2267,13 @@ export type Database = {
             foreignKeyName: "ai_model_guest_fallback_id_fkey"
             columns: ["guest_fallback_id"]
             isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
             referencedRelation: "model_definition"
             referencedColumns: ["id"]
           },
@@ -2201,6 +2289,13 @@ export type Database = {
             columns: ["mid_fallback_id"]
             isOneToOne: false
             referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
             referencedColumns: ["id"]
           },
           {
@@ -2225,6 +2320,8 @@ export type Database = {
         Args: { p_doc: Json; p_where: string }
         Returns: undefined
       }
+      jsonb_num: { Args: { n: number }; Returns: Json }
+      resolve_model_config: { Args: { p_model_id: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
@@ -25919,6 +26016,21 @@ export type Database = {
           other_id: string
           other_type: string
           role: string
+        }[]
+      }
+      assoc_members_visible: {
+        Args: { p_target_ids: string[]; p_target_type: string }
+        Returns: {
+          created_at: string
+          id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          position: number
+          role: string
+          source_id: string
+          source_type: string
+          target_id: string
         }[]
       }
       assoc_remove: {

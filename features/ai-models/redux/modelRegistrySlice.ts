@@ -191,6 +191,14 @@ export const fetchModelOptions = createAsyncThunk(
 /**
  * Fetch the full record for a single model by ID.
  *
+ * Reads the ai.model_config RESOLUTION view (Phase D of the AI catalog
+ * migration): `controls` and `constraints` are computed live from
+ * ai.api.rules ⊕ ai.offering.override × ai.setting for the model's preferred
+ * offering — the legacy model_definition.controls/constraints columns are
+ * dead to the app and drop in Phase C. The view also carries every display
+ * field the registry consumes (maker, ratings, premium flag, context window,
+ * capabilities), so this stays ONE read.
+ *
  * Skips when the record is already marked 'full'.
  * Always runs if the record is only 'options' or unknown.
  */
@@ -205,12 +213,34 @@ export const fetchModelById = createAsyncThunk(
       const supabase = createClient();
       const { data, error } = await supabase
         .schema("ai")
-        .from("model_definition")
+        .from("model_config")
         .select("*")
         .eq("id", modelId)
         .single();
       if (error) throw error;
-      return normalizeModel(data as AIModelRow);
+      if (!data.id || !data.name) {
+        throw new Error(
+          `ai.model_config returned a row without id/name for model ${modelId}`,
+        );
+      }
+      // normalizeModel keeps the legacy-alias mapping (output_format →
+      // response_format for image models) — the resolver emits the
+      // provider-canonical key names.
+      return normalizeModel({
+        id: data.id,
+        name: data.name,
+        common_name: data.common_name,
+        maker: data.maker,
+        cost_rating: data.cost_rating,
+        speed_rating: data.speed_rating,
+        is_premium: data.is_premium,
+        is_primary: data.is_primary,
+        context_window: data.context_window,
+        max_tokens: data.max_tokens,
+        capabilities: data.capabilities,
+        controls: data.controls,
+        constraints: data.constraints,
+      });
     } catch (err: unknown) {
       return rejectWithValue(
         err instanceof Error ? err.message : "Unknown error",
@@ -327,13 +357,13 @@ const modelRegistrySlice = createSlice({
         state.error = null;
         const record = action.payload;
         const existing = state.entities[record.id];
-        // The full row comes from model_definition (no resolved `maker`);
-        // preserve the maker already attached by the options fetch, if any.
+        // ai.model_config resolves `maker` itself; fall back to whatever the
+        // options fetch attached if the view ever returns null.
         state.entities[record.id] = {
           ...emptyModelRecord(),
           ...existing,
           ...record,
-          maker: existing?.maker ?? null,
+          maker: record.maker ?? existing?.maker ?? null,
           _fetchType: "full",
         };
         // Ensure the id appears in the right list

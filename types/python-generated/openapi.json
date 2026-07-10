@@ -12130,66 +12130,6 @@
         }
       }
     },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -35529,6 +35469,28 @@
         }
       }
     },
+    "/admin/ai-catalog/reload": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin AI Catalog"
+        ],
+        "summary": "Reload Catalog",
+        "operationId": "reload_catalog_admin_ai_catalog_reload_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiCatalogReloadSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scheduling/validate-cron": {
       "post": {
         "tags": [
@@ -41857,6 +41819,67 @@
           "version_number"
         ],
         "title": "AgentVersionInfo"
+      },
+      "AiCatalogReloadSummary": {
+        "properties": {
+          "endpoints": {
+            "type": "integer",
+            "title": "Endpoints"
+          },
+          "apis": {
+            "type": "integer",
+            "title": "Apis"
+          },
+          "offerings": {
+            "type": "integer",
+            "title": "Offerings"
+          },
+          "settings": {
+            "type": "integer",
+            "title": "Settings"
+          },
+          "providers": {
+            "type": "integer",
+            "title": "Providers"
+          },
+          "models": {
+            "type": "integer",
+            "title": "Models"
+          },
+          "aliases": {
+            "type": "integer",
+            "title": "Aliases"
+          },
+          "quarantined": {
+            "type": "integer",
+            "title": "Quarantined"
+          },
+          "refreshed_model_rows": {
+            "type": "integer",
+            "title": "Refreshed Model Rows"
+          },
+          "quarantined_rows": {
+            "items": {
+              "$ref": "#/components/schemas/QuarantinedRowSummary"
+            },
+            "type": "array",
+            "title": "Quarantined Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoints",
+          "apis",
+          "offerings",
+          "settings",
+          "providers",
+          "models",
+          "aliases",
+          "quarantined",
+          "refreshed_model_rows",
+          "quarantined_rows"
+        ],
+        "title": "AiCatalogReloadSummary"
       },
       "AnalysisPreferencesBody": {
         "properties": {
@@ -53800,61 +53823,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -72892,6 +72860,37 @@
           "slot"
         ],
         "title": "PutDeclaredSampleResponse"
+      },
+      "QuarantinedRowSummary": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "row_id": {
+            "type": "string",
+            "title": "Row Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "row_id",
+          "name",
+          "errors"
+        ],
+        "title": "QuarantinedRowSummary"
       },
       "QuickScrapeRequest": {
         "properties": {
