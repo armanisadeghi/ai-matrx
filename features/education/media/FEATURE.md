@@ -79,14 +79,16 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
 
 ## Known gaps (LOUD — unverified / blocked)
 
-- **[CRITICAL, backend-owned] Live audio GENERATION is unproven end-to-end.** The FE path is
-  complete and exercised up to the backend handoff, but the aidream podcast script agent currently
-  returns prose instead of a `<podcast_dialogue>` block (fails EVERY deck), and the whole agent-run
-  pipeline fails `resolve_call_profile` for every model. Both filed as critical feedback. `0` rows
-  of `media_kind='audio'` have reached `status='ready'`. Re-verify a full generation once fixed.
-- **[HIGH, backend-owned] Live mind-map GENERATION is blocked by the same agent-run outage.** The
-  render + node-click + card-link + trust path is verified against real prior agent-generated
-  diagrams (a clickable demo map exists); a *fresh* generation must be re-verified once fixed.
+- **[CRITICAL, backend-owned] Live audio GENERATION still can't reach a `ready` episode — now a TTS
+  stall (D40).** Re-tested live 2026-07-10 post-deploy: the script agent is FIXED (emits a real
+  `<podcast_dialogue>` with named hosts), but the audio stage now streams ~4449 chunks over ~6 min then
+  aborts `tts_stall_timeout` (Google `gemini-3.1-flash-tts-preview` stops mid-stream, no retry).
+  Reproduced 2×. `0` rows of `media_kind='audio'` at `status='ready'`. The FE path is verified correct
+  up to the backend handoff. See `KNOWN_DEFECTS.md` D40. Re-verify once the TTS stage is resilient.
+- **Live mind-map GENERATION is PROVEN (2026-07-10).** A *fresh* deck→diagram_spec run (agent
+  `d13184d4…`) produced 10 nodes / 11 edges, `linkDiagramToCards` linked **all 10 nodes → real cards**
+  (every `metadata.cardId` resolves to an `fc_card` row), grounded `TrustEnvelope`, persisted to
+  `education.study_media` (`media_kind='mind_map'`, `diagram_kind='diagram_spec'`, `status='ready'`).
 - **Audio REVIEW → spine is PROVEN** (`study_attempt method='audio_review'` verified via SQL),
   driven programmatically through `studyService` (real mic capture can't run headlessly).
 
@@ -103,5 +105,12 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
   (4) Trust envelopes now populate on the mind-map create paths. Verified: audio-review spine
   (SQL), diagram render + node-click + card-link (9/10 on a real diagram), converter registration.
   Blocked (backend): live audio + mind-map generation.
+- **2026-07-10 (post-outage)** — Live re-verification after the aidream backend recovered, via a real
+  supabase-js session driving the true client contracts. **Mind-map: PASS** — fresh deck→diagram_spec
+  (agent `d13184d4…`): 10 nodes / 11 edges, all 10 nodes linked to real `fc_card` rows, grounded trust,
+  persisted `study_media` `media_kind='mind_map'` `status='ready'` (`542c4b3d…`). **Audio: FAIL, D40 root
+  cause MOVED** — script agent now emits a valid `<podcast_dialogue>`; the audio stage streams ~4449
+  chunks over ~6 min then aborts `tts_stall_timeout` (Google TTS mid-stream stall, no retry), so still
+  `0` `ready` audio episodes. Backend-owned; FE path verified up to handoff.
 - **2026-07-07** — Initial P3 build: routes, `study_media` table + service, audio create/run/detail
   + recovery, mind-map create/view, both flipped `live` in `tools.ts`.

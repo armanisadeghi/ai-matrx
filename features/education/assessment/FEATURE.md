@@ -132,6 +132,11 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
   actual `assessmentService`/`studyService` modules): quiz + practice_test assessments created →
   taken → spine-recorded (`study_attempt` `method=quiz`/`practice_test`) → results finalized →
   `item_mastery` advanced → learning-gain baseline 0 → post 0.6875 delta paired by `pairLearningGain`.
-  **LLM generation + AI free-response grading NOT re-verifiable** — a platform-wide aidream outage
-  (`resolve_call_profile: model_provider=None` for EVERY model) blocked all agent execution; filed
-  cross-repo. See `KNOWN_DEFECTS.md`.
+- **2026-07-10 (post-outage)** — **LLM generation + AI free-response grading now VERIFIED LIVE** (the
+  D39 aidream outage recovered). Real supabase-js session driving the true client contract (`POST
+  /ai/agents/{id}` → `parseNdjsonStream` → `coerceGeneratedQuiz` → `assessmentService`): deck-grounded
+  `generateQuizFromSource` → 4 questions, **all 4 `trust.confidence='grounded'` with citations**;
+  persisted under RLS; the take path graded 2 free-response answers on MEANING via the reused
+  `gradeTypedAnswer` agent (`b39183d1…`; recorded to `study_attempt.graded_by=b39183d1…`); result
+  finalized (75%). P2 converter verified live from a paste source (registry shows `quiz` available →
+  5 grounded items → `education.assessment` `source_kind='source'`). Supersedes the outage note for P1.
