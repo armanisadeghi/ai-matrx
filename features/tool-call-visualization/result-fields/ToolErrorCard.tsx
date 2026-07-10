@@ -32,7 +32,8 @@ export interface ToolErrorCardProps {
  * input issue when the signature matches, and stay soft otherwise. The real
  * detail rides alongside (the message) and in the overlay Raw tab.
  */
-function errorLabel(entry: ToolLifecycleEntry): string {
+/** Calm one-line label for inline chat; Results tab uses the full message. */
+export function toolErrorLabel(entry: ToolLifecycleEntry): string {
     const hay = `${entry.errorType ?? ""} ${entry.errorMessage ?? ""}`.toLowerCase();
     if (
         /valid|argument|param|schema|required|missing|expected|must be|unrecognized|not allowed|format|type error/.test(
@@ -47,7 +48,7 @@ function errorLabel(entry: ToolLifecycleEntry): string {
 }
 
 /** The first non-empty line of a message, trimmed — never a stack trace. */
-function firstLine(message?: string | null): string | null {
+export function toolErrorFirstLine(message?: string | null): string | null {
     if (!message) return null;
     for (const raw of message.split("\n")) {
         const line = raw.trim();
@@ -63,8 +64,8 @@ export const ToolErrorCard: React.FC<ToolErrorCardProps> = ({
     className,
 }) => {
     const groupId = toolGroupId ?? entry.callId;
-    const label = errorLabel(entry);
-    const detail = firstLine(entry.errorMessage);
+    const label = toolErrorLabel(entry);
+    const detail = toolErrorFirstLine(entry.errorMessage);
 
     return (
         <div

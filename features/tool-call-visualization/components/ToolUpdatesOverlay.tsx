@@ -24,12 +24,13 @@
  * outer tab — the FullScreenOverlay's own tab bar is the only outer chrome.
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import FullScreenOverlay, {
   type TabDefinition,
 } from "@/components/official/FullScreenOverlay";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
@@ -41,6 +42,10 @@ import {
   InputView,
   RawDataView,
 } from "./ToolTabBodies";
+import {
+  buildToolEntriesSummary,
+  toolEntriesSummaryToHuman,
+} from "../utils/toolEntryBundle";
 
 // ─── Multi-tool entry selector (only rendered when entries.length > 1) ────────
 
@@ -51,8 +56,8 @@ const EntrySelector: React.FC<{
 }> = ({ entries, selectedCallId, onSelect }) => {
   if (entries.length <= 1) return null;
   return (
-    <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border bg-muted/40 overflow-x-auto scrollbar-none flex-shrink-0">
-      <span className="text-xs text-muted-foreground mr-1 flex-shrink-0">
+    <div className="flex flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border bg-muted/40 px-3 py-1.5 scrollbar-none">
+      <span className="mr-1 flex-shrink-0 text-xs text-muted-foreground">
         Tool
       </span>
       {entries.map((entry, idx) => {
@@ -63,17 +68,31 @@ const EntrySelector: React.FC<{
             key={entry.callId}
             onClick={() => onSelect(entry.callId)}
             className={cn(
-              "flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border border-border",
+              "flex-shrink-0 rounded-md border border-border px-2.5 py-1 text-xs font-medium transition-colors",
               isActive
-                ? "bg-primary text-primary-foreground border-primary"
+                ? "border-primary bg-primary text-primary-foreground"
                 : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            <span className="opacity-60 mr-1">{idx + 1}.</span>
+            <span className="mr-1 opacity-60">{idx + 1}.</span>
             {label}
           </button>
         );
       })}
+      <div className="ml-auto flex-shrink-0">
+        <CopyButtons
+          label={`All ${entries.length} tools`}
+          size="sm"
+          human={() => toolEntriesSummaryToHuman(entries)}
+          agent={() => ({
+            kind: "tool-results",
+            location: "AI Matrx — Tool updates overlay",
+            description: "Every tool call in this group.",
+            data: buildToolEntriesSummary(entries),
+            attributes: { count: String(entries.length) },
+          })}
+        />
+      </div>
     </div>
   );
 };
@@ -193,11 +212,24 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
   const initialCallId =
     requestedCallId ?? entries[entries.length - 1]?.callId ?? "";
 
-  const [selectedCallId, setSelectedCallId] = useState<string>(initialCallId);
+  const [userSelectedCallId, setUserSelectedCallId] = useState<string | null>(
+    null,
+  );
+  const [boundInitialCallId, setBoundInitialCallId] = useState(initialCallId);
+  if (isOpen && initialCallId !== boundInitialCallId) {
+    setBoundInitialCallId(initialCallId);
+    setUserSelectedCallId(null);
+  }
 
-  useEffect(() => {
-    if (isOpen && initialCallId) setSelectedCallId(initialCallId);
-  }, [isOpen, initialCallId]);
+  const selectedCallId = useMemo(() => {
+    if (
+      userSelectedCallId &&
+      entries.some((e) => e.callId === userSelectedCallId)
+    ) {
+      return userSelectedCallId;
+    }
+    return initialCallId;
+  }, [entries, userSelectedCallId, initialCallId]);
 
   const selectedEntry = useMemo(
     () =>
@@ -225,7 +257,7 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
           <InputTabContent
             entries={entries}
             selectedCallId={selectedCallId}
-            onSelect={setSelectedCallId}
+            onSelect={setUserSelectedCallId}
           />
         ),
       },
@@ -236,7 +268,7 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
           <RawTabContent
             entries={entries}
             selectedCallId={selectedCallId}
-            onSelect={setSelectedCallId}
+            onSelect={setUserSelectedCallId}
           />
         ),
       },
@@ -261,7 +293,7 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
           <ResultsTabContent
             entries={entries}
             selectedCallId={selectedCallId}
-            onSelect={setSelectedCallId}
+            onSelect={setUserSelectedCallId}
           />
         ),
       },

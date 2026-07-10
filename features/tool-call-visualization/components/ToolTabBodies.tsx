@@ -7,23 +7,20 @@
  * no entry selector strip, no tabs. Outer shells (ToolUpdatesOverlay,
  * ToolCallWindowPanel) compose them with their own navigation.
  *
- *   InputView      — Tool input parameters, each value via <ResultValue full>.
+ *   InputView      — dense KeyValueGrid of arguments (no card nesting).
  *   OutputView     — The "Pretty" results tab: <ResultValue density="full">.
- *   ErrorView      — Structured error via <ToolErrorCard>.
- *   RawDataView    — The "Raw I/O" tab: arguments + result + events as a JSON
- *                    tree (always present, for engineers).
+ *   ErrorView      — Full error story for the Results tab (not the calm
+ *                    inline one-liner — that stays on ToolErrorCard).
+ *   RawDataView    — Single non-repetitive JSON: { tool, input, result, error? }.
  *   EntryResultsBody — switch: error → ErrorView; custom renderer → it;
  *                      result present → OutputView; else EmptyResult.
- *   CustomOverlayBody — wraps a ToolOverlayTabSpec.Component with the
- *                       standard ToolRendererProps.
+ *   CustomOverlayBody — wraps a ToolOverlayTabSpec.Component.
  *
  *   CopyButton     — kept for backward-compat; thin clipboard helper.
- *
- * All colours are semantic tokens / Badge variants — no literal palette colours.
  */
 
 import React, { useState } from "react";
-import { Check, Copy, FileCode2, Settings2 } from "lucide-react";
+import { Check, CircleAlert, Copy, FileCode2, Settings2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -35,10 +32,13 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getOverlayRenderer, hasCustomRenderer } from "../registry/registry";
 import type { ToolOverlayTabSpec, ToolRendererProps } from "../types";
 import { ResultValue } from "../result-fields/ResultValue";
-import { ResultJson } from "../result-fields/ResultJson";
 import { EmptyResult } from "../result-fields/EmptyResult";
-import { ToolErrorCard } from "../result-fields/ToolErrorCard";
-import { humanizeKey } from "../result-fields/shape";
+import { toolErrorLabel } from "../result-fields/ToolErrorCard";
+import { KeyValueGrid } from "../result-fields/KeyValueGrid";
+import {
+  buildToolEntryBundle,
+  toolEntryBundleToHuman,
+} from "../utils/toolEntryBundle";
 
 // ─── Copy payload helpers ──────────────────────────────────────────────────
 
@@ -51,7 +51,11 @@ function resultToHuman(result: unknown): string {
   }
 }
 
-function buildAgentInput(entry: ToolLifecycleEntry, description: string, data: unknown) {
+function buildAgentInput(
+  entry: ToolLifecycleEntry,
+  description: string,
+  data: unknown,
+) {
   return {
     kind: "tool-result",
     location: "AI Matrx — Tool call result",
@@ -62,9 +66,6 @@ function buildAgentInput(entry: ToolLifecycleEntry, description: string, data: u
 }
 
 // ─── Copy button (backward-compat shim) ─────────────────────────────────────
-//
-// Retained because external code may still import it. New surfaces should use
-// <CopyButtons> from @/components/agent-copy.
 
 export const CopyButton: React.FC<{ text: string; className?: string }> = ({
   text,
@@ -106,19 +107,22 @@ export const CopyButton: React.FC<{ text: string; className?: string }> = ({
 };
 
 // ─── Input view ─────────────────────────────────────────────────────────────
+// Dense definition list via KeyValueGrid — no per-param cards, no giant fonts.
 
-export const InputView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) => {
+export const InputView: React.FC<{ entry: ToolLifecycleEntry }> = ({
+  entry,
+}) => {
   const args = entry.arguments ?? {};
-  const argEntries = Object.entries(args);
+  const argCount = Object.keys(args).length;
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-muted/30 px-4 py-2.5">
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-1.5">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Settings2 className="h-3.5 w-3.5" />
           <span>Tool input</span>
           <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            {argEntries.length} {argEntries.length === 1 ? "param" : "params"}
+            {argCount} {argCount === 1 ? "param" : "params"}
           </Badge>
         </div>
         <CopyButtons
@@ -126,25 +130,22 @@ export const InputView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) =>
           size="sm"
           human={() => JSON.stringify(args, null, 2)}
           agent={() =>
-            buildAgentInput(entry, `Input parameters for the "${entry.toolName}" tool call.`, {
-              tool: entry.toolName,
-              callId: entry.callId,
-              arguments: args,
-            })
+            buildAgentInput(
+              entry,
+              `Input parameters for the "${entry.toolName}" tool call.`,
+              {
+                tool: entry.toolName,
+                callId: entry.callId,
+                arguments: args,
+              },
+            )
           }
         />
       </div>
 
-      <div className="flex-1 space-y-3 overflow-auto p-4">
-        {argEntries.length > 0 ? (
-          argEntries.map(([key, value]) => (
-            <div key={key} className="rounded-md border border-border bg-card p-3">
-              <div className="mb-1.5 font-mono text-xs font-semibold text-muted-foreground">
-                {humanizeKey(key)}
-              </div>
-              <ResultValue value={value} density="full" />
-            </div>
-          ))
+      <div className="flex-1 overflow-auto px-3 py-2.5">
+        {argCount > 0 ? (
+          <KeyValueGrid value={args} density="full" />
         ) : (
           <EmptyResult density="full" message="No input parameters" />
         )}
@@ -155,7 +156,9 @@ export const InputView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) =>
 
 // ─── Output view (the "Pretty" results tab) ─────────────────────────────────
 
-export const OutputView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) => {
+export const OutputView: React.FC<{ entry: ToolLifecycleEntry }> = ({
+  entry,
+}) => {
   if (entry.result == null) {
     return (
       <div className="p-4">
@@ -172,11 +175,15 @@ export const OutputView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) =
           size="sm"
           human={() => resultToHuman(entry.result)}
           agent={() =>
-            buildAgentInput(entry, `Result of the "${entry.toolName}" tool call.`, {
-              tool: entry.toolName,
-              callId: entry.callId,
-              result: entry.result,
-            })
+            buildAgentInput(
+              entry,
+              `Result of the "${entry.toolName}" tool call.`,
+              {
+                tool: entry.toolName,
+                callId: entry.callId,
+                result: entry.result,
+              },
+            )
           }
         />
       </div>
@@ -185,113 +192,112 @@ export const OutputView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) =
   );
 };
 
-// ─── Error view ─────────────────────────────────────────────────────────────
+// ─── Error view (Results tab — full story, not the calm inline card) ────────
 
-export const ErrorView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) => (
-  <div className="p-4">
-    <ToolErrorCard entry={entry} toolGroupId={entry.callId} />
-  </div>
-);
-
-// ─── Raw data view (the "Raw" tab — verbatim, for engineers) ─────────────────
-//
-// Four clearly-labeled sections, top to bottom, each rendered with the canonical
-// JsonInspector WITHOUT any interpretation or reshaping:
-//   1. Tool   — metadata about WHICH tool ran.
-//   2. Input  — entry.arguments exactly as-is (verbatim model-produced input).
-//   3. Result — entry.result exactly as-is (verbatim).
-//   4. Error  — ONLY on error: the full detail (message text + complete event log).
-// This is THE place where everything about an error lives.
-
-const RAW_SECTION_HEADING_CLS =
-  "text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5";
-
-export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) => {
-  const toolMeta = {
-    toolName: entry.toolName,
-    displayName: entry.displayName,
-    callId: entry.callId,
-    status: entry.status,
-    startedAt: entry.startedAt,
-    completedAt: entry.completedAt,
-    isDelegated: entry.isDelegated,
-    errorType: entry.errorType,
-  };
-
-  const errorDetail = {
-    errorType: entry.errorType,
-    errorMessage: entry.errorMessage,
-    events: entry.events,
-  };
-
-  const hasError = entry.status === "error" || Boolean(entry.errorMessage);
-
-  const bundle = {
-    tool: toolMeta,
-    input: entry.arguments,
-    result: entry.result,
-    error: hasError ? errorDetail : null,
-  };
+export const ErrorView: React.FC<{ entry: ToolLifecycleEntry }> = ({
+  entry,
+}) => {
+  const label = toolErrorLabel(entry);
+  const message = entry.errorMessage?.trim() || null;
+  const args = entry.arguments ?? {};
+  const hasArgs = Object.keys(args).length > 0;
+  const bundle = buildToolEntryBundle(entry);
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-muted/30 px-4 py-2.5">
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-1.5">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <FileCode2 className="h-3.5 w-3.5" />
-          <span>Raw</span>
-          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            {entry.events.length} {entry.events.length === 1 ? "event" : "events"}
-          </Badge>
+          <CircleAlert className="h-3.5 w-3.5 text-destructive" />
+          <span>Error</span>
+          {entry.errorType && (
+            <Badge variant="outline" className="px-1.5 py-0 font-mono text-[10px]">
+              {entry.errorType}
+            </Badge>
+          )}
         </div>
         <CopyButtons
-          label="Raw data"
+          label="Error"
           size="sm"
-          human={() => JSON.stringify(bundle, null, 2)}
+          human={() => toolEntryBundleToHuman(entry)}
           agent={() =>
-            buildAgentInput(entry, `Raw tool/input/result/error for the "${entry.toolName}" tool call.`, {
-              callId: entry.callId,
-              ...bundle,
-            })
+            buildAgentInput(
+              entry,
+              `Error from the "${entry.toolName}" tool call.`,
+              bundle,
+            )
           }
         />
       </div>
 
-      <div className="flex-1 space-y-4 overflow-auto p-4">
-        <section>
-          <h3 className={RAW_SECTION_HEADING_CLS}>Tool</h3>
-          <ResultJson data={toolMeta} />
-        </section>
+      <div className="flex-1 space-y-4 overflow-auto px-3 py-3">
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {message ? (
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+              {message}
+            </p>
+          ) : (
+            <p className="text-sm italic text-muted-foreground">
+              No error message was recorded. Check the Raw tab for events.
+            </p>
+          )}
+        </div>
 
-        <section>
-          <h3 className={RAW_SECTION_HEADING_CLS}>Input</h3>
-          <ResultJson data={entry.arguments} />
-        </section>
-
-        <section>
-          <h3 className={RAW_SECTION_HEADING_CLS}>Result</h3>
-          <ResultJson data={entry.result ?? null} />
-        </section>
-
-        {hasError && (
-          <section>
-            <h3 className={RAW_SECTION_HEADING_CLS}>Error</h3>
-            {entry.errorMessage && (
-              <div className="mb-2 rounded-md border border-destructive/30 p-3 text-sm text-foreground whitespace-pre-wrap">
-                {entry.errorMessage}
-              </div>
-            )}
-            <ResultJson data={errorDetail} />
-          </section>
+        {hasArgs && (
+          <div className="space-y-1.5 border-t border-border pt-3">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Input that failed
+            </p>
+            <KeyValueGrid value={args} density="full" />
+          </div>
         )}
       </div>
     </div>
   );
 };
 
+// ─── Raw data view — ONE non-repetitive JSON: { tool, input, result, error? }
+
+export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({
+  entry,
+}) => {
+  const bundle = buildToolEntryBundle(entry);
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-1.5">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <FileCode2 className="h-3.5 w-3.5" />
+          <span>All</span>
+          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+            tool · input · result
+            {bundle.error ? " · error" : ""}
+          </Badge>
+        </div>
+        <CopyButtons
+          label="Raw data"
+          size="sm"
+          human={() => toolEntryBundleToHuman(entry)}
+          agent={() =>
+            buildAgentInput(
+              entry,
+              `Full tool/input/result/error for the "${entry.toolName}" tool call.`,
+              bundle,
+            )
+          }
+        />
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-hidden p-2">
+        <div className="h-full min-h-[280px] overflow-hidden rounded-md border border-border bg-card">
+          <JsonInspector data={bundle} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── EntryResultsBody — generic "Results" body ──────────────────────────────
-//
-// error → ErrorView; tool with custom OverlayComponent → that renderer; else
-// OutputView. Used when the tool does NOT register OverlayTabs.
 
 export const EntryResultsBody: React.FC<{
   entry: ToolLifecycleEntry | null;
@@ -308,14 +314,12 @@ export const EntryResultsBody: React.FC<{
 
   if (hasCustomRenderer(entry.toolName)) {
     const OverlayRenderer = getOverlayRenderer(entry.toolName);
-    return (
-      <OverlayRenderer
-        entry={entry}
-        events={entry.events}
-        toolGroupId={entry.callId}
-        isPersisted={false}
-      />
-    );
+    return React.createElement(OverlayRenderer, {
+      entry,
+      events: entry.events,
+      toolGroupId: entry.callId,
+      isPersisted: false,
+    });
   }
 
   if (entry.result != null) return <OutputView entry={entry} />;
