@@ -44,6 +44,7 @@ import {
 } from "./ToolTabBodies";
 import {
   buildToolEntriesSummary,
+  entryHasError,
   toolEntriesSummaryToHuman,
 } from "../utils/toolEntryBundle";
 
@@ -244,7 +245,7 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
   const customOverlayTabs: ToolOverlayTabSpec[] | null = useMemo(() => {
     if (entries.length !== 1) return null;
     if (!selectedEntry) return null;
-    if (selectedEntry.status === "error") return null;
+    if (entryHasError(selectedEntry)) return null;
     return getOverlayTabs(selectedEntry.toolName);
   }, [entries.length, selectedEntry]);
 

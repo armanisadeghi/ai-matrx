@@ -38,7 +38,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { mergeToolCalls } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { upsertToolCall } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { selectToolCallsForConversation } from "@/features/agents/redux/execution-system/observability/observability.selectors";
 import type { RootState } from "@/lib/redux/store";
 
@@ -56,6 +56,7 @@ import { useOrderedToolLifecycles } from "../redux/hooks";
 import { cxToolCallToLifecycleEntry } from "../utils/cxToolCallToLifecycleEntry";
 import {
   buildToolEntriesSummary,
+  entryHasError,
   toolEntriesSummaryToHuman,
 } from "../utils/toolEntryBundle";
 import {
@@ -332,7 +333,13 @@ function useConversationToolEntries(
       .then((page) => {
         if (cancelled) return;
         if (page.records.length > 0) {
-          dispatch(mergeToolCalls({ toolCalls: page.records }));
+          // upsert (not merge) — mergeToolCalls skips existing ids and would
+          // leave incomplete stream stubs forever even after the DB has the
+          // final output/error. Live in-flight entries still win at display
+          // time via liveByCallId overlay below.
+          for (const record of page.records) {
+            dispatch(upsertToolCall(record));
+          }
         }
         setHasMore(page.hasMore);
         setOldestCursor(page.oldestStartedAt);
@@ -358,7 +365,13 @@ function useConversationToolEntries(
     })
       .then((page) => {
         if (page.records.length > 0) {
-          dispatch(mergeToolCalls({ toolCalls: page.records }));
+          // upsert (not merge) — mergeToolCalls skips existing ids and would
+          // leave incomplete stream stubs forever even after the DB has the
+          // final output/error. Live in-flight entries still win at display
+          // time via liveByCallId overlay below.
+          for (const record of page.records) {
+            dispatch(upsertToolCall(record));
+          }
         }
         setHasMore(page.hasMore);
         if (page.oldestStartedAt) setOldestCursor(page.oldestStartedAt);
@@ -473,7 +486,7 @@ const ToolCallWindowPanelBody: React.FC<{
   const customOverlayTabs: ToolOverlayTabSpec[] | null = useMemo(() => {
     if (entries.length !== 1) return null;
     if (!selectedEntry) return null;
-    if (selectedEntry.status === "error") return null;
+    if (entryHasError(selectedEntry)) return null;
     return getOverlayTabs(selectedEntry.toolName);
   }, [entries.length, selectedEntry]);
 

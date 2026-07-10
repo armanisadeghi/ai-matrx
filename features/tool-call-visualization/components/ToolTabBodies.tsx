@@ -37,6 +37,7 @@ import { toolErrorLabel } from "../result-fields/ToolErrorCard";
 import { KeyValueGrid } from "../result-fields/KeyValueGrid";
 import {
   buildToolEntryBundle,
+  entryHasError,
   toolEntryBundleToHuman,
 } from "../utils/toolEntryBundle";
 
@@ -310,7 +311,7 @@ export const EntryResultsBody: React.FC<{
     );
   }
 
-  if (entry.status === "error") return <ErrorView entry={entry} />;
+  if (entryHasError(entry)) return <ErrorView entry={entry} />;
 
   if (hasCustomRenderer(entry.toolName)) {
     const OverlayRenderer = getOverlayRenderer(entry.toolName);
