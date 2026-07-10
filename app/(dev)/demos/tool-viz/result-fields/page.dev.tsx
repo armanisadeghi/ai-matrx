@@ -1227,7 +1227,7 @@ function LiveSearchSection() {
                 <FixtureCard label="SearchInline — LIVE conveyor → PERSISTENT (raw renderer)">
                     <SearchInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
                 </FixtureCard>
-                <FixtureCard label="Shell behavior (live: auto-expand while streaming → auto-collapse after)">
+                <FixtureCard label="Shell behavior (live: opens while streaming, STAYS open)">
                     <ToolCallVisualization entries={[simEntry]} hasContent />
                 </FixtureCard>
             </div>
@@ -1316,7 +1316,7 @@ function LiveScrapeSection() {
                 <FixtureCard label="ScrapeInline — READING wave → filled cards (raw renderer)">
                     <ScrapeInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
                 </FixtureCard>
-                <FixtureCard label="Shell behavior (web_read — live: auto-expand → auto-collapse after)">
+                <FixtureCard label="Shell behavior (web_read — live: opens while streaming, STAYS open)">
                     <ToolCallVisualization entries={[simEntry]} hasContent />
                 </FixtureCard>
             </div>
@@ -1369,7 +1369,7 @@ function LiveResearchSection() {
                 <FixtureCard label="ResearchInline — LIVE activity → streaming report → settled (raw renderer)">
                     <ResearchInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
                 </FixtureCard>
-                <FixtureCard label="Shell behavior (research_web — live: auto-expand → auto-collapse after)">
+                <FixtureCard label="Shell behavior (research_web — live: opens while streaming, STAYS open)">
                     <ToolCallVisualization entries={[simEntry]} hasContent />
                 </FixtureCard>
             </div>

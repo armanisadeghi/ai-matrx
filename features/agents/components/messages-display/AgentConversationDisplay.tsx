@@ -399,7 +399,12 @@ export function AgentConversationDisplay({
   // assistant turn that follows, or between two adjacent user turns).
   // Inside a group, AssistantTurnGroup renders sub-messages flush — no
   // additional spacing between iterations.
-  const spacingClass = compact ? "space-y-2 pb-12" : "space-y-6 pb-48";
+  //
+  // The generous viewport-relative bottom pad lifts the live assistant
+  // activity higher on the page (owner-specified): less of the past
+  // conversation sits in the visible space while the agent works, so there's
+  // less motion in view and the reading position stays calm.
+  const spacingClass = compact ? "space-y-2 pb-12" : "space-y-6 pb-[35dvh]";
 
   return (
     <NonEditableContextMenu

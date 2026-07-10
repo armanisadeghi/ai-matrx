@@ -14,11 +14,13 @@
  * rendered as flat siblings under the line — each keeps its own collapse and
  * full width. A subtle left rail is the only grouping affordance.
  *
- * Collapse behavior mirrors `ToolCallVisualization` (the 3-layer system):
- *   DEFAULT "auto" — expanded while ANY tool in the run is streaming, then
- *   auto-collapses 3s after they all finish. User preference wins:
- *   "verbose" = always open, "minimal" = never auto-open. Once the user
- *   clicks, their choice sticks (no auto-collapse fighting them).
+ * Collapse behavior mirrors `ToolCallVisualization` — motion is ONE-WAY:
+ *   a live batch opens and STAYS open (no timer, no auto-collapse; the
+ *   transcript never shifts on its own). A fresh-session persisted batch
+ *   mounts collapsed. User preference wins: "verbose" = always open,
+ *   "minimal" = never auto-open. A user click sticks for the session,
+ *   surviving remounts (state lives in `toolCardUiSession`, keyed by the
+ *   run's first callId).
  *
  * This component owns NO data subscription — the live/persisted wrappers
  * (`InlineToolBatch` / `DbToolBatch`) compute `entries` (for the count +
@@ -36,6 +38,12 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getToolDisplayName } from "../registry/registry";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import {
+  getToolCardUserChoice,
+  setToolCardUserChoice,
+  markToolCardLive,
+  wasToolCardLive,
+} from "./toolCardUiSession";
 
 export interface ToolCallBatchProps {
   /** One entry per tool in the run — drives the count + streaming state. */
@@ -62,9 +70,6 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
     (e) =>
       e.status === "started" || e.status === "progress" || e.status === "step",
   );
-  const allTerminal =
-    count > 0 &&
-    entries.every((e) => e.status === "completed" || e.status === "error");
   const streamingNow = !isPersisted && anyActive;
   // NOTE: the batch header is NEVER colored as an error. A run where one call
   // failed and a later one succeeded (the agent fixing its own bad arguments)
@@ -89,7 +94,7 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
     return `${count} tool calls`;
   })();
 
-  // ─── Collapse behavior: default "auto" → user preference override ─────────
+  // ─── Collapse behavior: one-way motion, session-lived memory ─────────────
   const userPref = useAppSelector(selectToolDisplayPreference(conversationId));
   const effectiveMode: "auto" | "stay-open" | "never-open" =
     userPref === "verbose"
@@ -98,35 +103,34 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
         ? "never-open"
         : "auto";
 
-  const [isExpanded, setIsExpanded] = useState<boolean>(() =>
+  // Batch identity survives remounts + the live→persisted flip: the run's
+  // first callId. (The batch component remounts when the run grows or the
+  // turn flips to the persisted path — per-mount state re-ran the open/
+  // collapse cycle; the session map doesn't.)
+  const batchKey = entries[0]?.callId ? `batch:${entries[0].callId}` : null;
+  const [userChoice, setUserChoiceState] = useState<boolean | null>(() =>
+    getToolCardUserChoice(batchKey),
+  );
+
+  // A batch that rendered live this session stays open after the flip.
+  useEffect(() => {
+    if (!isPersisted) markToolCardLive(batchKey);
+  }, [isPersisted, batchKey]);
+
+  const autoExpanded =
     effectiveMode === "never-open"
       ? false
       : effectiveMode === "stay-open"
         ? true
-        : streamingNow,
-  );
-  const [userToggled, setUserToggled] = useState(false);
+        : !isPersisted || wasToolCardLive(batchKey);
+  const isExpanded = userChoice ?? autoExpanded;
+
   // Mount the body once it has EVER been open so the close can animate and the
   // live tool cards keep their state. A persisted/never-opened batch never
-  // mounts its tools → no needless re-render/re-fetch on reload.
+  // mounts its tools → no needless re-render/re-fetch on reload. Latched via
+  // the React-endorsed "adjust state during render" pattern.
   const [hasEverExpanded, setHasEverExpanded] = useState<boolean>(isExpanded);
-  useEffect(() => {
-    if (isExpanded && !hasEverExpanded) setHasEverExpanded(true);
-  }, [isExpanded, hasEverExpanded]);
-
-  // Auto: keep expanded while streaming; collapse 3s after the run finishes.
-  useEffect(() => {
-    if (effectiveMode !== "auto" || userToggled) return undefined;
-    if (streamingNow) {
-      setIsExpanded(true);
-      return undefined;
-    }
-    if (allTerminal && isExpanded) {
-      const t = setTimeout(() => setIsExpanded(false), 3000);
-      return () => clearTimeout(t);
-    }
-    return undefined;
-  }, [effectiveMode, userToggled, streamingNow, allTerminal, isExpanded]);
+  if (isExpanded && !hasEverExpanded) setHasEverExpanded(true);
 
   if (count === 0) return null;
 
@@ -135,8 +139,8 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
       <button
         type="button"
         onClick={() => {
-          setUserToggled(true);
-          setIsExpanded((v) => !v);
+          setToolCardUserChoice(batchKey, !isExpanded);
+          setUserChoiceState(!isExpanded);
         }}
         className="flex w-full items-center gap-1.5 text-left"
       >

@@ -40,8 +40,14 @@ import {
 } from "../registry/registry";
 import { ToolGlyph } from "../renderers/_shared-entity/ToolGlyph";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
+import { useAutoScrollOnStream } from "../renderers/useAutoScrollOnStream";
+import {
+  getToolCardUserChoice,
+  setToolCardUserChoice,
+  markToolCardLive,
+  wasToolCardLive,
+} from "./toolCardUiSession";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { ToolErrorCard } from "../result-fields/ToolErrorCard";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
@@ -68,9 +74,6 @@ export interface ToolCallVisualizationProps {
 }
 
 // ─── Shell implementation ─────────────────────────────────────────────────────
-
-/** Fallback when there's no live request to check latest-activity against. */
-const SELECT_LATEST_TRUE = () => true;
 
 const ToolCallVisualizationInner: React.FC<{
   entries: ToolLifecycleEntry[];
@@ -116,10 +119,12 @@ const ToolCallVisualizationInner: React.FC<{
           : "complete";
 
   // ─── Display behavior: default → tool override → user preference ─────────
-  // DEFAULT ("auto"): expand WHILE streaming, then auto-collapse 3s after done.
-  // Tool override (registry `displayMode`): "stay-open" (never auto-collapse) |
-  // "never-open" (never auto-open). User preference wins over both:
-  // "verbose" (always open) | "minimal" (never auto-open).
+  // DEFAULT ("auto"): a live tool opens and STAYS open (one-way motion — the
+  // transcript never shifts on its own); a fresh-session persisted tool
+  // mounts collapsed. Tool override (registry `displayMode`): "stay-open"
+  // (open even when persisted) | "never-open" (never auto-open). User
+  // preference wins over both: "verbose" (always open) | "minimal" (never
+  // auto-open).
   const userPref = useAppSelector(selectToolDisplayPreference(conversationId));
   // A DB renderer's author-declared label (e.g. "Weather" for `travel_get_weather`).
   // Resolves async on first sight, then re-renders — so a fully DB-authored tool
@@ -149,22 +154,36 @@ const ToolCallVisualizationInner: React.FC<{
     entries.length === 1 &&
     !!HeaderInline;
 
-  // Expand state is DERIVED, not effect-synced (avoids cascading setState-in-
-  // effect). Three inputs combine:
-  //   1. userChoice — the user's explicit toggle. Once set it STICKS and wins.
-  //   2. autoExpanded — the automatic decision, computed purely from phase/mode/
-  //      streaming below.
-  //   3. autoCollapsed — the auto "3s after a live finish" grace having elapsed.
-  //      The ONLY effect-set state, and it's set from a timer callback, never
-  //      synchronously in an effect body.
-  const [userChoice, setUserChoice] = useState<boolean | null>(null);
-  const [autoCollapsed, setAutoCollapsed] = useState(false);
+  // ─── Expand state — motion is ONE-WAY, memory survives remounts ──────────
+  //
+  // THE RULE (owner-specified): the transcript must never shift on its own.
+  // A tool that opened live STAYS open — no 3s timer, no collapse-when-the-
+  // next-tool-starts. The ONLY thing that collapses a card is the user's
+  // click. Reloaded (fresh-session persisted) tools mount as collapsed lines.
+  //
+  // State lives in the module-scoped session map (`toolCardUiSession`), NOT
+  // per-mount useState — tool cards are remounted constantly during a live
+  // turn (a single slot becomes a `tool_batch` when the next consecutive tool
+  // starts; the whole turn flips live → persisted at stream end), and
+  // per-mount state re-ran the open→3s→collapse cycle on every remount (the
+  // "finished tools popping open all over the transcript" bug).
+  const primaryCallId = headerTool?.callId ?? null;
+  const [userChoice, setUserChoiceState] = useState<boolean | null>(() =>
+    getToolCardUserChoice(primaryCallId),
+  );
+  const setUserChoice = (open: boolean) => {
+    setToolCardUserChoice(primaryCallId, open);
+    setUserChoiceState(open);
+  };
 
-  // The automatic expand decision (no user override). Pure, except the grace,
-  // which rides on `autoCollapsed` (a timer flips it). Errors NEVER default to
-  // expanded — even a stay-open tool collapses to one calm line on error. A
-  // LIVE tool (`!isPersisted`) that's done stays open for the 3s grace; a
-  // persisted/reloaded tool collapses the moment it mounts done.
+  // Remember that this call rendered live this session, so it stays open
+  // across the live→persisted remount at stream end.
+  useEffect(() => {
+    if (!isPersisted) markToolCardLive(primaryCallId);
+  }, [isPersisted, primaryCallId]);
+
+  // The automatic expand decision (no user override). Errors NEVER default to
+  // expanded — even a stay-open tool collapses to one calm line on error.
   const autoExpanded =
     phase === "error"
       ? false
@@ -172,24 +191,15 @@ const ToolCallVisualizationInner: React.FC<{
         ? true
         : effectiveMode === "never-open"
           ? false
-          : streamingNow
-            ? true
-            : allTerminal && !isPersisted && !autoCollapsed;
+          : !isPersisted || wasToolCardLive(primaryCallId);
 
   const isExpanded = userChoice ?? autoExpanded;
   const toggleExpand = () => setUserChoice(!isExpanded);
 
-  // Card-chrome collapse: a card OPENS the moment it completes (it's the latest
-  // activity in the turn) and auto-collapses the instant the next thing starts
-  // (it's no longer the latest). A user click overrides and sticks. A
-  // persisted/reloaded card mounts collapsed (it's old). No 3s timer — the card
-  // tracks real stream position, not a clock.
-  const isLatest = useAppSelector(
-    headerTool && requestId
-      ? selectIsLatestToolActivity(requestId, headerTool.callId)
-      : SELECT_LATEST_TRUE,
-  );
-  const cardOpen = userChoice ?? (isPersisted ? false : isLatest);
+  // Card chrome follows the same one-way rule: a live card is open and stays
+  // open; a fresh-session persisted card mounts collapsed. User click sticks.
+  const cardOpen =
+    userChoice ?? (!isPersisted || wasToolCardLive(primaryCallId));
   const toggleCard = () => setUserChoice(!cardOpen);
 
   // Mount the body once it has EVER been open, so the collapse can animate and a
@@ -204,20 +214,14 @@ const ToolCallVisualizationInner: React.FC<{
     string | undefined
   >(undefined);
 
-  // Auto mode's 3s collapse after a LIVE finish. setState fires ONLY from the
-  // timer callback (deferred) — the effect body never sets state synchronously.
-  // stay-open / never-open never auto-collapse; an error already derives
-  // collapsed; a persisted/reloaded tool gets no grace.
-  useEffect(() => {
-    if (userChoice !== null) return undefined; // user took control — their choice sticks
-    if (effectiveMode !== "auto") return undefined;
-    if (phase === "error") return undefined;
-    if (!allTerminal) return undefined;
-    if (isPersisted) return undefined;
-    if (autoCollapsed) return undefined;
-    const t = setTimeout(() => setAutoCollapsed(true), 3000);
-    return () => clearTimeout(t);
-  }, [userChoice, effectiveMode, phase, allTerminal, isPersisted, autoCollapsed]);
+  // The expanded body is height-capped with internal scroll (see below) so a
+  // streaming result NEVER grows the card's footprint unboundedly. While the
+  // tool streams, the viewport stays pinned to the freshest content; when it
+  // finishes, control returns to the user.
+  const bodyScrollRef = useAutoScrollOnStream<HTMLDivElement>(
+    headerTool,
+    streamingNow,
+  );
 
   // Prefetch any DB-stored renderers so they're ready before the body mounts.
   useEffect(() => {
@@ -494,7 +498,14 @@ const ToolCallVisualizationInner: React.FC<{
           )}
         >
           <div className="overflow-hidden">
-            <div className="mt-0.5 space-y-1 bg-transparent">
+            {/* Height-capped viewport: a result NEVER grows the transcript
+                unboundedly. While streaming it stays pinned to the freshest
+                content (auto-scroll); once done the user scrolls it freely.
+                Content fades in rather than slamming into place. */}
+            <div
+              ref={bodyScrollRef}
+              className="mt-0.5 max-h-[26rem] space-y-1 overflow-y-auto overscroll-contain bg-transparent animate-in fade-in duration-300"
+            >
               {entries.map((entry) => {
                 const groupDisplayName = getToolDisplayName(entry.toolName);
                 // An errored tool call gets the calm ToolErrorCard for EVERY
