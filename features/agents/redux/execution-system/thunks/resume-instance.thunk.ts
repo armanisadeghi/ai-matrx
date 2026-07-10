@@ -33,7 +33,10 @@ import type { RootState } from "@/lib/redux/store";
 import type { UserOverrides } from "@/features/agents/types/request.types";
 
 import { generateRequestId } from "../utils/ids";
-import { resolveBackendForConversation } from "./resolve-base-url";
+import {
+  resolveBackendForConversation,
+  warmLocalEngineForConversation,
+} from "./resolve-base-url";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { hasAbortController } from "./abort-registry";
 import {
@@ -140,6 +143,10 @@ export const resumeInstance = createAsyncThunk<
       // server that owns the conversation; resolveBackendForConversation honors
       // the per-conversation override (sandbox-mode editor) and matches the
       // auth scheme automatically.
+      // Local-runtime pre-step (see execute-instance): warm the localhost
+      // engine discovery for local-pc-bound conversations so resume hits the
+      // same direct engine the original turn used.
+      await warmLocalEngineForConversation(state, conversationId);
       const backend = resolveBackendForConversation(state, conversationId);
       if (!backend) {
         releaseResumeClaim(userRequestId);

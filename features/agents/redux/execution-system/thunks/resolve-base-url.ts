@@ -7,9 +7,17 @@ import {
   selectAccessToken,
   selectFingerprintId,
 } from "@/lib/redux/slices/userSlice";
-import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
+import { resolveAgentSandboxRef, getConfiguredSandboxRef } from "@/lib/sandbox/active-binding";
+import {
+  discoverLocalEngine,
+  getCachedLocalEngine,
+} from "@/lib/local-engine/discovery";
 
-export type BackendChannel = "global" | "override" | "ec2-dedicated";
+export type BackendChannel =
+  | "global"
+  | "override"
+  | "ec2-dedicated"
+  | "local-runtime";
 
 /**
  * Dedicated aidream server for EC2 (slim) sandbox conversations — close to the
@@ -60,6 +68,57 @@ function dedicatedEc2ServerForConversation(
     : EC2_SANDBOX_SERVER_URL;
 }
 
+/**
+ * If this conversation is bound to the user's own computer (a compute target
+ * of kind "local-pc") AND the Matrx Local engine is reachable on localhost
+ * (fresh entry in the discovery cache — see `@/lib/local-engine/discovery`),
+ * the AI stream should go DIRECT to the engine's own /ai surface
+ * (`http://127.0.0.1:22140-22159`) instead of the far aidream local-proxy
+ * hop. The engine runs the whole agent loop in-process with its local tools.
+ *
+ * Returns the engine base URL, or `null` when the binding isn't local-pc,
+ * the engine isn't (freshly) discovered — the existing aidream local-proxy
+ * path then handles the turn exactly as before — or the user deliberately
+ * switched servers (an explicit server choice always wins, same rule as the
+ * EC2 auto-routing above).
+ *
+ * SYNC by design: the discovery cache is warmed upstream by
+ * `warmLocalEngineForConversation` in the execute/resume thunks.
+ */
+function localEngineUrlForConversation(
+  state: RootState,
+  conversationId: string,
+): string | null {
+  if (selectActiveServer(state) !== "production") return null;
+  const ref = resolveAgentSandboxRef(state, conversationId);
+  if (ref?.kind !== "local-pc") return null;
+  const engine = getCachedLocalEngine();
+  if (!engine) return null;
+  return engine.baseUrl;
+}
+
+/**
+ * Async pre-step for the execute/resume thunks: when the conversation's
+ * CONFIGURED binding is a local-pc target, run (or refresh) the localhost
+ * engine discovery so the synchronous `resolveBackendForConversation` can
+ * route direct. No-op (and no network) for every other binding. LOUD when a
+ * local-pc binding exists but no engine answers — the turn then falls back
+ * to the aidream local-proxy path rather than failing.
+ */
+export async function warmLocalEngineForConversation(
+  state: RootState,
+  conversationId: string,
+): Promise<void> {
+  const ref = getConfiguredSandboxRef(state, conversationId);
+  if (ref?.kind !== "local-pc") return;
+  const engine = await discoverLocalEngine();
+  if (!engine) {
+    console.warn(
+      `[local-engine] conversation ${conversationId} is bound to local-pc target ${ref.rowId} but no Matrx Local engine responded on 127.0.0.1:22140–22159 — falling back to the aidream local-proxy path for this turn.`,
+    );
+  }
+}
+
 export interface ResolvedBackend {
   /** Fully-qualified base URL with no trailing slash. */
   baseUrl: string;
@@ -101,6 +160,8 @@ export function resolveBaseUrlForConversation(
   if (override) {
     return override.endsWith("/") ? override.slice(0, -1) : override;
   }
+  const localEngine = localEngineUrlForConversation(state, conversationId);
+  if (localEngine) return localEngine;
   const ec2Dedicated = dedicatedEc2ServerForConversation(state, conversationId);
   if (ec2Dedicated) return ec2Dedicated;
   const resolved = selectResolvedBaseUrl(state);
@@ -172,6 +233,19 @@ export function resolveBackendForConversation(
     console.warn(
       `[sandbox-routing] conversation ${conversationId} has serverOverrideUrl=${overrideUrl} but no live sandbox binding resolved for it — ignoring the override and falling back to the default backend instead of POSTing to a disconnected sandbox.`,
     );
+  }
+
+  // Local-runtime: the conversation is bound to the user's own computer
+  // (compute target kind "local-pc") and the Matrx Local engine is reachable
+  // on localhost — POST the AI stream DIRECTLY at the engine's /ai surface
+  // (byte-compatible with aidream's). Same Supabase JWT bearer: the engine
+  // validates presence on loopback and verified identity over its tunnel
+  // (matrx-local app/api/auth.py), and its /ai context middleware reads the
+  // user from the JWT `sub`. When the engine isn't discovered, this branch
+  // yields nothing and the turn takes the existing aidream local-proxy path.
+  const localEngine = localEngineUrlForConversation(state, conversationId);
+  if (localEngine) {
+    return { baseUrl: localEngine, channel: "local-runtime", headers };
   }
 
   // EC2 (slim) sandbox conversations run the loop on the nearby dedicated

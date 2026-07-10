@@ -129,6 +129,8 @@ export const ASSOCIATION_TARGET_TYPES = [
   "conversation", //         a chat conversation a working_document is attached to
   "fc_set", //               a flashcard set (card→set membership)
   "fc_card", //              a flashcard (card→card hierarchy, quiz→card)
+  "study_media", //          a study-media artifact (summary/mind_map) — converter lineage target
+  "note", //                 a note — the origin a converted study artifact links back to (artifact→note 'source' lineage, P4)
   "file", //                 a file (card→file media + source lineage)
   "quiz_session", //         a quiz a card is used in
   "agent", //                an orchestrator agent — the container an Agent Set's member agents attach into (role 'member'); a 'matrx_set' self-edge marks the orchestrator

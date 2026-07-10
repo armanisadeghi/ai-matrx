@@ -516,7 +516,9 @@
           "title": "Mime Type"
         },
         "metadata": {
-          "additionalProperties": true,
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
           "description": "Free-form per-API metadata. Opaque to the resolver.",
           "title": "Metadata",
           "type": "object"
@@ -611,7 +613,8 @@
         }
       },
       "title": "MediaRef",
-      "type": "object"
+      "type": "object",
+      "x-contract-dynamic": "subclasses carry provider-display fields as extras; the canonical identifiers stay declared here"
     },
     "OutputSchemaEnvelope": {
       "additionalProperties": false,

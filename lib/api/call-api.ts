@@ -1119,10 +1119,7 @@ export function callCancelRequest(requestId: string) {
  * - `undefined` → fallback chain (prompts → builtins)
  */
 export type WarmSource =
-  | "prompt"
-  | "builtin"
-  | "prompt_version"
-  | "builtin_version";
+  "prompt" | "builtin" | "prompt_version" | "builtin_version";
 
 export function callWarmAgent(agentId: string, source?: WarmSource) {
   return callApi({
@@ -1470,7 +1467,7 @@ export function callHideMessages(
 
 export type RestoreCompactionBody = components["schemas"]["RestoreRequest"];
 export type RestoreCompactionResult =
-  components["schemas"]["aidream__api__routers__cx_data__RestoreResponse"];
+  components["schemas"]["aidream__services__conversation_context__compaction__RestoreResponse"];
 
 export interface CallRestoreCompactionOptions {
   conversationId: string;

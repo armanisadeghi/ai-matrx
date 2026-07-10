@@ -95,6 +95,17 @@ export function buildPlan(
   const reviewPerDay = Math.ceil(summary.dueCount / studyDayCount);
   const itemCap = input.dailyItemCap ?? null;
 
+  // Anti-burnout re-entry ramp (recovery-after-absence): scale the first study
+  // days down so the return isn't a wall of overdue items. 0-based study-day
+  // index → load multiplier. No-op unless `input.reentry` is set.
+  const reentry = input.reentry ?? false;
+  const rampFactor = (studyIdx: number): number => {
+    if (!reentry) return 1;
+    if (studyIdx <= 0) return 0.4;
+    if (studyIdx === 1) return 0.7;
+    return 1;
+  };
+
   const days: PlanDayDraft[] = [];
   let weakCursor = 0; // rotate through weak topics across days
 
@@ -161,6 +172,7 @@ export function buildPlan(
     } else {
       // Normal day: weak-area drill first (highest leverage), then due review.
       let itemsUsed = 0;
+      const factor = rampFactor(studyIndex);
       const capRemaining = () =>
         itemCap == null ? Infinity : Math.max(0, itemCap - itemsUsed);
 
@@ -170,7 +182,10 @@ export function buildPlan(
             ? weakTopics[weakCursor % weakTopics.length]
             : null;
         weakCursor += 1;
-        const weakItems = Math.min(perDayWeakTarget, capRemaining());
+        const weakItems = Math.min(
+          Math.max(1, Math.round(perDayWeakTarget * factor)),
+          capRemaining(),
+        );
         itemsUsed += weakItems;
         blocks.push({
           dayDate: dayIso,
@@ -190,7 +205,10 @@ export function buildPlan(
       }
 
       if (summary.dueCount > 0 && capRemaining() > 0) {
-        const reviewItems = Math.min(reviewPerDay, capRemaining());
+        const reviewItems = Math.min(
+          Math.max(1, Math.round(reviewPerDay * factor)),
+          capRemaining(),
+        );
         itemsUsed += reviewItems;
         blocks.push({
           dayDate: dayIso,
@@ -223,15 +241,20 @@ export function buildPlan(
     }
 
     const targetMinutes = blocks.reduce((s, b) => s + b.estimatedMinutes, 0);
+    const isFirstStudyDay = studyIndex === 0;
     days.push({
       dayDate: dayIso,
       targetMinutes: Math.min(targetMinutes, input.dailyMinutes + 20),
       isRestDay: false,
       rationale: isExamEve
         ? "Taper day — confirm, don't cram."
-        : idx === 0
-          ? "Kickoff — start with your highest-leverage weak areas."
-          : null,
+        : reentry && isFirstStudyDay
+          ? "Welcome back — a lighter first day to ease you in. No wall of overdue items; just the highest-leverage work."
+          : reentry && studyIndex === 1
+            ? "Ramping back up — still gentle so momentum holds."
+            : idx === 0
+              ? "Kickoff — start with your highest-leverage weak areas."
+              : null,
       blocks,
     });
   }
@@ -250,14 +273,18 @@ export function buildPlan(
     restDays: input.restDays,
     goalId: input.goalId ?? null,
     generatedBy: "heuristic",
-    rationale:
-      `A ${studyDayCount}-study-day plan over ${daysUntilExam} days to your exam. ` +
-      `Weak areas are front-loaded and spread out so no single day is a wall; ` +
-      `rest days are protected; the run finishes with a full practice test instead of a cram.`,
+    rationale: reentry
+      ? `Welcome back. This is your recovery plan — the remaining ${studyDayCount} study day${studyDayCount === 1 ? "" : "s"} to your exam, rebuilt from scratch. ` +
+        `Your overdue backlog was triaged and spread across the window (not dumped on you), the first day is deliberately light to ease you back in, ` +
+        `and rest days stay protected. No guilt wall — just the highest-leverage work, re-paced.`
+      : `A ${studyDayCount}-study-day plan over ${daysUntilExam} days to your exam. ` +
+        `Weak areas are front-loaded and spread out so no single day is a wall; ` +
+        `rest days are protected; the run finishes with a full practice test instead of a cram.`,
     config: {
       summary,
       itemType,
       generatedFrom: "heuristic",
+      ...(reentry ? { recovery: true } : {}),
     },
     days,
   };

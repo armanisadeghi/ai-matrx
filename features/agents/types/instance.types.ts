@@ -115,6 +115,18 @@ export type SourceFeature =
   // ── Notes ────────────────────────────────────────────────────────────────
   | "notes"
 
+  // ── CMS (`cms-*`) — websites + standalone HTML pages, `features/cms/` ────
+  /** Hub (`/cms`): owned-sites list + entry to standalone pages. */
+  | "cms-hub"
+  /** Site workspace (`/cms/[siteId]`): page list, settings, components hub chrome. */
+  | "cms-site"
+  /** Page editor (`/cms/[siteId]/pages/[pageId]`) — HTML/CSS/JS/SEO/preview/history. */
+  | "cms-page"
+  /** Shared component editor (`/cms/[siteId]/components`). */
+  | "cms-component"
+  /** Standalone quick-publish HTML page editor (`html_pages`, `features/html-pages/`). */
+  | "html-page"
+
   // ── Transcripts (`transcript*`, `transcription-*`) ───────────────────────
   | "transcripts"
   | "transcript-studio"
@@ -196,7 +208,7 @@ export type SourceFeature =
   /** Mode-agnostic flashcards AI tutor lanes (Phase 4 parity push) — the SAME
    *  fc_help_live / fc_review_batch agents Fast Fire uses, generalized to
    *  every study surface (classic set study, adaptive due review, weak-area
-   *  drill). See features/flashcards/data/tutor/. */
+   *  drill). See features/education/tutor/lanes/. */
   | "education-flashcards-help"
   | "education-flashcards-review"
   | "education-flashcards-coach"

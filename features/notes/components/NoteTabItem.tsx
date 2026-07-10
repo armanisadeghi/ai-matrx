@@ -82,7 +82,6 @@ const actionBtnClass =
 export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const dispatch = useAppDispatch();
 
-
   // ── Redux state ────────────────────────────────────────────────────
   const label = useAppSelector(selectNoteLabel(noteId)) ?? "Untitled";
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
@@ -167,7 +166,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     requestDelete,
     cancelDelete,
     confirmDelete,
-  } = useNoteDelete({ instanceId, noteId, noteLabel: label });
+  } = useNoteDelete({ instanceId, noteId, noteLabel: label, content });
 
   // Keep the "tab-interaction" timestamp warm while any tab-direct
   // popover or modal is open. This prevents the idle-based auto-move

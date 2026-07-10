@@ -169,7 +169,7 @@ Use this for silent context optimization — agent sees fewer tokens, user's cha
 }
 ```
 
-> The OpenAPI generator namespaces this response as `aidream__api__routers__cx_data__RestoreResponse` (there's an unrelated `RestoreResponse` in `file_analysis`). Type it as `components["schemas"]["aidream__api__routers__cx_data__RestoreResponse"]` or alias it on import.
+> The OpenAPI generator namespaces this response as `aidream__services__conversation_context__compaction__RestoreResponse` (there's an unrelated `RestoreResponse` in `file_analysis`). Type it as `components["schemas"]["aidream__services__conversation_context__compaction__RestoreResponse"]` or alias it on import.
 
 ---
 

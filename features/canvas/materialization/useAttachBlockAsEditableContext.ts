@@ -54,7 +54,9 @@ export function useAttachBlockAsEditableContext(args: {
         getState: () => store.getState(),
       });
       if (!result.ok) {
-        toast.error(result.errors[0] ?? "Could not add to conversation context");
+        toast.error(
+          result.errors[0] ?? "Could not add to conversation context",
+        );
         return result;
       }
       toast.success(

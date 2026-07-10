@@ -331,6 +331,38 @@ export const fcService = {
     return this.getSetWithCards(set.id);
   },
 
+  /**
+   * "Make this deeper" — persist agent-generated sub-cards for ONE parent card.
+   * Each sub-card is inserted as a normal set member (so it's studyable in the
+   * deck) AND linked to its parent by an `expands_into` hierarchy edge
+   * (parent → sub-card). Sub-cards append after the existing cards. Returns the
+   * created rows. Edge failures are logged, not fatal (the card still lands).
+   */
+  async addSubCards(
+    setId: string,
+    parentCardId: string,
+    subCards: NewCardInput[],
+    opts: { orgId?: string; startPosition?: number } = {},
+  ): Promise<FcResult<FcCardRow[]>> {
+    const res = await this.addCards(setId, subCards, opts);
+    if (res.error || !res.data) return res;
+    await Promise.all(
+      res.data.map(async (child) => {
+        const edge = await associationsService.add({
+          sourceType: "fc_card",
+          sourceId: parentCardId,
+          targetType: "fc_card",
+          targetId: child.id,
+          role: EDGE_ROLE.expandsInto,
+          orgId: opts.orgId,
+        });
+        if (!edge.ok)
+          console.error("[fcService.addSubCards] expands_into edge failed:", edge);
+      }),
+    );
+    return res;
+  },
+
   // ─── READ: a set with its ordered cards + details ────────────────────────
   async getSetWithCards(setId: string): Promise<FcResult<SetWithCards>> {
     try {

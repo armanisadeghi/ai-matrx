@@ -257,7 +257,11 @@ export function ConversationContextRail({
         type: kind === "scratch" ? "scratchpad" : "working_document",
         // gateConversationId: the CHAT this pill lives in — lets the canvas
         // scratch panel offer its per-document "Share with this chat" toggle.
-        data: { conversationId: scope, kind, gateConversationId: conversationId },
+        data: {
+          conversationId: scope,
+          kind,
+          gateConversationId: conversationId,
+        },
         metadata: {
           title:
             (kind === "scratch" ? scratchTitle : workingDocTitle)?.trim() ||
@@ -380,10 +384,7 @@ export function ConversationContextRail({
 
       // Pinned canvas artifacts (key = canvas_items UUID) — open in canvas
       // with version history; X unpins from context (row is kept).
-      if (
-        isCanvasItemContextKey(e.key) &&
-        isCanvasItemContextValue(e.value)
-      ) {
+      if (isCanvasItemContextKey(e.key) && isCanvasItemContextValue(e.value)) {
         const label = e.label?.trim() || e.value.label || "Artifact";
         out.push({
           id: `artifact:${e.key}`,

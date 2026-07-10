@@ -271,6 +271,13 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       tier: "internal",
     },
     {
+      name: "EnhanceSetDialog",
+      filePath: "features/flashcards/components/set-detail/EnhanceSetDialog.tsx",
+      description:
+        '"Make this deeper": per-card enrich (fc_enrich_card → detail layers) + deepen (fc_expand_card → atomic sub-cards) with a depth tier (recall/applied/exam), preview-then-persist. Opened from the set-detail Enhance button (owner/editor only).',
+      tier: "internal",
+    },
+    {
       name: "CreateFromTopic",
       filePath: "features/flashcards/components/create/CreateFromTopic.tsx",
       description:

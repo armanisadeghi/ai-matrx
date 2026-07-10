@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
@@ -33,8 +34,9 @@ export async function GET(request: NextRequest) {
       .eq("dimension", "shortcut");
 
     if (scope === "global") {
+      // Global/platform content now lives in the system org (was NULL org).
       query = query
-        .is("organization_id", null)
+        .eq("organization_id", await resolveSystemOrgId(supabase))
         .is("metadata->>user_id" as never, null)
         .is("metadata->>project_id" as never, null)
         .is("metadata->>task_id" as never, null);
@@ -137,10 +139,11 @@ export async function POST(request: NextRequest) {
 
     // Resolve scope FKs via the shared helper (sets user_id/org/project/task_id on payload).
     const scopePayload: Record<string, unknown> = {};
-    const scoped = applyScopeToInsertPayload({
+    const scoped = await applyScopeToInsertPayload({
       body,
       payload: scopePayload,
       userId: user.id,
+      client: supabase,
     });
     if (scoped instanceof NextResponse) return scoped;
 

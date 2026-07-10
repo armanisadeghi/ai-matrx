@@ -47,6 +47,11 @@ import { workingDocumentManifest } from "./working-document.manifest";
 import { scratchpadManifest } from "./scratchpad.manifest";
 import { warRoomThreadManifest } from "./war-room-thread.manifest";
 import { warRoomManifest } from "./war-room.manifest";
+import { cmsManifest } from "./cms.manifest";
+import { cmsSiteManifest } from "./cms-site.manifest";
+import { cmsPageManifest } from "./cms-page.manifest";
+import { cmsComponentManifest } from "./cms-component.manifest";
+import { htmlPageManifest } from "./html-page.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -81,6 +86,11 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   scratchpadManifest,
   warRoomThreadManifest,
   warRoomManifest,
+  cmsManifest,
+  cmsSiteManifest,
+  cmsPageManifest,
+  cmsComponentManifest,
+  htmlPageManifest,
 ];
 
 /**
@@ -106,8 +116,9 @@ function withInjectedBaselines(m: SurfaceManifest): SurfaceManifest {
 }
 
 /** All registered surface manifests, with generic baselines guaranteed. */
-export const ALL_MANIFESTS: readonly SurfaceManifest[] =
-  RAW_MANIFESTS.map(withInjectedBaselines);
+export const ALL_MANIFESTS: readonly SurfaceManifest[] = RAW_MANIFESTS.map(
+  withInjectedBaselines,
+);
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */
 const MANIFEST_INDEX: ReadonlyMap<string, SurfaceManifest> = new Map(

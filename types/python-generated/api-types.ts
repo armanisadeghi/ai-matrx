@@ -467,6 +467,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai-tools/app/{executor_name}/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Tools For App
+         * @description All active tool definitions bound to one executor (app).
+         *
+         *     Joins ``tool.definition`` through ``tool.binding`` WHERE
+         *     ``binding.executor_name = <resolved name>`` AND both rows are active.
+         */
+        get: operations["get_tools_for_app_ai_tools_app__executor_name__all_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai-tools/{tool_id}": {
         parameters: {
             query?: never;
@@ -8265,6 +8288,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflow/kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Workflow Kinds
+         * @description Full public kind catalog (kind_definition + kind_edge), resolved with
+         *     the engine's semantics (deleted_at-only liveness, is_active ignored,
+         *     public/system-org preference). ETag'd — clients revalidate cheaply.
+         */
+        get: operations["list_workflow_kinds_workflow_kinds_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/kinds/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow Kind
+         * @description One kind by slug — same resolution semantics as the catalog.
+         */
+        get: operations["get_workflow_kind_workflow_kinds__slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflow/contracts/audit": {
         parameters: {
             query?: never;
@@ -15518,7 +15583,7 @@ export interface components {
             };
             /** Metadata */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /**
@@ -15561,7 +15626,7 @@ export interface components {
             signed_url_ttl?: number | null;
             /** Metadata */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /**
@@ -15778,7 +15843,7 @@ export interface components {
             signed_url_expires_at?: number | null;
             /** Metadata */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /**
@@ -15815,6 +15880,8 @@ export interface components {
             nodes: number;
             /** Full */
             full: number;
+            /** Dynamic */
+            dynamic: number;
             /** Partial */
             partial: number;
             /** Non Conformant */
@@ -17939,7 +18006,7 @@ export interface components {
          * ConformanceState
          * @enum {string}
          */
-        ConformanceState: "full" | "partial" | "non_conformant";
+        ConformanceState: "full" | "dynamic" | "partial" | "non_conformant";
         /** ContentEditRequest */
         ContentEditRequest: {
             /** Content */
@@ -22151,7 +22218,7 @@ export interface components {
             op: string;
             /** Params */
             params?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             output?: components["schemas"]["ImageEditOutput"];
         };
@@ -22199,7 +22266,7 @@ export interface components {
             preserves_alpha: boolean;
             /** Params Schema */
             params_schema: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** ImageOpsCatalog */
@@ -22960,6 +23027,137 @@ export interface components {
             /** Ner Coverage Pct */
             ner_coverage_pct: number;
         };
+        /** KindCatalogResponse */
+        KindCatalogResponse: {
+            /** Kinds */
+            kinds: components["schemas"]["KindDescriptor"][];
+            /** Etag */
+            etag: string;
+        };
+        /**
+         * KindComponentDescriptor
+         * @description One kind_component row — a (platform, role) → renderer binding.
+         *
+         *     ``is_active`` is served verbatim: the CLIENT enforces the render-trust
+         *     rule (inactive/unknown → generic structured viewer), never the server.
+         */
+        KindComponentDescriptor: {
+            /** Platform */
+            platform: string;
+            /** Role */
+            role: string;
+            /** Component Key */
+            component_key: string;
+            /** Source */
+            source: string;
+            /** Is Default */
+            is_default: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Sort Order */
+            sort_order: number;
+            /** Version */
+            version: number;
+        };
+        /**
+         * KindDescriptor
+         * @description Wire view of one resolved kind_definition row (Content-IR spec §4).
+         */
+        KindDescriptor: {
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Version */
+            version: number;
+            /** Emitted Json Schema */
+            emitted_json_schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            data?: components["schemas"]["JsonValue"] | null;
+            /**
+             * Edges
+             * @default []
+             */
+            edges: components["schemas"]["KindEdgeDescriptor"][];
+            /**
+             * Components
+             * @default []
+             */
+            components: components["schemas"]["KindComponentDescriptor"][];
+            /**
+             * Surfaces
+             * @default []
+             */
+            surfaces: components["schemas"]["KindSurfaceDescriptor"][];
+            /**
+             * Examples
+             * @default []
+             */
+            examples: components["schemas"]["KindExampleDescriptor"][];
+            /**
+             * Metadata
+             * @default {}
+             */
+            metadata: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * KindEdgeDescriptor
+         * @description One composition edge: parent kind's ``field_name`` → child kind.
+         */
+        KindEdgeDescriptor: {
+            /** Field Name */
+            field_name: string;
+            /** Child Kind */
+            child_kind: string;
+            /** Pinned Child Version */
+            pinned_child_version?: number | null;
+            /** Position */
+            position?: number | null;
+        };
+        /**
+         * KindExampleDescriptor
+         * @description One kind_example row — a validated sample value for the kind.
+         *
+         *     Served ONLY on the by-slug endpoint (``load_kind``); the full-catalog
+         *     response stays lean (Content-IR spec §6 P3 — "extend /workflow/kinds/
+         *     {slug} to include examples"). Canonical-first, so ``examples[0]`` is the
+         *     right prefill for authoring surfaces (test-node dialog).
+         */
+        KindExampleDescriptor: {
+            /** Label */
+            label?: string | null;
+            data: components["schemas"]["JsonValue"];
+            /** Source */
+            source: string;
+            /** Is Canonical */
+            is_canonical: boolean;
+            /** Validation Status */
+            validation_status: string;
+        };
+        /**
+         * KindSurfaceDescriptor
+         * @description One kind_surface row — the detection list (fence_lang / xml_tag /
+         *     json_root_key / tool_name token → this kind).
+         */
+        KindSurfaceDescriptor: {
+            /** Surface Type */
+            surface_type: string;
+            /** Token */
+            token: string;
+            /** Parser Strategy */
+            parser_strategy: string;
+            /** Streaming */
+            streaming: boolean;
+            /** Priority */
+            priority: number;
+            /** Is Active */
+            is_active: boolean;
+        };
         /** LLMParams */
         LLMParams: {
             /** Model */
@@ -23179,7 +23377,7 @@ export interface components {
          * @description Why a branch of a contract is considered untyped.
          * @enum {string}
          */
-        LeakRule: "any" | "object" | "bare_container" | "extra_allow" | "unbound_typevar" | "unknown_type";
+        LeakRule: "any" | "object" | "bare_container" | "extra_allow" | "unbound_typevar" | "unknown_type" | "acknowledged_dynamic";
         /** LegalSearchRequest */
         LegalSearchRequest: {
             /** Query */
@@ -23687,6 +23885,17 @@ export interface components {
             /** Source Kind */
             source_kind: string;
         };
+        /** ListToolsForExecutorResponse */
+        ListToolsForExecutorResponse: {
+            /** Tools */
+            tools: components["schemas"]["ToolRecord"][];
+            /** Count */
+            count: number;
+            /** Executor Name */
+            executor_name: string;
+            /** Requested Executor */
+            requested_executor: string;
+        };
         /** ListToolsResponse */
         ListToolsResponse: {
             /** Tools */
@@ -23918,7 +24127,7 @@ export interface components {
              * @description Free-form per-API metadata. Opaque to the resolver.
              */
             metadata?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /**
              * Vision Class
@@ -27396,6 +27605,13 @@ export interface components {
             enabled_rules: components["schemas"]["LeakRule"][];
             /** Allowed Scalars */
             allowed_scalars: string[];
+            /**
+             * Allowed Aliases
+             * @default []
+             */
+            allowed_aliases: string[];
+            /** Input Rules */
+            input_rules?: components["schemas"]["LeakRule"][] | null;
         };
         /** RunBatchDeleteRequest */
         RunBatchDeleteRequest: {
@@ -30153,7 +30369,7 @@ export interface components {
             tool_name: string;
             /** Arguments */
             arguments: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Conversation Id */
             conversation_id?: string | null;
@@ -32751,6 +32967,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListToolsBySourceKindResponse"];
+                };
+            };
+        };
+    };
+    get_tools_for_app_ai_tools_app__executor_name__all_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                executor_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListToolsForExecutorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -47188,6 +47435,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NodeTypeDescriptor"][];
+                };
+            };
+        };
+    };
+    list_workflow_kinds_workflow_kinds_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "if-none-match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindCatalogResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workflow_kind_workflow_kinds__slug__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindDescriptor"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

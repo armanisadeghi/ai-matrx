@@ -815,6 +815,49 @@
         }
       }
     },
+    "/ai-tools/app/{executor_name}/all": {
+      "get": {
+        "tags": [
+          "AI Tools"
+        ],
+        "summary": "Get Tools For App",
+        "description": "All active tool definitions bound to one executor (app).\n\nJoins ``tool.definition`` through ``tool.binding`` WHERE\n``binding.executor_name = <resolved name>`` AND both rows are active.",
+        "operationId": "get_tools_for_app_ai_tools_app__executor_name__all_get",
+        "parameters": [
+          {
+            "name": "executor_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Executor Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListToolsForExecutorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai-tools/{tool_id}": {
       "get": {
         "tags": [
@@ -22552,6 +22595,99 @@
         }
       }
     },
+    "/workflow/kinds": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "List Workflow Kinds",
+        "description": "Full public kind catalog (kind_definition + kind_edge), resolved with\nthe engine's semantics (deleted_at-only liveness, is_active ignored,\npublic/system-org preference). ETag'd — clients revalidate cheaply.",
+        "operationId": "list_workflow_kinds_workflow_kinds_get",
+        "parameters": [
+          {
+            "name": "if-none-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-None-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KindCatalogResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow/kinds/{slug}": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Workflow Kind",
+        "description": "One kind by slug — same resolution semantics as the catalog.",
+        "operationId": "get_workflow_kind_workflow_kinds__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KindDescriptor"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflow/contracts/audit": {
       "get": {
         "tags": [
@@ -42981,7 +43117,9 @@
             "title": "Variants"
           },
           "metadata": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Metadata"
           }
@@ -43089,7 +43227,9 @@
           "metadata": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
@@ -43612,7 +43752,9 @@
             "title": "Signed Url Expires At"
           },
           "metadata": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Metadata"
           }
@@ -43724,6 +43866,10 @@
             "type": "integer",
             "title": "Full"
           },
+          "dynamic": {
+            "type": "integer",
+            "title": "Dynamic"
+          },
           "partial": {
             "type": "integer",
             "title": "Partial"
@@ -43748,6 +43894,7 @@
         "required": [
           "nodes",
           "full",
+          "dynamic",
           "partial",
           "non_conformant",
           "percent_full",
@@ -50154,6 +50301,7 @@
         "type": "string",
         "enum": [
           "full",
+          "dynamic",
           "partial",
           "non_conformant"
         ],
@@ -61413,7 +61561,9 @@
             "title": "Op"
           },
           "params": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Params"
           },
@@ -61511,7 +61661,9 @@
             "title": "Preserves Alpha"
           },
           "params_schema": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Params Schema"
           }
@@ -63560,6 +63712,294 @@
         ],
         "title": "KgCostSummaryResponse"
       },
+      "KindCatalogResponse": {
+        "properties": {
+          "kinds": {
+            "items": {
+              "$ref": "#/components/schemas/KindDescriptor"
+            },
+            "type": "array",
+            "title": "Kinds"
+          },
+          "etag": {
+            "type": "string",
+            "title": "Etag"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kinds",
+          "etag"
+        ],
+        "title": "KindCatalogResponse"
+      },
+      "KindComponentDescriptor": {
+        "properties": {
+          "platform": {
+            "type": "string",
+            "title": "Platform"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "component_key": {
+            "type": "string",
+            "title": "Component Key"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "platform",
+          "role",
+          "component_key",
+          "source",
+          "is_default",
+          "is_active",
+          "sort_order",
+          "version"
+        ],
+        "title": "KindComponentDescriptor",
+        "description": "One kind_component row — a (platform, role) → renderer binding.\n\n``is_active`` is served verbatim: the CLIENT enforces the render-trust\nrule (inactive/unknown → generic structured viewer), never the server."
+      },
+      "KindDescriptor": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "emitted_json_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emitted Json Schema"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/KindEdgeDescriptor"
+            },
+            "type": "array",
+            "title": "Edges",
+            "default": []
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/KindComponentDescriptor"
+            },
+            "type": "array",
+            "title": "Components",
+            "default": []
+          },
+          "surfaces": {
+            "items": {
+              "$ref": "#/components/schemas/KindSurfaceDescriptor"
+            },
+            "type": "array",
+            "title": "Surfaces",
+            "default": []
+          },
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/KindExampleDescriptor"
+            },
+            "type": "array",
+            "title": "Examples",
+            "default": []
+          },
+          "metadata": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Metadata",
+            "default": {}
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "label",
+          "version"
+        ],
+        "title": "KindDescriptor",
+        "description": "Wire view of one resolved kind_definition row (Content-IR spec §4)."
+      },
+      "KindEdgeDescriptor": {
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "title": "Field Name"
+          },
+          "child_kind": {
+            "type": "string",
+            "title": "Child Kind"
+          },
+          "pinned_child_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Child Version"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field_name",
+          "child_kind"
+        ],
+        "title": "KindEdgeDescriptor",
+        "description": "One composition edge: parent kind's ``field_name`` → child kind."
+      },
+      "KindExampleDescriptor": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "is_canonical": {
+            "type": "boolean",
+            "title": "Is Canonical"
+          },
+          "validation_status": {
+            "type": "string",
+            "title": "Validation Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "source",
+          "is_canonical",
+          "validation_status"
+        ],
+        "title": "KindExampleDescriptor",
+        "description": "One kind_example row — a validated sample value for the kind.\n\nServed ONLY on the by-slug endpoint (``load_kind``); the full-catalog\nresponse stays lean (Content-IR spec §6 P3 — \"extend /workflow/kinds/\n{slug} to include examples\"). Canonical-first, so ``examples[0]`` is the\nright prefill for authoring surfaces (test-node dialog)."
+      },
+      "KindSurfaceDescriptor": {
+        "properties": {
+          "surface_type": {
+            "type": "string",
+            "title": "Surface Type"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "parser_strategy": {
+            "type": "string",
+            "title": "Parser Strategy"
+          },
+          "streaming": {
+            "type": "boolean",
+            "title": "Streaming"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "surface_type",
+          "token",
+          "parser_strategy",
+          "streaming",
+          "priority",
+          "is_active"
+        ],
+        "title": "KindSurfaceDescriptor",
+        "description": "One kind_surface row — the detection list (fence_lang / xml_tag /\njson_root_key / tool_name token → this kind)."
+      },
       "LLMParams": {
         "properties": {
           "model": {
@@ -64661,7 +65101,8 @@
           "bare_container",
           "extra_allow",
           "unbound_typevar",
-          "unknown_type"
+          "unknown_type",
+          "acknowledged_dynamic"
         ],
         "title": "LeakRule",
         "description": "Why a branch of a contract is considered untyped."
@@ -66284,6 +66725,37 @@
         ],
         "title": "ListToolsBySourceKindResponse"
       },
+      "ListToolsForExecutorResponse": {
+        "properties": {
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ToolRecord"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "executor_name": {
+            "type": "string",
+            "title": "Executor Name"
+          },
+          "requested_executor": {
+            "type": "string",
+            "title": "Requested Executor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tools",
+          "count",
+          "executor_name",
+          "requested_executor"
+        ],
+        "title": "ListToolsForExecutorResponse"
+      },
       "ListToolsResponse": {
         "properties": {
           "tools": {
@@ -66818,7 +67290,9 @@
             "description": "Hint from the client. Server REPLACES with the canonical cld_files.mime_type when the reference resolves to one of our files."
           },
           "metadata": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Metadata",
             "description": "Free-form per-API metadata. Opaque to the resolver."
@@ -66909,7 +67383,8 @@
         "additionalProperties": true,
         "type": "object",
         "title": "MediaRef",
-        "description": "Canonical media reference shared across every API that takes media."
+        "description": "Canonical media reference shared across every API that takes media.",
+        "x-contract-dynamic": "subclasses carry provider-display fields as extras; the canonical identifiers stay declared here"
       },
       "MediaUpdate": {
         "properties": {
@@ -75628,6 +76103,28 @@
             },
             "type": "array",
             "title": "Allowed Scalars"
+          },
+          "allowed_aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Aliases",
+            "default": []
+          },
+          "input_rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LeakRule"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Rules"
           }
         },
         "type": "object",
@@ -82825,7 +83322,9 @@
             "title": "Tool Name"
           },
           "arguments": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Arguments"
           },

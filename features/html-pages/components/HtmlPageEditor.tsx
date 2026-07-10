@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HtmlPageRecord } from "@/features/html-pages/types";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -14,7 +14,7 @@ import {
   SaveTapButton,
 } from "@/components/icons/tap-buttons";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -31,6 +31,13 @@ import {
   setHtmlPagesNavOrder,
 } from "@/features/html-pages/utils/nav-order";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
+import { useHtmlPagesManager } from "@/features/html-pages/hooks/useHtmlPagesManager";
+import { useHtmlPageSurfaceScope } from "@/features/html-pages/hooks/useHtmlPageSurfaceScope";
+import { HTML_PAGE_CONTEXT_MENU_PROPS } from "@/features/html-pages/agent-context/htmlPageContextMenuProps";
+import { createHtmlPageExtraSections } from "@/features/html-pages/agent-context/htmlPageExtraSections";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { useMeasure } from "@uidotdev/usehooks";
@@ -103,6 +110,55 @@ export default function HtmlPageEditor({
   );
   const [htmlEditorRef, { height: htmlEditorHeight }] =
     useMeasure<HTMLDivElement>();
+  const metaDescriptionRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // ── Agent-context surface scope (`matrx-user/html-page`) ─────────────
+  // Sibling list for the `html_pages_structure` framing value — cheap,
+  // list-level fetch, independent of the currently-loaded page's own data.
+  const { pages: siblingPages } = useHtmlPagesManager();
+  const buildSurfaceScope = useHtmlPageSurfaceScope({
+    page,
+    siblingPages,
+    activeTab,
+    htmlContent,
+    metaTitle,
+    metaDescription,
+    metaKeywords,
+    ogImage,
+    canonicalUrl,
+    isIndexable,
+    textareaRef: metaDescriptionRef,
+  });
+
+  const getApplicationScope =
+    (ref: React.RefObject<HTMLTextAreaElement | null>) => () => {
+      const el = ref.current;
+      const start = el?.selectionStart ?? 0;
+      const end = el?.selectionEnd ?? 0;
+      const selectedText =
+        el && start !== end
+          ? el.value.slice(Math.min(start, end), Math.max(start, end))
+          : "";
+      return buildApplicationScopeFromMenuContext({
+        selectedText,
+        selectionRange: el
+          ? { type: "editable", element: el, start, end }
+          : null,
+        contextData: buildSurfaceScope() as Record<string, unknown>,
+      });
+    };
+  const getMetaApplicationScope = getApplicationScope(metaDescriptionRef);
+  const noTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const getHtmlApplicationScope = getApplicationScope(noTextareaRef);
+
+  const pageExtraSections = createHtmlPageExtraSections({
+    dirty,
+    liveUrl: page.url,
+    onSave: () => void handleSave(),
+    onCopyUrl: () => void handleCopyUrl(),
+    onOpenLive: () => window.open(page.url, "_blank", "noopener,noreferrer"),
+    onBackToList: () => requestBack(),
+  });
 
   useEffect(() => {
     setMetaTitle(page.meta_title ?? "");
@@ -202,136 +258,169 @@ export default function HtmlPageEditor({
   const requestBack = () => navigateTo(backHref);
 
   const metaForm = (
-    <div className="space-y-4 max-w-2xl">
-      <div>
-        <label className="text-sm font-medium block mb-1.5">
-          Title <span className="text-destructive">*</span>
-        </label>
-        <Input
-          value={metaTitle}
-          onChange={(e) => {
-            setMetaTitle(e.target.value);
-            markDirty();
-          }}
-          placeholder="Page title"
-          className="text-base"
-          style={{ fontSize: "16px" }}
-        />
-        <p className="text-[11px] text-muted-foreground mt-1">
-          Used as the HTML &lt;title&gt; and primary SEO title (50–60 chars
-          recommended).
-        </p>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium block mb-1.5">Description</label>
-        <Textarea
-          value={metaDescription}
-          onChange={(e) => {
-            setMetaDescription(e.target.value);
-            markDirty();
-          }}
-          placeholder="Meta description for search results"
-          rows={3}
-          className="text-base"
-          style={{ fontSize: "16px" }}
-        />
-        <p className="text-[11px] text-muted-foreground mt-1">
-          {metaDescription.length}/160 characters
-        </p>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium block mb-1.5">Keywords</label>
-        <Input
-          value={metaKeywords}
-          onChange={(e) => {
-            setMetaKeywords(e.target.value);
-            markDirty();
-          }}
-          placeholder="comma, separated, keywords"
-          className="text-base"
-          style={{ fontSize: "16px" }}
-        />
-      </div>
-
-      <div>
-        <label className="text-sm font-medium block mb-1.5">
-          Open Graph image URL
-        </label>
-        <Input
-          value={ogImage}
-          onChange={(e) => {
-            setOgImage(e.target.value);
-            markDirty();
-          }}
-          placeholder="https://…"
-          className="text-base font-mono"
-          style={{ fontSize: "16px" }}
-        />
-      </div>
-
-      <div>
-        <label className="text-sm font-medium block mb-1.5">
-          Canonical URL
-        </label>
-        <Input
-          value={canonicalUrl}
-          onChange={(e) => {
-            setCanonicalUrl(e.target.value);
-            markDirty();
-          }}
-          placeholder="https://…"
-          className="text-base font-mono"
-          style={{ fontSize: "16px" }}
-        />
-      </div>
-
-      <label className="flex items-center gap-2 text-sm cursor-pointer">
-        <Checkbox
-          checked={isIndexable}
-          onCheckedChange={(v) => {
-            setIsIndexable(v === true);
-            markDirty();
-          }}
-        />
-        Allow search engines to index this page
-      </label>
-      <p className="text-[11px] text-muted-foreground -mt-2 ml-6">
-        Off by default (noindex) to avoid duplicate-content issues.
-      </p>
-
-      {(page.source_message_id || page.artifact_id) && (
-        <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1 text-[11px] text-muted-foreground font-mono">
-          {page.source_message_id && (
-            <div>source_message_id: {page.source_message_id}</div>
-          )}
-          {page.source_conv_id && (
-            <div>source_conv_id: {page.source_conv_id}</div>
-          )}
-          {page.artifact_id && <div>artifact_id: {page.artifact_id}</div>}
+    <EditableContextMenu
+      {...HTML_PAGE_CONTEXT_MENU_PROPS}
+      extraSections={pageExtraSections}
+      getTextarea={() => metaDescriptionRef.current}
+      getApplicationScope={getMetaApplicationScope}
+      contextData={buildSurfaceScope() as Record<string, unknown>}
+      onTextReplace={(text) => {
+        setMetaDescription(text);
+        markDirty();
+      }}
+      onSave={() => void handleSave()}
+    >
+      <div className="space-y-4 max-w-2xl">
+        <div>
+          <label className="text-sm font-medium block mb-1.5">
+            Title <span className="text-destructive">*</span>
+          </label>
+          <Input
+            value={metaTitle}
+            onChange={(e) => {
+              setMetaTitle(e.target.value);
+              markDirty();
+            }}
+            placeholder="Page title"
+            className="text-base"
+            style={{ fontSize: "16px" }}
+          />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Used as the HTML &lt;title&gt; and primary SEO title (50–60 chars
+            recommended).
+          </p>
         </div>
-      )}
-    </div>
+
+        <div>
+          <label className="text-sm font-medium block mb-1.5">
+            Description
+          </label>
+          <ProTextarea
+            ref={metaDescriptionRef}
+            value={metaDescription}
+            onChange={(e) => {
+              setMetaDescription(e.target.value);
+              markDirty();
+            }}
+            placeholder="Meta description for search results"
+            rows={3}
+            className="text-base"
+            style={{ fontSize: "16px" }}
+            surfaceName={HTML_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+            getApplicationScope={getMetaApplicationScope}
+          />
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {metaDescription.length}/160 characters
+          </p>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Keywords</label>
+          <Input
+            value={metaKeywords}
+            onChange={(e) => {
+              setMetaKeywords(e.target.value);
+              markDirty();
+            }}
+            placeholder="comma, separated, keywords"
+            className="text-base"
+            style={{ fontSize: "16px" }}
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium block mb-1.5">
+            Open Graph image URL
+          </label>
+          <Input
+            value={ogImage}
+            onChange={(e) => {
+              setOgImage(e.target.value);
+              markDirty();
+            }}
+            placeholder="https://…"
+            className="text-base font-mono"
+            style={{ fontSize: "16px" }}
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium block mb-1.5">
+            Canonical URL
+          </label>
+          <Input
+            value={canonicalUrl}
+            onChange={(e) => {
+              setCanonicalUrl(e.target.value);
+              markDirty();
+            }}
+            placeholder="https://…"
+            className="text-base font-mono"
+            style={{ fontSize: "16px" }}
+          />
+        </div>
+
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <Checkbox
+            checked={isIndexable}
+            onCheckedChange={(v) => {
+              setIsIndexable(v === true);
+              markDirty();
+            }}
+          />
+          Allow search engines to index this page
+        </label>
+        <p className="text-[11px] text-muted-foreground -mt-2 ml-6">
+          Off by default (noindex) to avoid duplicate-content issues.
+        </p>
+
+        {(page.source_message_id || page.artifact_id) && (
+          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1 text-[11px] text-muted-foreground font-mono">
+            {page.source_message_id && (
+              <div>source_message_id: {page.source_message_id}</div>
+            )}
+            {page.source_conv_id && (
+              <div>source_conv_id: {page.source_conv_id}</div>
+            )}
+            {page.artifact_id && <div>artifact_id: {page.artifact_id}</div>}
+          </div>
+        )}
+      </div>
+    </EditableContextMenu>
   );
 
   const htmlEditor = (
-    <div ref={htmlEditorRef} className="h-full w-full min-h-0 overflow-hidden">
-      <SmallCodeEditor
-        key={page.id}
-        language="html"
-        path={`html-page://${page.id}.html`}
-        initialCode={htmlContent}
-        onChange={(value) => {
-          setHtmlContent(value ?? "");
-          markDirty();
-        }}
-        mode={themeMode}
-        height={htmlEditorHeight ? `${htmlEditorHeight}px` : "100%"}
-        defaultWordWrap="on"
-        showResetButton={false}
-      />
-    </div>
+    <EditableContextMenu
+      {...HTML_PAGE_CONTEXT_MENU_PROPS}
+      extraSections={pageExtraSections}
+      getApplicationScope={getHtmlApplicationScope}
+      contextData={buildSurfaceScope() as Record<string, unknown>}
+      onTextReplace={(text) => {
+        setHtmlContent(text);
+        markDirty();
+      }}
+      onSave={() => void handleSave()}
+    >
+      <div
+        ref={htmlEditorRef}
+        className="h-full w-full min-h-0 overflow-hidden"
+      >
+        <SmallCodeEditor
+          key={page.id}
+          language="html"
+          path={`html-page://${page.id}.html`}
+          initialCode={htmlContent}
+          onChange={(value) => {
+            setHtmlContent(value ?? "");
+            markDirty();
+          }}
+          mode={themeMode}
+          height={htmlEditorHeight ? `${htmlEditorHeight}px` : "100%"}
+          defaultWordWrap="on"
+          showResetButton={false}
+        />
+      </div>
+    </EditableContextMenu>
   );
 
   // Full-bleed preview: the page is the only job on this tab, so give it the
@@ -339,15 +428,23 @@ export default function HtmlPageEditor({
   // Prefer live URL when clean so assets/relative paths match production;
   // fall back to srcDoc while editing so unsaved HTML is still visible.
   const previewPane = (
-    <iframe
-      key={dirty ? `draft-${page.id}` : `live-${page.id}-${page.updated_at}`}
-      title="Page preview"
-      {...(dirty || !page.url
-        ? { srcDoc: htmlContent }
-        : { src: `${page.url}${page.url.includes("?") ? "&" : "?"}preview=1` })}
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-      className="block w-full h-full border-0 bg-white dark:bg-zinc-950"
-    />
+    <NonEditableContextMenu
+      {...HTML_PAGE_CONTEXT_MENU_PROPS}
+      extraSections={pageExtraSections}
+      contextData={buildSurfaceScope() as Record<string, unknown>}
+    >
+      <iframe
+        key={dirty ? `draft-${page.id}` : `live-${page.id}-${page.updated_at}`}
+        title="Page preview"
+        {...(dirty || !page.url
+          ? { srcDoc: htmlContent }
+          : {
+              src: `${page.url}${page.url.includes("?") ? "&" : "?"}preview=1`,
+            })}
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        className="block w-full h-full border-0 bg-white dark:bg-zinc-950"
+      />
+    </NonEditableContextMenu>
   );
 
   return (

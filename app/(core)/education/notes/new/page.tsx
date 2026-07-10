@@ -1,9 +1,10 @@
+// /education/notes/new — create a note and open it.
 import type { Metadata } from "next";
-import { EduToolComingSoon } from "@/features/education/components/EduToolComingSoon";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { EduNoteNew } from "@/features/education/notes/EduNoteNew";
 
 export const metadata: Metadata = toolMetadata("notes");
 
-export default function NoteNewPage() {
-  return <EduToolComingSoon slug="notes" surface={{ label: "New note", gate: "auth" }} />;
+export default function NewNotePage() {
+  return <EduNoteNew />;
 }

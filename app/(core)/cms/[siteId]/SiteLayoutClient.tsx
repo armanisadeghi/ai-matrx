@@ -10,14 +10,42 @@ import React, {
 import { extractErrorMessage } from "@/utils/errors";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { CmsSiteService } from "@/features/cms/services/cmsService";
-import type { ClientSite } from "@/features/cms/types";
+import {
+  CmsSiteService,
+  CmsPageService,
+  CmsComponentService,
+} from "@/features/cms/services/cmsService";
+import type {
+  ClientSite,
+  ClientPageSummary,
+  ClientComponent,
+} from "@/features/cms/types";
+import {
+  buildSiteStructureXml,
+  type SiteStructureCurrent,
+} from "@/features/cms/utils/buildSiteStructureXml";
 import { Loader2, AlertCircle, ChevronRight, PanelTop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SiteContextValue {
   site: ClientSite;
   refreshSite: () => Promise<void>;
+  /**
+   * Page/component summaries cached at the layout level so every child
+   * surface (dashboard, page editor, component editor) can rebuild
+   * `site_structure` without a fresh fetch on every keystroke. Refreshed on
+   * site enter — call `refreshPages`/`refreshComponents` after any
+   * create/update/delete/publish/discard/rollback so the cache (and the
+   * framing XML built from it) never drifts from what was just saved.
+   */
+  pages: ClientPageSummary[];
+  pagesLoading: boolean;
+  refreshPages: () => Promise<void>;
+  components: ClientComponent[];
+  componentsLoading: boolean;
+  refreshComponents: () => Promise<void>;
+  /** Builds the shared `site_structure` framing XML from the cached pages/components. */
+  buildStructureXml: (current?: SiteStructureCurrent) => string;
 }
 
 const SiteContext = createContext<SiteContextValue | null>(null);
@@ -92,6 +120,11 @@ export default function SiteLayoutClient({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [pages, setPages] = useState<ClientPageSummary[]>([]);
+  const [pagesLoading, setPagesLoading] = useState(true);
+  const [components, setComponents] = useState<ClientComponent[]>([]);
+  const [componentsLoading, setComponentsLoading] = useState(true);
+
   const fetchSite = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -105,9 +138,50 @@ export default function SiteLayoutClient({
     }
   }, [siteId]);
 
+  const refreshPages = useCallback(async () => {
+    setPagesLoading(true);
+    try {
+      const data = await CmsPageService.listPages(siteId);
+      setPages(data);
+    } catch (err: unknown) {
+      // Non-fatal: the framing XML degrades to a smaller page list rather than blocking the route.
+      console.error(
+        "[cms] failed to refresh site_structure page cache:",
+        extractErrorMessage(err),
+      );
+    } finally {
+      setPagesLoading(false);
+    }
+  }, [siteId]);
+
+  const refreshComponents = useCallback(async () => {
+    setComponentsLoading(true);
+    try {
+      const data = await CmsComponentService.listComponents(siteId);
+      setComponents(data);
+    } catch (err: unknown) {
+      console.error(
+        "[cms] failed to refresh site_structure component cache:",
+        extractErrorMessage(err),
+      );
+    } finally {
+      setComponentsLoading(false);
+    }
+  }, [siteId]);
+
   useEffect(() => {
     fetchSite();
-  }, [fetchSite]);
+    refreshPages();
+    refreshComponents();
+  }, [fetchSite, refreshPages, refreshComponents]);
+
+  const buildStructureXml = useCallback(
+    (current?: SiteStructureCurrent) => {
+      if (!site) return "";
+      return buildSiteStructureXml({ site, pages, components, current });
+    },
+    [site, pages, components],
+  );
 
   if (isLoading) {
     return (
@@ -149,7 +223,19 @@ export default function SiteLayoutClient({
   }
 
   return (
-    <SiteContext.Provider value={{ site, refreshSite: fetchSite }}>
+    <SiteContext.Provider
+      value={{
+        site,
+        refreshSite: fetchSite,
+        pages,
+        pagesLoading,
+        refreshPages,
+        components,
+        componentsLoading,
+        refreshComponents,
+        buildStructureXml,
+      }}
+    >
       <div className="h-[calc(100dvh-var(--shell-header-h,56px))] flex flex-col overflow-hidden">
         <div className="flex-none border-b border-border/50 bg-background/80 backdrop-blur-sm">
           <div className="flex items-center justify-between px-4 sm:px-6 py-3">

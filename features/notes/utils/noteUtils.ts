@@ -184,15 +184,26 @@ export function extractUniqueTags(notes: Note[]): string[] {
 }
 
 /**
+ * Whether a note's content is empty (null, undefined, or whitespace-only).
+ *
+ * Single source of truth for "does this note have anything worth losing" —
+ * drives the empty-new-note dedup logic below AND the delete-confirmation
+ * skip rule (an empty note deletes instantly, no dialog).
+ */
+export function isNoteContentEmpty(
+  content: string | null | undefined,
+): boolean {
+  return !content || content.trim() === "";
+}
+
+/**
  * Find an existing empty note (no content and "New Note" label or variants like "New Note 1", "New Note 2", etc.)
  * This prevents duplicate empty notes from accumulating
  */
 export function findEmptyNewNote(notes: Note[]): Note | null {
   return (
     notes.find((note) => {
-      // Check if content is empty
-      const isEmpty = !note.content || note.content.trim() === "";
-      if (!isEmpty) return false;
+      if (!isNoteContentEmpty(note.content)) return false;
 
       // Check if label is "New Note" or "New Note [number]"
       const isNewNoteLabel =
@@ -214,7 +225,7 @@ export function findEmptyNewNoteInFolder(
       (note) =>
         note.label === "New Note" &&
         note.folder_name === folderName &&
-        (!note.content || note.content.trim() === ""),
+        isNoteContentEmpty(note.content),
     ) || null
   );
 }
@@ -239,7 +250,7 @@ export function generateUniqueLabel(
   // If base label exists but is empty, this is a problem!
   // The caller should have found and reused this empty note instead
   // But we'll return the base label anyway - duplicate checking should handle this
-  const isBaseEmpty = !baseNote.content || baseNote.content.trim() === "";
+  const isBaseEmpty = isNoteContentEmpty(baseNote.content);
   if (isBaseEmpty) {
     console.warn(
       `generateUniqueLabel: "${baseLabel}" exists but is empty. Should be reused, not duplicated.`,
@@ -256,10 +267,7 @@ export function generateUniqueLabel(
     const numberedNote = existingNotes.find(
       (n) => n.label === `${baseLabel} ${counter}`,
     );
-    if (
-      numberedNote &&
-      (!numberedNote.content || numberedNote.content.trim() === "")
-    ) {
+    if (numberedNote && isNoteContentEmpty(numberedNote.content)) {
       console.warn(
         `generateUniqueLabel: "${baseLabel} ${counter}" exists but is empty. Should be reused, not duplicated.`,
       );

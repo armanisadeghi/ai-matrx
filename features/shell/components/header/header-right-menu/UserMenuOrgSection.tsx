@@ -30,7 +30,6 @@ export default function UserMenuOrgSection() {
       id="organization"
       icon="Building2"
       label="Organization"
-      defaultOpen
       iconClassName={promptForOrg ? "[&_svg]:text-red-500" : undefined}
     >
       {loading ? (

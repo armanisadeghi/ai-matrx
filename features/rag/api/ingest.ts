@@ -16,11 +16,7 @@
  * UI renders as a per-stage progress bar (fetch → extract → cleanup →
  * chunk → embed → upsert → complete). Cancelable via AbortController.
  */
-import {
-  buildHeaders,
-  postJson,
-  resolveBaseUrl,
-} from "@/lib/python-client";
+import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
 
 export interface IngestResponse {
   source_kind: string;
@@ -49,15 +45,33 @@ export interface IngestRequestBody {
    * error event will still surface a clear failure in the toolbar.
    */
   source_kind:
-    | "cld_file"
-    | "note"
-    | "code_file"
-    | "transcript"
-    | "scraped"
-    | "research";
+    "cld_file" | "note" | "code_file" | "transcript" | "scraped" | "research";
   source_id: string;
   field_id?: string | null;
   force?: boolean;
+}
+
+/**
+ * Non-streaming ingest for an arbitrary source kind. The generic primitive —
+ * `ingestFile` below is a thin `cld_file`-scoped convenience wrapper around
+ * this. Any editor (notes, code files, agent apps) that wants "Process for
+ * RAG" without the per-stage progress UI can call this directly.
+ */
+export async function ingestSource(
+  sourceKind: IngestRequestBody["source_kind"],
+  sourceId: string,
+  opts: { force?: boolean; signal?: AbortSignal } = {},
+): Promise<IngestResponse> {
+  const { data } = await postJson<IngestResponse, IngestRequestBody>(
+    `/rag/ingest`,
+    {
+      source_kind: sourceKind,
+      source_id: sourceId,
+      force: opts.force ?? false,
+    },
+    { signal: opts.signal },
+  );
+  return data;
 }
 
 /** Non-streaming ingest. Resolves with the final `IngestResponse`. */
@@ -65,16 +79,7 @@ export async function ingestFile(
   fileId: string,
   opts: { force?: boolean; signal?: AbortSignal } = {},
 ): Promise<IngestResponse> {
-  const { data } = await postJson<IngestResponse, IngestRequestBody>(
-    `/rag/ingest`,
-    {
-      source_kind: "cld_file",
-      source_id: fileId,
-      force: opts.force ?? false,
-    },
-    { signal: opts.signal },
-  );
-  return data;
+  return ingestSource("cld_file", fileId, opts);
 }
 
 // ---------------------------------------------------------------------------
@@ -91,13 +96,7 @@ export type IngestStreamEvent =
 
 export interface IngestProgress {
   stage:
-    | "fetch"
-    | "extract"
-    | "cleanup"
-    | "chunk"
-    | "embed"
-    | "upsert"
-    | "complete";
+    "fetch" | "extract" | "cleanup" | "chunk" | "embed" | "upsert" | "complete";
   current: number;
   total: number;
   message?: string;

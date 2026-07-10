@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Archive,
   CalendarClock,
+  HeartHandshake,
   Loader2,
   RefreshCw,
   Sparkles,
@@ -24,8 +25,15 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { planService } from "../../service/planService";
+import { studyService } from "../../service/studyService";
 import { collectPlanSummary } from "../collectSummary";
-import { buildPlan } from "../buildPlan";
+import { buildPlan, type PlanSummary } from "../buildPlan";
+import {
+  detectAbsence,
+  buildRecoveryDraft,
+  type AbsenceInfo,
+} from "../recovery";
+import { computePlanStaleness, type PlanStaleness } from "../staleness";
 import { usePlannerAgent } from "../usePlannerAgent";
 import { PlanAgenda } from "./PlanAgenda";
 import { PlanGenerateForm } from "./PlanGenerateForm";
@@ -42,6 +50,23 @@ function daysUntil(iso: string | null): number | null {
   return Math.round((target - today.getTime()) / MS_PER_DAY);
 }
 
+/** A warm, non-shaming one-liner describing the detected absence. */
+function absenceMessage(absence: AbsenceInfo): string {
+  const parts: string[] = [];
+  if (absence.daysSinceLastSession != null && absence.daysSinceLastSession >= 1) {
+    parts.push(
+      `It's been ${absence.daysSinceLastSession} day${absence.daysSinceLastSession === 1 ? "" : "s"} since your last study session`,
+    );
+  }
+  if (absence.overdueBlocks > 0) {
+    const lead = parts.length > 0 ? " and a few" : "A few";
+    parts.push(
+      `${lead} planned session${absence.overdueBlocks === 1 ? "" : "s"} slipped by`,
+    );
+  }
+  return parts.length > 0 ? `${parts.join("")}.` : "";
+}
+
 export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
   const [plan, setPlan] = useState<PlanWithDays | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +75,9 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
   const [busyBlockId, setBusyBlockId] = useState<string | null>(null);
   const [confirmNew, setConfirmNew] = useState(false);
   const [forceForm, setForceForm] = useState(false);
+  const [absence, setAbsence] = useState<AbsenceInfo | null>(null);
+  const [stale, setStale] = useState<PlanStaleness | null>(null);
+  const [liveSummary, setLiveSummary] = useState<PlanSummary | null>(null);
   const planner = usePlannerAgent();
 
   const load = async () => {
@@ -59,8 +87,38 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     if (res.error) {
       setError(res.error);
       setPlan(null);
+      setAbsence(null);
+      setStale(null);
+      setLiveSummary(null);
+      setLoading(false);
+      return;
+    }
+    const p = res.data;
+    setPlan(p);
+    if (p) {
+      // Read the live study snapshot + last-session time so we can detect a
+      // return-after-absence (recovery) or a materially-stale plan (adaptive
+      // re-plan trigger) — both off REAL performance data, not a guess.
+      const itemType =
+        (p.plan.config as { itemType?: string } | null)?.itemType ?? "fc_card";
+      const [summary, sessionsRes] = await Promise.all([
+        collectPlanSummary(itemType),
+        studyService.listSessions({ limit: 1 }),
+      ]);
+      const lastAt = sessionsRes.data?.[0]?.created_at
+        ? new Date(sessionsRes.data[0].created_at)
+        : null;
+      const now = new Date();
+      const abs = detectAbsence(p, lastAt, now);
+      setLiveSummary(summary);
+      setAbsence(abs);
+      // Absence takes priority over the staleness prompt (it's the stronger,
+      // more supportive affordance — never stack both).
+      setStale(abs ? null : computePlanStaleness(p.plan, summary, lastAt));
     } else {
-      setPlan(res.data);
+      setAbsence(null);
+      setStale(null);
+      setLiveSummary(null);
     }
     setLoading(false);
   };
@@ -126,6 +184,31 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
         return;
       }
       toast.success("Plan re-planned around your latest performance");
+      await load();
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  /**
+   * Recovery-after-absence: rebuild the remaining plan gently (deterministic —
+   * no agent), triaging the overdue backlog instead of guilt-walling the user.
+   */
+  const handleRecovery = async () => {
+    if (!plan) return;
+    setGenerating(true);
+    try {
+      const summary = liveSummary ?? (await collectPlanSummary(
+        (plan.plan.config as { itemType?: string } | null)?.itemType ??
+          "fc_card",
+      ));
+      const draft = buildRecoveryDraft(plan, summary, new Date());
+      const res = await planService.regeneratePlan(plan.plan.id, draft);
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("Welcome back — here's your recovery plan");
       await load();
     } finally {
       setGenerating(false);
@@ -290,6 +373,92 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
           </p>
         )}
       </header>
+
+      {absence && (
+        <section className="rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+              <HeartHandshake className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold text-foreground">
+                Welcome back — let&apos;s pick up where you left off
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {absenceMessage(absence)} No guilt, no wall of overdue cards — we&apos;ll
+                rebuild the rest of your plan with a lighter first day and put the
+                highest-value work first.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={generating}
+                  onClick={handleRecovery}
+                >
+                  {generating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <HeartHandshake className="h-3.5 w-3.5" />
+                  )}
+                  Build my recovery plan
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs text-muted-foreground"
+                  disabled={generating}
+                  onClick={() => setAbsence(null)}
+                >
+                  Not now
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!absence && stale && (
+        <section className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+              <RefreshCw className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold text-foreground">
+                Your plan is out of date
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {stale.reason}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={generating}
+                  onClick={handleReplan}
+                >
+                  {generating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  Re-plan now
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs text-muted-foreground"
+                  disabled={generating}
+                  onClick={() => setStale(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <PlanAgenda
         plan={plan}

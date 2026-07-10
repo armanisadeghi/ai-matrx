@@ -32,7 +32,12 @@ export type ExecutionMode = typeof EXECUTION_MODES[number];
  */
 const REALTIME_RUNTIMES: ReadonlySet<ExecutionMode> = new Set<ExecutionMode>([
   "browser-realtime",
-  // local-runtime will join this set in Phase 2 when matrx-local lands.
+  // NOTE: "local-runtime" (Phase 5, live) is a TURN-BASED transport — the
+  // Matrx Local engine's /ai surface speaks the same NDJSON stream contract
+  // as aidream, not the realtime voice transport. It deliberately stays out
+  // of this set; routing to the engine happens at the backend-resolution
+  // layer (resolve-base-url.ts "local-runtime" channel), keyed off the
+  // conversation's local-pc compute-target binding.
 ]);
 
 export interface PickRuntimeInput {

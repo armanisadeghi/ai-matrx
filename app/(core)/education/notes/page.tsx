@@ -1,9 +1,10 @@
+// /education/notes — Smart Notes home (list-first "savior" view).
 import type { Metadata } from "next";
-import { EduToolComingSoon } from "@/features/education/components/EduToolComingSoon";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { EduNotesHome } from "@/features/education/notes/EduNotesHome";
 
 export const metadata: Metadata = toolMetadata("notes");
 
 export default function NotesToolPage() {
-  return <EduToolComingSoon slug="notes" />;
+  return <EduNotesHome />;
 }

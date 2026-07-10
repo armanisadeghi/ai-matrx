@@ -1,4 +1,8 @@
+"use client";
+
+import { useRef } from "react";
 import { UserData } from "@/utils/userDataMapper";
+import { useResetMenuGroupsOnOpen } from "./useResetMenuGroupsOnOpen";
 import { OverlayMenuItem } from "./OverlayMenuItem";
 import { LinkMenuItem } from "./LinkMenuItem";
 import { AdminIndicatorMenuItem } from "./AdminIndicatorMenuItem";
@@ -23,6 +27,7 @@ const divider = (
 
 interface UserMenuPanelProps {
   userData: UserData;
+  menuCheckboxId?: string;
 }
 
 /**
@@ -31,9 +36,15 @@ interface UserMenuPanelProps {
  * component no longer carries a guest fallback — every reachable code path
  * has a real user.
  */
-export default function UserMenuPanel({ userData }: UserMenuPanelProps) {
+export default function UserMenuPanel({
+  userData,
+  menuCheckboxId = "shell-user-menu",
+}: UserMenuPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useResetMenuGroupsOnOpen(panelRef, menuCheckboxId);
+
   return (
-    <div className={USER_MENU_PANEL_CLASS}>
+    <div ref={panelRef} className={USER_MENU_PANEL_CLASS}>
       <UserProfileHeader userData={userData} />
 
       {divider}
@@ -42,12 +53,7 @@ export default function UserMenuPanel({ userData }: UserMenuPanelProps) {
 
       {divider}
 
-      <MenuGroup
-        id="quick"
-        icon="Rocket"
-        label="Quick Access"
-        defaultOpen={true}
-      >
+      <MenuGroup id="quick" icon="Rocket" label="Quick Access">
         {QUICK_ACCESS_ITEMS.map((item) => (
           <OverlayMenuItem key={item.overlayId} {...item} />
         ))}
@@ -68,7 +74,6 @@ export default function UserMenuPanel({ userData }: UserMenuPanelProps) {
             id="admin"
             icon="Shield"
             label="Admin"
-            defaultOpen={false}
             iconClassName="[&_svg]:text-amber-500"
           >
             <LinkMenuItem

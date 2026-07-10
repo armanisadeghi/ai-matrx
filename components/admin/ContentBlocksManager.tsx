@@ -73,7 +73,7 @@ import {
   CategoryWithSubcategories,
 } from "@/types/content-blocks-db";
 import { createClient } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/MarkdownStream";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
@@ -552,7 +552,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
     try {
       const supabase = createClient();
 
-      const organizationId = await ensureOrgId(undefined);
+      // Admin-authored blocks are GLOBAL platform-library content → system org
+      // (the create form has no per-scope option; global content lives here).
+      const organizationId = await resolveSystemOrgId();
       const { error } = await supabase.from("content_blocks").insert([
         {
           block_id: createFormData.block_id ?? "",
@@ -720,7 +722,8 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             color: finalColor,
             position: maxSortOrder + 1,
             metadata: { is_active: true, legacy_table: "shortcut_categories" },
-            organization_id: await ensureOrgId(undefined),
+            // Global platform-library category → system org.
+            organization_id: await resolveSystemOrgId(),
           },
         ])
         .select()

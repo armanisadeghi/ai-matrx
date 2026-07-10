@@ -7,12 +7,19 @@ import { useState, useCallback, useRef } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { removeInstanceTab } from "../redux/slice";
 import { deleteNote, restoreNote } from "../redux/thunks";
+import { isNoteContentEmpty } from "../utils/noteUtils";
 import { toast } from "@/lib/toast-service";
 
 interface UseNoteDeleteOptions {
   instanceId: string;
   noteId: string;
   noteLabel?: string;
+  /**
+   * Current note content. When empty (or whitespace-only), `requestDelete`
+   * skips the confirmation dialog entirely and deletes immediately — an
+   * empty note has nothing worth confirming the loss of.
+   */
+  content?: string | null;
   /** Close the tab after delete (desktop). Set false for mobile where navigation handles it. */
   closeTab?: boolean;
   /** Callback after delete completes (e.g., navigate back on mobile) */
@@ -23,6 +30,7 @@ export function useNoteDelete({
   instanceId,
   noteId,
   noteLabel,
+  content,
   closeTab = true,
   onDeleted,
 }: UseNoteDeleteOptions) {
@@ -30,14 +38,6 @@ export function useNoteDelete({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const requestDelete = useCallback(() => {
-    setConfirmOpen(true);
-  }, []);
-
-  const cancelDelete = useCallback(() => {
-    setConfirmOpen(false);
-  }, []);
 
   const confirmDelete = useCallback(async () => {
     setConfirmOpen(false);
@@ -74,6 +74,18 @@ export function useNoteDelete({
       setIsDeleting(false);
     }
   }, [dispatch, instanceId, noteId, noteLabel, closeTab, onDeleted]);
+
+  const requestDelete = useCallback(() => {
+    if (isNoteContentEmpty(content)) {
+      void confirmDelete();
+      return;
+    }
+    setConfirmOpen(true);
+  }, [content, confirmDelete]);
+
+  const cancelDelete = useCallback(() => {
+    setConfirmOpen(false);
+  }, []);
 
   return {
     confirmOpen,

@@ -16,11 +16,14 @@ import type { ConvertGenerator, TargetKind } from "../types";
 import { deckGenerator } from "./deck";
 import { summaryGenerator } from "./summary";
 import { mindMapGenerator } from "./mindMap";
+import { notesGenerator } from "@/features/education/notes/notesGenerator";
 
 // ── Live generators ────────────────────────────────────────────────────────
 registerGenerator(deckGenerator);
 registerGenerator(summaryGenerator);
 registerGenerator(mindMapGenerator);
+// notes (P4 Smart Notes) → a real platform note. Owned by features/education/notes.
+registerGenerator(notesGenerator);
 
 // ── Progressive placeholders (register when the owning project lands) ────────
 function placeholder(
@@ -41,4 +44,3 @@ function placeholder(
 registerGenerator(placeholder("audio", "Audio overview", "P3"));
 registerGenerator(placeholder("quiz", "Quiz", "P1"));
 registerGenerator(placeholder("practice_test", "Practice test", "P1"));
-registerGenerator(placeholder("notes", "Study notes", "P4"));

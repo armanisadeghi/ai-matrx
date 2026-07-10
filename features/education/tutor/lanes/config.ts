@@ -1,4 +1,4 @@
-// features/flashcards/data/tutor/config.ts
+// features/education/tutor/lanes/config.ts
 //
 // Phase 4 (Flashcards Competitive Parity Push) — mode-agnostic config for the
 // TWO optional AI-tutor lanes usable by ANY study surface (classic set study,
@@ -14,7 +14,7 @@
 // test agent) — same mechanism as Fast Fire's config, distinct keys so the
 // two don't collide.
 
-import { FC_AGENTS } from "../agents";
+import { FC_AGENTS } from "@/features/flashcards/data/agents";
 
 const STORAGE_KEYS = {
   help: "flashcards.tutor.agent.help_live",

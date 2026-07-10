@@ -107,7 +107,10 @@ export const syncCanvasItemContextFromAgentThunk = createAsyncThunk<
   ThunkApi
 >(
   "instanceContext/syncCanvasItemFromAgent",
-  async ({ conversationId, artifactId }, { dispatch, getState, rejectWithValue }) => {
+  async (
+    { conversationId, artifactId },
+    { dispatch, getState, rejectWithValue },
+  ) => {
     if (!isMaterializedArtifactId(artifactId)) {
       return rejectWithValue({ message: "invalid artifact id" });
     }
@@ -116,7 +119,10 @@ export const syncCanvasItemContextFromAgentThunk = createAsyncThunk<
     const history = await canvasArtifactService.getVersionHistory(artifactId);
     const latest =
       history.length > 0
-        ? history.reduce((max, r) => (r.version > max.version ? r : max), history[0]!)
+        ? history.reduce(
+            (max, r) => (r.version > max.version ? r : max),
+            history[0]!,
+          )
         : await canvasArtifactService.getById(artifactId);
 
     if (!latest) {

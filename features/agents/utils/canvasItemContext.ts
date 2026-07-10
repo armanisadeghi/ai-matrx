@@ -43,7 +43,9 @@ const DESCRIPTION =
   "key (the artifact UUID). Apply every change with ctx_patch — edits save as " +
   "a new version of the same artifact. Do NOT recreate it; extend or edit it.";
 
-export function isCanvasItemContextKey(key: string | null | undefined): boolean {
+export function isCanvasItemContextKey(
+  key: string | null | undefined,
+): boolean {
   return isMaterializedArtifactId(key);
 }
 

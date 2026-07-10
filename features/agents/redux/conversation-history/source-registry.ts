@@ -33,8 +33,10 @@ import {
   Image,
   MessageSquare,
   Mic,
+  PanelTop,
   PencilRuler,
   Play,
+  Puzzle,
   Server,
   StickyNote,
   Tag,
@@ -208,6 +210,11 @@ export const FEATURE_META: Record<string, SourceMeta> = {
 
   // Other interactive surfaces
   notes: { label: "Notes", icon: StickyNote },
+  "cms-hub": { label: "CMS", icon: PanelTop },
+  "cms-site": { label: "CMS Site", icon: PanelTop },
+  "cms-page": { label: "CMS Page Editor", icon: PanelTop },
+  "cms-component": { label: "CMS Component Editor", icon: Puzzle },
+  "html-page": { label: "HTML Page Editor", icon: PanelTop },
   research: { label: "Research", icon: Globe },
   dictionary: { label: "Dictionary", icon: Tag },
   "image-studio": { label: "Image Studio", icon: Image },

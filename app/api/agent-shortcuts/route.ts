@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 const SHORTCUT_FIELDS = [
   "id",
@@ -70,9 +71,10 @@ export async function GET(request: NextRequest) {
     let query = supabase.schema("agent").from("shortcut").select("*").is("deleted_at", null);
 
     if (scope === "global") {
+      // Global/platform content now lives in the system org (was NULL org).
       query = query
         .is("user_id", null)
-        .is("organization_id", null)
+        .eq("organization_id", await resolveSystemOrgId(supabase))
         .is("project_id", null)
         .is("task_id", null);
     } else if (scope === "user") {
@@ -169,10 +171,11 @@ export async function POST(request: NextRequest) {
     }
 
     const insertPayload = pickShortcutFields(body);
-    const scoped = applyScopeToInsertPayload({
+    const scoped = await applyScopeToInsertPayload({
       body,
       payload: insertPayload,
       userId: user.id,
+      client: supabase,
     });
     if (scoped instanceof NextResponse) return scoped;
 

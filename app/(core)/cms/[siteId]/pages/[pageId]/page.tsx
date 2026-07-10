@@ -7,10 +7,12 @@ import type { ClientPage } from "@/features/cms/types";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageEditor from "../../../../../../features/cms/components/PageEditor";
+import { useSiteContext } from "../../SiteLayoutClient";
 
 export default function EditPageRoute() {
   const { siteId, pageId } = useParams() as { siteId: string; pageId: string };
   const router = useRouter();
+  const { site, pages, components, refreshPages } = useSiteContext();
   const [page, setPage] = useState<ClientPage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,6 +41,7 @@ export default function EditPageRoute() {
     try {
       const updated = await CmsPageService.updatePage(id, updates);
       setPage(updated);
+      void refreshPages();
       return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save page");
@@ -57,6 +60,7 @@ export default function EditPageRoute() {
     try {
       const updated = await CmsPageService.saveDraft(id, draft);
       setPage(updated);
+      void refreshPages();
       return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save draft");
@@ -72,6 +76,7 @@ export default function EditPageRoute() {
     try {
       const updated = await CmsPageService.publishDraft(id);
       setPage(updated);
+      void refreshPages();
       return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish page");
@@ -86,6 +91,7 @@ export default function EditPageRoute() {
     try {
       await CmsPageService.discardDraft(id);
       await fetchPage();
+      void refreshPages();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to discard draft");
     } finally {
@@ -99,6 +105,7 @@ export default function EditPageRoute() {
     try {
       const updated = await CmsPageService.rollbackToVersion(id, versionNumber);
       setPage(updated);
+      void refreshPages();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rollback page");
     } finally {
@@ -144,6 +151,9 @@ export default function EditPageRoute() {
   return (
     <PageEditor
       siteId={siteId}
+      site={site}
+      pages={pages}
+      components={components}
       page={page}
       isSaving={isSaving}
       error={error}

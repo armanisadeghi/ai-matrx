@@ -1,4 +1,4 @@
-// features/flashcards/data/tutor/learnerContext.ts
+// features/education/tutor/lanes/learnerContext.ts
 //
 // Phase 4 — pure helpers that turn a study surface's already-loaded state
 // (cards, this-session results, mastery) into the REAL learner-context
@@ -8,8 +8,8 @@
 // per-card attempt history are fetched by the caller (studyService) since
 // they need I/O; this module only reshapes state already in memory.
 
-import type { CardWithDetails } from "../types";
-import type { ReviewResult } from "../../types";
+import type { CardWithDetails } from "@/features/flashcards/data/types";
+import type { ReviewResult } from "@/features/flashcards/types";
 import type { ItemMasteryRow } from "@/features/education/study/types";
 
 export interface RecentSessionContext {

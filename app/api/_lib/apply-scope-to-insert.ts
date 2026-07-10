@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 
 /**
  * Resolves `scope` + `scopeId` from a JSON request body into the four row-level
@@ -10,15 +13,24 @@ import { NextResponse } from "next/server";
  * needs to send it (and can't spoof it). For scoped inserts (organization /
  * project / task), `scopeId` on the body must be a non-empty string.
  *
- * Returns either a mutated `payload` with the correct FK set, or a
+ * `organization_id` is **NOT NULL** on all three tables, so it is ALWAYS
+ * resolved to a real org — never left null:
+ *  - global  → the system org (global/platform content)
+ *  - user    → the user's personal org
+ *  - org     → the given org scopeId
+ *  - project/task → the creator's personal org (the read filters by the
+ *    project_id/task_id FK, not by org)
+ *
+ * Returns either a mutated `payload` with the correct FKs set, or a
  * `NextResponse` with a 400 if the scope is malformed.
  */
-export function applyScopeToInsertPayload(args: {
+export async function applyScopeToInsertPayload(args: {
   body: Record<string, unknown>;
   payload: Record<string, unknown>;
   userId: string;
-}): NextResponse | Record<string, unknown> {
-  const { body, payload, userId } = args;
+  client: SupabaseClient;
+}): Promise<NextResponse | Record<string, unknown>> {
+  const { body, payload, userId, client } = args;
   const scope = typeof body.scope === "string" ? body.scope : null;
   const scopeId =
     typeof body.scopeId === "string" && body.scopeId.length > 0
@@ -32,11 +44,13 @@ export function applyScopeToInsertPayload(args: {
   payload.task_id = null;
 
   if (scope === null || scope === "global") {
+    payload.organization_id = await resolveSystemOrgId(client);
     return payload;
   }
 
   if (scope === "user") {
     payload.user_id = userId;
+    payload.organization_id = await ensureOrgIdServer(client, undefined);
     return payload;
   }
 
@@ -47,9 +61,13 @@ export function applyScopeToInsertPayload(args: {
         { status: 400 },
       );
     }
-    if (scope === "organization") payload.organization_id = scopeId;
-    else if (scope === "project") payload.project_id = scopeId;
-    else payload.task_id = scopeId;
+    if (scope === "organization") {
+      payload.organization_id = scopeId;
+    } else {
+      if (scope === "project") payload.project_id = scopeId;
+      else payload.task_id = scopeId;
+      payload.organization_id = await ensureOrgIdServer(client, undefined);
+    }
     return payload;
   }
 

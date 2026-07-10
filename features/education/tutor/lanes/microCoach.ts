@@ -1,4 +1,4 @@
-// features/flashcards/data/tutor/microCoach.ts
+// features/education/tutor/lanes/microCoach.ts
 //
 // Phase 4 stretch (Flashcards Competitive Parity Push) — a cheap/fast-model
 // per-card tip, surfaced right after grading (not just end-of-session). New
@@ -20,7 +20,7 @@ import {
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import type { ReviewResult } from "../../types";
+import type { ReviewResult } from "@/features/flashcards/types";
 import { getFcTutorAgentConfig } from "./config";
 
 export interface MicroCoachContext {

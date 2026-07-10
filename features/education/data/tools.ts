@@ -142,14 +142,15 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "Rich note editor with one-click conversion of any note/passage to flashcards, quiz, summary, or mind map.",
     icon: NotebookPen,
     letter: "Sn",
-    status: "coming-soon",
+    status: "live", // P4 — rich notes (thin skin over features/notes) + live lecture capture + one-click converter (note → deck/summary/mind_map) with note↔artifact lineage
     accessTier: "free",
     visionRef: "VISION §7 Note-Taking",
     capabilities: [
-      "Rich markdown/rich-text editor",
-      "One-click note → flashcards / quiz / summary / mind map",
-      "Live lecture transcription into the editor",
-      "Reuse features/notes primitives where possible",
+      "Rich markdown/rich-text editor (reuses the canonical notes editor + sharing)",
+      "One-click note → flashcards / summary / mind map (quiz/audio light up as P1/P3 register)",
+      "Live lecture capture — record → real-time transcription streamed into the editor",
+      "Every converted artifact links back to the note (visible lineage both directions)",
+      "Registers the converter `notes` target (source → structured, grounded study note)",
     ],
   },
   {

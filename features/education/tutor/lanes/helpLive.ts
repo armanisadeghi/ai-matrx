@@ -1,4 +1,4 @@
-// features/flashcards/data/tutor/helpLive.ts
+// features/education/tutor/lanes/helpLive.ts
 //
 // Phase 4 (Flashcards Competitive Parity Push) — the mode-agnostic "I'm
 // confused" live help lane (`fc_help_live`, AGENT_SPECS.md §6), generalized

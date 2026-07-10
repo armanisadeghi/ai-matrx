@@ -6,7 +6,7 @@
 // human-readable snapshot of who this learner is: what they've studied lately,
 // how well, what they're weak at, their streak, and their upcoming exams.
 //
-// This is the ONE cross-session assembler. `features/flashcards/data/tutor/
+// This is the ONE cross-session assembler. `features/education/tutor/lanes/
 // learnerContext.ts` reshapes only the CURRENT session's in-memory state; this
 // module queries the spine across days/weeks. The tutor conversation injects
 // `summaryText` into the request `context` channel every turn so the model can

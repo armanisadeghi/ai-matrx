@@ -1,7 +1,7 @@
 // features/flashcards/fast-fire/agents/helpLive.thunk.ts
 //
 // Fast Fire's thin wrapper over the generalized tutor lane
-// (`features/flashcards/data/tutor/helpLive.ts`, Phase 4 parity push). Builds
+// (`features/education/tutor/lanes/helpLive.ts`, Phase 4 parity push). Builds
 // REAL learner context from the drill's own Redux state — recent grades,
 // due count, and this card's attempt history — instead of the historical
 // `recent_correct: []` / `struggled_topics: []` stub. `timeOnCardMs` comes
@@ -17,8 +17,8 @@ import { studyService } from "@/features/education/study/service/studyService";
 import {
   helpLive as helpLiveCore,
   type HelpLiveResult,
-} from "../../data/tutor/helpLive";
-import { getFcTutorAgentConfig } from "../../data/tutor/config";
+} from "@/features/education/tutor/lanes/helpLive";
+import { getFcTutorAgentConfig } from "@/features/education/tutor/lanes/config";
 import {
   selectFastFireScoreboard,
   selectGradesInOrder,

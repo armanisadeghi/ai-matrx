@@ -83,6 +83,14 @@ export interface PlanInput {
   goalId?: string | null;
   /** Which study-spine item_type the plan schedules. Default 'fc_card'. */
   itemType?: string;
+  /**
+   * Anti-burnout re-entry ramp (recovery-after-absence). When set, the
+   * deterministic builder eases the first study days back in (a smaller first
+   * day, gentle second day) instead of dumping the whole overdue backlog on day
+   * one — the "welcome back, here's your recovery plan" shape. Only the
+   * heuristic builder honors it (recovery is deliberately deterministic).
+   */
+  reentry?: boolean;
 }
 
 /** A hydrated plan: the plan row + its days, each with its ordered blocks. */

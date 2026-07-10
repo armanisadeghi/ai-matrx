@@ -23,7 +23,7 @@ export function MenuGroup({
   id,
   icon,
   label,
-  defaultOpen = true,
+  defaultOpen = false,
   iconClassName,
   children,
 }: MenuGroupProps) {

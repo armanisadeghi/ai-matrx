@@ -65,9 +65,12 @@ export function CanvasPaneUserMenu() {
         />
         <div className="canvas-shell-user-menu-panel">
           {userData ? (
-            <UserMenuPanel userData={userData} />
+            <UserMenuPanel
+              userData={userData}
+              menuCheckboxId={CANVAS_SHELL_USER_MENU_ID}
+            />
           ) : (
-            <GuestUserMenuPanel />
+            <GuestUserMenuPanel menuCheckboxId={CANVAS_SHELL_USER_MENU_ID} />
           )}
         </div>
       </div>

@@ -9,12 +9,12 @@
 // Grading (`fc_grade_spoken`) is Fast-Fire-only, so it keeps its own
 // localStorage override here. Help + review are now MODE-AGNOSTIC (Phase 4
 // parity push generalized them to every study surface) — this module
-// delegates those two to the shared `features/flashcards/data/tutor/config.ts`
+// delegates those two to the shared `features/education/tutor/lanes/config.ts`
 // so there is exactly ONE override per lane, not a FastFire-local one that
 // could silently diverge from what every other surface reads.
 
 import { FC_AGENTS } from "@/features/flashcards/data/agents";
-import { getFcTutorAgentConfig } from "@/features/flashcards/data/tutor/config";
+import { getFcTutorAgentConfig } from "@/features/education/tutor/lanes/config";
 
 const STORAGE_KEYS = {
   grader: "fastfire.agent.grade_spoken",

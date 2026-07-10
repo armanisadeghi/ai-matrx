@@ -1,7 +1,7 @@
 // features/flashcards/fast-fire/agents/reviewSession.thunk.ts
 //
 // Fast Fire's thin wrapper over the generalized end-of-session review
-// (`features/flashcards/data/tutor/reviewSession.ts`, Phase 4 parity push).
+// (`features/education/tutor/lanes/reviewSession.ts`, Phase 4 parity push).
 // Builds the `attempts`/`aggregate` shape from Fast Fire's OWN grade state
 // (it has real per-card `transcript`/`score`, unlike the generic study spine
 // drivers) and folds the result into the Fast Fire Redux slice for its own
@@ -9,7 +9,7 @@
 // persistence the generalized core already does.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { reviewSession as reviewSessionCore } from "../../data/tutor/reviewSession";
+import { reviewSession as reviewSessionCore } from "@/features/education/tutor/lanes/reviewSession";
 import { setSessionReview } from "../redux/fastFireSlice";
 import {
   selectGradesInOrder,

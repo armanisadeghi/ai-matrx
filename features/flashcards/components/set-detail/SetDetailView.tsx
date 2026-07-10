@@ -49,6 +49,7 @@ import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDev
 import { downloadSetCsv } from "../../utils/importExportCsv";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
+import { EnhanceSetDialog } from "./EnhanceSetDialog";
 
 /** Phase 1B — the extra study modes on the spine, alongside classic Study. */
 const OTHER_STUDY_MODES = [
@@ -119,6 +120,10 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [enhanceOpen, setEnhanceOpen] = useState(false);
+  // Bump to refetch (after enrich/deepen adds details/sub-cards). The fetch
+  // lives in the effect so no setState fires synchronously in the effect body.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,7 +143,7 @@ export function SetDetailView({ setId }: { setId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [setId]);
+  }, [setId, reloadKey]);
 
   const [pendingAction, setPendingAction] = useState<
     "study" | "learn" | "test" | "match" | "write" | "fastfire" | "edit" | "sessions" | null
@@ -388,18 +393,16 @@ export function SetDetailView({ setId }: { setId: string }) {
                   <Download className="mr-1.5 h-4 w-4" />
                   Export
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    toast.info("Enhance & expand", {
-                      description:
-                        "Agentic card enrichment and sub-card expansion are coming soon.",
-                    })
-                  }
-                >
-                  <Expand className="mr-1.5 h-4 w-4" />
-                  Enhance
-                </Button>
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setEnhanceOpen(true)}
+                    disabled={data.cards.length === 0}
+                  >
+                    <Expand className="mr-1.5 h-4 w-4" />
+                    Enhance
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -439,6 +442,16 @@ export function SetDetailView({ setId }: { setId: string }) {
                 </div>
               )}
             </div>
+
+            {/* "Make this deeper" — per-card enrich (detail layers) + deepen
+                (atomic sub-cards) via the live enrichCard/expandCard agents. */}
+            <EnhanceSetDialog
+              open={enhanceOpen}
+              onOpenChange={setEnhanceOpen}
+              setId={setId}
+              cards={data.cards}
+              onChanged={() => setReloadKey((k) => k + 1)}
+            />
           </>
         )}
       </div>

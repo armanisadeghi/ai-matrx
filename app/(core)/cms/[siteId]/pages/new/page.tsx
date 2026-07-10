@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CmsPageService } from "@/features/cms/services/cmsService";
 import PageEditor from "@/features/cms/components/PageEditor";
+import { useSiteContext } from "../../SiteLayoutClient";
 
 export default function NewPageRoute() {
   const { siteId } = useParams() as { siteId: string };
   const router = useRouter();
+  const { site, pages, components } = useSiteContext();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +46,9 @@ export default function NewPageRoute() {
   return (
     <PageEditor
       siteId={siteId}
+      site={site}
+      pages={pages}
+      components={components}
       page={null}
       isSaving={isSaving}
       error={error}

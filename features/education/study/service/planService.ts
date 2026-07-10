@@ -127,6 +127,31 @@ export const planService = {
     return this.getPlan(plan.id);
   },
 
+  /**
+   * The active plan's gentle daily review cap (anti-burnout), or null when there
+   * is no active plan / no cap set. A lightweight single-column read so the due
+   * queue (`useDueReview`) can honor the SAME cap the planner uses — the two
+   * anti-burnout limits must not drift independently. `undefined`-safe: any read
+   * error resolves to null (uncapped) rather than throwing into the study loop.
+   */
+  async getActiveDailyItemCap(): Promise<number | null> {
+    try {
+      const { data, error } = await EDU()
+        .from("study_plan")
+        .select("daily_item_cap")
+        .eq("status", "active")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error || !data) return null;
+      const cap = (data as { daily_item_cap: number | null }).daily_item_cap;
+      return typeof cap === "number" && cap > 0 ? cap : null;
+    } catch {
+      return null;
+    }
+  },
+
   /** One plan hydrated with its days + ordered blocks. */
   async getPlan(planId: string): Promise<StudyResult<PlanWithDays | null>> {
     try {

@@ -54,7 +54,10 @@ import {
   selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
-import { resolveBackendForConversation } from "./resolve-base-url";
+import {
+  resolveBackendForConversation,
+  warmLocalEngineForConversation,
+} from "./resolve-base-url";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import { selectEndpointOverrideConfig } from "@/lib/redux/slices/apiConfigSlice";
 import {
@@ -523,6 +526,12 @@ export const executeInstance = createAsyncThunk<
       // resolver picks the matching auth scheme automatically — Supabase
       // JWT for the global channel, orchestrator-minted bearer for the
       // sandbox proxy.
+      //
+      // Local-runtime pre-step: a conversation bound to the user's own
+      // computer ("local-pc" target) warms the localhost engine discovery so
+      // the sync resolver below can route the stream DIRECT to Matrx Local
+      // (127.0.0.1:22140–22159). No-op for every other binding.
+      await warmLocalEngineForConversation(state, conversationId);
       const backend = resolveBackendForConversation(state, conversationId);
       if (!backend) {
         throw new Error("No backend URL configured");

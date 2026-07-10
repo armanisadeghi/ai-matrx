@@ -1,4 +1,8 @@
+"use client";
+
+import { useRef } from "react";
 import { OverlayMenuItem } from "./OverlayMenuItem";
+import { useResetMenuGroupsOnOpen } from "./useResetMenuGroupsOnOpen";
 import { ThemeToggleMenuItem } from "./ThemeToggleMenuItem";
 import { MenuGroup } from "./MenuGroup";
 import { GuestHeroCard } from "./GuestHeroCard";
@@ -20,19 +24,23 @@ const divider = (
  * `AuthGateDialog` (via `GuestOverlayMenuItem`) and items that genuinely
  * require an account (Sign Out, Admin, Messages, Notifications) are absent.
  */
-export default function GuestUserMenuPanel() {
+interface GuestUserMenuPanelProps {
+  menuCheckboxId?: string;
+}
+
+export default function GuestUserMenuPanel({
+  menuCheckboxId = "shell-user-menu",
+}: GuestUserMenuPanelProps = {}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useResetMenuGroupsOnOpen(panelRef, menuCheckboxId);
+
   return (
-    <div className={USER_MENU_PANEL_CLASS}>
+    <div ref={panelRef} className={USER_MENU_PANEL_CLASS}>
       <GuestHeroCard />
 
       {divider}
 
-      <MenuGroup
-        id="quick"
-        icon="Rocket"
-        label="Quick Access"
-        defaultOpen={true}
-      >
+      <MenuGroup id="quick" icon="Rocket" label="Quick Access">
         {QUICK_ACCESS_ITEMS.map((item) =>
           item.requiresAuth ? (
             <GuestOverlayMenuItem

@@ -20,6 +20,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { planService } from "@/features/education/study/service/planService";
 import type { CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,

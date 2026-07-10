@@ -1,10 +1,18 @@
+// /education/notes/[id] — the Smart Notes editor + convert/capture surface.
+// Editable rich note (workbench-backed) with one-click conversion to study
+// artifacts. Access is gated client-side (P7 useAccess) inside the reused notes
+// editor + RLS; a view-only sharee sees a read-only editor + duplicate-to-edit.
 import type { Metadata } from "next";
-import { EduToolComingSoon } from "@/features/education/components/EduToolComingSoon";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { EduNoteWorkspace } from "@/features/education/notes/EduNoteWorkspace";
 
 export const metadata: Metadata = toolMetadata("notes");
 
-// Read a note — the shareable URL. Gated by the note's view access.
-export default function NoteReadPage() {
-  return <EduToolComingSoon slug="notes" surface={{ label: "Read a note", gate: "view" }} />;
+export default async function NoteReadPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <EduNoteWorkspace noteId={id} />;
 }

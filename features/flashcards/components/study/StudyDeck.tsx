@@ -53,17 +53,17 @@ import { RefusalNotice } from "@/features/education/trust/components/RefusalNoti
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { FlashcardConfidenceRow } from "./FlashcardConfidenceRow";
 import { asConfidence, confidenceToResult, type Confidence } from "@/lib/srs/fsrs";
-import { helpLive, type HelpLiveResult } from "../../data/tutor/helpLive";
+import { helpLive, type HelpLiveResult } from "@/features/education/tutor/lanes/helpLive";
 import {
   reviewSession,
   type ReviewSessionResult,
-} from "../../data/tutor/reviewSession";
-import { microCoach } from "../../data/tutor/microCoach";
+} from "@/features/education/tutor/lanes/reviewSession";
+import { microCoach } from "@/features/education/tutor/lanes/microCoach";
 import {
   buildRecentSessionContext,
   buildReviewAggregate,
   buildReviewAttempts,
-} from "../../data/tutor/learnerContext";
+} from "@/features/education/tutor/lanes/learnerContext";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 
 const FC_CARD_ITEM_TYPE = "fc_card";

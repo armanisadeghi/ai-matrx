@@ -929,7 +929,11 @@ export async function processStream({
             console.warn(
               "[canvas-item] context_conflict — concurrent edit raced the agent; " +
                 "both versions are in artifact history",
-              { conversationId, artifactId: cd.key, baseVersion: cd.base_version },
+              {
+                conversationId,
+                artifactId: cd.key,
+                baseVersion: cd.base_version,
+              },
             );
             void dispatch(
               syncCanvasItemContextFromAgentThunk({
@@ -2000,7 +2004,8 @@ export async function processStream({
     // The wire type allows null durations; the profiler wants number|undefined.
     timing: completionStats?.timing_stats
       ? {
-          total_duration: completionStats.timing_stats.total_duration ?? undefined,
+          total_duration:
+            completionStats.timing_stats.total_duration ?? undefined,
           api_duration: completionStats.timing_stats.api_duration ?? undefined,
         }
       : undefined,

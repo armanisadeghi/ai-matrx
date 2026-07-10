@@ -678,5 +678,43 @@ Also listed in the `/code` Library panel under **HTML Pages** (adapter proxies `
 
 Only `html_content` / the live buffer drives the iframe. SEO metadata columns are not injected.
 
-**Last Updated:** 2026-07-09  
-**Version:** 2.2 (Management UI + /code library source + render preview)
+---
+
+## Agent surface (2026-07-10)
+
+`HtmlPageEditor` mounts the `matrx-user/html-page` Surface Values row (`ui_surface`, seeded via
+`migrations/cms_surfaces_seed.sql`) — the canonical v3 context menu on every editable region:
+
+- Meta description → `EditableContextMenu` + `ProTextarea`
+- HTML body (Monaco/`SmallCodeEditor`) → `EditableContextMenu` wraps the container
+- Preview iframe → `NonEditableContextMenu`
+- `extraSections`: Save, Copy Live URL, Open Live Page, Back to Published Pages — real handlers, see
+  `features/html-pages/agent-context/htmlPageExtraSections.ts`
+
+**`content`/`selection`/`text_before`/`text_after` are gated by `activeTab`** (mirrors `cms-page`'s
+`activeTabContent` in `buildCmsPageContextData.ts`) — `content` = `htmlContent` on the HTML tab,
+`metaDescription` on the Metadata tab, empty on Preview. Verified live 2026-07-10: right-clicking the
+description field previously leaked the full (13KB+) HTML document into `content` because the scope
+builder always read the meta-description textarea's selection against the HTML buffer; fixed in
+`buildHtmlPageContextData.ts` / `useHtmlPageSurfaceScope.ts`.
+
+**Known limitation — Monaco owns right-click on its own text.** `SmallCodeEditor`'s underlying Monaco
+instance stops the native `contextmenu` event before it reaches our `EditableContextMenu` wrapper, so
+right-clicking directly on a code line opens Monaco's built-in menu (Go to Symbol, Rename, Format,
+Cut/Copy/Paste), not the v3 agent menu. `Save`/menu actions bound to the wrapper still work via other
+entry points (the `extraSections` and the Metadata-tab menu). Fixing this would mean disabling
+Monaco's `contextmenu` option in the **shared** `SmallCodeEditor` component (`features/code-editor/`),
+which affects every other consumer — out of scope for this rollout; flagged for a follow-up if agent
+actions on the HTML tab's code itself become a priority.
+
+Framing value is `html_pages_structure` (`features/html-pages/utils/buildHtmlPagesStructureXml.ts`) —
+a flat list of sibling pages (from `useHtmlPagesManager()`), **not** the CMS `site_structure` tree;
+this is the other content system and never shares that shape. Agent-context builder:
+`features/html-pages/agent-context/buildHtmlPageContextData.ts`; scope hook:
+`features/html-pages/hooks/useHtmlPageSurfaceScope.ts`. See `features/cms/FEATURE.md` → "Agent
+surfaces (Surface Values)" for the full five-surface picture and `features/cms/SKILL.md` for the
+builder checklist.
+
+**Last Updated:** 2026-07-10  
+**Version:** 2.4 (Fixed `content` leaking full HTML doc into the Metadata-tab menu; documented Monaco
+context-menu limitation)

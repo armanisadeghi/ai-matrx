@@ -1,4 +1,4 @@
-// features/flashcards/data/tutor/reviewSession.ts
+// features/education/tutor/lanes/reviewSession.ts
 //
 // Phase 4 (Flashcards Competitive Parity Push) — the mode-agnostic
 // end-of-session "professor" review (`fc_review_batch`, AGENT_SPECS.md §7),

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import { Eye, Loader2 } from 'lucide-react';
-import { useNotesRedux } from '../../hooks/useNotesRedux';
-import { useNoteAccess } from '../../hooks/useNoteAccess';
-import { NoteEditorDock } from './NoteEditorDock';
-import { useNoteDelete } from '../../hooks/useNoteDelete';
-import { useToastManager } from '@/hooks/useToastManager';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { Eye, Loader2 } from "lucide-react";
+import { useNotesRedux } from "../../hooks/useNotesRedux";
+import { useNoteAccess } from "../../hooks/useNoteAccess";
+import { NoteEditorDock } from "./NoteEditorDock";
+import { useNoteDelete } from "../../hooks/useNoteDelete";
+import { useToastManager } from "@/hooks/useToastManager";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -17,13 +17,13 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from '@/components/ui/alert-dialog';
-import { RichDocument } from '@/features/rich-document/RichDocument';
-import type { ContentSource } from '@/features/rich-document/types';
-import type { Note } from '@/features/notes/types';
-import type { TuiEditorContentRef } from '@/components/mardown-display/chat-markdown/tui/TuiEditorContent';
+} from "@/components/ui/alert-dialog";
+import { RichDocument } from "@/features/rich-document/RichDocument";
+import type { ContentSource } from "@/features/rich-document/types";
+import type { Note } from "@/features/notes/types";
+import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 
-export type MobileEditorMode = 'plain' | 'wysiwyg' | 'preview';
+export type MobileEditorMode = "plain" | "wysiwyg" | "preview";
 
 /** State the editor exposes to MobileNotesView's header save button/dirty poll. */
 interface MobileNoteEditorWindowState {
@@ -42,7 +42,8 @@ declare global {
 
 // Heavy TUI editor — only loaded when needed
 const TuiEditorContent = dynamic(
-  () => import('@/components/mardown-display/chat-markdown/tui/TuiEditorContent'),
+  () =>
+    import("@/components/mardown-display/chat-markdown/tui/TuiEditorContent"),
   {
     ssr: false,
     loading: () => (
@@ -50,7 +51,7 @@ const TuiEditorContent = dynamic(
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     ),
-  }
+  },
 );
 
 interface MobileNoteEditorProps {
@@ -59,20 +60,25 @@ interface MobileNoteEditorProps {
   onBack: () => void;
 }
 
-export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNoteEditorProps) {
-  const { updateNote, deleteNote, copyNote, setActiveNoteDirty } = useNotesRedux();
-  const toast = useToastManager('notes');
+export default function MobileNoteEditor({
+  note,
+  editorMode,
+  onBack,
+}: MobileNoteEditorProps) {
+  const { updateNote, deleteNote, copyNote, setActiveNoteDirty } =
+    useNotesRedux();
+  const toast = useToastManager("notes");
 
   // A viewer-level sharee gets a read-only surface — their RLS-rejected
   // saves would otherwise silently discard every edit.
   const access = useNoteAccess(note.id);
   const readOnly = access.readOnly;
   const effectiveMode: MobileEditorMode =
-    readOnly && editorMode === 'wysiwyg' ? 'preview' : editorMode;
+    readOnly && editorMode === "wysiwyg" ? "preview" : editorMode;
 
-  const [localLabel, setLocalLabel] = useState(note.label || '');
-  const [localContent, setLocalContent] = useState(note.content || '');
-  const [localFolder, setLocalFolder] = useState(note.folder_name || 'Draft');
+  const [localLabel, setLocalLabel] = useState(note.label || "");
+  const [localContent, setLocalContent] = useState(note.content || "");
+  const [localFolder, setLocalFolder] = useState(note.folder_name || "Draft");
   const [localTags, setLocalTags] = useState<string[]>(note.tags || []);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -87,6 +93,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
     instanceId: "",
     noteId: note.id,
     noteLabel: localLabel || "Untitled Note",
+    content: localContent,
     closeTab: false,
     onDeleted: onBack,
   });
@@ -103,18 +110,18 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   // We compare local edits against THIS snapshot — not the live `note` prop —
   // so that realtime context updates don't reset isDirty to false mid-edit.
   const savedBaselineRef = useRef({
-    label: note.label || '',
-    content: note.content || '',
-    folder_name: note.folder_name || 'Draft',
+    label: note.label || "",
+    content: note.content || "",
+    folder_name: note.folder_name || "Draft",
     tags: JSON.stringify(note.tags || []),
   });
 
   // Sync when note switches (ID change only)
   useEffect(() => {
     const baseline = {
-      label: note.label || '',
-      content: note.content || '',
-      folder_name: note.folder_name || 'Draft',
+      label: note.label || "",
+      content: note.content || "",
+      folder_name: note.folder_name || "Draft",
       tags: JSON.stringify(note.tags || []),
     };
     savedBaselineRef.current = baseline;
@@ -128,7 +135,9 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   // Report dirty state to context so refreshNotes() never overwrites unsaved user input
   useEffect(() => {
     setActiveNoteDirty(isDirty);
-    return () => { setActiveNoteDirty(false); };
+    return () => {
+      setActiveNoteDirty(false);
+    };
   }, [isDirty, setActiveNoteDirty]);
 
   // Track dirty state against the saved baseline (not the live note prop)
@@ -148,12 +157,12 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   const growTextarea = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
   }, []);
 
   useEffect(() => {
-    if (editorMode === 'plain') growTextarea();
+    if (editorMode === "plain") growTextarea();
   }, [localContent, editorMode, growTextarea]);
 
   // Auto-save 2s after last change
@@ -162,12 +171,17 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
     autoSaveTimer.current = setTimeout(async () => {
       if (!isDirty || isSaving || autoSaveFailedRef.current) return;
       setIsSaving(true);
-      const label = localLabel.trim() || 'Untitled Note';
+      const label = localLabel.trim() || "Untitled Note";
       const content = localContent;
       const folder = localFolder;
       const tags = localTags;
       try {
-        await updateNote(note.id, { label, content, folder_name: folder, tags });
+        await updateNote(note.id, {
+          label,
+          content,
+          folder_name: folder,
+          tags,
+        });
         // Update baseline so dirty check doesn't flip back to true on next compare
         savedBaselineRef.current = {
           label,
@@ -185,11 +199,22 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
         setIsSaving(false);
       }
     }, 2000);
-  }, [isDirty, isSaving, note.id, localLabel, localContent, localFolder, localTags, updateNote]);
+  }, [
+    isDirty,
+    isSaving,
+    note.id,
+    localLabel,
+    localContent,
+    localFolder,
+    localTags,
+    updateNote,
+  ]);
 
   useEffect(() => {
     if (isDirty) scheduleAutoSave();
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
   }, [isDirty, scheduleAutoSave]);
 
   const handleSave = async () => {
@@ -199,11 +224,11 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
     try {
       // Capture latest TUI content if in rich mode
       let content = localContent;
-      if ((editorMode === 'wysiwyg') && tuiRef.current?.getCurrentMarkdown) {
+      if (editorMode === "wysiwyg" && tuiRef.current?.getCurrentMarkdown) {
         content = tuiRef.current.getCurrentMarkdown();
         setLocalContent(content);
       }
-      const label = localLabel.trim() || 'Untitled Note';
+      const label = localLabel.trim() || "Untitled Note";
       await updateNote(note.id, {
         label,
         content,
@@ -221,7 +246,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
       };
       setIsDirty(false);
     } catch {
-      toast.error('Failed to save note');
+      toast.error("Failed to save note");
     } finally {
       setIsSaving(false);
     }
@@ -231,33 +256,35 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   // We use a module-level ref pattern so the parent can read current values
   useEffect(() => {
     window.__mobileNoteEditorState = { isDirty, isSaving, handleSave };
-    return () => { delete window.__mobileNoteEditorState; };
+    return () => {
+      delete window.__mobileNoteEditorState;
+    };
   });
-
 
   const handleCopy = async () => {
     try {
       await copyNote(note.id);
-      toast.success('Note duplicated');
+      toast.success("Note duplicated");
     } catch {
-      toast.error('Failed to duplicate note');
+      toast.error("Failed to duplicate note");
     }
   };
 
   const handleExport = () => {
-    const content = (editorMode === 'wysiwyg' && tuiRef.current?.getCurrentMarkdown)
-      ? tuiRef.current.getCurrentMarkdown()
-      : localContent;
-    const blob = new Blob([content], { type: 'text/markdown' });
+    const content =
+      editorMode === "wysiwyg" && tuiRef.current?.getCurrentMarkdown
+        ? tuiRef.current.getCurrentMarkdown()
+        : localContent;
+    const blob = new Blob([content], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${localLabel || 'note'}.md`;
+    a.download = `${localLabel || "note"}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('Exported');
+    toast.success("Exported");
   };
 
   return (
@@ -268,28 +295,30 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
           <Eye className="w-3.5 h-3.5 shrink-0" />
           <span className="text-xs truncate">
             Read-only — shared with view access
-            {access.ownerEmail ? ` by ${access.ownerEmail}` : ''}.
+            {access.ownerEmail ? ` by ${access.ownerEmail}` : ""}.
           </span>
         </div>
       )}
       {/* ── Scrollable content area ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32">
-
         {/* Plain text */}
-        {effectiveMode === 'plain' && (
+        {effectiveMode === "plain" && (
           <textarea
             ref={textareaRef}
             value={localContent}
             readOnly={readOnly}
-            onChange={e => { setLocalContent(e.target.value); growTextarea(); }}
+            onChange={(e) => {
+              setLocalContent(e.target.value);
+              growTextarea();
+            }}
             placeholder="Start writing..."
             className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none border-none resize-none leading-relaxed"
-            style={{ fontSize: '16px', minHeight: 'calc(100dvh - 200px)' }}
+            style={{ fontSize: "16px", minHeight: "calc(100dvh - 200px)" }}
           />
         )}
 
         {/* Rich (WYSIWYG) */}
-        {effectiveMode === 'wysiwyg' && (
+        {effectiveMode === "wysiwyg" && (
           <div className="min-h-[calc(100dvh-200px)]">
             <TuiEditorContent
               ref={tuiRef}
@@ -303,7 +332,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
         )}
 
         {/* Preview */}
-        {effectiveMode === 'preview' && (
+        {effectiveMode === "preview" && (
           <div className="min-h-[calc(100dvh-200px)] prose prose-sm dark:prose-invert max-w-none">
             {localContent.trim() ? (
               <RichDocument
@@ -313,7 +342,9 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
                 actionsClassName="mb-2"
               />
             ) : (
-              <p className="text-muted-foreground text-sm">Nothing to preview yet.</p>
+              <p className="text-muted-foreground text-sm">
+                Nothing to preview yet.
+              </p>
             )}
           </div>
         )}
@@ -336,17 +367,26 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
       />
 
       {/* Delete confirmation */}
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={(open) => { if (!open) cancelDelete(); }}>
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open) cancelDelete();
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete note?</AlertDialogTitle>
             <AlertDialogDescription>
-              &ldquo;{localLabel || 'Untitled Note'}&rdquo; will be moved to trash. You can restore it later.
+              &ldquo;{localLabel || "Untitled Note"}&rdquo; will be moved to
+              trash. You can restore it later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
