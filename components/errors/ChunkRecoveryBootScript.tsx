@@ -1,8 +1,14 @@
 // Inline <script> that runs before React hydrates. Last line of defense for
-// stale tabs after a Vercel deploy: if a chunk request 404s during initial
+// stale tabs after a Vercel deploy: if a chunk request 404s during the INITIAL
 // page load — before any React error boundary mounts — this listener catches
-// the global error event and reloads the page. Once React boots, the
-// app-level boundaries (global-error.tsx + ErrorBoundaryView) take over.
+// the global error event and reloads the page. At that moment nothing the user
+// typed exists yet, so a reload is lossless.
+//
+// CRITICAL: once React boots (NewVersionWatcher sets __MATRX_APP_BOOTED__),
+// this script must NEVER reload — a mid-session reload destroys unsaved work
+// (this exact bug once wiped a user's page while they opened a context menu).
+// Post-boot it only dispatches the "matrx:stale-chunk" event; NewVersionWatcher
+// turns that into a consent-based "Refresh / Not now" toast.
 //
 // Why inline / pre-hydration: ChunkLoadError can fire during the very first
 // chunk fetch, which means React itself hasn't mounted yet, so no `error.tsx`
@@ -10,7 +16,8 @@
 // event is the only hook available at that moment.
 //
 // This script is intentionally tiny and dependency-free — it must never
-// itself depend on a chunk.
+// itself depend on a chunk. Keep the flag/event names in sync with
+// chunk-load-recovery.ts (APP_BOOTED_FLAG / STALE_CHUNK_EVENT).
 
 const SCRIPT = `(function(){
   try {
@@ -25,8 +32,19 @@ const SCRIPT = `(function(){
         || /Failed to fetch dynamically imported module/i.test(msg)
         || /Importing a module script failed/i.test(msg);
     }
-    function maybeReload(msg) {
+    function onChunkErr(msg) {
       if (!isChunkErr(msg)) return;
+      if (window.__MATRX_APP_BOOTED__) {
+        // App is live — the user may have unsaved work. NEVER reload here.
+        try {
+          window.dispatchEvent(new CustomEvent("matrx:stale-chunk", {
+            detail: { message: String(msg) }
+          }));
+        } catch (e) {}
+        return;
+      }
+      // Pre-hydration: nothing rendered yet, reload is lossless. Loop-guarded
+      // so a genuinely broken new build doesn't trap the user in reloads.
       try {
         var last = Number(sessionStorage.getItem(KEY) || 0);
         var now = Date.now();
@@ -38,14 +56,14 @@ const SCRIPT = `(function(){
     window.addEventListener("error", function(ev) {
       var msg = ev && (ev.message || (ev.error && ev.error.message));
       var name = ev && ev.error && ev.error.name;
-      maybeReload(name === "ChunkLoadError" ? name : msg);
+      onChunkErr(name === "ChunkLoadError" ? name : msg);
     });
     window.addEventListener("unhandledrejection", function(ev) {
       var r = ev && ev.reason;
       if (!r) return;
       var msg = typeof r === "string" ? r : (r.message || "");
       var name = r && r.name;
-      maybeReload(name === "ChunkLoadError" ? name : msg);
+      onChunkErr(name === "ChunkLoadError" ? name : msg);
     });
   } catch (e) { /* never break the page */ }
 })();`;

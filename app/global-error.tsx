@@ -1,9 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import {
-  attemptChunkReload,
-  isChunkLoadError,
-} from "@/components/errors/chunk-load-recovery";
+import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 
 // Terminal component for the "Fire Arman" option
 const TerminalOutput = () => {
@@ -76,13 +73,7 @@ export default function GlobalError({
 
   useEffect(() => {
     console.error("[GlobalError]", error);
-    // Stale-tab recovery: a Vercel deploy invalidated the chunks this tab
-    // is referencing. Try a one-shot hard reload to pick up the new build.
-    // attemptChunkReload is no-op'd if it already fired in the last 30s.
-    if (isStaleChunk) {
-      attemptChunkReload(error);
-    }
-  }, [error, isStaleChunk]);
+  }, [error]);
 
   // Function to handle refreshing the page
   const refreshPage = () => {
@@ -104,19 +95,28 @@ export default function GlobalError({
     window.location.href = "/";
   };
 
-  // Stale-tab UI: render a calm "Updating…" screen instead of the
-  // "Fire Arman" joke while the auto-reload kicks in. The reload is
-  // already scheduled in the effect above; this just avoids the flash.
+  // Stale-tab UI: a new deploy invalidated this tab's chunks. Render a calm
+  // prompt instead of the "Fire Arman" joke — and NEVER auto-reload: the user
+  // may have unsaved work elsewhere on the page. They refresh on their terms.
   if (isStaleChunk) {
     return (
       <html>
         <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-dvh flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="inline-block w-8 h-8 border-2 border-gray-300 dark:border-gray-700 border-t-blue-500 rounded-full animate-spin mb-4" />
-            <h2 className="text-lg font-semibold mb-1">Updating to the latest version…</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              A new build was deployed. Reloading this tab.
+          <div className="text-center max-w-md">
+            <h2 className="text-lg font-semibold mb-1">
+              This page is out of date
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              A new version of the app was deployed while this tab was open,
+              and part of this page could not load. Refresh when you&apos;re
+              ready.
             </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+            >
+              Refresh
+            </button>
           </div>
         </body>
       </html>

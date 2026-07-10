@@ -76,11 +76,15 @@ const nextConfig = {
     //      (see features/overlays/boundary/lazyOverlay.tsx ChunkLoadError timeout).
     //
     // With no `deploymentId`, nothing carries `?dpl=`, every URL is consistent,
-    // and lazy chunks resolve. Stale-tab protection is better handled by Vercel's
-    // native Skew Protection (Project Settings → Advanced) which does not depend
-    // on this framework query-param path. Re-introduce `deploymentId` ONLY with
-    // `process.env.VERCEL_DEPLOYMENT_ID` AND once Turbopack threads `dpl` through
-    // its runtime chunk loader — until then the query-param approach is broken.
+    // and lazy chunks resolve. Stale-tab protection is instead handled by:
+    //   1. Vercel's NATIVE Skew Protection (Project Settings → Advanced —
+    //      enable there, not here; it doesn't depend on this query-param path).
+    //   2. The consent-based new-version prompt + stale-chunk handling in
+    //      components/errors/ (see components/errors/FEATURE.md — NEVER
+    //      auto-reload a live session).
+    // Re-introduce `deploymentId` ONLY with `process.env.VERCEL_DEPLOYMENT_ID`
+    // AND once Turbopack threads `dpl` through its runtime chunk loader —
+    // until then the query-param approach is broken.
     // deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
 
     // Build performance optimizations

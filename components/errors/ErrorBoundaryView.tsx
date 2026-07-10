@@ -22,10 +22,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin, selectUser } from "@/lib/redux/slices/userSlice";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import {
-  attemptChunkReload,
-  isChunkLoadError,
-} from "@/components/errors/chunk-load-recovery";
+import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 
 // ---------------------------------------------------------------------------
@@ -383,10 +380,7 @@ export function ErrorBoundaryView({
 
   useEffect(() => {
     console.error(`[ErrorBoundary${context ? ` — ${context}` : ""}]`, error);
-    // Stale-tab recovery — see chunk-load-recovery.ts for the why.
-    if (isStaleChunk) {
-      attemptChunkReload(error);
-    } else {
+    if (!isStaleChunk) {
       // Feed the systemwide Error Inspector. One place here covers every
       // route-level error.tsx (they all delegate to ErrorBoundaryView).
       captureReactRenderError(error, {
@@ -397,17 +391,33 @@ export function ErrorBoundaryView({
     }
   }, [error, context, isStaleChunk]);
 
+  // Stale chunk after a deploy: the user refreshes on THEIR terms — an
+  // auto-reload here once destroyed a page full of unsaved work. Other parts
+  // of the app (and other tabs) may still hold state; never reload for them.
   if (isStaleChunk) {
     return (
       <div className="h-full flex items-center justify-center py-12 px-4">
-        <div className="text-center">
-          <RefreshCw className="h-6 w-6 mx-auto mb-3 text-muted-foreground animate-spin" />
+        <div className="text-center max-w-md">
+          <RefreshCw className="h-6 w-6 mx-auto mb-3 text-muted-foreground" />
           <h2 className="text-base font-semibold mb-1">
-            Updating to the latest version…
+            This page is out of date
           </h2>
-          <p className="text-sm text-muted-foreground">
-            A new build was deployed. Reloading this tab.
+          <p className="text-sm text-muted-foreground mb-4">
+            A new version of the app was deployed while this tab was open, and
+            part of this page could not load. Refresh when you&apos;re ready.
           </p>
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              onClick={() => window.location.reload()}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+            <Button variant="outline" onClick={reset}>
+              Try again
+            </Button>
+          </div>
         </div>
       </div>
     );

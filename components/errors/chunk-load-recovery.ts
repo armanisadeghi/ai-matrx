@@ -1,18 +1,23 @@
-// Chunk-error auto-recovery for stale tabs after a Vercel deploy.
+// Stale-chunk detection after a Vercel deploy.
 //
-// When Vercel ships a new build, content-hashed chunk filenames change and
-// the old ones are eventually purged from the CDN. Browser tabs left open
-// across the deploy then 404 on those chunks and surface a `ChunkLoadError`.
-// Vercel Skew Protection (configured via `deploymentId` in next.config.js)
-// solves this for tabs that opened during the protection window, but for
-// tabs older than the window — or for any chunk request that escapes the
-// protection — we still want to recover gracefully by reloading.
+// When Vercel ships a new build, content-hashed chunk filenames change and the
+// old ones are eventually purged from the CDN. Browser tabs left open across
+// the deploy then 404 on those chunks and surface a `ChunkLoadError`.
 //
-// The reload is gated by sessionStorage so we don't trap the user in a
-// reload loop if the new build itself is genuinely broken.
+// Policy (see components/errors/FEATURE.md — NEVER reintroduce auto-reload):
+//   - PRE-hydration (initial page load, no user state exists yet):
+//     ChunkRecoveryBootScript may hard-reload once, loop-guarded.
+//   - POST-hydration: we NEVER reload on the user's behalf — a reload destroys
+//     unsaved work. Instead we announce the stale chunk via a window event;
+//     NewVersionWatcher turns it into a "new version available — Refresh /
+//     Not now" toast, and error boundaries render a Refresh *button*.
 
-const RELOAD_FLAG_KEY = "chunk-load-recovery:last-reload";
-const RELOAD_LOOP_GUARD_MS = 30_000;
+/** Window event announcing a stale-chunk failure. Detail: { message: string }. */
+export const STALE_CHUNK_EVENT = "matrx:stale-chunk";
+
+/** Window flag set by NewVersionWatcher once React has booted. The boot
+ *  script checks it to decide reload (pre-boot) vs event (post-boot). */
+export const APP_BOOTED_FLAG = "__MATRX_APP_BOOTED__";
 
 export function isChunkLoadError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -29,31 +34,16 @@ export function isChunkLoadError(error: unknown): boolean {
 }
 
 /**
- * Reloads the page exactly once per ~30s window. Returns true if a reload
- * was triggered (caller can early-return), false if we suppressed it because
- * a reload already happened recently — in which case the caller should fall
- * through to the normal error UI.
+ * Announce a stale-chunk failure so NewVersionWatcher can offer the user a
+ * refresh. Never reloads. Safe to call unconditionally — no-ops unless the
+ * error is chunk-shaped.
  */
-export function attemptChunkReload(error: unknown): boolean {
-  if (typeof window === "undefined") return false;
-  if (!isChunkLoadError(error)) return false;
-
-  try {
-    const lastRaw = window.sessionStorage.getItem(RELOAD_FLAG_KEY);
-    const last = lastRaw ? Number(lastRaw) : 0;
-    const now = Date.now();
-    if (last && now - last < RELOAD_LOOP_GUARD_MS) {
-      // Already reloaded recently — the new build is also failing. Show the
-      // real error UI so the user (and admin debug panel) can see what's up.
-      return false;
-    }
-    window.sessionStorage.setItem(RELOAD_FLAG_KEY, String(now));
-  } catch {
-    // sessionStorage can throw in private mode / disabled storage — fall
-    // through and reload anyway. Worst case: a single extra reload.
-  }
-
-  // Hard reload (no cache) so we definitely pull the latest HTML + chunks.
-  window.location.reload();
-  return true;
+export function notifyStaleChunk(error: unknown): void {
+  if (typeof window === "undefined") return;
+  if (!isChunkLoadError(error)) return;
+  const message =
+    error instanceof Error ? error.message : String(error ?? "ChunkLoadError");
+  window.dispatchEvent(
+    new CustomEvent(STALE_CHUNK_EVENT, { detail: { message } }),
+  );
 }

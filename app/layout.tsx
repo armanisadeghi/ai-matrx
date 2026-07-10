@@ -11,6 +11,7 @@ import { inter, montserrat, openSans, roboto } from "@/styles/themes/fonts";
 import { SyncBootScript } from "@/lib/sync/components/SyncBootScript";
 import { syncPolicies } from "@/lib/sync/registry";
 import { ChunkRecoveryBootScript } from "@/components/errors/ChunkRecoveryBootScript";
+import { NewVersionWatcher } from "@/components/errors/NewVersionWatcher";
 
 export { metadata, viewport };
 
@@ -81,6 +82,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           {children}
           <Toaster />
           <Sonner />
+          {/* Consent-based new-version prompt + post-boot stale-chunk guard.
+                        Bakes THIS deployment's id in server-side so the client can
+                        compare against /api/version. Never auto-refreshes. */}
+          <NewVersionWatcher
+            deploymentId={process.env.VERCEL_DEPLOYMENT_ID ?? null}
+          />
         </Suspense>
         {/* Glass portal layer — lives outside all content stacking contexts.
                     NO position, NO z-index, NO transform, NO overflow, NO filter here — ever.
