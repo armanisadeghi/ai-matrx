@@ -262,6 +262,10 @@ export const fcService = {
           ...(c.metadata ?? {}),
           ...(c.trust ? { trust: c.trust } : {}),
         },
+        // Rich-variant payload (matching pairs, …) → the existing jsonb column.
+        ...(c.dynamic_content != null
+          ? { dynamic_content: c.dynamic_content as never }
+          : {}),
       }));
       const { data, error } = await EDU()
         .from("fc_card")
@@ -527,6 +531,7 @@ export const fcService = {
         | "topic"
         | "lesson"
         | "personal_notes"
+        | "dynamic_content"
       >
     >,
   ): Promise<FcResult<FcCardRow>> {

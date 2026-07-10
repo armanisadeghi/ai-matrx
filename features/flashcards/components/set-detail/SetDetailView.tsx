@@ -30,6 +30,7 @@ import {
   ListChecks,
   Grid3x3,
   PenLine,
+  Scissors,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,12 @@ import { useAccess, canEditAccess } from "@/utils/permissions";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { fcService } from "../../data/fcService";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
+import {
+  asCardKind,
+  CARD_KIND,
+  clozeFaces,
+  matchingPairs,
+} from "../../utils/cardVariants";
 import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
 import { downloadSetCsv } from "../../utils/importExportCsv";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
@@ -66,6 +73,9 @@ function CardPeek({ card, index }: { card: CardWithDetails; index: number }) {
   const hasHelper = card.details.some((d) => d.kind === "helper");
   const hasExample = card.details.some((d) => d.kind === "example");
   const hasAudio = card.details.some((d) => !!d.audio_file_id);
+  const kind = asCardKind(card.card_kind);
+  const pairs = kind === CARD_KIND.matching ? matchingPairs(card) : [];
+  const faces = kind === CARD_KIND.cloze ? clozeFaces(card.front) : null;
 
   return (
     <div className="flex flex-col rounded-lg border border-border bg-card p-3">
@@ -74,6 +84,18 @@ function CardPeek({ card, index }: { card: CardWithDetails; index: number }) {
           Card {index + 1}
         </span>
         <div className="flex items-center gap-1">
+          {kind === CARD_KIND.cloze && (
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-[10px] font-medium text-primary">
+              <Scissors className="h-2.5 w-2.5" />
+              Cloze
+            </span>
+          )}
+          {kind === CARD_KIND.matching && (
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-[10px] font-medium text-primary">
+              <Grid3x3 className="h-2.5 w-2.5" />
+              Match · {pairs.length}
+            </span>
+          )}
           {hasHelper && (
             <span
               title="Has helper detail"
@@ -102,14 +124,36 @@ function CardPeek({ card, index }: { card: CardWithDetails; index: number }) {
           )}
         </div>
       </div>
-      <p className="mt-1.5 line-clamp-3 text-sm font-medium text-foreground">
-        {card.front}
-      </p>
-      <div className="mt-2 border-t border-border pt-2">
-        <p className="line-clamp-3 text-xs text-muted-foreground">
-          {card.back}
-        </p>
-      </div>
+      {kind === CARD_KIND.matching ? (
+        <div className="mt-1.5 space-y-0.5">
+          {card.front.trim() && (
+            <p className="line-clamp-2 text-sm font-medium text-foreground">
+              {card.front}
+            </p>
+          )}
+          {pairs.slice(0, 3).map((p, i) => (
+            <p key={i} className="line-clamp-1 text-xs text-muted-foreground">
+              {p.left} <span className="text-border">↔</span> {p.right}
+            </p>
+          ))}
+          {pairs.length > 3 && (
+            <p className="text-[10px] text-muted-foreground/70">
+              +{pairs.length - 3} more
+            </p>
+          )}
+        </div>
+      ) : (
+        <>
+          <p className="mt-1.5 line-clamp-3 text-sm font-medium text-foreground">
+            {faces ? faces.front.replace(/\*\*/g, "") : card.front}
+          </p>
+          <div className="mt-2 border-t border-border pt-2">
+            <p className="line-clamp-3 text-xs text-muted-foreground">
+              {faces ? faces.back.replace(/\*\*/g, "") : card.back}
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -52,7 +52,14 @@ import { SourceCitations } from "@/features/education/trust/components/SourceCit
 import { RefusalNotice } from "@/features/education/trust/components/RefusalNotice";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { FlashcardConfidenceRow } from "./FlashcardConfidenceRow";
+import { MatchingCardPlayer } from "./MatchingCardPlayer";
 import { asConfidence, confidenceToResult, type Confidence } from "@/lib/srs/fsrs";
+import {
+  asCardKind,
+  CARD_KIND,
+  matchingPairs,
+  studyFaces,
+} from "../../utils/cardVariants";
 import { helpLive, type HelpLiveResult } from "@/features/education/tutor/lanes/helpLive";
 import {
   reviewSession,
@@ -314,7 +321,12 @@ export function StudyDeck(props: StudyDeckProps) {
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         prev();
-      } else if (!grading && useConfidence && /^[1-5]$/.test(e.key)) {
+      } else if (
+        !grading &&
+        currentKind !== CARD_KIND.matching &&
+        useConfidence &&
+        /^[1-5]$/.test(e.key)
+      ) {
         // 1–5 confidence taps — the confidence value drives both the FSRS
         // grade and the coarse result recorded to the ledger.
         e.preventDefault();
@@ -324,6 +336,7 @@ export function StudyDeck(props: StudyDeckProps) {
         }
       } else if (
         !grading &&
+        currentKind !== CARD_KIND.matching &&
         !useConfidence &&
         (e.key === "1" || e.key === "2" || e.key === "3")
       ) {
@@ -350,6 +363,7 @@ export function StudyDeck(props: StudyDeckProps) {
     grade,
     isMobile,
     useConfidence,
+    currentKind,
   ]);
 
   const restart = () => {
@@ -498,6 +512,11 @@ export function StudyDeck(props: StudyDeckProps) {
       ? Math.round(((currentIndex + 1) / cards.length) * 100)
       : 0;
 
+  // Card variant — matching branches to its own player; cloze/basic flip, with
+  // cloze rendering its blanked/revealed faces (studyFaces) instead of raw markup.
+  const currentKind = asCardKind(current.card_kind);
+  const cardFaces = studyFaces(current);
+
   return (
     <Shell>
       <div className="mb-4">
@@ -527,28 +546,44 @@ export function StudyDeck(props: StudyDeckProps) {
       </div>
 
       <div className="mx-auto max-w-2xl">
-        <FlashcardItem
-          key={`fc-card-${current.id}`}
-          front={current.front}
-          back={current.back}
-          index={currentIndex}
-          layoutMode="list"
-          flipped={isFlipped}
-          onFlipToggle={flip}
-          lastResult={resultsByCard[current.id] ?? null}
-          voiceTest={voiceTestForCard?.(current)}
-        />
-
-        {/* P0 Trust — once the answer is revealed, show where it came from:
-            citations (tap → exact passage), the confidence badge, and the
-            "Verify against source" action. Renders nothing for hand-made cards. */}
-        {isFlipped && (
-          <CardTrustFooter
-            trust={coerceTrustEnvelope(current.metadata)}
-            front={current.front}
-            back={current.back ?? ""}
-            className="mt-2"
+        {currentKind === CARD_KIND.matching ? (
+          // Matching variant — a tap-to-match mini-game that self-grades on
+          // completion through the deck's canonical grade path (no flip, no
+          // manual grade row).
+          <MatchingCardPlayer
+            key={`fc-match-${current.id}`}
+            cardId={current.id}
+            prompt={current.front}
+            pairs={matchingPairs(current)}
+            disabled={grading}
+            onComplete={(result) => handleGrade(result)}
           />
+        ) : (
+          <>
+            <FlashcardItem
+              key={`fc-card-${current.id}`}
+              front={cardFaces.front}
+              back={cardFaces.back}
+              index={currentIndex}
+              layoutMode="list"
+              flipped={isFlipped}
+              onFlipToggle={flip}
+              lastResult={resultsByCard[current.id] ?? null}
+              voiceTest={voiceTestForCard?.(current)}
+            />
+
+            {/* P0 Trust — once the answer is revealed, show where it came from:
+                citations (tap → exact passage), the confidence badge, and the
+                "Verify against source" action. Renders nothing for hand-made cards. */}
+            {isFlipped && (
+              <CardTrustFooter
+                trust={coerceTrustEnvelope(current.metadata)}
+                front={current.front}
+                back={current.back ?? ""}
+                className="mt-2"
+              />
+            )}
+          </>
         )}
 
         <div className="mt-2 flex flex-col gap-3">
@@ -576,7 +611,8 @@ export function StudyDeck(props: StudyDeckProps) {
             </Button>
           </div>
 
-          {useConfidence ? (
+          {/* Matching cards self-grade on completion — no manual grade row. */}
+          {currentKind === CARD_KIND.matching ? null : useConfidence ? (
             <div className="flex flex-col gap-1">
               <FlashcardConfidenceRow
                 onRate={(confidence) =>

@@ -47,6 +47,12 @@ export interface NewCardInput {
   personal_notes?: string | null;
   /** Extra card fields with no dedicated column (e.g. agent-emitted `tags`) → fc_card.metadata jsonb. */
   metadata?: Record<string, unknown>;
+  /**
+   * Structured payload for a rich card VARIANT (matching pairs, etc.) → the
+   * existing `fc_card.dynamic_content` jsonb column. Never a parallel table.
+   * See `features/flashcards/utils/cardVariants.ts` for the per-kind shapes.
+   */
+  dynamic_content?: Record<string, unknown> | null;
   /** Optional lineage: the source passage this card came from (§ from-source flow). */
   source?: { file_id: string; processed_document_id?: string; chunk_id?: string; page?: number };
   /**
