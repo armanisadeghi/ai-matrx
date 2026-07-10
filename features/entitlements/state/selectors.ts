@@ -57,10 +57,12 @@ function bindingWindow(windows: EntitlementWindow[]): EntitlementWindow | null {
 /**
  * The verdict for one capability, derived from the hydrated snapshot.
  *
- * The snapshot only carries usage for ENFORCED, metered capabilities. Absence =
- * unenforced or unlimited → allowed with no cap. Presence → the binding window
- * decides `allowed`. Cache one selector instance per capability for referential
- * stability.
+ * The snapshot carries usage + limits for EVERY registered capability that has
+ * limit rows (enforced or not) so limits are visible before the cap. Absence of
+ * a usage entry = genuinely unlimited on this tier → allowed with no cap.
+ * Presence → the binding window drives `remaining`/`limit`, but `allowed` only
+ * flips to false when the capability is `enforced` AND over a window. Cache one
+ * selector instance per capability for referential stability.
  */
 const verdictSelectorCache = new Map<
   Capability,
@@ -96,7 +98,12 @@ export function makeSelectEntitlement(
       }
 
       const binding = bindingWindow(usage.windows)!;
-      const allowed = usage.windows.every((w) => w.remaining > 0);
+      // Un-enforced capabilities are NEVER blocked (permissive rollout) — but
+      // their limits/usage ARE surfaced so the meter renders "X of Y left"
+      // before the cap. Only an enforced capability that is over a window flips
+      // `allowed` to false. Mirrors billing.resolve_capability exactly.
+      const underCap = usage.windows.every((w) => w.remaining > 0);
+      const allowed = usage.enforced ? underCap : true;
       return {
         capability,
         allowed,
@@ -104,7 +111,11 @@ export function makeSelectEntitlement(
         limit: binding.limit,
         used: binding.used,
         tier: e.tier,
-        reason: allowed ? "allowed" : "cap_reached",
+        reason: !usage.enforced
+          ? "permissive_stub"
+          : allowed
+            ? "allowed"
+            : "cap_reached",
         period: binding.period,
         windows: usage.windows,
         isLoading,

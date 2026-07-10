@@ -148,4 +148,11 @@ export interface EntitlementUsage {
   resetsAt: string | null;
   /** All configured windows for this capability at the user's tier. */
   windows: EntitlementWindow[];
+  /**
+   * Whether enforcement is live for this capability. The snapshot reports usage
+   * + limits for EVERY registered capability so limits are visible before the
+   * cap (TRUST mandate) — but while `enforced` is false the verdict stays
+   * `allowed` regardless of usage (permissive rollout; nothing silently capped).
+   */
+  enforced: boolean;
 }

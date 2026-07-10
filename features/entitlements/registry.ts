@@ -12,13 +12,17 @@
 //   capability regardless of tier/usage. Flip to `true` ONLY once the backend
 //   limit rows + the aidream-side spend re-check both exist. This is the
 //   per-capability rollout switch the brief mandates.
-// - `defaultFreeLimit` is the free-tier cap used by the resolver + by nudges to
-//   render "X of Y". `null` = unlimited on free (a genuinely generous default —
-//   README §8 flag 2: generosity is APPROVED).
+// - `defaultFreeLimit` is a DESCRIPTIVE annotation only — it is NOT the source
+//   of any number the UI or resolver reads. The SINGLE SOURCE for every limit is
+//   `billing.capability_limit` in the DB: the `entitlement_snapshot` /
+//   `resolve_capability` RPCs report a capability's live limits + windows (for
+//   EVERY registered capability, enforced or not — F1), and the hook/meter read
+//   those. Keeping a limit here too would be a second source of truth; don't.
 //
 // The exact free-tier numbers get one FYI-with-veto look from Arman before any
 // capability is enforced (brief Deliverable 5). Until then every capability
-// ships `enforced: false` — nothing is silently capped.
+// ships `enforced: false` — nothing is silently capped, but the limits ARE now
+// visible in-product ahead of the cap (TRUST mandate).
 
 import type { EntitlementPeriod, EntitlementTier } from "./types";
 
@@ -55,9 +59,10 @@ export interface CapabilityDefinition {
   /** Metering window. `null` = a pure gate (tier unlocks it; no usage count). */
   period: EntitlementPeriod;
   /**
-   * Free-tier cap per period. `null` = unlimited on free. The resolver reads
-   * the authoritative value from `billing.capability_limit` once enforcement is
-   * on; this is the design intent + the fallback the stub reports.
+   * DESCRIPTIVE design-intent annotation only — NOT read by the resolver, hook,
+   * or any meter. The authoritative free-tier numbers live in
+   * `billing.capability_limit` and reach the client via the snapshot RPC. Kept
+   * here purely as human-readable documentation of intent; never a second source.
    */
   defaultFreeLimit: number | null;
   /** Minimum tier for ANY access (a gate). Most capabilities are `free`. */

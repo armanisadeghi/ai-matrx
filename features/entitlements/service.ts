@@ -40,6 +40,24 @@ function warnPermissiveOnce(capability: Capability): void {
   );
 }
 
+// Loud recovery for an UNKNOWN capability id (F3). The resolver fails open
+// (never break prod) but the client must not stay quiet — a capability the DB
+// doesn't recognize means the registry and billing.capability drifted apart, or
+// a caller passed a bad id. Screams once per id, dev-only.
+const warnedUnknown = new Set<string>();
+function warnUnknownCapability(capability: Capability): void {
+  if (process.env.NODE_ENV === "production") return;
+  if (warnedUnknown.has(capability)) return;
+  warnedUnknown.add(capability);
+  // eslint-disable-next-line no-console -- intentional loud-recovery dev signal
+  console.error(
+    `[entitlements] resolver reported "${capability}" as UNKNOWN — it is not ` +
+      `registered in billing.capability. The verdict FAILED OPEN (unlimited). ` +
+      `Add the row to billing.capability (+ billing.capability_limit) or fix ` +
+      `the caller; the client registry and the DB have drifted apart.`,
+  );
+}
+
 function permissiveVerdict(capability: Capability): EntitlementCheckResult {
   warnPermissiveOnce(capability);
   const dfn = getCapability(capability);
@@ -84,7 +102,12 @@ export async function checkEntitlement(
         reason: "resolver_error",
       };
     }
-    return mapCheckRow(capability, data as EntitlementCheckRow);
+    const row = data as EntitlementCheckRow;
+    // Loud recovery (F3): the resolver failed OPEN on an unknown capability id.
+    // The DB already RAISEd a WARNING server-side; scream in the client too so a
+    // typo'd/unregistered capability can't silently resolve unlimited in dev.
+    if (row.unknown) warnUnknownCapability(capability);
+    return mapCheckRow(capability, row);
   } catch {
     return {
       ...permissiveVerdict(capability),
@@ -131,6 +154,8 @@ interface EntitlementCheckRow {
   period: EntitlementPeriod;
   windows?: EntitlementWindow[] | null;
   check_id: string | null;
+  /** True when the resolver failed open on an unknown capability id (F3). */
+  unknown?: boolean;
 }
 
 interface EntitlementSnapshotRow {
