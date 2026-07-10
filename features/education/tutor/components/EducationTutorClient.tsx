@@ -34,6 +34,10 @@ import { selectMessageCount } from "@/features/agents/redux/execution-system/mes
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { useEntitlement } from "@/features/entitlements/hooks";
+import { useAccess } from "@/utils/permissions/access";
+import { canEditAccess } from "@/utils/permissions/access-core";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { Eye } from "lucide-react";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
 import { assembleTutorGrounding, type TutorGroundingSeed } from "../grounding";
 import { TutorLanding } from "./TutorLanding";
@@ -91,6 +95,21 @@ export function EducationTutorClient({
     tutorMsg.limit != null
       ? `${Math.max(0, tutorMsg.remaining ?? 0)} of ${tutorMsg.limit} left`
       : null;
+
+  // ── Access gate (P7): view vs edit on an EXISTING conversation ────────────
+  // Tutor threads are `chat.conversation` rows (the registered `conversation`
+  // shareable type). A view-only sharee gets the read-only transcript — the
+  // composer is hidden and a "shared / read-only" banner shown — while the
+  // owner sees the live tutor + the ShareButton. Fresh conversations skip this
+  // (the creator is always the owner). Fail OPEN while resolving so the owner
+  // never sees a flash of a locked composer (UI reads may fail open; RLS is the
+  // real boundary).
+  const access = useAccess("conversation", conversationIdProp);
+  const isSharedView =
+    !!conversationIdProp &&
+    !access.loading &&
+    access.exists &&
+    !canEditAccess(access.level);
 
   // ── Agent execution minimal fetch ────────────────────────────────────────
   const executionPayload = useAppSelector((state) =>
@@ -258,12 +277,36 @@ export function EducationTutorClient({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-textured">
+      {/* Owner share affordance / shared-view read-only banner (P7). Only on an
+          existing conversation, and never when embedded in an AskTutor panel. */}
+      {!embedded && conversationIdProp && (access.isOwner || isSharedView) && (
+        <div className="flex items-center justify-between gap-2 border-b border-border bg-card/40 px-4 py-1.5">
+          {isSharedView ? (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Eye className="h-3.5 w-3.5" />
+              Shared conversation — read-only
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Your tutor conversation</span>
+          )}
+          {access.isOwner && (
+            <ShareButton
+              resourceType="conversation"
+              resourceId={conversationIdProp}
+              resourceName="Tutor conversation"
+              isOwner
+              size="sm"
+            />
+          )}
+        </div>
+      )}
       <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
         <AgentConversationColumn
           conversationId={conversationId}
           surfaceKey={surfaceKey}
           constrainWidth
           edgeToEdgeScroll
+          hideInput={isSharedView}
           smartInputProps={{
             sendButtonVariant: "blue",
             showSubmitOnEnterToggle: false,
