@@ -123,3 +123,15 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 - **2026-07-07** — Initial build: `assessment`/`assessment_item`/`assessment_result` tables + RLS +
   registration; 3 agents; service + `useGenerateQuiz` + grading + learning-gain contract; full
   quizzes + practice-tests UI (list/create/take/results/edit); tools flipped live; verified live.
+- **2026-07-10** — Converter contract: registered real `quiz` + `practice_test` `ConvertGenerator`s
+  (`data/quizGenerator.ts`, reusing `generateQuizFromSource` + exported `coerceGeneratedQuiz` +
+  `assessmentService`) — replaces the P1 "coming soon" placeholders, lighting up P9 upload-kit
+  fan-out and P4 note→quiz. Exam-hub deep-link prefill: `AssessmentCreate` seeds topic/examType/depth
+  from `?examType=&topic=&depth=` via `useSearchParams` (route pages Suspense-wrapped).
+- **2026-07-10** — Live DB-loop re-verification (real Supabase session, real RLS/triggers/RPC, via the
+  actual `assessmentService`/`studyService` modules): quiz + practice_test assessments created →
+  taken → spine-recorded (`study_attempt` `method=quiz`/`practice_test`) → results finalized →
+  `item_mastery` advanced → learning-gain baseline 0 → post 0.6875 delta paired by `pairLearningGain`.
+  **LLM generation + AI free-response grading NOT re-verifiable** — a platform-wide aidream outage
+  (`resolve_call_profile: model_provider=None` for EVERY model) blocked all agent execution; filed
+  cross-repo. See `KNOWN_DEFECTS.md`.
