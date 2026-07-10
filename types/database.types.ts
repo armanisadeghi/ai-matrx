@@ -30009,44 +30009,25 @@ export type Database = {
         Args: { current_owner_id: string; new_owner_id: string; org_id: string }
         Returns: boolean
       }
-      triage_feedback_item:
-        | {
-            Args: {
-              p_ai_assessment?: string
-              p_ai_complexity?: string
-              p_ai_estimated_files?: string[]
-              p_ai_solution_proposal?: string
-              p_ai_suggested_priority?: string
-              p_autonomy_score?: number
-              p_id: string
-            }
-            Returns: Database["users"]["Tables"]["user_feedback"]["Row"]
-            SetofOptions: {
-              from: "*"
-              to: "user_feedback"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              p_ai_assessment?: string
-              p_ai_complexity?: string
-              p_ai_estimated_files?: string[]
-              p_ai_solution_proposal?: string
-              p_ai_suggested_priority?: string
-              p_autonomy_score?: number
-              p_category_id?: string
-              p_id: string
-            }
-            Returns: Database["users"]["Tables"]["user_feedback"]["Row"]
-            SetofOptions: {
-              from: "*"
-              to: "user_feedback"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      triage_feedback_item: {
+        Args: {
+          p_ai_assessment?: string
+          p_ai_complexity?: string
+          p_ai_estimated_files?: string[]
+          p_ai_solution_proposal?: string
+          p_ai_suggested_priority?: string
+          p_autonomy_score?: number
+          p_category_id?: string
+          p_id: string
+        }
+        Returns: Database["users"]["Tables"]["user_feedback"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "user_feedback"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       udt_bulk_write: {
         Args: { p_operations: Json; p_table_id: string }
         Returns: Json

@@ -6,12 +6,15 @@ import { motion } from "motion/react";
 import type { HtmlPageSummary } from "@/features/html-pages/types";
 import { ExternalLink, FileCode, Loader2 } from "lucide-react";
 import { HTML_PAGES_GRID_ROW_BATCH } from "@/features/html-pages/utils/list-url-state";
+import { HtmlPagesContextMenu } from "@/features/html-pages/components/HtmlPagesContextMenu";
 
 interface HtmlPageGridViewProps {
   pages: HtmlPageSummary[];
   visibleCount: number;
   onVisibleCountChange: (count: number) => void;
   onOpenPage: (pageId: string, e?: React.MouseEvent) => void;
+  /** Opens a new blank page — wired into each card's v3 context menu. */
+  onCreatePage?: () => void;
   /** Query string to append so editor can return to this list state. */
   listReturnQuery?: string;
   openTab?: "preview" | "meta" | "html";
@@ -121,6 +124,7 @@ export default function HtmlPageGridView({
   visibleCount,
   onVisibleCountChange,
   onOpenPage,
+  onCreatePage,
   listReturnQuery = "",
   openTab = "preview",
 }: HtmlPageGridViewProps) {
@@ -170,14 +174,32 @@ export default function HtmlPageGridView({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {slice.map((page) => (
-          <LazyPreviewCard
-            key={page.id}
-            page={page}
-            href={pageHref(page.id)}
-            onOpenPage={onOpenPage}
-          />
-        ))}
+        {slice.map((page) =>
+          onCreatePage ? (
+            <HtmlPagesContextMenu
+              key={page.id}
+              pages={pages}
+              page={page}
+              onNewPage={onCreatePage}
+              onOpenPage={(pageId) => onOpenPage(pageId)}
+            >
+              <div className="min-w-0">
+                <LazyPreviewCard
+                  page={page}
+                  href={pageHref(page.id)}
+                  onOpenPage={onOpenPage}
+                />
+              </div>
+            </HtmlPagesContextMenu>
+          ) : (
+            <LazyPreviewCard
+              key={page.id}
+              page={page}
+              href={pageHref(page.id)}
+              onOpenPage={onOpenPage}
+            />
+          ),
+        )}
       </div>
 
       {hasMore ? (

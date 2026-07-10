@@ -152,8 +152,8 @@ export function NotesWindow({
             />
           ) : undefined
         }
-        secondaryPanelDefaultSize={360}
-        secondaryPanelMinSize={280}
+        secondaryPanelDefaultSize={520}
+        secondaryPanelMinSize={400}
         onClose={onClose}
         {...windowProps}
       >

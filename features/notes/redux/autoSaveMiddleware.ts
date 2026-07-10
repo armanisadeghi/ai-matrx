@@ -83,8 +83,7 @@ export const autoSaveMiddleware: Middleware =
 
       const currentState = storeApi.getState() as StateWithNotes;
       const currentRecord = currentState.notes?.notes?.[noteId] as
-        | NoteRecord
-        | undefined;
+        NoteRecord | undefined;
       if (!currentRecord || !currentRecord._dirty) return;
 
       // ── Auto-label: generate label from content if still "New Note" ──
@@ -107,8 +106,7 @@ export const autoSaveMiddleware: Middleware =
       // Re-read state after potential label update
       const stateAfterLabel = storeApi.getState() as StateWithNotes;
       const recordAfterLabel = stateAfterLabel.notes?.notes?.[noteId] as
-        | NoteRecord
-        | undefined;
+        NoteRecord | undefined;
       if (!recordAfterLabel || !recordAfterLabel._dirty) return;
 
       storeApi.dispatch(markNoteSaving(noteId));
@@ -195,7 +193,10 @@ export const autoSaveMiddleware: Middleware =
           clearNoteWriteBlockedToast(noteId);
           storeApi.dispatch(materializeNote(noteId));
           storeApi.dispatch(
-            markNoteSaved({ id: noteId, updatedAt: data?.updated_at ?? undefined }),
+            markNoteSaved({
+              id: noteId,
+              updatedAt: data?.updated_at ?? undefined,
+            }),
           );
         } else {
           // ── Subsequent saves: UPDATE ──────────────────────────────
@@ -208,6 +209,49 @@ export const autoSaveMiddleware: Middleware =
           if (Object.keys(updates).length === 0) {
             storeApi.dispatch(markNoteSaved({ id: noteId }));
             return;
+          }
+
+          // Concurrency check — same contract as saveNote. Without this,
+          // autosave is last-write-wins and silently clobbers collaborator edits.
+          const localUpdatedAt = recordAfterLabel.updated_at;
+          if (localUpdatedAt) {
+            const { data: serverNote, error: fetchError } = await supabase
+              .schema("workbench")
+              .from("notes")
+              .select("updated_at")
+              .eq("id", noteId)
+              .single();
+
+            if (fetchError) {
+              console.error(
+                "[AutoSave] concurrency check failed:",
+                fetchError.message,
+              );
+              storeApi.dispatch(
+                markNoteSaveError({
+                  id: noteId,
+                  error: noteSaveErrorMessage(fetchError),
+                }),
+              );
+              return;
+            }
+
+            if (
+              serverNote?.updated_at &&
+              serverNote.updated_at !== localUpdatedAt
+            ) {
+              console.warn(
+                "[AutoSave] conflict — server updated_at differs for",
+                noteId,
+              );
+              storeApi.dispatch(
+                markNoteSaveError({
+                  id: noteId,
+                  error: "conflict",
+                }),
+              );
+              return;
+            }
           }
 
           const { data, error } = await supabase
@@ -234,8 +278,18 @@ export const autoSaveMiddleware: Middleware =
 
           clearNoteWriteBlockedToast(noteId);
           storeApi.dispatch(
-            markNoteSaved({ id: noteId, updatedAt: data?.updated_at ?? undefined }),
+            markNoteSaved({
+              id: noteId,
+              updatedAt: data?.updated_at ?? undefined,
+            }),
           );
+          // Drop the long echo window — _savingNoteIds already covered the write.
+          storeApi.dispatch(removePendingDispatchId(noteId));
+          const cleanup = echoCleanupTimers.get(noteId);
+          if (cleanup) {
+            clearTimeout(cleanup);
+            echoCleanupTimers.delete(noteId);
+          }
         }
 
         // Notify sidebar of label changes

@@ -257,6 +257,21 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-10` — CMS Surfaces Rollout gap-closing: (1) `/cms/html-pages` LIST route now mounts the
+  `matrx-user/html-page` v3 menu — outer chrome (`NonEditableContextMenu` in `page.tsx`) plus per-row
+  (table) and per-card (grid) menus via the new reusable `HtmlPagesContextMenu`; both emit
+  `html_pages_structure` (new `buildHtmlPagesListContextData.ts`) with list-appropriate actions (New /
+  Open / Copy URL / Open Live / Back to hub — new `htmlPagesListExtraSections.ts`). Table rows pass
+  `enableFloatingIcon={false}` (a hidden `<span>` sibling is invalid inside `<tbody>`). (2) `PageEditor`
+  Preview tab now mounts a dedicated `NonEditableContextMenu` (read-only) while every other tab stays on
+  `EditableContextMenu`, same surface identity + `extraSections` + live `contextData`. (3) `cms-page`
+  menu gained a "Restore Previous Version" item (`cmsPageExtraSections.ts`) that drives the existing
+  rollback `ConfirmDialog` → `onRollback` for the latest non-current version. (4) SEO tab text fields
+  are now Pro (`ProInput` for title/keywords, `ProTextarea` for the meta description with
+  `surfaceName` + `getApplicationScope`); `buildCmsPageContextData` now binds `content`/`selection` to
+  the meta description when `activeTab === "seo"`. (5) Noted in `surface-candidates.ts` that the five
+  CMS surfaces are live via seed and intentionally not candidates. No re-seed, no new docs.
+
 - `2026-07-09` — P5 agent: component-delete bug fixed (route was missing the `delete` case — live
   400); site delete shipped (guarded, cascading, throwaway-site tested); `client_activity_log`
   writes added to every mutation (`actor: "human"`, C6 shape); first-claim side effect removed

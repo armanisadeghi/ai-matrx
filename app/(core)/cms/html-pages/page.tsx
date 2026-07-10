@@ -4,6 +4,7 @@ import React, { Suspense, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useHtmlPagesManager } from "@/features/html-pages/hooks/useHtmlPagesManager";
 import HtmlPageListView from "@/features/html-pages/components/HtmlPageListView";
+import { HtmlPagesContextMenu } from "@/features/html-pages/components/HtmlPagesContextMenu";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   ChevronLeftTapButton,
@@ -122,25 +123,32 @@ function HtmlPagesListBody() {
         </div>
       </PageHeader>
 
-      <div ref={scrollRef} className="h-full overflow-auto pt-12 relative">
-        {(isPending || navigatingId) && (
-          <div className="absolute inset-0 z-10 bg-background/40 flex items-center justify-center pointer-events-none">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        )}
-        <HtmlPageListView
-          pages={pages}
-          isLoading={isLoading}
-          error={error}
-          onOpenPage={openPage}
-          onDeletePage={async (pageId) => {
-            await deletePage(pageId);
-          }}
-          onRefresh={() => void refresh()}
-          scrollContainerRef={scrollRef}
-          restoreScrollTop={restoreScrollTop}
-        />
-      </div>
+      <HtmlPagesContextMenu
+        pages={pages}
+        onNewPage={() => void handleCreate()}
+        onOpenPage={(pageId) => openPage(pageId)}
+      >
+        <div ref={scrollRef} className="h-full overflow-auto pt-12 relative">
+          {(isPending || navigatingId) && (
+            <div className="absolute inset-0 z-10 bg-background/40 flex items-center justify-center pointer-events-none">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          )}
+          <HtmlPageListView
+            pages={pages}
+            isLoading={isLoading}
+            error={error}
+            onOpenPage={openPage}
+            onCreatePage={() => void handleCreate()}
+            onDeletePage={async (pageId) => {
+              await deletePage(pageId);
+            }}
+            onRefresh={() => void refresh()}
+            scrollContainerRef={scrollRef}
+            restoreScrollTop={restoreScrollTop}
+          />
+        </div>
+      </HtmlPagesContextMenu>
     </>
   );
 }

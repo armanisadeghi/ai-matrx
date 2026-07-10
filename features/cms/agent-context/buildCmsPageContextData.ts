@@ -53,10 +53,14 @@ function activeTabContent(
   html: string,
   css: string,
   js: string,
+  metaDescription: string,
 ): string {
   if (activeTab === "html") return html;
   if (activeTab === "css") return css;
   if (activeTab === "js") return js;
+  // On the SEO tab the bound editable buffer is the meta description (the one
+  // Pro-wired, surface-scoped field) — mirrors html-page's `meta` tab gating.
+  if (activeTab === "seo") return metaDescription;
   return "";
 }
 
@@ -88,6 +92,7 @@ export function buildCmsPageContextData(
     htmlContent,
     cssContent,
     jsContent,
+    metaDescription,
   );
   const hasSelection = selectionEnd > selectionStart;
   const selectedText = hasSelection

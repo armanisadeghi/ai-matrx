@@ -47,6 +47,11 @@ export interface SurfaceCandidate {
 
 export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   // matrx-user · pages already largely seeded — these are the gaps
+  //
+  // NOTE: the five CMS surfaces (matrx-user/cms, cms-site, cms-page,
+  // cms-component, html-page) are already LIVE in ui.ui_surface via
+  // migrations/cms_surfaces_seed.sql — intentionally NOT listed here (the
+  // dialog filters out existing rows anyway). Do not re-seed.
   { name: "matrx-user/agent-shortcuts",  client_name: "matrx-user",  description: "Agent shortcut runner / launcher",                       sort_order: 280, is_active: true,  group: "page" },
   { name: "matrx-user/quick-utilities",  client_name: "matrx-user",  description: "Quick utility tools palette",                            sort_order: 290, is_active: false, group: "overlay" },
 

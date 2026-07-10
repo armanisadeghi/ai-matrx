@@ -157,14 +157,21 @@ class CardBoundary extends React.Component<
   }
 }
 
-function Badge({ tone, children }: { tone: "canonical" | "legacy" | "heavy"; children: React.ReactNode }) {
+function Badge({
+  tone,
+  children,
+}: {
+  tone: "canonical" | "legacy" | "heavy";
+  children: React.ReactNode;
+}) {
   return (
     <span
       className={cn(
         "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
         tone === "canonical" &&
           "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-        tone === "legacy" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+        tone === "legacy" &&
+          "bg-amber-500/15 text-amber-600 dark:text-amber-400",
         tone === "heavy" && "bg-sky-500/15 text-sky-600 dark:text-sky-400",
       )}
     >
@@ -221,8 +228,7 @@ function Card({
 
 export default function DiffGalleryPage() {
   const [scenarioId, setScenarioId] = useState("markdown");
-  const scenario =
-    SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
+  const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
   const [originalInput, setOriginal] = useState(scenario.original);
   const [modifiedInput, setModified] = useState(scenario.modified);
   const [language, setLanguage] = useState(scenario.language);
@@ -336,7 +342,10 @@ export default function DiffGalleryPage() {
             title="DiffReview — per-hunk merge (NEW)"
             tone="canonical"
             verdict="The only one that MERGES: accept/reject each hunk → apply the result. Turns compare into an editing tool."
-            route={{ href: "/demos/diff", label: "/demos/diff (toggle review)" }}
+            route={{
+              href: "/demos/diff",
+              label: "/demos/diff (toggle review)",
+            }}
           >
             <DiffReview
               original={original}
@@ -394,7 +403,11 @@ export default function DiffGalleryPage() {
             }}
           >
             <div className="h-full overflow-auto p-2">
-              <InlineTextDiff original={original} modified={modified} view="split" />
+              <InlineTextDiff
+                original={original}
+                modified={modified}
+                view="split"
+              />
             </div>
           </Card>
 
@@ -462,7 +475,7 @@ export default function DiffGalleryPage() {
           <Card
             title="NoteDiffViewer (structured entity shell)"
             tone="canonical"
-            verdict="Field-by-field object diff (All/Changes/Summary/JSON tabs). For whole records, not raw text; long text fields use the light engine."
+            verdict="Default tab is Content (side-by-side body diff). All / Changes / Summary / JSON keep the structured field shell for folder, tags, etc."
             route={{ href: "/notes/[id]/diff", label: "/notes/[id]/diff" }}
           >
             <div className="h-full overflow-auto">

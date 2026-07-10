@@ -471,6 +471,11 @@ const notesSlice = createSlice({
         record.updated_at = action.payload.updatedAt;
       }
       markRecordClean(record);
+      // Echo window ends with the save — leave _pendingDispatchIds to its
+      // timed cleanup so the realtime echo of THIS write is still suppressed.
+      state._savingNoteIds = state._savingNoteIds.filter(
+        (id) => id !== action.payload.id,
+      );
     },
 
     markNoteSaveError(
@@ -482,6 +487,9 @@ const notesSlice = createSlice({
         record._saving = false;
         record._error = action.payload.error;
       }
+      state._savingNoteIds = state._savingNoteIds.filter(
+        (id) => id !== action.payload.id,
+      );
     },
 
     clearSavingNoteId(state, action: PayloadAction<string>) {
@@ -595,7 +603,20 @@ const notesSlice = createSlice({
       action: PayloadAction<{ instanceId: string; noteId: string | null }>,
     ) {
       const inst = state.instances[action.payload.instanceId];
-      if (inst) inst.activeTabId = action.payload.noteId;
+      if (!inst) return;
+      const noteId = action.payload.noteId;
+      inst.activeTabId = noteId;
+      // Active-first contract: focused note leads `openTabs` (and thus `?tabs=`).
+      if (
+        noteId &&
+        inst.openTabs.includes(noteId) &&
+        inst.openTabs[0] !== noteId
+      ) {
+        inst.openTabs = [
+          noteId,
+          ...inst.openTabs.filter((id) => id !== noteId),
+        ];
+      }
     },
 
     addInstanceTab(

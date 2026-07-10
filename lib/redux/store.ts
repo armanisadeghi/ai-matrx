@@ -18,6 +18,7 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import { loggerMiddleware } from "@/utils/logger";
 import { enableMapSet } from "immer";
 import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
+import { notesRealtimeMiddleware } from "@/features/notes/redux/realtimeMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
 import {
   cloudFilesRealtimeMiddleware,
@@ -206,6 +207,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         loggerMiddleware,
         syncMiddleware,
         autoSaveMiddleware,
+        notesRealtimeMiddleware,
         codeFilesAutoSaveMiddleware,
         cloudFilesRealtimeMiddleware,
         cloudFilesMutationToastMiddleware,

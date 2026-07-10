@@ -1,4 +1,12 @@
-import { Save, Upload, XCircle, Globe, Eye, ArrowLeft } from "lucide-react";
+import {
+  Save,
+  Upload,
+  XCircle,
+  Globe,
+  Eye,
+  ArrowLeft,
+  RotateCcw,
+} from "lucide-react";
 import type {
   ContextMenuExtraItem,
   ContextMenuExtraSection,
@@ -23,6 +31,14 @@ export interface CmsPageExtraSectionsConfig {
   onOpenLive: () => void;
   onOpenPreview: () => void;
   onBackToPages: () => void;
+  /**
+   * Restore the most recent non-current version. Drives the same
+   * `ConfirmDialog` + rollback path as the Versions tab (never a browser
+   * dialog). Rendered only when `canRollback` is true.
+   */
+  onRollback?: () => void;
+  /** False when no restorable version exists yet or the page is unsaved. */
+  canRollback?: boolean;
 }
 
 export function createCmsPageExtraSections(
@@ -40,6 +56,8 @@ export function createCmsPageExtraSections(
     onOpenLive,
     onOpenPreview,
     onBackToPages,
+    onRollback,
+    canRollback,
   } = config;
 
   const items: ContextMenuExtraItem[] = [
@@ -69,6 +87,18 @@ export function createCmsPageExtraSections(
       icon: XCircle,
       destructive: true,
       onSelect: onDiscardDraft,
+    });
+  }
+
+  if (onRollback) {
+    items.push({
+      kind: "item",
+      id: "rollback",
+      label: "Restore Previous Version",
+      icon: RotateCcw,
+      destructive: true,
+      disabled: !canRollback,
+      onSelect: onRollback,
     });
   }
 

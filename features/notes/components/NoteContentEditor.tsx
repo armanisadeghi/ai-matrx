@@ -51,6 +51,7 @@ import {
 import { analyzeDiff } from "../utils/diffAnalysis";
 import { supabase } from "@/utils/supabase/client";
 import { NoteEditorCore } from "./NoteEditorCore";
+import { setNoteLiveContent } from "../utils/noteLiveContent";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
@@ -206,6 +207,7 @@ export function NoteContentEditor({
     noteIdRef.current = noteId;
     lastReduxRef.current = reduxContent;
     setLocalContent(reduxContent);
+    setNoteLiveContent(noteId, reduxContent);
     setResetGen((n) => n + 1);
     // The recent-change flash is per-note — its range is meaningless once
     // we've swapped to a different document.
@@ -238,6 +240,7 @@ export function NoteContentEditor({
     const previous = localContentRef.current;
     lastReduxRef.current = reduxContent;
     setLocalContent(reduxContent);
+    setNoteLiveContent(noteId, reduxContent);
 
     // Skip the flash for trivial / massive changes:
     // - Initial load (previous was empty) would highlight the entire doc.
@@ -291,9 +294,10 @@ export function NoteContentEditor({
   const handleChange = useCallback(
     (content: string) => {
       setLocalContent(content);
+      setNoteLiveContent(noteId, content);
       syncToRedux(content);
     },
-    [syncToRedux],
+    [noteId, syncToRedux],
   );
 
   // ── Flush sync: local -> Redux immediately (no debounce) ───────────
@@ -308,6 +312,7 @@ export function NoteContentEditor({
         syncTimerRef.current = null;
       }
       setLocalContent(content);
+      setNoteLiveContent(noteId, content);
       lastReduxRef.current = content;
       dispatch(updateNoteContent({ id: noteId, content }));
     },
@@ -319,7 +324,9 @@ export function NoteContentEditor({
   // (tab close, navigation, instance unregister), flush it synchronously
   // so the user's in-flight keystrokes aren't silently dropped.
   useEffect(() => {
+    setNoteLiveContent(noteId, localContentRef.current);
     return () => {
+      setNoteLiveContent(noteId, null);
       if (syncTimerRef.current) {
         clearTimeout(syncTimerRef.current);
         syncTimerRef.current = null;

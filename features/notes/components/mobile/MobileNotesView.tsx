@@ -40,13 +40,22 @@ const VIEW_MODES: {
   { mode: "preview", icon: <Eye size={13} />, label: "Preview" },
 ];
 
-export default function MobileNotesView() {
+export default function MobileNotesView({
+  singleNoteId = null,
+}: {
+  /** When set, skip the list and open this note in the editor. */
+  singleNoteId?: string | null;
+} = {}) {
   const { notes } = useNotesRedux();
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
   const dispatch = useAppDispatch();
 
-  const [currentView, setCurrentView] = useState<MobileView>("list");
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<MobileView>(
+    singleNoteId ? "editor" : "list",
+  );
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(
+    singleNoteId,
+  );
   const [editorMode, setEditorMode] = useState<MobileEditorMode>("plain");
   // Shared filter state — owned here so header dropdown and list stay in sync
   const [filters, setFilters] =
@@ -56,6 +65,14 @@ export default function MobileNotesView() {
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+
+  // Keep embed/single-note mode in sync if the parent swaps the locked id.
+  React.useEffect(() => {
+    if (!singleNoteId) return;
+    setSelectedNoteId(singleNoteId);
+    setCurrentView("editor");
+    void dispatch(fetchNoteContent(singleNoteId));
+  }, [dispatch, singleNoteId]);
 
   // Unique folder names derived from all notes
   const folderNames = useMemo(() => {
@@ -79,7 +96,7 @@ export default function MobileNotesView() {
   // editor mounts, otherwise it would open on an empty body.
   const selectedNoteReady = Boolean(
     selectedNote &&
-      (!selectedNote._sharedWithMe || selectedNote.content != null),
+    (!selectedNote._sharedWithMe || selectedNote.content != null),
   );
 
   const handleNoteSelect = (note: Note) => {

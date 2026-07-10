@@ -691,6 +691,16 @@ Only `html_content` / the live buffer drives the iframe. SEO metadata columns ar
 - `extraSections`: Save, Copy Live URL, Open Live Page, Back to Published Pages — real handlers, see
   `features/html-pages/agent-context/htmlPageExtraSections.ts`
 
+**List route (`/cms/html-pages`) also mounts the surface.** The reusable `HtmlPagesContextMenu`
+wraps the list chrome (outer, in `page.tsx`), each table row (`HtmlPageListView`), and each grid card
+(`HtmlPageGridView`) with a `NonEditableContextMenu`. Framing value is the same
+`html_pages_structure`, built list-side by `buildHtmlPagesListContextData.ts` (list-level → no
+`current`; per-row → that page marked `current="true"` with its identity filled from the summary).
+Actions (New / Open / Copy URL / Open Live / Back to Content Manager) live in
+`htmlPagesListExtraSections.ts`. Table-row menus pass `enableFloatingIcon={false}` — the
+floating-selection icon renders a hidden `<span>` sibling of the trigger, which is invalid DOM
+directly inside `<tbody>`.
+
 **`content`/`selection`/`text_before`/`text_after` are gated by `activeTab`** (mirrors `cms-page`'s
 `activeTabContent` in `buildCmsPageContextData.ts`) — `content` = `htmlContent` on the HTML tab,
 `metaDescription` on the Metadata tab, empty on Preview. Verified live 2026-07-10: right-clicking the
@@ -716,5 +726,7 @@ surfaces (Surface Values)" for the full five-surface picture and `features/cms/S
 builder checklist.
 
 **Last Updated:** 2026-07-10  
-**Version:** 2.4 (Fixed `content` leaking full HTML doc into the Metadata-tab menu; documented Monaco
+**Version:** 2.5 (List route `/cms/html-pages` now mounts the v3 menu on chrome + rows + cards via
+`HtmlPagesContextMenu`; added `buildHtmlPagesListContextData` + `htmlPagesListExtraSections`. Prior:
+2.4 — fixed `content` leaking full HTML doc into the Metadata-tab menu; documented Monaco
 context-menu limitation)

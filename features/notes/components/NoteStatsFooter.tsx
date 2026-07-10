@@ -11,7 +11,7 @@
 // Designed for WindowPanel `footerVariant="bar"` — no self-owned bg/border
 // (the slot provides that). Pass `standalone` when rendering outside a slot.
 
-import { useMemo } from "react";
+import { useSyncExternalStore } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectNoteById,
@@ -19,6 +19,10 @@ import {
   selectNoteIsDirtyById,
   selectNoteIsSavingById,
 } from "../redux/selectors";
+import {
+  getNoteLiveContent,
+  subscribeNoteLiveContent,
+} from "../utils/noteLiveContent";
 import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +41,14 @@ export function NoteStatsFooter({
   className,
   standalone = false,
 }: NoteStatsFooterProps) {
-  const content = useAppSelector(selectNoteContent(noteId)) ?? "";
+  const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
+  const liveContent = useSyncExternalStore(
+    (onStoreChange) => subscribeNoteLiveContent(noteId, onStoreChange),
+    () => getNoteLiveContent(noteId),
+    () => undefined,
+  );
+  const content = liveContent ?? reduxContent;
+
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
   const isSaving = useAppSelector(selectNoteIsSavingById(noteId));
   const note = useAppSelector(selectNoteById(noteId));
@@ -59,9 +70,6 @@ export function NoteStatsFooter({
         ? "text-amber-500"
         : "text-emerald-500";
 
-  // Stable empty-string fallback so PlainTextMetricsBar doesn't thrash.
-  const text = useMemo(() => content, [content]);
-
   return (
     <div
       className={cn(
@@ -77,7 +85,7 @@ export function NoteStatsFooter({
         {saveStatus}
       </span>
       <PlainTextMetricsBar
-        text={text}
+        text={content}
         compact
         metrics={[
           "charCount",

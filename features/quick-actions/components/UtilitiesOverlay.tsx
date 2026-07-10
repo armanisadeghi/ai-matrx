@@ -11,10 +11,10 @@ import { QuickChatSheet } from "./QuickChatSheet";
 import { QuickDataSheet } from "./QuickDataSheet";
 import { WindowPanelShell } from "@/features/files";
 
-const LazyNotesLayout = dynamic(
+const LazyNotesView = dynamic(
   () =>
-    import("@/features/notes/components/NotesLayout").then((m) => ({
-      default: m.NotesLayout,
+    import("@/features/notes/components/NotesView").then((m) => ({
+      default: m.NotesView,
     })),
   { ssr: false },
 );
@@ -70,7 +70,13 @@ export function UtilitiesOverlay({
       ) as any,
       content: (
         <div className="h-full">
-          <LazyNotesLayout hidePageHeader />
+          <LazyNotesView
+            config={{
+              instanceId: "utilities-notes",
+              hidePageHeader: true,
+              syncUrl: false,
+            }}
+          />
         </div>
       ),
     },

@@ -42,12 +42,15 @@ import { cn } from "@/lib/utils";
 export interface NotesWindowViewProps {
   instanceId: string;
   showTabs?: boolean;
+  /** Forwarded to NoteTabBar — false for floating windows (default). */
+  syncUrl?: boolean;
   className?: string;
 }
 
 export function NotesWindowView({
   instanceId,
   showTabs = true,
+  syncUrl = false,
   className,
 }: NotesWindowViewProps) {
   const dispatch = useAppDispatch();
@@ -104,7 +107,7 @@ export function NotesWindowView({
       <div className={cn("flex h-full min-h-0 w-full flex-col", className)}>
         {/* Editor column (tab bar + presence + editor / split / empty) */}
         <div className="flex h-full min-h-0 flex-col">
-          {showTabs && <NoteTabBar instanceId={instanceId} />}
+          {showTabs && <NoteTabBar instanceId={instanceId} syncUrl={syncUrl} />}
           <NotePresenceBanner instanceId={instanceId} />
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1">

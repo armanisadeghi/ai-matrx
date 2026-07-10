@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   FolderOpen,
@@ -11,11 +11,24 @@ import {
   ChevronDown,
   Eye,
   Pencil,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectSharedWithMeNotes } from "../../redux/selectors";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectDeletedNotesList,
+  selectSharedWithMeNotes,
+} from "../../redux/selectors";
+import {
+  fetchDeletedNotes,
+  restoreNote,
+  permanentlyDeleteNoteThunk,
+  emptyTrashThunk,
+} from "../../redux/thunks";
 import {
   selectOrganizationId,
   selectPersonalOrganizationId,
@@ -40,12 +53,16 @@ export default function MobileNotesList({
   filters,
   onFiltersChange,
 }: MobileNotesListProps) {
+  const dispatch = useAppDispatch();
   const { notes, findOrCreateEmptyNote, isLoading } = useNotesRedux();
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
+  const deletedNotes = useAppSelector(selectDeletedNotesList);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sharedOpen, setSharedOpen] = useState(true);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const trashFetchedRef = useRef(false);
 
   // Active context for filtering
   const activeOrgId = useAppSelector(selectOrganizationId);
@@ -208,8 +225,7 @@ export default function MobileNotesList({
                     {sharedNotes.map((note) => {
                       const level =
                         note._sharedMeta?.permissionLevel ?? "viewer";
-                      const canEdit =
-                        level === "editor" || level === "admin";
+                      const canEdit = level === "editor" || level === "admin";
                       return (
                         <button
                           key={note.id}
@@ -307,6 +323,154 @@ export default function MobileNotesList({
                     </div>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Trash — soft-delete recovery (mirrors desktop NoteSidebar) */}
+            {!filters.sharedOnly && (
+              <div className="border-t border-border/40">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTrashOpen((v) => !v);
+                    if (!trashFetchedRef.current) {
+                      trashFetchedRef.current = true;
+                      dispatch(fetchDeletedNotes());
+                    }
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-xs font-medium text-muted-foreground transition-colors active:bg-muted/40"
+                >
+                  <Trash2
+                    className="text-rose-500 dark:text-rose-400"
+                    size={12}
+                  />
+                  <span>Trash</span>
+                  {deletedNotes.length > 0 && (
+                    <span className="rounded-full bg-muted px-1.5 text-[10px]">
+                      {deletedNotes.length}
+                    </span>
+                  )}
+                  <ChevronDown
+                    size={12}
+                    className={cn(
+                      "ml-auto transition-transform",
+                      trashOpen && "rotate-180",
+                    )}
+                  />
+                </button>
+                {trashOpen && (
+                  <div className="pb-2">
+                    {deletedNotes.length === 0 ? (
+                      <p className="px-4 py-2 text-xs text-muted-foreground/60">
+                        Trash is empty
+                      </p>
+                    ) : (
+                      <>
+                        <div className="mb-1 flex justify-end px-4">
+                          <button
+                            type="button"
+                            className="text-[11px] text-destructive/80 active:text-destructive"
+                            onClick={async () => {
+                              const ok = await confirm({
+                                title: "Empty trash",
+                                description: `Permanently delete ${deletedNotes.length} note${deletedNotes.length === 1 ? "" : "s"}? This cannot be undone.`,
+                                confirmLabel: "Empty trash",
+                                variant: "destructive",
+                              });
+                              if (!ok) return;
+                              try {
+                                const count =
+                                  await dispatch(emptyTrashThunk()).unwrap();
+                                toast.success(
+                                  count
+                                    ? `Emptied trash (${count})`
+                                    : "Nothing to delete",
+                                );
+                              } catch (err) {
+                                console.error(err);
+                                toast.error("Failed to empty trash");
+                              }
+                            }}
+                          >
+                            Empty trash
+                          </button>
+                        </div>
+                        <div className="divide-y divide-border/50">
+                          {deletedNotes.map((note) => {
+                            const deletedLabel = note.deleted_at
+                              ? new Date(note.deleted_at).toLocaleDateString(
+                                  undefined,
+                                  { month: "short", day: "numeric" },
+                                )
+                              : null;
+                            return (
+                              <div
+                                key={note.id}
+                                className="flex items-center gap-2 px-4 py-2.5"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm text-muted-foreground">
+                                    {note.label || "Untitled"}
+                                  </p>
+                                  {deletedLabel && (
+                                    <p className="text-[10px] text-muted-foreground/50">
+                                      Deleted {deletedLabel}
+                                    </p>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground active:bg-muted/40 active:text-foreground"
+                                  aria-label="Restore"
+                                  onClick={async () => {
+                                    try {
+                                      await dispatch(
+                                        restoreNote(note.id),
+                                      ).unwrap();
+                                      toast.success("Note restored");
+                                    } catch (err) {
+                                      console.error(err);
+                                      toast.error("Failed to restore note");
+                                    }
+                                  }}
+                                >
+                                  <RotateCcw size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-destructive/70 active:bg-destructive/10 active:text-destructive"
+                                  aria-label="Delete forever"
+                                  onClick={async () => {
+                                    const ok = await confirm({
+                                      title: "Permanently delete",
+                                      description: `Permanently delete "${note.label || "Untitled"}"? This cannot be undone.`,
+                                      confirmLabel: "Delete forever",
+                                      variant: "destructive",
+                                    });
+                                    if (!ok) return;
+                                    try {
+                                      await dispatch(
+                                        permanentlyDeleteNoteThunk(note.id),
+                                      ).unwrap();
+                                      toast.success("Note permanently deleted");
+                                    } catch (err) {
+                                      console.error(err);
+                                      toast.error(
+                                        "Failed to permanently delete",
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </>

@@ -8,6 +8,7 @@ import type { HtmlPageSummary } from "@/features/html-pages/types";
 import HtmlPageGridView, {
   formatRelativeDate,
 } from "@/features/html-pages/components/HtmlPageGridView";
+import { HtmlPagesContextMenu } from "@/features/html-pages/components/HtmlPagesContextMenu";
 import { setHtmlPagesNavOrder } from "@/features/html-pages/utils/nav-order";
 import {
   HTML_PAGES_GRID_INITIAL,
@@ -58,6 +59,7 @@ interface HtmlPageListViewProps {
     pageId: string,
     opts?: { e?: React.MouseEvent; tab?: "preview" | "meta" | "html" },
   ) => void;
+  onCreatePage: () => void;
   onDeletePage: (pageId: string) => void;
   onRefresh: () => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
@@ -69,6 +71,7 @@ export default function HtmlPageListView({
   isLoading,
   error,
   onOpenPage,
+  onCreatePage,
   onDeletePage,
   onRefresh,
   scrollContainerRef,
@@ -399,6 +402,7 @@ export default function HtmlPageListView({
           onOpenPage={(pageId, e) =>
             captureScrollAndOpen(pageId, { e, tab: "preview" })
           }
+          onCreatePage={onCreatePage}
           listReturnQuery={listReturnQuery}
           openTab="preview"
         />
@@ -446,8 +450,17 @@ export default function HtmlPageListView({
               </thead>
               <tbody>
                 {filtered.map((page) => (
-                  <tr
+                  <HtmlPagesContextMenu
                     key={page.id}
+                    pages={filtered}
+                    page={page}
+                    enableFloatingIcon={false}
+                    onNewPage={onCreatePage}
+                    onOpenPage={(pageId) =>
+                      captureScrollAndOpen(pageId, {})
+                    }
+                  >
+                  <tr
                     className="border-b border-border/60 hover:bg-muted/30 cursor-pointer transition-colors"
                     onClick={(e) => captureScrollAndOpen(page.id, { e })}
                   >
@@ -546,6 +559,7 @@ export default function HtmlPageListView({
                       </DropdownMenu>
                     </td>
                   </tr>
+                  </HtmlPagesContextMenu>
                 ))}
               </tbody>
             </table>

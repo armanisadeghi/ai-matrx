@@ -121,10 +121,11 @@ export function NoteVersionHistory({
     );
   }
 
-  const minPct = sidePanelWidthToPercent(360, viewportWidth);
-  const maxPct = sidePanelWidthToPercent(820, viewportWidth);
+  const minPct = Math.min(sidePanelWidthToPercent(480, viewportWidth), 45);
+  const maxPct = Math.min(sidePanelWidthToPercent(1100, viewportWidth), 85);
+  // Content side-by-side needs room — default ~720px, not a skinny inspector.
   const defaultPct = sidePanelWidthToPercent(
-    520,
+    720,
     viewportWidth,
     minPct,
     maxPct,

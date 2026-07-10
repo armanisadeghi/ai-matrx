@@ -715,9 +715,11 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
  */
 export const fetchSharedNotesList = createAsyncThunk<void, void>(
   "notes/fetchSharedNotesList",
-  async (_, { dispatch }) => {
+  async (_, { dispatch, getState }) => {
     const { data, error } = await supabase.rpc("get_notes_shared_with_me");
     if (error) throw error;
+
+    const incomingIds = new Set((data ?? []).map((row) => row.id as string));
 
     for (const row of data ?? []) {
       dispatch(
@@ -744,6 +746,15 @@ export const fetchSharedNotesList = createAsyncThunk<void, void>(
           },
         }),
       );
+    }
+
+    // Revoked shares must leave the store — otherwise the sharee keeps a
+    // stale editable cache after access is removed.
+    const state = getState() as RootState;
+    for (const note of Object.values(state.notes.notes)) {
+      if (note._sharedWithMe && !incomingIds.has(note.id)) {
+        dispatch(removeNote(note.id));
+      }
     }
   },
 );

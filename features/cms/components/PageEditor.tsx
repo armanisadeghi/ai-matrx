@@ -14,6 +14,7 @@ import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPag
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
 import { clientPageUrl } from "@/features/cms/utils/pageUrls";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProInput } from "@/components/official/ProInput";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Save,
@@ -105,9 +107,9 @@ export default function PageEditor({
   const isNew = !page;
   const [activeTab, setActiveTab] = useState<EditorTab>("html");
   const versions = useCmsVersions();
-  // Shared ref: only one of the HTML/CSS/JS ProTextareas is mounted at a
-  // time (gated by `activeTab`), so a single ref always points at whichever
-  // one is live.
+  // Shared ref: only one Pro editor is mounted at a time (gated by
+  // `activeTab` — the HTML/CSS/JS textareas or the SEO meta-description
+  // textarea), so a single ref always points at whichever one is live.
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [rollbackTarget, setRollbackTarget] = useState<number | null>(null);
@@ -346,6 +348,18 @@ export default function PageEditor({
       })
     : undefined;
 
+  // Most recent restorable version — the highest version_number that isn't the
+  // page's current content. Drives the menu's one-click "Restore Previous
+  // Version" through the same ConfirmDialog the Versions tab uses.
+  const latestRestorableVersion =
+    versions.versions
+      .filter((v) => !v.is_current)
+      .reduce<number | null>(
+        (max, v) =>
+          max === null || v.version_number > max ? v.version_number : max,
+        null,
+      );
+
   const pageExtraSections = createCmsPageExtraSections({
     isNew,
     hasDraft: page?.has_draft,
@@ -360,6 +374,13 @@ export default function PageEditor({
     onOpenPreview: () =>
       previewUrl && window.open(previewUrl, "_blank", "noopener,noreferrer"),
     onBackToPages: onClose,
+    onRollback: onRollback
+      ? () => {
+          if (latestRestorableVersion !== null)
+            setRollbackTarget(latestRestorableVersion);
+        }
+      : undefined,
+    canRollback: !isNew && !!onRollback && latestRestorableVersion !== null,
   });
 
   // ── Preview HTML generation ──────────────────────────────────────────
@@ -518,20 +539,12 @@ export default function PageEditor({
       </div>
 
       {/* ── Tab content ──────────────────────────────────────────── */}
-      <EditableContextMenu
-        {...CMS_PAGE_CONTEXT_MENU_PROPS}
-        extraSections={pageExtraSections}
-        getTextarea={() => textareaRef.current}
-        getApplicationScope={getApplicationScope}
-        contextData={buildSurfaceScope() as Record<string, unknown>}
-        onTextReplace={(text) => {
-          if (activeTab === "html") setHtmlContent(text);
-          else if (activeTab === "css") setCssContent(text);
-          else if (activeTab === "js") setJsContent(text);
-        }}
-        onSave={isNew ? undefined : () => void handleSaveDraft()}
-      >
-        <div className="flex-1 min-h-0 overflow-hidden">
+      {/* The Preview tab is read-only, so it mounts the NonEditable menu (no
+          text mutation); every other tab is editable. Same surface identity,
+          extraSections, and live contextData either way. */}
+      {(() => {
+        const tabPanels = (
+          <div className="flex-1 min-h-0 overflow-hidden">
           {/* HTML */}
           {activeTab === "html" && (
             <div className="relative h-full">
@@ -603,7 +616,7 @@ export default function PageEditor({
                       ({(metaTitle || title).length}/60 chars)
                     </span>
                   </label>
-                  <Input
+                  <ProInput
                     value={metaTitle}
                     onChange={(e) => setMetaTitle(e.target.value)}
                     placeholder={title || "SEO title…"}
@@ -617,19 +630,22 @@ export default function PageEditor({
                       ({metaDescription.length}/160 chars)
                     </span>
                   </label>
-                  <Textarea
+                  <ProTextarea
+                    ref={textareaRef}
                     value={metaDescription}
                     onChange={(e) => setMetaDescription(e.target.value)}
                     placeholder="Brief page description for search engines…"
                     rows={3}
                     className="text-sm"
+                    surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+                    getApplicationScope={getApplicationScope}
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">
                     Keywords
                   </label>
-                  <Input
+                  <ProInput
                     value={metaKeywords}
                     onChange={(e) => setMetaKeywords(e.target.value)}
                     placeholder="keyword1, keyword2, keyword3"
@@ -869,8 +885,35 @@ export default function PageEditor({
               </div>
             </div>
           )}
-        </div>
-      </EditableContextMenu>
+          </div>
+        );
+        return activeTab === "preview" ? (
+          <NonEditableContextMenu
+            {...CMS_PAGE_CONTEXT_MENU_PROPS}
+            extraSections={pageExtraSections}
+            contextData={buildSurfaceScope() as Record<string, unknown>}
+          >
+            {tabPanels}
+          </NonEditableContextMenu>
+        ) : (
+          <EditableContextMenu
+            {...CMS_PAGE_CONTEXT_MENU_PROPS}
+            extraSections={pageExtraSections}
+            getTextarea={() => textareaRef.current}
+            getApplicationScope={getApplicationScope}
+            contextData={buildSurfaceScope() as Record<string, unknown>}
+            onTextReplace={(text) => {
+              if (activeTab === "html") setHtmlContent(text);
+              else if (activeTab === "css") setCssContent(text);
+              else if (activeTab === "js") setJsContent(text);
+              else if (activeTab === "seo") setMetaDescription(text);
+            }}
+            onSave={isNew ? undefined : () => void handleSaveDraft()}
+          >
+            {tabPanels}
+          </EditableContextMenu>
+        );
+      })()}
 
       <ConfirmDialog
         open={discardConfirmOpen}
