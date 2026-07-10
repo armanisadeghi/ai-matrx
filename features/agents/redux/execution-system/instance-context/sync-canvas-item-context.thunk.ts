@@ -71,6 +71,16 @@ export function applyAgentCanvasItemDelta(args: {
     const next = applyContextDeltaToContent(entry.value.content, args.delta);
     if (next === null) return false;
 
+    // BUG-B guard: never let a transient empty full-replacement wipe a
+    // non-empty pinned artifact (mirrors working-document).
+    if (next === "" && entry.value.content !== "") {
+      console.warn(
+        "[canvas-item] blocked an empty context_delta from wiping a non-empty artifact (BUG-B guard fired)",
+        { conversationId: args.conversationId, artifactId: args.key },
+      );
+      return false;
+    }
+
     dispatch(
       setContextEntry({
         conversationId: args.conversationId,

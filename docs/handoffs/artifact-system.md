@@ -38,6 +38,8 @@ Ratified rules R1–R8 live in the vision doc. **Governing rule: the artifact la
 
 5. **Consolidation** — delete `app/api/artifacts` middle-tier; collapse legacy CanvasRenderer; one discovery front door.
 
+6. **Pin persistence across reload** — pins live in `instanceContext` (session). Reload drops the rail chip; R1 tag + canvas row survive. Decide: hydrate pins from R1/`userEditable` on load, or persist a pin set.
+
 ## Done
 
 - Streaming + inline-edit persistence for render blocks — `BlockRenderer` / `artifact-renderers.tsx`.
@@ -45,6 +47,7 @@ Ratified rules R1–R8 live in the vision doc. **Governing rule: the artifact la
 - Generic version history — `ArtifactVersionHistory.tsx`.
 - `userEditable` registry flag + ArtifactRefBlock `resolve:"latest"` (mermaid + code).
 - **Pin code/JSON as editable context** — attach primitive + rewrite + writeback + rail + stream refresh.
+- Attach hardening — mid-stream gate, all-identical-fence rewrite, orphan reuse, latest `base_version` on re-attach, R8 chain dedupe, BUG-B empty-delta guard.
 - `cx_canvas_save_user_version` preserves `external_system`/`external_id`/org/metadata/source identity.
 - HTML auto-publish + flashcards domain link.
 - Single-message refresh — `refetch-single-message.thunk.ts`.
@@ -54,3 +57,5 @@ Ratified rules R1–R8 live in the vision doc. **Governing rule: the artifact la
 1. **Convert reach for tables.** Should Convert on a fresh table materialize-on-the-fly (one click), or should tables auto-materialize at stream-end so Convert is always present?
 
 2. **Self-contained types' home.** Mermaid/comparison/timeline/etc. — stay canvas-library-only, or escape into dedicated features?
+
+3. **Pin persistence.** Session-only (today) vs hydrate-on-reload from R1 code artifacts vs explicit persisted pin set?

@@ -33,6 +33,10 @@ import { wrapArtifactText } from "./artifactWire";
 import { ensureArtifactPersisted } from "./ensureArtifactPersisted";
 import { isRealSourceId } from "./materializeBlocks";
 import { cxMessageContentRewriter } from "./materializeMessageArtifacts";
+import {
+  messageStillHasFence as messageStillHasFencePure,
+  rewriteAllMatchingFences,
+} from "./attachBlockFenceRewrite";
 
 export interface AttachBlockInput {
   conversationId: string;
@@ -80,50 +84,32 @@ function fenceMarkdown(language: string, body: string): string {
   });
 }
 
-/**
- * Replace the FIRST matching fence in the message content with the R1
- * artifact tag. Returns null when the fence isn't found (caller should abort
- * the rewrite — never leave a dangling ref).
- */
 function rewriteFenceToArtifact(
   content: CxContentBlock[],
   language: string,
   body: string,
   wire: string,
 ): CxContentBlock[] | null {
-  const fence = fenceMarkdown(language, body);
-  let replaced = false;
-  const out: CxContentBlock[] = content.map((block) => {
-    if (replaced || !isTextBlock(block)) return block;
-    const text = block.text ?? "";
-    const idx = text.indexOf(fence);
-    if (idx === -1) {
-      // Soft match: fence body alone between fences of this language.
-      const soft = new RegExp(
-        "```" +
-          escapeRegExp(language || "") +
-          "\\s*\\n" +
-          escapeRegExp(body) +
-          "\\n```",
-      );
-      if (!soft.test(text)) return block;
-      replaced = true;
-      return {
-        ...block,
-        text: text.replace(soft, wire),
-      } as CxTextContent;
-    }
-    replaced = true;
-    return {
-      ...block,
-      text: text.slice(0, idx) + wire + text.slice(idx + fence.length),
-    } as CxTextContent;
-  });
-  return replaced ? out : null;
+  return rewriteAllMatchingFences(
+    content,
+    language,
+    body,
+    wire,
+    fenceMarkdown(language, body),
+  ) as CxContentBlock[] | null;
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function messageStillHasFence(
+  content: CxContentBlock[],
+  language: string,
+  body: string,
+): boolean {
+  return messageStillHasFencePure(
+    content,
+    language,
+    body,
+    fenceMarkdown(language, body),
+  );
 }
 
 /**
@@ -178,6 +164,48 @@ function extractBody(row: {
   }
   if (typeof stored === "string") return stored;
   return "";
+}
+
+/** Latest row in the version chain for `id` (root or any child). */
+async function resolveLatestInChain(id: string) {
+  const history = await canvasArtifactService.getVersionHistory(id);
+  if (history.length > 0) {
+    return history.reduce((max, r) => (r.version > max.version ? r : max), history[0]!);
+  }
+  return canvasArtifactService.getById(id);
+}
+
+/**
+ * Find a canvas row for this message whose body matches but is not yet
+ * referenced in the message text — leftover from an upsert that succeeded
+ * before a rewrite failed.
+ */
+async function findOrphanCanvasRowForBody(
+  messageId: string,
+  body: string,
+  messageContent: CxContentBlock[],
+) {
+  const existing = await canvasArtifactService.getBySource({
+    system: "cx_message",
+    id: messageId,
+  });
+  const trimmed = body.trim();
+  for (const row of existing) {
+    if (extractBody(row).trim() !== trimmed) continue;
+    const referenced = messageContent.some(
+      (b) =>
+        isTextBlock(b) &&
+        typeof b.text === "string" &&
+        b.text.includes(`id="${row.id}"`),
+    );
+    if (!referenced) return row;
+  }
+  return null;
+}
+
+/** Prefer the chain root UUID as the durable context / R1 key. */
+function chainRootId(row: { id: string; parent_canvas_id: string | null }): string {
+  return row.parent_canvas_id ?? row.id;
 }
 
 /**
@@ -242,10 +270,12 @@ export async function attachBlockAsEditableContext(
 
   if (artifactId) {
     steps.push(`reusing existing artifact ${artifactId}`);
-    const row = await canvasArtifactService.getById(artifactId);
-    if (row) {
-      version = row.version;
-      rowContent = extractBody(row) || body;
+    const latest = await resolveLatestInChain(artifactId);
+    if (latest) {
+      // Context key = chain root (stable R1 id); content + base_version = head.
+      artifactId = chainRootId(latest);
+      version = latest.version;
+      rowContent = extractBody(latest) || body;
     } else {
       // Stale id — fall back to upsert below.
       steps.push("existing id not found in DB — will upsert");
@@ -255,15 +285,7 @@ export async function attachBlockAsEditableContext(
 
   const needsRewrite =
     !artifactId ||
-    !(
-      findExistingArtifactIdForBody(messageContent, body) === artifactId ||
-      messageContent.some(
-        (b) =>
-          isTextBlock(b) &&
-          typeof b.text === "string" &&
-          b.text.includes(`id="${artifactId}"`),
-      )
-    );
+    messageStillHasFence(messageContent, language || "text", body);
 
   if (needsRewrite) {
     // Dry-run the fence locate with a placeholder wire so we fail BEFORE upsert.
@@ -286,6 +308,22 @@ export async function attachBlockAsEditableContext(
         errors,
         steps,
       };
+    }
+  }
+
+  if (!artifactId) {
+    // Reuse an orphan from a prior attach that upserted then failed rewrite.
+    const orphan = await findOrphanCanvasRowForBody(
+      messageId,
+      body,
+      messageContent,
+    );
+    if (orphan) {
+      const latest = (await resolveLatestInChain(orphan.id)) ?? orphan;
+      artifactId = chainRootId(latest);
+      version = latest.version;
+      rowContent = extractBody(latest) || body;
+      steps.push(`reusing orphan canvas row ${artifactId} (prior failed rewrite)`);
     }
   }
 
@@ -321,15 +359,12 @@ export async function attachBlockAsEditableContext(
     steps.push(...ensured.steps);
   }
 
-  // ── 2. Rewrite message to R1 (skip if already rewritten for this id) ────
-  const alreadyWired =
-    findExistingArtifactIdForBody(messageContent, body) === artifactId ||
-    messageContent.some(
-      (b) =>
-        isTextBlock(b) &&
-        typeof b.text === "string" &&
-        b.text.includes(`id="${artifactId}"`),
-    );
+  // ── 2. Rewrite message to R1 (any remaining matching fences) ────────────
+  const alreadyWired = !messageStillHasFence(
+    messageContent,
+    language || "text",
+    body,
+  );
 
   if (!alreadyWired) {
     const wire = wrapArtifactText({

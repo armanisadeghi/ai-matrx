@@ -72,17 +72,34 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
 }) => {
     const artifactId = serverData?.artifact_id;
     // Registry-driven: userEditable types (mermaid, code, …) always show the
-    // newest version in the chain. Missing type → assume latest (safe default
-    // for pinned editable context).
-    const artifactType =
+    // newest version in the chain. Prefer wire/metadata type; if the tag omits
+    // type, load exact first then upgrade to latest once row.type is known —
+    // never assume latest for unknown types (archive fidelity).
+    const artifactTypeHint =
         serverData?.artifact_type ?? fallbackMetadata?.artifactType;
-    const wantLatest =
-        !artifactType ||
-        Boolean(getArtifactDef(artifactType)?.userEditable);
-    const { row, loading, error } = useCanvasItem(
-        artifactId,
-        wantLatest ? { resolve: "latest" } : undefined,
+    const hintWantsLatest = Boolean(
+        artifactTypeHint && getArtifactDef(artifactTypeHint)?.userEditable,
     );
+    const exact = useCanvasItem(
+        hintWantsLatest ? null : artifactId,
+        { resolve: "exact" },
+    );
+    const discoveredWantsLatest = Boolean(
+        !hintWantsLatest &&
+            exact.row?.type &&
+            getArtifactDef(exact.row.type)?.userEditable,
+    );
+    const latest = useCanvasItem(
+        hintWantsLatest || discoveredWantsLatest ? artifactId : null,
+        { resolve: "latest" },
+    );
+    const row = hintWantsLatest || discoveredWantsLatest ? latest.row : exact.row;
+    const loading =
+        hintWantsLatest || discoveredWantsLatest
+            ? latest.loading || (discoveredWantsLatest && exact.loading)
+            : exact.loading;
+    const error =
+        hintWantsLatest || discoveredWantsLatest ? latest.error : exact.error;
 
     if (loading) {
         return (
