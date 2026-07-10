@@ -20,6 +20,10 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { getFcTutorAgentConfig } from "./config";
+import {
+  coerceTrustEnvelope,
+  type TrustEnvelope,
+} from "@/features/education/trust/types";
 
 export interface HelpLiveContext {
   front: string;
@@ -48,6 +52,9 @@ export interface HelpLiveResult {
   answer: string;
   hintLevel: "nudge" | "partial" | "full";
   followups: string[];
+  /** P0 TrustEnvelope — how grounded this answer is; null on refusal render
+   *  the honest-refusal presentation instead of a normal answer bubble. */
+  trust: TrustEnvelope | null;
 }
 
 async function waitForObject(
@@ -134,6 +141,7 @@ export function helpLive(ctx: HelpLiveContext) {
         followups: Array.isArray(r.followups)
           ? r.followups.filter((x): x is string => typeof x === "string")
           : [],
+        trust: coerceTrustEnvelope(r.trust),
       };
     } catch (err) {
       console.error("[flashcards.helpLive] failed:", err);

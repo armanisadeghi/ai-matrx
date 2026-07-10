@@ -35,6 +35,9 @@ import {
 } from "../redux/fastFire.selectors";
 import { FastFireTimerBar } from "./FastFireTimerBar";
 import { SpokenFrontPlayer } from "./SpokenFrontPlayer";
+import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
+import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
+import { RefusalNotice } from "@/features/education/trust/components/RefusalNotice";
 
 interface FastFireLiveCardProps {
   subscribeProgress: (
@@ -184,10 +187,24 @@ export function FastFireLiveCard({
             settings to enable it.
           </div>
         )}
-        {help && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-            {help.answer}
-          </div>
+        {help && help.trust?.confidence === "not_in_material" ? (
+          <RefusalNotice message={help.answer} />
+        ) : (
+          help && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+              {help.trust && (
+                <div className="mb-1.5 flex items-center gap-2">
+                  <ConfidenceBadge confidence={help.trust.confidence} />
+                </div>
+              )}
+              {help.answer}
+              {help.trust && help.trust.citations.length > 0 && (
+                <div className="mt-1.5">
+                  <SourceCitations trust={help.trust} label="Sources" />
+                </div>
+              )}
+            </div>
+          )
         )}
 
         {/* Live background-grading status (only when liveScore is on) */}
