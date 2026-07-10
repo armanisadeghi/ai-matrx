@@ -50,6 +50,9 @@ import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-m
 import { useAutosave } from "@/hooks/useAutosave";
 import { AutosaveIndicator } from "@/components/AutosaveIndicator";
 import { SetVersionHistoryDialog } from "./SetVersionHistoryDialog";
+import { studyService } from "@/features/education/study/service/studyService";
+import type { ItemMasteryRow } from "@/features/education/study/types";
+import { MasteryTierPill } from "@/features/education/study/components/MasteryDisplay";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput, SetWithCards, CardWithDetails } from "../../data/types";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
@@ -86,6 +89,9 @@ export function EditSetView({ setId }: { setId: string }) {
   });
   const [addingCard, setAddingCard] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [masteryByCard, setMasteryByCard] = useState<
+    Record<string, ItemMasteryRow | undefined>
+  >({});
 
   // Bump to refetch (after adding a card / restoring a version). The fetch
   // lives in the effect so no setState fires synchronously in the effect body.
@@ -125,6 +131,19 @@ export function EditSetView({ setId }: { setId: string }) {
           topic: res.data.set.topic ?? "",
         });
         setError(null);
+        // Per-card mastery for the retention pills (read-only, RLS-scoped).
+        if (res.data.cards.length > 0) {
+          const mRes = await studyService.getMasteryBulk(
+            res.data.cards.map((c) => ({ itemType: "fc_card", itemId: c.id })),
+          );
+          if (!cancelled) {
+            const seed: Record<string, ItemMasteryRow | undefined> = {};
+            for (const m of mRes.data ?? []) seed[m.item_id] = m;
+            setMasteryByCard(seed);
+          }
+        } else {
+          setMasteryByCard({});
+        }
       }
       setLoading(false);
     })();
@@ -394,6 +413,7 @@ export function EditSetView({ setId }: { setId: string }) {
                   index={i}
                   count={data.cards.length}
                   reordering={reordering}
+                  mastery={masteryByCard[card.id]}
                   onMove={(dir) => void moveCard(i, dir)}
                   onDelete={() => setDeleteTarget(card)}
                 />
@@ -440,6 +460,7 @@ function CardEditor({
   index,
   count,
   reordering,
+  mastery,
   onMove,
   onDelete,
 }: {
@@ -447,6 +468,7 @@ function CardEditor({
   index: number;
   count: number;
   reordering: boolean;
+  mastery: ItemMasteryRow | undefined;
   onMove: (direction: -1 | 1) => void;
   onDelete: () => void;
 }) {
@@ -530,6 +552,7 @@ function CardEditor({
               {kindLabel}
             </span>
           )}
+          <MasteryTierPill mastery={mastery} />
         </span>
         <div className="flex items-center gap-1">
           <Button

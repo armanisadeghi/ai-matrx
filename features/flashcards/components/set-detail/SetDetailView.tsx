@@ -52,6 +52,12 @@ import {
   clozeFaces,
   matchingPairs,
 } from "../../utils/cardVariants";
+import { studyService } from "@/features/education/study/service/studyService";
+import type { ItemMasteryRow } from "@/features/education/study/types";
+import {
+  MasteryTierPill,
+  DeckMasteryBar,
+} from "@/features/education/study/components/MasteryDisplay";
 import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
 import { downloadSetCsv } from "../../utils/importExportCsv";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
@@ -69,7 +75,15 @@ const OTHER_STUDY_MODES = [
 const EDU_BASE = "/education/flashcards";
 
 /** A compact, non-flipping front/back peek for one card with detail badges. */
-function CardPeek({ card, index }: { card: CardWithDetails; index: number }) {
+function CardPeek({
+  card,
+  index,
+  mastery,
+}: {
+  card: CardWithDetails;
+  index: number;
+  mastery: ItemMasteryRow | undefined;
+}) {
   const hasHelper = card.details.some((d) => d.kind === "helper");
   const hasExample = card.details.some((d) => d.kind === "example");
   const hasAudio = card.details.some((d) => !!d.audio_file_id);
@@ -80,8 +94,11 @@ function CardPeek({ card, index }: { card: CardWithDetails; index: number }) {
   return (
     <div className="flex flex-col rounded-lg border border-border bg-card p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-          Card {index + 1}
+        <span className="flex items-center gap-1.5">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+            Card {index + 1}
+          </span>
+          <MasteryTierPill mastery={mastery} />
         </span>
         <div className="flex items-center gap-1">
           {kind === CARD_KIND.cloze && (
@@ -165,6 +182,9 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [enhanceOpen, setEnhanceOpen] = useState(false);
+  const [masteryByCard, setMasteryByCard] = useState<
+    Record<string, ItemMasteryRow | undefined>
+  >({});
   // Bump to refetch (after enrich/deepen adds details/sub-cards). The fetch
   // lives in the effect so no setState fires synchronously in the effect body.
   const [reloadKey, setReloadKey] = useState(0);
@@ -181,6 +201,19 @@ export function SetDetailView({ setId }: { setId: string }) {
       } else {
         setData(res.data);
         setError(null);
+        // Per-card mastery for the retention viz (read-only; RLS-scoped).
+        if (res.data.cards.length > 0) {
+          const mRes = await studyService.getMasteryBulk(
+            res.data.cards.map((c) => ({ itemType: "fc_card", itemId: c.id })),
+          );
+          if (!cancelled) {
+            const seed: Record<string, ItemMasteryRow | undefined> = {};
+            for (const m of mRes.data ?? []) seed[m.item_id] = m;
+            setMasteryByCard(seed);
+          }
+        } else {
+          setMasteryByCard({});
+        }
       }
       setLoading(false);
     })();
@@ -450,6 +483,16 @@ export function SetDetailView({ setId }: { setId: string }) {
               </div>
             </div>
 
+            {/* Deck mastery — Brainscape's retention hook: where you stand
+                across the whole deck, in the shared mastery vocabulary. */}
+            {data.cards.length > 0 && (
+              <div className="mt-4 rounded-xl border border-border bg-card p-3">
+                <DeckMasteryBar
+                  masteries={data.cards.map((c) => masteryByCard[c.id])}
+                />
+              </div>
+            )}
+
             {/* Audio overview (Phase 7 — podcast-from-deck) */}
             <div className="mt-4">
               <AudioOverviewSection
@@ -481,7 +524,12 @@ export function SetDetailView({ setId }: { setId: string }) {
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {data.cards.map((card, i) => (
-                    <CardPeek key={card.id} card={card} index={i} />
+                    <CardPeek
+                      key={card.id}
+                      card={card}
+                      index={i}
+                      mastery={masteryByCard[card.id]}
+                    />
                   ))}
                 </div>
               )}

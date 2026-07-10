@@ -79,3 +79,78 @@ export function displayMasteryPct(
   if (live != null) return live;
   return mastery.mastery_score != null ? Number(mastery.mastery_score) : null;
 }
+
+// ─── Mastery tiers — the SHARED display vocabulary ────────────────────────────
+//
+// One canonical bucketing of an item's mastery into named tiers, so every
+// surface (P5 dashboards, the flashcards editor + set detail, the game) speaks
+// the SAME language for "how well do I know this". Derived from the live decayed
+// mastery %, the FSRS struggle flag, and whether the item has ever been studied.
+
+/** New → never studied; then struggling → learning → familiar → mastered. */
+export type MasteryTier =
+  | "new"
+  | "struggling"
+  | "learning"
+  | "familiar"
+  | "mastered";
+
+export interface MasteryTierMeta {
+  tier: MasteryTier;
+  label: string;
+  /** Live mastery % (0–1), or null for never-studied items. */
+  pct: number | null;
+}
+
+/** Tier order low → high, for building distribution bars. */
+export const MASTERY_TIER_ORDER: readonly MasteryTier[] = [
+  "new",
+  "struggling",
+  "learning",
+  "familiar",
+  "mastered",
+];
+
+export const MASTERY_TIER_LABEL: Record<MasteryTier, string> = {
+  new: "New",
+  struggling: "Struggling",
+  learning: "Learning",
+  familiar: "Familiar",
+  mastered: "Mastered",
+};
+
+/**
+ * Classify an item's mastery into a named tier. `null`/never-studied →
+ * `new`; a struggling item (FSRS `struggle_flag`, or live mastery < 40%) →
+ * `struggling`; then `learning` (< 70%), `familiar` (< 90%), `mastered` (≥ 90%).
+ * Thresholds match the planner's weak-area cutoff (`collectSummary`) so "weak"
+ * means the same thing everywhere.
+ */
+export function masteryTier(
+  mastery:
+    | (Pick<
+        ItemMasteryRow,
+        | "difficulty"
+        | "stability"
+        | "last_review"
+        | "attempt_count"
+        | "lapses"
+        | "mastery_score"
+        | "struggle_flag"
+      >)
+    | null
+    | undefined,
+  now: Date = new Date(),
+): MasteryTierMeta {
+  if (!mastery || (mastery.attempt_count ?? 0) === 0) {
+    return { tier: "new", label: MASTERY_TIER_LABEL.new, pct: null };
+  }
+  const pct = displayMasteryPct(mastery, now);
+  const p = pct ?? 0;
+  let tier: MasteryTier;
+  if (mastery.struggle_flag || p < 0.4) tier = "struggling";
+  else if (p < 0.7) tier = "learning";
+  else if (p < 0.9) tier = "familiar";
+  else tier = "mastered";
+  return { tier, label: MASTERY_TIER_LABEL[tier], pct };
+}
