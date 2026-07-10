@@ -278,12 +278,12 @@ export function CreateFromSource() {
           </div>
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              New set from a document
+              A study set grounded in your material
             </h1>
             <p className="text-sm text-muted-foreground">
               {step === "pick-doc"
-                ? "Pick a document from your RAG library, then choose exactly which passages to use."
-                : `Curating from "${selectedDoc?.name}"`}
+                ? "Pick a document, then choose exactly which passages to use — every card is grounded in, and cites, your own material."
+                : `Grounding cards in "${selectedDoc?.name}" — you choose the passages`}
             </p>
           </div>
         </div>
@@ -297,11 +297,12 @@ export function CreateFromSource() {
                 <p className="text-sm font-medium text-foreground">
                   Generating{" "}
                   {Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10))} cards
-                  from {selectedChunkIds.size}{" "}
-                  {selectedChunkIds.size === 1 ? "passage" : "passages"}
+                  grounded in {selectedChunkIds.size}{" "}
+                  {selectedChunkIds.size === 1 ? "passage" : "passages"} of your
+                  material
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  This can take a moment for larger selections.
+                  Each card will cite the exact passage it came from.
                 </p>
               </div>
             </div>

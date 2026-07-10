@@ -53,6 +53,8 @@ import { SetVersionHistoryDialog } from "./SetVersionHistoryDialog";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ItemMasteryRow } from "@/features/education/study/types";
 import { MasteryTierPill } from "@/features/education/study/components/MasteryDisplay";
+import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import { CardTrustFooter } from "@/features/education/trust/components/CardTrustFooter";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput, SetWithCards, CardWithDetails } from "../../data/types";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
@@ -693,6 +695,16 @@ function CardEditor({
           </div>
         </div>
       )}
+
+      {/* P0 Trust — for an AI-generated card, show where it came from and let
+          the author re-check it against its cited source (drift detection).
+          Renders nothing for a hand-made card. */}
+      <CardTrustFooter
+        trust={coerceTrustEnvelope(card.metadata)}
+        front={front}
+        back={back ?? ""}
+        className="mt-2"
+      />
     </div>
   );
 }

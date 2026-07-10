@@ -222,8 +222,9 @@ export function CreateFromTopic() {
               New flashcard set
             </h1>
             <p className="text-sm text-muted-foreground">
-              Describe a topic and let AI build a study set you can review right
-              away.
+              Describe a topic and AI builds a study set to review right away.
+              Upload a document to get cards grounded in — and cited to — your
+              own material.
             </p>
           </div>
         </div>
