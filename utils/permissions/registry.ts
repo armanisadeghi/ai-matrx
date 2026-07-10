@@ -350,11 +350,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     schemaName: "education",
     idColumn: "id",
     ownerColumn: "created_by",
-    // NOTE: the live DB registry row carries is_public_column='visibility'
-    // (mirrored faithfully for parity). That looks wrong for a visibility-enum
-    // table (should be null) and is flagged in KNOWN_DEFECTS as DB-owner work;
-    // do not "fix" it here — the mirror must equal the DB.
-    isPublicColumn: "visibility",
+    isPublicColumn: null,
     displayLabel: "Study Guide",
     urlPathTemplate: "/education/learn/{slug}",
     rlsUsesHasPermission: true,

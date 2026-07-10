@@ -268,7 +268,7 @@
     "table_name": "learn_doc",
     "id_column": "id",
     "owner_column": "created_by",
-    "is_public_column": "visibility",
+    "is_public_column": null,
     "display_label": "Study Guide",
     "url_path_template": "/education/learn/{slug}",
     "rls_uses_has_permission": true,
