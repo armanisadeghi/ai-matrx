@@ -55,6 +55,21 @@ One physical PDF = `cld_files` row. Two derived families, now sharing identity:
 - Scanner-produced PDFs (`Scans/`, `parent_file_id` set) get no `page1_url` grid thumbnail — the variant pipeline skips derivatives BY DESIGN; the grid falls back to live render.
 
 ## Change Log
+- 2026-07-10 — **Results-surface parity + real scan thumbnails (final design deltas).**
+  Extractor toolbar: Download (authed blob; `downloadFile` now exported from the
+  `@/features/files` public surface) + Share (canonical `shareModalWindow`) + Indexed pill;
+  text-pane subtitles = "N words · M% confidence" (per-page `extraction_confidence`, raw pane
+  only); inspector Widgets gained **Ask this document** (question input + 4 suggested prompts →
+  Analyze Document shortcut with `runtime.userInput`). Scanner recents render real page-1
+  thumbnails via `<MediaThumbnail>` (`RecentScanRow.fileId` from `source_id`). aidream:
+  `run_pdf_from_images` dispatches `generate_thumbnail_for_file(allow_lineage=True)` at save
+  (scanned masters legitimately carry `parent_file_id` lineage — the flag bypasses only that
+  guard); 10 existing scans backfilled live (new CLI `aidream/cli/scan_thumbnail_backfill.py`).
+  ⚠️ Root-cause fix ridealong: `thumbnail_source._render_pdf_first_page` read `.bytes`/
+  `.mime_type` off `PdfPageRender` (has `.content`/`.format`) — EVERY pdf page-1 thumbnail
+  platform-wide had silently fallen back to the mime icon. Residual: pre-fix PDF masters keep
+  icon variants under the real keys (key-dedup skips them); healing needs `force_rerender`
+  plumbed through — tracked in feedback.
 - 2026-07-08 — **500-page scale items shipped (closes D32).** (1) `PdfStudioReader` text panes virtualized with `@tanstack/react-virtual` (the repo-standard windowing primitive) — only the visible window + overscan of `PageBlock`s mounts; active-page sync is now scroll-position-derived (the old IntersectionObserver can't observe unmounted rows), `pinPageToTop` = `scrollToIndex`, and inline-edit buffers lifted to pane-level `drafts` so an edit survives its row unmounting. (2) aidream `/pdf/clean-content/{doc_id}` routes docs with >200 per-page rows to the **resumable per-page clean** (`matrx_rag.stages.run_clean` — per-page `cleaned_text` rows are the durable checkpoints, retry skips finished pages); stream announces mode via `pdf_clean_started {mode, total_pages}`, FE (`streamPdfClean` `onCleanStarted` + `usePdfExtractor.cleanContent`) auto-retries per-page runs up to 2× on stream death and surfaces per-page progress in the cleaned pane (`streamingStatus`). ≤200pp keeps the whole-doc agent path. (3) aidream ZIP endpoints (`/pdf/split`, `/pdf/render-all`, `/pdf/studio/render` render_all) stream via new `matrx_utils.file_handling.zip_stream.stream_zip`; render-all renders lazily via `pdf.ops.iter_render_pages_to_image_bytes` (bounded queue, one render thread owns the Document) — peak memory O(one page). (4) **Reading-order viewer tab** ("Order") added to the Analysis Studio `InspectorRail` — `features/file-analysis/content/ReadingOrderContent.tsx` streams `extract-reading-order`, renders per-page ordered blocks with column chips, page header jumps the canvas. (5) Extractor uploads now dispatch `generate_thumbnail_for_file` from `_upload_raw_to_cld_files` (page-1 grid thumbnails were missing on 19/20 `pdf-extractions/` masters; files-router uploads were fine). aidream tests: `packages/matrx-utils/tests/test_zip_stream_and_iter_render.py`.
 - 2026-07-08 — **Reversible-redaction key escrow wired (closes D31).** The browser now wraps each session key with the org escrow KMS RSA public key (WebCrypto RSA-OAEP SHA-256; raw key never transits the server) and inserts the ciphertext into `pdf.pdf_redaction_key_escrow` (`features/file-analysis/redact/escrow.ts` + `utils/supabase/pdfDb.ts`); recovery = "Recover via organization" in `RestoreDialog` → aidream `POST /redact/escrow/recover` (owner or org owner/admin, KMS Decrypt, every unwrap audit-logged to `platform.activity_log`); `KeyHandoff` copy reflects escrow status (loud red panel on escrow failure). Server: aidream `GET /redact/escrow/wrapping-key` + recover endpoint, env `MATRX_REDACTION_KMS_KEY_ID` (asymmetric RSA ENCRYPT_DECRYPT key; 503 loudly when unset).
 - 2026-07-07 — **Design-parity wave** (design sources now in-repo:
