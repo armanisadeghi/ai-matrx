@@ -155,6 +155,7 @@ export const practiceTestGenerator: ConvertGenerator = {
   targetKind: "practice_test",
   label: "Practice test",
   available: true,
-  capability: "education.quiz_generate",
+  // Per-kind metering, matching kindConfig (quiz vs practice_test are separate caps).
+  capability: "education.practice_test_generate",
   run: makeRun("practice_test"),
 };
