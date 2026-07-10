@@ -349,6 +349,7 @@ const ToolCallVisualizationInner: React.FC<{
           entries,
           initialCallId: seedCallId !== "no-entry" ? seedCallId : null,
           initialTab: initialTab ?? null,
+          conversationId: conversationId ?? null,
         },
       }),
     );

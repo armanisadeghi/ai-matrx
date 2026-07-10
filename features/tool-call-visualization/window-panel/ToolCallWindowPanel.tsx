@@ -15,26 +15,32 @@
  *   - SNAPSHOT: props carry an `entries` array (post-stream / persisted
  *     callers without an active request). No live subscription.
  *
- * Layout:
- *   - Left sidebar (`EntrySidebar`)  — one row per entry, dense list with
- *     status dot. Hidden by default for single-entry groups.
- *   - Main pane                       — browser-style tab strip (top) +
- *     active tab body (below). Tabs are assembled from
- *     `getOverlayTabs(toolName)` for the selected entry, falling back to
- *     `[Results, Input, Raw]` when no custom tabs are registered (or on
- *     entry error / multi-tool view).
+ * Sidebar scope:
+ *   - This Message — tools for the current request / snapshot (default).
+ *   - All Messages — every tool call in the conversation (cached + paged).
  *
- * Window registration:
- *   - `ephemeral: true` — never persisted; live tool data can't survive
- *     a reload.
- *   - `instanceMode: "multi"` — multiple side-by-side windows allowed.
+ * Layout:
+ *   - Left sidebar (`EntrySidebar`)  — scope toggle + one row per entry.
+ *   - Main pane                       — browser-style tab strip + body.
+ *   - Header actions                  — Copy / Copy for AI for ALL listed tools.
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Loader2,
+  LoaderCircle,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { mergeToolCalls } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { selectToolCallsForConversation } from "@/features/agents/redux/execution-system/observability/observability.selectors";
+import type { RootState } from "@/lib/redux/store";
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
@@ -47,6 +53,15 @@ import {
   RawDataView,
 } from "../components/ToolTabBodies";
 import { useOrderedToolLifecycles } from "../redux/hooks";
+import { cxToolCallToLifecycleEntry } from "../utils/cxToolCallToLifecycleEntry";
+import {
+  buildToolEntriesSummary,
+  toolEntriesSummaryToHuman,
+} from "../utils/toolEntryBundle";
+import {
+  CONVERSATION_TOOL_CALL_PAGE_SIZE,
+  fetchConversationToolCallsPage,
+} from "../service/fetchConversationToolCalls";
 
 // ─── Tab descriptor used by the browser-tab strip ─────────────────────────────
 
@@ -56,60 +71,126 @@ interface ToolTab {
   content: React.ReactNode;
 }
 
+type SidebarScope = "message" | "conversation";
+
 // ─── Entry sidebar ────────────────────────────────────────────────────────────
 
 const EntrySidebar: React.FC<{
   entries: ToolLifecycleEntry[];
   selectedCallId: string;
   onSelect: (callId: string) => void;
-}> = ({ entries, selectedCallId, onSelect }) => {
+  scope: SidebarScope;
+  onScopeChange: (scope: SidebarScope) => void;
+  conversationScopeAvailable: boolean;
+  loadingMore: boolean;
+  hasMore: boolean;
+  onLoadMore: () => void;
+}> = ({
+  entries,
+  selectedCallId,
+  onSelect,
+  scope,
+  onScopeChange,
+  conversationScopeAvailable,
+  loadingMore,
+  hasMore,
+  onLoadMore,
+}) => {
   return (
-    <div className="flex flex-col h-full overflow-y-auto py-1.5">
-      {entries.length === 0 ? (
-        <div className="px-3 py-4 text-xs text-muted-foreground italic">
-          No tool entries
-        </div>
-      ) : (
-        entries.map((entry, idx) => {
-          const isActive = entry.callId === selectedCallId;
-          const label = getToolDisplayName(entry.toolName);
-          const isError = entry.status === "error";
-          const isRunning =
-            entry.status === "started" ||
-            entry.status === "progress" ||
-            entry.status === "step";
-          const isComplete = entry.status === "completed";
-          return (
-            <button
-              key={entry.callId}
-              type="button"
-              onClick={() => onSelect(entry.callId)}
-              className={cn(
-                "flex items-center gap-2 px-2.5 py-1.5 mx-1 rounded-md text-left text-xs transition-colors border",
-                isActive
-                  ? "bg-primary/10 text-foreground border-primary/30"
-                  : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-              title={`${label} — ${entry.status}`}
+    <div className="flex h-full flex-col overflow-hidden">
+      {conversationScopeAvailable && (
+        <div className="flex-shrink-0 border-b border-border px-1.5 py-1.5">
+          <ToggleGroup
+            type="single"
+            value={scope}
+            onValueChange={(v) => {
+              if (v === "message" || v === "conversation") onScopeChange(v);
+            }}
+            className="grid w-full grid-cols-2 gap-0.5 rounded-md bg-muted/60 p-0.5"
+          >
+            <ToggleGroupItem
+              value="message"
+              className="h-6 rounded-sm px-1 text-[10px] font-medium data-[state=on]:bg-background data-[state=on]:shadow-sm"
             >
-              <span className="flex-shrink-0 opacity-60 font-mono w-4 text-right">
-                {idx + 1}.
-              </span>
-              <span className="flex-1 truncate font-medium">{label}</span>
-              <span className="flex-shrink-0">
-                {isError ? (
-                  <AlertTriangle className="w-3 h-3 text-red-500" />
-                ) : isRunning ? (
-                  <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
-                ) : isComplete ? (
-                  <CheckCircle className="w-3 h-3 text-green-500" />
-                ) : (
-                  <span className="block w-2 h-2 rounded-full bg-muted-foreground/40" />
+              This message
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="conversation"
+              className="h-6 rounded-sm px-1 text-[10px] font-medium data-[state=on]:bg-background data-[state=on]:shadow-sm"
+            >
+              All messages
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      )}
+
+      <div className="min-h-0 flex-1 overflow-y-auto py-1">
+        {entries.length === 0 ? (
+          <div className="px-3 py-4 text-xs italic text-muted-foreground">
+            {loadingMore ? "Loading tool calls…" : "No tool entries"}
+          </div>
+        ) : (
+          entries.map((entry, idx) => {
+            const isActive = entry.callId === selectedCallId;
+            const label = getToolDisplayName(entry.toolName);
+            const isError = entry.status === "error";
+            const isRunning =
+              entry.status === "started" ||
+              entry.status === "progress" ||
+              entry.status === "step";
+            const isComplete = entry.status === "completed";
+            return (
+              <button
+                key={entry.callId}
+                type="button"
+                onClick={() => onSelect(entry.callId)}
+                className={cn(
+                  "mx-1 flex items-center gap-2 rounded-md border px-2 py-1.5 text-left text-xs transition-colors",
+                  isActive
+                    ? "border-primary/30 bg-primary/10 text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
-              </span>
-            </button>
-          );
-        })
+                title={`${label} — ${entry.status}`}
+              >
+                <span className="w-4 flex-shrink-0 text-right font-mono opacity-60">
+                  {idx + 1}.
+                </span>
+                <span className="flex-1 truncate font-medium">{label}</span>
+                <span className="flex-shrink-0">
+                  {isError ? (
+                    <AlertTriangle className="h-3 w-3 text-destructive" />
+                  ) : isRunning ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  ) : isComplete ? (
+                    <CheckCircle className="h-3 w-3 text-success" />
+                  ) : (
+                    <span className="block h-2 w-2 rounded-full bg-muted-foreground/40" />
+                  )}
+                </span>
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      {scope === "conversation" && (hasMore || loadingMore) && (
+        <div className="flex-shrink-0 border-t border-border p-1.5">
+          <button
+            type="button"
+            disabled={loadingMore}
+            onClick={onLoadMore}
+            className="flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
+          >
+            {loadingMore ? (
+              <>
+                <LoaderCircle className="h-3 w-3 animate-spin" />
+                Loading…
+              </>
+            ) : (
+              `Load older (${CONVERSATION_TOOL_CALL_PAGE_SIZE})`
+            )}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -143,7 +224,7 @@ const ToolBrowserTabBar: React.FC<{
       ref={scrollRef}
       role="tablist"
       aria-label="Tool result views"
-      className="flex items-stretch h-[34px] min-h-[34px] overflow-x-auto overflow-y-hidden bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 shrink-0"
+      className="flex h-[34px] min-h-[34px] shrink-0 items-stretch overflow-x-auto overflow-y-hidden border-b border-border bg-muted/40"
       style={{ scrollbarWidth: "none" }}
     >
       {tabs.map((tab) => {
@@ -156,22 +237,22 @@ const ToolBrowserTabBar: React.FC<{
             data-active={isActive}
             onClick={() => onTabClick(tab.id)}
             className={cn(
-              "relative flex items-center gap-1.5 px-3 h-full border-r border-gray-300 dark:border-gray-700 shrink-0 cursor-pointer select-none transition-colors",
+              "relative flex h-full shrink-0 cursor-pointer select-none items-center gap-1.5 border-r border-border px-3 transition-colors",
               isActive
-                ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                : "bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60",
+                ? "bg-background text-foreground"
+                : "bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
             )}
           >
             {isActive && (
-              <span className="absolute inset-x-0 top-0 h-[2px] bg-blue-500 rounded-b-none" />
+              <span className="absolute inset-x-0 top-0 h-[2px] bg-primary" />
             )}
-            <span className="text-xs font-medium truncate max-w-[160px] leading-none">
+            <span className="max-w-[160px] truncate text-xs font-medium leading-none">
               {tab.label}
             </span>
           </div>
         );
       })}
-      <div className="flex-1 min-w-0" />
+      <div className="min-w-0 flex-1" />
     </div>
   );
 };
@@ -192,6 +273,125 @@ const LiveEntriesProvider: React.FC<{
   return <>{render(filtered)}</>;
 };
 
+// ─── Conversation-wide entries (All Messages) ─────────────────────────────────
+
+function useConversationToolEntries(
+  conversationId: string | null,
+  enabled: boolean,
+): {
+  entries: ToolLifecycleEntry[];
+  loadingMore: boolean;
+  hasMore: boolean;
+  loadMore: () => void;
+} {
+  const dispatch = useAppDispatch();
+  const persisted = useAppSelector((state: RootState) =>
+    conversationId
+      ? selectToolCallsForConversation(conversationId)(state)
+      : [],
+  );
+
+  // Live overlays: any in-flight toolLifecycle for this conversation wins
+  // over the persisted row for the same callId.
+  const liveByCallId = useAppSelector((state: RootState) => {
+    if (!conversationId || !enabled) {
+      return null as Map<string, ToolLifecycleEntry> | null;
+    }
+    const requestIds =
+      state.activeRequests.byConversationId[conversationId] ?? [];
+    const map = new Map<string, ToolLifecycleEntry>();
+    for (const requestId of requestIds) {
+      const lifecycle =
+        state.activeRequests.byRequestId[requestId]?.toolLifecycle;
+      if (!lifecycle) continue;
+      for (const callId of Object.keys(lifecycle)) {
+        const entry = lifecycle[callId];
+        if (entry) map.set(callId, entry);
+      }
+    }
+    return map.size > 0 ? map : null;
+  });
+
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [oldestCursor, setOldestCursor] = useState<string | null>(null);
+  const fetchedOnceRef = useRef<string | null>(null);
+
+  // Initial page when switching to All Messages — fill gaps beyond the
+  // conversation-bundle cache (which is message-page scoped).
+  useEffect(() => {
+    if (!enabled || !conversationId) return;
+    if (fetchedOnceRef.current === conversationId) return;
+    fetchedOnceRef.current = conversationId;
+
+    let cancelled = false;
+    setLoadingMore(true);
+    void fetchConversationToolCallsPage(conversationId, {
+      limit: CONVERSATION_TOOL_CALL_PAGE_SIZE,
+    })
+      .then((page) => {
+        if (cancelled) return;
+        if (page.records.length > 0) {
+          dispatch(mergeToolCalls({ toolCalls: page.records }));
+        }
+        setHasMore(page.hasMore);
+        setOldestCursor(page.oldestStartedAt);
+      })
+      .catch(() => {
+        if (!cancelled) setHasMore(false);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingMore(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, conversationId, dispatch]);
+
+  const loadMore = () => {
+    if (!conversationId || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    void fetchConversationToolCallsPage(conversationId, {
+      limit: CONVERSATION_TOOL_CALL_PAGE_SIZE,
+      beforeStartedAt: oldestCursor,
+    })
+      .then((page) => {
+        if (page.records.length > 0) {
+          dispatch(mergeToolCalls({ toolCalls: page.records }));
+        }
+        setHasMore(page.hasMore);
+        if (page.oldestStartedAt) setOldestCursor(page.oldestStartedAt);
+      })
+      .catch((err) => {
+        console.error("[ToolCallWindowPanel] loadMore failed", err);
+      })
+      .finally(() => setLoadingMore(false));
+  };
+
+  const entries = useMemo(() => {
+    if (!enabled) return [] as ToolLifecycleEntry[];
+    const byCallId = new Map<string, ToolLifecycleEntry>();
+    for (const rec of persisted) {
+      byCallId.set(rec.callId, cxToolCallToLifecycleEntry(rec));
+    }
+    if (liveByCallId) {
+      for (const [callId, entry] of liveByCallId) {
+        byCallId.set(callId, entry);
+      }
+    }
+    const list = Array.from(byCallId.values());
+    list.sort((a, b) => {
+      if (a.startedAt < b.startedAt) return -1;
+      if (a.startedAt > b.startedAt) return 1;
+      return 0;
+    });
+    return list;
+  }, [enabled, persisted, liveByCallId]);
+
+  return { entries, loadingMore, hasMore, loadMore };
+}
+
 // ─── Public props ─────────────────────────────────────────────────────────────
 
 interface ToolCallWindowPanelProps {
@@ -203,6 +403,7 @@ interface ToolCallWindowPanelProps {
   entries: ToolLifecycleEntry[] | null;
   initialCallId: string | null;
   initialTab: string | null;
+  conversationId: string | null;
 }
 
 // ─── Inner body — receives the resolved entries (live or snapshot) ────────────
@@ -210,42 +411,58 @@ interface ToolCallWindowPanelProps {
 const ToolCallWindowPanelBody: React.FC<{
   instanceId: string;
   onClose: () => void;
-  entries: ToolLifecycleEntry[];
+  messageEntries: ToolLifecycleEntry[];
   initialCallId: string | null;
   initialTab: string | null;
-}> = ({ instanceId, onClose, entries, initialCallId, initialTab }) => {
-  // Selected entry — initialised from prop, falls back to last entry, kept
-  // valid when entries shift (new entries arrive on the live stream).
-  const [selectedCallId, setSelectedCallId] = useState<string>(() => {
+  conversationId: string | null;
+}> = ({
+  instanceId,
+  onClose,
+  messageEntries,
+  initialCallId,
+  initialTab,
+  conversationId,
+}) => {
+  const [scope, setScope] = useState<SidebarScope>("message");
+  const conversationScopeAvailable = Boolean(conversationId);
+
+  const {
+    entries: conversationEntries,
+    loadingMore,
+    hasMore,
+    loadMore,
+  } = useConversationToolEntries(
+    conversationId,
+    scope === "conversation" && conversationScopeAvailable,
+  );
+
+  const entries =
+    scope === "conversation" && conversationScopeAvailable
+      ? conversationEntries
+      : messageEntries;
+
+  // User pick (null = follow initialCallId, else last entry).
+  const [userSelectedCallId, setUserSelectedCallId] = useState<string | null>(
+    null,
+  );
+  const [boundInitialCallId, setBoundInitialCallId] = useState(initialCallId);
+  if (initialCallId !== boundInitialCallId) {
+    setBoundInitialCallId(initialCallId);
+    setUserSelectedCallId(null);
+  }
+
+  const selectedCallId = useMemo(() => {
+    if (
+      userSelectedCallId &&
+      entries.some((e) => e.callId === userSelectedCallId)
+    ) {
+      return userSelectedCallId;
+    }
     if (initialCallId && entries.some((e) => e.callId === initialCallId)) {
       return initialCallId;
     }
     return entries[entries.length - 1]?.callId ?? "";
-  });
-
-  // Re-focus when the parent re-dispatches openOverlay with a new
-  // `initialCallId` (e.g. user clicked the window button on a different
-  // tool while the same per-request window is already open). We only
-  // honour it when the requested entry is actually present.
-  const lastFocusedRef = useRef<string | null>(initialCallId);
-  useEffect(() => {
-    if (!initialCallId) return;
-    if (initialCallId === lastFocusedRef.current) return;
-    if (entries.some((e) => e.callId === initialCallId)) {
-      lastFocusedRef.current = initialCallId;
-      setSelectedCallId(initialCallId);
-    }
-  }, [initialCallId, entries]);
-
-  useEffect(() => {
-    if (entries.length === 0) {
-      if (selectedCallId !== "") setSelectedCallId("");
-      return;
-    }
-    if (!entries.some((e) => e.callId === selectedCallId)) {
-      setSelectedCallId(entries[entries.length - 1].callId);
-    }
-  }, [entries, selectedCallId]);
+  }, [entries, userSelectedCallId, initialCallId]);
 
   const selectedEntry = useMemo(
     () =>
@@ -253,10 +470,6 @@ const ToolCallWindowPanelBody: React.FC<{
     [entries, selectedCallId],
   );
 
-  // Custom tabs only when:
-  //   1. The group contains exactly one entry.
-  //   2. That entry is not in error state.
-  //   3. The tool's registry record provides OverlayTabs.
   const customOverlayTabs: ToolOverlayTabSpec[] | null = useMemo(() => {
     if (entries.length !== 1) return null;
     if (!selectedEntry) return null;
@@ -311,18 +524,12 @@ const ToolCallWindowPanelBody: React.FC<{
     ];
   }, [customOverlayTabs, selectedEntry]);
 
-  const [activeTabId, setActiveTabId] = useState<string>(() => {
+  const [userTabId, setUserTabId] = useState<string | null>(initialTab);
+  const activeTabId = useMemo(() => {
+    if (userTabId && tabs.some((t) => t.id === userTabId)) return userTabId;
     if (initialTab && tabs.some((t) => t.id === initialTab)) return initialTab;
     return tabs[0]?.id ?? "results";
-  });
-
-  // Keep activeTabId valid as the tab list changes (e.g. selected entry
-  // toggles between custom-tabs and the default Results tab).
-  useEffect(() => {
-    if (!tabs.some((t) => t.id === activeTabId)) {
-      setActiveTabId(tabs[0]?.id ?? "results");
-    }
-  }, [tabs, activeTabId]);
+  }, [userTabId, tabs, initialTab]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
@@ -334,6 +541,33 @@ const ToolCallWindowPanelBody: React.FC<{
     return getToolDisplayName(selectedEntry.toolName);
   }, [entries.length, selectedEntry]);
 
+  const copyAllActions =
+    entries.length > 0 ? (
+      <CopyButtons
+        label={
+          scope === "conversation"
+            ? `All ${entries.length} tools in conversation`
+            : `All ${entries.length} tools in this message`
+        }
+        size="sm"
+        human={() => toolEntriesSummaryToHuman(entries)}
+        agent={() => ({
+          kind: "tool-results",
+          location: "AI Matrx — Tool call window",
+          description:
+            scope === "conversation"
+              ? `Every tool call in conversation ${conversationId ?? ""}.`
+              : "Every tool call in this message / request.",
+          data: buildToolEntriesSummary(entries),
+          attributes: {
+            count: String(entries.length),
+            scope,
+            ...(conversationId ? { conversationId } : {}),
+          },
+        })}
+      />
+    ) : null;
+
   return (
     <WindowPanel
       id={`tool-call-window-${instanceId}`}
@@ -344,25 +578,35 @@ const ToolCallWindowPanelBody: React.FC<{
       minHeight={460}
       width={1100}
       height={700}
+      actionsRight={copyAllActions}
       sidebar={
         <EntrySidebar
           entries={entries}
           selectedCallId={selectedCallId}
-          onSelect={setSelectedCallId}
+          onSelect={setUserSelectedCallId}
+          scope={scope}
+          onScopeChange={(next) => {
+            setScope(next);
+            setUserSelectedCallId(null);
+          }}
+          conversationScopeAvailable={conversationScopeAvailable}
+          loadingMore={loadingMore}
+          hasMore={hasMore}
+          onLoadMore={loadMore}
         />
       }
-      sidebarDefaultSize={140}
-      sidebarMinSize={80}
+      sidebarDefaultSize={168}
+      sidebarMinSize={120}
       defaultSidebarOpen={true}
       bodyClassName="p-0 overflow-hidden"
     >
-      <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden">
         <ToolBrowserTabBar
           tabs={tabs}
           activeTabId={activeTab?.id ?? ""}
-          onTabClick={setActiveTabId}
+          onTabClick={setUserTabId}
         />
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="min-h-0 flex-1 overflow-auto">
           {activeTab?.content ?? null}
         </div>
       </div>
@@ -381,16 +625,10 @@ const ToolCallWindowPanel: React.FC<ToolCallWindowPanelProps> = ({
   entries,
   initialCallId,
   initialTab,
+  conversationId,
 }) => {
   if (!isOpen) return null;
 
-  // Live mode is selected by `requestId` ALONE — the opener signals "show every
-  // tool in this request" with `callIds: []` (LiveEntriesProvider returns all
-  // when callIds is empty). Requiring `callIds.length > 0` here was the
-  // window-panel-empty bug: the opener's `callIds: []` fell through to snapshot
-  // mode with `entries: null`. If the live store has been pruned (e.g. after
-  // reload — observability rehydrate drops `toolLifecycle`), fall back to the
-  // snapshot `entries` the opener now always passes.
   if (requestId) {
     return (
       <LiveEntriesProvider
@@ -400,9 +638,12 @@ const ToolCallWindowPanel: React.FC<ToolCallWindowPanelProps> = ({
           <ToolCallWindowPanelBody
             instanceId={instanceId}
             onClose={onClose}
-            entries={liveEntries.length > 0 ? liveEntries : (entries ?? [])}
+            messageEntries={
+              liveEntries.length > 0 ? liveEntries : (entries ?? [])
+            }
             initialCallId={initialCallId}
             initialTab={initialTab}
+            conversationId={conversationId}
           />
         )}
       />
@@ -413,9 +654,10 @@ const ToolCallWindowPanel: React.FC<ToolCallWindowPanelProps> = ({
     <ToolCallWindowPanelBody
       instanceId={instanceId}
       onClose={onClose}
-      entries={entries ?? []}
+      messageEntries={entries ?? []}
       initialCallId={initialCallId}
       initialTab={initialTab}
+      conversationId={conversationId}
     />
   );
 };

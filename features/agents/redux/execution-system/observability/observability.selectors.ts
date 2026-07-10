@@ -121,6 +121,34 @@ export const selectToolCallsForMessage = (messageId: string) =>
     },
   );
 
+/**
+ * Every non-deleted tool call for a conversation, oldest → newest by
+ * `startedAt`. Used by the tool-call window's "All Messages" scope.
+ * Scans the by-id map (conversationId is on every row) — no secondary
+ * index yet; conversations rarely hold enough tools for this to matter.
+ */
+export const selectToolCallsForConversation = (conversationId: string) =>
+  createSelector(
+    (state: RootState) => state.observability.toolCalls,
+    (byId): CxToolCallRecord[] => {
+      if (!conversationId) return EMPTY_TOOL_CALLS;
+      const out: CxToolCallRecord[] = [];
+      for (const id in byId) {
+        const rec = byId[id];
+        if (rec.conversationId === conversationId && !rec.deletedAt) {
+          out.push(rec);
+        }
+      }
+      if (out.length === 0) return EMPTY_TOOL_CALLS;
+      out.sort((a, b) => {
+        if (a.startedAt < b.startedAt) return -1;
+        if (a.startedAt > b.startedAt) return 1;
+        return 0;
+      });
+      return out;
+    },
+  );
+
 // ---------------------------------------------------------------------------
 // Timelines
 // ---------------------------------------------------------------------------

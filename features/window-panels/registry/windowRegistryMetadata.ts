@@ -1243,6 +1243,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
       entries: null,
       initialCallId: null,
       initialTab: null,
+      conversationId: null,
     },
     ephemeral: true,
     instanceMode: "multi",

@@ -28,6 +28,8 @@ export interface OpenToolCallWindowPanelOptions {
   entries: unknown;
   initialCallId: string | null;
   initialTab: string | null;
+  /** Enables the sidebar "All messages" scope (conversation-wide tool list). */
+  conversationId?: string | null;
 }
 
 export interface ToolCallWindowPanelHandle {
@@ -50,6 +52,7 @@ export function useOpenToolCallWindowPanel() {
             entries: opts.entries,
             initialCallId: opts.initialCallId,
             initialTab: opts.initialTab,
+            conversationId: opts.conversationId ?? null,
           },
         }),
       );
@@ -72,6 +75,14 @@ export function ToolCallWindowPanelController(props: OpenToolCallWindowPanelOpti
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.requestId, props.callIds, props.entries, props.initialCallId, props.initialTab]);
+  }, [
+    open,
+    props.requestId,
+    props.callIds,
+    props.entries,
+    props.initialCallId,
+    props.initialTab,
+    props.conversationId,
+  ]);
   return null;
 }

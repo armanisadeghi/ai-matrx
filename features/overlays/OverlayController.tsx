@@ -4823,6 +4823,11 @@ export default function OverlayController() {
             initialTab={
               typeof data?.initialTab === "string" ? data.initialTab : null
             }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : null
+            }
           />
         );
       })}
