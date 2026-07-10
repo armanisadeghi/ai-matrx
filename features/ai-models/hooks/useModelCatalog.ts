@@ -1,34 +1,30 @@
 "use client";
 
 /**
- * useModelCatalog — TEMPORARY data hook for the model-picker Lab.
+ * useModelCatalog — data hook for the model picker.
  *
- * Purpose: prove the *data* for a rich model picker before we invest in the
- * final UI (a ui-bakeoff comes later). Two variants, each reading its canonical
- * view directly (client → Supabase, per the data-flow doctrine):
+ * Two variants, each reading its canonical view directly (client → Supabase):
+ *   - "user"  → `ai.model_public`  (anon + authenticated; masked, points pricing).
+ *               Filtered to ROUTABLE models via `ai.model_offering`.
+ *   - "admin" → `ai.model_admin`   (super-admin; raw $ pricing + service internals;
+ *               full catalog incl. deprecated).
  *
- *   - "user"  → `ai.model_public`  (anon + authenticated; masked, points-based
- *               pricing). Filtered to ROUTABLE models via `ai.model_offering`
- *               (a bare model_definition row with no offering cannot be called).
- *   - "admin" → `ai.model_admin`   (super-admin; raw $ pricing, vendor,
- *               wire_format, service internals, is_deprecated). Shows the FULL
- *               catalog including deprecated / non-routable rows.
+ * The row is reshaped for display: pretty name only (never the technical
+ * model_class), a MAKER resolved so serving-only providers (Groq/Cerebras) are
+ * never shown as the maker, capability modalities + grouped features preserved
+ * in full (nothing hidden), interaction (turn/single/extraction/realtime) and
+ * multilingual kept intact.
  *
- * Loud, no silent fallback: a read failure surfaces the real PostgREST error
- * (a 42501 on `model_admin` means the admin view isn't granted to the caller —
- * that is a DB grant gap to fix, not something to paper over).
- *
- * This hook is self-contained (not wired into the modelRegistry slice) so the
- * Lab can be added and removed without touching canonical state. When the final
- * picker is chosen, its data path folds back into the one registry.
+ * Loud, no silent fallback: a read failure surfaces the real PostgREST error.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import {
-  parseCapabilities,
-  type ModelCapabilities,
-} from "@/features/ai-models/capabilities/parse";
+  groupFeatures,
+  type GroupedFeatures,
+} from "@/features/ai-models/capabilities/feature-map";
+import { resolveMaker } from "@/features/ai-models/lab/modelDisplay";
 import type { Database, Json } from "@/types/database.types";
 
 type ModelPublicRow = Database["ai"]["Views"]["model_public"]["Row"];
@@ -36,27 +32,41 @@ type ModelAdminRow = Database["ai"]["Views"]["model_admin"]["Row"];
 
 export type ModelCatalogVariant = "user" | "admin";
 
-/** Unified, render-ready model row for the Lab picker. */
+export type Modality = "text" | "image" | "audio" | "video" | "entities";
+export const INPUT_MODALITIES: Modality[] = ["text", "image", "audio", "video"];
+export const OUTPUT_MODALITIES: Modality[] = [
+  "text",
+  "image",
+  "audio",
+  "video",
+  "entities",
+];
+
+export type Interaction = "turn" | "single" | "extraction" | "realtime";
+
+/** Reshaped, render-ready model row. */
 export interface CatalogModel {
   id: string;
+  /** Pretty, business-facing name only — NEVER the technical model_class. */
   name: string;
-  commonName: string | null;
+  /** Who MADE the model (resolved; serving-only providers suppressed). */
   maker: string | null;
-  modelClass: string | null;
-  capabilities: ModelCapabilities;
+  input: Modality[];
+  output: Modality[];
+  features: GroupedFeatures;
+  interaction: Interaction;
+  multilingual: boolean;
   contextWindow: number | null;
   maxTokens: number | null;
   isPrimary: boolean;
   isPremium: boolean;
   isDeprecated: boolean;
-  description: string | null;
-  releaseDate: string | null;
+  /** OUTPUT cost basis used for the price tier (points for user view). */
+  outputCost: number | null;
   usageBasis: string | null;
   tokenBilled: boolean | null;
-  serviceName: string | null;
-  /** points per 1M tokens (user view); null on admin view */
-  pointsInput: number | null;
-  pointsOutput: number | null;
+  description: string | null;
+  releaseDate: string | null;
   /** admin-only extras — present only for variant === "admin" */
   admin?: {
     pricing: Json | null;
@@ -69,51 +79,94 @@ export interface CatalogModel {
   };
 }
 
+function asModalities(raw: unknown, allowed: Modality[]): Modality[] {
+  if (!Array.isArray(raw)) return [];
+  const set = new Set(allowed);
+  const out: Modality[] = [];
+  for (const v of raw) {
+    if (typeof v === "string" && set.has(v as Modality) && !out.includes(v as Modality)) {
+      out.push(v as Modality);
+    }
+  }
+  return out;
+}
+
+function asInteraction(raw: unknown): Interaction {
+  return raw === "single" || raw === "extraction" || raw === "realtime"
+    ? raw
+    : "turn";
+}
+
+/** Parse the raw `capabilities` JSON, preserving everything (no data loss). */
+function parseCaps(raw: unknown): {
+  input: Modality[];
+  output: Modality[];
+  features: GroupedFeatures;
+  interaction: Interaction;
+  multilingual: boolean;
+} {
+  const obj =
+    typeof raw === "object" && raw !== null && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
+  const rawFeatures = Array.isArray(obj.features)
+    ? obj.features.filter((f): f is string => typeof f === "string")
+    : [];
+  return {
+    input: asModalities(obj.input, INPUT_MODALITIES),
+    output: asModalities(obj.output, OUTPUT_MODALITIES),
+    features: groupFeatures(rawFeatures),
+    interaction: asInteraction(obj.interaction),
+    multilingual: obj.multilingual === true,
+  };
+}
+
 function normalizePublic(row: ModelPublicRow): CatalogModel | null {
   if (!row.id || !row.name) return null;
   return {
     id: row.id,
-    name: row.name,
-    commonName: row.common_name,
-    maker: row.maker,
-    modelClass: row.model_class,
-    capabilities: parseCapabilities(row.capabilities),
+    name: row.common_name || row.name,
+    maker: resolveMaker(row.maker, row.model_class),
+    ...parseCaps(row.capabilities),
     contextWindow: row.context_window,
     maxTokens: row.max_tokens,
     isPrimary: row.is_primary ?? false,
     isPremium: row.is_premium ?? false,
-    isDeprecated: false, // model_public never surfaces deprecated rows
-    description: row.description,
-    releaseDate: row.release_date,
+    isDeprecated: false,
+    outputCost: row.points_per_million_output,
     usageBasis: row.usage_basis,
     tokenBilled: row.token_billed,
-    serviceName: row.service_name,
-    pointsInput: row.points_per_million_input,
-    pointsOutput: row.points_per_million_output,
+    description: row.description,
+    releaseDate: row.release_date,
   };
+}
+
+function pricingOutputCost(pricing: Json | null): number | null {
+  if (typeof pricing !== "object" || pricing === null || Array.isArray(pricing)) {
+    return null;
+  }
+  const p = pricing as Record<string, unknown>;
+  const candidate = p.output ?? p.output_per_million ?? p.per_million_output;
+  return typeof candidate === "number" ? candidate : null;
 }
 
 function normalizeAdmin(row: ModelAdminRow): CatalogModel | null {
   if (!row.id || !row.name) return null;
   return {
     id: row.id,
-    name: row.name,
-    commonName: row.common_name,
-    maker: row.maker,
-    modelClass: row.model_class,
-    capabilities: parseCapabilities(row.capabilities),
+    name: row.common_name || row.name,
+    maker: resolveMaker(row.maker, row.model_class),
+    ...parseCaps(row.capabilities),
     contextWindow: row.context_window,
     maxTokens: row.max_tokens,
     isPrimary: row.is_primary ?? false,
     isPremium: row.is_premium ?? false,
     isDeprecated: row.is_deprecated ?? false,
-    description: row.description,
-    releaseDate: row.release_date,
+    outputCost: pricingOutputCost(row.pricing),
     usageBasis: row.usage_basis,
     tokenBilled: row.token_billed,
-    serviceName: row.service_display_name ?? row.service_internal_name,
-    pointsInput: null,
-    pointsOutput: null,
+    description: row.description,
+    releaseDate: row.release_date,
     admin: {
       pricing: row.pricing,
       vendor: row.vendor,
@@ -128,79 +181,100 @@ function normalizeAdmin(row: ModelAdminRow): CatalogModel | null {
 
 interface CatalogState {
   models: CatalogModel[];
-  isLoading: boolean;
   error: string | null;
+  /** Which variant the current `models`/`error` reflect; null until first load. */
+  loadedVariant: ModelCatalogVariant | null;
+  /** Bumped by reload() to force a re-fetch of the same variant. */
+  nonce: number;
 }
 
-export function useModelCatalog(variant: ModelCatalogVariant): CatalogState & {
+async function loadCatalog(
+  variant: ModelCatalogVariant,
+): Promise<{ models: CatalogModel[]; error: string | null }> {
+  try {
+    const supabase = createClient();
+    if (variant === "admin") {
+      const { data, error } = await supabase
+        .schema("ai")
+        .from("model_admin")
+        .select("*")
+        .order("common_name", { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      const models = (data ?? [])
+        .map(normalizeAdmin)
+        .filter((m): m is CatalogModel => m !== null);
+      return { models, error: null };
+    }
+    const [publicRes, offeringRes] = await Promise.all([
+      supabase
+        .schema("ai")
+        .from("model_public")
+        .select("*")
+        .order("common_name", { ascending: true, nullsFirst: false }),
+      supabase.schema("ai").from("model_offering").select("model_id"),
+    ]);
+    if (publicRes.error) throw publicRes.error;
+    if (offeringRes.error) throw offeringRes.error;
+    const routable = new Set(
+      (offeringRes.data ?? [])
+        .map((r) => r.model_id)
+        .filter((id): id is string => typeof id === "string"),
+    );
+    const models = (publicRes.data ?? [])
+      .map(normalizePublic)
+      .filter((m): m is CatalogModel => m !== null)
+      .filter((m) => routable.has(m.id));
+    return { models, error: null };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === "object" && err && "message" in err
+          ? String((err as { message: unknown }).message)
+          : "Failed to load model catalog";
+    // Loud: a real failure (e.g. 42501 on model_admin) must be visible.
+    console.error(
+      `[useModelCatalog] ${variant} catalog load failed:`,
+      message,
+      err,
+    );
+    return { models: [], error: message };
+  }
+}
+
+export function useModelCatalog(variant: ModelCatalogVariant): {
+  models: CatalogModel[];
+  isLoading: boolean;
+  error: string | null;
   reload: () => void;
 } {
   const [state, setState] = useState<CatalogState>({
     models: [],
-    isLoading: true,
     error: null,
+    loadedVariant: null,
+    nonce: 0,
   });
 
-  const load = useCallback(async () => {
-    setState((s) => ({ ...s, isLoading: true, error: null }));
-    try {
-      const supabase = createClient();
-
-      if (variant === "admin") {
-        const { data, error } = await supabase
-          .schema("ai")
-          .from("model_admin")
-          .select("*")
-          .order("common_name", { ascending: true, nullsFirst: false });
-        if (error) throw error;
-        const models = (data ?? [])
-          .map(normalizeAdmin)
-          .filter((m): m is CatalogModel => m !== null);
-        setState({ models, isLoading: false, error: null });
-        return;
-      }
-
-      // user variant: routable public models only
-      const [publicRes, offeringRes] = await Promise.all([
-        supabase
-          .schema("ai")
-          .from("model_public")
-          .select("*")
-          .order("common_name", { ascending: true, nullsFirst: false }),
-        supabase.schema("ai").from("model_offering").select("model_id"),
-      ]);
-      if (publicRes.error) throw publicRes.error;
-      if (offeringRes.error) throw offeringRes.error;
-      const routable = new Set(
-        (offeringRes.data ?? [])
-          .map((r) => r.model_id)
-          .filter((id): id is string => typeof id === "string"),
-      );
-      const models = (publicRes.data ?? [])
-        .map(normalizePublic)
-        .filter((m): m is CatalogModel => m !== null)
-        .filter((m) => routable.has(m.id));
-      setState({ models, isLoading: false, error: null });
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "object" && err && "message" in err
-            ? String((err as { message: unknown }).message)
-            : "Failed to load model catalog";
-      // Loud: a real failure (e.g. 42501 on model_admin) must be visible.
-      console.error(
-        `[useModelCatalog] ${variant} catalog load failed:`,
-        message,
-        err,
-      );
-      setState({ models: [], isLoading: false, error: message });
-    }
-  }, [variant]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    void loadCatalog(variant).then((result) => {
+      if (active) {
+        setState((s) => ({ ...s, ...result, loadedVariant: variant }));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [variant, state.nonce]);
 
-  return { ...state, reload: () => void load() };
+  // Loading whenever the loaded data doesn't reflect the requested variant yet.
+  const loading = state.loadedVariant !== variant;
+
+  return {
+    models: loading ? [] : state.models,
+    isLoading: loading,
+    error: loading ? null : state.error,
+    reload: () =>
+      setState((s) => ({ ...s, loadedVariant: null, nonce: s.nonce + 1 })),
+  };
 }

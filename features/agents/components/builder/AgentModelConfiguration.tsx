@@ -21,7 +21,7 @@ import { AgentToolsModal } from "@/features/agents/components/tools-management/A
 import { AgentSkillsModal } from "@/features/agents/components/skills-management/AgentSkillsModal";
 import { Label } from "@/components/ui/label";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
-import { ModelPickerLab } from "@/features/ai-models/components/lab/ModelPickerLab";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import type { ModelCatalogVariant } from "@/features/ai-models/hooks/useModelCatalog";
 import { cn } from "@/lib/utils";
 
@@ -75,10 +75,11 @@ export function AgentModelConfiguration({
             Model
           </Label>
           {labVariant ? (
-            <ModelPickerLab
+            <ModelListDropdown
               value={modelId}
               onValueChange={handleModelChange}
               variant={labVariant}
+              inputModalities={["text"]}
             />
           ) : (
             <SmartModelSelect
