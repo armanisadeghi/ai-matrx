@@ -28,7 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
-import { useEntitlement } from "@/features/entitlements/hooks";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAudioStudyCreate } from "../useAudioStudyCreate";
 import type { EduAudioFormat } from "../../types";
 
@@ -68,7 +69,7 @@ export function AudioStudyNew() {
   const router = useRouter();
   const params = useSearchParams();
   const { create, busy } = useAudioStudyCreate();
-  const ent = useEntitlement("education.audio_generate");
+  const gen = useEntitlementGuard("education.audio_generate");
 
   const [decks, setDecks] = useState<FcSetRow[]>([]);
   const [sourceKind, setSourceKind] = useState<SourceKind>(
@@ -103,20 +104,17 @@ export function AudioStudyNew() {
       toast.error("Type a topic to make audio about");
       return;
     }
-    const verdict = await ent.check();
-    if (!verdict.allowed) {
-      toast.error(
-        ent.definition?.upgradeMessage ?? "You've reached your audio limit.",
-      );
-      return;
-    }
-    await create({
-      format,
-      sourceKind,
-      deckId: sourceKind === "deck" ? deckId : undefined,
-      topic: sourceKind === "topic" ? topic : undefined,
-      hostCount,
-      adaptive: sourceKind === "deck" && adaptive,
+    // Canonical guard: server-truth check BEFORE spending; a cap-hit opens the
+    // respectful contextual paywall (not a toast) and never starts the work.
+    await gen.guard(async () => {
+      await create({
+        format,
+        sourceKind,
+        deckId: sourceKind === "deck" ? deckId : undefined,
+        topic: sourceKind === "topic" ? topic : undefined,
+        hostCount,
+        adaptive: sourceKind === "deck" && adaptive,
+      });
     });
   }
 
@@ -261,13 +259,17 @@ export function AudioStudyNew() {
         )}
       </section>
 
-      {ent.limit != null && (
-        <p className="text-xs text-muted-foreground">
-          {ent.remaining} of {ent.limit} audio generations left this month.
-        </p>
-      )}
+      <EntitlementMeter
+        capability="education.audio_generate"
+        showAllWindows
+        className="justify-center"
+      />
 
-      <Button onClick={handleGenerate} disabled={busy} className="w-full gap-2">
+      <Button
+        onClick={handleGenerate}
+        disabled={busy || gen.isChecking}
+        className="w-full gap-2"
+      >
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
@@ -275,6 +277,7 @@ export function AudioStudyNew() {
         )}
         Generate audio
       </Button>
+      <gen.Paywall />
     </div>
   );
 }

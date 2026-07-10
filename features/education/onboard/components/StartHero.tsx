@@ -34,7 +34,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useEntitlement } from "@/features/entitlements/hooks";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { getGenerator, isTargetAvailable } from "@/features/education/convert/registry";
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
@@ -57,7 +58,7 @@ const DEFAULT_TARGETS: TargetKind[] = ["deck", "summary", "mind_map"];
 
 export function StartHero() {
   const kit = useKitGeneration();
-  const ingestEnt = useEntitlement("education.ingest_document");
+  const ingestGuard = useEntitlementGuard("education.ingest_document");
 
   const [mode, setMode] = useState<InputMode>("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -90,25 +91,25 @@ export function StartHero() {
 
   const onGenerate = useCallback(async () => {
     if (!canGenerate) return;
-    // Metered (P8) — pre-check before spending, honest limit surfaced up front.
-    const verdict = await ingestEnt.check();
-    if (!verdict.allowed) return; // limit UI shown inline; no silent spend
+    // Canonical guard (P8): server-truth check BEFORE spending; a cap-hit opens
+    // the respectful contextual paywall and never starts the kit build.
+    await ingestGuard.guard(async () => {
+      const kinds = [...selected].filter(isTargetAvailable);
+      const input =
+        mode === "upload"
+          ? ({ kind: "file", file: file! } as const)
+          : mode === "paste"
+            ? ({ kind: "paste", text: pasteText } as const)
+            : ({
+                kind: isYouTube ? "youtube" : "url",
+                url,
+              } as const);
 
-    const kinds = [...selected].filter(isTargetAvailable);
-    const input =
-      mode === "upload"
-        ? ({ kind: "file", file: file! } as const)
-        : mode === "paste"
-          ? ({ kind: "paste", text: pasteText } as const)
-          : ({
-              kind: isYouTube ? "youtube" : "url",
-              url,
-            } as const);
-
-    await kit.run(input, kinds, { focus: focus.trim() || undefined });
+      await kit.run(input, kinds, { focus: focus.trim() || undefined });
+    });
   }, [
     canGenerate,
-    ingestEnt,
+    ingestGuard,
     selected,
     mode,
     file,
@@ -168,16 +169,18 @@ export function StartHero() {
             />
           </div>
 
-          {ingestEnt.limit != null && (
-            <p className="text-center text-xs text-muted-foreground">
-              {ingestEnt.remaining} of {ingestEnt.limit} kits left this month
-            </p>
-          )}
+          <div className="flex justify-center">
+            <EntitlementMeter
+              capability="education.ingest_document"
+              showAllWindows
+            />
+          </div>
+          <ingestGuard.Paywall />
 
           <Button
             size="lg"
             className="w-full"
-            disabled={!canGenerate}
+            disabled={!canGenerate || ingestGuard.isChecking}
             onClick={onGenerate}
           >
             {kit.busy ? (

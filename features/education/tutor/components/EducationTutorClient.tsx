@@ -34,6 +34,7 @@ import { selectMessageCount } from "@/features/agents/redux/execution-system/mes
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { useEntitlement } from "@/features/entitlements/hooks";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
@@ -93,10 +94,9 @@ export function EducationTutorClient({
   // there is never a mid-send ambush (the entitlements TRUST mandate).
   const tutorMsg = useEntitlement("education.tutor_message");
   const sendBlocked = !tutorMsg.allowed;
-  const remainingLabel =
-    tutorMsg.limit != null
-      ? `${Math.max(0, tutorMsg.remaining ?? 0)} of ${tutorMsg.limit} left`
-      : null;
+  // The remaining-count meter is the canonical primitive (renders nothing while
+  // unlimited/permissive; shows "X of Y left" once limits exist).
+  const hasMeter = tutorMsg.limit != null;
 
   // ── Access gate (P7): view vs edit on an EXISTING conversation ────────────
   // Tutor threads are `chat.conversation` rows (the registered `conversation`
@@ -386,13 +386,11 @@ export function EducationTutorClient({
               ? tutorMsg.definition.upgradeMessage
               : "Ask your tutor anything about what you're studying…",
             disableSend: sendBlocked,
-            extraRightControls: remainingLabel ? (
-              <span
-                className="whitespace-nowrap text-xs text-muted-foreground"
-                title="Tutor messages remaining"
-              >
-                {remainingLabel}
-              </span>
+            extraRightControls: hasMeter ? (
+              <EntitlementMeter
+                capability="education.tutor_message"
+                className="whitespace-nowrap"
+              />
             ) : undefined,
           }}
           afterMessages={
