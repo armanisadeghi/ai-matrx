@@ -101,13 +101,31 @@ enforces it in code, not copy:
   advances FSRS/mastery. Game sessions are study sessions (visible in P5).
 - **FSRS + `useDueReview` selection** — generalized in `engine/queue.ts`; not
   forked.
-- **P7 access boundary** — enforced today via `fc_set`/`fc_card` RLS directly
-  (a private deck's cards 404 for non-owners), surfaced inline in Host setup
-  with a lock/globe hint. Does NOT call the `useAccess` hook — no such import
-  exists in this feature. Migrate to `useAccess` once P7 ships if a richer
-  shared-state (not just public/private) is needed for cross-account rooms.
+- **P7 access boundary** — enforced today via `fc_set`/`fc_card` RLS + the
+  **org-gated** `assoc_for_targets` read, surfaced inline in Host setup with a
+  lock/globe hint. **Multiplayer works only when every player shares org access
+  to the deck (team/class rooms).** A guest from a *different personal account*
+  loads an empty deck even for a `visibility='public'` set — the card-membership
+  read filters by `iam.has_org_access`, not visibility (see KNOWN_DEFECTS D37).
+  Does NOT call the `useAccess` hook — no such import exists yet. Migrate to
+  `useAccess`/a visibility-aware read once P7 ships to unlock cross-account
+  public/shared rooms.
 - **P8 `useEntitlement("education.game_room_size")`** — max players shown BEFORE
   hosting (TRUST mandate: no mid-workflow ambush), generous default.
+
+## Verification (2026-07-10 live run)
+
+- **Solo round** (admin) played end-to-end: `study_session` mode=game
+  status=completed, 8 `study_attempt` method=game rows, 8 `item_mastery` rows
+  moved, 1 `game_result`, badges `first_game`+`perfect_round`, 1
+  `league_membership` on the leaderboard.
+- **Multiplayer round** (admin host + a 2nd real authenticated user, shared org):
+  host created room → guest joined by code (`game_room_by_code`) → both loaded
+  the deck with **their own** mastery (per-player SRS queues) → guest received
+  `game_started` over the live Broadcast channel → both `game_result` rows saved
+  → `game_room_players` scoreboard + `league_leaderboard` resolved BOTH players →
+  guest earned a real `comeback` badge (trailed, finished top).
+- Streak forgiveness (below) still verified at the DB level with test rows.
 
 ## Verification (2026-07-07)
 
@@ -128,6 +146,19 @@ enforces it in code, not copy:
 
 ## Change Log
 
+- **2026-07-10** — DoD-closing live run (P10). Drove a real solo round + a real
+  two-user multiplayer round end-to-end through the authenticated service/RPC
+  paths (first live rows in `game_room`/`game_result`/`game_badge`/
+  `league_membership` and first `method='game'` attempts). **Fixed two blocking
+  bugs** in `gameService`: `setLeagueOptIn` and `awardBadges` used
+  `.upsert({ onConflict })` against **partial** unique indexes
+  (`... WHERE deleted_at IS NULL`), which PostgREST cannot target → every league
+  opt-in and badge award threw "no unique or exclusion constraint matching" and
+  silently persisted nothing (the direct cause of the empty tables). Both now do
+  partial-unique-safe conflict handling (read-live-then-update-or-insert; badges
+  insert only not-yet-earned keys, tolerating a 23505 race). Filed **D37**:
+  cross-personal-account multiplayer loads an empty deck (card read is org-gated,
+  ignores `visibility='public'`) — supported scenario today is same-org rooms.
 - **2026-07-07** — Initial build (P10): game/league/badge tables + streak
   forgiveness; pure engine (SRS queue, scoring, badges); Broadcast realtime;
   solo + multiplayer surfaces; streak/league/badge UI; routes; tools + admin map.

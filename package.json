@@ -63,6 +63,7 @@
     "check:ui-primitives:staged": "tsx scripts/check-ui-primitives.ts --staged",
     "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",
     "check:migrations": "tsx scripts/check-migrations.ts",
+    "check:shareable-registry": "tsx scripts/regen-shareable-registry-snapshot.ts --check",
     "check:dead-relations": "tsx scripts/check-dead-relations.ts",
     "check:dead-relations:strict": "tsx scripts/check-dead-relations.ts --strict",
     "gen:entity-types": "tsx scripts/generate-entity-types.ts",

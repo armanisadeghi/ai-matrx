@@ -27,6 +27,12 @@
  *  - A committed snapshot is auditable in PR review: "this PR adds task to
  *    the registry" is visible in the diff of two files (the migration and
  *    the snapshot).
+ *
+ * The blind spot of a committed snapshot: a live-DB registry change that nobody
+ * snapshotted is invisible here (that is how the `assessment` enum row shipped
+ * un-mirrored). `pnpm check:shareable-registry` closes it — it pulls the LIVE
+ * registry and screams if it no longer equals the committed snapshot. Run it on
+ * any registry migration; this test then holds the TS mirror to that snapshot.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

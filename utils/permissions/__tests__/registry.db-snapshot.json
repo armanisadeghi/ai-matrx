@@ -44,6 +44,17 @@
     "is_active": true
   },
   {
+    "resource_type": "assessment",
+    "table_name": "assessment",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Assessment",
+    "url_path_template": "/education/quizzes/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "auto_ingest_batch",
     "table_name": "auto_ingest_batch",
     "id_column": "id",
@@ -249,6 +260,17 @@
     "is_public_column": null,
     "display_label": "Folder",
     "url_path_template": "/files/folder/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "learn_doc",
+    "table_name": "learn_doc",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": "visibility",
+    "display_label": "Study Guide",
+    "url_path_template": "/education/learn/{slug}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -592,6 +614,17 @@
     "url_path_template": "/workflows/{id}",
     "rls_uses_has_permission": false,
     "is_active": false
+  },
+  {
+    "resource_type": "wf_node_data_slot",
+    "table_name": "node_data_slot",
+    "id_column": "id",
+    "owner_column": "user_id",
+    "is_public_column": null,
+    "display_label": "Workflow Node Data Slot",
+    "url_path_template": "/workflows/{id}",
+    "rls_uses_has_permission": false,
+    "is_active": true
   },
   {
     "resource_type": "wf_run",

@@ -258,8 +258,12 @@ export const gameService = {
   },
 
   /**
-   * Award badges idempotently. Inserts only keys not already earned; the unique
-   * (user_id, badge_key) index makes a concurrent double-award a no-op. Returns
+   * Award badges idempotently. Inserts only keys not already earned. The unique
+   * `(user_id, badge_key)` index is PARTIAL (`WHERE deleted_at IS NULL`), so it
+   * cannot be an `ON CONFLICT` target (PostgREST/`.upsert` can't attach the
+   * predicate) — we filter out already-earned keys ourselves, then insert the
+   * remainder. A concurrent double-award still hits the partial unique index and
+   * fails with 23505, which we treat as "already earned" (idempotent). Returns
    * the keys actually newly inserted (for a celebratory toast).
    */
   async awardBadges(
@@ -270,7 +274,20 @@ export const gameService = {
     if (keys.length === 0) return { data: [], error: null };
     try {
       const orgId = await ensureOrgId(null);
-      const rows = keys.map((key) => ({
+      // Which of these keys does the user already hold? (partial-unique-safe)
+      const { data: existing, error: exErr } = await EDU()
+        .from("game_badge")
+        .select("badge_key")
+        .eq("user_id", userId)
+        .in("badge_key", keys)
+        .is("deleted_at", null);
+      if (exErr) return fail("awardBadges", exErr);
+      const held = new Set(
+        (existing ?? []).map((r) => (r as { badge_key: string }).badge_key),
+      );
+      const newKeys = keys.filter((k) => !held.has(k));
+      if (newKeys.length === 0) return { data: [], error: null };
+      const rows = newKeys.map((key) => ({
         organization_id: orgId,
         user_id: userId,
         badge_key: key,
@@ -278,12 +295,15 @@ export const gameService = {
       })) as never;
       const { data, error } = await EDU()
         .from("game_badge")
-        .upsert(rows, {
-          onConflict: "user_id,badge_key",
-          ignoreDuplicates: true,
-        })
+        .insert(rows)
         .select("badge_key");
-      if (error) return fail("awardBadges", error);
+      if (error) {
+        // 23505 = concurrent award raced us to the same key(s): idempotent no-op.
+        if ((error as { code?: string }).code === "23505") {
+          return { data: [], error: null };
+        }
+        return fail("awardBadges", error);
+      }
       const inserted = (data ?? []).map(
         (r) => (r as { badge_key: string }).badge_key as BadgeKey,
       );
@@ -325,7 +345,16 @@ export const gameService = {
     }
   },
 
-  /** Opt in (or out) of the current week's league. Upserts the caller's row. */
+  /**
+   * Opt in (or out) of the current week's league — the caller's own row (RLS-
+   * owned). The unique `(user_id, week_start)` index is PARTIAL
+   * (`WHERE deleted_at IS NULL`), so `.upsert({ onConflict })` cannot target it
+   * (PostgREST can't attach the predicate → "no unique or exclusion constraint
+   * matching"). We do the conflict resolution ourselves: update the live row if
+   * one exists, else insert. `league_add_result` only UPDATEs an opted-in row,
+   * so this membership row MUST exist before mastery gain can land — a broken
+   * upsert here silently blocked the entire league flow.
+   */
   async setLeagueOptIn(
     optedIn: boolean,
     displayName: string,
@@ -335,16 +364,38 @@ export const gameService = {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) return fail("setLeagueOptIn", "not authenticated");
+      const weekStart = this.currentWeekStart();
+
+      const { data: existing, error: exErr } = await EDU()
+        .from("league_membership")
+        .select("id")
+        .eq("user_id", uid)
+        .eq("week_start", weekStart)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (exErr) return fail("setLeagueOptIn", exErr);
+
+      if (existing) {
+        const { data, error } = await EDU()
+          .from("league_membership")
+          .update({ opted_in: optedIn, display_name: displayName } as never)
+          .eq("id", (existing as { id: string }).id)
+          .select("*")
+          .single();
+        if (error) return fail("setLeagueOptIn", error);
+        return { data: data as LeagueMembershipRow, error: null };
+      }
+
       const payload = {
         organization_id: orgId,
         user_id: uid,
-        week_start: this.currentWeekStart(),
+        week_start: weekStart,
         display_name: displayName,
         opted_in: optedIn,
       } as never;
       const { data, error } = await EDU()
         .from("league_membership")
-        .upsert(payload, { onConflict: "user_id,week_start" })
+        .insert(payload)
         .select("*")
         .single();
       if (error) return fail("setLeagueOptIn", error);

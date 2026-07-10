@@ -126,6 +126,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/apps/{id}",
     rlsUsesHasPermission: true,
   },
+  assessment: {
+    resourceType: "assessment",
+    tableName: "assessment",
+    schemaName: "education",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Assessment",
+    urlPathTemplate: "/education/quizzes/{id}",
+    rlsUsesHasPermission: true,
+  },
   auto_ingest_batch: {
     resourceType: "auto_ingest_batch",
     tableName: "auto_ingest_batch",
@@ -331,6 +342,21 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     isPublicColumn: null,
     displayLabel: "Folder",
     urlPathTemplate: "/files/folder/{id}",
+    rlsUsesHasPermission: true,
+  },
+  learn_doc: {
+    resourceType: "learn_doc",
+    tableName: "learn_doc",
+    schemaName: "education",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    // NOTE: the live DB registry row carries is_public_column='visibility'
+    // (mirrored faithfully for parity). That looks wrong for a visibility-enum
+    // table (should be null) and is flagged in KNOWN_DEFECTS as DB-owner work;
+    // do not "fix" it here — the mirror must equal the DB.
+    isPublicColumn: "visibility",
+    displayLabel: "Study Guide",
+    urlPathTemplate: "/education/learn/{slug}",
     rlsUsesHasPermission: true,
   },
   note: {
@@ -639,6 +665,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     displayLabel: "WC Claim",
     urlPathTemplate: "/legal/wc/{id}",
     rlsUsesHasPermission: true,
+  },
+  wf_node_data_slot: {
+    resourceType: "wf_node_data_slot",
+    tableName: "node_data_slot",
+    schemaName: "workflow",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: null,
+    displayLabel: "Workflow Node Data Slot",
+    urlPathTemplate: "/workflows/{id}",
+    rlsUsesHasPermission: false,
   },
   wf_run: {
     resourceType: "wf_run",
