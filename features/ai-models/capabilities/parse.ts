@@ -11,8 +11,8 @@
 // Because of that, this module PARSES AND VALIDATES — it never infers. The
 // tolerant legacy-shape branches and the `api_class` string-sniffing fallback
 // (`*_tts` / `*_image_generation` / `*_realtime` → guessed modalities) were
-// deleted with the `api_class` tear-out. `api_class` is being dropped from the
-// table; nothing may depend on it again.
+// deleted with the `api_class` tear-out. `api_class` was DROPPED from the
+// table (ai_034, 2026-07-10); nothing may depend on it again.
 //
 // `DEFAULT_CAPABILITIES` remains the answer for a row that has no capabilities
 // at all — i.e. a model being composed in the admin UI before its first save.

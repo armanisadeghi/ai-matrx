@@ -60,7 +60,6 @@ type ComparisonSortKey =
   | "max_out"
   | "released"
   | "our_name"
-  | "class"
   | "primary"
   | "deprecated"
   | "status";
@@ -174,9 +173,6 @@ function compareComparisons(
     }
     case "our_name":
       cmp = (leA?.common_name ?? "").localeCompare(leB?.common_name ?? "");
-      break;
-    case "class":
-      cmp = (leA?.model_class ?? "").localeCompare(leB?.model_class ?? "");
       break;
     case "primary":
       cmp = Number(Boolean(leA?.is_primary)) - Number(Boolean(leB?.is_primary));
@@ -541,7 +537,6 @@ function ProviderEntryDetail({
                   [
                     ["name", le.name],
                     ["common_name", le.common_name ?? "—"],
-                    ["model_class", le.model_class],
                     ["maker", le.maker ?? "—"],
                     [
                       "context_window",
@@ -572,21 +567,6 @@ function ProviderEntryDetail({
                     </div>
                     <pre className="p-2 pt-7 text-[11px] font-mono bg-muted/30 rounded border whitespace-pre-wrap break-all leading-relaxed">
                       {JSON.stringify(le.capabilities, null, 2)}
-                    </pre>
-                  </div>
-                </section>
-              )}
-              {le.controls && (
-                <section>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                    controls
-                  </p>
-                  <div className="relative">
-                    <div className="absolute top-2 right-2 z-10">
-                      <CopyBtn text={JSON.stringify(le.controls, null, 2)} />
-                    </div>
-                    <pre className="p-2 pt-7 text-[11px] font-mono bg-muted/30 rounded border whitespace-pre-wrap break-all leading-relaxed">
-                      {JSON.stringify(le.controls, null, 2)}
                     </pre>
                   </div>
                 </section>
@@ -763,14 +743,6 @@ function ComparisonTable({
               Our Name
             </SortableTH>
             <SortableTH
-              sortKey="class"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              Class
-            </SortableTH>
-            <SortableTH
               sortKey="primary"
               activeSortKey={sortKey}
               activeSortDir={sortDir}
@@ -845,9 +817,6 @@ function ComparisonTable({
                   >
                     {le?.common_name ?? "—"}
                   </span>
-                </td>
-                <td className="px-2 py-1.5 whitespace-nowrap">
-                  {le?.model_class ?? "—"}
                 </td>
                 <td className="px-2 py-1.5 text-center">
                   {le?.is_primary ? (

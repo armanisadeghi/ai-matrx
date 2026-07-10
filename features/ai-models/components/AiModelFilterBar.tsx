@@ -137,11 +137,6 @@ export default function AiModelFilterBar({
     [models],
   );
 
-  const modelClasses = useMemo(
-    () => [...new Set(models.map((m) => m.model_class).filter(Boolean))].sort(),
-    [models],
-  );
-
   // Local debounced search
   const [localQ, setLocalQ] = useState(q);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -165,7 +160,6 @@ export default function AiModelFilterBar({
     isDeprecatedFilterNonDefault(filters),
     filters.is_primary !== undefined,
     filters.is_premium !== undefined,
-    filters.model_class,
     filters.context_window_min !== undefined,
     filters.context_window_max !== undefined,
     filters.max_tokens_min !== undefined,
@@ -260,26 +254,6 @@ export default function AiModelFilterBar({
           </SelectContent>
         </Select>
 
-        {/* Model Class */}
-        <Select
-          value={filters.model_class ?? "__all__"}
-          onValueChange={(v) =>
-            onUpdateFilters({ model_class: v === "__all__" ? undefined : v })
-          }
-        >
-          <SelectTrigger className="h-7 text-xs w-32 shrink-0">
-            <SelectValue placeholder="Model Class" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">All Classes</SelectItem>
-            {modelClasses.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         {/* Expand/collapse for secondary filters */}
         <Button
           variant="ghost"
@@ -296,13 +270,11 @@ export default function AiModelFilterBar({
           More
           {activeFilterCount >
             (filters.provider ? 1 : 0) +
-              (isDeprecatedFilterNonDefault(filters) ? 1 : 0) +
-              (filters.model_class ? 1 : 0) && (
+              (isDeprecatedFilterNonDefault(filters) ? 1 : 0) && (
             <Badge variant="secondary" className="h-4 px-1 text-xs">
               {activeFilterCount -
                 (filters.provider ? 1 : 0) -
-                (isDeprecatedFilterNonDefault(filters) ? 1 : 0) -
-                (filters.model_class ? 1 : 0)}
+                (isDeprecatedFilterNonDefault(filters) ? 1 : 0)}
             </Badge>
           )}
         </Button>

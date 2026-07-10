@@ -8,7 +8,6 @@ export type AiModelFilters = {
   is_deprecated?: boolean;
   is_primary?: boolean;
   is_premium?: boolean;
-  model_class?: string;
   context_window_min?: number;
   context_window_max?: number;
   max_tokens_min?: number;
@@ -102,9 +101,6 @@ function serializeTabState(params: URLSearchParams, tab: TabState) {
   if (tab.filters.is_premium !== undefined)
     params.set(`${p}.is_premium`, String(tab.filters.is_premium));
   else params.delete(`${p}.is_premium`);
-  if (tab.filters.model_class)
-    params.set(`${p}.model_class`, tab.filters.model_class);
-  else params.delete(`${p}.model_class`);
   if (tab.filters.context_window_min !== undefined)
     params.set(`${p}.cw_min`, String(tab.filters.context_window_min));
   else params.delete(`${p}.cw_min`);
@@ -136,7 +132,6 @@ function deserializeTabState(params: URLSearchParams, id: string): TabState {
       ),
       is_primary: parseBoolean(params.get(`${p}.is_primary`)),
       is_premium: parseBoolean(params.get(`${p}.is_premium`)),
-      model_class: params.get(`${p}.model_class`) ?? undefined,
       context_window_min: params.get(`${p}.cw_min`)
         ? parseInt(params.get(`${p}.cw_min`)!, 10)
         : undefined,
@@ -232,8 +227,6 @@ export function useTabUrlState() {
           params.set(`${newId}.is_primary`, String(initialFilters.is_primary));
         if (initialFilters?.is_premium !== undefined)
           params.set(`${newId}.is_premium`, String(initialFilters.is_premium));
-        if (initialFilters?.model_class)
-          params.set(`${newId}.model_class`, initialFilters.model_class);
         if (initialFilters?.context_window_min !== undefined)
           params.set(
             `${newId}.cw_min`,

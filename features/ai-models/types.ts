@@ -162,17 +162,11 @@ export type ProviderModelsCache = {
 // These are what the codebase imports and uses everywhere.
 // =============================================================================
 
-export type AiModel = Omit<
-  AiModelRow,
-  | "controls"
-  | "constraints"
-  | "capabilities"
-  // `api_class` still exists on ai.model_definition (drops in a later phase) but
-  // its fact lives on ai.offering → ai.api now; nothing in the app may read it.
-  | "api_class"
-> & {
-  controls: ControlsSchema | null;
-  constraints: ModelConstraint[] | null;
+// NOTE (2026-07-10, ai_034): the legacy `api_class`/`model_class`/`controls`/
+// `constraints` columns are DROPPED from ai.model_definition. Routing facts
+// live on ai.offering → ai.api; resolved controls/constraints come from the
+// `ai.model_config` view (registry slice full records), never the model row.
+export type AiModel = Omit<AiModelRow, "capabilities"> & {
   capabilities: Record<string, unknown> | string[] | null;
   /** Resolved brand/maker display name (`ai.provider.name` via the
    *  `provider_id` FK). NOT a stored column on the model row — the service /
@@ -236,7 +230,6 @@ export type AiModelOfferingView = AiModelOfferingViewRow;
 export type AiModelFormData = {
   name: string;
   common_name: string;
-  model_class: string;
   context_window: string;
   max_tokens: string;
   // The model's maker/brand is set via this FK (ai.provider). The old free-text

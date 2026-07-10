@@ -1478,12 +1478,9 @@ export type Database = {
       }
       model_definition: {
         Row: {
-          api_class: string | null
           capabilities: Json | null
           common_name: string | null
-          constraints: Json | null
           context_window: number | null
-          controls: Json | null
           cost_rating: number | null
           created_at: string
           created_by: string | null
@@ -1498,7 +1495,6 @@ export type Database = {
           max_tokens: number | null
           metadata: Json
           mid_fallback_id: string | null
-          model_class: string
           name: string
           organization_id: string
           provider_id: string | null
@@ -1512,12 +1508,9 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          api_class?: string | null
           capabilities?: Json | null
           common_name?: string | null
-          constraints?: Json | null
           context_window?: number | null
-          controls?: Json | null
           cost_rating?: number | null
           created_at?: string
           created_by?: string | null
@@ -1532,7 +1525,6 @@ export type Database = {
           max_tokens?: number | null
           metadata?: Json
           mid_fallback_id?: string | null
-          model_class: string
           name: string
           organization_id: string
           provider_id?: string | null
@@ -1546,12 +1538,9 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          api_class?: string | null
           capabilities?: Json | null
           common_name?: string | null
-          constraints?: Json | null
           context_window?: number | null
-          controls?: Json | null
           cost_rating?: number | null
           created_at?: string
           created_by?: string | null
@@ -1566,7 +1555,6 @@ export type Database = {
           max_tokens?: number | null
           metadata?: Json
           mid_fallback_id?: string | null
-          model_class?: string
           name?: string
           organization_id?: string
           provider_id?: string | null
@@ -2045,7 +2033,6 @@ export type Database = {
           maker: string | null
           max_tokens: number | null
           mid_fallback_id: string | null
-          model_class: string | null
           name: string | null
           offering_id: string | null
           pricing: Json | null
@@ -5106,7 +5093,6 @@ export type Database = {
       request: {
         Row: {
           ai_model_id: string
-          api_class: string | null
           api_duration_ms: number | null
           cached_tokens: number | null
           conversation_id: string
@@ -5120,6 +5106,7 @@ export type Database = {
           iteration: number
           metadata: Json
           output_tokens: number | null
+          provider: string | null
           raw_usage: Json | null
           response_id: string | null
           status: string
@@ -5133,7 +5120,6 @@ export type Database = {
         }
         Insert: {
           ai_model_id: string
-          api_class?: string | null
           api_duration_ms?: number | null
           cached_tokens?: number | null
           conversation_id: string
@@ -5147,6 +5133,7 @@ export type Database = {
           iteration?: number
           metadata?: Json
           output_tokens?: number | null
+          provider?: string | null
           raw_usage?: Json | null
           response_id?: string | null
           status?: string
@@ -5160,7 +5147,6 @@ export type Database = {
         }
         Update: {
           ai_model_id?: string
-          api_class?: string | null
           api_duration_ms?: number | null
           cached_tokens?: number | null
           conversation_id?: string
@@ -5174,6 +5160,7 @@ export type Database = {
           iteration?: number
           metadata?: Json
           output_tokens?: number | null
+          provider?: string | null
           raw_usage?: Json | null
           response_id?: string | null
           status?: string

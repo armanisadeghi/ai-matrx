@@ -15,8 +15,7 @@ export function applyFiltersForCount(
                 m.id.toLowerCase().includes(lq) ||
                 (m.name ?? '').toLowerCase().includes(lq) ||
                 (m.common_name ?? '').toLowerCase().includes(lq) ||
-                (m.maker ?? '').toLowerCase().includes(lq) ||
-                (m.model_class ?? '').toLowerCase().includes(lq),
+                (m.maker ?? '').toLowerCase().includes(lq),
         );
     }
 
@@ -31,9 +30,6 @@ export function applyFiltersForCount(
     }
     if (filters.is_premium !== undefined) {
         result = result.filter((m) => (m.is_premium ?? false) === filters.is_premium);
-    }
-    if (filters.model_class) {
-        result = result.filter((m) => m.model_class === filters.model_class);
     }
     if (filters.context_window_min !== undefined) {
         result = result.filter((m) => (m.context_window ?? 0) >= filters.context_window_min!);

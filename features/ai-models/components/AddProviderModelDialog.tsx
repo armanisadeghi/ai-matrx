@@ -57,7 +57,6 @@ export default function AddProviderModelDialog({
   const [templateId, setTemplateId] = useState<string>("");
   const [nameOverride, setNameOverride] = useState<string>("");
   const [commonNameOverride, setCommonNameOverride] = useState<string>("");
-  const [modelClassOverride, setModelClassOverride] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +70,6 @@ export default function AddProviderModelDialog({
         ? providerEntry.display_name
         : providerEntry.id,
     );
-    setModelClassOverride("");
     setTemplateId("");
     setError(null);
   }, [open, providerEntry]);
@@ -106,12 +104,6 @@ export default function AddProviderModelDialog({
     [localModels, templateId],
   );
 
-  // Auto-fill model_class from template (only if user hasn't overridden it).
-  React.useEffect(() => {
-    if (!template) return;
-    setModelClassOverride((prev) => prev || template.model_class);
-  }, [template]);
-
   const ctxFromProvider = providerEntry?.max_input_tokens ?? null;
   const maxOutFromProvider = providerEntry?.max_tokens ?? null;
 
@@ -119,7 +111,6 @@ export default function AddProviderModelDialog({
     !!providerEntry &&
     !!template &&
     nameOverride.trim().length > 0 &&
-    modelClassOverride.trim().length > 0 &&
     !submitting;
 
   const handleCreate = async (openEditor: boolean) => {
@@ -128,25 +119,15 @@ export default function AddProviderModelDialog({
     setError(null);
     try {
       // Spread template (without id / the resolved maker), then override with
-      // provider-synced fields. Strip the dropping columns (provider/endpoints/
-      // pricing/api_class/capabilities_pre_canonical) — they are not real insert
-      // targets and the maker is derived, never written.
+      // provider-synced fields. The legacy columns (provider/endpoints/pricing/
+      // api_class/model_class/controls/constraints/capabilities_pre_canonical)
+      // are DROPPED from ai.model_definition, so the template row cannot carry
+      // them; the maker is derived, never written.
       const { id: _id, maker: _maker, ...templateRest } = template;
-      const cleanTemplate = { ...templateRest } as Record<string, unknown>;
-      for (const dead of [
-        "provider",
-        "endpoints",
-        "pricing",
-        "api_class",
-        "capabilities_pre_canonical",
-      ]) {
-        delete cleanTemplate[dead];
-      }
       const payload: AiModelInsert = {
-        ...cleanTemplate,
+        ...templateRest,
         name: nameOverride.trim(),
         common_name: commonNameOverride.trim() || null,
-        model_class: modelClassOverride.trim(),
         provider_id: providerId,
         context_window: ctxFromProvider ?? template.context_window ?? null,
         max_tokens: maxOutFromProvider ?? template.max_tokens ?? null,
@@ -179,8 +160,8 @@ export default function AddProviderModelDialog({
             Add provider model to database
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Provider info is auto-synced. Pick an existing model to copy class /
-            pricing / controls / constraints from.
+            Provider info is auto-synced. Pick an existing model to copy the
+            remaining registry fields (flags, capabilities, ratings) from.
           </DialogDescription>
         </DialogHeader>
 
@@ -291,8 +272,8 @@ export default function AddProviderModelDialog({
                             <span className="font-medium">
                               {m.common_name ?? m.name}
                             </span>
-                            <span className="text-muted-foreground ml-2">
-                              ({m.model_class})
+                            <span className="text-muted-foreground ml-2 font-mono">
+                              ({m.name})
                             </span>
                           </SelectItem>
                         ))}
@@ -313,7 +294,7 @@ export default function AddProviderModelDialog({
                               {m.common_name ?? m.name}
                             </span>
                             <span className="text-muted-foreground ml-2">
-                              ({m.maker ?? "—"} · {m.model_class})
+                              ({m.maker ?? "—"})
                             </span>
                           </SelectItem>
                         ))}
@@ -325,21 +306,6 @@ export default function AddProviderModelDialog({
 
               {template && (
                 <>
-                  <div className="space-y-1">
-                    <Label htmlFor="apm-class" className="text-xs">
-                      model_class
-                      <span className="text-muted-foreground ml-1">
-                        (editable — often differs from name)
-                      </span>
-                    </Label>
-                    <Input
-                      id="apm-class"
-                      value={modelClassOverride}
-                      onChange={(e) => setModelClassOverride(e.target.value)}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </div>
-
                   <div className="rounded-md border bg-muted/20 p-3 space-y-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Inherited from template
@@ -352,22 +318,6 @@ export default function AddProviderModelDialog({
                       <InheritedField
                         label="maker"
                         value={template.maker ?? "—"}
-                      />
-                      <InheritedField
-                        label="controls"
-                        value={
-                          template.controls
-                            ? `${Object.keys(template.controls).length} key(s)`
-                            : "—"
-                        }
-                      />
-                      <InheritedField
-                        label="constraints"
-                        value={
-                          template.constraints
-                            ? `${template.constraints.length} rule(s)`
-                            : "—"
-                        }
                       />
                       <InheritedField
                         label="capabilities"

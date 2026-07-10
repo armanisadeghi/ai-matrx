@@ -9,7 +9,7 @@ import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
 // transitively imports this slice via reduxTypes → modelRegistrySlice),
 // breaking the type-level circular dependency.
 type StateWithModelRegistry = { modelRegistry: ModelRegistryState };
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,8 +21,8 @@ export type AIModelRow = Database["ai"]["Tables"]["model_definition"]["Row"];
 /**
  * What data this record currently holds.
  *
- * - 'options' → only id, name, common_name, maker, model_class loaded
- * - 'full'    → all columns loaded
+ * - 'options' → only id, name, common_name, maker, cost_rating, speed_rating loaded
+ * - 'full'    → all fields loaded (incl. resolved controls/constraints)
  *
  * Status only upgrades — never downgrades. A 'full' record never becomes 'options'.
  */
@@ -38,10 +38,14 @@ export type AIModelRecord = {
    *  Not a stored column — attached by the fetch/hydrate layer. Replaced the
    *  dropped free-text `provider` column for all display. */
   maker: string | null;
-  // `api_class`/`model_class` still exist on ai.model_definition (dropping in a
-  // later phase) but the registry never surfaces them — routing is decided
-  // server-side via ai.offering → ai.endpoint/ai.api.
-} & Omit<AIModelRow, "api_class" | "model_class">;
+  /** Resolved controls/constraints from the `ai.model_config` RESOLUTION view
+   *  (Phase D), populated only on 'full' records by `fetchModelById`. NOT
+   *  stored columns — the legacy `model_definition.controls`/`constraints`
+   *  columns (along with `api_class`/`model_class`) were DROPPED (ai_034);
+   *  routing is decided server-side via ai.offering → ai.endpoint/ai.api. */
+  controls: Json | null;
+  constraints: Json | null;
+} & AIModelRow;
 
 /** Convenience alias — the full normalized model (fetchType === 'full'). */
 export type AIModel = AIModelRecord;
@@ -198,8 +202,8 @@ export const fetchModelOptions = createAsyncThunk(
  * Reads the ai.model_config RESOLUTION view (Phase D of the AI catalog
  * migration): `controls` and `constraints` are computed live from
  * ai.api.rules ⊕ ai.offering.override × ai.setting for the model's preferred
- * offering — the legacy model_definition.controls/constraints columns are
- * dead to the app and drop in Phase C. The view also carries every display
+ * offering — the legacy model_definition.controls/constraints columns were
+ * DROPPED (ai_034). The view also carries every display
  * field the registry consumes (maker, ratings, premium flag, context window,
  * capabilities), so this stays ONE read.
  *
@@ -287,8 +291,7 @@ const modelRegistrySlice = createSlice({
       state,
       action: {
         payload: {
-          // The SSR shell attaches the resolved `maker` (ai.provider.name); the
-          // dropping columns may still be present at runtime but are never read.
+          // The SSR shell attaches the resolved `maker` (ai.provider.name).
           models: AIModelRecord[];
           fetchType: ModelRecordFetchType;
           fetchScope: ModelFetchScope;

@@ -68,8 +68,6 @@ export default function CoreFieldsAuditTab({
     const patch: Partial<Omit<AiModel, "id">> = {};
     if (edits.common_name !== undefined)
       patch.common_name = (edits.common_name as string).trim() || null;
-    if (edits.model_class !== undefined)
-      patch.model_class = (edits.model_class as string).trim();
     if (edits.context_window !== undefined) {
       const v = parseInt(edits.context_window as unknown as string);
       patch.context_window = isNaN(v) ? null : v;
@@ -183,7 +181,6 @@ export default function CoreFieldsAuditTab({
               <Th>Model (API name)</Th>
               <Th className="w-36">Common Name</Th>
               <Th className="w-28">Maker</Th>
-              <Th className="w-24">Class</Th>
               <Th className="w-24">Context</Th>
               <Th className="w-24">Max Tokens</Th>
               <Th className="w-16">Status</Th>
@@ -230,16 +227,6 @@ export default function CoreFieldsAuditTab({
                       provider column is dropped) — read-only here; set the FK in
                       the model detail form. */}
                   <ProviderBadge provider={model.maker} />
-                </td>
-                <td className="px-3 py-1">
-                  <Input
-                    value={getVal(model, "model_class")}
-                    onChange={(e) =>
-                      setVal(model.id, "model_class", e.target.value)
-                    }
-                    className="h-7 text-xs"
-                    placeholder="chat / image…"
-                  />
                 </td>
                 <td className="px-3 py-1">
                   <Input

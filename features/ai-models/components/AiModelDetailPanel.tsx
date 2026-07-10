@@ -61,7 +61,6 @@ function rowToFormData(row: AiModel): AiModelFormData {
   return {
     name: row.name ?? "",
     common_name: row.common_name ?? "",
-    model_class: row.model_class ?? "",
     context_window:
       row.context_window != null ? String(row.context_window) : "",
     max_tokens: row.max_tokens != null ? String(row.max_tokens) : "",
@@ -82,7 +81,6 @@ function rowToFormData(row: AiModel): AiModelFormData {
 const EMPTY_FORM: AiModelFormData = {
   name: "",
   common_name: "",
-  model_class: "",
   context_window: "",
   max_tokens: "",
   provider_id: "",
@@ -521,7 +519,6 @@ const AI_MODEL_COLUMNS = new Set([
   "id",
   "name",
   "common_name",
-  "model_class",
   "context_window",
   "max_tokens",
   "provider_id",
@@ -529,10 +526,10 @@ const AI_MODEL_COLUMNS = new Set([
   "is_primary",
   "is_premium",
   "capabilities",
-  // NOTE: `controls` / `constraints` are deliberately ABSENT — they resolve
-  // from ai.api.rules ⊕ ai.offering.override (see ModelRulesEditor) and the
-  // legacy model_definition columns drop in Phase C. Raw-JSON pastes that
-  // still carry them are stripped.
+  // NOTE: `controls` / `constraints` / `model_class` / `api_class` are
+  // deliberately ABSENT — those legacy columns were DROPPED (ai_034).
+  // Controls/constraints resolve from ai.api.rules ⊕ ai.offering.override
+  // (see ModelRulesEditor). Raw-JSON pastes that still carry them are stripped.
   "mid_fallback_id",
   "guest_fallback_id",
   "cost_rating",
@@ -822,7 +819,7 @@ function RawModelJsonTab({
         spellCheck={false}
         placeholder={
           isAddMode
-            ? '{\n  "name": "my-model-id",\n  "model_class": "llm",\n  "provider": "openai",\n  ...\n}'
+            ? '{\n  "name": "my-model-id",\n  "common_name": "My Model",\n  "context_window": 200000,\n  ...\n}'
             : undefined
         }
         className={`flex-1 min-h-0 w-full resize-none rounded-md border px-3 py-2 font-mono text-[11px] leading-relaxed text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 overflow-auto bg-background placeholder:text-muted-foreground/40 ${
@@ -990,7 +987,6 @@ export default function AiModelDetailPanel({
         const payload = {
           name: formData.name.trim(),
           common_name: formData.common_name.trim() || null,
-          model_class: formData.model_class.trim(),
           context_window: formData.context_window
             ? parseInt(formData.context_window)
             : null,
@@ -1091,7 +1087,7 @@ export default function AiModelDetailPanel({
 
   const canSave =
     usingRawJsonForNew ||
-    (formData.name.trim() && formData.model_class.trim() && (isNew || isDirty));
+    (formData.name.trim() && (isNew || isDirty));
 
   return (
     <>
@@ -1220,8 +1216,6 @@ export default function AiModelDetailPanel({
                       partial.name = cleaned.name;
                     if (typeof cleaned.common_name === "string")
                       partial.common_name = cleaned.common_name;
-                    if (typeof cleaned.model_class === "string")
-                      partial.model_class = cleaned.model_class;
                     if (typeof cleaned.provider_id === "string")
                       partial.provider_id = cleaned.provider_id;
                     if (typeof cleaned.context_window === "number")

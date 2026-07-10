@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -55,52 +54,12 @@ export default function AiModelForm({
     onChange,
     onDelete,
 }: AiModelFormProps) {
-    // "Same as name" — true when model_class equals name
-    const [modelClassSameAsName, setModelClassSameAsName] = useState(
-        () => !data.model_class || data.model_class === data.name
-    );
-    // Whether the user is entering a custom free-text value (vs picking from dropdown)
-    const [modelClassCustom, setModelClassCustom] = useState(false);
-
-    // Keep model_class in sync when "same as name" is on
-    useEffect(() => {
-        if (modelClassSameAsName) {
-            onChange({ ...data, model_class: data.name });
-        }
-        // Only re-run when the name changes while the checkbox is on
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data.name, modelClassSameAsName]);
-
     const set = (key: keyof AiModelFormData) => (
         e: React.ChangeEvent<HTMLInputElement>
     ) => onChange({ ...data, [key]: e.target.value });
 
     const toggle = (key: keyof AiModelFormData) => (checked: boolean) =>
         onChange({ ...data, [key]: checked });
-
-    const handleSameAsNameToggle = (checked: boolean) => {
-        setModelClassSameAsName(checked);
-        if (checked) {
-            setModelClassCustom(false);
-            onChange({ ...data, model_class: data.name });
-        }
-    };
-
-    const handleModelClassSelectChange = (value: string) => {
-        if (value === '__custom__') {
-            setModelClassCustom(true);
-            // don't clear model_class — let user type
-        } else {
-            setModelClassCustom(false);
-            onChange({ ...data, model_class: value });
-        }
-    };
-
-    // Sorted unique model names for the dropdown (excluding current model to avoid self-ref noise)
-    const modelNameOptions = React.useMemo(() => {
-        const names = allModels.map((m) => m.name).filter(Boolean) as string[];
-        return [...new Set(names)].sort();
-    }, [allModels]);
 
     // Fallback target options — every non-deprecated, non-self model grouped
     // by provider for easy scanning. Used by the Mid + Guest fallback Selects.
@@ -148,73 +107,6 @@ export default function AiModelForm({
                         className="h-8 text-sm"
                     />
                 </FormField>
-            </div>
-
-            {/* Model Class with "Same as name" toggle */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            Model Class <span className="text-destructive ml-1">*</span>
-                        </Label>
-                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                            <Checkbox
-                                checked={modelClassSameAsName}
-                                onCheckedChange={(v) => handleSameAsNameToggle(!!v)}
-                                id="model_class_same"
-                                className="h-3.5 w-3.5"
-                            />
-                            <span className="text-xs text-muted-foreground">Same as name</span>
-                        </label>
-                    </div>
-
-                    {modelClassSameAsName ? (
-                        <Input
-                            value={data.model_class}
-                            readOnly
-                            className="h-8 text-sm font-mono bg-muted/50 cursor-not-allowed"
-                        />
-                    ) : modelClassCustom ? (
-                        <div className="flex gap-1">
-                            <Input
-                                value={data.model_class}
-                                onChange={set('model_class')}
-                                placeholder="Enter model class…"
-                                className="h-8 text-sm font-mono flex-1"
-                                autoFocus
-                            />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 px-2 text-xs shrink-0"
-                                onClick={() => setModelClassCustom(false)}
-                            >
-                                List
-                            </Button>
-                        </div>
-                    ) : (
-                        <Select
-                            value={modelNameOptions.includes(data.model_class) ? data.model_class : (data.model_class ? '__custom__' : undefined)}
-                            onValueChange={handleModelClassSelectChange}
-                        >
-                            <SelectTrigger className="h-8 text-sm font-mono">
-                                <SelectValue placeholder="Choose model name or custom…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="__custom__" className="font-normal text-muted-foreground italic">
-                                    — Custom value —
-                                </SelectItem>
-                                {modelNameOptions.map((n) => (
-                                    <SelectItem key={n} value={n} className="font-mono text-xs">
-                                        {n}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                    <p className="text-xs text-muted-foreground">The API model identifier</p>
-                </div>
             </div>
 
             <FormField label="Provider" description="ai.provider record (provider_id FK) — the model's maker. The old free-text provider column is dropped and derived, never edited.">

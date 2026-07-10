@@ -182,7 +182,6 @@ const SORT_FIELDS = [
   "common_name",
   "name",
   "provider",
-  "model_class",
   "provider_id",
   "context_window",
   "max_tokens",
@@ -256,21 +255,6 @@ const COLUMNS: ColDef[] = [
     ),
   },
   {
-    key: "model_class",
-    header: "Model Class",
-    width: "w-[180px] min-w-[140px]",
-    sortable: true,
-    filterType: "model_class",
-    render: (item) => (
-      <span
-        className="text-xs font-mono text-muted-foreground truncate block max-w-[170px]"
-        title={item.model_class}
-      >
-        {item.model_class}
-      </span>
-    ),
-  },
-  {
     key: "provider_id",
     header: "Provider FK",
     width: "w-[120px] min-w-[100px]",
@@ -319,22 +303,8 @@ const COLUMNS: ColDef[] = [
       <JsonSummaryBadge data={item.capabilities} label="caps" />
     ),
   },
-  {
-    key: "controls",
-    header: "Controls",
-    width: "w-[90px] min-w-[80px]",
-    sortable: false,
-    render: (item) => <JsonSummaryBadge data={item.controls} label="ctrl" />,
-  },
-  {
-    key: "constraints",
-    header: "Constraints",
-    width: "w-[100px] min-w-[80px]",
-    sortable: false,
-    render: (item) => (
-      <JsonSummaryBadge data={item.constraints} label="rules" />
-    ),
-  },
+  // NOTE: no controls/constraints columns — those legacy model_definition
+  // columns were DROPPED (ai_034); resolved rules live on ai.model_config.
   {
     key: "is_deprecated",
     header: "Deprecated",
@@ -397,8 +367,7 @@ function applyFilters(
         m.id.toLowerCase().includes(lq) ||
         (m.name ?? "").toLowerCase().includes(lq) ||
         (m.common_name ?? "").toLowerCase().includes(lq) ||
-        (m.maker ?? "").toLowerCase().includes(lq) ||
-        (m.model_class ?? "").toLowerCase().includes(lq),
+        (m.maker ?? "").toLowerCase().includes(lq),
     );
   }
 
@@ -419,9 +388,6 @@ function applyFilters(
     result = result.filter(
       (m) => (m.is_premium ?? false) === filters.is_premium,
     );
-  }
-  if (filters.model_class) {
-    result = result.filter((m) => m.model_class === filters.model_class);
   }
   if (filters.context_window_min !== undefined) {
     result = result.filter(
@@ -607,7 +573,6 @@ function SortIcon({
 
 type FilterType =
   | "provider"
-  | "model_class"
   | "is_deprecated"
   | "is_primary"
   | "is_premium"
@@ -616,7 +581,6 @@ type FilterType =
 
 interface FilterOptions {
   providers: string[];
-  modelClasses: string[];
 }
 
 function isFilterActive(
@@ -626,8 +590,6 @@ function isFilterActive(
   switch (filterType) {
     case "provider":
       return !!filters.provider;
-    case "model_class":
-      return !!filters.model_class;
     case "is_deprecated":
       return isDeprecatedFilterNonDefault(filters);
     case "is_primary":
@@ -867,19 +829,6 @@ function ColumnHeaderFilter({
             onClear={() => onUpdateFilters({ provider: undefined })}
           />
         );
-      case "model_class":
-        return (
-          <SelectFilterContent
-            label="Model Class"
-            value={filters.model_class}
-            options={filterOptions.modelClasses.map((c) => ({
-              value: c,
-              label: c,
-            }))}
-            onChange={(v) => onUpdateFilters({ model_class: v })}
-            onClear={() => onUpdateFilters({ model_class: undefined })}
-          />
-        );
       case "is_deprecated":
         return (
           <BoolFilterContent
@@ -1010,9 +959,6 @@ export default function AiModelTable({
     () => ({
       providers: [
         ...new Set(models.map((m) => m.maker).filter(Boolean)),
-      ].sort() as string[],
-      modelClasses: [
-        ...new Set(models.map((m) => m.model_class).filter(Boolean)),
       ].sort() as string[],
     }),
     [models],

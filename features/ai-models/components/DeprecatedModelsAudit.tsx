@@ -64,7 +64,6 @@ interface SettingsReviewTarget {
 type SortField =
   | "model"
   | "provider"
-  | "model_class"
   | "prompts"
   | "builtins"
   | "agents"
@@ -105,7 +104,6 @@ export default function DeprecatedModelsAudit({
   // ── Filter / sort state ───────────────────────────────────────────────────
   const [q, setQ] = useState("");
   const [filterProvider, setFilterProvider] = useState("__all__");
-  const [filterModelClass, setFilterModelClass] = useState("__all__");
   const [filterMinTotal, setFilterMinTotal] = useState<number | undefined>(
     undefined,
   );
@@ -119,19 +117,6 @@ export default function DeprecatedModelsAudit({
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const activeModels = allModels.filter((m) => !m.is_deprecated);
-
-  const modelClasses = useMemo(
-    () =>
-      [
-        ...new Set(
-          allModels
-            .filter((m) => m.is_deprecated)
-            .map((m) => m.model_class)
-            .filter(Boolean),
-        ),
-      ].sort(),
-    [allModels],
-  );
 
   const deprecatedProviders = useMemo(
     () =>
@@ -214,17 +199,12 @@ export default function DeprecatedModelsAudit({
           e.model.id.toLowerCase().includes(lq) ||
           (e.model.common_name ?? "").toLowerCase().includes(lq) ||
           e.model.name.toLowerCase().includes(lq) ||
-          (e.model.maker ?? "").toLowerCase().includes(lq) ||
-          (e.model.model_class ?? "").toLowerCase().includes(lq),
+          (e.model.maker ?? "").toLowerCase().includes(lq),
       );
     }
 
     if (filterProvider !== "__all__") {
       result = result.filter((e) => e.model.maker === filterProvider);
-    }
-
-    if (filterModelClass !== "__all__") {
-      result = result.filter((e) => e.model.model_class === filterModelClass);
     }
 
     if (filterHasUsage === "with") {
@@ -255,11 +235,6 @@ export default function DeprecatedModelsAudit({
         case "provider":
           cmp = (a.model.maker ?? "").localeCompare(b.model.maker ?? "");
           break;
-        case "model_class":
-          cmp = (a.model.model_class ?? "").localeCompare(
-            b.model.model_class ?? "",
-          );
-          break;
         case "prompts":
           cmp = (a.usage?.prompts.length ?? 0) - (b.usage?.prompts.length ?? 0);
           break;
@@ -288,7 +263,6 @@ export default function DeprecatedModelsAudit({
     entries,
     q,
     filterProvider,
-    filterModelClass,
     filterHasUsage,
     filterMinTotal,
     filterMaxTotal,
@@ -309,7 +283,6 @@ export default function DeprecatedModelsAudit({
   const hasAnyFilter = !!(
     q ||
     filterProvider !== "__all__" ||
-    filterModelClass !== "__all__" ||
     filterHasUsage !== "all" ||
     filterMinTotal !== undefined ||
     filterMaxTotal !== undefined
@@ -335,7 +308,6 @@ export default function DeprecatedModelsAudit({
   const clearFilters = () => {
     setQ("");
     setFilterProvider("__all__");
-    setFilterModelClass("__all__");
     setFilterHasUsage("all");
     setFilterMinTotal(undefined);
     setFilterMaxTotal(undefined);
@@ -525,23 +497,6 @@ export default function DeprecatedModelsAudit({
           </SelectContent>
         </Select>
 
-        {/* Model class */}
-        {modelClasses.length > 0 && (
-          <Select value={filterModelClass} onValueChange={setFilterModelClass}>
-            <SelectTrigger className="h-7 text-xs w-32 shrink-0">
-              <SelectValue placeholder="Model Class" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">All Classes</SelectItem>
-              {modelClasses.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
         {/* Usage filter */}
         <Select
           value={filterHasUsage}
@@ -629,7 +584,6 @@ export default function DeprecatedModelsAudit({
               <tr className="h-8">
                 <Th field="model" label="Deprecated Model" />
                 <Th field="provider" label="Provider" className="w-28" />
-                <Th field="model_class" label="Class" className="w-24" />
                 <Th
                   field="prompts"
                   label="Prompts"
@@ -694,11 +648,6 @@ export default function DeprecatedModelsAudit({
                     {/* Maker */}
                     <td className="px-3 py-1.5 text-muted-foreground text-xs">
                       {model.maker ?? "—"}
-                    </td>
-
-                    {/* Model class */}
-                    <td className="px-3 py-1.5 text-muted-foreground text-xs font-mono">
-                      {model.model_class ?? "—"}
                     </td>
 
                     {/* Prompts count */}

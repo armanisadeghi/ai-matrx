@@ -32,7 +32,6 @@ function leanComparison(c: ProviderSyncComparison) {
           id: c.localEntry.id,
           name: c.localEntry.name,
           common_name: c.localEntry.common_name,
-          model_class: c.localEntry.model_class,
           is_primary: c.localEntry.is_primary,
           is_deprecated: c.localEntry.is_deprecated,
         }

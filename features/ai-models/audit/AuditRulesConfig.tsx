@@ -151,12 +151,6 @@ export default function AuditRulesConfig({
               onChange={(v) => set("require_provider", v)}
             />
             <RuleSwitch
-              label="Require model_class"
-              description="Model must have a class (e.g. chat, image)"
-              checked={rules.require_model_class}
-              onChange={(v) => set("require_model_class", v)}
-            />
-            <RuleSwitch
               label="Require context_window"
               description="Model must have a context window value"
               checked={rules.require_context_window}

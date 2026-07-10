@@ -126,8 +126,6 @@ export interface AuditRuleConfig {
   require_max_tokens: boolean;
   /** Core fields: require a maker (the provider_id FK) */
   require_provider: boolean;
-  /** Core fields: require model_class */
-  require_model_class: boolean;
 }
 
 export const DEFAULT_AUDIT_RULES: AuditRuleConfig = {
@@ -138,7 +136,6 @@ export const DEFAULT_AUDIT_RULES: AuditRuleConfig = {
   require_context_window: true,
   require_max_tokens: true,
   require_provider: true,
-  require_model_class: true,
 };
 
 // ── Per-model audit results ────────────────────────────────────────────────
@@ -224,15 +221,6 @@ export function auditModel(
       severity: "error",
     });
   }
-  if (rules.require_model_class && !model.model_class?.trim()) {
-    issues.push({
-      category: "core_fields",
-      field: "model_class",
-      message: "Missing model class",
-      severity: "error",
-    });
-  }
-
   // ── Capabilities ───────────────────────────────────────────────────────
   const caps = parseCapabilities(model.capabilities);
   if (rules.capabilities_object_required && !model.capabilities) {
