@@ -30,8 +30,11 @@ The web build is complete and user-confirmed live; the Diagram Editor agent is n
 3. **`agent.agent_surface` association edge** — deliberately skipped (mechanism condemned
    2026-07-02); add the agent↔surface edge on `platform.associations` when the replacement in
    `docs/handoffs/surfaces-bindings.md` item 1 lands.
-4. **Chat right-click scoping** (gated on the decision below): if pursued, the fix path is
-   **context-menu-v3** (`context-menu-v3` skill) — NOT a v2 extension.
+4. **Chat right-click scoping — APPROVED onto context-menu-v3** (Arman 2026-07-07: "context menu
+   v3 probably sounds like the right call"): right-clicking a mermaid block in chat should offer
+   diagram-scoped agents (the Diagram Editor first). Build with the `context-menu-v3` skill — NOT
+   a v2 extension. Natural to pair with `docs/handoffs/notes-sidebar-menu.md` (same skill, same
+   sweep).
 
 ## Done
 
