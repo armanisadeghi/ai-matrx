@@ -10,7 +10,7 @@ export async function GET() {
         const supabase = getScriptSupabaseClient();
 
         // Fetch all non-deprecated AI models + providers (to resolve `maker`
-        // from the model_provider FK — the free-text `provider` column is
+        // from the provider_id FK — the free-text `provider` column is
         // dropping and must never be read).
         const [modelsRes, providersRes] = await Promise.all([
             supabase
@@ -39,8 +39,8 @@ export async function GET() {
         );
         const models = (modelsRes.data ?? []).map((m) => ({
             ...m,
-            maker: m.model_provider
-                ? makerById.get(m.model_provider) ?? null
+            maker: m.provider_id
+                ? makerById.get(m.provider_id) ?? null
                 : null,
         }));
 

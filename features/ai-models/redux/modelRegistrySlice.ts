@@ -34,22 +34,14 @@ export type ModelRecordFetchType = "options" | "full";
  */
 export type AIModelRecord = {
   _fetchType: ModelRecordFetchType;
-  /** Resolved brand/maker name (`ai.provider.name` via the `model_provider` FK).
+  /** Resolved brand/maker name (`ai.provider.name` via the `provider_id` FK).
    *  Not a stored column — attached by the fetch/hydrate layer. Replaced the
    *  dropped free-text `provider` column for all display. */
   maker: string | null;
-  // These columns are DROPPING from ai.model_definition — the registry must
-  // never surface them: `provider` (→ maker), `endpoints`/`api_class` (routing is
-  // decided server-side by ai.service.wire_format), `pricing` (→ ai.offering),
-  // `capabilities_pre_canonical` (dead canonicalization snapshot).
-} & Omit<
-  AIModelRow,
-  | "provider"
-  | "endpoints"
-  | "pricing"
-  | "api_class"
-  | "capabilities_pre_canonical"
->;
+  // `api_class`/`model_class` still exist on ai.model_definition (dropping in a
+  // later phase) but the registry never surfaces them — routing is decided
+  // server-side via ai.offering → ai.endpoint/ai.api.
+} & Omit<AIModelRow, "api_class" | "model_class">;
 
 /** Convenience alias — the full normalized model (fetchType === 'full'). */
 export type AIModel = AIModelRecord;
@@ -99,16 +91,13 @@ const initialState: ModelRegistryState = {
 // ---------------------------------------------------------------------------
 
 // Sourced from the ai.model_public view, which resolves the maker name from the
-// model_provider FK (the dropped free-text `provider` column is never read).
+// provider_id FK (the dropped free-text `provider` column is never read).
 // The view's columns are all nullable; the thunk normalizes id/name before use.
 type ModelOptionRow = {
   id: string;
   name: string;
   common_name: string | null;
   maker: string | null;
-  // model_class is non-null on model_definition; the view types it nullable, so
-  // the thunk coalesces to "" when normalizing.
-  model_class: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -116,7 +105,7 @@ type ModelOptionRow = {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch lightweight options (id, name, common_name, maker, model_class) for
+ * Fetch lightweight options (id, name, common_name, maker) for
  * all active, ROUTABLE models. Used to populate dropdowns without pulling the full schema.
  *
  * CRITICAL: only models with ≥1 available ai.offering are returned. A bare
@@ -153,11 +142,11 @@ export const fetchModelOptions = createAsyncThunk(
         return [] as ModelOptionRow[];
       }
       // ai.model_public already excludes deprecated/deleted models and resolves
-      // the maker name from the model_provider FK. Constrain to routable IDs.
+      // the maker name from the provider_id FK. Constrain to routable IDs.
       const { data, error } = await supabase
         .schema("ai")
         .from("model_public")
-        .select("id, name, common_name, maker, model_class")
+        .select("id, name, common_name, maker")
         .in("id", routableIds)
         .order("common_name", { ascending: true, nullsFirst: false });
       if (error) throw error;
@@ -172,7 +161,6 @@ export const fetchModelOptions = createAsyncThunk(
             name: r.name,
             common_name: r.common_name,
             maker: r.maker,
-            model_class: r.model_class ?? "",
           }),
         );
     } catch (err: unknown) {
@@ -377,10 +365,14 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     is_premium: null,
     is_primary: null,
     max_tokens: null,
-    model_class: "",
-    model_provider: null,
+    provider_id: null,
     guest_fallback_id: null,
     mid_fallback_id: null,
+    // 2026-07-10 ai-schema reshape additions
+    cost_rating: null,
+    speed_rating: null,
+    retry_fallback_id: null,
+    retry_max_attempts: 0,
     organization_id: "",
     created_by: null,
     deleted_at: null,

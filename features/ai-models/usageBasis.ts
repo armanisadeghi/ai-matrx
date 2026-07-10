@@ -180,7 +180,7 @@ interface TierLike {
  *   what makes that NULL *intentional*; without it a NULL basis is a pricing
  *   bug. It cannot be derived from `capabilities` (gpt-image and Imagen are
  *   both "image out"; one is token-billed, one is per-image) nor from
- *   `ai.service.wire_format` — so it is recorded per offering.
+ *   `ai.api.translator_key` — so it is recorded per offering.
  *
  * Fail-closed: when the fact is unknown, pass `tokenBilled: false` and let the
  * validator scream. Never guess from the model name.

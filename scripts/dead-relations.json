@@ -1008,6 +1008,14 @@
       "new": "content_ir.kind_component",
       "since": "2026-07-07",
       "reason": "retired to graveyard.render_component (Shape System Stage 3, SHAPE_SYSTEM.md R1) — the dormant render registry lost to content_ir.kind_component, the canonical (kind, platform, role) → component_key resolver. Its only reader was the never-dispatched fetchRenderComponents thunk, now deleted. skill.render_definition SURVIVES as the markdown-atom palette; only its render_component satellite died. Never .from('render_component')."
+    },
+    {
+      "relation": "service",
+      "old": "ai.service",
+      "newSchema": "ai",
+      "new": "ai.endpoint",
+      "since": "2026-07-10",
+      "reason": "retired (ai-schema reshape) — ai.service split into ai.endpoint (one row per serving vendor: base_url/auth_ref/byok/priority) + ai.api (one row per wire contract: translator_key = old wire_format, transport, enveloped rules, request_defaults). ai.offering.service_id → endpoint_id + api_id; controls_override → override (enveloped). Never .schema('ai').from('service')."
     }
   ]
 }

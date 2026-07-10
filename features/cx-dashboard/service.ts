@@ -55,18 +55,18 @@ async function resolveAiModels(
   const ids = [...new Set(modelIds.filter((id): id is string => !!id))];
   if (ids.length === 0) return new Map();
   // `provider` (free-text) was dropped from ai.model_definition — the maker is the
-  // model_provider FK → ai.provider.name. Resolve it in a second query (same pattern as
+  // provider_id FK → ai.provider.name. Resolve it in a second query (same pattern as
   // app/api/ai-models/route.ts). Don't swallow the error.
   const { data, error } = await supabase
     .schema("ai")
     .from("model_definition")
-    .select("id, common_name, name, model_provider")
+    .select("id, common_name, name, provider_id")
     .in("id", ids);
   if (error) {
     console.error("[cx-dashboard] resolveAiModels: model_definition fetch failed", error);
   }
   const rows = data || [];
-  const providerIds = [...new Set(rows.map((m) => m.model_provider).filter((v): v is string => !!v))];
+  const providerIds = [...new Set(rows.map((m) => m.provider_id).filter((v): v is string => !!v))];
   const providerNames = new Map<string, string | null>();
   if (providerIds.length > 0) {
     const { data: provs, error: provErr } = await supabase
@@ -83,7 +83,7 @@ async function resolveAiModels(
   for (const m of rows) {
     map.set(m.id, {
       common_name: m.common_name ?? null,
-      provider: m.model_provider ? (providerNames.get(m.model_provider) ?? null) : null,
+      provider: m.provider_id ? (providerNames.get(m.provider_id) ?? null) : null,
       name: m.name ?? null,
     });
   }

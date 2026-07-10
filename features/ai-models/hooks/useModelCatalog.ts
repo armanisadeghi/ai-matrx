@@ -9,11 +9,11 @@
  *   - "admin" → `ai.model_admin`   (super-admin; raw $ pricing + service internals;
  *               full catalog incl. deprecated).
  *
- * The row is reshaped for display: pretty name only (never the technical
- * model_class), a MAKER resolved so serving-only providers (Groq/Cerebras) are
- * never shown as the maker, capability modalities + grouped features preserved
- * in full (nothing hidden), interaction (turn/single/extraction/realtime) and
- * multilingual kept intact.
+ * The row is reshaped for display: pretty name only, the stored MAKER (the DB
+ * resolves it — serving vendors like Groq/Cerebras are never exposed on
+ * user-facing views), stored cost/speed ratings (1-6; 6 renders as "5+"),
+ * capability modalities + grouped features preserved in full (nothing hidden),
+ * interaction (turn/single/extraction/realtime) and multilingual kept intact.
  *
  * Loud, no silent fallback: a read failure surfaces the real PostgREST error.
  */
@@ -24,7 +24,6 @@ import {
   groupFeatures,
   type GroupedFeatures,
 } from "@/features/ai-models/capabilities/feature-map";
-import { resolveMaker } from "@/features/ai-models/lab/modelDisplay";
 import type { Database, Json } from "@/types/database.types";
 
 type ModelPublicRow = Database["ai"]["Views"]["model_public"]["Row"];
@@ -47,10 +46,14 @@ export type Interaction = "turn" | "single" | "extraction" | "realtime";
 /** Reshaped, render-ready model row. */
 export interface CatalogModel {
   id: string;
-  /** Pretty, business-facing name only — NEVER the technical model_class. */
+  /** Pretty, business-facing name only — never a technical identifier. */
   name: string;
-  /** Who MADE the model (resolved; serving-only providers suppressed). */
+  /** Who MADE the model (stored `maker` — never a serving vendor). */
   maker: string | null;
+  /** Curated cost rating, 1-6 smallint (6 renders as the "5+" band). */
+  costRating: number | null;
+  /** Curated speed rating, 1-6 smallint (6 renders as "5+"). */
+  speedRating: number | null;
   input: Modality[];
   output: Modality[];
   features: GroupedFeatures;
@@ -70,10 +73,16 @@ export interface CatalogModel {
   /** admin-only extras — present only for variant === "admin" */
   admin?: {
     pricing: Json | null;
+    /** Serving vendor (ai.endpoint.vendor) — ADMIN eyes only, never user-facing. */
     vendor: string | null;
-    wireFormat: string | null;
-    serviceDisplayName: string | null;
-    serviceInternalName: string | null;
+    endpointId: string | null;
+    endpointDisplayName: string | null;
+    endpointInternalName: string | null;
+    apiId: string | null;
+    apiName: string | null;
+    /** Wire-contract translator (ai.api.translator_key — the old wire_format vocabulary). */
+    translatorKey: string | null;
+    transport: string | null;
     offeringId: string | null;
     providerModelId: string | null;
   };
@@ -126,7 +135,9 @@ function normalizePublic(row: ModelPublicRow): CatalogModel | null {
   return {
     id: row.id,
     name: row.common_name || row.name,
-    maker: resolveMaker(row.maker, row.model_class),
+    maker: row.maker,
+    costRating: row.cost_rating,
+    speedRating: row.speed_rating,
     ...parseCaps(row.capabilities),
     contextWindow: row.context_window,
     maxTokens: row.max_tokens,
@@ -155,7 +166,9 @@ function normalizeAdmin(row: ModelAdminRow): CatalogModel | null {
   return {
     id: row.id,
     name: row.common_name || row.name,
-    maker: resolveMaker(row.maker, row.model_class),
+    maker: row.maker,
+    costRating: row.cost_rating,
+    speedRating: row.speed_rating,
     ...parseCaps(row.capabilities),
     contextWindow: row.context_window,
     maxTokens: row.max_tokens,
@@ -170,9 +183,13 @@ function normalizeAdmin(row: ModelAdminRow): CatalogModel | null {
     admin: {
       pricing: row.pricing,
       vendor: row.vendor,
-      wireFormat: row.wire_format,
-      serviceDisplayName: row.service_display_name,
-      serviceInternalName: row.service_internal_name,
+      endpointId: row.endpoint_id,
+      endpointDisplayName: row.endpoint_display_name,
+      endpointInternalName: row.endpoint_internal_name,
+      apiId: row.api_id,
+      apiName: row.api_name,
+      translatorKey: row.translator_key,
+      transport: row.transport,
       offeringId: row.offering_id,
       providerModelId: row.provider_model_id,
     },

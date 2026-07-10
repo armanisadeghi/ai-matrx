@@ -13,9 +13,12 @@ import type {
   AiProvider,
   AiProviderInsert,
   AiProviderUpdate,
-  AiService,
-  AiServiceInsert,
-  AiServiceUpdate,
+  AiApi,
+  AiApiInsert,
+  AiApiUpdate,
+  AiEndpoint,
+  AiEndpointInsert,
+  AiEndpointUpdate,
   AiSetting,
   AiSettingInsert,
   AiSettingUpdate,
@@ -82,7 +85,7 @@ type AgentBuiltinSettingsRow = {
 
 export const aiModelService = {
   async fetchAll(): Promise<AiModel[]> {
-    // Resolve `maker` from the model_provider FK (ai.provider.name). The old
+    // Resolve `maker` from the provider_id FK (ai.provider.name). The old
     // free-text `provider` column is dropping — never read it. Fetch providers
     // alongside models and map by id so every row carries a display brand.
     const [modelsRes, providers] = await Promise.all([
@@ -99,8 +102,8 @@ export const aiModelService = {
       (row): AiModel =>
         ({
           ...row,
-          maker: row.model_provider
-            ? (makerById.get(row.model_provider) ?? null)
+          maker: row.provider_id
+            ? (makerById.get(row.provider_id) ?? null)
             : null,
         }) as unknown as AiModel,
     );
@@ -195,55 +198,100 @@ export const aiModelService = {
     if (error) throw error;
   },
 
-  // ── Service CRUD (ai.service — the callable-route catalog) ──
+  // ── Endpoint CRUD (ai.endpoint — one row per serving vendor) ──
 
-  async fetchServices(): Promise<AiService[]> {
+  async fetchEndpoints(): Promise<AiEndpoint[]> {
     const { data, error } = await supabase
       .schema("ai")
-      .from("service")
+      .from("endpoint")
       .select("*")
       .is("deleted_at", null)
       .order("display_name", { ascending: true });
     if (error) throw error;
-    return data as unknown as AiService[];
+    return data as unknown as AiEndpoint[];
   },
 
-  async createService(payload: AiServiceInsert): Promise<AiService> {
+  async createEndpoint(payload: AiEndpointInsert): Promise<AiEndpoint> {
     const { data, error } = await supabase
       .schema("ai")
-      .from("service")
+      .from("endpoint")
       .insert(payload)
       .select()
       .single();
     if (error) throw error;
-    return data as unknown as AiService;
+    return data as unknown as AiEndpoint;
   },
 
-  async updateService(
+  async updateEndpoint(
     id: string,
-    payload: AiServiceUpdate,
-  ): Promise<AiService> {
+    payload: AiEndpointUpdate,
+  ): Promise<AiEndpoint> {
     const { data, error } = await supabase
       .schema("ai")
-      .from("service")
+      .from("endpoint")
       .update(payload)
       .eq("id", id)
       .select()
       .single();
     if (error) throw error;
-    return data as unknown as AiService;
+    return data as unknown as AiEndpoint;
   },
 
-  async deleteService(id: string): Promise<void> {
+  async deleteEndpoint(id: string): Promise<void> {
     const { error } = await supabase
       .schema("ai")
-      .from("service")
+      .from("endpoint")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", id);
     if (error) throw error;
   },
 
-  // ── Offering CRUD (ai.offering — model × service, per-service pricing/overrides) ──
+  // ── API CRUD (ai.api — one row per wire contract / translator) ──
+
+  async fetchApis(): Promise<AiApi[]> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("api")
+      .select("*")
+      .is("deleted_at", null)
+      .order("display_name", { ascending: true });
+    if (error) throw error;
+    return data as unknown as AiApi[];
+  },
+
+  async createApi(payload: AiApiInsert): Promise<AiApi> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("api")
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiApi;
+  },
+
+  async updateApi(id: string, payload: AiApiUpdate): Promise<AiApi> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("api")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiApi;
+  },
+
+  async deleteApi(id: string): Promise<void> {
+    const { error } = await supabase
+      .schema("ai")
+      .from("api")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  // ── Offering CRUD (ai.offering — model × endpoint × api, per-offering pricing/overrides) ──
 
   async fetchOfferings(): Promise<AiOffering[]> {
     const { data, error } = await supabase
@@ -306,7 +354,7 @@ export const aiModelService = {
     if (error) throw error;
   },
 
-  /** Read-only reporting view — offering × service × model_definition joined,
+  /** Read-only reporting view — offering × endpoint/api × model_definition joined,
    *  with points-based pricing computed. Nothing writes to this; edit the
    *  underlying offering row instead. */
   async fetchModelOfferingView(): Promise<AiModelOfferingView[]> {
@@ -389,12 +437,12 @@ export const aiModelService = {
     return this.withMaker(data as Record<string, unknown>);
   },
 
-  /** Attach the resolved `maker` (ai.provider.name via model_provider FK) to a
+  /** Attach the resolved `maker` (ai.provider.name via the provider_id FK) to a
    *  freshly written model row so the caller can splice it into a list without a
    *  full refetch. The dropped free-text `provider` column is never read. */
   async withMaker(row: Record<string, unknown>): Promise<AiModel> {
     const providerId =
-      typeof row.model_provider === "string" ? row.model_provider : null;
+      typeof row.provider_id === "string" ? row.provider_id : null;
     let maker: string | null = null;
     if (providerId) {
       const providers = await this.fetchProviders();

@@ -16,9 +16,15 @@ export type AiEndpointRow = Database["ai"]["Tables"]["endpoint"]["Row"];
 export type AiEndpointInsert = Database["ai"]["Tables"]["endpoint"]["Insert"];
 export type AiEndpointUpdate = Database["ai"]["Tables"]["endpoint"]["Update"];
 
-export type AiServiceRow = Database["ai"]["Tables"]["service"]["Row"];
-export type AiServiceInsert = Database["ai"]["Tables"]["service"]["Insert"];
-export type AiServiceUpdate = Database["ai"]["Tables"]["service"]["Update"];
+export type AiApiRow = Database["ai"]["Tables"]["api"]["Row"];
+export type AiApiInsert = Database["ai"]["Tables"]["api"]["Insert"];
+export type AiApiUpdate = Database["ai"]["Tables"]["api"]["Update"];
+
+export type AiModelAliasRow = Database["ai"]["Tables"]["model_alias"]["Row"];
+export type AiModelAliasInsert =
+  Database["ai"]["Tables"]["model_alias"]["Insert"];
+export type AiModelAliasUpdate =
+  Database["ai"]["Tables"]["model_alias"]["Update"];
 
 export type AiOfferingRow = Database["ai"]["Tables"]["offering"]["Row"];
 export type AiOfferingInsert = Database["ai"]["Tables"]["offering"]["Insert"];
@@ -126,6 +132,14 @@ export type ControlParam = {
 
 export type ControlsSchema = Record<string, ControlParam>;
 
+/** The enveloped rules shape stored in `ai.api.rules` and `ai.offering.override`:
+ *  `{"params": {...ControlsSchema}, "constraints": [...ModelConstraint]}`.
+ *  Never store a flat param map — the envelope is the canonical wire shape. */
+export type RulesEnvelope = {
+  params: ControlsSchema;
+  constraints: ModelConstraint[];
+};
+
 export type ProviderModelEntry = {
   id: string;
   display_name?: string;
@@ -153,25 +167,15 @@ export type AiModel = Omit<
   | "controls"
   | "constraints"
   | "capabilities"
-  // The following four columns are being DROPPED from ai.model_definition —
-  // their fact now lives elsewhere and nothing in the app may read them:
-  //   - `provider` (free text)    → resolved `maker` (ai.provider via model_provider FK)
-  //   - `endpoints` (jsonb)       → ai.offering → ai.service.wire_format
-  //   - `pricing`   (jsonb)       → ai.offering.pricing (managed per-offering)
-  //   - `api_class` (text)        → ai.offering → ai.service.wire_format + vendor
-  | "provider"
-  | "endpoints"
-  | "pricing"
+  // `api_class` still exists on ai.model_definition (drops in a later phase) but
+  // its fact lives on ai.offering → ai.api now; nothing in the app may read it.
   | "api_class"
-  // One-release capabilities-canonicalization revert snapshot — canonicalization
-  // is long done (all rows canonical); the column has no readers and is dropping.
-  | "capabilities_pre_canonical"
 > & {
   controls: ControlsSchema | null;
   constraints: ModelConstraint[] | null;
   capabilities: Record<string, unknown> | string[] | null;
   /** Resolved brand/maker display name (`ai.provider.name` via the
-   *  `model_provider` FK). NOT a stored column on the model row — the service /
+   *  `provider_id` FK). NOT a stored column on the model row — the service /
    *  fetch layer attaches it. This replaced the dropped free-text `provider`
    *  column for all display, filtering, and grouping. */
   maker: string | null;
@@ -181,23 +185,32 @@ export type AiProvider = Omit<AiProviderRow, "provider_models_cache"> & {
   provider_models_cache: ProviderModelsCache | null;
 };
 
-export type AiService = Omit<
-  AiServiceRow,
-  "auth_ref" | "controls" | "request_defaults" | "metadata"
-> & {
+/** `ai.endpoint` — ONE row per serving vendor (admin-only surface; users never
+ *  see vendors). Json fields narrowed to their stored shapes. */
+export type AiEndpoint = Omit<AiEndpointRow, "auth_ref" | "metadata"> & {
   auth_ref: Record<string, unknown>;
-  controls: ControlsSchema;
+  metadata: Record<string, unknown>;
+};
+
+/** `ai.api` — one row per wire contract (translator_key = the old wire_format
+ *  vocabulary). `rules` is the canonical params/constraints envelope. */
+export type AiApi = Omit<
+  AiApiRow,
+  "rules" | "request_defaults" | "metadata"
+> & {
+  rules: RulesEnvelope;
   request_defaults: Record<string, unknown>;
   metadata: Record<string, unknown>;
 };
 
 export type AiOffering = Omit<
   AiOfferingRow,
-  "pricing" | "capabilities_override" | "controls_override" | "metadata"
+  "pricing" | "capabilities_override" | "override" | "metadata"
 > & {
   pricing: PricingTier[];
   capabilities_override: Record<string, unknown>;
-  controls_override: ControlsSchema;
+  /** Per-offering override of the api's rules — same envelope shape. */
+  override: RulesEnvelope;
   metadata: Record<string, unknown>;
 };
 
@@ -212,7 +225,8 @@ export type AiSetting = Omit<
 };
 
 /** Row shape of the read-only `ai.model_offering` reporting view (offering ×
- *  service × model_definition joined, points-based pricing computed). */
+ *  endpoint/api × model_definition joined, points-based pricing computed —
+ *  serving vendor deliberately NOT exposed). */
 export type AiModelOfferingView = AiModelOfferingViewRow;
 
 // =============================================================================
@@ -227,7 +241,7 @@ export type AiModelFormData = {
   max_tokens: string;
   // The model's maker/brand is set via this FK (ai.provider). The old free-text
   // `provider` column is dropped and derived — never edited here.
-  model_provider: string;
+  provider_id: string;
   is_deprecated: boolean;
   is_primary: boolean;
   is_premium: boolean;
@@ -242,7 +256,8 @@ export type AiModelFormData = {
 
 export type AiOfferingFormData = {
   model_id: string;
-  service_id: string;
+  endpoint_id: string;
+  api_id: string;
   provider_model_id: string;
   priority: string;
   is_available: boolean;
@@ -253,7 +268,12 @@ export type AiOfferingFormData = {
   // pricing bug). See features/ai-models/usageBasis.ts.
   token_billed: boolean;
   capabilities_override: Record<string, unknown>;
-  controls_override: Record<string, unknown>;
+  /** Full `override` envelope. The form UI edits `override.params` (the old
+   *  flat controls map) and carries `override.constraints` through untouched. */
+  override: {
+    params: Record<string, unknown>;
+    constraints: unknown[];
+  };
   notes: string;
   visibility: string;
 };
