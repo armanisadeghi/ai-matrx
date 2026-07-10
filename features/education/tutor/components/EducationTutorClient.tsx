@@ -40,7 +40,9 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { Eye } from "lucide-react";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
 import { assembleTutorGrounding, type TutorGroundingSeed } from "../grounding";
+import type { TrustEnvelope } from "@/features/education/trust/types";
 import { TutorLanding } from "./TutorLanding";
+import { TutorTrustStrip } from "./TutorTrustStrip";
 
 const SOURCE_FEATURE = "education-tutor" as const;
 const BASE_PATH = "/education/tutor/[conversationId]";
@@ -160,6 +162,12 @@ export function EducationTutorClient({
   // conversation slot (no create-race), and `request.context` is re-sent on
   // EVERY turn (including continuations), so grounding stays live for the whole
   // conversation. The agent inlines each slot up to its `max_inline_chars`.
+  // The derived P0 trust envelope for the surface strip (citations + confidence
+  // + refusal convention). Populated from the SAME grounding assembly used for
+  // context injection on the fresh route, and re-derived for an existing
+  // transcript (below) so the strip is present on every tutor view.
+  const [tutorTrust, setTutorTrust] = useState<TrustEnvelope | null>(null);
+
   const groundedRef = useRef<string | null>(null);
   useEffect(() => {
     if (conversationIdProp || !liveConversationId || !authReady) return;
@@ -171,6 +179,7 @@ export function EducationTutorClient({
       try {
         const grounding = await assembleTutorGrounding({ seed });
         if (cancelled) return;
+        setTutorTrust(grounding.trust);
         dispatch(
           setContextEntries({
             conversationId: target,
@@ -191,6 +200,27 @@ export function EducationTutorClient({
       cancelled = true;
     };
   }, [conversationIdProp, liveConversationId, authReady, dispatch, seed]);
+
+  // ── Trust envelope for an EXISTING transcript ─────────────────────────────
+  // The fresh route sets `tutorTrust` from the injection assembly above; on a
+  // resumed conversation we re-derive it from the learner's current material so
+  // the trust strip is present here too. Derivation-only (no context write —
+  // the launch-time injection already lives on the conversation).
+  useEffect(() => {
+    if (!conversationIdProp || !authReady) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const grounding = await assembleTutorGrounding({ seed });
+        if (!cancelled) setTutorTrust(grounding.trust);
+      } catch (err) {
+        console.error("[EducationTutorClient] trust derivation failed", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationIdProp, authReady, seed]);
 
   // ── Existing-conversation load (only on /education/tutor/[id]) ────────────
   const loadAbortRef = useRef<AbortController | null>(null);
@@ -300,6 +330,9 @@ export function EducationTutorClient({
           )}
         </div>
       )}
+      {/* P0 trust surface: what the tutor is grounded in (real citations),
+          honest confidence, and the refusal convention. */}
+      <TutorTrustStrip trust={tutorTrust} />
       <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
         <AgentConversationColumn
           conversationId={conversationId}
