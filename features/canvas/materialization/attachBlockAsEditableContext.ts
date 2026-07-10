@@ -227,10 +227,14 @@ export async function attachBlockAsEditableContext(
   }
 
   // ── 1. Resolve / create the canvas row ──────────────────────────────────
+  // Prefer the message's R1 id (stable context key) over a resolve:latest
+  // chrome id that may be a newer version row in the same chain.
+  const bodyMatchId = findExistingArtifactIdForBody(messageContent, body);
   let artifactId =
+    bodyMatchId ??
     (isMaterializedArtifactId(input.existingArtifactId)
       ? input.existingArtifactId
-      : null) ?? findExistingArtifactIdForBody(messageContent, body);
+      : null);
 
   let version = 1;
   let wasCreated = false;
@@ -243,8 +247,45 @@ export async function attachBlockAsEditableContext(
       version = row.version;
       rowContent = extractBody(row) || body;
     } else {
+      // Stale id — fall back to upsert below.
       steps.push("existing id not found in DB — will upsert");
       artifactId = null;
+    }
+  }
+
+  const needsRewrite =
+    !artifactId ||
+    !(
+      findExistingArtifactIdForBody(messageContent, body) === artifactId ||
+      messageContent.some(
+        (b) =>
+          isTextBlock(b) &&
+          typeof b.text === "string" &&
+          b.text.includes(`id="${artifactId}"`),
+      )
+    );
+
+  if (needsRewrite) {
+    // Dry-run the fence locate with a placeholder wire so we fail BEFORE upsert.
+    const probe = rewriteFenceToArtifact(
+      messageContent,
+      language || "text",
+      body,
+      "<!--probe-->",
+    );
+    if (!probe) {
+      errors.push(
+        "Could not locate this code fence in the message — try again after the response finishes, or copy the block first",
+      );
+      return {
+        ok: false,
+        artifactId: null,
+        version: null,
+        wasCreated: false,
+        alreadyAttached: false,
+        errors,
+        steps,
+      };
     }
   }
 
@@ -271,7 +312,7 @@ export async function attachBlockAsEditableContext(
         alreadyAttached: false,
         errors,
         steps: [...steps, ...ensured.steps],
-        };
+      };
     }
     artifactId = ensured.artifactId;
     version = ensured.version ?? 1;
@@ -281,8 +322,9 @@ export async function attachBlockAsEditableContext(
   }
 
   // ── 2. Rewrite message to R1 (skip if already rewritten for this id) ────
-  const alreadyWired = findExistingArtifactIdForBody(messageContent, body) === artifactId
-    || messageContent.some(
+  const alreadyWired =
+    findExistingArtifactIdForBody(messageContent, body) === artifactId ||
+    messageContent.some(
       (b) =>
         isTextBlock(b) &&
         typeof b.text === "string" &&
@@ -304,6 +346,7 @@ export async function attachBlockAsEditableContext(
       wire,
     );
     if (!rewritten) {
+      // Should be unreachable after the pre-flight probe — still abort loudly.
       errors.push(
         "Could not locate the code fence in the message to rewrite — aborting so we never leave a dangling ref",
       );
@@ -336,19 +379,37 @@ export async function attachBlockAsEditableContext(
   }
 
   // ── 3. Flip in-session render to by-id (version history visible) ────────
-  steps.push("refetchSingleMessage + clear _streamRequestId");
-  await deps.dispatch(
-    refetchSingleMessage({ conversationId, messageId }),
-  );
-  // Drop the live-stream anchor so AgentAssistantMessage renders from
-  // byId.content (the rewritten R1 form) instead of activeRequests.
-  deps.dispatch(
-    updateMessageRecord({
-      conversationId,
-      messageId,
-      patch: { _streamRequestId: undefined },
-    }),
-  );
+  // Clear _streamRequestId on EVERY message that shares this request — a
+  // multi-iteration agentic turn collapses by requestId, and clearing only
+  // one row would duplicate the answer.
+  steps.push("refetchSingleMessage + clear _streamRequestId cohort");
+  await deps.dispatch(refetchSingleMessage({ conversationId, messageId }));
+  const afterState = deps.getState();
+  const entry =
+    afterState.messages.byConversationId[conversationId];
+  const streamReqId = entry?.byId?.[messageId]?._streamRequestId;
+  if (streamReqId && entry) {
+    for (const mid of entry.orderedIds) {
+      const rec = entry.byId[mid];
+      if (rec?._streamRequestId === streamReqId) {
+        deps.dispatch(
+          updateMessageRecord({
+            conversationId,
+            messageId: mid,
+            patch: { _streamRequestId: undefined },
+          }),
+        );
+      }
+    }
+  } else {
+    deps.dispatch(
+      updateMessageRecord({
+        conversationId,
+        messageId,
+        patch: { _streamRequestId: undefined },
+      }),
+    );
+  }
   invalidateCanvasItemCache(artifactId);
   if (typeof window !== "undefined") {
     window.dispatchEvent(

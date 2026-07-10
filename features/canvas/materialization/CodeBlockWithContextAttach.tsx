@@ -30,12 +30,18 @@ export function CodeBlockWithContextAttach({
   extraMenuItems,
   code,
   language,
+  isStreamActive,
   ...rest
 }: CodeBlockWithContextAttachProps) {
   const { attach, busy, canAttach } = useAttachBlockAsEditableContext({
     conversationId,
     messageId,
   });
+
+  // Mid-stream attach is forbidden: clearing the live-stream anchor while
+  // tokens are still landing breaks the turn (and can duplicate multi-iteration
+  // answers). Wait until the stream is idle.
+  const attachReady = canAttach && !isStreamActive;
 
   const attachItem: CodeBlockMenuItem | null =
     conversationId && messageId
@@ -45,14 +51,18 @@ export function CodeBlockWithContextAttach({
           iconColor: "text-amber-600 dark:text-amber-400",
           label: busy
             ? "Adding to context…"
-            : canAttach
-              ? "Add to conversation context"
-              : "Wait for message to save…",
-          description: canAttach
+            : isStreamActive
+              ? "Wait for response to finish…"
+              : attachReady
+                ? "Add to conversation context"
+                : "Wait for message to save…",
+          description: attachReady
             ? "Pin as an editable artifact the agent can modify"
-            : "Available once this turn is persisted",
+            : isStreamActive
+              ? "Available once streaming completes"
+              : "Available once this turn is persisted",
           category: "Save",
-          disabled: !canAttach || busy,
+          disabled: !attachReady || busy,
           showToast: false,
           action: () => {
             void attach({
@@ -72,6 +82,7 @@ export function CodeBlockWithContextAttach({
     <CodeBlock
       code={code}
       language={language}
+      isStreamActive={isStreamActive}
       extraMenuItems={merged}
       {...rest}
     />

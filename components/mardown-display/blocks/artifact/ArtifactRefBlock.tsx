@@ -72,12 +72,13 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
 }) => {
     const artifactId = serverData?.artifact_id;
     // Registry-driven: userEditable types (mermaid, code, …) always show the
-    // newest version in the chain and live-refresh on CANVAS_ITEM_UPDATED_EVENT.
+    // newest version in the chain. Missing type → assume latest (safe default
+    // for pinned editable context).
     const artifactType =
         serverData?.artifact_type ?? fallbackMetadata?.artifactType;
-    const wantLatest = Boolean(
-        artifactType && getArtifactDef(artifactType)?.userEditable,
-    );
+    const wantLatest =
+        !artifactType ||
+        Boolean(getArtifactDef(artifactType)?.userEditable);
     const { row, loading, error } = useCanvasItem(
         artifactId,
         wantLatest ? { resolve: "latest" } : undefined,
