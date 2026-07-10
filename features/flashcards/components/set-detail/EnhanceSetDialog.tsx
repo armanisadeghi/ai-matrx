@@ -26,6 +26,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import type { Depth } from "@/features/education/assessment/data/types";
 import { fcService } from "../../data/fcService";
 import type { CardWithDetails } from "../../data/types";
@@ -66,6 +68,7 @@ export function EnhanceSetDialog({
   onChanged: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const enrichGuard = useEntitlementGuard("education.card_enrichment");
   const [depth, setDepth] = useState<Depth>("applied");
   const [work, setWork] = useState<Record<string, CardWork>>({});
 
@@ -77,6 +80,12 @@ export function EnhanceSetDialog({
     }));
 
   const run = async (card: CardWithDetails, mode: Mode): Promise<void> => {
+    // Meter the card_enrichment capability: server-truth check BEFORE the agent
+    // runs; a cap opens the respectful paywall and never starts the work.
+    await enrichGuard.guard(() => runAgent(card, mode));
+  };
+
+  const runAgent = async (card: CardWithDetails, mode: Mode): Promise<void> => {
     patchWork(card.id, { running: mode, preview: null });
     if (mode === "enrich") {
       const details = await dispatch(enrichCard({ card, depth }));
@@ -199,6 +208,11 @@ export function EnhanceSetDialog({
               </button>
             ))}
           </div>
+          {/* Limit shown BEFORE the action (TRUST mandate). */}
+          <EntitlementMeter
+            capability="education.card_enrichment"
+            className="ml-auto"
+          />
         </div>
 
         <ScrollArea className="max-h-[55vh]">
@@ -331,6 +345,8 @@ export function EnhanceSetDialog({
             )}
           </div>
         </ScrollArea>
+        {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
+        <enrichGuard.Paywall />
       </DialogContent>
     </Dialog>
   );

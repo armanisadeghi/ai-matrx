@@ -45,6 +45,8 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useLiveJsonRegion } from "@/features/content-ir/react/useLiveJsonRegion";
 import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_AGENTS } from "../../data/agents";
 import { fcService } from "../../data/fcService";
 import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
@@ -69,6 +71,7 @@ const FIELD_INPUT_CLASS = "text-base";
 export function CreateFromTopic() {
   const router = useRouter();
   const { generate, isGenerating, activeRequestId } = useGenerateCards();
+  const cardGen = useEntitlementGuard("education.generate_cards");
   const [isNavigating, startNavigation] = useTransition();
 
   const answerText = useAppSelector((state) =>
@@ -127,9 +130,10 @@ export function CreateFromTopic() {
   const [gradeLevel, setGradeLevel] = useState("");
   const [userRequest, setUserRequest] = useState("");
 
-  // True from the click through agent-run + persistence + the route push, so
-  // the whole form stays locked and the button shows real progress.
-  const busy = isGenerating || isNavigating;
+  // True from the click through the entitlement pre-check, agent-run,
+  // persistence, and the route push, so the whole form stays locked and the
+  // button shows real progress.
+  const busy = isGenerating || isNavigating || cardGen.isChecking;
 
   const trimmedTopic = topic.trim();
   const canSubmit = trimmedTopic.length > 0 && !busy;
@@ -140,6 +144,12 @@ export function CreateFromTopic() {
 
   const handleGenerate = async () => {
     if (!canSubmit) return;
+    // Meter the generate_cards capability: server-truth check BEFORE any work;
+    // on a cap it opens the respectful paywall and never starts the run.
+    await cardGen.guard(runGeneration);
+  };
+
+  const runGeneration = async () => {
     const safeCount = Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10));
 
     try {
@@ -338,8 +348,13 @@ export function CreateFromTopic() {
                 />
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-2 pt-1">
+              {/* Actions — the limit is shown BEFORE the action (never a
+                  mid-workflow surprise), per the TRUST mandate. */}
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                <EntitlementMeter
+                  capability="education.generate_cards"
+                  className="mr-auto"
+                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -361,6 +376,8 @@ export function CreateFromTopic() {
           )}
         </div>
       </div>
+      {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
+      <cardGen.Paywall />
     </div>
   );
 }

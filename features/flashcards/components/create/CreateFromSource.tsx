@@ -58,6 +58,8 @@ import {
 import type { LibraryDocSummary } from "@/features/rag/types/library";
 import type { ChunkRow } from "@/features/rag/types/documents";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_AGENTS } from "../../data/agents";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput } from "../../data/types";
@@ -87,6 +89,7 @@ type Step = "pick-doc" | "curate";
 export function CreateFromSource() {
   const router = useRouter();
   const { generate, isGenerating } = useGenerateCards();
+  const cardGen = useEntitlementGuard("education.generate_cards");
   const [isNavigating, startNavigation] = useTransition();
 
   const [step, setStep] = useState<Step>("pick-doc");
@@ -117,7 +120,7 @@ export function CreateFromSource() {
     limit: CHUNK_FETCH_LIMIT,
   });
 
-  const busy = isGenerating || isNavigating;
+  const busy = isGenerating || isNavigating || cardGen.isChecking;
   const readyDocs = docs.filter((d) => d.chunks > 0);
 
   const goBack = () => {
@@ -153,6 +156,13 @@ export function CreateFromSource() {
 
   const handleGenerate = async () => {
     if (!selectedDoc || !canGenerate) return;
+    // Meter generate_cards: server-truth check BEFORE any work; a cap opens the
+    // respectful paywall and never starts the run.
+    await cardGen.guard(runGeneration);
+  };
+
+  const runGeneration = async () => {
+    if (!selectedDoc) return;
     const selected = (chunks ?? [])
       .filter((c) => selectedChunkIds.has(c.chunk_id))
       .sort((a, b) => a.chunk_index - b.chunk_index);
@@ -325,6 +335,8 @@ export function CreateFromSource() {
           )}
         </div>
       </div>
+      {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
+      <cardGen.Paywall />
     </div>
   );
 }
@@ -539,8 +551,12 @@ function CurateStep({
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-2 pt-1">
+      {/* Actions — limit shown BEFORE the action (TRUST mandate). */}
+      <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+        <EntitlementMeter
+          capability="education.generate_cards"
+          className="mr-auto"
+        />
         <Button
           type="button"
           variant="ghost"

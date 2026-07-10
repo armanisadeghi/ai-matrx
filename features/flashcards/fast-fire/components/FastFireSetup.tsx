@@ -41,6 +41,8 @@ import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevi
 import { updateConfig } from "../redux/fastFireSlice";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import {
   ensureSpokenFrontsForSet,
   getSpokenFrontReadiness,
@@ -51,6 +53,10 @@ export function FastFireSetup() {
   const dispatch = useAppDispatch();
   const config = useAppSelector(selectFastFireConfig);
   const { start, starting, startError } = useFastFireLauncher();
+  // FastFire grades every spoken answer with AI — meter the live_grade
+  // capability once at session start (a per-card check would stall the timed
+  // loop). The limit shows on the setup screen; a cap opens the paywall.
+  const liveGrade = useEntitlementGuard("education.live_grade");
 
   const [sets, setSets] = useState<FcSetRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -408,11 +414,14 @@ export function FastFireSetup() {
           </div>
         )}
 
+        <div className="mb-2 flex justify-center">
+          <EntitlementMeter capability="education.live_grade" />
+        </div>
         <Button
           size="lg"
           className="w-full gap-2 bg-orange-600 hover:bg-orange-700"
-          disabled={!selectedSet || starting}
-          onClick={() => void start()}
+          disabled={!selectedSet || starting || liveGrade.isChecking}
+          onClick={() => void liveGrade.guard(start)}
         >
           {starting ? (
             <>
@@ -430,6 +439,8 @@ export function FastFireSetup() {
           One microphone prompt for the whole session. Answer each card aloud
           before the timer runs out.
         </p>
+        {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
+        <liveGrade.Paywall />
 
         {/* Entry-flow affordances: create a new set, or review past results. */}
         <div className="mt-5 flex items-center justify-center gap-4 text-xs text-muted-foreground">
