@@ -34,15 +34,25 @@ that makes it a tutor: **grounding injection**.
   pre-loaded with that context. Consumed by flashcards `StudyDeck`.
 - `TutorHome.tsx` / `TutorLanding.tsx` — list home + fresh-conversation empty state (starters).
 - `TutorSettingsPanel.tsx` — the two tunable knobs (teaching mode + personality).
+- `TutorTrustStrip.tsx` — the P0 grounding-derived trust surface (see Trust below).
 
 **Data / logic** (`features/education/tutor/`)
 - `agents.ts` — `EDU_TUTOR_AGENTS` (the live tutor agent id). `DEFAULT_TUTOR_AGENT_ID`.
 - `learnerMemory.ts` — **the ONE cross-session memory assembler.** Reads the study spine
   (sessions, attempts, `item_mastery` FSRS state, streak, goals) → a `LearnerMemory` snapshot +
   a compact `summaryText`.
-- `grounding.ts` — `assembleTutorGrounding()` → the launch variables (`learner_memory`,
-  `study_material` [seed + weak-card digest], `teaching_mode`, `personality_style`).
+- `grounding.ts` — `assembleTutorGrounding()` → the context slots (`learner_memory`,
+  `study_material` [seed + weak-card digest], `teaching_mode`, `personality_style`) **plus the
+  surface `trust` envelope** (`deriveGroundingTrust` — real citations from the known sources, an
+  honest `inferred` floor, `not_in_material` when nothing is loaded).
 - `settings.ts` — persisted per-learner tutor prefs (Socratic/Direct + personality).
+- `lanes/` — **the generalized short-lived tutor lanes** (moved here from
+  `features/flashcards/data/tutor/`, P2 build guidance "generalize, don't fork"): `helpLive`
+  (`fc_help_live`, the in-context "help me with this card" call — threads its own
+  `TrustEnvelope`), `reviewSession` (`fc_review_batch` end-of-session review), `microCoach`
+  (`fc_micro_coach` per-card tip), `learnerContext` (reshapes the CURRENT session's in-memory
+  state), and `config` (per-lane agent-id overrides). Consumed by flashcards study surfaces
+  (`StudyDeck`, Fast Fire) — NOT the conversation; these are one-shot JSON lanes.
 
 **Reused primitive introduced here:** `features/agents/hooks/useConversationRoutePromotion.ts`
 — the generic conversation-route URL promotion (registerSurface + pendingNav + persisted-gated
@@ -67,12 +77,18 @@ queries the learner's notes/flashcards/quiz live when the injected material is t
 
 ## Trust (P0)
 
-The tutor is P0's honest-answer surface. The agent prompt enforces: cite the learner's material
-inline (`(from your card "…")`), and when the material doesn't cover a question, refuse honestly
-and offer general knowledge as an explicit choice rather than fabricate. The `TutorLanding` /
-`TutorHome` carry the "Cites your material" trust affordance. (Prose citations are the trust
-surface for a conversation; the structured `TrustEnvelope` primitives are for item-shaped AI
-output — see `features/education/trust/`.)
+The tutor is P0's honest-answer surface, on TWO layers:
+- **Per-answer (agent prompt):** cite the learner's material inline (`(from your card "…")`), and
+  when the material doesn't cover a question, refuse honestly and offer general knowledge as an
+  explicit choice rather than fabricate.
+- **Structured surface envelope (`TutorTrustStrip`):** the live tutor is a streaming markdown
+  agent that can't yet carry a per-claim envelope per turn, so the strip renders a
+  grounding-DERIVED `TrustEnvelope` (`grounding.ts#deriveGroundingTrust`) — `ConfidenceBadge` +
+  `SourceCitations` from the KNOWN sources (seed + weak cards), floored honestly at `inferred`
+  (never a fabricated `grounded`), and the `not_in_material` "answers are general knowledge"
+  notice when nothing is loaded. Present on fresh + resumed transcripts, and refreshed per turn.
+  **Target:** a per-turn structured envelope once the streaming channel can carry it (the `lanes/`
+  one-shot JSON agents already emit real per-answer envelopes — `helpLive` threads one).
 
 ## Voice (reused, not rebuilt)
 
@@ -85,12 +101,21 @@ output. No audio code lives here — per the "reuse, never rebuild audio capture
 - **Conversations are tagged `source_feature: "education-tutor"`** (registered in
   `source-registry.ts` + the `SourceFeature` union) — real user chats, NOT system-marked, so they
   filter into the tutor history list and nowhere else.
-- **Do NOT fork a conversation store.** Tutor threads are `cx_conversation`/chat-schema rows via
-  the agents pipeline, exactly like `/chat`.
-- **Grounding is launch-time** (variables), not per-turn — refreshing memory mid-conversation is
-  a future enhancement.
-- **`learnerMemory` is the one cross-session assembler**; `features/flashcards/data/tutor/
-  learnerContext.ts` only reshapes the CURRENT session — don't confuse them.
+- **Do NOT fork a conversation store.** Tutor threads are `chat.conversation` rows via the agents
+  pipeline, exactly like `/chat` — the registered `conversation` shareable type (owner
+  `created_by`).
+- **Grounding is injected at launch AND refreshed per turn.** `request.context` re-sends every
+  turn; after each new turn `EducationTutorClient` re-assembles memory + material and overwrites
+  the `learner_memory` / `study_material` slots (a per-key MERGE — `teaching_mode` /
+  `personality_style` survive), so mid-conversation studying never leaves stale memory riding
+  along. Owner-only, gated on a changed message count.
+- **`learnerMemory` is the one cross-session assembler**; `lanes/learnerContext.ts` only reshapes
+  the CURRENT session — don't confuse them.
+- **Send is metered, view is access-gated.** The composer binds `useEntitlement`
+  (`education.tutor_message`) — limit shown pre-action, send blocked pre-send once capped (permissive
+  today, `enforced: false`). The existing-conversation view binds `useAccess("conversation", id)` —
+  a view-only sharee gets the read-only transcript (composer hidden, banner shown); the owner sees
+  the live tutor + `ShareButton`. Both fail open while resolving; RLS is the real boundary.
 
 ## Doctrine compliance
 
@@ -98,18 +123,28 @@ output. No audio code lives here — per the "reuse, never rebuild audio capture
 `ConversationHistorySidebar`, `setUserVariableValues`, the study-spine `studyService`, the voice
 primitives, the P0 trust affordances, the agent-execution + chat-schema conversation storage.
 **Introduced:** `useConversationRoutePromotion` (generic, `/chat`-adoptable), the tutor grounding
-+ memory assemblers, the `education-tutor` source_feature, `AskTutorButton`.
++ memory assemblers, the grounding-derived `TutorTrustStrip`, the `education-tutor`
+source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts:** P8
+`useEntitlement`, P7 `useAccess`, P0 `TrustEnvelope` + trust components.
 
 ## Open / follow-ups
 
-- **Generalize `features/flashcards/data/tutor/` into this feature** (the one-shot help /
-  micro-coach / review lanes). Deferred to avoid conflicting with the concurrently-active
-  flashcards agent editing `StudyDeck.tsx`; no duplication was introduced (this feature consumes
-  those lanes as-is). Coordinate before moving.
-- Per-turn memory refresh; `useAccess` (P7) for shared-transcript gating; `useEntitlement` (P8)
-  on the send path — wire when those contracts land in the repo.
+- **Per-turn STRUCTURED trust:** the surface strip is grounding-derived (`inferred` floor); a
+  per-turn per-claim envelope needs the streaming markdown agent to emit a structured channel
+  alongside its prose (or content-IR). The `lanes/` JSON agents already do — the streaming path
+  can't yet.
+- **Conversation sharing UX:** the `useAccess` view/edit gate + `ShareButton` are wired, but the
+  shareable read-only transcript is only exercised once real tutor-conversation shares exist.
+- **Enforcement:** `education.tutor_message` stays `enforced: false` until the aidream-side spend
+  re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-07-10** — Closed the recorded P2 open items: metered send (`useEntitlement`,
+  `education.tutor_message`, pre-visible limit + pre-send block); conversation view/edit gating
+  (`useAccess("conversation", id)` — read-only sharee, owner `ShareButton`); generalized the
+  flashcards tutor lanes into `lanes/` (repointed every consumer, deleted the old module, no
+  shims); per-turn learner-memory refresh; and the P0 fix — a grounding-derived `TutorTrustStrip`
+  (citations + confidence + refusal) on the previously trust-blind live tutor.
 - **2026-07-07** — P2 shipped: authored the tutor (`46b7b357`, later superseded same-day by the
   context-slot version `d80cc27e` — see `LIVE_AGENTS.md`) + `fc_micro_coach` (`0d6c715b`)
   agents (live-verified via agent_run: grounding, cross-session memory recall, inline citations,
