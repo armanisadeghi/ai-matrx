@@ -37,6 +37,13 @@ interface SmartInputForwardProps {
   placeholder?: string;
   compact?: boolean;
   extraRightControls?: React.ReactNode;
+  /**
+   * Disable sending (button + Enter-to-submit). Surfaces gate on this for
+   * pre-visible limits — e.g. the AI Tutor blocks the composer once the
+   * metered `education.tutor_message` cap is reached, so the limit is enforced
+   * BEFORE the action, never mid-send (the entitlements TRUST mandate).
+   */
+  disableSend?: boolean;
 }
 
 interface AgentConversationColumnProps {

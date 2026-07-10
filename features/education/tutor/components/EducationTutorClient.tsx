@@ -33,6 +33,7 @@ import { setContextEntries } from "@/features/agents/redux/execution-system/inst
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
+import { useEntitlement } from "@/features/entitlements/hooks";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
 import { assembleTutorGrounding, type TutorGroundingSeed } from "../grounding";
 import { TutorLanding } from "./TutorLanding";
@@ -77,6 +78,19 @@ export function EducationTutorClient({
     : `${SOURCE_FEATURE}:${agentId}`;
   const authReady = useAppSelector(selectAuthReady);
   const isFreshRoute = !conversationIdProp;
+
+  // ── Entitlement gate (P8): tutor messages are a metered capability ────────
+  // Reactive to the boot-hydrated snapshot. Permissive today (the capability
+  // ships `enforced: false`), so nothing is capped until the aidream-side
+  // spend re-check lands and enforcement flips — but the limit is shown BEFORE
+  // the action and the composer is blocked pre-send once a cap is reached, so
+  // there is never a mid-send ambush (the entitlements TRUST mandate).
+  const tutorMsg = useEntitlement("education.tutor_message");
+  const sendBlocked = !tutorMsg.allowed;
+  const remainingLabel =
+    tutorMsg.limit != null
+      ? `${Math.max(0, tutorMsg.remaining ?? 0)} of ${tutorMsg.limit} left`
+      : null;
 
   // ── Agent execution minimal fetch ────────────────────────────────────────
   const executionPayload = useAppSelector((state) =>
@@ -253,7 +267,18 @@ export function EducationTutorClient({
           smartInputProps={{
             sendButtonVariant: "blue",
             showSubmitOnEnterToggle: false,
-            placeholder: "Ask your tutor anything about what you're studying…",
+            placeholder: sendBlocked
+              ? tutorMsg.definition.upgradeMessage
+              : "Ask your tutor anything about what you're studying…",
+            disableSend: sendBlocked,
+            extraRightControls: remainingLabel ? (
+              <span
+                className="whitespace-nowrap text-xs text-muted-foreground"
+                title="Tutor messages remaining"
+              >
+                {remainingLabel}
+              </span>
+            ) : undefined,
           }}
           afterMessages={
             showEmptyState ? (
