@@ -626,6 +626,7 @@ const DiagramFlow: React.FC<{
   backgroundVariant: BackgroundVariant;
   setBackgroundVariant: (v: BackgroundVariant) => void;
   onExportImage: () => void;
+  onNodeClick?: (node: DiagramNode) => void;
 }> = ({
   diagram,
   showMiniMap,
@@ -633,6 +634,7 @@ const DiagramFlow: React.FC<{
   backgroundVariant,
   setBackgroundVariant,
   onExportImage,
+  onNodeClick,
 }) => {
   const { fitView, getNodes, getEdges } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
@@ -648,6 +650,19 @@ const DiagramFlow: React.FC<{
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges],
+  );
+
+  // Opt-in node-click bridge (e.g. mind-map node → source card / Ask tutor).
+  // Only wired when a consumer passes `onNodeClick`; other consumers are
+  // unaffected. Resolves the ReactFlow node back to the original DiagramNode
+  // (carrying metadata like `cardId`) before handing it up.
+  const handleNodeClick = useCallback(
+    (_e: React.MouseEvent, rfNode: Node) => {
+      if (!onNodeClick) return;
+      const original = diagram.nodes.find((n) => n.id === rfNode.id);
+      if (original) onNodeClick(original);
+    },
+    [onNodeClick, diagram.nodes],
   );
 
   // ── Export with updated (non-deprecated) ReactFlow APIs ──
@@ -827,10 +842,11 @@ const DiagramFlow: React.FC<{
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
+      onNodeClick={onNodeClick ? handleNodeClick : undefined}
       nodeTypes={nodeTypes}
       fitView={false}
       proOptions={{ hideAttribution: true }}
-      className="bg-gray-50 dark:bg-gray-900"
+      className={`bg-gray-50 dark:bg-gray-900 ${onNodeClick ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
     >
       <Background
         variant={backgroundVariant}
@@ -1119,11 +1135,20 @@ function getDiagramIcon(type: string): React.ReactNode {
 interface InteractiveDiagramBlockProps {
   diagram: DiagramData;
   taskId?: string;
+  /**
+   * Opt-in: called with the original `DiagramNode` when a node is clicked.
+   * When set, nodes render with a pointer cursor. Omit for the default
+   * (non-interactive) behavior every existing consumer relies on. Used by the
+   * education Mind Maps tool to resolve a node to its source card / open an
+   * "Ask tutor about this" affordance.
+   */
+  onNodeClick?: (node: DiagramNode) => void;
 }
 
 const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
   diagram,
   taskId,
+  onNodeClick,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showMiniMap, setShowMiniMap] = useState(false);
@@ -1366,6 +1391,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   backgroundVariant={backgroundVariant}
                   setBackgroundVariant={setBackgroundVariant}
                   onExportImage={handleExportImage}
+                  onNodeClick={onNodeClick}
                 />
               </ReactFlowProvider>
             </div>

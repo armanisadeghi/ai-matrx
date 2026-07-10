@@ -20,13 +20,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
-import { useEntitlement } from "@/features/entitlements/hooks";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import {
   resolveDeckAudioSource,
   resolveTopicAudioSource,
 } from "../../audio/resolveAudioSource";
 import { studyMediaService } from "../../service";
 import { useGenerateMindMap } from "../useGenerateMindMap";
+import { linkDiagramToCards, type LinkableCard } from "../linkCards";
 
 type SourceKind = "deck" | "topic";
 
@@ -34,7 +36,7 @@ export function MindMapNew() {
   const router = useRouter();
   const params = useSearchParams();
   const { generate, isGenerating } = useGenerateMindMap();
-  const ent = useEntitlement("education.mindmap_generate");
+  const gen = useEntitlementGuard("education.mindmap_generate");
 
   const [decks, setDecks] = useState<FcSetRow[]>([]);
   const [sourceKind, setSourceKind] = useState<SourceKind>(
@@ -59,46 +61,64 @@ export function MindMapNew() {
       toast.error("Type a topic to map");
       return;
     }
-    const verdict = await ent.check();
-    if (!verdict.allowed) {
-      toast.error(ent.definition?.upgradeMessage ?? "You've reached your mind-map limit.");
-      return;
-    }
-
-    const resolved =
-      sourceKind === "deck"
-        ? (await resolveDeckAudioSource(deckId, { adaptive: false })).data
-        : resolveTopicAudioSource(topic);
-    if (!resolved) {
-      toast.error("Couldn't load that source — pick a deck with cards, or type a topic.");
-      return;
-    }
-
-    try {
-      const spec = await generate({
-        source_content: resolved.content,
-        title: resolved.source.title,
-        focus: focus.trim(),
-      });
-      const title = spec.title || resolved.source.title;
-      const media = await studyMediaService.create({
-        mediaKind: "mind_map",
-        title,
-        source: resolved.source,
-        config: { diagramKind: "diagram_spec", hint: focus.trim() || undefined },
-        trust: resolved.trust,
-        irEnvelope: spec,
-        diagramKind: "diagram_spec",
-        status: "ready",
-      });
-      if (media.error || !media.data) {
-        toast.error(media.error ?? "Couldn't save the mind map");
+    // Canonical guard: awaits the server-truth check BEFORE spending; on a
+    // cap-hit it opens the respectful contextual paywall (not a toast) and never
+    // starts the work (DoD #2 — no mid-generation ambush).
+    await gen.guard(async () => {
+      const resolved =
+        sourceKind === "deck"
+          ? (await resolveDeckAudioSource(deckId, { adaptive: false })).data
+          : resolveTopicAudioSource(topic);
+      if (!resolved) {
+        toast.error("Couldn't load that source — pick a deck with cards, or type a topic.");
         return;
       }
-      router.push(`/education/mind-maps/${media.data.id}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't generate the mind map");
-    }
+
+      // For a deck source, load the cards so generated nodes can be linked back to
+      // the exact card they summarize (clickable node → source card / Ask tutor).
+      let deckCards: LinkableCard[] = [];
+      if (sourceKind === "deck") {
+        const withCards = await fcService.getSetWithCards(deckId);
+        deckCards = (withCards.data?.cards ?? []).map((c) => ({
+          id: c.id,
+          front: c.front,
+          back: c.back,
+        }));
+      }
+
+      try {
+        const spec = await generate({
+          source_content: resolved.content,
+          title: resolved.source.title,
+          focus: focus.trim(),
+        });
+        // Resolve nodes → source cards where we can (DoD item 3). Unmatched nodes
+        // stay unlinked; a click still offers "ask the tutor about this idea".
+        const { spec: linkedSpec, linkedCount } = linkDiagramToCards(spec, deckCards);
+        const title = spec.title || resolved.source.title;
+        const media = await studyMediaService.create({
+          mediaKind: "mind_map",
+          title,
+          source: resolved.source,
+          config: {
+            diagramKind: "diagram_spec",
+            hint: focus.trim() || undefined,
+            linkedCards: linkedCount,
+          },
+          trust: resolved.trust,
+          irEnvelope: linkedSpec,
+          diagramKind: "diagram_spec",
+          status: "ready",
+        });
+        if (media.error || !media.data) {
+          toast.error(media.error ?? "Couldn't save the mind map");
+          return;
+        }
+        router.push(`/education/mind-maps/${media.data.id}`);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Couldn't generate the mind map");
+      }
+    });
   }
 
   return (
@@ -157,16 +177,21 @@ export function MindMapNew() {
         />
       </section>
 
-      {ent.limit != null && (
-        <p className="text-xs text-muted-foreground">
-          {ent.remaining} of {ent.limit} mind maps left this month.
-        </p>
-      )}
+      <EntitlementMeter
+        capability="education.mindmap_generate"
+        showAllWindows
+        className="justify-center"
+      />
 
-      <Button onClick={handleGenerate} disabled={isGenerating} className="w-full gap-2">
+      <Button
+        onClick={handleGenerate}
+        disabled={isGenerating || gen.isChecking}
+        className="w-full gap-2"
+      >
         {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Network className="h-4 w-4" />}
         {isGenerating ? "Mapping your material…" : "Generate mind map"}
       </Button>
+      <gen.Paywall />
     </div>
   );
 }

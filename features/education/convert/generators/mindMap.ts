@@ -8,6 +8,7 @@ import { studyMediaService } from "@/features/education/media/service";
 import { EDU_MEDIA_AGENTS } from "@/features/education/media/mindmap/agents";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { runAgentExtraction } from "../runAgentExtraction";
+import { buildSourceTrust } from "../sourceTrust";
 import type {
   ConvertContext,
   ConvertGenerator,
@@ -57,12 +58,14 @@ async function run(
   }
   const spec = extracted.value;
   const title = spec.title || source.title || "Mind map";
+  const trust = buildSourceTrust(source, title);
 
   const media = await studyMediaService.create({
     mediaKind: "mind_map",
     title,
     source: { kind: "topic", title: source.title ?? title },
     config: { diagramKind: "diagram_spec", hint: options?.focus || undefined },
+    trust,
     irEnvelope: spec,
     diagramKind: "diagram_spec",
     status: "ready",
@@ -91,7 +94,7 @@ async function run(
     resourceType: "study_media",
     href: `/education/mind-maps/${id}`,
     title,
-    trust: null,
+    trust,
     detail: `${nodeCount} node${nodeCount === 1 ? "" : "s"}`,
   };
 }
