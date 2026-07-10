@@ -260,14 +260,35 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       name: "StudyDeck",
       filePath: "features/flashcards/components/study/StudyDeck.tsx",
       description:
-        'Shared presentational deck reused by every study surface (classic/adaptive/weak-area). Phase 4 added the "Ask AI" tutor affordance (fc_help_live), auto end-of-session batch review (fc_review_batch), and per-card micro-coaching toasts (fc_micro_coach).',
+        'Shared presentational deck reused by every study surface (classic/adaptive/weak-area). Phase 4 added the "Ask AI" tutor affordance (fc_help_live), auto end-of-session batch review (fc_review_batch), and per-card micro-coaching toasts (fc_micro_coach). F1: 1-5 confidence grading (FSRS), cloze flip faces, and a branch to MatchingCardPlayer for matching cards.',
+      tier: "internal",
+    },
+    {
+      name: "FlashcardConfidenceRow",
+      filePath: "features/flashcards/components/study/FlashcardConfidenceRow.tsx",
+      description:
+        "F1: the one-tap 1-5 confidence rating row (Brainscape-style) → FSRS grades via recordAttempt({ confidence }). Toggleable with the 3-way FlashcardGradeButton row (persisted).",
+      tier: "internal",
+    },
+    {
+      name: "MatchingCardPlayer",
+      filePath: "features/flashcards/components/study/MatchingCardPlayer.tsx",
+      description:
+        "F1: the study interaction for a matching card variant — tap-to-match, self-grades on completion (0 miss=correct, else partial) through the study spine.",
       tier: "internal",
     },
     {
       name: "EditSetView",
       filePath: "features/flashcards/components/editor/EditSetView.tsx",
       description:
-        "The set authoring surface: rename set, inline per-card front/back edit (dirty-tracked), add card. Writes via fcService.",
+        "The set authoring surface: rename set, inline per-card edit, add card (basic/cloze/matching kind menu). F1: debounced autosave with a status indicator (no manual save), a version-history/restore entry point, per-card mastery pills, and the trust footer (verify-against-source) on generated cards. Writes via fcService.",
+      tier: "internal",
+    },
+    {
+      name: "SetVersionHistoryDialog",
+      filePath: "features/flashcards/components/editor/SetVersionHistoryDialog.tsx",
+      description:
+        "F1: never-lose-work version restore — lists the set's platform row-versions (get_version_history) and restores any prior version (restore_version, append-only). Opened from the editor's History button.",
       tier: "internal",
     },
     {
