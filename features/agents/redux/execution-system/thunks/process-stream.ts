@@ -187,6 +187,7 @@ import { callbackManager } from "@/utils/callbackManager";
 import { type WidgetHandle } from "@/features/agents/types/widget-handle.types";
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { surfaceDelegatedToolCall } from "./surface-delegated-tool-call.thunk";
+import { runToolStateEffects } from "@/features/tool-call-visualization/effects/toolStateEffects";
 
 // =============================================================================
 // Types
@@ -1227,6 +1228,22 @@ export async function processStream({
                 toolData.call_id,
               );
             }
+
+            // Tool completion → global-state refresh. A tool that mutated an
+            // entity with Redux state (a note the user has open, the tasks
+            // board) dispatches that entity's canonical refetch — the UI
+            // updates live instead of waiting for a page reload. Runs HERE
+            // (the one chokepoint every completed tool flows through), not in
+            // tool-card components, which may be collapsed or never mounted.
+            runToolStateEffects({
+              toolName: toolData.tool_name,
+              args:
+                getState().activeRequests.byRequestId[requestId]
+                  ?.toolLifecycle[toolData.call_id]?.arguments ?? {},
+              result: rawResult,
+              dispatch,
+              getState,
+            });
           }
         }
 
