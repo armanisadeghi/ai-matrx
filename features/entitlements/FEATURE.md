@@ -110,7 +110,13 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
 - [x] `/pricing` + `/pricing/pledge` + `/pricing/compare` (verified rendering).
 - [x] Admin usage read surface (`/administration/entitlements`, super-admin) + `usage_admin_summary` / `usage_my_summary` (P5).
 - [x] Stripe machinery: SDK, checkout, customer portal (one-click cancel), webhooks, lifecycle sync, idempotency + ordering guard.
-- [ ] **Blocked on Arman:** Stripe TEST keys + `STRIPE_WEBHOOK_SECRET` (`.env.local` has LIVE keys) → then verify checkout→webhook→sub→entitlement end-to-end.
+- [x] Stripe TEST secret/publishable keys are in `.env.local` (`STRIPE_TEST_MODE_SECRET_KEY` /
+      `STRIPE_TEST_MODE_PUBLISHABLE_KEY`, win over the live keys per `lib/stripe/server.ts`); a
+      test `billing.product`/`price` row is seeded (`AI Matrx Premium (TEST)`, $10/mo).
+- [ ] **Blocked on Arman:** `STRIPE_WEBHOOK_SECRET` is still unset (only remaining gap — run
+      `stripe listen --forward-to localhost:3000/api/stripe/webhook` for a dev secret, or pull the
+      endpoint secret from the Stripe dashboard once a real webhook endpoint exists) → then verify
+      checkout→webhook→sub→entitlement end-to-end with the test keys already in place.
 - [ ] Seed `billing.product`/`price` with the real Premium price (product decision) → swap `/pricing` to DB-backed.
 - [ ] aidream-side spend re-check per capability → then flip `enforced` per capability.
 - [ ] Trial pre-renewal reminder email (wire the platform email path).

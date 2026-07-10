@@ -23,7 +23,25 @@ import type {
   EntitlementWindow,
 } from "./types";
 
+// Dev-only, once-per-capability-per-session warning so a permissive stub is
+// never silently mistaken for "enforced and fine" (types.ts documents this as
+// "Loud in dev" — this is that promise, kept). Never fires in production;
+// never throttles/blocks the permissive verdict itself (fail-open by design).
+const warnedPermissive = new Set<Capability>();
+function warnPermissiveOnce(capability: Capability): void {
+  if (process.env.NODE_ENV === "production") return;
+  if (warnedPermissive.has(capability)) return;
+  warnedPermissive.add(capability);
+  // eslint-disable-next-line no-console -- intentional loud-recovery dev signal
+  console.warn(
+    `[entitlements] "${capability}" resolved permissive_stub (enforced: false) — ` +
+      `unlimited for every user until this capability's backend limit + server ` +
+      `re-check land and it is flipped to enforced: true in the registry.`,
+  );
+}
+
 function permissiveVerdict(capability: Capability): EntitlementCheckResult {
+  warnPermissiveOnce(capability);
   const dfn = getCapability(capability);
   return {
     capability,
