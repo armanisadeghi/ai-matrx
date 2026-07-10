@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Plus,
-  Save,
   Layers,
   AlertCircle,
   Eye,
@@ -33,6 +32,7 @@ import {
   Scissors,
   Grid3x3,
   X,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import { useAutosave } from "@/hooks/useAutosave";
+import { AutosaveIndicator } from "@/components/AutosaveIndicator";
+import { SetVersionHistoryDialog } from "./SetVersionHistoryDialog";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput, SetWithCards, CardWithDetails } from "../../data/types";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
@@ -81,12 +84,29 @@ export function EditSetView({ setId }: { setId: string }) {
     description: "",
     topic: "",
   });
-  const [savingHeader, setSavingHeader] = useState(false);
   const [addingCard, setAddingCard] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  // Bump to refetch (after adding a card). The fetch lives in the effect so no
-  // setState fires synchronously in the effect body.
+  // Bump to refetch (after adding a card / restoring a version). The fetch
+  // lives in the effect so no setState fires synchronously in the effect body.
   const [reloadKey, setReloadKey] = useState(0);
+
+  // Header autosave — debounced persistence with a visible status, so set
+  // details are never lost to a missed manual save.
+  const headerAutosave = useAutosave<HeaderFields>({
+    save: async (h) => {
+      const res = await fcService.updateSet(setId, {
+        name: h.name.trim() || "Untitled set",
+        description: h.description.trim() || null,
+        topic: h.topic.trim() || null,
+      });
+      if (res.data) {
+        const saved = res.data;
+        setData((prev) => (prev ? { ...prev, set: saved } : prev));
+      }
+      return { error: res.error };
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -113,21 +133,13 @@ export function EditSetView({ setId }: { setId: string }) {
     };
   }, [setId, reloadKey]);
 
-  const saveHeader = async () => {
-    if (!data) return;
-    setSavingHeader(true);
-    const res = await fcService.updateSet(setId, {
-      name: header.name.trim() || "Untitled set",
-      description: header.description.trim() || null,
-      topic: header.topic.trim() || null,
+  // Edit a header field and schedule a debounced autosave in one gesture.
+  const editHeader = (patch: Partial<HeaderFields>): void => {
+    setHeader((h) => {
+      const next = { ...h, ...patch };
+      headerAutosave.schedule(next);
+      return next;
     });
-    setSavingHeader(false);
-    if (res.error) {
-      toast.error("Couldn't save set details", { description: res.error });
-    } else {
-      toast.success("Set details saved");
-      if (res.data) setData({ ...data, set: res.data });
-    }
   };
 
   const STARTER_CARD: Record<CardKind, NewCardInput> = {
@@ -213,10 +225,21 @@ export function EditSetView({ setId }: { setId: string }) {
             Back
           </Button>
           {data ? (
-            <Button variant="outline" size="sm" onClick={goView} disabled={isPending}>
-              <Eye className="mr-1.5 h-4 w-4" />
-              View set
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setHistoryOpen(true)}
+                disabled={isPending}
+              >
+                <History className="mr-1.5 h-4 w-4" />
+                History
+              </Button>
+              <Button variant="outline" size="sm" onClick={goView} disabled={isPending}>
+                <Eye className="mr-1.5 h-4 w-4" />
+                View set
+              </Button>
+            </div>
           ) : null}
         </div>
 
@@ -251,9 +274,15 @@ export function EditSetView({ setId }: { setId: string }) {
           <>
             {/* Set details */}
             <section className="rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground">
-                <Layers className="h-4 w-4 text-primary" />
-                Set details
+              <div className="mb-3 flex items-center justify-between gap-2 text-sm font-medium text-foreground">
+                <span className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  Set details
+                </span>
+                <AutosaveIndicator
+                  status={headerAutosave.status}
+                  lastSavedAt={headerAutosave.lastSavedAt}
+                />
               </div>
               <div className="space-y-3">
                 <div>
@@ -262,9 +291,8 @@ export function EditSetView({ setId }: { setId: string }) {
                   </label>
                   <Input
                     value={header.name}
-                    onChange={(e) =>
-                      setHeader((h) => ({ ...h, name: e.target.value }))
-                    }
+                    onChange={(e) => editHeader({ name: e.target.value })}
+                    onBlur={headerAutosave.flush}
                     placeholder="Set name"
                   />
                 </div>
@@ -275,9 +303,8 @@ export function EditSetView({ setId }: { setId: string }) {
                     </label>
                     <Input
                       value={header.topic}
-                      onChange={(e) =>
-                        setHeader((h) => ({ ...h, topic: e.target.value }))
-                      }
+                      onChange={(e) => editHeader({ topic: e.target.value })}
+                      onBlur={headerAutosave.flush}
                       placeholder="e.g. Cell Biology"
                     />
                   </div>
@@ -288,23 +315,13 @@ export function EditSetView({ setId }: { setId: string }) {
                     <Input
                       value={header.description}
                       onChange={(e) =>
-                        setHeader((h) => ({ ...h, description: e.target.value }))
+                        editHeader({ description: e.target.value })
                       }
+                      onBlur={headerAutosave.flush}
                       placeholder="What this set covers"
                     />
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <Button size="sm" onClick={saveHeader} disabled={savingHeader}>
-                    {savingHeader ? (
-                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-1.5 h-4 w-4" />
-                    )}
-                    Save details
-                  </Button>
-                </div>
-
                 {/* Sharing */}
                 <div className="flex flex-col gap-1.5 border-t border-border pt-3">
                   <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -403,6 +420,14 @@ export function EditSetView({ setId }: { setId: string }) {
         busy={deleting}
         onConfirm={confirmDeleteCard}
       />
+
+      {/* Never-lose-work: platform version history + restore for this set. */}
+      <SetVersionHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        setId={setId}
+        onRestored={() => setReloadKey((k) => k + 1)}
+      />
     </div>
   );
 }
@@ -427,52 +452,59 @@ function CardEditor({
 }) {
   const kind = asCardKind(card.card_kind);
 
-  // Baseline (last-saved) vs. live edits — never mutate the card prop.
-  const [base, setBase] = useState({
-    front: card.front,
-    back: card.back,
-    pairs: matchingPairs(card),
-  });
+  // Live edits — never mutate the card prop. Autosave debounces persistence.
   const [front, setFront] = useState(card.front);
   const [back, setBack] = useState(card.back);
   const [pairs, setPairs] = useState<MatchingPair[]>(() => matchingPairs(card));
-  const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
 
-  const pairsDirty =
-    JSON.stringify(pairs) !== JSON.stringify(base.pairs);
-  const dirty =
-    front !== base.front ||
-    back !== base.back ||
-    (kind === CARD_KIND.matching && pairsDirty);
+  // Debounced autosave — the never-lose-work path. The save fn builds the
+  // kind-correct patch from the snapshot it's handed; on success it re-syncs the
+  // baseline WITHOUT touching the live fields (so a mid-debounce keystroke is
+  // never clobbered).
+  const autosave = useAutosave<{
+    front: string;
+    back: string;
+    pairs: MatchingPair[];
+  }>({
+    save: async (v) => {
+      const patch =
+        kind === CARD_KIND.matching
+          ? {
+              front: v.front.trim(),
+              card_kind: CARD_KIND.matching,
+              dynamic_content: matchingDynamicContent(v.pairs) as never,
+            }
+          : kind === CARD_KIND.cloze
+            ? {
+                front: v.front.trim(),
+                back: v.back.trim(),
+                card_kind: CARD_KIND.cloze,
+              }
+            : { front: v.front.trim(), back: v.back.trim() };
+      const res = await fcService.updateCard(card.id, patch);
+      return { error: res.error };
+    },
+  });
 
-  const save = async () => {
-    setSaving(true);
-    const patch =
-      kind === CARD_KIND.matching
-        ? {
-            front: front.trim(),
-            card_kind: CARD_KIND.matching,
-            dynamic_content: matchingDynamicContent(pairs) as never,
-          }
-        : kind === CARD_KIND.cloze
-          ? { front: front.trim(), back: back.trim(), card_kind: CARD_KIND.cloze }
-          : { front: front.trim(), back: back.trim() };
-    const res = await fcService.updateCard(card.id, patch);
-    setSaving(false);
-    if (res.error) {
-      toast.error(`Couldn't save card ${index + 1}`, { description: res.error });
-    } else {
-      toast.success(`Card ${index + 1} saved`);
-      // Re-sync the baseline so the row is no longer dirty.
-      if (res.data) {
-        const savedPairs = matchingPairs(res.data);
-        setFront(res.data.front);
-        setBack(res.data.back);
-        setPairs(savedPairs);
-        setBase({ front: res.data.front, back: res.data.back, pairs: savedPairs });
-      }
-    }
+  // Apply a field edit and schedule a debounced autosave in one gesture. Reads
+  // sibling fields from the current closure so a single-field change still saves
+  // the whole card. (Explicit call, not an effect — so autosave never re-fires
+  // on its own status change.)
+  const editCard = (patch: {
+    front?: string;
+    back?: string;
+    pairs?: MatchingPair[];
+  }): void => {
+    const next = {
+      front: patch.front ?? front,
+      back: patch.back ?? back,
+      pairs: patch.pairs ?? pairs,
+    };
+    if (patch.front !== undefined) setFront(patch.front);
+    if (patch.back !== undefined) setBack(patch.back);
+    if (patch.pairs !== undefined) setPairs(patch.pairs);
+    autosave.schedule(next);
   };
 
   const kindLabel =
@@ -547,25 +579,16 @@ function CardEditor({
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
-          <Button
-            size="sm"
-            variant={dirty ? "default" : "ghost"}
-            onClick={save}
-            disabled={!dirty || saving}
-            className="h-7 px-2 text-xs"
-          >
-            {saving ? (
-              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="mr-1 h-3.5 w-3.5" />
-            )}
-            Save
-          </Button>
+          <AutosaveIndicator
+            status={autosave.status}
+            lastSavedAt={autosave.lastSavedAt}
+            className="ml-1"
+          />
         </div>
       </div>
 
       {kind === CARD_KIND.matching ? (
-        <MatchingPairsEditor pairs={pairs} onChange={setPairs} prompt={front} onPromptChange={setFront} />
+        <MatchingPairsEditor pairs={pairs} onChange={(p) => editCard({ pairs: p })} prompt={front} onPromptChange={(v) => editCard({ front: v })} />
       ) : kind === CARD_KIND.cloze ? (
         <div className="space-y-2">
           <div>
@@ -591,7 +614,7 @@ function CardEditor({
             ) : (
               <Textarea
                 value={front}
-                onChange={(e) => setFront(e.target.value)}
+                onChange={(e) => editCard({ front: e.target.value })}
                 rows={3}
                 className="resize-y text-sm"
               />
@@ -603,7 +626,7 @@ function CardEditor({
             </label>
             <Textarea
               value={back}
-              onChange={(e) => setBack(e.target.value)}
+              onChange={(e) => editCard({ back: e.target.value })}
               rows={2}
               className="resize-y text-sm"
             />
@@ -622,7 +645,7 @@ function CardEditor({
             ) : (
               <Textarea
                 value={front}
-                onChange={(e) => setFront(e.target.value)}
+                onChange={(e) => editCard({ front: e.target.value })}
                 rows={3}
                 className="resize-y text-sm"
               />
@@ -639,7 +662,7 @@ function CardEditor({
             ) : (
               <Textarea
                 value={back}
-                onChange={(e) => setBack(e.target.value)}
+                onChange={(e) => editCard({ back: e.target.value })}
                 rows={3}
                 className="resize-y text-sm"
               />
