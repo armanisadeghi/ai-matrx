@@ -101,15 +101,18 @@ enforces it in code, not copy:
   advances FSRS/mastery. Game sessions are study sessions (visible in P5).
 - **FSRS + `useDueReview` selection** — generalized in `engine/queue.ts`; not
   forked.
-- **P7 access boundary** — enforced today via `fc_set`/`fc_card` RLS + the
-  **org-gated** `assoc_for_targets` read, surfaced inline in Host setup with a
-  lock/globe hint. **Multiplayer works only when every player shares org access
-  to the deck (team/class rooms).** A guest from a *different personal account*
-  loads an empty deck even for a `visibility='public'` set — the card-membership
-  read filters by `iam.has_org_access`, not visibility (see KNOWN_DEFECTS D37).
-  Does NOT call the `useAccess` hook — no such import exists yet. Migrate to
-  `useAccess`/a visibility-aware read once P7 ships to unlock cross-account
-  public/shared rooms.
+- **P7 access boundary** — enforced via `fc_set`/`fc_card` RLS + the
+  **visibility-aware** card-membership read (`assoc_members_visible` RPC,
+  `has_org_access OR iam.has_access(target,'viewer')`), surfaced inline in Host
+  setup with a lock/globe hint. **Cross-account public/shared decks work:** a
+  guest from a *different personal account* loads a `visibility='public'` (or
+  `'link'`/share-granted) deck's cards, because `iam.has_access` is the canonical
+  row-level authorization truth (honors visibility, grants, memberships, and
+  reachability → the card's public parent set). A stranger with no grant on a
+  PRIVATE deck still loads 0 cards (verified negative). Same-org (team/class)
+  rooms are unchanged — the org branch is a strict subset. The deck read is
+  `fcService.getSetWithCards` → `associationsService.listForTargetsVisible`; do
+  NOT reintroduce the org-only `assoc_for_targets` here (that was D37).
 - **P8 `useEntitlement("education.game_room_size")`** — max players shown BEFORE
   hosting (TRUST mandate: no mid-workflow ambush), generous default.
 
@@ -146,6 +149,17 @@ enforces it in code, not copy:
 
 ## Change Log
 
+- **2026-07-10** — Fixed D37 (cross-account empty deck). The card-membership read
+  was org-gated (`assoc_for_targets` → `iam.has_org_access`), so a guest from a
+  different personal org loaded 0 cards for a `visibility='public'` deck. New
+  visibility-aware `assoc_members_visible` RPC (`has_org_access OR
+  iam.has_access(target,'viewer')` — the canonical row-level auth truth,
+  evaluated once per target; strict superset of the old read) wrapped by
+  `associationsService.listForTargetsVisible`; `fcService.getSetWithCards` routes
+  through it, so every flashcard surface reads public/shared decks cross-account.
+  Live-verified as a real guest (`test@test.com`, org membership removed → true
+  stranger): old rpc 0 → new rpc 52 edges → 52 playable cards; PRIVATE un-granted
+  deck stays 0 (no leak). `migrations/assoc_members_visible_rpc.sql` (ledgered).
 - **2026-07-10** — DoD-closing live run (P10). Drove a real solo round + a real
   two-user multiplayer round end-to-end through the authenticated service/RPC
   paths (first live rows in `game_room`/`game_result`/`game_badge`/

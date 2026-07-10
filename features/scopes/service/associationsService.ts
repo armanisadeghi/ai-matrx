@@ -199,6 +199,44 @@ export const associationsService = {
     }
   },
 
+  /**
+   * Like {@link listForTargets}, but VISIBILITY-AWARE: an edge is returned when
+   * the caller EITHER shares org access to it (identical to `listForTargets`) OR
+   * can VIEW its target via the canonical row-level authorization truth
+   * `iam.has_access(target, 'viewer')` — which honors `visibility='public'`/
+   * `'link'`, share grants, container memberships, and reachability. A strict
+   * SUPERSET of `listForTargets` access; a stranger with no grant on a private
+   * target still gets nothing (see `assoc_members_visible` RPC + KNOWN_DEFECTS
+   * D37). Use this for reading the members of a SHAREABLE container (e.g. a
+   * public/shared flashcard deck's cards) that a cross-account caller may view;
+   * keep plain `listForTargets` for org-scoped tagging reads.
+   */
+  async listForTargetsVisible(
+    rawTargetType: string,
+    targetIds: string[],
+  ): Promise<ScopesRpcResult<{ edges: AssociationTargetEdge[] }>> {
+    try {
+      requireUserId();
+      const targetType = normalizeEntityToken(rawTargetType);
+      const ids = Array.from(new Set(targetIds));
+      if (ids.length === 0) return ok({ edges: [] });
+      const bad = firstError(
+        checkToken("targetType", targetType),
+        checkUuidArray("targetIds", ids),
+      );
+      if (bad) return { ok: false, error: bad };
+      const { data, error } = await supabase.rpc("assoc_members_visible", {
+        p_target_type: targetType,
+        p_target_ids: ids,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      const rows = (Array.isArray(data) ? data : []) as AssocForTargetsRow[];
+      return ok({ edges: rows.map(toTargetEdge) });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   // ──────────────────────────────────────────────────────────────────
   //  READ — BATCH: every OUTGOING edge for many sources, one round-trip.
   // ──────────────────────────────────────────────────────────────────

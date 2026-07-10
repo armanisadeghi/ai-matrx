@@ -373,8 +373,13 @@ export const fcService = {
       const setRes = await this.getSet(setId);
       if (!setRes.data) return { data: null, error: setRes.error };
 
-      // Membership edges (cards → this set), ordered by position.
-      const edgesRes = await associationsService.listForTargets("fc_set", [
+      // Membership edges (cards → this set), ordered by position. VISIBILITY-AWARE
+      // read: a cross-account caller who can VIEW this set (public/link/share
+      // grant) reads its card membership even without org access — the org-gated
+      // `listForTargets` returned 0 edges for a stranger on a public deck, which
+      // loaded an empty deck into cross-account multiplayer games (KNOWN_DEFECTS
+      // D37). Strict superset — same-org reads are unchanged.
+      const edgesRes = await associationsService.listForTargetsVisible("fc_set", [
         setId,
       ]);
       if (!edgesRes.ok)
