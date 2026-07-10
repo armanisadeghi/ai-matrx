@@ -14,7 +14,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -39,7 +39,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useEntitlement } from "@/features/entitlements/hooks";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useLibrary } from "@/features/rag/hooks/useLibrary";
 import { useDocumentChunks } from "@/features/rag/hooks/useDocument";
 import type { LibraryDocSummary } from "@/features/rag/types/library";
@@ -82,16 +83,28 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
   const router = useRouter();
   const base = `/education/${config.base}`;
   const { generate, isGenerating } = useGenerateQuiz();
-  const entitlement = useEntitlement(config.capability);
+  const entitlement = useEntitlementGuard(config.capability);
   const [isNavigating, startNavigation] = useTransition();
 
+  // Exam-hub deep links (P6 Phase B CTAs) seed the create surface:
+  //   /education/{quizzes|practice-tests}/new?examType=<slug>&topic=<Exam Name>&depth=exam
+  // Read once for the initial state below; the user can still edit every field.
+  // Requires the route to wrap this component in a <Suspense> boundary.
+  const searchParams = useSearchParams();
+  const seedTopic = searchParams.get("topic")?.trim() ?? "";
+  const seedExamType = searchParams.get("examType")?.trim() ?? "";
+  const seedDepthRaw = searchParams.get("depth")?.trim() ?? "";
+  const seedDepth: Depth = DEPTHS.some((d) => d.value === seedDepthRaw)
+    ? (seedDepthRaw as Depth)
+    : "applied";
+
   const [mode, setMode] = useState<SourceMode>("topic");
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(seedTopic);
   const [count, setCount] = useState(config.defaultCount);
   const [difficulty, setDifficulty] = useState<(typeof DIFFICULTIES)[number]>("Medium");
-  const [depth, setDepth] = useState<Depth>("applied");
+  const [depth, setDepth] = useState<Depth>(seedDepth);
   const [types, setTypes] = useState<Set<QuestionType>>(new Set());
-  const [examType, setExamType] = useState("");
+  const [examType, setExamType] = useState(seedExamType);
   const [timeLimitMin, setTimeLimitMin] = useState(config.timed ? 20 : 0);
   const [userRequest, setUserRequest] = useState("");
   const [selectedDeck, setSelectedDeck] = useState<FcSetRow | null>(null);
@@ -133,13 +146,9 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
-    // Pre-action entitlement check (server truth). Permissive stub today.
-    const verdict = await entitlement.check();
-    if (!verdict.allowed) {
-      toast.error(entitlement.definition.upgradeMessage);
-      return;
-    }
-
+    // Canonical guard: server-truth check BEFORE spending; a cap-hit opens the
+    // respectful contextual paywall (not a toast) and never starts generation.
+    await entitlement.guard(async () => {
     const safeCount = Math.min(config.countMax, Math.max(1, count || 1));
     const questionTypes = Array.from(types).join(",");
     const sharedVars = {
@@ -272,6 +281,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : `Failed to generate the ${config.noun}`);
     }
+    });
   };
 
   return (
@@ -566,13 +576,9 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
               />
             </div>
 
-            {/* Metering (visible BEFORE the action — TRUST §6) */}
-            {entitlement.limit != null && (
-              <p className="text-[11px] text-muted-foreground">
-                {entitlement.remaining ?? 0} of {entitlement.limit}{" "}
-                generations left this {entitlement.period ?? "month"}.
-              </p>
-            )}
+            {/* Metering (visible BEFORE the action — TRUST §6), canonical primitive */}
+            <EntitlementMeter capability={config.capability} showAllWindows />
+            <entitlement.Paywall />
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <Button
@@ -582,7 +588,10 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
               >
                 Cancel
               </Button>
-              <Button onClick={() => void handleGenerate()} disabled={!canGenerate}>
+              <Button
+                onClick={() => void handleGenerate()}
+                disabled={!canGenerate || entitlement.isChecking}
+              >
                 <Sparkles className="mr-1.5 h-4 w-4" />
                 Generate
               </Button>
