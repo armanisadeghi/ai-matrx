@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Boxes } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectNoteById } from "@/features/notes/redux/selectors";
@@ -58,7 +58,7 @@ export function EduNoteActionBar({ noteId }: { noteId: string }) {
         </div>
         {canEdit && <LiveCaptureButton noteId={noteId} />}
         <Button size="sm" onClick={openConvert} className="gap-1.5">
-          <Sparkles className="h-3.5 w-3.5" />
+          <Boxes className="h-3.5 w-3.5" />
           Convert
         </Button>
         <ShareButton

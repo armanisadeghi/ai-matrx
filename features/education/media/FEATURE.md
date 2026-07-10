@@ -112,5 +112,10 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
   cause MOVED** — script agent now emits a valid `<podcast_dialogue>`; the audio stage streams ~4449
   chunks over ~6 min then aborts `tts_stall_timeout` (Google TTS mid-stream stall, no retry), so still
   `0` `ready` audio episodes. Backend-owned; FE path verified up to handoff.
+- **2026-07-10 (Convergence-B)** — `audioGenerator` now writes its `source` lineage edge through the
+  shared `recordSourceLineage` (`features/education/convert`) instead of an inline
+  `associationsService` call (same edge, one canonical writer). `audio/audioBrief.ts#serializeDeck`
+  is now also reused by the flashcard-set detail's new **Convert** affordance (deck → other study
+  artifacts), not just the audio overview — one deck-serialization mapping, two consumers.
 - **2026-07-07** — Initial P3 build: routes, `study_media` table + service, audio create/run/detail
   + recovery, mind-map create/view, both flipped `live` in `tools.ts`.

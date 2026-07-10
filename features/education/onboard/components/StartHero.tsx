@@ -130,7 +130,7 @@ export function StartHero() {
           One upload → a full study kit
         </div>
         <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
-          Turn anything into a grounded study kit
+          Turn your material into a grounded study kit
         </h1>
         <p className="mx-auto max-w-xl text-sm text-muted-foreground">
           Drop a PDF, paste your notes, or link a page. We build flashcards, a

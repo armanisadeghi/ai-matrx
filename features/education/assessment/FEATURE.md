@@ -120,6 +120,13 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- **2026-07-10 (Convergence-B)** — Two lineage/loop gaps closed. (1) `quizGenerator` now calls the
+  shared `recordSourceLineage` (`features/education/convert`) — a converted quiz/practice_test lands a
+  real `assessment --source--> origin` association edge, not only the flat `source_kind`/`source_id`
+  columns (both kept). `assessment` added to `ASSOCIATION_TARGET_TYPES`. (2) `AssessmentDetail` grew a
+  **Convert** affordance (shared `ConvertContentDialog` + `data/serializeAssessment.ts`) — a quiz/test
+  is now a convert SOURCE (→ deck/notes/summary/mind_map/audio), reverse-lineage chips via
+  `GeneratedFromChips`. No forked dialog or lineage code.
 - **2026-07-07** — Initial build: `assessment`/`assessment_item`/`assessment_result` tables + RLS +
   registration; 3 agents; service + `useGenerateQuiz` + grading + learning-gain contract; full
   quizzes + practice-tests UI (list/create/take/results/edit); tools flipped live; verified live.

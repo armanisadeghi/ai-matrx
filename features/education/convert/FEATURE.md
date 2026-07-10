@@ -1,7 +1,8 @@
 # Content Converter — the cross-tool conversion contract
 
 > **Status:** Contract published 2026-07-07 (P9 Universal Ingest, co-owned with P4 Smart Notes).
-> Three live generators (deck · summary · mind_map); four progressive placeholders.
+> **All seven generators are LIVE** (deck · summary · mind_map · notes · quiz · practice_test ·
+> audio) — no placeholders remain.
 > **This is the ONE dispatch layer for turning content into study artifacts.** Do not build a
 > second one — register a generator here (or from your feature) instead.
 
@@ -53,11 +54,16 @@ ingest pipeline normalizes EVERY input to a durable file.
 | `summary` | Study Summary agent (`92b607a4…`) → `studyMediaService` | `study_media` (`media_kind='summary'`) | `education.ingest_document` |
 | `mind_map` | Study Mind Map agent → `studyMediaService` | `study_media` (`media_kind='mind_map'`) | `education.mindmap_generate` |
 | `notes` | Study Notes agent (`f23562ce…`) → `NotesAPI.create` | `workbench.notes` (a real platform note) | `education.notes_generate` |
+| `quiz` | Assessment from-source agent → `assessmentService.createWithItems` | `education.assessment` (`assessment_kind='quiz'`) | `education.quiz_generate` |
+| `practice_test` | same from-source agent (longer/timed defaults) → `assessmentService.createWithItems` | `education.assessment` (`assessment_kind='practice_test'`) | `education.practice_test_generate` |
 | `audio` | `buildAudioRequest` → `studioRunsService` + `studyMediaService` (streamed podcast pipeline) | `study_media` (`media_kind='audio'`) + `pc_studio_runs` | `education.audio_generate` |
 
 Each generator: run the agent (`runAgentExtraction` — the shared launch+extract primitive),
-coerce, persist, add a `source` association edge to `ref.fileId`, return the result. Per-card
-TrustEnvelopes roll up via `mergeTrustEnvelopes`.
+coerce, persist, then call `recordSourceLineage(result, source, orgId)` — the ONE canonical writer
+of the artifact→origin `source` edge (no generator hand-rolls it) — and return the result. Per-card
+TrustEnvelopes roll up via `mergeTrustEnvelopes`. The `quiz`/`practice_test` generators ALSO keep
+the flat `assessment.source_kind`/`source_id` columns (fast filter + learning-gain matching); the
+association edge is the polymorphic lineage every kit/convert surface reads.
 
 **Envelopes without agent citations (`mind_map` / `audio`):** these agents return structure
 (`diagram_spec { nodes, edges }`) or audio, not a `trust`/citations field — so the generator
@@ -65,9 +71,10 @@ derives a **grounded TrustEnvelope from the KNOWN source** via `sourceTrust.ts#b
 (cites the ingest anchor). `MindMapDetail` / `AudioStudyDetail` render `<SourceCitations/>` from
 it. (Previously `mindMap.ts` hardcoded `trust: null` — fixed 2026-07-10.)
 
-## Registering a new generator (P1 / P3 / P4)
+## Registering a new generator
 
-Replace the placeholder in `generators/index.ts` (or self-register from your feature):
+All seven current targets are live. To add a NEW `TargetKind`, register it in
+`generators/index.ts` (or self-register from your feature):
 
 ```ts
 import { registerGenerator } from "@/features/education/convert/registry";
@@ -89,18 +96,34 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 - `registry.ts` — `registerGenerator` / `runConvert` (aka `convertContent`) / `isTargetAvailable`
 - `useContentConverter.ts` — the React entry (`convert` + `convertMany`)
 - `runAgentExtraction.ts` — shared "launch JSON-extraction agent → get object" primitive
+- `recordSourceLineage.ts` — **the ONE canonical writer** of the artifact→origin `source` edge
+  (resolves the anchor: the durable ingest `file` OR the origin entity via `ref.entityType`/
+  `entityId`). Every generator calls it; none hand-rolls the edge.
+- `lineage.ts` — the reverse read: `listGeneratedFrom(entityType, entityId)` (incoming `source`
+  edges → the "generated from this" rows)
+- `GeneratedFromChips.tsx` — the reverse-lineage chip strip, reused on every convert-source surface
+- `ConvertContentDialog.tsx` — **the ONE convert-source dialog** (note / deck / assessment / passage
+  → any target); metered via the canonical entitlement guard. Sources hand it serialized text + an
+  origin token.
 - `trustMerge.ts` — roll per-item envelopes up to one artifact envelope
 - `sourceTrust.ts` — `buildSourceTrust`: a grounded envelope from the source for agents that
   emit no citations (`mind_map`, `audio`)
 - `agents.ts` — converter-owned agent ids (the summary agent)
-- `generators/` — `deck.ts`, `summary.ts`, `mindMap.ts`, `index.ts` (registration).
-  `audio` self-registers from `features/education/media/audio/audioGenerator.ts`
+- `generators/` — `deck.ts`, `summary.ts`, `mindMap.ts`, `index.ts` (registration). `notes`,
+  `quiz`/`practice_test`, and `audio` self-register from their owning features
+  (`education/notes`, `education/assessment`, `education/media/audio`).
 
 ## Invariants
 
 - ONE dispatch. No second converter, no per-feature parallel path.
+- ONE convert-source dialog (`ConvertContentDialog`) and ONE lineage writer
+  (`recordSourceLineage`) / reverse reader (`lineage.ts` + `GeneratedFromChips`). Do not fork
+  a per-feature dialog or edge-writer — a source hands the dialog its serialized text + origin token.
 - Generators are plain async functions (not hooks) so the dispatch runs from anywhere.
-- Every generated artifact links a `source` edge to `ref.fileId` — lineage is never optional.
+- Every generated artifact links a `source` edge to its origin — the durable `ref.fileId`, or the
+  origin entity (`ref.entityType`/`entityId`) for an entity-sourced convert (note→deck, deck→quiz,
+  assessment→deck). Lineage is never optional and is written in ONE place (`recordSourceLineage`);
+  all seven generators route through it.
 - Everything the agents emit carries the P0 TrustEnvelope; `trust` flows through unchanged —
   except `mind_map`/`audio`, whose agents emit no citations, so the generator derives a grounded
   envelope from the source (`sourceTrust.ts`). No generator persists `trust: null`.
@@ -108,6 +131,18 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 
 ## Change log
 
+- **2026-07-10** — **Lineage + source-affordance convergence (Convergence-B certification).** Closed
+  four gaps: (1) extracted `recordSourceLineage.ts` — the ONE writer of the artifact→origin `source`
+  edge — and migrated all five inline call sites (deck/summary/mind_map/notes/audio) onto it, THEN
+  added it to `quiz`/`practice_test` (which previously only set the flat `source_kind`/`source_id`
+  columns — so a converted quiz/test now lands a real association edge; `assessment` added to
+  `ASSOCIATION_TARGET_TYPES`). (2) Generalized the note-only `ConvertNoteDialog` into the shared
+  `ConvertContentDialog` + `lineage.ts` + `GeneratedFromChips` (deleting `notes/ConvertNoteDialog`,
+  `notes/GeneratedArtifactsChips`, `notes/service`) and put a Convert affordance on the flashcard-set
+  detail (`SetDetailView`, `serializeDeck`) and the assessment detail (`AssessmentDetail`,
+  `serializeAssessment`) — decks and quizzes are now convert SOURCES, not just targets. Entity-sourced
+  conversions link back via `recordSourceLineage` reading `ref.entityType`/`entityId`. (3) This doc
+  rewritten to current truth. Entitlement guarding unchanged (`useEntitlementGuard` per target row).
 - **2026-07-10** — `audio` target went LIVE (P3 Audio Study). `audioStudyGenerator`
   (`features/education/media/audio/audioGenerator.ts`) drives the canonical audio-create path
   (`buildAudioRequest` → `studioRunsService` + `studyMediaService`, streamed) and self-registers.

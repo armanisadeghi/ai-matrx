@@ -24,8 +24,10 @@ back to the note so lineage is visible both directions.
   up automatically as owning projects register generators.
 - **Live capture = `features/audio` `useChunkedRecordAndTranscribe`.** The one canonical
   streaming-transcription path (shared mic stream + Groq chunks). No second capture path.
-- **Lineage = `platform.associations`** via `associationsService` only (through
-  `service.ts`).
+- **Lineage = `platform.associations`** via the shared converter primitives — the generator
+  writes the `artifact --source--> note` edge through `recordSourceLineage`, and the reverse
+  read is `lineage.ts` / `GeneratedFromChips` (both in `features/education/convert`). No
+  note-local lineage code.
 
 ## Surfaces
 
@@ -40,16 +42,18 @@ back to the note so lineage is visible both directions.
 
 ## Key flows
 
-**Convert (note → artifact).** `ConvertNoteDialog` reads the note content (or the current
-in-editor text selection), calls `convert({ source: { text, title, ref:{kind:'note',...} },
-targetKind })`, then `linkArtifactToNote` writes an `artifact --source--> note` edge (role
-`source`, mirroring the generators' `artifact→origin` convention) with `{targetKind, href,
-detail}` on the edge metadata. Each metered target shows `remaining` BEFORE the action
-(`useEntitlement`, TRUST mandate). Result carries the P0 `TrustEnvelope` → `ConfidenceBadge`.
+**Convert (note → artifact).** `EduNoteActionBar` renders the SHARED `ConvertContentDialog`
+(`features/education/convert`) with `origin={kind:'note', entityType:'note', entityId, title}`
++ the note content (or the current in-editor selection). The dialog calls
+`convert({ source:{ text, title, ref:{kind:'note', entityType:'note', entityId} }, targetKind })`;
+the generator's `recordSourceLineage` writes the `artifact --source--> note` edge (role `source`)
+with `{targetKind, href, detail}` metadata — so the note surface owns NO lineage-write code. Each
+metered target shows `remaining` BEFORE the action (`useEntitlementGuard`, TRUST mandate). Result
+carries the P0 `TrustEnvelope` → `ConfidenceBadge`.
 
-**Reverse lineage.** `GeneratedArtifactsChips` reads incoming `source` edges on the note
-(`listGeneratedFromNote`) → clickable chips. The just-created artifact links back; the note
-lists its artifacts.
+**Reverse lineage.** `GeneratedFromChips` (shared) reads incoming `source` edges on the note
+(`lineage.ts#listGeneratedFrom('note', id)`) → clickable chips. The just-created artifact links
+back; the note lists its artifacts.
 
 **Live capture.** `LiveCaptureButton` records; each transcribed chunk is appended to the
 note's live Redux content (`updateNoteContent`), rendering in the editor as the lecturer
@@ -61,8 +65,9 @@ content, so simultaneous manual edits are never clobbered.
 P4 registers the converter's `notes` target — `notesGenerator.ts` (`agents.ts`
 `NOTES_AGENTS.studyNotes` = `f23562ce…`, a grounded Study-Notes agent, same TrustEnvelope
 contract as summary/deck). It runs the agent → creates a real platform note (folder
-"Study Notes") → links a `source` edge to the ingest anchor file. So P9's one-upload→kit
-fan-out can include a structured note, and it lands right back in this surface.
+"Study Notes") → calls `recordSourceLineage` to link a `source` edge to the origin (the ingest
+anchor file for the P9 kit, or the origin entity for an entity-sourced convert). So P9's
+one-upload→kit fan-out can include a structured note, and it lands right back in this surface.
 
 ## Invariants
 
@@ -71,11 +76,21 @@ fan-out can include a structured note, and it lands right back in this surface.
 - Lineage edges are `role='source'`, `artifact` (source) → `note` (target). The reverse
   query filters `direction==='incoming' && role==='source'`.
 - The convert UI's target availability is read LIVE from the converter registry
-  (`isTargetAvailable`) — quiz/audio show "coming soon" until P1/P3 register, then light up
-  with no change here.
+  (`isTargetAvailable`). All seven targets are live today; a future `TargetKind` shows
+  "coming soon" until its generator registers, then lights up with no change here.
+- The convert dialog + reverse-lineage chips are the SHARED `features/education/convert`
+  primitives (`ConvertContentDialog` / `GeneratedFromChips`) — the same ones the flashcard-set
+  and assessment detail surfaces use. Do not fork a note-local copy.
 
 ## Change log
 
+- **2026-07-10** — Convergence-B: the note-local convert stack was generalized into shared
+  converter primitives. `ConvertNoteDialog` → `convert/ConvertContentDialog`,
+  `GeneratedArtifactsChips` → `convert/GeneratedFromChips`, and `notes/service.ts`
+  (`linkArtifactToNote`/`listGeneratedFromNote`) → `convert/recordSourceLineage` +
+  `convert/lineage.ts`. All three files deleted here; behavior identical (the artifact→note
+  edge is now written by the generator via `recordSourceLineage`). Same dialog now powers the
+  flashcard-set and assessment detail surfaces.
 - **2026-07-10** — Feature created (P4). Replaced the 4 `EduToolComingSoon` note-route stubs
   with the real surface (home/new/[id]/[id]/edit); built the convert dialog + note↔artifact
   lineage + reverse chips + live capture; authored the Study Notes agent + registered the

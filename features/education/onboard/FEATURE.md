@@ -60,6 +60,20 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
   reachable solely when a user picks an `.apkg`. A static import chain to it eagerly compiles the
   emscripten module and hangs the page build — do not re-introduce one. (`code-splitting` skill.)
 
+## Format coverage (honest scope + roadmap)
+
+The hero ingests **PDF, plain text / Markdown / CSV-family files, pasted text, and URLs / YouTube
+links** — that is the whole supported set today, and the UI copy is kept honest to it (the file
+picker `accept` filter, the drop-zone hint "PDF, text, Markdown, or CSV", and the error copy all
+name only what actually ingests). The hero headline says "Turn your material…", not "anything", for
+the same reason.
+
+**Not yet ingestable at the hero (recorded roadmap, not a silent gap):** DOCX / PPTX / other Office
+formats, audio, video, and images (OCR). Each needs an ingest adapter (`useIngest` → `fileHandler`
+→ extraction) before it can be advertised. Until then the copy must not imply them, and dropping an
+unsupported file surfaces the honest ingest error rather than a fake success. When an adapter lands,
+extend `useIngest` + the `accept` filter + the drop hint together.
+
 ## Gotchas learned
 
 - The production `FC_AGENTS.generateFromSource` agent does NOT receive `source_content` through the
@@ -71,6 +85,11 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 
 ## Change log
 
+- **2026-07-10** — Honesty pass (Convergence-B): hero headline "Turn anything…" → "Turn your
+  material…" so it no longer overclaims formats the hero can't ingest. Recorded the DOCX/PPTX/audio/
+  video/image ingest gaps as roadmap (see "Format coverage") rather than leaving them implied. The
+  converter fan-out now includes all seven live targets (quiz/practice_test/notes/audio joined
+  deck/summary/mind_map) — the kit picker lights them up with no change here.
 - **2026-07-07** — Shipped: Upload Hero (`/education/start`), converter fan-out (deck/summary/
   mind_map), study-summary kind on `study_media`, `/education/data` (exports + import incl. Anki
   `.apkg` + pledge), summary viewer. Verified live end-to-end (grounded deck+summary+mindmap linked

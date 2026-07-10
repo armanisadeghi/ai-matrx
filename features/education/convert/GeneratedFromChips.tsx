@@ -18,7 +18,7 @@ import {
   Network,
   Headphones,
   StickyNote,
-  Sparkles,
+  Boxes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listGeneratedFrom, type GeneratedArtifact } from "./lineage";
@@ -39,7 +39,7 @@ function iconFor(a: GeneratedArtifact): typeof Layers {
   if (a.artifactType === "fc_set") return Layers;
   if (a.artifactType === "assessment") return ListChecks;
   if (a.artifactType === "note") return StickyNote;
-  return Sparkles;
+  return Boxes;
 }
 
 export function GeneratedFromChips({

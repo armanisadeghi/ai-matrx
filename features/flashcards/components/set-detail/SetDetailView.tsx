@@ -31,7 +31,7 @@ import {
   Grid3x3,
   PenLine,
   Scissors,
-  Sparkles,
+  Boxes,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -491,7 +491,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                   onClick={() => setConvertOpen(true)}
                   disabled={data.cards.length === 0}
                 >
-                  <Sparkles className="mr-1.5 h-4 w-4" />
+                  <Boxes className="mr-1.5 h-4 w-4" />
                   Convert
                 </Button>
               </div>

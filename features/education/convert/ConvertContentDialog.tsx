@@ -30,7 +30,7 @@ import {
   NotebookPen,
   ArrowRight,
   Loader2,
-  Sparkles,
+  Boxes,
 } from "lucide-react";
 import {
   Dialog,
@@ -200,7 +200,7 @@ export function ConvertContentDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <Boxes className="h-4 w-4 text-primary" />
             Turn this into study material
           </DialogTitle>
           <DialogDescription>

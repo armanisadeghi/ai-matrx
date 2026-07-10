@@ -23,7 +23,7 @@ import {
   AlertCircle,
   ArrowLeft,
   History,
-  Sparkles,
+  Boxes,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -291,7 +291,7 @@ export function AssessmentDetail({
             onClick={() => setConvertOpen(true)}
             disabled={items.length === 0}
           >
-            <Sparkles className="mr-1.5 h-4 w-4" />
+            <Boxes className="mr-1.5 h-4 w-4" />
             Convert
           </Button>
         </div>
