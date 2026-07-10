@@ -50,6 +50,13 @@ export interface ArtifactTypeDef {
    * instead of a string — see `planMaterialization` + `resolveArtifactDefByKind`.
    */
   kinds?: string[];
+  /**
+   * User (and agent via ctx_patch) can edit this type → chat refs resolve
+   * `{ resolve: "latest" }` so they show the newest chain version, and
+   * ArtifactVersionHistory is the browse/restore surface. Mermaid was the
+   * hard-coded pioneer; code (incl. pinned JSON) joins it for editable context.
+   */
+  userEditable?: boolean;
 }
 
 export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
@@ -68,7 +75,7 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   { canvasType: "diagram", aliases: ["diagram"], standaloneAliases: ["diagram"], materializable: true, kinds: ["diagram_spec"] },
   { canvasType: "recipe", aliases: ["recipe", "cooking_recipe"], standaloneAliases: ["cooking_recipe"], materializable: true },
   { canvasType: "math_problem", aliases: ["math_problem"], standaloneAliases: ["math_problem"], materializable: true, kinds: ["math_problem"] },
-  { canvasType: "mermaid", aliases: ["mermaid"], standaloneAliases: ["mermaid"], materializable: true },
+  { canvasType: "mermaid", aliases: ["mermaid"], standaloneAliases: ["mermaid"], materializable: true, userEditable: true },
   // Self-contained visuals — durable, referenceable (like a diagram). A bare
   // ```svg / ```chart fence materializes; SvgBlock/ChartBlock parse the payload.
   { canvasType: "svg", aliases: ["svg"], standaloneAliases: ["svg"], materializable: true },
@@ -101,7 +108,9 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   // Artifact-wrapper-only (a bare ```code fence / image must NOT auto-materialize
   // — they'd flood the library with throwaway snippets):
   { canvasType: "iframe", aliases: ["iframe"], standaloneAliases: [], materializable: true },
-  { canvasType: "code", aliases: ["code"], standaloneAliases: [], materializable: true },
+  // Bare ```code / ```json never auto-materialize (standaloneAliases: []) —
+  // user-initiated "Add to conversation context" forces materialization.
+  { canvasType: "code", aliases: ["code"], standaloneAliases: [], materializable: true, userEditable: true },
   { canvasType: "image", aliases: ["image"], standaloneAliases: [], materializable: true },
 ];
 

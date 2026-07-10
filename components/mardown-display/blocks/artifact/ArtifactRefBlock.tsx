@@ -3,6 +3,7 @@
 import React, { Suspense, lazy } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ArtifactBlock from "./ArtifactBlock";
@@ -21,6 +22,7 @@ interface ArtifactRefBlockProps {
     /** The render-block `data` payload carrying the artifact_ref fields. */
     serverData?: ArtifactRefServerData | null;
     messageId?: string;
+    conversationId?: string;
     taskId?: string;
     /**
      * The inline `<artifact>` body + metadata from the message text. Used ONLY
@@ -62,15 +64,20 @@ interface ArtifactRefBlockProps {
 const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
     serverData,
     messageId,
+    conversationId,
     taskId,
     fallbackContent,
     fallbackMetadata,
     fallbackServerData,
 }) => {
     const artifactId = serverData?.artifact_id;
-    // Mermaid artifacts are user-editable — always show the newest version in
-    // the chain, and live-refresh when an editor saves (event-driven).
-    const wantLatest = serverData?.artifact_type === "mermaid";
+    // Registry-driven: userEditable types (mermaid, code, …) always show the
+    // newest version in the chain and live-refresh on CANVAS_ITEM_UPDATED_EVENT.
+    const artifactType =
+        serverData?.artifact_type ?? fallbackMetadata?.artifactType;
+    const wantLatest = Boolean(
+        artifactType && getArtifactDef(artifactType)?.userEditable,
+    );
     const { row, loading, error } = useCanvasItem(
         artifactId,
         wantLatest ? { resolve: "latest" } : undefined,
@@ -188,6 +195,7 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
                 artifactTitle: row.title ?? serverData?.title ?? "Artifact",
             }}
             messageId={messageId}
+            conversationId={conversationId}
             taskId={taskId ?? `artifact:${row.id}`}
         />
     );
