@@ -34,6 +34,7 @@ import {
 import { SpokenFrontPlayer } from "../components/SpokenFrontPlayer";
 import { gradeSpokenAnswer } from "../agents/gradeSpokenAnswer.thunk";
 import type { SpokenGrade } from "../agents/grading-core";
+import { verdictResult, type GradeResult } from "@/features/education/trust/types";
 import { VoiceTestAudioSetup } from "./VoiceTestAudioSetup";
 import { VoiceAnswerMicMeter } from "./VoiceAnswerMicMeter";
 
@@ -55,7 +56,7 @@ const PREPARE_MIN_MS = 900;
 const SPOKEN_FRONT_MAX_WAIT_MS = 25_000;
 
 const RESULT_STYLE: Record<
-  SpokenGrade["result"],
+  GradeResult,
   {
     label: string;
     icon: typeof CheckCircle2;
@@ -471,7 +472,7 @@ function ResultView({
   onAgain: () => void;
   onDone: () => void;
 }) {
-  const style = grade ? RESULT_STYLE[grade.result] : null;
+  const style = grade ? RESULT_STYLE[verdictResult(grade.verdict)] : null;
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-4">
       {grade && style ? (
@@ -492,8 +493,8 @@ function ResultView({
               Score {Math.round(grade.score * 100)}%
             </div>
           </div>
-          {grade.feedback && (
-            <p className="text-sm text-foreground">{grade.feedback}</p>
+          {grade.verdict.explanation && (
+            <p className="text-sm text-foreground">{grade.verdict.explanation}</p>
           )}
           {grade.missing.length > 0 && (
             <p className="text-xs text-muted-foreground">

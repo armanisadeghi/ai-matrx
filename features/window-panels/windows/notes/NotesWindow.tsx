@@ -7,11 +7,12 @@
 // content — every other concern is a slot:
 //   - sidebar      → <NoteSidebar>         (note tree; WindowPanel ResizablePanel)
 //   - actionsRight → <NoteViewControls>    (view-mode menu + history toggle)
-//   - footer       → <NoteMetadataBar>     (folder, context, tags, save status)
-//   - body         → <NotesWindowView>     (tab bar + editor + split + history)
+//   - footer       → <NoteStatsFooter>     (save status + content metrics only)
+//   - body         → <NotesWindowView>     (tab bar + editor + chrome + split)
 //
-// No reinvented header/footer, no `sidebarExpandsWindow` rect mutation, no
-// viewport-sized side panels. Multiple instances coexist via windowInstanceId.
+// Chrome (folder/context/tags) lives in the body via NoteMetadataBar — never
+// stacked inside the WindowPanel footer (that caused the thick double-chrome).
+// Editor body never pins ProTextarea stats — metrics are footer-only.
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -39,15 +40,14 @@ import {
 import { NotesInstanceProvider } from "@/features/notes/context/NotesInstanceContext";
 import { NoteSidebar } from "@/features/notes/components/NoteSidebar";
 import { NoteViewControls } from "@/features/notes/components/NoteViewControls";
-import { NoteMetadataBar } from "@/features/notes/components/NoteMetadataBar";
+import { NoteStatsFooter } from "@/features/notes/components/NoteStatsFooter";
 import { NoteHistoryPane } from "@/features/notes/components/NoteHistoryPane";
 import { NotesWindowView } from "@/features/notes/components/NotesWindowView";
 
-export interface NotesWindowProps
-  extends Omit<
-    WindowPanelProps,
-    "children" | "title" | "sidebar" | "onClose"
-  > {
+export interface NotesWindowProps extends Omit<
+  WindowPanelProps,
+  "children" | "title" | "sidebar" | "onClose"
+> {
   title?: string;
   /** Unique overlay instance ID — derives stable notes instance + window IDs. */
   windowInstanceId?: string;
@@ -112,9 +112,7 @@ export function NotesWindow({
     }
   }, [dispatch, userId, initialNoteId]);
 
-  const activeTabId = useAppSelector(
-    selectInstanceActiveTab(notesInstanceId),
-  );
+  const activeTabId = useAppSelector(selectInstanceActiveTab(notesInstanceId));
   const historyOpen = useAppSelector(
     selectInstanceHistoryOpen(notesInstanceId),
   );
@@ -143,8 +141,9 @@ export function NotesWindow({
         sidebarMinSize={150}
         actionsRight={<NoteViewControls instanceId={notesInstanceId} />}
         footer={
-          activeTabId ? <NoteMetadataBar noteId={activeTabId} /> : undefined
+          activeTabId ? <NoteStatsFooter noteId={activeTabId} /> : undefined
         }
+        // Compact bar chrome is fine for metrics; chrome (folder/tags) is in body.
         secondaryPanel={
           activeTabId && historyOpen ? (
             <NoteHistoryPane

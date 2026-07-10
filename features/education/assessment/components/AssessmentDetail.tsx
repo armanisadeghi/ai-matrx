@@ -23,13 +23,18 @@ import {
   AlertCircle,
   ArrowLeft,
   History,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAccess } from "@/utils/permissions/access";
 import { cn } from "@/lib/utils";
+import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
+import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
+import type { TargetKind } from "@/features/education/convert/types";
 import { assessmentService } from "../data/assessmentService";
+import { serializeAssessment } from "../data/serializeAssessment";
 import { newGainGroupId } from "../data/learningGain";
 import { kindConfigFor } from "./kindConfig";
 import { AssessmentTaker } from "./take/AssessmentTaker";
@@ -59,6 +64,8 @@ export function AssessmentDetail({
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [lineageKey, setLineageKey] = useState(0);
   const [isPending, startTransition] = useTransition();
   const access = useAccess("assessment", assessmentId);
 
@@ -278,6 +285,24 @@ export function AssessmentDetail({
               Make a copy to edit
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setConvertOpen(true)}
+            disabled={items.length === 0}
+          >
+            <Sparkles className="mr-1.5 h-4 w-4" />
+            Convert
+          </Button>
+        </div>
+
+        {/* Reverse lineage — study artifacts made from this assessment. */}
+        <div className="mt-3">
+          <GeneratedFromChips
+            entityType="assessment"
+            entityId={assessmentId}
+            refreshKey={lineageKey}
+          />
         </div>
 
         {/* Results history */}
@@ -338,6 +363,22 @@ export function AssessmentDetail({
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
+      />
+
+      {/* Convert this assessment into other study artifacts (shared primitive). */}
+      <ConvertContentDialog
+        open={convertOpen}
+        onOpenChange={setConvertOpen}
+        origin={{
+          kind: "assessment",
+          entityType: "assessment",
+          entityId: assessmentId,
+          title: assessment.title,
+        }}
+        text={serializeAssessment(assessment, items).markdown}
+        orgId={assessment.organization_id ?? undefined}
+        excludeKinds={[assessment.assessment_kind as TargetKind]}
+        onConverted={() => setLineageKey((k) => k + 1)}
       />
     </div>
   );

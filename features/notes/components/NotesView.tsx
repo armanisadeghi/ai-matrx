@@ -20,13 +20,13 @@ import {
   PilcrowRight,
   Columns,
   Eye,
-  History,
-  RefreshCw,
   X,
-  PanelLeft,
-  PanelLeftClose,
 } from "lucide-react";
-import { usePanelRef, type Layout, type OnPanelResize } from "react-resizable-panels";
+import {
+  usePanelRef,
+  type Layout,
+  type OnPanelResize,
+} from "react-resizable-panels";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -37,6 +37,20 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
+import {
+  PanelLeftTapButton,
+  HistoryTapButton,
+  RetryTapButton,
+  LoadingTapButton,
+} from "@/components/icons/tap-buttons";
+import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
+import {
+  normalizeNoteEditorMode,
+  usePreferredDefaultEditorMode,
+  NOTES_SPLIT_MIN_WIDTH_PX,
+} from "../hooks/usePreferredDefaultEditorMode";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const MobileNotesView = dynamic(() => import("./mobile/MobileNotesView"), {
   ssr: false,
@@ -84,6 +98,7 @@ import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 import { NoteMetadataBar } from "./NoteMetadataBar";
+import { NoteStatsFooter } from "./NoteStatsFooter";
 import { NoteTabBar } from "./NoteTabBar";
 import { NoteSidebar } from "./NoteSidebar";
 import { FolderQuickPick } from "./FolderQuickPick";
@@ -112,7 +127,11 @@ export interface NotesViewProps {
   sidebarLayout?: Layout;
 }
 
-export function NotesView({ config, className, sidebarLayout }: NotesViewProps) {
+export function NotesView({
+  config,
+  className,
+  sidebarLayout,
+}: NotesViewProps) {
   const dispatch = useAppDispatch();
   const { id: userId } = useAppSelector(selectUser);
   const isMobile = useIsMobile();
@@ -258,10 +277,17 @@ export function NotesView({ config, className, sidebarLayout }: NotesViewProps) 
   const activeNoteEditedByOthers = useAppSelector(
     selectActiveNoteEditedByOthers,
   );
-  const editorMode =
+  const preferredDefaultMode = usePreferredDefaultEditorMode();
+  const isNarrowViewport = useMediaQuery(
+    `(max-width: ${NOTES_SPLIT_MIN_WIDTH_PX - 1}px)`,
+  );
+  const canShowWideModes = !isNarrowViewport;
+  const editorMode = normalizeNoteEditorMode(
     useAppSelector(
-      activeTabId ? selectNoteEditorMode(activeTabId) : () => "plain",
-    ) ?? "plain";
+      activeTabId ? selectNoteEditorMode(activeTabId) : () => undefined,
+    ),
+    preferredDefaultMode,
+  );
 
   const setMode = useCallback(
     (mode: string) => {
@@ -504,8 +530,13 @@ export function NotesView({ config, className, sidebarLayout }: NotesViewProps) 
           <FolderQuickPick instanceId={instanceId} />
         )}
 
-        {/* Layer 2: Metadata bar (bottom — folder, tags, status) */}
-        {activeTabId && <NoteMetadataBar noteId={activeTabId} />}
+        {/* Layer 2: chrome (folder/context/tags) + stats footer (metrics only) */}
+        {activeTabId && (
+          <>
+            <NoteMetadataBar noteId={activeTabId} />
+            <NoteStatsFooter noteId={activeTabId} standalone />
+          </>
+        )}
       </div>
     </div>
   );
@@ -517,103 +548,103 @@ export function NotesView({ config, className, sidebarLayout }: NotesViewProps) 
         <MobileNotesView />
       ) : (
         <div className={`flex h-full w-full min-h-0 ${className ?? ""}`}>
-          {/* ── Header center: View mode buttons (portaled into shell header) */}
+          {/* ── Header: left chrome | center view modes | right actions ── */}
           <PageHeader>
-            <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
-              {showSidebar && !singleNote && (
-                <>
-                  <button
-                    className={cn(
-                      "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5",
-                      "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
-                    )}
-                    onClick={toggleSidebar}
-                    title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-                    aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-                  >
-                    {sidebarCollapsed ? <PanelLeft /> : <PanelLeftClose />}
-                  </button>
-                  <div className="w-px h-4 bg-border/30 mx-0.5" />
-                </>
+            <div className="flex w-full min-w-0 items-center gap-0">
+              {/* Left — sidebar toggle (shell owns far-left hamburger) */}
+              {showSidebar && !singleNote ? (
+                <PanelLeftTapButton
+                  variant="transparent"
+                  onClick={toggleSidebar}
+                  ariaLabel={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                  tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                />
+              ) : (
+                <div className="w-9 shrink-0" aria-hidden />
               )}
-              {activeTabId && (
-                <>
-                  <button
-                    className={modeBtnClass("plain")}
-                    onClick={() => setMode("plain")}
-                  >
-                    <FileText /> Edit
-                  </button>
-                  <button
-                    className={cn(modeBtnClass("split"), "max-lg:hidden")}
-                    onClick={() => setMode("split")}
-                  >
-                    <SplitSquareHorizontal /> Split
-                  </button>
-                  <button
-                    className={cn(modeBtnClass("wysiwyg"), "max-lg:hidden")}
-                    onClick={() => setMode("wysiwyg")}
-                  >
-                    <PilcrowRight /> Rich
-                  </button>
-                  <button
-                    className={cn(
-                      modeBtnClass("markdown-split"),
-                      "max-lg:hidden",
+
+              {/* Center — view / style modes only */}
+              <div className="flex min-w-0 flex-1 items-center justify-center">
+                {activeTabId && (
+                  <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
+                    <button
+                      type="button"
+                      className={modeBtnClass("plain")}
+                      onClick={() => setMode("plain")}
+                    >
+                      <FileText /> Edit
+                    </button>
+                    {canShowWideModes && (
+                      <>
+                        <button
+                          type="button"
+                          className={modeBtnClass("split")}
+                          onClick={() => setMode("split")}
+                        >
+                          <SplitSquareHorizontal /> Split
+                        </button>
+                        <button
+                          type="button"
+                          className={modeBtnClass("wysiwyg")}
+                          onClick={() => setMode("wysiwyg")}
+                        >
+                          <PilcrowRight /> Rich
+                        </button>
+                        <button
+                          type="button"
+                          className={modeBtnClass("markdown-split")}
+                          onClick={() => setMode("markdown-split")}
+                        >
+                          <Columns /> MD Split
+                        </button>
+                      </>
                     )}
-                    onClick={() => setMode("markdown-split")}
-                  >
-                    <Columns /> MD Split
-                  </button>
-                  <button
-                    className={modeBtnClass("preview")}
-                    onClick={() => setMode("preview")}
-                  >
-                    <Eye /> Preview
-                  </button>
-                  <div className="w-px h-4 bg-border/30 mx-0.5" />
-                  <button
-                    className={cn(
-                      "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5",
-                      showHistory
-                        ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
-                        : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
-                    )}
-                    onClick={() => setShowHistory((v) => !v)}
-                  >
-                    <History /> History
-                  </button>
-                  <NoteCleanupButton
-                    noteId={activeTabId}
-                    showLabel
-                    label="Clean up"
-                    triggerClassName="flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5 text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]"
-                    triggerActiveClassName="bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
-                  />
-                  <div className="w-px h-4 bg-border/30 mx-0.5" />
-                </>
-              )}
-              <button
-                className={cn(
-                  "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5",
-                  isRefreshing
-                    ? "text-[var(--shell-nav-text-hover)]"
-                    : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
+                    <button
+                      type="button"
+                      className={modeBtnClass("preview")}
+                      onClick={() => setMode("preview")}
+                    >
+                      <Eye /> Preview
+                    </button>
+                  </div>
                 )}
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                title={
-                  isRefreshing
-                    ? "Refreshing…"
-                    : "Refresh notes list and open tabs"
-                }
-                aria-label="Refresh notes"
-              >
-                <RefreshCw className={cn(isRefreshing && "animate-spin")} />{" "}
-                Refresh
-              </button>
+              </div>
+
+              {/* Balance spacer so the view-mode group stays visually centered */}
+              <div className="w-9 shrink-0" aria-hidden />
             </div>
           </PageHeader>
+
+          <PageHeaderRightPortal>
+            <TapTargetButtonGroup>
+              {activeTabId && (
+                <>
+                  <HistoryTapButton
+                    variant="group"
+                    onClick={() => setShowHistory((v) => !v)}
+                    ariaLabel="Versions"
+                    tooltip="Version history"
+                    className={showHistory ? "text-primary" : undefined}
+                  />
+                  <NoteCleanupButton noteId={activeTabId} asTapGroup />
+                </>
+              )}
+              {isRefreshing ? (
+                <LoadingTapButton
+                  variant="group"
+                  disabled
+                  ariaLabel="Refreshing…"
+                />
+              ) : (
+                <RetryTapButton
+                  variant="group"
+                  onClick={handleRefresh}
+                  ariaLabel="Refresh notes"
+                  tooltip="Refresh notes list and open tabs"
+                />
+              )}
+            </TapTargetButtonGroup>
+          </PageHeaderRightPortal>
 
           {/* Layer 4/5: collapsible + resizable sidebar | main editor column.
               react-resizable-panels v4 owns the size; cookie persists the split

@@ -36,8 +36,7 @@ import {
 } from "lucide-react";
 import AiModelForm from "./AiModelForm";
 import JsonFieldEditor from "./JsonFieldEditor";
-import ControlsEditor from "./ControlsEditor";
-import ConstraintsEditor from "./ConstraintsEditor";
+import ModelRulesEditor from "./ModelRulesEditor";
 import ModelUsageAudit from "./ModelUsageAudit";
 import { aiModelService } from "../service";
 import type {
@@ -45,8 +44,6 @@ import type {
   AiModelFormData,
   AiOffering,
   AiProvider,
-  ControlsSchema,
-  ModelConstraint,
   ProviderModelEntry,
 } from "../types";
 
@@ -523,10 +520,16 @@ const AI_MODEL_COLUMNS = new Set([
   "is_primary",
   "is_premium",
   "capabilities",
-  "controls",
-  "constraints",
+  // NOTE: `controls` / `constraints` are deliberately ABSENT — they resolve
+  // from ai.api.rules ⊕ ai.offering.override (see ModelRulesEditor) and the
+  // legacy model_definition columns drop in Phase C. Raw-JSON pastes that
+  // still carry them are stripped.
   "mid_fallback_id",
   "guest_fallback_id",
+  "cost_rating",
+  "speed_rating",
+  "retry_fallback_id",
+  "retry_max_attempts",
 ]);
 
 /** Strip any keys not in AI_MODEL_COLUMNS and return { cleaned, unknownKeys } */
@@ -845,14 +848,6 @@ export default function AiModelDetailPanel({
     isNew ? EMPTY_FORM : model ? rowToFormData(model) : EMPTY_FORM,
   );
 
-  // Pending edits from JSON-field tabs (controls, constraints, endpoints, capabilities)
-  const [pendingControls, setPendingControls] = useState<ControlsSchema | null>(
-    null,
-  );
-  const [pendingConstraints, setPendingConstraints] = useState<
-    ModelConstraint[] | null
-  >(null);
-
   // Raw JSON tab state
   const buildRawJson = useCallback(
     () => JSON.stringify(model, null, 2),
@@ -878,18 +873,12 @@ export default function AiModelDetailPanel({
     Object.keys({ ...formData, ...baseline }) as Array<keyof AiModelFormData>
   ).some((k) => JSON.stringify(formData[k]) !== JSON.stringify(baseline[k]));
 
-  const isDirty =
-    formIsDirty ||
-    pendingControls !== null ||
-    pendingConstraints !== null ||
-    rawJsonDirty;
+  const isDirty = formIsDirty || rawJsonDirty;
 
   useEffect(() => {
     const base = isNew ? EMPTY_FORM : model ? rowToFormData(model) : EMPTY_FORM;
     setFormData(base);
     setBaseline(base);
-    setPendingControls(null);
-    setPendingConstraints(null);
     setRawJsonText(model ? JSON.stringify(model, null, 2) : "{}");
     setRawJsonError(null);
     setSavedFlash(false);

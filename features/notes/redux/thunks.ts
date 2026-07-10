@@ -336,8 +336,7 @@ export const createNewNote = createAsyncThunk<
   const folderName = input.folder_name ?? "Draft";
 
   // Resolve folder_id from note_folders table
-  const folderId =
-    input.folder_id ?? (await resolveFolderId(folderName));
+  const folderId = input.folder_id ?? (await resolveFolderId(folderName));
 
   const { data, error } = await supabase
     .schema("workbench")
@@ -635,6 +634,35 @@ export const restoreNote = createAsyncThunk<void, string>(
     if (data) {
       dispatch(upsertNoteFromServer({ note: data, fetchStatus: "full" }));
     }
+  },
+);
+
+/**
+ * Permanently delete one soft-deleted note and drop it from the store.
+ */
+export const permanentlyDeleteNoteThunk = createAsyncThunk<void, string>(
+  "notes/permanentlyDeleteNote",
+  async (noteId, { dispatch }) => {
+    const { permanentlyDeleteNote } = await import("../service/notesService");
+    await permanentlyDeleteNote(noteId);
+    dispatch(removeNote(noteId));
+  },
+);
+
+/**
+ * Empty the trash — hard-delete every soft-deleted note for the current user.
+ */
+export const emptyTrashThunk = createAsyncThunk<number, void>(
+  "notes/emptyTrash",
+  async (_, { dispatch, getState }) => {
+    const { emptyTrash } = await import("../service/notesService");
+    const count = await emptyTrash();
+    if (count === 0) return 0;
+    const notes = (getState() as RootState).notes?.notes ?? {};
+    for (const note of Object.values(notes)) {
+      if (note.deleted_at) dispatch(removeNote(note.id));
+    }
+    return count;
   },
 );
 

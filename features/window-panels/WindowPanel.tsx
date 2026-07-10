@@ -1233,8 +1233,19 @@ export function WindowPanel({
           ? { width: "max-content", height: "auto" }
           : { width: rect.width, height: rect.height }),
         zIndex,
-        minWidth: isMinimized ? 0 : (minWidth ?? 180),
-        minHeight: isMinimized ? 0 : (minHeight ?? 80),
+        // Cap CSS mins to the current rect so arrange/snap geometry wins.
+        // Uncapped minWidth (e.g. 640) was overriding tile widths and stacking
+        // every left-edge window on top of each other.
+        minWidth: isMinimized
+          ? 0
+          : fitContent
+            ? (minWidth ?? 180)
+            : Math.min(minWidth ?? 180, rect.width),
+        minHeight: isMinimized
+          ? 0
+          : fitContent
+            ? (minHeight ?? 80)
+            : Math.min(minHeight ?? 80, rect.height),
         visibility: windowsHidden ? "hidden" : undefined,
       }}
       onPointerDown={onFocus}

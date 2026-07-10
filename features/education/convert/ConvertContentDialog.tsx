@@ -1,11 +1,14 @@
-// features/education/notes/ConvertNoteDialog.tsx
+// features/education/convert/ConvertContentDialog.tsx
 //
-// The one-click "turn this note into a study artifact" surface (P4). Drives the
-// CANONICAL converter contract (useContentConverter → convertContent) — never a
-// bespoke generation path — for the whole note OR a highlighted passage, links a
-// note↔artifact `source` lineage edge, and shows the result inline with its P0
-// trust confidence. Targets light up automatically as owning projects register
-// their generators (isTargetAvailable).
+// THE one-click "turn this into a study artifact" surface — the single dialog
+// primitive for every convert SOURCE (a note, a flashcard deck, an assessment, a
+// passage). Sources hand it their serialized text + an origin entity token; the
+// dialog drives the CANONICAL converter contract (useContentConverter →
+// convertContent) — never a bespoke generation path — and each generated artifact
+// links a `source` lineage edge back to the origin (written by the generator via
+// recordSourceLineage, because the source ref carries the origin entity token).
+// Targets light up automatically as owning projects register generators
+// (isTargetAvailable).
 //
 // Metering uses the CANONICAL entitlement primitives (features/entitlements):
 // useEntitlementGuard (check-before-spend + Paywall) + EntitlementMeter (visible
@@ -20,6 +23,7 @@ import { toast } from "sonner";
 import {
   Layers,
   ListChecks,
+  FileCheck2,
   FileText,
   Network,
   Headphones,
@@ -37,18 +41,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useContentConverter } from "@/features/education/convert/useContentConverter";
-import { isTargetAvailable } from "@/features/education/convert/registry";
-import type {
-  ConvertResult,
-  ConvertSource,
-  TargetKind,
-} from "@/features/education/convert/types";
+import { useContentConverter } from "./useContentConverter";
+import { isTargetAvailable } from "./registry";
+import type { ConvertResult, ConvertSource, SourceRef, TargetKind } from "./types";
 import type { Capability } from "@/features/entitlements/registry";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
-import { linkArtifactToNote } from "./service";
 
 interface TargetMeta {
   kind: TargetKind;
@@ -58,7 +57,7 @@ interface TargetMeta {
   capability: Capability;
 }
 
-// Presentation for each note-convert target. Availability is read live from the
+// Presentation for each convert target. Availability is read live from the
 // converter registry (isTargetAvailable) — a target greys out as "coming soon"
 // until its owning project registers a generator, then lights up with no change.
 const TARGETS: TargetMeta[] = [
@@ -82,6 +81,13 @@ const TARGETS: TargetMeta[] = [
     blurb: "Auto-generated questions that grade on meaning",
     icon: ListChecks,
     capability: "education.quiz_generate",
+  },
+  {
+    kind: "practice_test",
+    label: "Practice test",
+    blurb: "A longer, timed exam-style test",
+    icon: FileCheck2,
+    capability: "education.practice_test_generate",
   },
   {
     kind: "summary",
@@ -112,52 +118,71 @@ type RowState =
   | { status: "done"; result: ConvertResult }
   | { status: "error"; message: string };
 
-export interface ConvertNoteDialogProps {
+/** The origin entity a conversion links back to (the lineage anchor). */
+export interface ConvertOrigin {
+  /** SourceRef kind ("note" | "deck" | "assessment" | …). */
+  kind: SourceRef["kind"];
+  /** Registered entity token the lineage edge points at ("note", "fc_set", "assessment"). */
+  entityType: string;
+  entityId: string;
+  title: string;
+}
+
+export interface ConvertContentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  noteId: string;
-  noteTitle: string;
-  noteContent: string;
+  /** The origin entity + its display title. Drives the lineage ref. */
+  origin: ConvertOrigin;
+  /** The serialized text of the whole origin, ready to convert. */
+  text: string;
   orgId?: string;
-  /** Text of the current in-editor selection, if any (enables passage convert). */
+  /** Optional in-editor selection, if any — enables a "selected passage" toggle. */
   selectionText?: string;
+  /** Targets to hide (e.g. a deck source hides "deck"). */
+  excludeKinds?: TargetKind[];
   /** Called after a successful conversion so the caller can refresh lineage chips. */
   onConverted?: () => void;
 }
 
-export function ConvertNoteDialog({
+export function ConvertContentDialog({
   open,
   onOpenChange,
-  noteId,
-  noteTitle,
-  noteContent,
+  origin,
+  text,
   orgId,
   selectionText,
+  excludeKinds,
   onConverted,
-}: ConvertNoteDialogProps) {
+}: ConvertContentDialogProps) {
   const router = useRouter();
   const { convert } = useContentConverter();
   const hasSelection = Boolean(selectionText && selectionText.trim().length > 20);
   const [useSelection, setUseSelection] = useState(false);
   const [rows, setRows] = useState<Record<string, RowState>>({});
 
-  const sourceText = useSelection && selectionText ? selectionText : noteContent;
+  const sourceText = useSelection && selectionText ? selectionText : text;
   const canConvert = sourceText.trim().length > 0;
+  const targets = TARGETS.filter((t) => !excludeKinds?.includes(t.kind));
 
   const runConvert = async (kind: TargetKind) => {
     if (!canConvert) {
-      toast.error("This note has no content to convert yet.");
+      toast.error("There's no content to convert yet.");
       return;
     }
     setRows((r) => ({ ...r, [kind]: { status: "running" } }));
     const source: ConvertSource = {
       text: sourceText,
-      title: noteTitle || "Note",
-      ref: { kind: "note", entityType: "note", entityId: noteId },
+      title: origin.title || "Study material",
+      // The origin entity token — the generator's recordSourceLineage links the
+      // artifact back to it (artifact --source--> origin).
+      ref: {
+        kind: origin.kind,
+        entityType: origin.entityType,
+        entityId: origin.entityId,
+      },
     };
     try {
       const result = await convert({ source, targetKind: kind });
-      await linkArtifactToNote(result, noteId, orgId);
       setRows((r) => ({ ...r, [kind]: { status: "done", result } }));
       onConverted?.();
       toast.success(`Created "${result.title}"`, {
@@ -176,11 +201,11 @@ export function ConvertNoteDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            Turn this note into study material
+            Turn this into study material
           </DialogTitle>
           <DialogDescription>
-            Every artifact is grounded in this note and links back to it — nothing
-            is siloed.
+            Every artifact is grounded in this content and links back to it —
+            nothing is siloed.
           </DialogDescription>
         </DialogHeader>
 
@@ -196,7 +221,7 @@ export function ConvertNoteDialog({
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Whole note
+              Whole source
             </button>
             <button
               type="button"
@@ -214,7 +239,7 @@ export function ConvertNoteDialog({
         )}
 
         <div className="flex flex-col gap-2">
-          {TARGETS.map((t) => (
+          {targets.map((t) => (
             <TargetRow
               key={t.kind}
               meta={t}

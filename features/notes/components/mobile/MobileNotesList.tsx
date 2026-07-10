@@ -177,123 +177,139 @@ export default function MobileNotesList({
           <div className="flex items-center justify-center h-32">
             <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : filteredNotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground">
-            <p className="text-sm">
-              {searchQuery || isFiltered
-                ? "No notes match your filters"
-                : "No notes yet — tap + to create one"}
-            </p>
-          </div>
         ) : (
-          <div className="divide-y divide-border/50">
-            {filteredNotes.map((note) => (
-              <button
-                key={note.id}
-                onClick={() => onNoteSelect(note)}
-                className="w-full flex items-start gap-3 px-4 py-3 text-left active:bg-muted/40 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-foreground mb-0.5 truncate">
-                    {note.label || "Untitled Note"}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2 leading-relaxed">
-                    {getPreviewText(note.content)}
-                  </p>
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Clock size={10} />
-                      <span>{formatDate(note.updated_at)}</span>
-                    </div>
-                    {filters.folder === "all" && note.folder_name && (
-                      <div className="flex items-center gap-1">
-                        <FolderOpen size={10} />
-                        <span>{note.folder_name}</span>
-                      </div>
+          <>
+            {/* Shared with me — top virtual section (mirrors desktop sidebar) */}
+            {!filters.sharedOnly && sharedNotes.length > 0 && (
+              <div className="border-b border-border/40">
+                <button
+                  type="button"
+                  onClick={() => setSharedOpen((v) => !v)}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-xs font-medium text-muted-foreground transition-colors active:bg-muted/40"
+                >
+                  <Users
+                    className="text-indigo-500 dark:text-indigo-400"
+                    size={12}
+                  />
+                  <span>Shared with me</span>
+                  <span className="rounded-full bg-muted px-1.5 text-[10px]">
+                    {sharedNotes.length}
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    className={cn(
+                      "ml-auto transition-transform",
+                      sharedOpen && "rotate-180",
                     )}
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Tag size={10} />
-                        <span>
-                          {note.tags.slice(0, 2).join(", ")}
-                          {note.tags.length > 2
-                            ? ` +${note.tags.length - 2}`
-                            : ""}
-                        </span>
-                      </div>
-                    )}
+                  />
+                </button>
+                {sharedOpen && (
+                  <div className="divide-y divide-border/50">
+                    {sharedNotes.map((note) => {
+                      const level =
+                        note._sharedMeta?.permissionLevel ?? "viewer";
+                      const canEdit =
+                        level === "editor" || level === "admin";
+                      return (
+                        <button
+                          key={note.id}
+                          type="button"
+                          onClick={() => onNoteSelect(note)}
+                          className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors active:bg-muted/40"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <h3 className="mb-0.5 truncate text-sm font-semibold text-foreground">
+                              {note.label || "Untitled Note"}
+                            </h3>
+                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Clock size={10} />
+                                <span>{formatDate(note.updated_at)}</span>
+                              </div>
+                              {note._sharedMeta?.ownerEmail && (
+                                <span className="max-w-[140px] truncate">
+                                  {note._sharedMeta.ownerEmail}
+                                </span>
+                              )}
+                              <div className="ml-auto flex shrink-0 items-center gap-1">
+                                {canEdit ? (
+                                  <>
+                                    <Pencil
+                                      size={10}
+                                      className="text-emerald-500"
+                                    />
+                                    <span>Can edit</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye size={10} className="text-sky-500" />
+                                    <span>View only</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-        {/* ── Shared with me ─────────────────────────────────────────── */}
-        {!filters.sharedOnly && sharedNotes.length > 0 && (
-          <div className="border-t border-border/40 mt-2">
-            <button
-              onClick={() => setSharedOpen((v) => !v)}
-              className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium text-muted-foreground active:bg-muted/40 transition-colors"
-            >
-              <Users size={12} />
-              <span>Shared with me</span>
-              <span className="text-[10px] bg-muted px-1.5 rounded-full">
-                {sharedNotes.length}
-              </span>
-              <ChevronDown
-                size={12}
-                className={cn(
-                  "ml-auto transition-transform",
-                  sharedOpen && "rotate-180",
                 )}
-              />
-            </button>
-            {sharedOpen && (
-              <div className="divide-y divide-border/50">
-                {sharedNotes.map((note) => {
-                  const level = note._sharedMeta?.permissionLevel ?? "viewer";
-                  const canEdit = level === "editor" || level === "admin";
-                  return (
-                    <button
-                      key={note.id}
-                      onClick={() => onNoteSelect(note)}
-                      className="w-full flex items-start gap-3 px-4 py-3 text-left active:bg-muted/40 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-foreground mb-0.5 truncate">
-                          {note.label || "Untitled Note"}
-                        </h3>
-                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock size={10} />
-                            <span>{formatDate(note.updated_at)}</span>
-                          </div>
-                          {note._sharedMeta?.ownerEmail && (
-                            <span className="truncate max-w-[140px]">
-                              {note._sharedMeta.ownerEmail}
-                            </span>
-                          )}
-                          <div className="flex items-center gap-1 ml-auto shrink-0">
-                            {canEdit ? (
-                              <>
-                                <Pencil size={10} />
-                                <span>Can edit</span>
-                              </>
-                            ) : (
-                              <>
-                                <Eye size={10} />
-                                <span>View only</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
               </div>
             )}
-          </div>
+
+            {filteredNotes.length === 0 ? (
+              <div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
+                <p className="text-sm">
+                  {searchQuery || isFiltered
+                    ? "No notes match your filters"
+                    : "No notes yet — tap + to create one"}
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/50">
+                {filteredNotes.map((note) => (
+                  <button
+                    key={note.id}
+                    type="button"
+                    onClick={() => onNoteSelect(note)}
+                    className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors active:bg-muted/40"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <h3 className="mb-0.5 truncate text-sm font-semibold text-foreground">
+                        {note.label || "Untitled Note"}
+                      </h3>
+                      <p className="mb-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        {getPreviewText(note.content)}
+                      </p>
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock size={10} />
+                          <span>{formatDate(note.updated_at)}</span>
+                        </div>
+                        {filters.folder === "all" && note.folder_name && (
+                          <div className="flex items-center gap-1">
+                            <FolderOpen size={10} />
+                            <span>{note.folder_name}</span>
+                          </div>
+                        )}
+                        {note.tags && note.tags.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Tag size={10} />
+                            <span>
+                              {note.tags.slice(0, 2).join(", ")}
+                              {note.tags.length > 2
+                                ? ` +${note.tags.length - 2}`
+                                : ""}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* Spacer so last item clears the floating action bar */}

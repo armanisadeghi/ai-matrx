@@ -17,6 +17,7 @@ import {
   Rows3,
   Crown,
   ShieldAlert,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -42,6 +43,19 @@ import {
 } from "@/features/window-panels/tools-grid/menuPrimitives";
 import ToolsGrid from "@/features/window-panels/tools-grid/ToolsGrid";
 import { getStaticEntryBySlug } from "@/features/window-panels/registry/windowRegistryMetadata";
+
+/** True when a windowed rect covers the sidebar Windows trigger. */
+function rectCoversTrigger(
+  rect: { x: number; y: number; width: number; height: number },
+  trigger: DOMRect,
+): boolean {
+  return (
+    rect.x < trigger.right &&
+    rect.x + rect.width > trigger.left &&
+    rect.y < trigger.bottom &&
+    rect.y + rect.height > trigger.top
+  );
+}
 
 // ─── State dot colours ────────────────────────────────────────────────────────
 
@@ -79,9 +93,13 @@ export default function SidebarWindowToggle() {
   );
   const [pos, setPos] = useState({ x: 0, bottom: 0, maxHeight: 0 });
   const [mounted, setMounted] = useState(false);
+  // Left-stack layouts cover the sidebar Windows icon — surface a floating
+  // rescue control so Layout controls stay reachable.
+  const [triggerCovered, setTriggerCovered] = useState(false);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const floatingRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -100,10 +118,38 @@ export default function SidebarWindowToggle() {
     });
   }, []);
 
+  const recomputeTriggerCovered = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) {
+      setTriggerCovered(false);
+      return;
+    }
+    const trigger = el.getBoundingClientRect();
+    const covered = windows.some(
+      (w) =>
+        w.state === "windowed" &&
+        w.popoutMode === null &&
+        rectCoversTrigger(w.windowed, trigger),
+    );
+    setTriggerCovered(covered);
+  }, [windows]);
+
+  useEffect(() => {
+    recomputeTriggerCovered();
+    window.addEventListener("resize", recomputeTriggerCovered);
+    return () => window.removeEventListener("resize", recomputeTriggerCovered);
+  }, [recomputeTriggerCovered]);
+
   // Measure trigger and open/close
   const handleToggle = useCallback(() => {
     measure();
     setOpen((v) => !v);
+  }, [measure]);
+
+  const openLayoutControls = useCallback(() => {
+    measure();
+    setActiveTab("layout");
+    setOpen(true);
   }, [measure]);
 
   // Re-measure on viewport resize while menu is open so the cap stays accurate.
@@ -118,9 +164,11 @@ export default function SidebarWindowToggle() {
   useEffect(() => {
     if (!open) return undefined;
     const onDown = (e: PointerEvent) => {
+      const target = e.target as Node;
       if (
-        triggerRef.current?.contains(e.target as Node) ||
-        menuRef.current?.contains(e.target as Node)
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target) ||
+        floatingRef.current?.contains(target)
       )
         return;
       setOpen(false);
@@ -174,6 +222,32 @@ export default function SidebarWindowToggle() {
           )}
         </span>
       </button>
+
+      {/* Floating rescue — left-stack layouts cover the sidebar Windows icon.
+          Sits above window z-indexes (BASE_Z=1000+) so Layout stays reachable. */}
+      {mounted &&
+        triggerCovered &&
+        !open &&
+        createPortal(
+          <button
+            ref={floatingRef}
+            type="button"
+            onClick={openLayoutControls}
+            className={cn(
+              "fixed z-[10001] flex items-center justify-center",
+              "h-9 w-9 rounded-full",
+              "bg-card/95 backdrop-blur-md border border-border shadow-lg",
+              "text-foreground hover:bg-accent hover:text-foreground",
+              "transition-colors",
+            )}
+            style={{ left: 10, bottom: 10 }}
+            aria-label="Open window layout controls"
+            title="Window layout"
+          >
+            <LayoutGrid size={16} strokeWidth={2} />
+          </button>,
+          document.body,
+        )}
 
       {/* ── Menu portal — escapes sidebar overflow/transform ─────────────── */}
       {mounted &&

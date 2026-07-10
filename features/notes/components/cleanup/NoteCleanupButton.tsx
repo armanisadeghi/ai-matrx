@@ -13,6 +13,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import { TapTargetButtonForGroup } from "@/components/icons/TapTargetButton";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { cleanContent } from "@/lib/content-cleanup/clean";
@@ -32,6 +33,7 @@ export function NoteCleanupButton({
   triggerActiveClassName,
   showLabel = false,
   label = "Clean up",
+  asTapGroup = false,
 }: {
   noteId: string;
   className?: string;
@@ -41,6 +43,8 @@ export function NoteCleanupButton({
   triggerActiveClassName?: string;
   showLabel?: boolean;
   label?: string;
+  /** Render the trigger as a TapTargetButtonForGroup (header action groups). */
+  asTapGroup?: boolean;
 }) {
   const { content, label: noteLabel, apply } = useNoteCleanup(noteId);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -74,15 +78,17 @@ export function NoteCleanupButton({
     });
   };
 
-  const onResetDefaults = () =>
-    setEnabled(new Set(DEFAULT_ENABLED_OPERATIONS));
+  const onResetDefaults = () => setEnabled(new Set(DEFAULT_ENABLED_OPERATIONS));
 
   const onRun = () => {
     if (!preview || !preview.changed) {
       toast.info("Nothing to clean up");
       return;
     }
-    setRun((prev) => ({ report: preview as CleanupReport, id: (prev?.id ?? 0) + 1 }));
+    setRun((prev) => ({
+      report: preview as CleanupReport,
+      id: (prev?.id ?? 0) + 1,
+    }));
     setPopoverOpen(false);
     setReviewOpen(true);
   };
@@ -98,26 +104,40 @@ export function NoteCleanupButton({
     <>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            title="Clean up content"
-            disabled={!hasContent}
-            className={cn(
-              triggerClassName ??
-                cn(
-                  "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
-                  popoverOpen
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                ),
-              triggerClassName && popoverOpen && triggerActiveClassName,
-              "disabled:cursor-not-allowed disabled:opacity-40",
-              className,
-            )}
-          >
-            <Eraser />
-            {showLabel && <span>{label}</span>}
-          </button>
+          {asTapGroup ? (
+            <TapTargetButtonForGroup
+              ariaLabel="Clean up content"
+              tooltip="Clean up content"
+              disabled={!hasContent}
+              className={cn(popoverOpen && "text-primary", className)}
+            >
+              {/* lucide: eraser */}
+              <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+              <path d="M22 21H7" />
+              <path d="m5 11 9 9" />
+            </TapTargetButtonForGroup>
+          ) : (
+            <button
+              type="button"
+              title="Clean up content"
+              disabled={!hasContent}
+              className={cn(
+                triggerClassName ??
+                  cn(
+                    "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+                    popoverOpen
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                  ),
+                triggerClassName && popoverOpen && triggerActiveClassName,
+                "disabled:cursor-not-allowed disabled:opacity-40",
+                className,
+              )}
+            >
+              <Eraser />
+              {showLabel && <span>{label}</span>}
+            </button>
+          )}
         </PopoverTrigger>
         <PopoverContent align="end" className="w-auto p-0">
           <CleanupOptionsPopover

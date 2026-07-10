@@ -11,16 +11,19 @@
 //
 // Reuses the SAME grounded from-source agent (ASSESSMENT_AGENTS.generateQuizFromSource)
 // and the SAME payload coercion (coerceGeneratedQuiz) as the interactive create
-// surface — no forked generation path. Provenance is single-valued (source_kind/
-// source_id columns, the study_media precedent), not a polymorphic edge — so no
-// association token is minted here. Every item carries its TrustEnvelope through
-// unchanged; document-anchored sources get openable citations backfilled.
+// surface — no forked generation path. Provenance is recorded BOTH ways, like the
+// other converter generators: the flat source_kind/source_id columns (fast filter
+// + learning-gain matching) AND the canonical `source` association edge to the
+// origin (recordSourceLineage — the polymorphic lineage every kit/convert surface
+// reads). Every item carries its TrustEnvelope through unchanged; document-anchored
+// sources get openable citations backfilled.
 
 import { assessmentService } from "./assessmentService";
 import { ASSESSMENT_AGENTS } from "./agents";
 import { coerceGeneratedQuiz } from "./useGenerateQuiz";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { runAgentExtraction } from "@/features/education/convert/runAgentExtraction";
+import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import type {
   ConvertContext,
   ConvertGenerator,
@@ -129,7 +132,7 @@ function makeRun(kind: "quiz" | "practice_test") {
     }
 
     const assessmentId = created.data.assessment.id;
-    return {
+    const result: ConvertResult = {
       targetKind: kind,
       artifactId: assessmentId,
       resourceType: "assessment",
@@ -140,6 +143,13 @@ function makeRun(kind: "quiz" | "practice_test") {
       trust: items[0]?.trust ?? null,
       detail: `${items.length} question${items.length === 1 ? "" : "s"}`,
     };
+
+    // Canonical `source` lineage edge → the origin (ingest anchor file OR the
+    // source entity for an entity-sourced convert). Parity with every other
+    // generator; the flat source columns above stay for filter/learning-gain.
+    await recordSourceLineage(result, source, ctx.orgId);
+
+    return result;
   };
 }
 

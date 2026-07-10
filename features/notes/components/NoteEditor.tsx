@@ -783,6 +783,8 @@ export function NoteEditor({
               onKeyUp={syncSelectionFromTextarea}
               onMouseUp={syncSelectionFromTextarea}
               placeholder="Start typing your note..."
+              enableTextStats={false}
+              defaultShowTextStatsBar={false}
               wrapperClassName="absolute inset-0 w-full h-full"
               className="w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3 pb-[50dvh] shadow-none"
             />

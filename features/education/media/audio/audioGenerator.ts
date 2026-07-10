@@ -16,10 +16,10 @@
 
 import { studioRunsService } from "@/features/podcasts/studio/runs/service";
 import { stashPendingStart } from "@/features/podcasts/studio/runs/pendingStart";
-import { associationsService } from "@/features/scopes/service/associationsService";
 import { studyMediaService } from "../service";
 import { buildAudioRequest } from "./audioBrief";
 import { buildSourceTrust } from "@/features/education/convert/sourceTrust";
+import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import type {
   ConvertContext,
   ConvertGenerator,
@@ -79,20 +79,7 @@ async function run(
   // cold open resumes from the durable run instead (agent_run recovery).
   stashPendingStart(runRow.id, podcastRequest);
 
-  // Lineage: link the artifact → the ingest anchor file (kit provenance).
-  if (source.ref?.fileId) {
-    const edge = await associationsService.add({
-      sourceType: "study_media",
-      sourceId: id,
-      targetType: "file",
-      targetId: source.ref.fileId,
-      role: "source",
-      orgId: ctx.orgId,
-    });
-    if (!edge.ok) console.error("[convert/audio] source edge failed:", edge);
-  }
-
-  return {
+  const result: ConvertResult = {
     targetKind: "audio",
     artifactId: id,
     resourceType: "study_media",
@@ -101,6 +88,11 @@ async function run(
     trust,
     detail: "Audio overview",
   };
+
+  // Lineage: link the artifact → its origin (ingest anchor file or entity source).
+  await recordSourceLineage(result, source, ctx.orgId);
+
+  return result;
 }
 
 export const audioStudyGenerator: ConvertGenerator = {

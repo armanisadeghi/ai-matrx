@@ -12,11 +12,11 @@
 // carry the trust envelope through unchanged.
 
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { associationsService } from "@/features/scopes/service/associationsService";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import { NOTES_AGENTS } from "./agents";
 import { runAgentExtraction } from "@/features/education/convert/runAgentExtraction";
+import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import type {
   ConvertContext,
   ConvertGenerator,
@@ -102,22 +102,7 @@ async function run(
     organization_id: ctx.orgId ?? null,
   });
 
-  // Lineage: link the note → the ingest anchor file (kit provenance). Note↔note
-  // and note↔source-entity edges (e.g. note→transcript, note→note) are added by
-  // the P4 one-click convert UI, which knows the origin entity token.
-  if (source.ref?.fileId) {
-    const edge = await associationsService.add({
-      sourceType: "note",
-      sourceId: note.id,
-      targetType: "file",
-      targetId: source.ref.fileId,
-      role: "source",
-      orgId: ctx.orgId,
-    });
-    if (!edge.ok) console.error("[convert/notes] source edge failed:", edge);
-  }
-
-  return {
+  const result: ConvertResult = {
     targetKind: "notes",
     artifactId: note.id,
     resourceType: "note",
@@ -128,6 +113,12 @@ async function run(
       ? `${keyTerms.length} key term${keyTerms.length === 1 ? "" : "s"}`
       : "Notes",
   };
+
+  // Lineage: link the note → its origin (ingest anchor file for the kit, or the
+  // source entity — e.g. note→note, transcript→note — for a one-click convert).
+  await recordSourceLineage(result, source, ctx.orgId);
+
+  return result;
 }
 
 export const notesGenerator: ConvertGenerator = {

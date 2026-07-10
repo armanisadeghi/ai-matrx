@@ -21,6 +21,7 @@ import {
   removeInstanceTab,
   markNoteSaved,
   markTabInteraction,
+  setNoteEditorMode,
 } from "../redux/slice";
 import { getReduxSyncDelay } from "../redux/notes.types";
 import {
@@ -43,9 +44,13 @@ import {
 } from "../redux/thunks";
 import { useNotesInstanceId } from "../context/NotesInstanceContext";
 import { useNoteAccess } from "../hooks/useNoteAccess";
+import {
+  normalizeNoteEditorMode,
+  usePreferredDefaultEditorMode,
+} from "../hooks/usePreferredDefaultEditorMode";
 import { analyzeDiff } from "../utils/diffAnalysis";
 import { supabase } from "@/utils/supabase/client";
-import { NoteEditorCore, type EditorMode } from "./NoteEditorCore";
+import { NoteEditorCore } from "./NoteEditorCore";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
@@ -85,11 +90,16 @@ interface NoteContentEditorProps {
    * (e.g. the Notes page header) instead of inline. Omit for inline actions.
    */
   actionsSurfaceId?: string;
+  /**
+   * Height-bounded hosts (Notes window, tiles). Drops full-page scroll padding.
+   */
+  embedded?: boolean;
 }
 
 export function NoteContentEditor({
   noteId,
   actionsSurfaceId,
+  embedded = false,
 }: NoteContentEditorProps) {
   const dispatch = useAppDispatch();
   const instanceId = useNotesInstanceId();
@@ -99,8 +109,18 @@ export function NoteContentEditor({
 
   // ── Redux selectors (cached — stable references) ──────────────────
   const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
-  const editorMode = (useAppSelector(selectNoteEditorMode(noteId)) ??
-    "plain") as EditorMode;
+  const preferredDefaultMode = usePreferredDefaultEditorMode();
+  const savedEditorMode = useAppSelector(selectNoteEditorMode(noteId));
+  const editorMode = normalizeNoteEditorMode(
+    savedEditorMode,
+    preferredDefaultMode,
+  );
+
+  // Persist the viewport-preferred default once so resize doesn't flip mid-edit.
+  useEffect(() => {
+    if (!noteExists || savedEditorMode) return;
+    dispatch(setNoteEditorMode({ id: noteId, mode: preferredDefaultMode }));
+  }, [dispatch, noteId, noteExists, savedEditorMode, preferredDefaultMode]);
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
   const allFolders = useAppSelector(selectAllFolders);
   const currentFolder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
@@ -432,9 +452,9 @@ export function NoteContentEditor({
     });
     if (!ok) return;
     try {
-      const { permanentlyDeleteNote } =
-        await import("@/features/notes/service/notesService");
-      await permanentlyDeleteNote(noteId);
+      const { permanentlyDeleteNoteThunk } =
+        await import("@/features/notes/redux/thunks");
+      await dispatch(permanentlyDeleteNoteThunk(noteId)).unwrap();
       dispatch(markTabInteraction({ instanceId }));
       dispatch(removeInstanceTab({ instanceId, noteId }));
       toast.success("Note permanently deleted");
@@ -635,7 +655,9 @@ export function NoteContentEditor({
             resetKey={`${noteId}:${resetGen}`}
             noteId={noteId}
             actionsSurfaceId={actionsSurfaceId}
-            largeScrollbar
+            largeScrollbar={!embedded}
+            embedded={embedded}
+            enableTextStats={false}
             findOverlay={
               editorMode === "plain" || editorMode === "split" ? (
                 <>

@@ -106,6 +106,13 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
 - **Consume the primitives, never hand-roll.** `EntitlementMeter` for the meter,
   `useEntitlementGuard` for the pre-spend check + paywall. A hand-rolled `remaining` line or a
   `toast.error` on a cap-hit is a defect (reuse-first doctrine).
+- **Gate capabilities (`period: null`) have no meter and no snapshot limit.** The snapshot/selector
+  plumb only metered *windows*, so a gate always resolves `limit: null` and `EntitlementMeter`
+  renders nothing for it (correct — a gate has no "X of Y left"). A gate consumer shows its limit
+  inline from the hook's `tier` + its own feature default (e.g. `HostSetupImpl` renders "Up to N
+  players · <tier>"). That inline render is NOT a hand-rolled duplicate of `EntitlementMeter` —
+  it's the only surface for a gate limit until a gate-limit primitive is warranted (only one gate
+  capability exists today; don't build a speculative abstraction for it).
 - **Billing tables are protected resources** — RLS deny-by-default; writes only via webhooks /
   `SECURITY DEFINER` RPCs. (Backend, landing next.)
 
@@ -146,6 +153,16 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
       capability (never flip without both the limit row and the re-check).
 - [ ] **Blocked on Arman:** trial pre-renewal reminder email (wire the platform email path).
 - [ ] **FYI-with-veto (Arman):** the free-tier matrix numbers get one look before enforcement flips.
+- [ ] **Needs Arman sign-off — `/pricing/pledge` final wording.** Two of the six pledge bullets are
+      forward COMMITMENTS, not live capabilities, and are now marked "Before paid launch" on the page
+      rather than claimed present-tense (a trust page over-promising is the inverted dark pattern P8
+      kills). Arman owns the final copy + the underlying product/legal calls:
+      1. **Pre-charge reminder email** — no `invoice.upcoming` handler / email dispatch exists (email
+         path blocked on Arman, above). Ship the reminder before flipping paid billing on.
+      2. **Refunds & proration** — no refund policy page anywhere and no in-app plan-change path yet
+         (checkout mints a NEW subscription so proration is N/A; plan-switch proration is a Stripe
+         *portal dashboard* config, not a `proration_behavior` code param — nothing honest to wire in
+         code today). Refund policy = product/legal (Arman); post the written terms before paid launch.
 
 ## Capability consumers & ownership
 
@@ -164,7 +181,7 @@ consumer is not a bug — it's awaiting the feature that spends it — but it mu
 | `education.quiz_generate` | `AssessmentCreate` (quiz) | this feature |
 | `education.practice_test_generate` | `AssessmentCreate` (practice test) | this feature |
 | `education.tutor_message` | `EducationTutorClient` | this feature |
-| `education.game_room_size` | **NO consumer** — `HostSetupImpl` (engage) still hand-checks; wire to `useEntitlement` when P10 lands | engage/game agent |
+| `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting | engage/game agent |
 
 ## Change Log
 
@@ -179,3 +196,9 @@ consumer is not a bug — it's awaiting the feature that spends it — but it mu
   tutor now consume `EntitlementMeter` + `useEntitlementGuard` (no more hand-rolled meters /
   `toast.error` cap-hits). F5: `/pricing` is education-first + DB-backed. Migration
   `billing_visible_limits_and_loud_unknown.sql`.
+- **2026-07-10** — Convergence-A gap closure: confirmed `education.game_room_size` is consumed by
+  `HostSetupImpl` (P10) via `useEntitlement` (consumer table updated); documented the gate-capability
+  display rule (gates have no snapshot limit / no meter — inline render from hook tier + feature
+  default is canonical). Reworded the two over-claiming `/pricing/pledge` bullets (pre-charge reminder,
+  refunds/proration) to honest "Before paid launch" commitments; final wording pending Arman sign-off
+  (roadmap). No code change to the entitlement contract.

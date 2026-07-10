@@ -52,11 +52,7 @@ const TuiEditorContent = dynamic(
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type EditorMode =
-  | "plain"
-  | "split"
-  | "preview"
-  | "wysiwyg"
-  | "markdown-split";
+  "plain" | "split" | "preview" | "wysiwyg" | "markdown-split";
 
 export interface NoteEditorCoreProps {
   /** Current note content (controlled) */
@@ -177,6 +173,12 @@ export interface NoteEditorCoreProps {
    * as the context menu. See `useNotesSurfaceScope`.
    */
   getApplicationScope?: () => ApplicationScope;
+  /**
+   * Pin ProTextarea's live stats bar under the textarea. Notes hosts own
+   * metrics in `NoteStatsFooter` — leave this false (default) so the editor
+   * body never grows a second footer that floats mid-pane.
+   */
+  enableTextStats?: boolean;
 }
 
 /**
@@ -212,6 +214,7 @@ export function NoteEditorCore({
   embedded = false,
   surfaceName,
   getApplicationScope,
+  enableTextStats = false,
 }: NoteEditorCoreProps) {
   // Full-page surfaces pad the bottom by 85dvh so the last line can scroll to
   // the middle; embedded/tile surfaces must NOT (it balloons content past the
@@ -320,6 +323,9 @@ export function NoteEditorCore({
               placeholder={placeholder}
               // readOnly, not disabled — viewers still select/copy/scroll.
               readOnly={readOnly}
+              // Stats live in NoteStatsFooter — never pin a bar inside the editor.
+              enableTextStats={enableTextStats}
+              defaultShowTextStatsBar={false}
               wrapperClassName="absolute inset-0 w-full h-full"
               className={cn(
                 "w-full h-full resize-none border-0 shadow-none",
@@ -381,9 +387,7 @@ export function NoteEditorCore({
           )}
           actionsSource={richSource}
           actionsVariant={
-            actionsSurfaceId
-              ? "remote"
-              : (previewActionsVariant ?? "icon-only")
+            actionsSurfaceId ? "remote" : (previewActionsVariant ?? "icon-only")
           }
           actionsSurfaceId={actionsSurfaceId}
         />

@@ -7,11 +7,11 @@
 // trust column, then link a `source` lineage edge to the ingest anchor file.
 
 import { studyMediaService } from "@/features/education/media/service";
-import { associationsService } from "@/features/scopes/service/associationsService";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import { CONVERT_AGENTS } from "../agents";
 import { runAgentExtraction } from "../runAgentExtraction";
+import { recordSourceLineage } from "../recordSourceLineage";
 import type {
   ConvertContext,
   ConvertGenerator,
@@ -93,19 +93,7 @@ async function run(
   }
   const id = media.data.id;
 
-  if (source.ref?.fileId) {
-    const edge = await associationsService.add({
-      sourceType: "study_media",
-      sourceId: id,
-      targetType: "file",
-      targetId: source.ref.fileId,
-      role: "source",
-      orgId: ctx.orgId,
-    });
-    if (!edge.ok) console.error("[convert/summary] source edge failed:", edge);
-  }
-
-  return {
+  const result: ConvertResult = {
     targetKind: "summary",
     artifactId: id,
     resourceType: "study_media",
@@ -116,6 +104,10 @@ async function run(
       ? `${keyPoints.length} key point${keyPoints.length === 1 ? "" : "s"}`
       : "Summary",
   };
+
+  await recordSourceLineage(result, source, ctx.orgId);
+
+  return result;
 }
 
 export const summaryGenerator: ConvertGenerator = {

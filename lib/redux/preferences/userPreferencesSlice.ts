@@ -18,6 +18,13 @@ import { MatrxRecordId } from "@/types/records";
 // ONCE in features/scopes/types.ts (`EntityType | "nav"`) and re-exported below
 // so `FavoriteItem.kind` and existing importers stay stable — no parallel union.
 import type { FavoriteKind } from "@/features/scopes/types";
+// The tutor teaching-mode / personality vocabulary is owned by the tutor feature
+// (single source of truth); type-imported here so `TutorPreferences` can't drift
+// from it. Type-only ⇒ erased at runtime ⇒ no import cycle (mirrors FavoriteKind).
+import type {
+  TutorTeachingMode,
+  TutorPersonalityStyle,
+} from "@/features/education/tutor/settings";
 
 // Define types for each module's preferences
 export interface DisplayPreferences {
@@ -280,6 +287,18 @@ export interface FlashcardPreferences {
   primaryTutorPersona: string;
 }
 
+/**
+ * AI Tutor teaching preferences (VISION §4) — Socratic vs Direct teaching mode
+ * and the tutor's personality/style. These ride into every tutor conversation
+ * as launch variables (`teaching_mode` / `personality_style`). Durable + synced
+ * (they used to live in localStorage — per-browser only — which lost the setting
+ * on device switch; see features/education/tutor/settings.ts).
+ */
+export interface TutorPreferences {
+  teachingMode: TutorTeachingMode;
+  personalityStyle: TutorPersonalityStyle;
+}
+
 export interface PlaygroundPreferences {
   lastRecipeId: MatrxRecordId;
   preferredProvider: MatrxRecordId;
@@ -514,6 +533,7 @@ export interface UserPreferences {
   coding: CodingPreferences;
   sandbox: SandboxPreferences;
   flashcard: FlashcardPreferences;
+  tutor: TutorPreferences;
   playground: PlaygroundPreferences;
   aiModels: AiModelsPreferences;
   system: SystemPreferences;
@@ -630,6 +650,11 @@ export const initializeUserPreferencesState = (
       targetScore: 80,
       primaryAudioVoice: "default",
       primaryTutorPersona: "default",
+    },
+    tutor: {
+      // Must match DEFAULT_TUTOR_SETTINGS in features/education/tutor/settings.ts.
+      teachingMode: "Socratic",
+      personalityStyle: "Encouraging & Step-by-Step",
     },
     assistant: {
       alwaysActive: false,
@@ -826,6 +851,7 @@ export const initializeUserPreferencesState = (
     coding: { ...defaultPreferences.coding, ...preferences.coding },
     sandbox: { ...defaultPreferences.sandbox, ...preferences.sandbox },
     flashcard: { ...defaultPreferences.flashcard, ...preferences.flashcard },
+    tutor: { ...defaultPreferences.tutor, ...preferences.tutor },
     playground: { ...defaultPreferences.playground, ...preferences.playground },
     aiModels: { ...defaultPreferences.aiModels, ...preferences.aiModels },
     system: { ...defaultPreferences.system, ...preferences.system },
@@ -957,6 +983,7 @@ const userPreferencesSlice = createSlice({
         state.coding = { ...state._meta.loadedPreferences.coding };
         state.sandbox = { ...state._meta.loadedPreferences.sandbox };
         state.flashcard = { ...state._meta.loadedPreferences.flashcard };
+        state.tutor = { ...state._meta.loadedPreferences.tutor };
         state.playground = { ...state._meta.loadedPreferences.playground };
         state.aiModels = { ...state._meta.loadedPreferences.aiModels };
         state.system = { ...state._meta.loadedPreferences.system };
@@ -1090,6 +1117,7 @@ const userPreferencesSlice = createSlice({
         state.sandbox = { ...state.sandbox, ...loaded.sandbox };
       if (loaded.flashcard)
         state.flashcard = { ...state.flashcard, ...loaded.flashcard };
+      if (loaded.tutor) state.tutor = { ...state.tutor, ...loaded.tutor };
       if (loaded.playground)
         state.playground = { ...state.playground, ...loaded.playground };
       if (loaded.aiModels)
@@ -1198,6 +1226,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "coding",
   "sandbox",
   "flashcard",
+  "tutor",
   "playground",
   "aiModels",
   "system",

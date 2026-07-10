@@ -4,18 +4,21 @@
 //
 // The per-learner AI Tutor settings surface (VISION §4 "tunable personality
 // and teaching style"). Two knobs — teaching mode (Socratic vs Direct) and
-// personality/style — persisted via the tutor settings module and applied to
-// every new tutor conversation as launch variables. Rendered inline (used in a
-// Popover from the tutor home + conversation header).
+// personality/style — persisted on the DURABLE settings system
+// (`userPreferences.tutor.*`, synced across devices) and applied to every new
+// tutor conversation as launch variables. Rendered inline (used in a Popover
+// from the tutor home + conversation header).
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { GraduationCap, MessageCircleQuestion } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSetting } from "@/features/settings/hooks/useSetting";
 import {
-  getTutorSettings,
-  setTutorSettings,
   TUTOR_TEACHING_MODES,
   TUTOR_PERSONALITY_STYLES,
+  migrateLegacyTutorSettings,
+  type TutorTeachingMode,
+  type TutorPersonalityStyle,
   type TutorSettings,
 } from "../settings";
 
@@ -76,24 +79,19 @@ export interface TutorSettingsPanelProps {
 }
 
 export function TutorSettingsPanel({ className, onChange }: TutorSettingsPanelProps) {
-  const [settings, setSettings] = useState<TutorSettings>(getTutorSettings);
-
-  // Reflect changes made in another tab / another panel instance.
+  // One-time seed from the legacy localStorage key (no-op after first run / on
+  // a fresh device). Runs before the reads settle so a returning learner's saved
+  // preference is already reflected.
   useEffect(() => {
-    const sync = () => setSettings(getTutorSettings());
-    window.addEventListener("education-tutor-settings-changed", sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener("education-tutor-settings-changed", sync);
-      window.removeEventListener("storage", sync);
-    };
+    migrateLegacyTutorSettings();
   }, []);
 
-  const update = (patch: Partial<TutorSettings>) => {
-    const next = setTutorSettings(patch);
-    setSettings(next);
-    onChange?.(next);
-  };
+  const [teachingMode, setTeachingMode] = useSetting<TutorTeachingMode>(
+    "userPreferences.tutor.teachingMode",
+  );
+  const [personalityStyle, setPersonalityStyle] = useSetting<TutorPersonalityStyle>(
+    "userPreferences.tutor.personalityStyle",
+  );
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
@@ -101,19 +99,25 @@ export function TutorSettingsPanel({ className, onChange }: TutorSettingsPanelPr
         label="Teaching style"
         icon={MessageCircleQuestion}
         options={TUTOR_TEACHING_MODES}
-        value={settings.teachingMode}
-        onChange={(v) => update({ teachingMode: v })}
-        help={MODE_HELP[settings.teachingMode]}
+        value={teachingMode}
+        onChange={(v) => {
+          setTeachingMode(v);
+          onChange?.({ teachingMode: v, personalityStyle });
+        }}
+        help={MODE_HELP[teachingMode]}
       />
       <Segmented
         label="Personality"
         icon={GraduationCap}
         options={TUTOR_PERSONALITY_STYLES}
-        value={settings.personalityStyle}
-        onChange={(v) => update({ personalityStyle: v })}
+        value={personalityStyle}
+        onChange={(v) => {
+          setPersonalityStyle(v);
+          onChange?.({ teachingMode, personalityStyle: v });
+        }}
       />
       <p className="text-[11px] text-muted-foreground">
-        Applies to your next tutor conversation.
+        Applies to your next tutor conversation. Synced across your devices.
       </p>
     </div>
   );

@@ -6,8 +6,8 @@
 
 import { studyMediaService } from "@/features/education/media/service";
 import { EDU_MEDIA_AGENTS } from "@/features/education/media/mindmap/agents";
-import { associationsService } from "@/features/scopes/service/associationsService";
 import { runAgentExtraction } from "../runAgentExtraction";
+import { recordSourceLineage } from "../recordSourceLineage";
 import { buildSourceTrust } from "../sourceTrust";
 import type {
   ConvertContext,
@@ -75,20 +75,8 @@ async function run(
   }
   const id = media.data.id;
 
-  if (source.ref?.fileId) {
-    const edge = await associationsService.add({
-      sourceType: "study_media",
-      sourceId: id,
-      targetType: "file",
-      targetId: source.ref.fileId,
-      role: "source",
-      orgId: ctx.orgId,
-    });
-    if (!edge.ok) console.error("[convert/mindMap] source edge failed:", edge);
-  }
-
   const nodeCount = spec.nodes.length;
-  return {
+  const result: ConvertResult = {
     targetKind: "mind_map",
     artifactId: id,
     resourceType: "study_media",
@@ -97,6 +85,10 @@ async function run(
     trust,
     detail: `${nodeCount} node${nodeCount === 1 ? "" : "s"}`,
   };
+
+  await recordSourceLineage(result, source, ctx.orgId);
+
+  return result;
 }
 
 export const mindMapGenerator: ConvertGenerator = {

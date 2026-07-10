@@ -31,6 +31,7 @@ import {
   Grid3x3,
   PenLine,
   Scissors,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,9 @@ import { downloadSetCsv } from "../../utils/importExportCsv";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
+import { serializeDeck } from "@/features/education/media/audio/audioBrief";
+import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
+import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
 
 /** Phase 1B — the extra study modes on the spine, alongside classic Study. */
 const OTHER_STUDY_MODES = [
@@ -182,6 +186,8 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [enhanceOpen, setEnhanceOpen] = useState(false);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [lineageKey, setLineageKey] = useState(0);
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
   >({});
@@ -480,7 +486,24 @@ export function SetDetailView({ setId }: { setId: string }) {
                     Enhance
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  onClick={() => setConvertOpen(true)}
+                  disabled={data.cards.length === 0}
+                >
+                  <Sparkles className="mr-1.5 h-4 w-4" />
+                  Convert
+                </Button>
               </div>
+            </div>
+
+            {/* Reverse lineage — study artifacts made from this deck. */}
+            <div className="mt-3">
+              <GeneratedFromChips
+                entityType="fc_set"
+                entityId={setId}
+                refreshKey={lineageKey}
+              />
             </div>
 
             {/* Deck mastery — Brainscape's retention hook: where you stand
@@ -543,6 +566,22 @@ export function SetDetailView({ setId }: { setId: string }) {
               setId={setId}
               cards={data.cards}
               onChanged={() => setReloadKey((k) => k + 1)}
+            />
+
+            {/* Convert this deck into other study artifacts (shared primitive). */}
+            <ConvertContentDialog
+              open={convertOpen}
+              onOpenChange={setConvertOpen}
+              origin={{
+                kind: "deck",
+                entityType: "fc_set",
+                entityId: setId,
+                title: data.set.name,
+              }}
+              text={serializeDeck(data.set, data.cards).markdown}
+              orgId={data.set.organization_id ?? undefined}
+              excludeKinds={["deck"]}
+              onConverted={() => setLineageKey((k) => k + 1)}
             />
           </>
         )}

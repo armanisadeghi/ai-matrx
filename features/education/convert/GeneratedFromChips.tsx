@@ -1,19 +1,28 @@
-// features/education/notes/GeneratedArtifactsChips.tsx
+// features/education/convert/GeneratedFromChips.tsx
 //
-// Reverse-lineage strip: every study artifact generated FROM this note, shown as
-// clickable chips ("generated from this"). Reads the incoming `source` edges via
-// the canonical association system (features/education/notes/service). Lineage is
-// visible both directions — the artifact links back to the note, the note lists
-// its artifacts.
+// Reverse-lineage strip: every study artifact generated FROM an origin entity
+// (note / deck / assessment / …), shown as clickable chips ("generated from
+// this"). Reads the incoming `source` edges via the canonical association system
+// (`lineage.ts`). Lineage is visible both directions — the artifact links back to
+// the origin, the origin lists its artifacts. Reused across every convert source
+// surface, so there is ONE chips implementation, not a per-feature copy.
 
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Layers, ListChecks, FileText, Network, Headphones, StickyNote, Sparkles } from "lucide-react";
+import {
+  Layers,
+  ListChecks,
+  FileText,
+  Network,
+  Headphones,
+  StickyNote,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { listGeneratedFromNote, type GeneratedArtifact } from "./service";
-import type { TargetKind } from "@/features/education/convert/types";
+import { listGeneratedFrom, type GeneratedArtifact } from "./lineage";
+import type { TargetKind } from "./types";
 
 const KIND_ICON: Record<TargetKind, typeof Layers> = {
   deck: Layers,
@@ -28,16 +37,19 @@ const KIND_ICON: Record<TargetKind, typeof Layers> = {
 function iconFor(a: GeneratedArtifact): typeof Layers {
   if (a.targetKind && KIND_ICON[a.targetKind]) return KIND_ICON[a.targetKind];
   if (a.artifactType === "fc_set") return Layers;
+  if (a.artifactType === "assessment") return ListChecks;
   if (a.artifactType === "note") return StickyNote;
   return Sparkles;
 }
 
-export function GeneratedArtifactsChips({
-  noteId,
+export function GeneratedFromChips({
+  entityType,
+  entityId,
   refreshKey,
   className,
 }: {
-  noteId: string;
+  entityType: string;
+  entityId: string;
   /** Bump to re-fetch after a new conversion. */
   refreshKey?: number;
   className?: string;
@@ -47,13 +59,13 @@ export function GeneratedArtifactsChips({
 
   useEffect(() => {
     let active = true;
-    void listGeneratedFromNote(noteId).then((rows) => {
+    void listGeneratedFrom(entityType, entityId).then((rows) => {
       if (active) setItems(rows);
     });
     return () => {
       active = false;
     };
-  }, [noteId, refreshKey]);
+  }, [entityType, entityId, refreshKey]);
 
   if (items.length === 0) return null;
 

@@ -101,7 +101,20 @@ export interface TrustEnvelope {
 // ONE grading path for typed/short-answer items.
 
 /**
- * The typed result of grading a free-response / typed / spoken answer on meaning.
+ * The three graded outcomes every meaning-graded path resolves to. This is the
+ * shared vocabulary behind the typed (assessment `AttemptResult`), spoken
+ * (FastFire), and review result unions — defined ONCE here so they can't drift
+ * (they were four identical copies before the trust unification).
+ */
+export type GradeResult = "correct" | "partial" | "incorrect";
+
+/**
+ * THE canonical meaning-grading verdict CORE. Every grading path — typed/short-
+ * answer (assessment) and spoken (FastFire / voice) — resolves to this shape.
+ * Spoken and typed carry their extra fields (transcript, rubric, score,
+ * gradedBy) as THIN ADAPTERS wrapped around this shared core; they never fork a
+ * second verdict shape. See `SpokenGrade` (grading-core) and `GradedAnswer`
+ * (assessment/data/grading).
  *
  * - `correct`      — the answer conveys the required idea (paraphrase-tolerant).
  * - `partial`      — some but not all of the required idea is present.
@@ -114,6 +127,38 @@ export interface GradeVerdict {
   partial: boolean;
   misconception: string | null;
   explanation: string;
+}
+
+/** Normalized 0..1 score for a result token (1 correct / 0.5 partial / 0 incorrect). */
+export function gradeResultScore(result: GradeResult): number {
+  return result === "correct" ? 1 : result === "partial" ? 0.5 : 0;
+}
+
+/** Derive a result token from a continuous 0..1 score (≥0.8 correct, ≥0.4 partial). */
+export function resultFromScore(score: number): GradeResult {
+  return score >= 0.8 ? "correct" : score >= 0.4 ? "partial" : "incorrect";
+}
+
+/** The result token a verdict represents (correct → partial → incorrect). */
+export function verdictResult(v: GradeVerdict): GradeResult {
+  return v.correct ? "correct" : v.partial ? "partial" : "incorrect";
+}
+
+/**
+ * Build a GradeVerdict from a result token — the adapter helper spoken grading
+ * uses to wrap its `result` string + feedback text in the shared core.
+ */
+export function verdictFromResult(
+  result: GradeResult,
+  explanation: string,
+  misconception: string | null = null,
+): GradeVerdict {
+  return {
+    correct: result === "correct",
+    partial: result === "partial",
+    misconception,
+    explanation,
+  };
 }
 
 // ── Verify-against-source verdict ───────────────────────────────────────────

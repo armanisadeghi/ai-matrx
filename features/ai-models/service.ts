@@ -354,6 +354,24 @@ export const aiModelService = {
     if (error) throw error;
   },
 
+  /** Resolved user-facing config for one model (ai.model_config view) —
+   *  controls/constraints computed live from ai.api.rules ⊕ ai.offering.override
+   *  × ai.setting for the PREFERRED offering. This is what the app's settings
+   *  engine consumes; admin rule editors show it as the read-only result of
+   *  their edits. Null when the model is deprecated/deleted (view excludes it). */
+  async fetchModelConfig(
+    modelId: string,
+  ): Promise<Database["ai"]["Views"]["model_config"]["Row"] | null> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("model_config")
+      .select("*")
+      .eq("id", modelId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   /** Read-only reporting view — offering × endpoint/api × model_definition joined,
    *  with points-based pricing computed. Nothing writes to this; edit the
    *  underlying offering row instead. */

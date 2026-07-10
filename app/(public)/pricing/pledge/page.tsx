@@ -7,6 +7,7 @@ import {
   BellRing,
   Gauge,
   Gift,
+  Hourglass,
   MousePointerClick,
   ScrollText,
   ShieldOff,
@@ -32,6 +33,14 @@ type Pledge = {
   title: string;
   promise: string;
   detail: string;
+  /**
+   * Present when the promise is a forward COMMITMENT, not a live capability
+   * today. Renders a visible "before paid launch" pill so the page never claims
+   * present-tense something we haven't shipped (the inverted dark pattern the
+   * whole page exists to kill — a trust page must not over-promise). Both
+   * committed items are pending Arman's sign-off (see features/entitlements/FEATURE.md).
+   */
+  status?: "before-launch";
 };
 
 const PLEDGES: Pledge[] = [
@@ -44,10 +53,12 @@ const PLEDGES: Pledge[] = [
   },
   {
     icon: BellRing,
-    title: "We remind you before every charge",
-    promise: "You get an email before each renewal — trials included.",
+    title: "We'll remind you before every charge",
+    promise:
+      "Before we ever charge, we'll email you — trials included. This lands before paid billing goes live.",
     detail:
-      "A renewal should never be a surprise line on a statement. We email you ahead of every charge, and especially before a trial converts to paid, so you can decide on purpose. A silent charge is a failure on our part, not a feature of ours.",
+      "A renewal should never be a surprise line on a statement. Our commitment is to email you ahead of every charge, and especially before a trial converts to paid, so you can decide on purpose. We're building this reminder into billing before we turn paid plans on — a silent charge would be a failure on our part, never a feature of ours.",
+    status: "before-launch",
   },
   {
     icon: Gauge,
@@ -73,9 +84,11 @@ const PLEDGES: Pledge[] = [
   {
     icon: BadgeDollarSign,
     title: "Honest refunds and proration",
-    promise: "Fair proration on changes, and refunds when they're warranted.",
+    promise:
+      "When paid plans launch: clean proration on plan changes, and refunds when they're warranted.",
     detail:
-      "Upgrade or downgrade and we prorate the difference cleanly. If something goes wrong on our end, we make it right. We won't hide behind fine print to keep money we didn't earn.",
+      "Change your plan and we'll prorate the difference cleanly. If something goes wrong on our end, we'll make it right — we won't hide behind fine print to keep money we didn't earn. We're finalizing the written refund terms before paid launch and will post them right here.",
+    status: "before-launch",
   },
 ];
 
@@ -104,13 +117,18 @@ export default function PledgePage() {
             The AI education market is full of paywall traps and cancellation
             dark patterns. We&apos;re building the opposite on purpose. These
             aren&apos;t marketing lines — they&apos;re the standard we hold
-            ourselves to, and the standard you should hold us to.
+            ourselves to, and the standard you should hold us to. A couple are
+            still being built; we mark those{" "}
+            <span className="font-medium text-foreground">
+              Before paid launch
+            </span>{" "}
+            rather than pretend they&apos;re live today.
           </p>
         </header>
 
         {/* Pledges */}
         <div className="mt-12 flex flex-col gap-4">
-          {PLEDGES.map(({ icon: Icon, title, promise, detail }, idx) => (
+          {PLEDGES.map(({ icon: Icon, title, promise, detail, status }, idx) => (
             <section
               key={title}
               className="flex flex-col gap-3 rounded-2xl border border-border bg-card/70 p-6 sm:flex-row sm:gap-5 lg:p-8"
@@ -124,9 +142,17 @@ export default function PledgePage() {
                 </span>
               </div>
               <div className="flex flex-col gap-1.5">
-                <h2 className="text-lg font-semibold tracking-tight">
-                  {title}
-                </h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-lg font-semibold tracking-tight">
+                    {title}
+                  </h2>
+                  {status === "before-launch" && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                      <Hourglass className="h-3 w-3" strokeWidth={2} />
+                      Before paid launch
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm font-medium text-foreground">{promise}</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   {detail}

@@ -29,8 +29,12 @@ import {
   normalizeAudioContentType,
 } from "@/features/audio/utils/audio-mime";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
-
-export type SpokenResult = "correct" | "partial" | "incorrect";
+import {
+  verdictFromResult,
+  resultFromScore,
+  type GradeVerdict,
+  type GradeResult,
+} from "@/features/education/trust/types";
 
 export interface SpokenGradeRubric {
   accuracy: number;
@@ -38,13 +42,20 @@ export interface SpokenGradeRubric {
   clarity: number;
 }
 
+/**
+ * The spoken-answer grade — a THIN ADAPTER around the canonical `GradeVerdict`
+ * core (correct/partial/misconception/explanation), carrying the spoken-only
+ * extras (continuous score, speaking rubric, transcript, what was missing). The
+ * grader's textual feedback IS the verdict's `explanation`; the pass/partial/
+ * fail token is `verdictResult(verdict)`. Never a second verdict shape.
+ */
 export interface SpokenGrade {
-  result: SpokenResult;
-  /** Normalized 0..1. */
+  verdict: GradeVerdict;
+  /** Normalized 0..1 (rubric-derived; spoken keeps a continuous score). */
   score: number;
   rubric: SpokenGradeRubric;
   transcript: string;
-  feedback: string;
+  /** Points the learner missed, per the grader. */
   missing: string[];
 }
 
@@ -57,17 +68,15 @@ export function coerceSpokenGrade(raw: unknown): SpokenGrade | null {
   const str = (v: unknown): string => (typeof v === "string" ? v : "");
   const resultRaw = str(r.result);
   const score = Math.min(1, Math.max(0, num(r.score, 0)));
-  const result: SpokenResult =
+  const result: GradeResult =
     resultRaw === "correct" || resultRaw === "partial" || resultRaw === "incorrect"
       ? resultRaw
-      : score >= 0.8
-        ? "correct"
-        : score >= 0.4
-          ? "partial"
-          : "incorrect";
+      : resultFromScore(score);
   const rubricRaw = (r.rubric as Record<string, unknown>) ?? {};
+  const explanation = str(r.audio_feedback) || str(r.feedback);
+  const misconception = str(r.misconception) || null;
   return {
-    result,
+    verdict: verdictFromResult(result, explanation, misconception),
     score,
     rubric: {
       accuracy: num(rubricRaw.accuracy, 0),
@@ -75,7 +84,6 @@ export function coerceSpokenGrade(raw: unknown): SpokenGrade | null {
       clarity: num(rubricRaw.clarity, 0),
     },
     transcript: str(r.transcript),
-    feedback: str(r.audio_feedback) || str(r.feedback),
     missing: Array.isArray(r.missing)
       ? r.missing.filter((x): x is string => typeof x === "string")
       : [],

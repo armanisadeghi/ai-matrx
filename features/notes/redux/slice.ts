@@ -418,20 +418,34 @@ const notesSlice = createSlice({
       for (const [key, value] of Object.entries(note)) {
         if (key.startsWith("_")) continue;
         const field = key as keyof Note;
-        if (existing._dirty && existing._dirtyFields.has(field as NoteUndoableField)) {
+        if (
+          existing._dirty &&
+          existing._dirtyFields.has(field as NoteUndoableField)
+        ) {
           continue; // Preserve local edit
         }
         writeNoteField(existing, field, value as Note[typeof field]);
       }
     },
 
-    /** Remove a note from state entirely */
+    /** Remove a note from state entirely (all instances drop the tab). */
     removeNote(state, action: PayloadAction<string>) {
       const noteId = action.payload;
       delete state.notes[noteId];
+      // Legacy global tabs
       state.openTabs = state.openTabs.filter((id) => id !== noteId);
       if (state.activeNoteId === noteId) {
         state.activeNoteId = state.openTabs[0] ?? null;
+      }
+      // Per-window instances — hard/soft delete must not leave dangling tabs
+      for (const inst of Object.values(state.instances)) {
+        inst.openTabs = inst.openTabs.filter((id) => id !== noteId);
+        if (inst.activeTabId === noteId) {
+          inst.activeTabId = inst.openTabs[0] ?? null;
+        }
+        if (inst.splitNoteId === noteId) {
+          inst.splitNoteId = null;
+        }
       }
     },
 

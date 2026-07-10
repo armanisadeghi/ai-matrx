@@ -1,34 +1,21 @@
 "use client";
 
-// Layer 2: NoteMetadataBar
-// Shows folder, tags, scope assignments, org/project/task context, save status, word count.
-// Title is handled by the tab (Layer 3) — NOT duplicated here.
-// Props: noteId only. Everything from Redux.
+// Layer 2: NoteMetadataBar — editor CHROME only (folder, context, tags).
+//
+// Content metrics + save status live in NoteStatsFooter (WindowPanel footer /
+// /notes bottom strip). Do NOT reintroduce a stats bar here — that was the
+// double-footer / mid-pane hover bug.
+//
+// Props: noteId only (+ optional variant). Everything from Redux.
 
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import {
-  FolderOpen,
-  ChevronDown,
-  X,
-  Plus,
-  Building2,
-  Network,
-} from "lucide-react";
+import { FolderOpen, ChevronDown, X, Plus, Network } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { updateNoteFolder, updateNoteTags } from "../redux/slice";
 import {
   selectNoteFolder,
   selectNoteTags,
-  selectNoteIsDirtyById,
-  selectNoteIsSavingById,
-  selectNoteContent,
   selectAllFolders,
   selectNoteById,
 } from "../redux/selectors";
@@ -44,24 +31,27 @@ import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsD
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import { cn } from "@/lib/utils";
 import { NoteContextSection } from "./NoteContextSection";
-import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
 
 interface NoteMetadataBarProps {
   noteId: string;
+  /**
+   * `chrome` (default) — thin strip above the stats footer; owns its own
+   * top border. `slot` — for rare cases where a parent already frames it.
+   */
+  variant?: "chrome" | "slot";
 }
 
-export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
+export function NoteMetadataBar({
+  noteId,
+  variant = "chrome",
+}: NoteMetadataBarProps) {
   const dispatch = useAppDispatch();
 
   const folder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
   const tags = useAppSelector(selectNoteTags(noteId));
-  const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
-  const isSaving = useAppSelector(selectNoteIsSavingById(noteId));
-  const content = useAppSelector(selectNoteContent(noteId)) ?? "";
   const allFolders = useAppSelector(selectAllFolders);
   const note = useAppSelector(selectNoteById(noteId));
 
-  // Current hierarchy context (from appContextSlice)
   const ctxOrgId = useAppSelector(selectOrganizationId);
   const ctxOrgName = useAppSelector(selectOrganizationName);
   const ctxProjId = useAppSelector(selectProjectId);
@@ -69,7 +59,6 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
   const ctxTaskId = useAppSelector(selectTaskId);
   const ctxTaskName = useAppSelector(selectTaskName);
 
-  // Note's assigned context
   const noteOrgId = note?.organization_id ?? null;
   const noteProjId = note?.project_id ?? null;
   const noteTaskId = note?.task_id ?? null;
@@ -79,9 +68,6 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
   const [tagInput, setTagInput] = useState("");
   const [scopePickerOpen, setScopePickerOpen] = useState(false);
 
-  // Folder dropdown is portaled to <body> with fixed positioning: the
-  // metadata row clips overflow and the menu opens upward, so an in-flow
-  // absolute menu gets cut off. We anchor it to the trigger's rect instead.
   const folderBtnRef = useRef<HTMLButtonElement>(null);
   const folderMenuRef = useRef<HTMLDivElement>(null);
   const [folderMenuPos, setFolderMenuPos] = useState<{
@@ -107,9 +93,6 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
     });
   }, [recomputeFolderMenuPos]);
 
-  // While open: close on outside click or Escape. Scroll/resize only
-  // *reposition* the menu (the trigger lives in a fixed bottom bar, so it
-  // doesn't move with content scroll — closing on every scroll was wrong).
   useEffect(() => {
     if (!folderOpen) return undefined;
     const onPointerDown = (e: MouseEvent) => {
@@ -136,30 +119,6 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
       window.removeEventListener("resize", recomputeFolderMenuPos);
     };
   }, [folderOpen, recomputeFolderMenuPos]);
-
-  // Derived content metrics — single memo keyed on content so this only
-  // recomputes when the note text actually changes (never on unrelated
-  // re-renders). Word/char/line/reading-time all come from one shared util.
-  const stats = useMemo(() => computeNoteStats(content), [content]);
-
-  // A persisted save error (RLS-rejected write, conflict, network) outranks
-  // everything — "Unsaved" alone reads as benign while edits are being lost.
-  const saveError =
-    note?._error && note._error !== "conflict" ? note._error : null;
-  const saveStatus = saveError
-    ? "Save failed"
-    : isSaving
-      ? "Saving..."
-      : isDirty
-        ? "Unsaved"
-        : "Saved";
-  const statusColor = saveError
-    ? "text-destructive"
-    : isSaving
-      ? "text-yellow-500"
-      : isDirty
-        ? "text-amber-500"
-        : "text-green-500";
 
   const handleFolderChange = useCallback(
     (f: string) => {
@@ -189,42 +148,43 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
 
   return (
     <>
-      {/* Context panel — renders ABOVE the bar (like the folder dropdown),
-          rather than expanding the bar inline. The official assignment field
-          (scopes live via ctx_scope_assignments; project/task FKs via the note
-          save pipeline). Replaces the old glassy NoteContextPicker. */}
       {scopePickerOpen && (
-        <div className="relative z-10 border-t border-border/20 px-2 bg-background shrink-0">
+        <div className="relative z-10 shrink-0 border-t border-border/20 bg-background px-2">
           <NoteContextSection noteId={noteId} />
         </div>
       )}
 
-      <div className="relative z-10 flex items-center gap-2.5 py-1.5 px-4 border-t border-border/20 shrink-0 overflow-hidden min-h-[2.25rem] bg-background">
-        {/* Folder selector */}
+      <div
+        className={cn(
+          "relative z-10 flex min-h-0 shrink-0 items-center gap-1.5 overflow-hidden px-2 py-0.5",
+          variant === "chrome" && "border-t border-border/20 bg-background",
+        )}
+      >
         <div className="shrink-0">
           <button
+            type="button"
             ref={folderBtnRef}
             onClick={toggleFolderMenu}
-            className="flex items-center gap-1 text-xs text-foreground hover:text-primary cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5"
+            className="flex cursor-pointer items-center gap-1 text-[0.6875rem] text-foreground transition-colors hover:text-primary [&_svg]:h-3 [&_svg]:w-3"
           >
             <FolderOpen />
-            <span className="max-w-[120px] truncate">{folder}</span>
-            <ChevronDown className="w-3! h-3! opacity-60" />
+            <span className="max-w-[100px] truncate">{folder}</span>
+            <ChevronDown className="!h-2.5 !w-2.5 opacity-60" />
           </button>
         </div>
 
-        {/* Context toggle — shows summary pill, expands full picker above */}
         <button
+          type="button"
           onClick={() => setScopePickerOpen((v) => !v)}
           className={cn(
-            "flex items-center gap-1 px-2 py-0.5 text-xs rounded-full cursor-pointer transition-colors shrink-0",
+            "flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-1.5 py-0 text-[0.6875rem] transition-colors",
             noteOrgId || noteProjId || noteTaskId
               ? "bg-primary/10 text-primary"
-              : "text-foreground hover:text-primary border border-dashed border-border",
+              : "border border-dashed border-border text-muted-foreground hover:text-primary",
           )}
           title="Set context for this note"
         >
-          <Network className="w-3 h-3" />
+          <Network className="h-3 w-3" />
           {noteTaskId
             ? ctxTaskName && noteTaskId === ctxTaskId
               ? ctxTaskName
@@ -242,9 +202,8 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
         <ScopeTagsDisplay
           entityType="note"
           entityId={noteId}
-          className="shrink-0 [&_.badge]:text-[0.625rem] [&_.badge]:py-0 [&_.badge]:px-1.5"
+          className="shrink-0 [&_.badge]:px-1.5 [&_.badge]:py-0 [&_.badge]:text-[0.625rem]"
         />
-        {/* Task links + quick attach */}
         <TaskChipRow
           entityType="note"
           entityId={noteId}
@@ -253,20 +212,17 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
           className="shrink-0"
         />
 
-        {/* Tags */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto">
-          <span className="text-xs font-medium text-foreground shrink-0">
-            Tags
-          </span>
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {tags.map((tag) => (
             <span
               key={tag}
-              className="flex items-center gap-1 px-2 py-0.5 text-xs bg-muted rounded-full text-foreground shrink-0"
+              className="flex shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 py-0 text-[0.625rem] text-foreground"
             >
               {tag}
               <button
+                type="button"
                 onClick={() => handleRemoveTag(tag)}
-                className="cursor-pointer text-muted-foreground hover:text-foreground [&_svg]:w-2.5 [&_svg]:h-2.5"
+                className="cursor-pointer text-muted-foreground hover:text-foreground [&_svg]:h-2.5 [&_svg]:w-2.5"
               >
                 <X />
               </button>
@@ -285,58 +241,40 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
                 }
               }}
               onBlur={handleAddTag}
-              className="w-28 px-2 py-1 text-xs bg-muted rounded-md border border-border outline-none focus:border-primary shrink-0"
+              className="w-24 shrink-0 rounded-md border border-border bg-muted px-1.5 py-0.5 text-[0.6875rem] outline-none focus:border-primary"
               placeholder="Add tag…"
               style={{ fontSize: "16px" }}
             />
           ) : (
             <button
+              type="button"
               onClick={() => setAddingTag(true)}
-              className="flex items-center justify-center w-5 h-5 rounded-md text-foreground hover:text-primary hover:bg-accent cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5 shrink-0"
+              className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-primary [&_svg]:h-3 [&_svg]:w-3"
+              title="Add tag"
             >
               <Plus />
             </button>
           )}
         </div>
-
-        {/* Status + word count */}
-        <span
-          className={cn("text-xs font-medium shrink-0", statusColor)}
-          title={saveError ?? undefined}
-        >
-          {saveStatus}
-        </span>
-        <span
-          className="text-xs text-foreground shrink-0 tabular-nums"
-          title={`${formatStatNumber(stats.words)} words · ${formatStatNumber(
-            stats.characters,
-          )} characters · ${formatStatNumber(stats.lines)} lines · ~${
-            stats.readingTimeMinutes
-          } min read`}
-        >
-          {formatStatNumber(stats.words)} words ·{" "}
-          {formatStatNumber(stats.characters)} chars
-        </span>
       </div>
 
-      {/* Folder dropdown — portaled to <body> so it escapes the metadata
-          row's overflow clip and sits above window panels. */}
       {folderOpen &&
         folderMenuPos &&
         typeof document !== "undefined" &&
         createPortal(
           <div
             ref={folderMenuRef}
-            className="fixed z-[10000] min-w-[120px] max-h-[240px] overflow-auto py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg"
+            className="fixed z-[10000] max-h-[240px] min-w-[120px] overflow-auto rounded-lg border border-border bg-card/95 py-1 shadow-lg backdrop-blur-2xl"
             style={{ left: folderMenuPos.left, bottom: folderMenuPos.bottom }}
           >
             {allFolders.map((f) => (
               <button
                 key={f}
+                type="button"
                 className={cn(
-                  "w-full text-left px-3 py-1.5 text-xs cursor-pointer transition-colors",
+                  "w-full cursor-pointer px-3 py-1.5 text-left text-xs transition-colors",
                   f === folder
-                    ? "bg-primary/10 text-primary font-medium"
+                    ? "bg-primary/10 font-medium text-primary"
                     : "text-foreground hover:bg-accent",
                 )}
                 onClick={() => handleFolderChange(f)}

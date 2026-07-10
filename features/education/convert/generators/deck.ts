@@ -11,12 +11,11 @@
 // the two drift on card shape.
 
 import { fcService } from "@/features/flashcards/data/fcService";
-import { EDGE_ROLE } from "@/features/flashcards/data/types";
 import type { NewCardInput } from "@/features/flashcards/data/types";
-import { associationsService } from "@/features/scopes/service/associationsService";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { CONVERT_AGENTS } from "../agents";
 import { runAgentExtraction } from "../runAgentExtraction";
+import { recordSourceLineage } from "../recordSourceLineage";
 import { mergeTrustEnvelopes } from "../trustMerge";
 import type {
   ConvertContext,
@@ -182,21 +181,8 @@ async function run(
   }
   const setId = created.data.set.id;
 
-  // Set-level lineage edge → the ingest anchor file (kit provenance).
-  if (source.ref?.fileId) {
-    const edge = await associationsService.add({
-      sourceType: "fc_set",
-      sourceId: setId,
-      targetType: "file",
-      targetId: source.ref.fileId,
-      role: EDGE_ROLE.source,
-      orgId: ctx.orgId,
-    });
-    if (!edge.ok) console.error("[convert/deck] source edge failed:", edge);
-  }
-
   const trust = mergeTrustEnvelopes(cards.map((c) => c.trust));
-  return {
+  const result: ConvertResult = {
     targetKind: "deck",
     artifactId: setId,
     resourceType: "fc_set",
@@ -205,6 +191,11 @@ async function run(
     trust,
     detail: `${cards.length} card${cards.length === 1 ? "" : "s"}`,
   };
+
+  // Set-level lineage edge → the origin (ingest anchor file OR entity source).
+  await recordSourceLineage(result, source, ctx.orgId);
+
+  return result;
 }
 
 export const deckGenerator: ConvertGenerator = {

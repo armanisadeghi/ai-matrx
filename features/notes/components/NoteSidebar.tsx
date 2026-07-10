@@ -82,6 +82,8 @@ import {
   moveNoteToFolder,
   fetchAllNoteScopes,
   fetchDeletedNotes,
+  permanentlyDeleteNoteThunk,
+  emptyTrashThunk,
 } from "../redux/thunks";
 import {
   selectAllNotesList,
@@ -908,7 +910,74 @@ export function NoteSidebar({
         ref={folderTreeRef}
         onDragOver={handleListAutoScroll}
       >
-        {listStatus === "loaded" && allNotes.length === 0 ? (
+        {/* Shared with me — virtual folder at the top with the defaults */}
+        {sharedNotes.length > 0 && (
+          <div className="mb-1">
+            <button
+              type="button"
+              onClick={() => setSharedOpen((v) => !v)}
+              className="group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
+            >
+              {sharedOpen ? (
+                <ChevronDown className="opacity-60" />
+              ) : (
+                <ChevronRight className="opacity-60" />
+              )}
+              <Users className="text-indigo-500 dark:text-indigo-400" />
+              <span className="flex-1 text-left truncate">Shared with me</span>
+              <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+                {sharedNotes.length}
+              </span>
+            </button>
+            {sharedOpen && (
+              <div className="ml-2">
+                {sharedNotes.map((note) => {
+                  const level = note._sharedMeta?.permissionLevel ?? "viewer";
+                  const canEdit = level === "editor" || level === "admin";
+                  const isActive = activeTabId === note.id;
+                  const isOpenTab = openTabIds?.includes(note.id) ?? false;
+                  return (
+                    <button
+                      key={note.id}
+                      type="button"
+                      data-note-id={note.id}
+                      onClick={() => selectNote(note.id)}
+                      title={
+                        `${note._sharedMeta?.ownerEmail ?? "Someone"} shared this with you — ` +
+                        (canEdit ? "you can edit" : "view only")
+                      }
+                      className={cn(
+                        "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors",
+                        isActive
+                          ? "bg-accent text-foreground"
+                          : isOpenTab
+                            ? "bg-accent/30 text-foreground/80"
+                            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                      )}
+                    >
+                      <FileText className="w-3.5 h-3.5 shrink-0 text-indigo-500/70 dark:text-indigo-400/70" />
+                      <span className="flex-1 text-xs truncate leading-tight">
+                        {note.label}
+                      </span>
+                      <span className="text-[0.5625rem] opacity-40 shrink-0 truncate max-w-[80px]">
+                        {note._sharedMeta?.ownerEmail?.split("@")[0] ?? ""}
+                      </span>
+                      {canEdit ? (
+                        <Pencil className="w-3 h-3 shrink-0 text-emerald-500/70" />
+                      ) : (
+                        <Eye className="w-3 h-3 shrink-0 text-sky-500/70" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {listStatus === "loaded" &&
+        allNotes.length === 0 &&
+        sharedNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 px-6 py-8">
             <StickyNote className="w-10 h-10 mb-3 opacity-40" />
             <p className="text-xs font-medium">No notes yet</p>
@@ -972,6 +1041,7 @@ export function NoteSidebar({
                 </div>
               </div>
             )}
+
             {groupKeys.map((groupKey) => {
               const groupNotes = groupedNotes.get(groupKey) ?? [];
               const isExpanded = expandedFolders.has(groupKey);
@@ -1096,6 +1166,134 @@ export function NoteSidebar({
             })}
           </>
         )}
+
+        {/* Trash — soft-deleted recovery, bottom of the scrollable list */}
+        <div className="mt-1 border-t border-border/20">
+          <button
+            type="button"
+            onClick={() => {
+              setTrashOpen((v) => !v);
+              if (!trashFetchedRef.current) {
+                trashFetchedRef.current = true;
+                dispatch(fetchDeletedNotes());
+              }
+            }}
+            className="group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
+          >
+            {trashOpen ? (
+              <ChevronDown className="opacity-60" />
+            ) : (
+              <ChevronRight className="opacity-60" />
+            )}
+            <Trash2 className="text-rose-500 dark:text-rose-400" />
+            <span className="flex-1 text-left truncate">Trash</span>
+            {deletedNotes.length > 0 && (
+              <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+                {deletedNotes.length}
+              </span>
+            )}
+          </button>
+          {trashOpen && (
+            <div className="ml-2 max-h-48 overflow-y-auto pb-1">
+              {deletedNotes.length === 0 ? (
+                <p className="px-3 py-2 text-[0.5625rem] text-muted-foreground/50">
+                  Trash is empty
+                </p>
+              ) : (
+                <>
+                  <div className="mb-0.5 flex items-center justify-end px-2">
+                    <button
+                      type="button"
+                      className="cursor-pointer text-[0.5625rem] text-destructive/80 transition-colors hover:text-destructive"
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: "Empty trash",
+                          description: `Permanently delete ${deletedNotes.length} note${deletedNotes.length === 1 ? "" : "s"}? This cannot be undone.`,
+                          confirmLabel: "Empty trash",
+                          variant: "destructive",
+                        });
+                        if (!ok) return;
+                        try {
+                          const count =
+                            await dispatch(emptyTrashThunk()).unwrap();
+                          toast.success(
+                            count
+                              ? `Emptied trash (${count})`
+                              : "Nothing to delete",
+                          );
+                        } catch (err) {
+                          console.error(err);
+                          toast.error("Failed to empty trash");
+                        }
+                      }}
+                    >
+                      Empty trash
+                    </button>
+                  </div>
+                  {deletedNotes.map((note) => {
+                    const deletedLabel = note.deleted_at
+                      ? new Date(note.deleted_at).toLocaleDateString(
+                          undefined,
+                          { month: "short", day: "numeric" },
+                        )
+                      : null;
+                    return (
+                      <div
+                        key={note.id}
+                        className="group/trash flex items-center gap-1.5 rounded-sm px-2 py-1"
+                      >
+                        <FileText className="h-3 w-3 shrink-0 text-muted-foreground/40" />
+                        <div className="min-w-0 flex-1">
+                          <span className="block truncate text-[0.625rem] text-muted-foreground">
+                            {note.label || "Untitled"}
+                          </span>
+                          {deletedLabel && (
+                            <span className="block text-[0.5rem] text-muted-foreground/50">
+                              Deleted {deletedLabel}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => dispatch(restoreNote(note.id))}
+                          className="cursor-pointer text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/trash:opacity-100 [&_svg]:h-3 [&_svg]:w-3"
+                          title="Restore"
+                        >
+                          <RotateCcw />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: "Permanently delete",
+                              description: `Permanently delete "${note.label || "Untitled"}"? This cannot be undone.`,
+                              confirmLabel: "Delete forever",
+                              variant: "destructive",
+                            });
+                            if (!ok) return;
+                            try {
+                              await dispatch(
+                                permanentlyDeleteNoteThunk(note.id),
+                              ).unwrap();
+                              toast.success("Note permanently deleted");
+                            } catch (err) {
+                              console.error(err);
+                              toast.error("Failed to permanently delete");
+                            }
+                          }}
+                          className="cursor-pointer text-destructive/70 opacity-0 transition-opacity hover:text-destructive group-hover/trash:opacity-100 [&_svg]:h-3 [&_svg]:w-3"
+                          title="Delete forever"
+                        >
+                          <Trash2 />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom: bulk actions (selection mode) or New Note + New Folder */}
@@ -1174,126 +1372,6 @@ export function NoteSidebar({
             ? createPortal(content, contextMenuPortalTarget)
             : content;
         })()}
-
-      {/* ── Shared with me ─────────────────────────────────────────────── */}
-      {sharedNotes.length > 0 && (
-        <div className="shrink-0 border-t border-border/20">
-          <button
-            onClick={() => setSharedOpen((v) => !v)}
-            className="flex items-center gap-1.5 w-full px-3 py-1.5 text-[0.625rem] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          >
-            <Users className="w-3 h-3" />
-            <span>Shared with me</span>
-            <span className="text-[0.5rem] bg-muted px-1 rounded">
-              {sharedNotes.length}
-            </span>
-            <ChevronDown
-              className={cn(
-                "w-2.5 h-2.5 ml-auto transition-transform",
-                sharedOpen && "rotate-180",
-              )}
-            />
-          </button>
-          {sharedOpen && (
-            <div className="max-h-48 overflow-y-auto px-1 pb-1">
-              {sharedNotes.map((note) => {
-                const level = note._sharedMeta?.permissionLevel ?? "viewer";
-                const canEdit = level === "editor" || level === "admin";
-                const isActive = activeTabId === note.id;
-                const isOpenTab = openTabIds?.includes(note.id) ?? false;
-                return (
-                  <button
-                    key={note.id}
-                    data-note-id={note.id}
-                    onClick={() => selectNote(note.id)}
-                    title={
-                      `${note._sharedMeta?.ownerEmail ?? "Someone"} shared this with you — ` +
-                      (canEdit ? "you can edit" : "view only")
-                    }
-                    className={cn(
-                      "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors",
-                      isActive
-                        ? "bg-accent text-foreground"
-                        : isOpenTab
-                          ? "bg-accent/30 text-foreground/80"
-                          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                    )}
-                  >
-                    <FileText className="w-3.5 h-3.5 shrink-0 opacity-50" />
-                    <span className="flex-1 text-xs truncate leading-tight">
-                      {note.label}
-                    </span>
-                    <span className="text-[0.5625rem] opacity-40 shrink-0 truncate max-w-[80px]">
-                      {note._sharedMeta?.ownerEmail?.split("@")[0] ?? ""}
-                    </span>
-                    {canEdit ? (
-                      <Pencil className="w-3 h-3 shrink-0 opacity-50" />
-                    ) : (
-                      <Eye className="w-3 h-3 shrink-0 opacity-50" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Trash section ──────────────────────────────────────────────── */}
-      <div className="shrink-0 border-t border-border/20">
-        <button
-          onClick={() => {
-            setTrashOpen((v) => !v);
-            if (!trashFetchedRef.current) {
-              trashFetchedRef.current = true;
-              dispatch(fetchDeletedNotes());
-            }
-          }}
-          className="flex items-center gap-1.5 w-full px-3 py-1.5 text-[0.625rem] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        >
-          <Trash2 className="w-3 h-3" />
-          <span>Trash</span>
-          {deletedNotes.length > 0 && (
-            <span className="text-[0.5rem] bg-muted px-1 rounded">
-              {deletedNotes.length}
-            </span>
-          )}
-          <ChevronDown
-            className={cn(
-              "w-2.5 h-2.5 ml-auto transition-transform",
-              trashOpen && "rotate-180",
-            )}
-          />
-        </button>
-        {trashOpen && (
-          <div className="max-h-40 overflow-y-auto px-1 pb-1">
-            {deletedNotes.length === 0 ? (
-              <p className="text-[0.5625rem] text-muted-foreground/50 px-3 py-2">
-                Trash is empty
-              </p>
-            ) : (
-              deletedNotes.map((note) => (
-                <div
-                  key={note.id}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-sm group/trash"
-                >
-                  <FileText className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-                  <span className="text-[0.625rem] text-muted-foreground truncate flex-1">
-                    {note.label || "Untitled"}
-                  </span>
-                  <button
-                    onClick={() => dispatch(restoreNote(note.id))}
-                    className="opacity-0 group-hover/trash:opacity-100 text-muted-foreground hover:text-foreground transition-opacity cursor-pointer [&_svg]:w-3 [&_svg]:h-3"
-                    title="Restore"
-                  >
-                    <RotateCcw />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
 
       {/* ── Dialogs ────────────────────────────────────────────────────── */}
       <CreateFolderDialog

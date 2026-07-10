@@ -32,6 +32,10 @@ import {
 } from "../redux/selectors";
 import { cn } from "@/lib/utils";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
+import {
+  normalizeNoteEditorMode,
+  usePreferredDefaultEditorMode,
+} from "../hooks/usePreferredDefaultEditorMode";
 
 export const NOTE_VIEW_MODES = [
   { mode: "plain", label: "Edit", icon: FileText },
@@ -55,10 +59,13 @@ export function NoteViewControls({
   const dispatch = useAppDispatch();
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
   const historyOpen = useAppSelector(selectInstanceHistoryOpen(instanceId));
-  const editorMode =
+  const preferredDefault = usePreferredDefaultEditorMode();
+  const editorMode = normalizeNoteEditorMode(
     useAppSelector(
-      activeTabId ? selectNoteEditorMode(activeTabId) : () => "plain",
-    ) ?? "plain";
+      activeTabId ? selectNoteEditorMode(activeTabId) : () => undefined,
+    ),
+    preferredDefault,
+  );
 
   const setMode = useCallback(
     (mode: NoteViewMode) => {
@@ -116,7 +123,7 @@ export function NoteViewControls({
       <button
         type="button"
         onClick={toggleHistory}
-        title="Version history"
+        title="Versions"
         className={cn(
           "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
           historyOpen
@@ -125,6 +132,7 @@ export function NoteViewControls({
         )}
       >
         <History />
+        <span className="sr-only">Versions</span>
       </button>
     </div>
   );

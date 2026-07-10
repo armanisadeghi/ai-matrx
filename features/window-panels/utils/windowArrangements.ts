@@ -294,9 +294,13 @@ export function computeGlobalArrangement(
   };
 
   const spec = specs[layout];
+  // Only fill unique slots — extras used to wrap onto occupied tiles and overlap.
+  const slotCount = spec.cols * spec.rows;
+  const placed = windowIds.slice(0, slotCount);
 
-  return windowIds.map((id, i) => {
-    let col, row;
+  return placed.map((id, i) => {
+    let col: number;
+    let row: number;
 
     if (primary === "horizontal") {
       col = i % spec.cols;
@@ -307,12 +311,10 @@ export function computeGlobalArrangement(
     }
 
     if (dirX === "rtl") {
-      const targetCol = col % spec.cols;
-      col = col - targetCol + (spec.cols - 1 - targetCol);
+      col = spec.cols - 1 - col;
     }
     if (dirY === "btt") {
-      const targetRow = row % spec.rows;
-      row = row - targetRow + (spec.rows - 1 - targetRow);
+      row = spec.rows - 1 - row;
     }
 
     const targetIndex = row * spec.cols + col;

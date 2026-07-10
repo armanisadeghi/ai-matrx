@@ -34,6 +34,7 @@ import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteTabBar } from "./NoteTabBar";
 import { NotePresenceBanner } from "./NotePresenceBanner";
 import { NoteVersionHistory } from "./NoteVersionHistory";
+import { NoteMetadataBar } from "./NoteMetadataBar";
 import { FolderQuickPick } from "./FolderQuickPick";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -105,36 +106,41 @@ export function NotesWindowView({
         <div className="flex h-full min-h-0 flex-col">
           {showTabs && <NoteTabBar instanceId={instanceId} />}
           <NotePresenceBanner instanceId={instanceId} />
-          <div className="flex min-h-0 flex-1">
-            {activeTabId ? (
-              splitNoteId ? (
-                <div className="flex min-h-0 flex-1">
-                  <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                    <NoteContentEditor noteId={activeTabId} />
-                  </div>
-                  <div className="w-px shrink-0 bg-border" />
-                  <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                    <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-2 py-0.5">
-                      <span className="truncate text-[0.625rem] font-medium text-muted-foreground">
-                        {splitNoteLabel ?? "Split Note"}
-                      </span>
-                      <button
-                        onClick={() => dispatch(closeSplit(instanceId))}
-                        className="flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                        title="Close split"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-1">
+              {activeTabId ? (
+                splitNoteId ? (
+                  <div className="flex min-h-0 flex-1">
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                      <NoteContentEditor noteId={activeTabId} embedded />
                     </div>
-                    <NoteContentEditor noteId={splitNoteId} />
+                    <div className="w-px shrink-0 bg-border" />
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                      <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-2 py-0.5">
+                        <span className="truncate text-[0.625rem] font-medium text-muted-foreground">
+                          {splitNoteLabel ?? "Split Note"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => dispatch(closeSplit(instanceId))}
+                          className="flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                          title="Close split"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <NoteContentEditor noteId={splitNoteId} embedded />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <NoteContentEditor noteId={activeTabId} embedded />
+                )
               ) : (
-                <NoteContentEditor noteId={activeTabId} />
-              )
-            ) : (
-              <FolderQuickPick instanceId={instanceId} />
-            )}
+                <FolderQuickPick instanceId={instanceId} />
+              )}
+            </div>
+            {/* Chrome only — stats live in WindowPanel footer (NoteStatsFooter). */}
+            {activeTabId && <NoteMetadataBar noteId={activeTabId} />}
           </div>
         </div>
 

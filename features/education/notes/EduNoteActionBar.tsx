@@ -16,9 +16,9 @@ import { selectNoteById } from "@/features/notes/redux/selectors";
 import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
+import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
 import { LiveCaptureButton } from "./LiveCaptureButton";
-import { ConvertNoteDialog } from "./ConvertNoteDialog";
-import { GeneratedArtifactsChips } from "./GeneratedArtifactsChips";
 
 export function EduNoteActionBar({ noteId }: { noteId: string }) {
   const router = useRouter();
@@ -71,14 +71,22 @@ export function EduNoteActionBar({ noteId }: { noteId: string }) {
         />
       </div>
 
-      <GeneratedArtifactsChips noteId={noteId} refreshKey={lineageKey} />
+      <GeneratedFromChips
+        entityType="note"
+        entityId={noteId}
+        refreshKey={lineageKey}
+      />
 
-      <ConvertNoteDialog
+      <ConvertContentDialog
         open={convertOpen}
         onOpenChange={setConvertOpen}
-        noteId={noteId}
-        noteTitle={label}
-        noteContent={content}
+        origin={{
+          kind: "note",
+          entityType: "note",
+          entityId: noteId,
+          title: label,
+        }}
+        text={content}
         orgId={orgId}
         selectionText={selectionText}
         onConverted={() => setLineageKey((k) => k + 1)}

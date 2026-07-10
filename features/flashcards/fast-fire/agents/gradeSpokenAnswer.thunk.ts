@@ -12,6 +12,7 @@
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { CloudFolders } from "@/features/files";
+import { verdictResult } from "@/features/education/trust/types";
 import { studyService } from "@/features/education/study/service/studyService";
 import { getFastFireAgentConfig } from "../config";
 import {
@@ -135,14 +136,14 @@ async function maybeRecord(
     method: args.method ?? "voice_test",
     responseKind: "spoken",
     ...(args.sessionId ? { sessionId: args.sessionId } : {}),
-    ...(grade ? { result: grade.result } : {}),
+    ...(grade ? { result: verdictResult(grade.verdict) } : {}),
     ...(grade ? { scoreValue: grade.score } : {}),
     ...(grade
       ? {
           score: {
             rubric: grade.rubric,
             missing: grade.missing,
-            feedback: grade.feedback,
+            feedback: grade.verdict.explanation,
           },
         }
       : {}),

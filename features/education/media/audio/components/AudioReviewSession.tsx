@@ -40,6 +40,7 @@ import {
 } from "@/features/flashcards/fast-fire/audio/continuousCapture";
 import { gradeSpokenAnswer } from "@/features/flashcards/fast-fire/agents/gradeSpokenAnswer.thunk";
 import type { SpokenGrade } from "@/features/flashcards/fast-fire/agents/grading-core";
+import { verdictResult, type GradeResult } from "@/features/education/trust/types";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import type {

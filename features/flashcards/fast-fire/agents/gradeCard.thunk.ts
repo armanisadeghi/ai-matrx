@@ -37,14 +37,14 @@ import {
   audioExtensionForType,
   normalizeAudioContentType,
 } from "@/features/audio/utils/audio-mime";
+import { verdictResult } from "@/features/education/trust/types";
 import { getFastFireAgentConfig } from "../config";
+import { coerceSpokenGrade } from "./grading-core";
 import {
   gradePending,
   gradeResolved,
   gradeSkipped,
   gradeFailed,
-  type GradeResult,
-  type GradeRubric,
 } from "../redux/fastFireSlice";
 
 const FC_CARD_ITEM_TYPE = "fc_card";
@@ -60,47 +60,10 @@ export interface GradeCardArgs {
   sessionId: string | null;
 }
 
-/** Narrow an unknown extracted object to the fc_grade_spoken shape. */
-function coerceGrade(raw: unknown): {
-  score: number;
-  result: GradeResult;
-  rubric: GradeRubric;
-  transcript: string;
-  feedback: string;
-  missing: string[];
-} | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const r = raw as Record<string, unknown>;
-  const num = (v: unknown, fallback: number): number =>
-    typeof v === "number" && Number.isFinite(v) ? v : fallback;
-  const str = (v: unknown): string => (typeof v === "string" ? v : "");
-  const resultRaw = str(r.result);
-  const result: GradeResult =
-    resultRaw === "correct" ||
-    resultRaw === "partial" ||
-    resultRaw === "incorrect"
-      ? resultRaw
-      : num(r.score, 0) >= 0.8
-        ? "correct"
-        : num(r.score, 0) >= 0.4
-          ? "partial"
-          : "incorrect";
-  const rubricRaw = (r.rubric as Record<string, unknown>) ?? {};
-  return {
-    score: Math.min(1, Math.max(0, num(r.score, 0))),
-    result,
-    rubric: {
-      accuracy: num(rubricRaw.accuracy, 0),
-      completeness: num(rubricRaw.completeness, 0),
-      clarity: num(rubricRaw.clarity, 0),
-    },
-    transcript: str(r.transcript),
-    feedback: str(r.audio_feedback) || str(r.feedback),
-    missing: Array.isArray(r.missing)
-      ? r.missing.filter((x): x is string => typeof x === "string")
-      : [],
-  };
-}
+// Coercion of the grader's structured output is the shared `coerceSpokenGrade`
+// (grading-core) — the ONE spoken-grade coercer. (This thunk carried a
+// byte-for-byte inline copy as deliberate tech debt; deleted at the trust
+// unification. FastFire's flat slice payload is built from the adapter below.)
 
 /** Wait for the json extractor to finalize, then read the first object. */
 async function waitForGrade(
@@ -241,10 +204,14 @@ export function gradeCard(args: GradeCardArgs) {
       const requestId = exec.requestId;
       if (!requestId) throw new Error("grader returned no request id");
 
-      // 5. Poll for the structured grade.
+      // 5. Poll for the structured grade + coerce via the shared spoken coercer.
       const raw = await waitForGrade(getState, requestId);
-      const grade = coerceGrade(raw);
+      const grade = coerceSpokenGrade(raw);
       if (!grade) throw new Error("grader did not return a structured grade");
+      // Flatten the SpokenGrade adapter onto the slice's per-card wire shape:
+      // the verdict's result token + explanation, plus the spoken extras.
+      const result = verdictResult(grade.verdict);
+      const feedback = grade.verdict.explanation;
 
       // 6. Into Redux — the ONLY way the grade reaches the UI.
       dispatch(
@@ -252,25 +219,26 @@ export function gradeCard(args: GradeCardArgs) {
           cardId,
           runId: sessionId,
           score: grade.score,
-          result: grade.result,
+          result,
           rubric: grade.rubric,
           transcript: grade.transcript,
-          feedback: grade.feedback,
+          feedback,
           missing: grade.missing,
         }),
       );
 
-      // 7. Record the attempt on the study spine.
+      // 7. Record the attempt on the study spine (score jsonb shape unchanged:
+      //    { rubric, missing, feedback }).
       await recordAttempt({
         cardId,
         sessionId,
         responseAudioFileId,
-        result: grade.result,
+        result,
         scoreValue: grade.score,
         score: {
           rubric: grade.rubric,
           missing: grade.missing,
-          feedback: grade.feedback,
+          feedback,
         },
         transcript: grade.transcript || null,
         gradedBy: config.graderAgentId,

@@ -131,6 +131,11 @@ export const defaultUserPreferences: UserPreferences = {
     primaryAudioVoice: "default",
     primaryTutorPersona: "default",
   },
+  tutor: {
+    // Must match DEFAULT_TUTOR_SETTINGS in features/education/tutor/settings.ts.
+    teachingMode: "Socratic",
+    personalityStyle: "Encouraging & Step-by-Step",
+  },
   playground: {
     lastRecipeId: "",
     preferredProvider: "",

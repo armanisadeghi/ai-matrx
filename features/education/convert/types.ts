@@ -59,6 +59,7 @@ export interface SourceRef {
     | "paste"
     | "note"
     | "deck"
+    | "assessment"
     | "transcript"
     | "processed_document";
   /** Canonical anchor — the cld_files id lineage edges point at. */
