@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
-import type { ClientPage, PageVersionOperation } from "@/features/cms/types";
+import type { ClientPage, VersionOperation } from "@/features/cms/types";
 import { useCmsVersions } from "@/features/cms/hooks/useCmsVersions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +51,7 @@ interface PageEditorProps {
 }
 
 /** How a `history.row_versions` operation reads to a human. */
-const VERSION_OPERATION_LABEL: Record<PageVersionOperation, string> = {
+const VERSION_OPERATION_LABEL: Record<VersionOperation, string> = {
   INSERT: "Page created",
   UPDATE: "Content changed",
   DELETE: "Page deleted",

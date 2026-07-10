@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-07-09`
+**Last updated:** `2026-07-10`
 
 ---
 
@@ -53,6 +53,45 @@ build plan this feature is part of (project P5).
 
 ---
 
+## Agent surfaces (Surface Values)
+
+Five `ui_surface` rows under `matrx-user/` give every CMS/HTML-page route a canonical v3 right-click
+context menu with live agent context — see the `surface-authoring` and `surface-pro-rollout` skills
+for the general contract this section instantiates.
+
+| Surface | Route(s) | Menu | Notes |
+|---|---|---|---|
+| `matrx-user/cms` | `/cms` | `NonEditableContextMenu` (page + per-card) | List/entry hub — `owned_sites_summary`, no `site_structure` |
+| `matrx-user/cms-site` | `/cms/[siteId]` | `NonEditableContextMenu` | Page-list workspace; first surface to emit `site_structure` |
+| `matrx-user/cms-page` | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer` |
+| `matrx-user/cms-component` | `/cms/[siteId]/components` | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards) | Shared header/footer editor |
+| `matrx-user/html-page` | `/cms/html-pages`, `/cms/html-pages/[pageId]` | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor` |
+
+**The framing idea:** every website surface (`cms-site`/`cms-page`/`cms-component`) emits the *same*
+compact `site_structure` XML — `features/cms/utils/buildSiteStructureXml.ts` (pure, size-capped at
+12KB, collapses non-current pages under load). `matrx-user/html-page` emits the smaller, distinct
+`html_pages_structure` (`features/html-pages/utils/buildHtmlPagesStructureXml.ts`) — a flat sibling
+list, never the site tree; the two content systems never share a framing shape. `SiteLayoutClient`
+(`app/(core)/cms/[siteId]/SiteLayoutClient.tsx`) caches `pages`/`components` per site so every child
+route rebuilds the XML from the same in-memory list instead of refetching on every keystroke —
+`refreshPages()`/`refreshComponents()` after any create/update/delete/publish/discard/rollback.
+
+**Per-surface agent-context files** live under `features/cms/agent-context/` (`features/html-pages/agent-context/`
+for the standalone system): `build<Surface>ContextData.ts` (pure `contextData` builder →
+`create<Surface>Scope(...)`), `<surface>ContextMenuProps.ts` (`sourceFeature`/`surfaceName` identity),
+`<surface>ExtraSections.ts` (real Save/Publish/Discard/Navigate handlers, never toast stubs). Each has
+a matching `use<Surface>SurfaceScope` hook under `features/cms/hooks/` /
+`features/html-pages/hooks/` returning `() => SurfaceScopePayload` so menus read live editor state at
+click time, not a stale snapshot.
+
+**Agent skill:** `skill.definition` row `cms-authoring` (migration `migrations/cms_surfaces_seed.sql`)
+teaches CMS-bound agents the two-content-system model, draft/publish twins, `site_structure`/
+`html_pages_structure`, URL rules, `agent_write_policy`, and the aidream CMS tool map. Opt-in via
+`skill_config.included` on system agents — never auto-attached. Builder checklist for extending any
+of the five surfaces: `features/cms/SKILL.md`.
+
+---
+
 ## Admin map
 
 - **Map config:** `app/(core)/cms/admin/page.tsx`
@@ -70,24 +109,36 @@ Supabase MCP at the wrong project for this feature.
 - `client_sites` — one row per site. `settings` jsonb holds `agent_write_policy` (`blocked | draft_only | full`, F4) and `policy_overrides` — no dedicated columns.
 - `client_pages` — draft/publish twin columns (`*_draft`), `has_draft`, `is_published`, category/slug routing fields.
 - `client_components` — header/footer/etc., same draft-twin pattern.
-- `history.row_versions` — the canonical append-only page-version log (aidream CMS migration `0002`).
-  EVERY change to a `client_pages` row is captured by the `_history` trigger with a full jsonb
-  snapshot + an incrementing `version`. Not reachable over PostgREST directly — see the version RPCs
-  below. The legacy `client_page_versions` table was retired (migration `0004`) and archived as
-  `graveyard.client_page_versions`.
+- `history.row_versions` — the canonical append-only version log (aidream CMS migrations `0002` +
+  `0005`). EVERY change to a versioned row is captured by its `_history` trigger with a full jsonb
+  snapshot + an incrementing `version` (bumped by `_touch`). **FIVE entities are versioned** —
+  `client_sites`, `client_pages`, `client_components`, `client_assets`, `html_pages`. The
+  append-only tables (`client_activity_log`, `form_submissions`) are NOT, mirroring the main DB.
+  Don't trust this list — ask the DB: `select * from platform.versioning_audit()`. Not reachable
+  over PostgREST directly — see the version RPCs below. Legacy `client_page_versions` was retired
+  (migration `0004`) and archived as `graveyard.client_page_versions`.
 - `client_assets` — schema only, no service (Wave 2, out of scope here).
 - `client_activity_log` — the C6 contract. Every mutation writes one row; `changes` jsonb always carries `actor: "agent"|"human"|"system"` + optional `metadata` (e.g. `capture_media_refs[]` from P4's verification loop).
 - `html_pages` — standalone quick-publish pages, no site/draft concept.
 - `client_content_exceptions` — **does not exist yet.** P1 owns creating it (schema shape: P3's `matrx_content_guard.models.ContentException` + `Violation`, `packages/matrx-content-guard/matrx_content_guard/models.py`). `/api/cms/approvals` and `ApprovalsQueuePanel` are built against that shape and self-report `available: false` until the table lands.
 
-**Version RPCs (aidream CMS migration `0003`).** `history` and `platform` are not exposed to
-PostgREST, so the routes reach the version system through a `public` façade that mirrors the main
+**Version RPCs (aidream CMS migrations `0003` + `0006`).** `history` and `platform` are not exposed
+to PostgREST, so the routes reach the version system through a `public` façade that mirrors the main
 DB's names: `version_list(p_token, p_id, …)`, `version_get(p_token, p_version_id)`,
-`version_snapshot(p_token, p_id, p_version)`, `version_restore(p_token, p_id, p_version)` — token is
-always `'client_page'`. They are SECURITY DEFINER with **EXECUTE locked to `service_role`** and carry
-**no in-DB access gate** (this project has no `iam`): the route MUST run `verifyPageOwnership` before
-returning or restoring anything. `version_restore` restores content columns only and is itself a
-versioned change — history is appended to, never rewritten.
+`version_snapshot(p_token, p_id, p_version)`, `version_restore(p_token, p_id, p_version)`. `p_token`
+is a `platform.entity_types` token — one of the five versioned entities, not just `'client_page'`.
+
+They are SECURITY DEFINER with **EXECUTE locked to `service_role`** and carry **no in-DB access
+gate** (this project has no `iam`): the route MUST verify ownership before returning or restoring
+anything. `app/api/cms/versions/route.ts` holds that boundary as an explicit `OWNERSHIP` map from
+entity token → check (site → `owner_user_id`; page/component/asset → site → owner; `html_page` → its
+direct `user_id`). **An entity absent from that map is unreachable, by construction** — a `400`, not
+a leak.
+
+`version_restore` restores content columns only and is itself a versioned change — history is
+appended to, never rewritten. Each entity declares the identity/ownership columns a restore must
+never touch (`platform.entity_types.restore_exclude_columns`), so a rollback can never rewrite
+`client_sites.owner_user_id` or `html_pages.user_id`.
 
 **FK cascade (verified live 2026-07-10):** `client_pages`, `client_components`, `client_assets`,
 `client_activity_log` → `client_sites` are all `ON DELETE CASCADE`. Site delete is a single
@@ -95,8 +146,8 @@ versioned change — history is appended to, never rewritten.
 cascade: the log outlives the rows it describes.
 
 **Key types** (`features/cms/types.ts`) — `ClientSite`, `ClientSiteSettings`, `AgentWritePolicy`,
-`ClientPage`, `ClientPageSummary`, `ClientPageVersion`, `ClientPageVersionDetail`,
-`PageVersionOperation`, `ClientComponent`, `ClientActivityLog`,
+`ClientPage`, `ClientPageSummary`, `ClientEntityVersion`, `ClientEntityVersionDetail`,
+`CmsEntityType`, `VersionOperation`, `PageVersionContent`, `ClientComponent`, `ClientActivityLog`,
 `ClientActivityChanges`, `ContentException`. No generated types exist for this project (it's not
 `txzxabzwovsujtloxrus`) — these are hand-maintained; keep them in sync with live schema by hand.
 
@@ -115,13 +166,18 @@ the intended drift guard, had not landed as of 2026-07-09 — re-derive against 
 `publish_page_draft` RPC the same way; discard likewise. Rollback goes through `version_restore`.
 
 ### 1b. Human reads / restores a version
-`PageEditor` "History" tab → `useCmsVersions` → `CmsVersionService.listVersions` →
-`POST /api/cms/versions {action:"list"}` → ownership check → `version_list` RPC. Every change shows
+`PageEditor` "History" tab → `useCmsVersions` → `CmsVersionService.listVersions(rowId, entityType)` →
+`POST /api/cms/versions {action:"list"}` → ownership check → `version_list` RPC. `entityType`
+defaults to `client_page`, and `list` still accepts the legacy `pageId` param. Every change shows
 (`operation`: INSERT/UPDATE/DELETE), the live one carries `is_current` and its Restore button is
 disabled. Restore → `POST /api/cms/pages {action:"rollback"}` → `version_restore`, then the list is
-refetched because the restore added a version. **This is the same log, in the same shape, that
-aidream's `version_service` and the `cms_page` `versions` tool action return** — matched field for
-field (`services/cms/dtos.py::VersionSummary`/`VersionRead`). Change one, change both.
+refetched because the restore added a version.
+
+`get` returns the raw row snapshot as `data` — deliberately not flattened, since the columns differ
+per entity; `features/cms/utils/pageVersionContent.ts` is the typed reader for `client_page`.
+**This is the same log, in the same shape, that aidream's `version_service` and the `versions` tool
+action return** — matched field for field (`services/cms/dtos.py::VersionSummary`/`VersionRead`).
+Change one, change both.
 
 ### 2. Arman watches agent activity (visibility surface)
 `/administration/cms-agents` → `CmsAgentsAdminClient` fetches `admin_list_sites` once, then each
@@ -170,7 +226,7 @@ logged. **This route only edits the setting — enforcement is P1's service-laye
 
 ## Related features
 
-- Cross-links: `common-docs/cms-system/FEATURE.md` (system-of-record, cross-repo), `features/html-pages/README.md` (the sibling quick-publish system, same DB), `aidream/docs/cms_agent_authoring/README.md` (the 5-project agent-authoring build this feature's P5 half belongs to), `aidream/packages/matrx-content-guard/matrx_content_guard/models.py` (F3 exception shape this feature's approvals queue is built against)
+- Cross-links: `common-docs/cms-system/FEATURE.md` (system-of-record, cross-repo), `features/html-pages/README.md` (the sibling quick-publish system, same DB), `aidream/docs/cms_agent_authoring/README.md` (the 5-project agent-authoring build this feature's P5 half belongs to), `aidream/packages/matrx-content-guard/matrx_content_guard/models.py` (F3 exception shape this feature's approvals queue is built against), `features/surfaces/FEATURE.md` (Surface Values contract the five CMS surfaces implement), `features/context-menu-v3/FEATURE.md` (canonical v3 menu every CMS route mounts), `features/cms/SKILL.md` (builder checklist for the surfaces + skill)
 
 ---
 
@@ -209,6 +265,29 @@ UI-complete here but only take effect once P1's service layer reads them.
   agent-write-policy editor, approvals queue); C4 URL builder (`pageUrls.ts`) added; this
   FEATURE.md created (feature predated the doctrine).
 
+- `2026-07-10` — CMS Surfaces Rollout: five `ui_surface` rows (`matrx-user/cms`, `cms-site`,
+  `cms-page`, `cms-component`, `html-page`) authored, seeded live (`migrations/cms_surfaces_seed.sql`,
+  applied + ledgered), and pro-rolled-out with canonical v3 context menus (`EditableContextMenu`/
+  `NonEditableContextMenu`) + `ProTextarea` on every HTML/CSS/JS/meta-description editor. New
+  `buildSiteStructureXml`/`buildHtmlPagesStructureXml` framing utils give every website surface the
+  same size-capped "big picture" XML regardless of where the user is. `SiteLayoutClient` now caches
+  `pages`/`components` per site (`useSiteContext()`) so the framing XML never drifts from what a
+  sibling route just saved. `skill.definition` row `cms-authoring` + `features/cms/SKILL.md` teach
+  bound agents the model. `pnpm check:surface-drift` and `pnpm type-check` clean.
+
+- `2026-07-10` — Verification pass on the CMS Surfaces Rollout: right-clicked every mounted region
+  across all five surfaces live (`/cms`, `/cms/[siteId]`, page editor HTML/CSS/JS/SEO tabs, component
+  editor, `/cms/html-pages` list + editor) confirming the v3 menu, surface footer, and `site_structure`/
+  `html_pages_structure` appear with no `VALUE MAPPING GAP` diagnostics. Found and fixed a real bug in
+  `matrx-user/html-page`: `content`/`selection`/`text_before`/`text_after` were always bound to the
+  full HTML buffer regardless of active tab, so the Metadata tab's menu leaked the entire HTML document
+  into `content` instead of the meta description — fixed by gating on `activeTab`
+  (`buildHtmlPageContextData.ts`, `useHtmlPageSurfaceScope.ts`), mirroring `cms-page`'s existing
+  `activeTabContent` pattern. Documented (not fixed — shared-component blast radius) that Monaco's
+  native context menu wins over the v3 menu when right-clicking directly on HTML-tab code lines; see
+  `features/html-pages/README.md` → "Agent surface". `pnpm check:surface-drift` (33 surfaces, 576
+  values) and `pnpm type-check` both clean on every touched file.
+
 - `2026-07-10` — Version system cut over to the canonical `history.row_versions` log. `/api/cms/versions`
   `list`/`get` now call the `version_list` / `version_get` RPCs; `/api/cms/pages` `rollback` calls
   `version_restore` (audit-preserving) instead of the retired `rollback_to_version`. `ClientPageVersion`
@@ -219,3 +298,14 @@ UI-complete here but only take effect once P1's service layer reads them.
   (table archived to `graveyard.client_page_versions`; `last_published_at` write moved into
   `publish_page_draft`). Verified live end-to-end on `dev-website`. Closes the
   `cms-versioning-fe-cutover` handoff.
+
+- `2026-07-10` — Versioning extended from pages to EVERY CMS content entity (aidream CMS migrations
+  `0005` + `0006`): `client_sites`, `client_components`, `client_assets` and `html_pages` now carry a
+  `version` column and the canonical `_touch` + `_history` triggers. The public façade went generic
+  (`page_id` → `row_id`, `published_by` → `actor_id`, new `entity_type`), so `ClientPageVersion` →
+  `ClientEntityVersion` / `ClientEntityVersionDetail` (raw `data` snapshot + `pageVersionContent()`
+  reader). `/api/cms/versions` takes an `entityType` token and enforces a per-entity `OWNERSHIP` map
+  (new `verifyAssetOwnership` / `verifyHtmlPageOwnership` in `_lib/cmsDb.ts`); an unknown token is a
+  400. Verified live end-to-end: site/page/component/html_page history reads, a raw-snapshot `get`,
+  and 403 on every entity for rows the caller does not own. Also graveyarded the orphan CMS
+  `dashboard_saved_views` (0 rows; the real one is on the main project).

@@ -2,19 +2,19 @@
 
 import { useState, useCallback } from 'react';
 import { CmsVersionService } from '../services/cmsService';
-import type { ClientPageVersion, ClientPageVersionDetail } from '../types';
+import type { CmsEntityType, ClientEntityVersion, ClientEntityVersionDetail } from '../types';
 
 export function useCmsVersions() {
-    const [versions, setVersions] = useState<ClientPageVersion[]>([]);
-    const [selectedVersion, setSelectedVersion] = useState<ClientPageVersionDetail | null>(null);
+    const [versions, setVersions] = useState<ClientEntityVersion[]>([]);
+    const [selectedVersion, setSelectedVersion] = useState<ClientEntityVersionDetail | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchVersions = useCallback(async (pageId: string) => {
+    const fetchVersions = useCallback(async (rowId: string, entityType: CmsEntityType = 'client_page') => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await CmsVersionService.listVersions(pageId);
+            const data = await CmsVersionService.listVersions(rowId, entityType);
             setVersions(data);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to load version history');
@@ -23,11 +23,11 @@ export function useCmsVersions() {
         }
     }, []);
 
-    const viewVersion = useCallback(async (versionId: string) => {
+    const viewVersion = useCallback(async (versionId: string, entityType: CmsEntityType = 'client_page') => {
         setIsLoading(true);
         setError(null);
         try {
-            const version = await CmsVersionService.getVersion(versionId);
+            const version = await CmsVersionService.getVersion(versionId, entityType);
             setSelectedVersion(version);
             return version;
         } catch (err: unknown) {

@@ -69,3 +69,36 @@ export async function verifyComponentOwnership(
   const ok = await verifySiteOwnership(db, comp.client_id, userId);
   return { ok, clientId: comp.client_id };
 }
+
+/** Verify the user owns the site that an asset belongs to. */
+export async function verifyAssetOwnership(
+  db: SupabaseClient,
+  assetId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data: asset } = await db
+    .from("client_assets")
+    .select("client_id")
+    .eq("id", assetId)
+    .single();
+  if (!asset) return false;
+  return verifySiteOwnership(db, asset.client_id, userId);
+}
+
+/**
+ * Verify the user owns an `html_pages` row. These have no site — ownership is the
+ * direct `user_id` column (same rule aidream's `services/cms/access.py` applies).
+ */
+export async function verifyHtmlPageOwnership(
+  db: SupabaseClient,
+  pageId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await db
+    .from("html_pages")
+    .select("id")
+    .eq("id", pageId)
+    .eq("user_id", userId)
+    .single();
+  return !!data;
+}

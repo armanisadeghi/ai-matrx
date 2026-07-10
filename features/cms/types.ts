@@ -104,30 +104,56 @@ export interface ClientPageSummary {
   created_at: string;
 }
 
-// ─── Page Version ──────────────────────────────────────────────────────
-// The canonical append-only history (`history.row_versions` on the CMS project):
-// EVERY change to a page — create, edit, draft save, publish, rollback — is one
-// row. Shapes mirror aidream's `VersionSummary` / `VersionRead`
-// (`services/cms/dtos.py`) 1:1 so both surfaces agree.
+// ─── Entity Version ────────────────────────────────────────────────────
+// The canonical append-only history (`history.row_versions` on the CMS project).
+// EVERY change to a versioned row — create, edit, draft save, publish, rollback —
+// is one entry. FIVE entities are versioned (CMS migration 0005), not just pages;
+// the `entity_type` token says which. Shapes mirror aidream's `VersionSummary` /
+// `VersionRead` (`services/cms/dtos.py`) 1:1 so both surfaces agree.
 
-export type PageVersionOperation = "INSERT" | "UPDATE" | "DELETE";
+export type VersionOperation = "INSERT" | "UPDATE" | "DELETE";
 
-export interface ClientPageVersion {
+/** `platform.entity_types` tokens for the versioned CMS entities. */
+export type CmsEntityType =
+  | "client_site"
+  | "client_page"
+  | "client_component"
+  | "client_asset"
+  | "html_page";
+
+export interface ClientEntityVersion {
   /** `history.row_versions.id` — a bigint, carried as a string. */
   id: string;
-  page_id: string;
-  /** The page's `version` at the time of the change. Rollback targets this. */
+  entity_type: CmsEntityType;
+  /** The versioned row's id (a page id, a site id, …). */
+  row_id: string;
+  /** The row's `version` at the time of the change. Rollback targets this. */
   version_number: number;
-  operation: PageVersionOperation;
-  /** `actor_id`, falling back to the snapshot's `last_published_by`. */
-  published_by: string | null;
+  operation: VersionOperation;
+  /**
+   * Who made the change. NULL whenever the writer set neither `app.user_id` nor
+   * a JWT — aidream connects as `postgres` and the `/api/cms/*` routes use the
+   * secret key, so this is usually NULL. Authoritative attribution for those
+   * writes lives in `client_activity_log`.
+   */
+  actor_id: string | null;
   occurred_at: string;
-  /** True when this version is the page's live content right now. */
+  /** True when this version is the row's live content right now. */
   is_current: boolean;
 }
 
-/** A version plus the full content snapshot it captured. */
-export interface ClientPageVersionDetail extends ClientPageVersion {
+/**
+ * A version plus the raw row snapshot it captured. `data` is NOT flattened into
+ * typed fields — the columns differ per entity, and a page-shaped version DTO is
+ * exactly what made the old system a lie. Callers read the fields their entity has;
+ * `pageVersionContent()` below is the typed reader for `client_page`.
+ */
+export interface ClientEntityVersionDetail extends ClientEntityVersion {
+  data: Record<string, unknown>;
+}
+
+/** The content fields a `client_page` snapshot carries, read out of `data`. */
+export interface PageVersionContent {
   title: string | null;
   slug: string | null;
   is_published: boolean | null;

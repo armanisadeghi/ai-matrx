@@ -11,8 +11,9 @@ import type {
     ClientSite,
     ClientPage,
     ClientPageSummary,
-    ClientPageVersion,
-    ClientPageVersionDetail,
+    CmsEntityType,
+    ClientEntityVersion,
+    ClientEntityVersionDetail,
     ClientComponent,
     ClientActivityLog,
     AgentWritePolicy,
@@ -223,16 +224,18 @@ export const CmsPageService = {
 
 // ── Versions ─────────────────────────────────────────────────────────────────
 
+// Five CMS entities are versioned (client_site / client_page / client_component /
+// client_asset / html_page). `entityType` defaults to `client_page`.
 export const CmsVersionService = {
-    /** Full change history for a page, newest first. Every change is an entry. */
-    async listVersions(pageId: string): Promise<ClientPageVersion[]> {
-        const res = await callApi<{ versions: ClientPageVersion[] }>('versions', 'list', { pageId });
+    /** Full change history for a row, newest first. Every change is an entry. */
+    async listVersions(rowId: string, entityType: CmsEntityType = 'client_page'): Promise<ClientEntityVersion[]> {
+        const res = await callApi<{ versions: ClientEntityVersion[] }>('versions', 'list', { rowId, entityType });
         return res.versions;
     },
 
-    /** One history entry (by its `id`) with the content snapshot it captured. */
-    async getVersion(versionId: string): Promise<ClientPageVersionDetail> {
-        const res = await callApi<{ version: ClientPageVersionDetail }>('versions', 'get', { versionId });
+    /** One history entry (by its `id`) with the raw row snapshot it captured. */
+    async getVersion(versionId: string, entityType: CmsEntityType = 'client_page'): Promise<ClientEntityVersionDetail> {
+        const res = await callApi<{ version: ClientEntityVersionDetail }>('versions', 'get', { versionId, entityType });
         return res.version;
     },
 };

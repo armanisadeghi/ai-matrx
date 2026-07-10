@@ -1,62 +1,64 @@
 /**
- * CMS Versions API Route — v4 (canonical history, ownership-secured)
+ * CMS Versions API Route — v5 (canonical history, every entity, ownership-secured)
  *
  * Reads the canonical append-only log `history.row_versions` on the CMS project
- * through its public façade RPCs (`version_list` / `version_get`, migration
- * `db/migrations/cms/0003_public_version_api.sql` in aidream). EVERY change to a
- * page is a version here — create, edit, draft save, publish, rollback — not
- * just first publishes as the retired `client_page_versions` table held.
+ * through its public façade RPCs (`version_list` / `version_get`, aidream CMS
+ * migrations `0003` + `0006`). EVERY change to a versioned row is an entry —
+ * create, edit, draft save, publish, rollback.
+ *
+ * FIVE entities are versioned (migration `0005`), not just pages. The `entityType`
+ * param is a `platform.entity_types` token; it defaults to `client_page` so the
+ * page History tab keeps working unchanged.
  *
  * The RPCs are SECURITY DEFINER with EXECUTE locked to `service_role` and carry
- * NO in-DB access gate (the CMS project has no `iam`), so the page→site→owner
- * chain MUST be verified here before any version data is returned — the same
- * contract aidream's `services/cms/access.py` enforces on its side.
- *
- * Read-only: versions are written only by the `_history` trigger, and restored
- * only by `pages` `rollback`.
+ * NO in-DB access gate (the CMS project has no `iam`), so the ownership chain MUST
+ * be verified HERE before any version data is returned — the same contract
+ * aidream's `services/cms/access.py` enforces on its side. `verifyEntityOwnership`
+ * below is that chain; an entity absent from it is unreachable, by construction.
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
-import { getCmsClient, verifyPageOwnership } from "../_lib/cmsDb";
+import {
+  getCmsClient,
+  verifyPageOwnership,
+  verifySiteOwnership,
+  verifyComponentOwnership,
+  verifyAssetOwnership,
+  verifyHtmlPageOwnership,
+} from "../_lib/cmsDb";
 import type {
-  ClientPageVersion,
-  ClientPageVersionDetail,
+  CmsEntityType,
+  ClientEntityVersion,
+  ClientEntityVersionDetail,
 } from "@/features/cms/types";
 
-/** platform.entity_types token for `public.client_pages` on the CMS project. */
-const PAGE_TOKEN = "client_page";
-
 /** The `version_get` RPC returns the summary fields plus the raw row snapshot. */
-type VersionGetRow = ClientPageVersion & { row_data: Record<string, unknown> };
+type VersionGetRow = ClientEntityVersion & { row_data: Record<string, unknown> };
 
-function str(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
+/**
+ * entity token -> its ownership check. This map IS the authorization boundary:
+ * an entity that is not here cannot be read through this route, even if the DB
+ * versions it.
+ */
+const OWNERSHIP: Record<
+  CmsEntityType,
+  (db: SupabaseClient, rowId: string, userId: string) => Promise<boolean>
+> = {
+  client_site: verifySiteOwnership,
+  client_page: verifyPageOwnership,
+  client_component: async (db, rowId, userId) =>
+    (await verifyComponentOwnership(db, rowId, userId)).ok,
+  client_asset: verifyAssetOwnership,
+  html_page: verifyHtmlPageOwnership,
+};
 
-/** Flatten a `row_data` snapshot into the content fields the version UI reads. */
-function toVersionDetail(row: VersionGetRow): ClientPageVersionDetail {
-  const d = row.row_data ?? {};
-  return {
-    id: row.id,
-    page_id: row.page_id,
-    version_number: row.version_number,
-    operation: row.operation,
-    published_by: row.published_by,
-    occurred_at: row.occurred_at,
-    is_current: row.is_current,
-    title: str(d.title),
-    slug: str(d.slug),
-    is_published: typeof d.is_published === "boolean" ? d.is_published : null,
-    html_content: str(d.html_content),
-    css_content: str(d.css_content),
-    js_content: str(d.js_content),
-    meta_title: str(d.meta_title),
-    meta_description: str(d.meta_description),
-    meta_keywords: str(d.meta_keywords),
-    og_image: str(d.og_image),
-    canonical_url: str(d.canonical_url),
-  };
+function resolveEntityType(raw: unknown): CmsEntityType | null {
+  if (raw === undefined || raw === null) return "client_page"; // back-compat default
+  return typeof raw === "string" && raw in OWNERSHIP
+    ? (raw as CmsEntityType)
+    : null;
 }
 
 export async function POST(request: NextRequest) {
@@ -75,26 +77,38 @@ export async function POST(request: NextRequest) {
     const { action, ...params } = body;
     const db = getCmsClient();
 
+    const entityType = resolveEntityType(params.entityType);
+    if (!entityType) {
+      return NextResponse.json(
+        {
+          error: `Unknown entityType: ${String(params.entityType)}. Known: ${Object.keys(OWNERSHIP).join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+
     switch (action) {
       case "list": {
-        const { pageId } = params;
-        if (!pageId) {
+        // `pageId` is the legacy name the page History tab sends; `rowId` is the
+        // general one. Exactly one is required.
+        const rowId: string | undefined = params.rowId ?? params.pageId;
+        if (!rowId) {
           return NextResponse.json(
-            { error: "pageId is required" },
+            { error: "rowId (or pageId) is required" },
             { status: 400 },
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await OWNERSHIP[entityType](db, rowId, user.id))) {
           return NextResponse.json(
-            { error: "Page not found or access denied" },
+            { error: "Not found or access denied" },
             { status: 403 },
           );
         }
 
         const { data, error } = await db.rpc("version_list", {
-          p_token: PAGE_TOKEN,
-          p_id: pageId,
+          p_token: entityType,
+          p_id: rowId,
         });
 
         if (error) {
@@ -103,7 +117,7 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({
-          versions: (data ?? []) as ClientPageVersion[],
+          versions: (data ?? []) as ClientEntityVersion[],
         });
       }
 
@@ -117,7 +131,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { data, error } = await db.rpc("version_get", {
-          p_token: PAGE_TOKEN,
+          p_token: entityType,
           p_version_id: Number(versionId),
         });
 
@@ -130,13 +144,24 @@ export async function POST(request: NextRequest) {
 
         const row = data as VersionGetRow;
 
-        // Ownership is checked on the page the version belongs to — the RPC
-        // itself has no access gate.
-        if (!(await verifyPageOwnership(db, row.page_id, user.id))) {
+        // Ownership is checked on the ROW the version belongs to — the RPC itself
+        // has no access gate.
+        if (!(await OWNERSHIP[entityType](db, row.row_id, user.id))) {
           return NextResponse.json({ error: "Access denied" }, { status: 403 });
         }
 
-        return NextResponse.json({ version: toVersionDetail(row) });
+        const version: ClientEntityVersionDetail = {
+          id: row.id,
+          entity_type: row.entity_type,
+          row_id: row.row_id,
+          version_number: row.version_number,
+          operation: row.operation,
+          actor_id: row.actor_id,
+          occurred_at: row.occurred_at,
+          is_current: row.is_current,
+          data: row.row_data ?? {},
+        };
+        return NextResponse.json({ version });
       }
 
       default:
