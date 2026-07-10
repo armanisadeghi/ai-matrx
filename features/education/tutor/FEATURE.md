@@ -50,7 +50,8 @@ promote with the stale-focus guard), extracted from `ChatRoomClient`. `/chat` ca
 
 ## How grounding works (load-bearing)
 
-The tutor is a streaming TEXT chat agent (`d80cc27e-…`) with **zero user-facing variables** (so
+The tutor is a streaming TEXT chat agent (`d80cc27e-…`, the current live id in `agents.ts` — see
+`LIVE_AGENTS.md` for the full supersession chain) with **zero user-facing variables** (so
 the chat composer stays clean) and **four declared CONTEXT SLOTS**: `learner_memory`,
 `study_material`, `teaching_mode`, `personality_style` (each with a `max_inline_chars` ceiling —
 content ≤ that is inlined into the model's view, capped at 5000). Grounding is **context, not
@@ -109,7 +110,8 @@ primitives, the P0 trust affordances, the agent-execution + chat-schema conversa
   on the send path — wire when those contracts land in the repo.
 
 ## Change log
-- **2026-07-07** — P2 shipped: authored the tutor (`46b7b357`) + `fc_micro_coach` (`0d6c715b`)
+- **2026-07-07** — P2 shipped: authored the tutor (`46b7b357`, later superseded same-day by the
+  context-slot version `d80cc27e` — see `LIVE_AGENTS.md`) + `fc_micro_coach` (`0d6c715b`)
   agents (live-verified via agent_run: grounding, cross-session memory recall, inline citations,
   Socratic); cross-session `learnerMemory` + `grounding` assemblers; the `/education/tutor`
   surface (home/new/[id]) on the canonical chat infra with launch-time grounding + the reusable

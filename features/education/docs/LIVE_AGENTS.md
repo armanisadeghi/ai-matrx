@@ -573,10 +573,14 @@ Contract + surface live in `features/education/tutor/` (see its `FEATURE.md`).
 
 | Key | Agent id | Model | Shape |
 |---|---|---|---|
-| `EDU_TUTOR_AGENTS.tutor` | `46b7b357-6d45-44cd-9c12-1b647d94d5ee` | gemini-3.5-flash | Streaming TEXT chat. Vars: `learner_memory`, `study_material`, `teaching_mode`, `personality_style` (substituted into the system prompt at launch). Grounds in the learner's own material with inline citations, honest boundary, Socratic/Direct, personality-tunable. |
+| `EDU_TUTOR_AGENTS.tutor` | `d80cc27e-63ce-49b6-a285-fdb78a66c537` | gemini-3.5-flash | Streaming TEXT chat, zero user-facing variables. Grounding rides four declared CONTEXT SLOTS (`learner_memory`, `study_material`, `teaching_mode`, `personality_style`), filled via `setContextEntries` and re-sent every turn (so memory stays live for the whole conversation, not just at launch). Grounds in the learner's own material with inline citations, honest boundary, Socratic/Direct, personality-tunable. |
 | `FC_AGENTS.microCoach` | `0d6c715b-b861-4769-b0de-5d33f29f64a8` | gemini-flash-lite | `{ tip }` — one-sentence post-grade coaching, `fc_micro_coach` (AGENT_SPECS §11). Lights up the no-op lane in `StudyDeck`. |
 
-Superseded: `df4a4142-…` (first tutor draft, deactivated — its `learner_memory`/`study_material` never wired as prompt variables; recreated as `46b7b357-…`).
+Superseded: `df4a4142-…` (first draft, `learner_memory`/`study_material` never wired as prompt variables) →
+recreated as `46b7b357-…` (variable-based, live-verified 2026-07-07) → recreated again same day as
+`d80cc27e-…` (context-slot version, the current live id — variables rendered as an awkward editable
+strip in the composer; context slots are silent and re-sent per turn). Both prior ids are deactivated
+in `agent.definition` (verified live via Supabase, 2026-07-10) — do not point new code at them.
 
 ---
 
