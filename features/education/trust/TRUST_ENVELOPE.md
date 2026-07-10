@@ -77,12 +77,14 @@ interface TrustEnvelope {
 
 That's the whole consumer surface: one field pass-through + one component + one coercer.
 
-## Grade-on-meaning (the grading half of trust)
+## Grade-on-meaning (the grading half of trust) — ONE verdict core
 
-Grading judges **meaning, not exact strings** (Knowt is hated for exact-string grading). The one
-verdict shape every typed / short-answer / spoken grading path returns:
+Grading judges **meaning, not exact strings** (Knowt is hated for exact-string grading). There is
+**ONE canonical verdict core** every grading path resolves to — typed/short-answer AND spoken:
 
 ```ts
+type GradeResult = "correct" | "partial" | "incorrect";  // the ONE result vocabulary
+
 interface GradeVerdict {
   correct: boolean;
   partial: boolean;
@@ -91,9 +93,21 @@ interface GradeVerdict {
 }
 ```
 
-P1's typed/short-answer grading adopts this path (contract with P1). The existing spoken grader
-(`features/flashcards/fast-fire/agents/grading-core.ts`, `SpokenGrade`) already grades meaning-ish
-with a rubric; `GradeVerdict` is the text-answer verdict and the misconception-naming layer.
+Both grading paths are **thin adapters that carry their extra fields around this shared core** —
+never a second verdict shape:
+
+| Path | Adapter | Extras it wraps around `GradeVerdict` |
+|---|---|---|
+| Typed / short-answer (assessment) | `GradedAnswer` (`assessment/data/grading.ts`) | `scoreValue`, `gradedBy` |
+| Spoken (FastFire / voice) | `SpokenGrade` (`fast-fire/agents/grading-core.ts`) | `score`, `rubric`, `transcript`, `missing` |
+
+Shared helpers live beside the core in [`types.ts`](./types.ts): `verdictResult(v)` (→ `GradeResult`),
+`gradeResultScore(result)` (→ 0..1), `resultFromScore(score)`, `verdictFromResult(...)`. The
+duplicated result unions (`SpokenResult`, the slice's `GradeResult`, assessment's `AttemptResult`,
+`ReviewResult`) are all now aliases of the one `GradeResult`; the coercer is the single
+`coerceSpokenGrade` (FastFire's inline duplicate `coerceGrade` was deleted). The persisted shapes
+are unchanged — `study_attempt.score` jsonb stays `{ rubric, missing, feedback }`, `result` /
+`score_value` unchanged, `assessment_result.detail` unchanged.
 
 ## Agent-side contract
 
@@ -123,5 +137,16 @@ are `fc_generate_from_source` (real citations) and `fc_help_live` (honest refusa
 | P9 ingest | the one-upload kit fan-out stamps `groundedIn` + citations on every artifact |
 
 ## Change log
+- **2026-07-10** — **Verdict unification + verify-hub-wide (final certification).** ONE grading
+  verdict core: `GradeVerdict` + shared `GradeResult` vocabulary + helpers (`verdictResult`,
+  `gradeResultScore`, `resultFromScore`, `verdictFromResult`) in `types.ts`. `SpokenGrade` now
+  embeds `verdict: GradeVerdict` (dropped its `result`/`feedback` in favor of the core); the four
+  duplicate result unions collapsed to `GradeResult`; FastFire's inline `coerceGrade` deleted (reuses
+  `coerceSpokenGrade`). Behavior-identical refactor — persisted shapes untouched. The "Verify against
+  source" affordance was extracted from `CardTrustFooter` into the shared
+  [`<VerifyAgainstSourceButton/>`](./components/VerifyAgainstSourceButton.tsx) and mounted hub-wide:
+  quiz items (QuestionView post-grade + AssessmentResults review), summaries (SummaryDetail), and
+  mind-map node panels (linked card verified against the map's cited sources). `CardTrustFooter` now
+  consumes the same shared affordance.
 - **2026-07-07** — Contract published (types + doc + coercers). Primitives, kind registration,
   reference retrofits, and grade-on-meaning tests land during Wave 1.

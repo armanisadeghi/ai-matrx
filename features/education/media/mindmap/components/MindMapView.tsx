@@ -26,6 +26,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
+import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
+import type { TrustEnvelope } from "@/features/education/trust/types";
 import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import type {
   DiagramData,
@@ -89,9 +91,13 @@ function seedForNode(node: DiagramNode): { title: string; material: string } {
 /** The side panel shown when a node is clicked — source card (if linked) + tutor. */
 function NodePanel({
   node,
+  mapTrust,
   onClose,
 }: {
   node: DiagramNode;
+  /** The map's TrustEnvelope — a linked node card is verified against ITS cited
+   *  sources (nodes carry no per-node citations of their own). */
+  mapTrust: TrustEnvelope | null | undefined;
   onClose: () => void;
 }) {
   const card = nodeCard(node);
@@ -121,6 +127,11 @@ function NodePanel({
               </div>
               <div className="text-sm font-medium text-foreground">{card.front}</div>
               <div className="text-sm text-muted-foreground">{card.back}</div>
+              <VerifyAgainstSourceButton
+                trust={mapTrust}
+                front={card.front}
+                back={card.back}
+              />
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-border bg-muted/40 p-3 text-xs text-muted-foreground">
@@ -141,7 +152,14 @@ function NodePanel({
   );
 }
 
-export function MindMapView({ envelope }: { envelope: unknown }) {
+export function MindMapView({
+  envelope,
+  mapTrust,
+}: {
+  envelope: unknown;
+  /** Map-level TrustEnvelope, threaded to the node panel's verify affordance. */
+  mapTrust?: TrustEnvelope | null;
+}) {
   const [selected, setSelected] = useState<DiagramNode | null>(null);
   const diagram = toDiagram(envelope);
   if (!diagram) {
@@ -155,7 +173,13 @@ export function MindMapView({ envelope }: { envelope: unknown }) {
   return (
     <>
       <InteractiveDiagramBlock diagram={diagram} onNodeClick={setSelected} />
-      {selected && <NodePanel node={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <NodePanel
+          node={selected}
+          mapTrust={mapTrust}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </>
   );
 }

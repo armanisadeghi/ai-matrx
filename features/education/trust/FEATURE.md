@@ -29,7 +29,8 @@ shared primitives:
 | Open-source resolver | [`open-source.ts`](./open-source.ts) | `openCitationSource` → canonical `openFilePreview(fileId)` / new-tab url. |
 | Grounding backfill | [`grounding.ts`](./grounding.ts) | `attachSourceRefs` — source-agnostic durable-ref backfill (RAG / uploads / chat). |
 | `<RefusalNotice/>` | [`components/RefusalNotice.tsx`](./components/RefusalNotice.tsx) | Honest-refusal callout + explicit general-knowledge opt-in. |
-| `<CardTrustFooter/>` | [`components/CardTrustFooter.tsx`](./components/CardTrustFooter.tsx) | One-line drop-in: badge + citations + Verify action. |
+| `<CardTrustFooter/>` | [`components/CardTrustFooter.tsx`](./components/CardTrustFooter.tsx) | One-line flashcard drop-in: badge + citations + the shared Verify affordance. |
+| `<VerifyAgainstSourceButton/>` | [`components/VerifyAgainstSourceButton.tsx`](./components/VerifyAgainstSourceButton.tsx) | THE shared "Verify against source" affordance (button + verdict). Mount on ANY cited item — flashcards, quiz items, summaries, mind-map nodes. Renders nothing without a verifiable citation. |
 | `useVerifyAgainstSource` | [`useVerifyAgainstSource.ts`](./useVerifyAgainstSource.ts) | Re-checks a card against its cited passage; flags drift. |
 
 ## Agents (authored + live-verified via agent_author, 2026-07-07)
@@ -112,6 +113,13 @@ marketing) and `/education/features/data-security` (the T5 posture statement).
 - Quiz/audio/notes consumers wire the envelope during their own waves (P1–P4) per the contract.
 
 ## Change log
+- **2026-07-10** — **Verdict unification + verify hub-wide (final cert).** ONE grading verdict core
+  (`GradeVerdict` + shared `GradeResult` + helpers; `SpokenGrade`/`GradedAnswer` are thin adapters;
+  four duplicate result unions collapsed; FastFire's inline `coerceGrade` deleted). "Verify against
+  source" extracted into the shared `<VerifyAgainstSourceButton/>` and mounted on quiz items
+  (QuestionView + AssessmentResults), summaries (SummaryDetail), and mind-map node panels;
+  `CardTrustFooter` now consumes it. Behavior-identical refactor; persisted shapes untouched. See
+  `TRUST_ENVELOPE.md` change log for detail.
 - **2026-07-07 (b)** — Source-agnostic grounding + open-the-real-source: `SourceCitation` gains
   durable `fileId`/`documentId`/`url`/`page`; `attachSourceRefs` backfill wired in
   `CreateFromSource` + the chat/canvas adapter; `<SourceCitations/>` "Open full source" opens the

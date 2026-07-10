@@ -6,6 +6,7 @@
  */
 
 import type { Database } from "@/types/database.types";
+import type { GradeResult } from "@/features/education/trust/types";
 
 // ============================================================================
 // Card & Review primitives
@@ -16,7 +17,11 @@ export interface FlashcardCard {
   back: string;
 }
 
-export type ReviewResult = "correct" | "partial" | "incorrect";
+/**
+ * A card review outcome. Aliased to the canonical `GradeResult`
+ * (features/education/trust) — the ONE shared result vocabulary; never a copy.
+ */
+export type ReviewResult = GradeResult;
 
 // ============================================================================
 // Database row types

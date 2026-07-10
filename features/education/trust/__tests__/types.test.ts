@@ -13,6 +13,10 @@ import {
   isRefusal,
   isGrounded,
   citationIsOpenable,
+  gradeResultScore,
+  resultFromScore,
+  verdictResult,
+  verdictFromResult,
 } from "../types";
 import { attachSourceRefs } from "../grounding";
 
@@ -198,6 +202,41 @@ describe("coerceGradeVerdict (grade-on-meaning)", () => {
     });
     expect(v?.misconception).toBe("Confuses absorbed with reflected light");
     expect(v?.explanation).toBe("Green light is reflected, not absorbed.");
+  });
+});
+
+describe("grade verdict core (the ONE grading vocabulary + adapters)", () => {
+  it("maps result tokens to normalized scores", () => {
+    expect(gradeResultScore("correct")).toBe(1);
+    expect(gradeResultScore("partial")).toBe(0.5);
+    expect(gradeResultScore("incorrect")).toBe(0);
+  });
+
+  it("derives a result token from a continuous score (0.8 / 0.4 thresholds)", () => {
+    expect(resultFromScore(0.9)).toBe("correct");
+    expect(resultFromScore(0.8)).toBe("correct");
+    expect(resultFromScore(0.5)).toBe("partial");
+    expect(resultFromScore(0.4)).toBe("partial");
+    expect(resultFromScore(0.39)).toBe("incorrect");
+    expect(resultFromScore(0)).toBe("incorrect");
+  });
+
+  it("round-trips a result through the verdict adapter helpers", () => {
+    for (const result of ["correct", "partial", "incorrect"] as const) {
+      const v = verdictFromResult(result, "why", null);
+      expect(verdictResult(v)).toBe(result);
+      expect(v.explanation).toBe("why");
+      expect(v.misconception).toBeNull();
+    }
+  });
+
+  it("verdictResult prefers correct over partial", () => {
+    expect(verdictResult({ correct: true, partial: true, misconception: null, explanation: "" })).toBe(
+      "correct",
+    );
+    expect(
+      verdictResult({ correct: false, partial: false, misconception: null, explanation: "" }),
+    ).toBe("incorrect");
   });
 });
 

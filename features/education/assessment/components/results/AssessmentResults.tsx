@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
+import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import { assessmentService } from "../../data/assessmentService";
 import { pairLearningGain } from "../../data/learningGain";
 import { kindConfigFor } from "../kindConfig";
@@ -287,6 +288,12 @@ export function AssessmentResults({
                       </p>
                     )}
                     <SourceCitations trust={trust} className="mt-2" />
+                    <VerifyAgainstSourceButton
+                      trust={trust}
+                      front={item.prompt}
+                      back={item.correct_answer ?? ""}
+                      className="mt-2"
+                    />
                   </div>
                 </div>
               </div>

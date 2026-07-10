@@ -45,7 +45,11 @@ that makes it a tutor: **grounding injection**.
   `study_material` [seed + weak-card digest], `teaching_mode`, `personality_style`) **plus the
   surface `trust` envelope** (`deriveGroundingTrust` — real citations from the known sources, an
   honest `inferred` floor, `not_in_material` when nothing is loaded).
-- `settings.ts` — persisted per-learner tutor prefs (Socratic/Direct + personality).
+- `settings.ts` — per-learner tutor prefs (Socratic/Direct + personality) on the **durable settings
+  system** (`userPreferences.tutor.*`, synced across devices). Owns the tutor vocabulary (unions +
+  defaults) the `userPreferences` slice type-imports, the non-React `getTutorSettings()` accessor
+  (reads the store), and the one-time localStorage→durable migration. `TutorSettingsPanel` reads/
+  writes via `useSetting("userPreferences.tutor.*")`.
 - `lanes/` — **the generalized short-lived tutor lanes** (moved here from
   `features/flashcards/data/tutor/`, P2 build guidance "generalize, don't fork"): `helpLive`
   (`fc_help_live`, the in-context "help me with this card" call — threads its own
@@ -139,6 +143,12 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-07-10 (b)** — **Tutor settings → durable platform settings.** Moved the Socratic/Direct +
+  personality prefs off per-browser localStorage onto the synced settings system
+  (`userPreferences.tutor`, `features/settings`), so they follow the learner across devices.
+  `settings.ts` keeps the vocabulary + a non-React store accessor + a one-time localStorage
+  migration (nobody loses their current choice); the localStorage write path + the same-tab
+  `education-tutor-settings-changed` event are deleted. `TutorSettingsPanel` now uses `useSetting`.
 - **2026-07-10** — Closed the recorded P2 open items: metered send (`useEntitlement`,
   `education.tutor_message`, pre-visible limit + pre-send block); conversation view/edit gating
   (`useAccess("conversation", id)` — read-only sharee, owner `ShareButton`); generalized the

@@ -59,12 +59,14 @@ function isPersonalityStyle(v: unknown): v is TutorPersonalityStyle {
  */
 export function getTutorSettings(): TutorSettings {
   migrateLegacyTutorSettings();
-  const tutor = getStore().getState().userPreferences.tutor;
+  const store = getStore();
+  if (!store) return { ...DEFAULT_TUTOR_SETTINGS };
+  const tutor = store.getState().userPreferences.tutor;
   return {
-    teachingMode: isTeachingMode(tutor?.teachingMode)
+    teachingMode: isTeachingMode(tutor.teachingMode)
       ? tutor.teachingMode
       : DEFAULT_TUTOR_SETTINGS.teachingMode,
-    personalityStyle: isPersonalityStyle(tutor?.personalityStyle)
+    personalityStyle: isPersonalityStyle(tutor.personalityStyle)
       ? tutor.personalityStyle
       : DEFAULT_TUTOR_SETTINGS.personalityStyle,
   };
@@ -106,6 +108,10 @@ export function migrateLegacyTutorSettings(): void {
   }
 
   const store = getStore();
+  if (!store) {
+    migrationDone = false; // store not ready yet — retry on the next call
+    return;
+  }
   const patches: { preference: "teachingMode" | "personalityStyle"; value: string }[] = [];
   if (isTeachingMode(parsed.teachingMode)) {
     patches.push({ preference: "teachingMode", value: parsed.teachingMode });

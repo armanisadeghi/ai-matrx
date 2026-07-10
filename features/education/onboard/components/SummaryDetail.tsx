@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
+import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
@@ -118,8 +119,13 @@ export function SummaryDetail({ id }: { id: string }) {
       </div>
 
       {trust && trust.citations.length > 0 && (
-        <div className="border-t border-border pt-4">
+        <div className="space-y-2 border-t border-border pt-4">
           <SourceCitations trust={trust} label="Grounded in your material" />
+          <VerifyAgainstSourceButton
+            trust={trust}
+            front={row.title}
+            back={markdown || keyPoints.join("; ")}
+          />
         </div>
       )}
     </div>

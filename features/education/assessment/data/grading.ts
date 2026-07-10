@@ -19,7 +19,12 @@ import {
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { coerceGradeVerdict, type GradeVerdict } from "@/features/education/trust/types";
+import {
+  coerceGradeVerdict,
+  gradeResultScore,
+  verdictResult,
+  type GradeVerdict,
+} from "@/features/education/trust/types";
 import { ASSESSMENT_AGENTS } from "./agents";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "./types";
 
@@ -55,10 +60,6 @@ function normalize(s: string): string {
     .replace(/\s+/g, " ");
 }
 
-function resultToScore(result: AttemptResult): number {
-  return result === "correct" ? 1 : result === "partial" ? 0.5 : 0;
-}
-
 /**
  * Grade an objective answer locally. `response` is the learner's selected
  * option (MC/TF) or typed word (fill_blank). fill_blank accepts the canonical
@@ -91,7 +92,7 @@ export function gradeAnswerLocal(
   const result: AttemptResult = isCorrect ? "correct" : "incorrect";
   return {
     result,
-    scoreValue: resultToScore(result),
+    scoreValue: gradeResultScore(result),
     explanation,
     misconception: null,
     gradedBy: "local",
@@ -104,16 +105,17 @@ function normalizeAcceptable(v: unknown): string[] {
     : [];
 }
 
-/** Map a grade-on-meaning verdict → the unified GradedAnswer. */
+/**
+ * Map a grade-on-meaning verdict → the unified GradedAnswer. `GradedAnswer` is
+ * the TYPED-answer adapter: the canonical `GradeVerdict` core (result +
+ * explanation + misconception via the shared helpers) plus assessment's extras
+ * (scoreValue, gradedBy).
+ */
 function verdictToGraded(v: GradeVerdict, agentId: string): GradedAnswer {
-  const result: AttemptResult = v.correct
-    ? "correct"
-    : v.partial
-      ? "partial"
-      : "incorrect";
+  const result = verdictResult(v);
   return {
     result,
-    scoreValue: resultToScore(result),
+    scoreValue: gradeResultScore(result),
     explanation: v.explanation,
     misconception: v.misconception,
     gradedBy: agentId,

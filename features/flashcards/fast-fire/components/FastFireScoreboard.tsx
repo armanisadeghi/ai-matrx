@@ -37,11 +37,8 @@ import {
   selectReviewFilter,
   selectPendingGradeCount,
 } from "../redux/fastFire.selectors";
-import {
-  setReviewFilter,
-  type ReviewFilter,
-  type GradeResult,
-} from "../redux/fastFireSlice";
+import { setReviewFilter, type ReviewFilter } from "../redux/fastFireSlice";
+import type { GradeResult } from "@/features/education/trust/types";
 import { CoachReviewPanel } from "@/features/education/study/components/CoachReviewPanel";
 import { parsedSessionReviewFromSummary } from "@/features/education/study/utils/parseSessionReview";
 import { FastFireReviewPlayer } from "./FastFireReviewPlayer";

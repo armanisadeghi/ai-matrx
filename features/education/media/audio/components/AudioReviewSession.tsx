@@ -56,12 +56,12 @@ type Phase =
 
 interface CardResult {
   cardId: string;
-  result: SpokenGrade["result"] | "skipped";
+  result: GradeResult | "skipped";
   score: number;
 }
 
 const RESULT_STYLE: Record<
-  SpokenGrade["result"],
+  GradeResult,
   { label: string; icon: typeof CheckCircle2; text: string; bg: string }
 > = {
   correct: {
@@ -256,7 +256,7 @@ export function AudioReviewSession({
           ...r,
           {
             cardId: card.id,
-            result: res.grade!.result,
+            result: verdictResult(res.grade!.verdict),
             score: res.grade!.score,
           },
         ]);
@@ -403,7 +403,7 @@ export function AudioReviewSession({
   }
 
   // Running (asking / answering / grading / result)
-  const style = grade ? RESULT_STYLE[grade.result] : null;
+  const style = grade ? RESULT_STYLE[verdictResult(grade.verdict)] : null;
   return (
     <div className="mx-auto flex min-h-[60dvh] w-full max-w-md flex-col p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -461,8 +461,8 @@ export function AudioReviewSession({
                 <div className={cn("text-lg font-semibold", style.text)}>
                   {style.label}
                 </div>
-                {grade.feedback && (
-                  <p className="text-sm text-foreground">{grade.feedback}</p>
+                {grade.verdict.explanation && (
+                  <p className="text-sm text-foreground">{grade.verdict.explanation}</p>
                 )}
               </>
             ) : (

@@ -24,6 +24,12 @@
 // playback was dead because the player lived in a ref that never re-rendered.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+// The grade result token + rubric come from the canonical grading core, not a
+// local copy: `GradeResult` is the shared trust vocabulary (correct/partial/
+// incorrect); `GradeRubric` is the spoken grader's rubric. Consumers import them
+// from those canonical sources directly (no barrel re-export from this slice).
+import type { GradeResult } from "@/features/education/trust/types";
+import type { SpokenGradeRubric as GradeRubric } from "../agents/grading-core";
 
 // =============================================================================
 // Types
@@ -49,15 +55,6 @@ export type FastFirePhase =
   | "finalizing"
   | "complete"
   | "abandoned";
-
-export type GradeResult = "correct" | "partial" | "incorrect";
-
-/** The per-card rubric the grader agent returns (mirrors `fc_grade_spoken`). */
-export interface GradeRubric {
-  accuracy: number;
-  completeness: number;
-  clarity: number;
-}
 
 /**
  * Per-card grade lifecycle. `pending` = sent to the grader, awaiting result.

@@ -21,8 +21,7 @@
 // though they resolve out of order, long after the drill advanced past them.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { fileHandler } from "@/features/files";
-import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { fileHandler, CloudFolders } from "@/features/files";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -37,7 +36,7 @@ import {
   audioExtensionForType,
   normalizeAudioContentType,
 } from "@/features/audio/utils/audio-mime";
-import { verdictResult } from "@/features/education/trust/types";
+import { verdictResult, type GradeResult } from "@/features/education/trust/types";
 import { getFastFireAgentConfig } from "../config";
 import { coerceSpokenGrade } from "./grading-core";
 import {

@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
+import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import type { GradedAnswer } from "../../data/grading";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "../../data/types";
 
@@ -234,6 +235,11 @@ function FeedbackBlock({
       )}
 
       <SourceCitations trust={trust} />
+      <VerifyAgainstSourceButton
+        trust={trust}
+        front={item.prompt}
+        back={item.correct_answer ?? ""}
+      />
 
       {/* Grade override — the learner can argue a meaning-graded verdict. */}
       {onOverride && graded.gradedBy !== "local" && (

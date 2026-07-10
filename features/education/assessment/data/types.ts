@@ -9,7 +9,7 @@
 // ASSESSMENT_ITEM_TYPE and features/education/study.
 
 import type { Database } from "@/types/database.types";
-import type { TrustEnvelope } from "@/features/education/trust/types";
+import type { GradeResult, TrustEnvelope } from "@/features/education/trust/types";
 
 type Edu = Database["education"]["Tables"];
 
@@ -52,8 +52,12 @@ export function asDepth(value: string | null | undefined): Depth | null {
 export type ResultPhase = "standalone" | "baseline" | "post";
 export type ResultStatus = "in_progress" | "completed" | "abandoned";
 
-/** The three graded outcomes the study spine records (shared vocabulary). */
-export type AttemptResult = "correct" | "partial" | "incorrect";
+/**
+ * The three graded outcomes the study spine records. Aliased to the canonical
+ * `GradeResult` (features/education/trust) — the ONE shared result vocabulary
+ * across typed, spoken, and review grading; never a parallel copy.
+ */
+export type AttemptResult = GradeResult;
 
 // ─── Service result (supabase-style; the service never throws) ────────────────
 export interface AsResult<T> {

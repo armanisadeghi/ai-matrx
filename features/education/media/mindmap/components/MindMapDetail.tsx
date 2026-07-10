@@ -120,7 +120,7 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
         )}
       </div>
 
-      <MindMapView envelope={media.ir_envelope} />
+      <MindMapView envelope={media.ir_envelope} mapTrust={trust} />
 
       {trust && (
         <div className="space-y-2 rounded-xl border border-border bg-card/60 p-4">
