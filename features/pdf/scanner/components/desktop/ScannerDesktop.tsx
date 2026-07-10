@@ -41,6 +41,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 
+import { MediaThumbnail } from "@/features/files";
+
 import { fetchRecentScans, type RecentScanRow } from "../../processing";
 import type { Quad, ScanItem, ScanRotation } from "../../types";
 import { useScanSession } from "../../useScanSession";
@@ -425,13 +427,33 @@ export default function ScannerDesktop() {
                       className="overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-colors hover:border-primary/40"
                     >
                       <div className="relative flex h-24 items-center justify-center border-b border-border bg-muted/40">
-                        <div className="flex h-16 w-12 flex-col gap-1 rounded-sm border border-border bg-background p-2 shadow-md">
-                          <div className="h-1 w-3/5 rounded-full bg-muted-foreground/40" />
-                          <div className="h-0.5 w-full rounded-full bg-muted-foreground/20" />
-                          <div className="h-0.5 w-4/5 rounded-full bg-muted-foreground/20" />
-                          <div className="h-0.5 w-11/12 rounded-full bg-muted-foreground/20" />
-                          <div className="h-0.5 w-3/5 rounded-full bg-muted-foreground/20" />
-                        </div>
+                        {r.fileId ? (
+                          // Real page-1 thumbnail via the canonical component
+                          // (self-resolves the thumbnail_url variant from the
+                          // asset endpoint; falls back to a file icon).
+                          <MediaThumbnail
+                            file={{
+                              id: r.fileId,
+                              fileName: r.name,
+                              mimeType: "application/pdf",
+                              fileSize: null,
+                              metadata: {},
+                              publicUrl: null,
+                              thumbnailUrl: null,
+                            }}
+                            className="h-full w-full"
+                            rounded="rounded-none"
+                            iconSize={28}
+                          />
+                        ) : (
+                          <div className="flex h-16 w-12 flex-col gap-1 rounded-sm border border-border bg-background p-2 shadow-md">
+                            <div className="h-1 w-3/5 rounded-full bg-muted-foreground/40" />
+                            <div className="h-0.5 w-full rounded-full bg-muted-foreground/20" />
+                            <div className="h-0.5 w-4/5 rounded-full bg-muted-foreground/20" />
+                            <div className="h-0.5 w-11/12 rounded-full bg-muted-foreground/20" />
+                            <div className="h-0.5 w-3/5 rounded-full bg-muted-foreground/20" />
+                          </div>
+                        )}
                         {r.cleanReady && (
                           <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
                             <Check className="h-2.5 w-2.5" />

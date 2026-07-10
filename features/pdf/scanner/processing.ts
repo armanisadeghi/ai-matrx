@@ -116,6 +116,9 @@ export interface RecentScanRow {
   createdAt: string;
   itemCount: number | null;
   cleanReady: boolean;
+  /** Backing cloud file (source_kind='cld_file') — drives the card thumbnail
+   *  via the canonical `<MediaThumbnail>`; null for legacy/unlinked docs. */
+  fileId: string | null;
 }
 
 export async function fetchRecentScans(limit = 12): Promise<RecentScanRow[]> {
@@ -129,7 +132,9 @@ export async function fetchRecentScans(limit = 12): Promise<RecentScanRow[]> {
     .from("processed_documents")
     // clean_content_completed_at is the cheap presence marker — never pull
     // the (potentially huge) clean_content body for a list view.
-    .select("id, name, created_at, metadata, clean_content_completed_at")
+    .select(
+      "id, name, created_at, metadata, clean_content_completed_at, source_kind, source_id",
+    )
     .is("deleted_at", null)
     .eq("owner_id", uid)
     .eq("metadata->>via", "/pdf/from-images")
@@ -147,6 +152,7 @@ export async function fetchRecentScans(limit = 12): Promise<RecentScanRow[]> {
       createdAt: row.created_at,
       itemCount: typeof meta.item_count === "number" ? meta.item_count : null,
       cleanReady: Boolean(row.clean_content_completed_at),
+      fileId: row.source_kind === "cld_file" ? row.source_id : null,
     };
   });
 }
