@@ -79,7 +79,8 @@ export function AgentModelConfiguration({
               value={modelId}
               onValueChange={handleModelChange}
               variant={labVariant}
-              inputModalities={["text"]}
+              inputModalities={[]}
+              outputModalities={["text"]}
             />
           ) : (
             <SmartModelSelect

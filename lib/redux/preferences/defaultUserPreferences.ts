@@ -142,6 +142,7 @@ export const defaultUserPreferences: UserPreferences = {
     activeModels: [],
     inactiveModels: [],
     newModels: [],
+    favoriteModels: [],
   },
   system: {
     viewedAnnouncements: [],

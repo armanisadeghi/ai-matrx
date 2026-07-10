@@ -30,6 +30,7 @@ import {
   MousePointerClick,
   Search,
   SlidersHorizontal,
+  Star,
   Type,
   Image as ImageIcon,
   AudioLines,
@@ -38,6 +39,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
+import { selectFavoriteModelIds } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
   Popover,
   PopoverTrigger,
@@ -66,7 +70,7 @@ import {
   type FeatureBucket,
 } from "@/features/ai-models/capabilities/feature-map";
 import {
-  makePriceTierFn,
+  priceTier,
   type PriceTier,
 } from "@/features/ai-models/lab/modelDisplay";
 
@@ -175,7 +179,8 @@ function ModelDetailCard({
   onSelect: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-y-auto p-4">
+    <div className="flex h-full flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold text-foreground">
@@ -321,14 +326,17 @@ function ModelDetailCard({
           </div>
         )}
       </dl>
-
-      <button
-        type="button"
-        onClick={onSelect}
-        className="mt-4 w-full rounded-md bg-primary py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-      >
-        Select model
-      </button>
+      </div>
+      {/* Fixed footer — the Select button never moves. */}
+      <div className="shrink-0 border-t border-border p-3">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="w-full rounded-md bg-primary py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          Select model
+        </button>
+      </div>
     </div>
   );
 }
@@ -426,6 +434,12 @@ function FiltersPanel({
           Input
         </div>
         <div className="flex flex-wrap gap-1">
+          <ChipToggle
+            active={filters.input.size === 0}
+            onClick={() => setFilters((f) => ({ ...f, input: new Set() }))}
+          >
+            Any
+          </ChipToggle>
           {INPUT_MODALITIES.map((m) => (
             <ChipToggle
               key={m}
@@ -443,6 +457,12 @@ function FiltersPanel({
           Output
         </div>
         <div className="flex flex-wrap gap-1">
+          <ChipToggle
+            active={filters.output.size === 0}
+            onClick={() => setFilters((f) => ({ ...f, output: new Set() }))}
+          >
+            Any
+          </ChipToggle>
           {OUTPUT_MODALITIES.map((m) => (
             <ChipToggle
               key={m}
@@ -513,27 +533,58 @@ function ModelRow({
   model,
   tier,
   selected,
+  isFavorite,
   onSelect,
   onHover,
+  onToggleFavorite,
 }: {
   model: CatalogModel;
   tier: PriceTier | null;
   selected: boolean;
+  isFavorite: boolean;
   onSelect: () => void;
   onHover?: () => void;
+  onToggleFavorite: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       onMouseEnter={onHover}
       className={cn(
-        "grid w-full grid-cols-[minmax(0,72px)_minmax(0,1fr)_auto_auto] items-center gap-2 rounded px-2 py-1 text-left transition-colors",
-        "hover:bg-muted/60",
+        "grid w-full cursor-pointer grid-cols-[auto_minmax(0,72px)_minmax(0,1fr)_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
+        "hover:bg-muted/60 focus:bg-muted/60 focus:outline-none",
         selected && "bg-muted",
       )}
     >
-      <span className="truncate text-[11px] text-muted-foreground" title={model.maker ?? undefined}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleFavorite();
+        }}
+        title={isFavorite ? "Remove favorite" : "Add favorite"}
+        aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
+        className={cn(
+          "flex h-4 w-4 items-center justify-center rounded transition-colors",
+          isFavorite
+            ? "text-amber-400"
+            : "text-muted-foreground/30 hover:text-muted-foreground",
+        )}
+      >
+        <Star className={cn("h-3 w-3", isFavorite && "fill-amber-400")} />
+      </button>
+      <span
+        className="truncate text-[11px] text-muted-foreground"
+        title={model.maker ?? undefined}
+      >
         {model.maker ?? "—"}
       </span>
       <span className="flex min-w-0 items-center gap-1.5">
@@ -550,7 +601,7 @@ function ModelRow({
       <span className="w-10 text-right">
         <UsageTier tier={tier} />
       </span>
-    </button>
+    </div>
   );
 }
 
@@ -566,9 +617,12 @@ export function ModelListDropdown({
 }: ModelListDropdownProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
+  const dispatch = useAppDispatch();
+  const favoriteIds = useAppSelector(selectFavoriteModelIds);
   const { models, isLoading, error } = useModelCatalog(variant);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<"all" | "favorites">("all");
   const [rightPanel, setRightPanel] = useState<RightPanel>(null);
   const [hovered, setHovered] = useState<CatalogModel | null>(null);
   const [mobileDetail, setMobileDetail] = useState<CatalogModel | null>(null);
@@ -584,16 +638,27 @@ export function ModelListDropdown({
     sort: "name",
   }));
 
-  const priceTierFn = useMemo(
-    () => makePriceTierFn(models.map((m) => m.outputCost)),
-    [models],
-  );
+  const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+
+  const toggleFavorite = (id: string) => {
+    const next = favoriteSet.has(id)
+      ? favoriteIds.filter((f) => f !== id)
+      : [...favoriteIds, id];
+    dispatch(
+      setPreference({
+        module: "aiModels",
+        preference: "favoriteModels",
+        value: next,
+      }),
+    );
+  };
 
   const selected = models.find((m) => m.id === value) ?? null;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const rows = models.filter((m) => {
+      if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
       if (q && ![m.name, m.maker].some((f) => f?.toLowerCase().includes(q)))
         return false;
       for (const m2 of filters.input) if (!m.input.includes(m2)) return false;
@@ -605,8 +670,7 @@ export function ModelListDropdown({
       if (filters.multilingualOnly && !m.multilingual) return false;
       return true;
     });
-    const sorted = [...rows];
-    sorted.sort((a, b) => {
+    const cmp = (a: CatalogModel, b: CatalogModel) => {
       switch (filters.sort) {
         case "maker":
           return (a.maker ?? "").localeCompare(b.maker ?? "");
@@ -617,9 +681,16 @@ export function ModelListDropdown({
         default:
           return a.name.localeCompare(b.name);
       }
-    });
+    };
+    const sorted = [...rows].sort(cmp);
+    // On the All tab, favorites float to the top (still sorted among themselves).
+    if (tab === "all") {
+      const favs = sorted.filter((m) => favoriteSet.has(m.id));
+      const rest = sorted.filter((m) => !favoriteSet.has(m.id));
+      return [...favs, ...rest];
+    }
     return sorted;
-  }, [models, query, filters]);
+  }, [models, query, filters, tab, favoriteSet]);
 
   const activeFilterCount =
     filters.input.size +
@@ -715,8 +786,39 @@ export function ModelListDropdown({
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-border px-2 py-1">
+        {(["all", "favorites"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] transition-colors",
+              tab === t
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t === "favorites" && (
+              <Star
+                className={cn(
+                  "h-3 w-3",
+                  tab === t && "fill-amber-400 text-amber-400",
+                )}
+              />
+            )}
+            {t === "all" ? "All" : "Favorites"}
+            {t === "favorites" && favoriteSet.size > 0 && (
+              <span className="text-muted-foreground">{favoriteSet.size}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Column header */}
-      <div className="grid grid-cols-[minmax(0,72px)_minmax(0,1fr)_auto_auto] gap-2 border-b border-border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="grid grid-cols-[auto_minmax(0,72px)_minmax(0,1fr)_auto_auto] gap-2 border-b border-border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="w-4" />
         <span>Maker</span>
         <span>Name</span>
         <span>Speed</span>
@@ -748,8 +850,10 @@ export function ModelListDropdown({
             <ModelRow
               key={m.id}
               model={m}
-              tier={priceTierFn(m.outputCost)}
+              tier={priceTier(m.outputCost)}
               selected={m.id === value}
+              isFavorite={favoriteSet.has(m.id)}
+              onToggleFavorite={() => toggleFavorite(m.id)}
               onSelect={() =>
                 isMobile ? setMobileDetail(m) : handleSelect(m.id)
               }
@@ -793,7 +897,7 @@ export function ModelListDropdown({
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   <ModelDetailCard
                     model={mobileDetail}
-                    tier={priceTierFn(mobileDetail.outputCost)}
+                    tier={priceTier(mobileDetail.outputCost)}
                     variant={variant}
                     onSelect={() => handleSelect(mobileDetail.id)}
                   />
@@ -858,7 +962,7 @@ export function ModelListDropdown({
               >
                 <ModelDetailCard
                   model={hovered}
-                  tier={priceTierFn(hovered.outputCost)}
+                  tier={priceTier(hovered.outputCost)}
                   variant={variant}
                   onSelect={() => handleSelect(hovered.id)}
                 />

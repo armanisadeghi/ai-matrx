@@ -90,10 +90,13 @@ export function resolveMaker(
 
 // ── Pricing tiers ──────────────────────────────────────────────────────────
 //
-// $ … $$$$$+  — a coarse cost band based on OUTPUT cost only. The "+" band is
-// reserved for the extreme outliers (Fable / GPT Pro class). Thresholds are
-// derived from the loaded set (relative to its median) because absolute point
-// magnitudes will be curated in the DB later.
+// $ … $$$$$+  — a coarse cost band based on OUTPUT cost only (points per 1M
+// output tokens). Thresholds are ABSOLUTE, calibrated against the real live
+// distribution (2026-07-09) and these anchors:
+//   Fable 1,000,000 → $$$$$+   Opus 500,000 → $$$$$   GPT-4o / Gemini 3.5 Flash
+//   ~180-200k → $$$$   Gemini Flash 60k → $$$   Llama 70b 24k → $$   OSS 20B 6k → $
+// The "+" band is reserved for the extreme outliers (Fable / GPT-Pro class).
+// These belong in the DB long-term (curated per model); this is the stopgap.
 
 export type PriceTier = "$" | "$$" | "$$$" | "$$$$" | "$$$$$" | "$$$$$+";
 
@@ -106,24 +109,13 @@ export const PRICE_TIERS: PriceTier[] = [
   "$$$$$+",
 ];
 
-/** Build a tiering function from the set's output-cost distribution. */
-export function makePriceTierFn(
-  outputCosts: Array<number | null>,
-): (cost: number | null) => PriceTier | null {
-  const valid = outputCosts.filter(
-    (c): c is number => typeof c === "number" && c > 0,
-  );
-  if (valid.length === 0) return () => null;
-  const sorted = [...valid].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)];
-  return (cost) => {
-    if (typeof cost !== "number" || cost <= 0) return null;
-    const r = cost / median;
-    if (r < 0.5) return "$";
-    if (r < 1) return "$$";
-    if (r < 2) return "$$$";
-    if (r < 5) return "$$$$";
-    if (r < 15) return "$$$$$";
-    return "$$$$$+";
-  };
+/** Absolute output-cost → tier. `cost` is points per 1M output tokens. */
+export function priceTier(cost: number | null): PriceTier | null {
+  if (typeof cost !== "number" || cost <= 0) return null;
+  if (cost >= 800_000) return "$$$$$+";
+  if (cost >= 350_000) return "$$$$$";
+  if (cost >= 120_000) return "$$$$";
+  if (cost >= 40_000) return "$$$";
+  if (cost >= 8_000) return "$$";
+  return "$";
 }

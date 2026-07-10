@@ -131,6 +131,12 @@ export const selectAiModelsPreferences = createSelector(
   (state): AiModelsPreferences => state.aiModels,
 );
 
+/** Starred model ids (may include ids no longer in the catalog — filter at use). */
+export const selectFavoriteModelIds = createSelector(
+  selectAiModelsPreferences,
+  (aiModels): string[] => aiModels.favoriteModels ?? [],
+);
+
 export const selectSystemPreferences = createSelector(
   selectUserPreferences,
   (state): SystemPreferences => state.system,

@@ -292,6 +292,9 @@ export interface AiModelsPreferences {
   activeModels: string[];
   inactiveModels: string[];
   newModels: string[];
+  /** Starred model ids. Applied only when the model is present in the catalog
+   *  (a stale favorite for a removed model is simply ignored). */
+  favoriteModels: string[];
 }
 
 export interface SystemPreferences {
@@ -725,6 +728,7 @@ export const initializeUserPreferencesState = (
       activeModels: [],
       inactiveModels: [],
       newModels: [],
+      favoriteModels: [],
     },
     system: {
       viewedAnnouncements: [],
