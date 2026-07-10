@@ -253,6 +253,19 @@ export function PdfStudioReader({
     [pages],
   );
 
+  // Design's results-header stat ("486 words · 98% confidence") — word
+  // count from the pane's own text, confidence from the extractor's
+  // per-page `extraction_confidence` (raw pane only; cleanup has no
+  // confidence metric and we never invent one).
+  const rawSubtitle = useMemo(
+    () => paneStatsSubtitle(pages, "raw") ?? "System A · per-page",
+    [pages],
+  );
+  const cleanedSubtitle = useMemo(
+    () => paneStatsSubtitle(pages, "cleaned") ?? "System B · per-page",
+    [pages],
+  );
+
   // Each text pane registers its own scroll container. Whichever one the
   // user touched most recently is allowed to drive sync — the other
   // follows via `scrollIntoView`. `lastScrolledPaneRef` is a non-state
@@ -296,7 +309,7 @@ export function PdfStudioReader({
         <TextPane
           paneKey="raw"
           title="Raw extraction"
-          subtitle="System A · per-page"
+          subtitle={rawSubtitle}
           icon={<FileText className="w-3 h-3 text-primary" />}
           doc={doc}
           pages={pages}
@@ -320,7 +333,7 @@ export function PdfStudioReader({
         <TextPane
           paneKey="clean"
           title="AI-cleaned"
-          subtitle="System B · per-page"
+          subtitle={cleanedSubtitle}
           icon={<MousePointerClick className="w-3 h-3 text-primary" />}
           doc={doc}
           pages={pages}
@@ -1863,6 +1876,38 @@ function ExtractionsSection({
 }
 
 // ── Pane header ───────────────────────────────────────────────────────────
+
+/**
+ * "N words · M% confidence" for a text pane (the design's results stat).
+ * Returns null when the field has no text yet so callers keep their
+ * descriptive fallback. Confidence = mean per-page `extraction_confidence`
+ * (raw field only — cleanup has no confidence metric).
+ */
+function paneStatsSubtitle(
+  pages: PdfPageRow[],
+  field: "raw" | "cleaned",
+): string | null {
+  let words = 0;
+  for (const p of pages) {
+    const text = field === "cleaned" ? p.cleanedText : p.rawText;
+    if (!text) continue;
+    const m = text.match(/\S+/g);
+    if (m) words += m.length;
+  }
+  if (words === 0) return null;
+  let conf = "";
+  if (field === "raw") {
+    const values = pages
+      .map((p) => p.extractionConfidence)
+      .filter((c): c is number => typeof c === "number");
+    if (values.length > 0) {
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const pct = mean <= 1 ? mean * 100 : mean;
+      conf = ` · ${Math.round(pct)}% confidence`;
+    }
+  }
+  return `${words.toLocaleString()} words${conf}`;
+}
 
 function PaneHeader({
   title,

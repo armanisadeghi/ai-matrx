@@ -341,6 +341,11 @@ export {
 // or a download/share link directly. Prefer `useFileSrc` / `useFile` for
 // reactive paths; these exist for non-React code and the few places that
 // legitimately need a raw URL (OG images, mailers, admin tools).
+// Imperative bytes fetch — authed download of a file's contents as a Blob
+// (+ server-supplied filename). For click-to-download flows; reactive
+// previewers should keep using `useFileBlob` / `useFileSrc`.
+export { downloadFile } from "@/features/files/api/files";
+
 export {
   pythonBaseUrl,
   pythonShareUrl,

@@ -12,11 +12,14 @@
  */
 
 import React from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   ChevronLeftTapButton,
   ChevronRightTapButton,
+  DownloadTapButton,
+  ShareTapButton,
   ZapTapButton,
   PartyPopperTapButton,
   ClipboardListTapButton,
@@ -25,6 +28,9 @@ import {
   LoadingTapButton,
   RetryTapButton,
 } from "@/components/icons/tap-buttons";
+import { downloadFile } from "@/features/files";
+import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { WandSparklesTapButton } from "@/components/icons/ai-tap-buttons";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import { PdfStudioDocTitle } from "./PdfStudioDocTitle";
@@ -98,6 +104,87 @@ export function PdfStudioToolbar({
   const actionsBusy = pipelineRunning || aiCleanRunning || refreshing;
 
   return (
+    <ToolbarBody
+      doc={doc}
+      hasSource={hasSource}
+      actionsBusy={actionsBusy}
+      activePage={activePage}
+      totalPages={totalPages}
+      onJumpToPage={onJumpToPage}
+      onOpenFind={onOpenFind}
+      onRunPipeline={onRunPipeline}
+      pipelineRunning={pipelineRunning}
+      onRunAiClean={onRunAiClean}
+      aiCleanRunning={aiCleanRunning}
+      liveStatus={liveStatus}
+      onOpenSource={onOpenSource}
+      onOpenCopyPages={onOpenCopyPages}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+      onRename={onRename}
+      onDeleteDoc={onDeleteDoc}
+      onOpenKnowledgeAssets={onOpenKnowledgeAssets}
+    />
+  );
+}
+
+function ToolbarBody({
+  doc,
+  hasSource,
+  actionsBusy,
+  activePage,
+  totalPages,
+  onJumpToPage,
+  onOpenFind,
+  onRunPipeline,
+  pipelineRunning,
+  onRunAiClean,
+  aiCleanRunning,
+  liveStatus,
+  onOpenSource,
+  onOpenCopyPages,
+  onRefresh,
+  refreshing,
+  onRename,
+  onDeleteDoc,
+  onOpenKnowledgeAssets,
+}: Omit<PdfStudioToolbarProps, "doc"> & {
+  doc: PdfDocument;
+  hasSource: boolean;
+  actionsBusy: boolean;
+}) {
+  // Download + Share (design: results-header actions). Both act on the
+  // backing cloud file, so they render only when one is linked.
+  const saveBlob = useDownloadBlob();
+  const openShare = useOpenShareModalWindow();
+  const [downloading, setDownloading] = React.useState(false);
+
+  const handleDownload = React.useCallback(async () => {
+    if (!doc.sourceId || downloading) return;
+    setDownloading(true);
+    try {
+      const { blob, filename } = await downloadFile(doc.sourceId);
+      saveBlob({ blob, filename: filename ?? `${doc.name}.pdf` });
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? `Download failed: ${err.message}` : "Download failed",
+      );
+    } finally {
+      setDownloading(false);
+    }
+  }, [doc.sourceId, doc.name, downloading, saveBlob]);
+
+  const handleShare = React.useCallback(() => {
+    if (!doc.sourceId) return;
+    openShare({
+      resourceType: "file",
+      resourceId: doc.sourceId,
+      resourceName: doc.name,
+      isOwner: true,
+    });
+  }, [doc.sourceId, doc.name, openShare]);
+
+  return (
     <div className="shrink-0 border-b border-border bg-card/40">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-0 min-w-0">
         <div className="flex items-center gap-0 min-w-0 justify-self-start">
@@ -110,6 +197,15 @@ export function PdfStudioToolbar({
             onRename={onRename}
             onDeleteDoc={onDeleteDoc}
           />
+          {!!doc.cleanContent && (
+            <span
+              className="ml-1.5 hidden shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 sm:flex"
+              title="Cleaned content is stored and indexed for retrieval"
+            >
+              <Check className="h-2.5 w-2.5" />
+              Indexed
+            </span>
+          )}
         </div>
 
         <PageJumperTapGroup
@@ -179,6 +275,29 @@ export function PdfStudioToolbar({
                 tooltip="Refresh document"
               />
             )}
+            {hasSource &&
+              (downloading ? (
+                <LoadingTapButton
+                  variant="group"
+                  disabled
+                  ariaLabel="Downloading"
+                />
+              ) : (
+                <DownloadTapButton
+                  variant="group"
+                  onClick={() => void handleDownload()}
+                  ariaLabel="Download PDF"
+                  tooltip="Download the PDF"
+                />
+              ))}
+            {hasSource && (
+              <ShareTapButton
+                variant="group"
+                onClick={handleShare}
+                ariaLabel="Share"
+                tooltip="Share this document"
+              />
+            )}
             {hasSource && (
               <ExternalLinkTapButton
                 variant="group"
@@ -222,9 +341,13 @@ function PageJumperTapGroup({
   const total = Math.max(totalPages, 0);
   const [draft, setDraft] = React.useState("");
 
-  React.useEffect(() => {
+  // Sync the draft when the active page changes — derived-state pattern
+  // (render-phase set with prop tracking), not an effect.
+  const [syncedPage, setSyncedPage] = React.useState<number | null>(null);
+  if (activePage !== syncedPage) {
+    setSyncedPage(activePage);
     if (activePage != null) setDraft(String(activePage));
-  }, [activePage]);
+  }
 
   const submit = () => {
     const n = parseInt(draft, 10);

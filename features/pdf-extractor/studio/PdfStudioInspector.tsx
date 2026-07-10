@@ -24,6 +24,9 @@ import {
   MousePointerClick,
   Repeat,
   Plus,
+  MessageCircleQuestion,
+  ArrowRight,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { ChunkingConfigForm } from "@/features/page-extraction/components/ChunkingConfigForm";
@@ -199,6 +202,14 @@ interface PdfShortcutEntry {
   description: string;
 }
 
+/** Design's Ask-tab suggestion grid — generic, doc-type-agnostic prompts. */
+const SUGGESTED_QUESTIONS = [
+  "Summarize this document",
+  "What are the key facts and figures?",
+  "What dates or deadlines appear?",
+  "Who are the parties involved?",
+] as const;
+
 const PDF_SHORTCUTS: PdfShortcutEntry[] = [
   {
     id: "dba439a3-a495-4e57-893a-2176cf14ab8d",
@@ -339,7 +350,7 @@ function AiActionsPanel({
     return null;
   })();
 
-  const handleRun = async (shortcutId: string) => {
+  const handleRun = async (shortcutId: string, userInput?: string) => {
     if (!hasContent) {
       toast.error("Nothing to send to the agent yet");
       return;
@@ -402,10 +413,32 @@ function AiActionsPanel({
       await trigger(shortcutId, {
         scope: applicationScope,
         sourceFeature: "pdf-extractor",
-        runtime: { surfaceName: "matrx-user/pdf-widgets" },
+        runtime: {
+          surfaceName: "matrx-user/pdf-widgets",
+          ...(userInput ? { userInput } : {}),
+        },
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not run agent");
+    }
+  };
+
+  // ── Ask this document (design: Ask tab — question box + suggestions) ──
+  // Rides the Analyze Document shortcut: the question seeds the first user
+  // message (runtime.userInput) and the doc text travels as scope.
+  const ASK_SHORTCUT_ID = PDF_SHORTCUTS[0].id;
+  const [question, setQuestion] = useState("");
+  const [asking, setAsking] = useState(false);
+
+  const ask = async (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed || asking) return;
+    setAsking(true);
+    try {
+      await handleRun(ASK_SHORTCUT_ID, trimmed);
+      setQuestion("");
+    } finally {
+      setAsking(false);
     }
   };
 
@@ -484,6 +517,60 @@ function AiActionsPanel({
         <p className="text-xs text-muted-foreground py-4 text-center">
           No extracted content — run the pipeline first.
         </p>
+      )}
+
+      {/* Ask this document (design: Ask tab) */}
+      {hasContent && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <MessageCircleQuestion className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+              Ask this document
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void ask(question);
+              }}
+              placeholder="Ask about this document…"
+              className="h-8 text-[11px]"
+              disabled={asking}
+            />
+            <Button
+              size="sm"
+              className="h-8 px-2.5 shrink-0"
+              disabled={!question.trim() || asking}
+              onClick={() => void ask(question)}
+              aria-label="Ask"
+            >
+              {asking ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <ArrowRight className="w-3.5 h-3.5" />
+              )}
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            {SUGGESTED_QUESTIONS.map((q) => (
+              <button
+                key={q}
+                type="button"
+                disabled={asking}
+                onClick={() => void ask(q)}
+                className="rounded-md border border-border bg-card px-2 py-1.5 text-left text-[10px] leading-snug text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-snug">
+            Answers are grounded in the {usingClean ? "cleaned" : "extracted"}{" "}
+            text of this document.
+          </p>
+        </div>
       )}
 
       {/* Widget list — single-shot agents wired to the
