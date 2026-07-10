@@ -101,8 +101,11 @@ enforces it in code, not copy:
   advances FSRS/mastery. Game sessions are study sessions (visible in P5).
 - **FSRS + `useDueReview` selection** — generalized in `engine/queue.ts`; not
   forked.
-- **P7 `useAccess`** — a hosted deck must be shared/public for other players to
-  load its cards (surfaced inline in Host setup with a lock/globe hint).
+- **P7 access boundary** — enforced today via `fc_set`/`fc_card` RLS directly
+  (a private deck's cards 404 for non-owners), surfaced inline in Host setup
+  with a lock/globe hint. Does NOT call the `useAccess` hook — no such import
+  exists in this feature. Migrate to `useAccess` once P7 ships if a richer
+  shared-state (not just public/private) is needed for cross-account rooms.
 - **P8 `useEntitlement("education.game_room_size")`** — max players shown BEFORE
   hosting (TRUST mandate: no mid-workflow ambush), generous default.
 
