@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChevronRight, ChevronDown, Check } from "lucide-react";
 import {
   DropdownMenu,
@@ -15,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { buildAdminTree, getAdminCrumbs, type AdminCrumb } from "./route-tree";
 
 function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
-  const router = useRouter();
   const pathname = usePathname() ?? "";
   const hasChildren = crumb.children.length > 0;
 
@@ -24,17 +24,16 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
     crumb.isLast ? "font-medium text-foreground" : "text-muted-foreground",
   );
 
-  // Leaf crumb (no children to drill into) — plain link / text.
+  // Leaf crumb (no children to drill into) — real Link so Cmd/Ctrl+click works.
   if (!hasChildren) {
     if (crumb.isPage) {
       return (
-        <button
-          type="button"
-          onClick={() => router.push(crumb.fullPath)}
+        <Link
+          href={crumb.fullPath}
           className="rounded-sm px-1.5 py-0.5 text-sm transition-colors hover:bg-accent hover:text-foreground"
         >
           <span className={labelClass}>{crumb.label}</span>
-        </button>
+        </Link>
       );
     }
     return (
@@ -64,8 +63,10 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
       >
         {crumb.isPage && (
           <>
-            <DropdownMenuItem onSelect={() => router.push(crumb.fullPath)}>
-              <span className="font-medium">{crumb.label} overview</span>
+            <DropdownMenuItem asChild>
+              <Link href={crumb.fullPath}>
+                <span className="font-medium">{crumb.label} overview</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
@@ -80,15 +81,17 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
           return (
             <DropdownMenuItem
               key={child.fullPath}
-              onSelect={() => router.push(child.fullPath)}
+              asChild
               className={cn("gap-2", active && "bg-accent/60")}
             >
-              {active ? (
-                <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-              ) : (
-                <span className="w-3.5 shrink-0" />
-              )}
-              <span className="truncate">{child.label}</span>
+              <Link href={child.fullPath}>
+                {active ? (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                ) : (
+                  <span className="w-3.5 shrink-0" />
+                )}
+                <span className="truncate">{child.label}</span>
+              </Link>
             </DropdownMenuItem>
           );
         })}

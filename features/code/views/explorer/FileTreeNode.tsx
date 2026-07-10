@@ -56,6 +56,17 @@ interface PendingCreate {
   initialName: string;
 }
 
+/** Fixed footer slots for size / mtime / permissions — never grow/shrink the menu. */
+const MENU_SUMMARY_SLOTS = 3;
+const EMPTY_MENU_SUMMARY: string[] = Array.from(
+  { length: MENU_SUMMARY_SLOTS },
+  () => "",
+);
+
+function toFixedMenuSummary(lines: string[]): string[] {
+  return Array.from({ length: MENU_SUMMARY_SLOTS }, (_, i) => lines[i] ?? "");
+}
+
 function parentOf(path: string): string {
   const trimmed = path.replace(/\/+$/, "");
   const idx = trimmed.lastIndexOf("/");
@@ -94,7 +105,8 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
-  const [menuSummary, setMenuSummary] = useState<string[]>([]);
+  /** Always length `MENU_SUMMARY_SLOTS` — empty strings reserve height, never remount. */
+  const [menuSummary, setMenuSummary] = useState<string[]>(EMPTY_MENU_SUMMARY);
 
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const createInputRef = useRef<HTMLInputElement | null>(null);
@@ -302,7 +314,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   const handleContextMenuOpenChange = useCallback(
     (open: boolean) => {
       if (!open) {
-        setMenuSummary([]);
+        setMenuSummary(EMPTY_MENU_SUMMARY);
         return;
       }
 
@@ -313,7 +325,9 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
       if (node.modifiedAt) {
         lines.push(formatRelativeTime(node.modifiedAt));
       }
-      setMenuSummary(lines);
+      // Always paint the fixed footer immediately so async enrichment only
+      // swaps text in place — never inserts/removes rows.
+      setMenuSummary(toFixedMenuSummary(lines));
 
       void fetchFilesystemProperties(adapter, node)
         .then((props) => {
@@ -331,7 +345,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
           if (props.permissions) {
             next.push(props.permissions);
           }
-          setMenuSummary(next);
+          setMenuSummary(toFixedMenuSummary(next));
         })
         .catch(() => {
           // Keep list-derived summary lines when stat/list fails.
@@ -467,24 +481,11 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-52">
-          {menuSummary.length > 0 && (
-            <>
-              {menuSummary.map((line) => (
-                <ContextMenuLabel
-                  key={line}
-                  className="py-0.5 text-[11px] font-normal text-muted-foreground"
-                >
-                  {line}
-                </ContextMenuLabel>
-              ))}
-              <ContextMenuSeparator />
-            </>
-          )}
           <ContextMenuItem onSelect={() => setPropertiesOpen(true)}>
             <Info className="mr-2 h-3.5 w-3.5" /> Properties…
           </ContextMenuItem>
           <ContextMenuSeparator />
-          {isDir && (
+          {isDir ? (
             <>
               <ContextMenuItem onSelect={() => startCreate("file")}>
                 <FilePlus className="mr-2 h-3.5 w-3.5" /> New file
@@ -492,9 +493,13 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
               <ContextMenuItem onSelect={() => startCreate("directory")}>
                 <FolderPlus className="mr-2 h-3.5 w-3.5" /> New folder
               </ContextMenuItem>
-              <ContextMenuSeparator />
             </>
+          ) : (
+            <ContextMenuItem onSelect={() => void handleDownload()}>
+              <Download className="mr-2 h-3.5 w-3.5" /> Download
+            </ContextMenuItem>
           )}
+          <ContextMenuSeparator />
           <ContextMenuItem onSelect={startRename}>
             <Pencil className="mr-2 h-3.5 w-3.5" /> Rename
             <span className="ml-auto text-[10px] text-muted-foreground">
@@ -512,15 +517,21 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
           <ContextMenuItem onSelect={handleCopyPath}>
             <CopyIcon className="mr-2 h-3.5 w-3.5" /> Copy path
           </ContextMenuItem>
-          {!isDir && (
-            <ContextMenuItem onSelect={() => void handleDownload()}>
-              <Download className="mr-2 h-3.5 w-3.5" /> Download
-            </ContextMenuItem>
-          )}
           <ContextMenuSeparator />
           <ContextMenuItem onSelect={handleRefresh}>
             <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh
           </ContextMenuItem>
+          <ContextMenuSeparator />
+          {/* Fixed-height metadata footer — always MENU_SUMMARY_SLOTS rows so
+              async property enrichment never shifts action items above. */}
+          {menuSummary.map((line, i) => (
+            <ContextMenuLabel
+              key={i}
+              className="h-5 py-0 text-[11px] font-normal leading-5 text-muted-foreground"
+            >
+              {line || "\u00A0"}
+            </ContextMenuLabel>
+          ))}
         </ContextMenuContent>
       </ContextMenu>
 

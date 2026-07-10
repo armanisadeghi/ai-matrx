@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
-# run-release-gates.sh — Quality gates before a release (formerly pre-commit).
+# run-release-gates.sh — Quality checks around a release (formerly pre-commit).
 #
 # Runs doctrine, UI primitives, migration ledger, and dead-relations checks
-# with a visible spinner so a 30–45s run never looks hung.
+# with a visible spinner so a long run never looks hung.
+#
+# DEFAULT IS ADVISORY — loud findings, exit 0 always. Ship/release must never
+# be blocked or delayed by these checks; only git itself may stop a push.
+# Use --strict for CI / manual hard-fail.
 #
 # Usage:
-#   ./scripts/run-release-gates.sh           # strict — blocks on failure (release default)
-#   ./scripts/run-release-gates.sh --advisory  # loud only, exit 0 (old pre-commit behavior)
+#   ./scripts/run-release-gates.sh            # advisory — scream, never block
+#   ./scripts/run-release-gates.sh --strict   # exit 1 on failure (CI)
+#   ./scripts/run-release-gates.sh --advisory # explicit alias of the default
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,27 +21,20 @@ cd "$REPO_ROOT"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; NC='\033[0m'
 
-ADVISORY=false
+STRICT=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --advisory) ADVISORY=true; shift ;;
+        --strict) STRICT=true; shift ;;
+        --advisory) STRICT=false; shift ;;
         -h|--help)
-            grep '^#' "$0" | head -12 | sed 's/^# \?//'
+            grep '^#' "$0" | head -16 | sed 's/^# \?//'
             exit 0
             ;;
         *) echo "Unknown flag: $1" >&2; exit 2 ;;
     esac
 done
 
-if $ADVISORY; then
-    declare -a GATES=(
-        "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts"
-        "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
-        "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
-        "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"
-        "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
-    )
-else
+if $STRICT; then
     declare -a GATES=(
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
@@ -44,12 +42,25 @@ else
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts --strict"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
     )
+else
+    # Non-strict variants still print the full loud report; they exit 0.
+    declare -a GATES=(
+        "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts"
+        "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
+        "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
+        "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"
+        "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
+    )
 fi
 
 echo ""
 echo -e "${BOLD}  Release quality gates${NC}"
 echo -e "  ${DIM}${#GATES[@]} checks — typically 30–45s${NC}"
-$ADVISORY && echo -e "  ${YELLOW}Mode: advisory (warnings only)${NC}"
+if $STRICT; then
+    echo -e "  ${RED}Mode: strict (blocks on failure)${NC}"
+else
+    echo -e "  ${YELLOW}Mode: advisory (loud only — never blocks ship/push)${NC}"
+fi
 echo ""
 
 _spinner_frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
@@ -82,36 +93,71 @@ run_gate() {
     local elapsed=$(( SECONDS - start ))
     printf "\r%80s\r" ""
 
+    # Always surface the check's own report when it wrote anything — advisory
+    # mode exits 0 with a loud red box; hiding that would defeat the point.
+    local has_output=false
+    [[ -s "$tmp" ]] && has_output=true
+
     if [[ $exit_code -ne 0 ]]; then
         echo -e "${RED}[FAIL]${NC}  [$step/$total] ${label} (${elapsed}s)"
-        [[ -s "$tmp" ]] && cat "$tmp"
+        $has_output && cat "$tmp"
         rm -f "$tmp"
-        return "$exit_code"
+        return 1
+    fi
+
+    # Heuristic: non-strict checkers still print SCHEMA TRUTH-CHECK / FAIL boxes
+    # while exiting 0. Treat that as a loud advisory failure for the summary.
+    if $has_output && grep -qE 'SCHEMA TRUTH-CHECK|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+        echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
+        cat "$tmp"
+        rm -f "$tmp"
+        return 2
     fi
 
     echo -e "${GREEN}[OK]${NC}    [$step/$total] ${label} (${elapsed}s)"
+    $has_output && cat "$tmp"
     rm -f "$tmp"
     return 0
 }
 
 failed=0
+warned=0
 step=1
 total=${#GATES[@]}
 
 for entry in "${GATES[@]}"; do
     IFS='|' read -r label cmd <<< "$entry"
-    if ! run_gate "$step" "$total" "$label" "$cmd"; then
+    set +e
+    run_gate "$step" "$total" "$label" "$cmd"
+    rc=$?
+    set -e
+    if [[ $rc -eq 1 ]]; then
         failed=1
-        break
+        # Strict: stop early. Advisory: keep going so every gate screams.
+        $STRICT && break
+    elif [[ $rc -eq 2 ]]; then
+        warned=1
     fi
     step=$(( step + 1 ))
 done
 
 echo ""
 if [[ $failed -ne 0 ]]; then
-    echo -e "${RED}${BOLD}Release gates failed — fix the issues above before releasing.${NC}"
+    echo -e "${RED}${BOLD}Release gates reported failures.${NC}"
+    if $STRICT; then
+        echo -e "${RED}${BOLD}Strict mode — fix the issues above before releasing.${NC}"
+        echo ""
+        exit 1
+    fi
+    echo -e "${YELLOW}${BOLD}Advisory mode — ship/push continues. Fix these ASAP.${NC}"
     echo ""
-    exit 1
+    exit 0
+fi
+
+if [[ $warned -ne 0 ]]; then
+    echo -e "${YELLOW}${BOLD}Release gates reported warnings (advisory — ship/push continues).${NC}"
+    echo ""
+    exit 0
 fi
 
 echo -e "${GREEN}${BOLD}All release gates passed.${NC}"

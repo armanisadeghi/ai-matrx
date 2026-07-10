@@ -1,25 +1,18 @@
 # CLAUDE.md — AI Matrx Admin
 
-
-> 🔴 **TEMPORARY — DB TRANSITION IN PROGRESS (read before touching DB/data code).** The 2026 schema-reorg + canonical-RLS changeover is mid-flight. If you encounter db errors, check the schema of the table first. Many tables used to "public" but they are now in custom schemas.
-- [Canonical DB Docs](docs/official/canonical_db.md)
-
-
 Large-scale Next.js no-code AI app builder and admin dashboard. Desktop-first, mobile-responsive.
 
 > **Official Next.js / React / TypeScript best practices:** `~/.arman/rules/nextjs-best-practices/nextjs-guide.md` — single source of truth for rendering, caching, performance, mobile, Tailwind, component contracts, API patterns. This file covers project-specific conventions only.
 
 ---
 
-## Operating Principle: Build the platform, not the artifact.
+## Operating Principle: Build the platform, not the artifact
 
 > **The artifact is disposable. The class of failure goes extinct. Friction is the spec for your next primitive.**
 
-Every task is a probe exposing what the platform is missing. Build (or extend) the missing generic, named, documented primitive, then complete the task by consuming it. **Forbidden:** code that only serves this one artifact. **Required:** reusable primitives.
+Every task is a probe exposing what the platform is missing. Build (or extend) the generic, named, documented primitive, then complete the task by consuming it. Code that serves only this one artifact is **forbidden** — a second implementation of something we already own is a defect even if it works; delete yours and extend ours. The five anti-patterns this kills (local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap): **[PRINCIPLES.md](./PRINCIPLES.md)**. Enforced by ESLint ([`eslint.config.mjs`](./eslint.config.mjs)), `pnpm check:doctrine` ([script](./scripts/check-doctrine.ts)), and the pre-commit hook; every `FEATURE.md` has a Doctrine section ([template](./features/_FEATURE_TEMPLATE.md)).
 
-**Acceptance tests** — *Feature:* could you rebuild it in minutes from existing capabilities? *Bug:* is this whole class of failure now structurally impossible, not just patched here? *Adding a type/component/slice/hook:* did you prove (grep / read / `Explore` subagent) no existing primitive could be extended? If no, the remainder is your next infrastructure ticket — extract it.
-
-The five anti-patterns this kills (local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap) with "look here first" anchors: **[PRINCIPLES.md](./PRINCIPLES.md)**. Enforced by ESLint ([`eslint.config.mjs`](./eslint.config.mjs)), `pnpm check:doctrine` ([script](./scripts/check-doctrine.ts)), and the pre-commit hook. Every `FEATURE.md` has a Doctrine section ([template](./features/_FEATURE_TEMPLATE.md)).
+**Before writing ANY new function, component, hook, slice, service, or table, read [docs/reuse-first.md](./docs/reuse-first.md)** — the ladder (**Reuse → Extend → Compose → Create**, exhaust each rung), the mandatory search gate (concept + synonyms + the Primitives Index; "found nothing" names the queries you ran), the importable-code rules (pure core, thin shell, no speculative abstraction), and the new-table bar (exceptional — same entity, new variant → column/flag/JSONB on the existing table). Your summary states what you searched, what you found, and what you reused or extended.
 
 ---
 
@@ -69,6 +62,7 @@ Always use the latest stable release of every package — no deprecated APIs.
 
 - **Project:** `txzxabzwovsujtloxrus` (Matrx Main, `us-west-1`, Postgres 17). The only DB this repo talks to. `NEXT_PUBLIC_SUPABASE_URL` → `db.matrxserver.com`. Always pass `project_id: "txzxabzwovsujtloxrus"` to Supabase MCP tools — do not guess between Matrx Main / My Matrx / Matrx Flow / Matrx DM / Matrx Games.
 - **Clients:** `@/utils/supabase/client` (browser), `@/utils/supabase/server` (SSR). `createAdminClient()` is restricted — see Protected Resources.
+- **Canonical standards:** [docs/official/canonical_db.md](docs/official/canonical_db.md). Many tables moved from `public` into domain schemas — on any DB error, check the table's live schema first. **Spot a stale table reference or a non-canonical table while working? You own it:** report it and migrate the table + every consumer, client AND server — for code in other repos, write the exact prompt and hand it to the user to relay to that repo's agent.
 
 ### Database migrations — the DB is the source of truth, NOT the files
 

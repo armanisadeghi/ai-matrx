@@ -11,11 +11,57 @@ globs:
 ## Requirements
 All clickable cards/items that navigate to new routes must:
 1. Provide immediate visual feedback and prevent duplicate actions
-2. **Support cmd+click / ctrl+click to open in a new tab** — this is a critical UX requirement
+2. **Support cmd+click / ctrl+click to open in a new tab** — this is a critical UX requirement (data-loss hazard if broken)
+
+## Global primitive (ALWAYS use this)
+
+```ts
+import {
+  shouldOpenInNewTab,
+  allowNativeNewTab,
+  openInNewTab,
+} from "@/utils/navigation/should-open-in-new-tab";
+```
+
+- `shouldOpenInNewTab(e)` / `allowNativeNewTab(e)` — true for Cmd/Ctrl/Shift/Alt/middle-click
+- `openInNewTab(href)` — when there is no underlying `<a href>` (CommandItem, SelectItem)
+
+Do **not** inline `e.metaKey || e.ctrlKey` checks. Import the helper.
 
 ## The cmd+click Problem
 
 Using `onClick` with `router.push()` breaks cmd+click (open in new tab) because the browser can only intercept that natively on `<a>` elements with an `href`. **Always use `<Link>` wrappers with `href` for navigation buttons**.
+
+### Dropdown / menu items
+```tsx
+<DropdownMenuItem asChild>
+  <Link href={path}>{label}</Link>
+</DropdownMenuItem>
+```
+Never `onSelect={() => router.push(...)}` alone — that kills Cmd/Ctrl+click.
+
+### Link + loading-state intercept
+```tsx
+<Link
+  href={path}
+  onClick={(e) => {
+    if (allowNativeNewTab(e)) return; // let href open a new tab
+    e.preventDefault();
+    router.push(path);
+  }}
+>
+```
+
+### No href available (CommandItem / SelectItem)
+Set an `href` on the item data and open it yourself on modified click:
+```tsx
+onPointerDown={(e) => {
+  if (href && shouldOpenInNewTab(e)) {
+    e.preventDefault();
+    openInNewTab(href);
+  }
+}}
+```
 
 ## Implementation
 
@@ -33,9 +79,11 @@ const handleNavigate = (id: string, path: string) => {
 
 ### Child Component — Navigation Handlers
 ```typescript
+import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
+
 // Accept optional event; bail out on cmd/ctrl+click so the Link href takes over
 const handleEdit = (e?: React.MouseEvent) => {
-  if (e && (e.metaKey || e.ctrlKey)) return; // let <Link href> handle new-tab
+  if (e && allowNativeNewTab(e)) return; // let <Link href> handle new-tab
   e?.preventDefault();
   if (onNavigate && !isAnyNavigating) {
     onNavigate(id, `${basePath}/edit/${id}`);
@@ -46,6 +94,7 @@ const handleEdit = (e?: React.MouseEvent) => {
 ### Child Component — Wrap navigation buttons in `<Link>`
 ```tsx
 import Link from "next/link";
+import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 
 // Wrap each navigation IconButton in a Link for native cmd+click support.
 // The onClick intercepts normal clicks to trigger loading states via router.push.
@@ -63,11 +112,13 @@ import Link from "next/link";
 
 ### Card body with no primary URL (opens a modal on click)
 ```typescript
+import { shouldOpenInNewTab, openInNewTab } from "@/utils/navigation/should-open-in-new-tab";
+
 // For cards that open a modal on click (no single primary URL),
 // handle cmd/ctrl+click explicitly to open the most relevant destination.
 const handleCardClick = (e: React.MouseEvent) => {
-  if (e.metaKey || e.ctrlKey) {
-    window.open(`${basePath}/run/${id}`, "_blank");
+  if (shouldOpenInNewTab(e)) {
+    openInNewTab(`${basePath}/run/${id}`);
     return;
   }
   // normal click — open modal
@@ -87,11 +138,13 @@ const isDisabled = isNavigating || isAnyNavigating;
 ```
 
 ## Checklist
+- ✅ Import `shouldOpenInNewTab` / `allowNativeNewTab` from `@/utils/navigation/should-open-in-new-tab`
 - ✅ `useTransition` + `startTransition` for navigation
 - ✅ Navigation buttons wrapped in `<Link href={...}>` for cmd+click support
-- ✅ Handler accepts `(e?: React.MouseEvent)` and returns early on `e.metaKey || e.ctrlKey`
+- ✅ Dropdown items use `DropdownMenuItem asChild` + `<Link>`
+- ✅ Handler accepts `(e?: React.MouseEvent)` and returns early on `allowNativeNewTab(e)`
 - ✅ Loading overlay with spinner on active card
 - ✅ Disable all cards when any is navigating
 - ✅ Prevent duplicate clicks with state check
 - ✅ Update tooltips/aria-labels to "Please wait..."
-- ✅ Card body with modal: handle `e.metaKey || e.ctrlKey` with `window.open`
+- ✅ Card body with modal: handle modified click with `openInNewTab`

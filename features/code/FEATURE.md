@@ -119,6 +119,7 @@ Tier selection happens at `New sandbox` time and sticks per-user (`userPreferenc
 
 ## Change log
 
+- `2026-07-09` — Explorer file-tree context menu: move async metadata (size / mtime / permissions) to a fixed-height footer; never conditionally insert rows that shift action items. Dir vs file actions use a same-slot swap (New file/folder ↔ Download).
 - `2026-07-09` — `/code` activity-view icons inject into the app shell Large-Route menu (`CodeSidebarMenu`); the resizable/collapsible file panel stays in the workspace. Duplicate 48px ActivityBar rail is hidden on the route host (`showActivityBar={false}`); floating windows and agent-app editor keep the embedded rail.
 - `2026-07-09` — Library side-panel header: title shortened to **Code**, dropped "Your saved code" subtitle; `SidePanelHeader` truncates title/subtitle so narrow panels don't wrap. Editable Monaco right-click now includes Format Document/Selection, Find, Go to Line, Word Wrap, and Command Palette via `createCodeEditorExtraSections`; Format also on the editor toolbar.
 - `2026-07-09` — HTML Pages (`html-page:`) register a render-previewer (`features/html-pages/code-preview/`). Eye icon on those tabs opens a paired preview: dirty → `srcDoc` of live buffer; clean → published `page.url?preview=1`. Registration side-effect imported from `CodeWorkspace.tsx`.

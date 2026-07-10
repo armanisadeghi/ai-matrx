@@ -26,6 +26,10 @@ import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenTranscriptStudioWindow } from "@/features/overlays/openers/transcriptStudioWindow";
 import { useOpenScraperWindow } from "@/features/overlays/openers/scraperWindow";
 
+// Canonical home: `@/utils/navigation/should-open-in-new-tab` — re-exported
+// here so existing RAG/KG imports keep working.
+export { shouldOpenInNewTab } from "@/utils/navigation/should-open-in-new-tab";
+
 export interface CitationInput {
   sourceKind: string;
   /** cld_file → file_id; library_doc → processed_document_id; note → note id;
@@ -40,19 +44,6 @@ export interface CitationInput {
   fileName?: string | null;
   score?: number | null;
   query?: string | null;
-}
-
-/** True for clicks that should keep the browser's native "open in new tab". */
-export function shouldOpenInNewTab(e: {
-  metaKey?: boolean;
-  ctrlKey?: boolean;
-  shiftKey?: boolean;
-  altKey?: boolean;
-  button?: number;
-}): boolean {
-  return Boolean(
-    e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1,
-  );
 }
 
 export function useOpenCitation() {
@@ -72,8 +63,7 @@ export function useOpenCitation() {
             chunkId: c.chunkId ?? null,
             pageNumber: c.pageNumber ?? null,
             pageNumbers:
-              c.pageNumbers ??
-              (c.pageNumber != null ? [c.pageNumber] : null),
+              c.pageNumbers ?? (c.pageNumber != null ? [c.pageNumber] : null),
             snippet: c.snippet ?? null,
             fileName: c.fileName ?? null,
             score: c.score ?? null,

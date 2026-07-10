@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ListTree, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,7 +80,6 @@ const iconSlot =
   "flex h-4 w-4 shrink-0 items-center justify-center [&>svg]:h-4 [&>svg]:w-4 [&>svg]:max-w-none";
 
 export default function AdminNavTreeMenu() {
-  const router = useRouter();
   const pathname = usePathname() ?? "";
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -147,18 +147,20 @@ export default function AdminNavTreeMenu() {
                 return (
                   <DropdownMenuItem
                     key={feature.link}
-                    onSelect={() => router.push(feature.link)}
+                    asChild
                     className={cn("gap-2", active && "bg-accent/60")}
                   >
-                    <span className={cn(iconSlot, "text-muted-foreground")}>
-                      {feature.icon}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">
-                      {feature.title}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground truncate max-w-[5rem]">
-                      {feature.categoryName}
-                    </span>
+                    <Link href={feature.link}>
+                      <span className={cn(iconSlot, "text-muted-foreground")}>
+                        {feature.icon}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {feature.title}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[5rem]">
+                        {feature.categoryName}
+                      </span>
+                    </Link>
                   </DropdownMenuItem>
                 );
               })
@@ -185,13 +187,17 @@ export default function AdminNavTreeMenu() {
                     return (
                       <DropdownMenuItem
                         key={feature.link}
-                        onSelect={() => router.push(feature.link)}
+                        asChild
                         className={cn("gap-2", active && "bg-accent/60")}
                       >
-                        <span className={cn(iconSlot, "text-muted-foreground")}>
-                          {feature.icon}
-                        </span>
-                        <span className="truncate">{feature.title}</span>
+                        <Link href={feature.link}>
+                          <span
+                            className={cn(iconSlot, "text-muted-foreground")}
+                          >
+                            {feature.icon}
+                          </span>
+                          <span className="truncate">{feature.title}</span>
+                        </Link>
                       </DropdownMenuItem>
                     );
                   })}

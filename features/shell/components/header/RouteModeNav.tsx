@@ -34,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 
 export interface RouteNavItem {
   name: string;
@@ -112,7 +113,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
         key={item.href}
         href={item.href}
         onClick={(e) => {
-          if (e.metaKey || e.ctrlKey) return;
+          if (allowNativeNewTab(e)) return;
           e.preventDefault();
           navigate(item.href);
         }}
@@ -178,11 +179,20 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
               return (
                 <DropdownMenuItem
                   key={item.href}
-                  onSelect={() => navigate(item.href)}
+                  asChild
                   className={cn("gap-2", isActive && "font-semibold")}
                 >
-                  {Icon && <Icon className="w-4 h-4 shrink-0" />}
-                  {item.name}
+                  <Link
+                    href={item.href}
+                    onClick={(e) => {
+                      if (allowNativeNewTab(e)) return;
+                      e.preventDefault();
+                      navigate(item.href);
+                    }}
+                  >
+                    {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                    {item.name}
+                  </Link>
                 </DropdownMenuItem>
               );
             })}

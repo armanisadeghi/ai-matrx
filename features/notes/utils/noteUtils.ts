@@ -5,6 +5,54 @@ import { DEFAULT_FOLDER_NAMES } from "../constants/defaultFolders";
 import { idMatchesQuery } from "@/utils/search-scoring";
 
 /**
+ * Whether a note belongs in the active-org sidebar/list view.
+ *
+ * After the org retrofit, historical notes were stamped onto the user's
+ * **personal** organization, while most users keep a company org as their
+ * active/default. Filtering strictly on `activeOrgId` then zeros every
+ * folder count even though the notes still exist (and show up in
+ * unfiltered surfaces like FolderQuickPick).
+ *
+ * Rule: visible when the note's org matches the active org OR the user's
+ * personal org. Other company orgs stay hidden. Callers still handle the
+ * null-org ("homeless") case separately.
+ */
+export function noteMatchesActiveOrgContext(
+  note: { organization_id: string | null },
+  activeOrgId: string | null,
+  personalOrgId: string | null,
+): boolean {
+  if (!activeOrgId) return true;
+  const orgId = note.organization_id;
+  if (orgId == null) return false;
+  if (orgId === activeOrgId) return true;
+  if (personalOrgId != null && orgId === personalOrgId) return true;
+  return false;
+}
+
+/**
+ * Ordered folder names for a sidebar: defaults first, then any folders
+ * present on the given notes (alphabetically). Keeps the folder list in
+ * lockstep with whatever note set the counts are derived from.
+ */
+export function folderNamesForNotes(
+  notes: ReadonlyArray<{ folder_name: string | null }>,
+): string[] {
+  const folderSet = new Set<string>(DEFAULT_FOLDER_NAMES);
+  for (const note of notes) {
+    if (note.folder_name) folderSet.add(note.folder_name);
+  }
+  return Array.from(folderSet).sort((a, b) => {
+    const aIdx = DEFAULT_FOLDER_NAMES.indexOf(a);
+    const bIdx = DEFAULT_FOLDER_NAMES.indexOf(b);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return a.localeCompare(b);
+  });
+}
+
+/**
  * Filter notes based on search, tags, and folder
  */
 export function filterNotes(notes: Note[], filters: NoteFilters): Note[] {

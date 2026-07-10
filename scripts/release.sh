@@ -18,12 +18,13 @@
 #   ./scripts/release.sh --minor      # minor bump
 #   ./scripts/release.sh --major      # major bump
 #   ./scripts/release.sh --message "feat: something"   # custom commit message
-#   ./scripts/release.sh --dry-run    # preview without changes (still runs release gates)
+#   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --monitor    # poll Vercel deployment status after push
 #
-# Before bumping the version, runs release quality gates (doctrine, UI primitives,
-# migration ledger, dead-relations) via scripts/run-release-gates.sh — with a
-# spinner so the ~30–45s run never looks hung. Manual: pnpm check:release-gates
+# After a successful push, runs release quality gates in ADVISORY mode
+# (doctrine, UI primitives, migration ledger, dead-relations) — loud only,
+# never blocks or delays the ship. Only git itself may stop a push.
+# Manual hard-fail: pnpm check:release-gates:strict
 #
 # --monitor requires either:
 #   - VERCEL_TOKEN env var (personal access token from vercel.com/account/tokens)
@@ -190,11 +191,6 @@ EOF
     fi
 fi
 
-# ── Release quality gates (doctrine, UI primitives, migrations, dead-relations) ─
-echo ""
-info "Running release quality gates..."
-bash "$SCRIPT_DIR/run-release-gates.sh"
-
 # ── Read current version ─────────────────────────────────────────────────────
 CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null) \
     || fail "Could not read version from $VERSION_FILE."
@@ -340,6 +336,14 @@ echo ""
 echo -e "  GitHub:  ${CYAN}https://github.com/${GITHUB_REPO}/actions${NC}"
 echo -e "  Vercel:  ${CYAN}https://vercel.com/dashboard${NC}"
 echo ""
+
+# ── Advisory quality gates (post-push — never block or delay the ship) ───────
+# Only git may stop a release. These scream loudly if something is wrong, then
+# always continue. Failures here are for humans to fix on the next pass.
+echo ""
+info "Running advisory release quality gates (post-push, non-blocking)..."
+# Explicit --advisory + || true so a future strict default cannot abort release.
+bash "$SCRIPT_DIR/run-release-gates.sh" --advisory || true
 
 # ── Vercel deployment monitor ─────────────────────────────────────────────────
 _monitor_vercel() {

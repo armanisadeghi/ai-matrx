@@ -18,11 +18,13 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectSharedWithMeNotes } from "../../redux/selectors";
 import {
   selectOrganizationId,
+  selectPersonalOrganizationId,
   selectProjectId,
   selectTaskId,
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
+import { noteMatchesActiveOrgContext } from "../../utils/noteUtils";
 import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileActionBar";
 import NotesFilterSheet, { NotesFilterState } from "./NotesFilterSheet";
 import type { Note } from "@/features/notes/types";
@@ -47,6 +49,7 @@ export default function MobileNotesList({
 
   // Active context for filtering
   const activeOrgId = useAppSelector(selectOrganizationId);
+  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const activeProjectId = useAppSelector(selectProjectId);
   const activeTaskId = useAppSelector(selectTaskId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
@@ -71,14 +74,23 @@ export default function MobileNotesList({
       return true;
     });
     if (activeOrgId)
-      result = result.filter((n) => n.organization_id === activeOrgId);
+      result = result.filter((n) =>
+        noteMatchesActiveOrgContext(n, activeOrgId, personalOrgId),
+      );
     if (scopeFilteredNoteIds)
       result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
     if (activeProjectId)
       result = result.filter((n) => n.project_id === activeProjectId);
     if (activeTaskId) result = result.filter((n) => n.task_id === activeTaskId);
     return result;
-  }, [notes, activeOrgId, scopeFilteredNoteIds, activeProjectId, activeTaskId]);
+  }, [
+    notes,
+    activeOrgId,
+    personalOrgId,
+    scopeFilteredNoteIds,
+    activeProjectId,
+    activeTaskId,
+  ]);
 
   // Filtered + sorted notes. "Shared only" swaps the base list to the notes
   // shared WITH me (from get_notes_shared_with_me) — those are cross-org, so

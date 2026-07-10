@@ -63,6 +63,7 @@ import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   selectOrganizationId,
   selectOrganizationName,
+  selectPersonalOrganizationId,
   selectScopeSelectionsContext,
   selectProjectId,
   selectProjectName,
@@ -70,6 +71,10 @@ import {
   selectTaskName,
 } from "@/lib/redux/slices/appContextSlice";
 import { useEntitiesByScopes } from "@/features/scopes/hooks/useEntitiesByScopes";
+import {
+  folderNamesForNotes,
+  noteMatchesActiveOrgContext,
+} from "../utils/noteUtils";
 import {
   setInstanceActiveTab,
   addInstanceTab,
@@ -163,6 +168,7 @@ export function NoteSidebar({
 
   // ── Active context for filtering + grouping labels ──────────────────
   const activeOrgId = useAppSelector(selectOrganizationId);
+  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const activeProjectId = useAppSelector(selectProjectId);
   const activeTaskId = useAppSelector(selectTaskId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
@@ -183,11 +189,11 @@ export function NoteSidebar({
 
   // ── Filter notes by active context (org + scopes + project + task) ─
   //
-  // No-value ≠ non-matching: a note from ANOTHER org is excluded outright,
-  // but a note with NO org at all is merely "homeless" — we hide it from the
-  // scoped view yet surface a count + opt-in toggle so users are nudged
-  // toward assigning context instead of silently losing notes. Display-only:
-  // zero effect on any saving behavior.
+  // Org rule (see `noteMatchesActiveOrgContext`): active org OR personal org.
+  // Historical notes were stamped onto the personal org at retrofit time, so
+  // a strict active-org-only filter zeros every folder count whenever the
+  // user is working in a company org. Other company orgs stay excluded.
+  // Null-org ("homeless") notes are hidden by default with a banner + toggle.
   const [includeHomeless, setIncludeHomeless] = useState(false);
   const [claimingHomeless, setClaimingHomeless] = useState(false);
   const { contextFiltered, homelessCount } = useMemo(() => {
@@ -195,7 +201,9 @@ export function NoteSidebar({
     let homeless: typeof allNotes = [];
     if (activeOrgId) {
       homeless = result.filter((n) => n.organization_id == null);
-      result = result.filter((n) => n.organization_id === activeOrgId);
+      result = result.filter((n) =>
+        noteMatchesActiveOrgContext(n, activeOrgId, personalOrgId),
+      );
     }
     if (scopeFilteredNoteIds)
       result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
@@ -218,6 +226,7 @@ export function NoteSidebar({
   }, [
     allNotes,
     activeOrgId,
+    personalOrgId,
     scopeFilteredNoteIds,
     activeProjectId,
     activeTaskId,
@@ -340,23 +349,17 @@ export function NoteSidebar({
   }, [folderCtx, noteCtx]);
 
   // ── Derived data ───────────────────────────────────────────────────
+  // Folder list MUST come from the same note set as the counts
+  // (`contextFiltered`). Building it from `allNotes` left empty folders
+  // (count 0) for notes that the org filter had already excluded.
   const folders = useMemo(() => {
-    const set = new Set<string>(allFolders);
-    for (const n of allNotes) {
-      if (n.folder_name) set.add(n.folder_name);
-    }
-    // Add "Uncategorized" if any notes lack a folder_name
-    const hasOrphans = allNotes.some((n) => !n.folder_name);
-    const result = allFolders.concat(
-      Array.from(set)
-        .filter((f) => !allFolders.includes(f))
-        .sort(),
-    );
+    const result = folderNamesForNotes(contextFiltered);
+    const hasOrphans = contextFiltered.some((n) => !n.folder_name);
     if (hasOrphans && !result.includes("Uncategorized")) {
       result.push("Uncategorized");
     }
     return result;
-  }, [allNotes, allFolders]);
+  }, [contextFiltered]);
 
   // Filter notes by search (operates on context-filtered set)
   const filteredNotes = useMemo(() => {
@@ -800,7 +803,11 @@ export function NoteSidebar({
             type="button"
             onClick={() => setIncludeHomeless((v) => !v)}
             className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-            title={includeHomeless ? "Hide these notes" : "Show these notes in the list"}
+            title={
+              includeHomeless
+                ? "Hide these notes"
+                : "Show these notes in the list"
+            }
           >
             {includeHomeless ? "Hide" : "Show"}
           </button>

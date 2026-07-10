@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -24,12 +24,21 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  openInNewTab,
+  shouldOpenInNewTab,
+} from "@/utils/navigation/should-open-in-new-tab";
 
 export interface IconSelectItem {
   id: string;
   label: string;
   icon?: React.ReactNode;
   value: string;
+  /**
+   * When set, Cmd/Ctrl/middle-click opens this URL in a new tab instead of
+   * calling onValueChange (required for navigation selects).
+   */
+  href?: string;
 }
 
 export interface IconSelectProps {
@@ -69,6 +78,8 @@ function IconSelectTrigger({
 /**
  * IconSelect - A simple icon-only select component based on the NavigationSelectIcon
  * that was proven to work correctly across the application.
+ *
+ * Navigation items MUST set `href` so Cmd/Ctrl+click opens a new tab.
  */
 const IconSelect = ({
   items,
@@ -82,6 +93,8 @@ const IconSelect = ({
   searchPlaceholder = "Search...",
 }: IconSelectProps) => {
   const [open, setOpen] = useState(false);
+  // cmdk onSelect does not receive the mouse event — track modifier clicks here.
+  const skipSelectRef = useRef(false);
 
   if (searchable) {
     return (
@@ -109,7 +122,20 @@ const IconSelect = ({
                   <CommandItem
                     key={item.id}
                     value={item.label}
+                    onPointerDown={(e) => {
+                      const href = item.href;
+                      if (href && shouldOpenInNewTab(e)) {
+                        skipSelectRef.current = true;
+                        e.preventDefault();
+                        openInNewTab(href);
+                        setOpen(false);
+                      }
+                    }}
                     onSelect={() => {
+                      if (skipSelectRef.current) {
+                        skipSelectRef.current = false;
+                        return;
+                      }
                       onValueChange?.(item.value);
                       setOpen(false);
                     }}
@@ -139,7 +165,17 @@ const IconSelect = ({
       <SelectContent className={contentClassName}>
         <SelectGroup>
           {items.map((item) => (
-            <SelectItem key={item.id} value={item.value}>
+            <SelectItem
+              key={item.id}
+              value={item.value}
+              onPointerDown={(e) => {
+                const href = item.href;
+                if (href && shouldOpenInNewTab(e)) {
+                  e.preventDefault();
+                  openInNewTab(href);
+                }
+              }}
+            >
               <div className="flex items-center">
                 {item.icon && <span className="mr-2">{item.icon}</span>}
                 {item.label}

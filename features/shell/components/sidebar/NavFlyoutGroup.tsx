@@ -26,6 +26,7 @@ import {
 } from "../../constants/nav-data";
 import { useNavActions } from "../../navigation/navActions";
 import { useNavPanelActions } from "../../navigation/navPanelActions";
+import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 
 interface NavFlyoutGroupProps {
   item: ShellNavItem;
@@ -237,7 +238,7 @@ export default function NavFlyoutGroup({
   // Expanded: clicking toggles/pins the flyout instead of navigating.
   // Collapsed: let the Link navigate to the main route.
   const handleParentClick = (e: React.MouseEvent) => {
-    if (e.metaKey || e.ctrlKey) return; // allow new-tab via href
+    if (allowNativeNewTab(e)) return; // allow new-tab via href
     if (!expanded) return;
     e.preventDefault();
     position();
