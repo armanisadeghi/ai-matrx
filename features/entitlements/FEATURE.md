@@ -2,9 +2,11 @@
 
 > **Status:** Day-1 contract shipped 2026-07-07 · backend + Stripe landing incrementally.
 > **Spec:** [`docs/proposals/education-projects/P8-entitlements-billing.md`](../../docs/proposals/education-projects/P8-entitlements-billing.md).
-> **The contract is live and permissive.** Every capability ships `enforced: false` — nothing
-> is capped until Arman approves the free-tier matrix AND the backend limit + server re-check
-> both exist for that capability.
+> **The contract is live and permissive — but limits are VISIBLE.** Every capability ships
+> `enforced: false`, so nothing is capped until Arman approves the free-tier matrix AND the
+> backend limit + server re-check both exist. Since F1 (2026-07-10) the resolver reports each
+> capability's limits + windows regardless of enforcement, so meters render "X of Y left"
+> ahead of the cap while enforcement stays off (TRUST mandate, pledge claim #3).
 
 ## What this is
 
@@ -52,6 +54,9 @@ imperative, server-truth path — call it immediately before an action that spen
 | [`service.ts`](./service.ts) | `checkEntitlement` (server-truth pre-action) + `fetchEntitlementSnapshot` (boot). |
 | [`state/entitlementsSlice.ts`](./state/entitlementsSlice.ts) | Session-boot state (tier + usage). Volatile, never persisted. |
 | [`state/selectors.ts`](./state/selectors.ts) | Per-capability memoized verdict selectors. |
+| [`components/EntitlementMeter.tsx`](./components/EntitlementMeter.tsx) | "X of Y left" meter — the ONLY meter primitive. Drop beside any metered action. |
+| [`components/useEntitlementGuard.tsx`](./components/useEntitlementGuard.tsx) | `guard(action)` — server-truth check before spend; opens the paywall on a cap-hit. |
+| [`components/CapabilityPaywallDialog.tsx`](./components/CapabilityPaywallDialog.tsx) | Contextual cap-hit paywall (helpful, never hostage). Never a `toast.error`. |
 
 ## Metering model (Arman decisions, 2026-07-07)
 
@@ -93,7 +98,14 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
   fails closed (see `checkEntitlement`).
 - **Entitlement state hydrates ONCE at session boot** (like `adminLevel`), never persisted.
 - **Every metered action shows `remaining` BEFORE the cap.** The cap check happens before the
-  action starts — mid-generation ambush is a defect (README §6).
+  action starts — mid-generation ambush is a defect (README §6). The mechanism: the snapshot /
+  `resolve_capability` RPCs report limits + windows for EVERY registered capability, enforced or
+  not, each with an `enforced` flag; un-enforced caps stay `allowed` but the meter still renders.
+- **`billing.capability_limit` is the SINGLE SOURCE for every number.** The registry
+  `defaultFreeLimit` is descriptive-only, read by nobody — never a second source of truth.
+- **Consume the primitives, never hand-roll.** `EntitlementMeter` for the meter,
+  `useEntitlementGuard` for the pre-spend check + paywall. A hand-rolled `remaining` line or a
+  `toast.error` on a cap-hit is a defect (reuse-first doctrine).
 - **Billing tables are protected resources** — RLS deny-by-default; writes only via webhooks /
   `SECURITY DEFINER` RPCs. (Backend, landing next.)
 
@@ -104,10 +116,21 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
       capability_limit, usage_ledger) + `entitlement_check` / `entitlement_snapshot` /
       `entitlement_consume` resolver RPCs. Multi-window metering. Verified live.
 - [x] Approved free-tier matrix encoded (enforcement OFF).
+- [x] **F1 — limits VISIBLE pre-enforcement.** Snapshot + `resolve_capability` report limits +
+      windows for every registered capability with an `enforced` flag; single source =
+      `billing.capability_limit`. Verified live (admin snapshot returns all 10 metered caps).
 - [x] Boot hydration wired (`DeferredSingletons`, keyed on user id — refetch on login, clear on logout).
 - [x] Consume hardening: additive-quantity cap check, concurrency lock, `check_id` idempotency (verified live).
 - [x] Paywall + usage-meter primitives (`EntitlementMeter`, `useEntitlementGuard`, `CapabilityPaywallDialog`).
-- [x] `/pricing` + `/pricing/pledge` + `/pricing/compare` (verified rendering).
+- [x] Primitives CONSUMED (F4): flashcards, notes, mindmap, audio, onboard/start, assessment,
+      tutor all render `EntitlementMeter` + guard/paywall. See consumer table below.
+- [x] `/pricing/pledge` + `/pricing/compare` (education-specific, verified rendering).
+- [x] `/pricing` education-first + DB-backed (F5) — Free caps from `billing.capability_limit`,
+      Premium from `billing.product`/`price` (TEST row today). Generic harness `PLANS[]` +
+      `PricingGrid`/`PricingLanding` retained ONLY for `(dev)/demos/upgrade`. Premium CTA starts
+      real Stripe checkout. **Structure decision:** education plans are primary on `/pricing`
+      because every inbound link is an education paywall; the generic SaaS grid lives on in the
+      demos, not deleted.
 - [x] Admin usage read surface (`/administration/entitlements`, super-admin) + `usage_admin_summary` / `usage_my_summary` (P5).
 - [x] Stripe machinery: SDK, checkout, customer portal (one-click cancel), webhooks, lifecycle sync, idempotency + ordering guard.
 - [x] Stripe TEST secret/publishable keys are in `.env.local` (`STRIPE_TEST_MODE_SECRET_KEY` /
@@ -117,12 +140,42 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
       `stripe listen --forward-to localhost:3000/api/stripe/webhook` for a dev secret, or pull the
       endpoint secret from the Stripe dashboard once a real webhook endpoint exists) → then verify
       checkout→webhook→sub→entitlement end-to-end with the test keys already in place.
-- [ ] Seed `billing.product`/`price` with the real Premium price (product decision) → swap `/pricing` to DB-backed.
-- [ ] aidream-side spend re-check per capability → then flip `enforced` per capability.
-- [ ] Trial pre-renewal reminder email (wire the platform email path).
+- [ ] **Blocked on Arman:** seed `billing.price` with the REAL Premium number (product decision).
+      `/pricing` is already DB-backed off the TEST row — swapping the number needs no code change.
+- [ ] **Blocked on Arman:** aidream-side spend re-check per capability → then flip `enforced` per
+      capability (never flip without both the limit row and the re-check).
+- [ ] **Blocked on Arman:** trial pre-renewal reminder email (wire the platform email path).
+- [ ] **FYI-with-veto (Arman):** the free-tier matrix numbers get one look before enforcement flips.
+
+## Capability consumers & ownership
+
+Which registered capabilities have a live consumer, and who owns each. A capability with NO
+consumer is not a bug — it's awaiting the feature that spends it — but it must be tracked here.
+
+| Capability | Consumer surface | Owner |
+|---|---|---|
+| `education.generate_cards` | flashcards create-from-source/topic | flashcards agent |
+| `education.card_enrichment` | flashcards enrich/enhance | flashcards agent |
+| `education.live_grade` | flashcards live grader | flashcards agent |
+| `education.notes_generate` | notes generation | notes agent |
+| `education.ingest_document` | onboard `StartHero` | this feature |
+| `education.mindmap_generate` | `MindMapNew` | this feature |
+| `education.audio_generate` | `AudioStudyNew` | this feature |
+| `education.quiz_generate` | `AssessmentCreate` (quiz) | this feature |
+| `education.practice_test_generate` | `AssessmentCreate` (practice test) | this feature |
+| `education.tutor_message` | `EducationTutorClient` | this feature |
+| `education.game_room_size` | **NO consumer** — `HostSetupImpl` (engage) still hand-checks; wire to `useEntitlement` when P10 lands | engage/game agent |
 
 ## Change Log
 
 - **2026-07-07** — Day-1 contract shipped: `features/entitlements/` (types, registry, hook,
   service, slice, selectors), registered `entitlements` reducer, permissive stub for all 10
   capabilities. Unblocks P1–P5/P9/P10.
+- **2026-07-10** — F1: limits VISIBLE pre-enforcement — snapshot/`resolve_capability` report
+  limits + windows for every registered capability with an `enforced` flag (single source =
+  `billing.capability_limit`; registry `defaultFreeLimit` demoted to descriptive-only). F3:
+  `resolve_capability` screams (WARNING + `unknown:true`) on an unknown capability id instead of
+  failing open silently; client service logs a dev error. F4: mindmap/audio/onboard/assessment/
+  tutor now consume `EntitlementMeter` + `useEntitlementGuard` (no more hand-rolled meters /
+  `toast.error` cap-hits). F5: `/pricing` is education-first + DB-backed. Migration
+  `billing_visible_limits_and_loud_unknown.sql`.
