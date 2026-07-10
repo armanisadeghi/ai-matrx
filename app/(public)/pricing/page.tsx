@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ScrollText, Scale, ShieldCheck } from "lucide-react";
-import { PricingLandingRoute } from "@/features/pricing/components/PricingLandingRoute";
+import { EducationPricing } from "@/features/pricing/education/EducationPricing";
+import { loadEducationPricing } from "@/features/pricing/education/loadEducationPricing";
 
 export const metadata: Metadata = {
   title: "Pricing — AI Matrx",
   description:
-    "Simple, honest pricing for the AI Matrx harness. A generous free tier, limits visible up front, one-click cancel, and no silent charges — ever.",
+    "Simple, honest pricing for AI Matrx study tools. A generous free tier, limits visible up front, one-click cancel, and no silent charges — ever.",
   alternates: { canonical: "/pricing" },
   openGraph: {
     title: "Pricing — AI Matrx",
@@ -17,11 +18,17 @@ export const metadata: Metadata = {
   },
 };
 
-// NOTE(P8): Plans render from the static PLANS[] in features/pricing/data.ts.
-// TODO(P8): swap to DB-backed billing.product/price once seeded. Do not invent
-// new prices here — the numbers live in one place (data.ts) until the DB owns them.
+// P8 F5: /pricing is now EDUCATION-FIRST and DB-BACKED — Free-tier caps from
+// billing.capability_limit, Premium from billing.product/price (the seeded TEST
+// row today; real numbers are Arman's call — seed the real billing.price and
+// this page reflects it with no code change). The generic agent-harness PLANS[]
+// (features/pricing/data.ts + PricingGrid/PricingLanding) is retained ONLY for
+// the (dev)/demos/upgrade demos that still consume it — see
+// features/entitlements/FEATURE.md for the structure decision.
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const pricing = await loadEducationPricing();
+
   return (
     <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -62,7 +69,7 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <PricingLandingRoute />
+        <EducationPricing pricing={pricing} />
 
         {/* Footer trust reminder */}
         <section className="border-t border-border/40 py-10 text-center">
