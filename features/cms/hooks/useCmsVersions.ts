@@ -2,11 +2,11 @@
 
 import { useState, useCallback } from 'react';
 import { CmsVersionService } from '../services/cmsService';
-import type { ClientPageVersion } from '../types';
+import type { ClientPageVersion, ClientPageVersionDetail } from '../types';
 
 export function useCmsVersions() {
     const [versions, setVersions] = useState<ClientPageVersion[]>([]);
-    const [selectedVersion, setSelectedVersion] = useState<ClientPageVersion | null>(null);
+    const [selectedVersion, setSelectedVersion] = useState<ClientPageVersionDetail | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -16,8 +16,8 @@ export function useCmsVersions() {
         try {
             const data = await CmsVersionService.listVersions(pageId);
             setVersions(data);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to load version history');
         } finally {
             setIsLoading(false);
         }
@@ -30,8 +30,8 @@ export function useCmsVersions() {
             const version = await CmsVersionService.getVersion(versionId);
             setSelectedVersion(version);
             return version;
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to load version');
             return null;
         } finally {
             setIsLoading(false);

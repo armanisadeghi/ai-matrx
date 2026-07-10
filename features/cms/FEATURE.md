@@ -70,18 +70,33 @@ Supabase MCP at the wrong project for this feature.
 - `client_sites` — one row per site. `settings` jsonb holds `agent_write_policy` (`blocked | draft_only | full`, F4) and `policy_overrides` — no dedicated columns.
 - `client_pages` — draft/publish twin columns (`*_draft`), `has_draft`, `is_published`, category/slug routing fields.
 - `client_components` — header/footer/etc., same draft-twin pattern.
-- `client_page_versions` — populated by the `publish_page_draft` RPC.
+- `history.row_versions` — the canonical append-only page-version log (aidream CMS migration `0002`).
+  EVERY change to a `client_pages` row is captured by the `_history` trigger with a full jsonb
+  snapshot + an incrementing `version`. Not reachable over PostgREST directly — see the version RPCs
+  below. The legacy `client_page_versions` table was retired (migration `0004`) and archived as
+  `graveyard.client_page_versions`.
 - `client_assets` — schema only, no service (Wave 2, out of scope here).
 - `client_activity_log` — the C6 contract. Every mutation writes one row; `changes` jsonb always carries `actor: "agent"|"human"|"system"` + optional `metadata` (e.g. `capture_media_refs[]` from P4's verification loop).
 - `html_pages` — standalone quick-publish pages, no site/draft concept.
 - `client_content_exceptions` — **does not exist yet.** P1 owns creating it (schema shape: P3's `matrx_content_guard.models.ContentException` + `Violation`, `packages/matrx-content-guard/matrx_content_guard/models.py`). `/api/cms/approvals` and `ApprovalsQueuePanel` are built against that shape and self-report `available: false` until the table lands.
 
-**FK cascade (verified live 2026-07-09):** `client_pages`, `client_components`, `client_assets`,
-`client_activity_log` → `client_sites` and `client_page_versions` → `client_pages` are all
-`ON DELETE CASCADE`. Site delete is a single `DELETE FROM client_sites` — no manual fan-out needed.
+**Version RPCs (aidream CMS migration `0003`).** `history` and `platform` are not exposed to
+PostgREST, so the routes reach the version system through a `public` façade that mirrors the main
+DB's names: `version_list(p_token, p_id, …)`, `version_get(p_token, p_version_id)`,
+`version_snapshot(p_token, p_id, p_version)`, `version_restore(p_token, p_id, p_version)` — token is
+always `'client_page'`. They are SECURITY DEFINER with **EXECUTE locked to `service_role`** and carry
+**no in-DB access gate** (this project has no `iam`): the route MUST run `verifyPageOwnership` before
+returning or restoring anything. `version_restore` restores content columns only and is itself a
+versioned change — history is appended to, never rewritten.
+
+**FK cascade (verified live 2026-07-10):** `client_pages`, `client_components`, `client_assets`,
+`client_activity_log` → `client_sites` are all `ON DELETE CASCADE`. Site delete is a single
+`DELETE FROM client_sites` — no manual fan-out needed. `history.row_versions` has no FK and does not
+cascade: the log outlives the rows it describes.
 
 **Key types** (`features/cms/types.ts`) — `ClientSite`, `ClientSiteSettings`, `AgentWritePolicy`,
-`ClientPage`, `ClientPageSummary`, `ClientPageVersion`, `ClientComponent`, `ClientActivityLog`,
+`ClientPage`, `ClientPageSummary`, `ClientPageVersion`, `ClientPageVersionDetail`,
+`PageVersionOperation`, `ClientComponent`, `ClientActivityLog`,
 `ClientActivityChanges`, `ContentException`. No generated types exist for this project (it's not
 `txzxabzwovsujtloxrus`) — these are hand-maintained; keep them in sync with live schema by hand.
 
@@ -97,7 +112,16 @@ the intended drift guard, had not landed as of 2026-07-09 — re-derive against 
 `app/(core)/cms/[siteId]/pages/[pageId]/page.tsx` → `CmsPageService.saveDraft/updatePage` →
 `POST /api/cms/pages {action: "save-draft"|"update"}` → ownership check
 (`verifyPageOwnership`) → DB write → `logCmsActivity(actor: "human")`. Publish goes through the
-`publish_page_draft` RPC the same way; discard/rollback likewise.
+`publish_page_draft` RPC the same way; discard likewise. Rollback goes through `version_restore`.
+
+### 1b. Human reads / restores a version
+`PageEditor` "History" tab → `useCmsVersions` → `CmsVersionService.listVersions` →
+`POST /api/cms/versions {action:"list"}` → ownership check → `version_list` RPC. Every change shows
+(`operation`: INSERT/UPDATE/DELETE), the live one carries `is_current` and its Restore button is
+disabled. Restore → `POST /api/cms/pages {action:"rollback"}` → `version_restore`, then the list is
+refetched because the restore added a version. **This is the same log, in the same shape, that
+aidream's `version_service` and the `cms_page` `versions` tool action return** — matched field for
+field (`services/cms/dtos.py::VersionSummary`/`VersionRead`). Change one, change both.
 
 ### 2. Arman watches agent activity (visibility surface)
 `/administration/cms-agents` → `CmsAgentsAdminClient` fetches `admin_list_sites` once, then each
@@ -184,3 +208,14 @@ UI-complete here but only take effect once P1's service layer reads them.
   visibility surface shipped at `/administration/cms-agents` (activity feed, page tree,
   agent-write-policy editor, approvals queue); C4 URL builder (`pageUrls.ts`) added; this
   FEATURE.md created (feature predated the doctrine).
+
+- `2026-07-10` — Version system cut over to the canonical `history.row_versions` log. `/api/cms/versions`
+  `list`/`get` now call the `version_list` / `version_get` RPCs; `/api/cms/pages` `rollback` calls
+  `version_restore` (audit-preserving) instead of the retired `rollback_to_version`. `ClientPageVersion`
+  rewritten to mirror aidream's `VersionSummary` 1:1 (+ new `ClientPageVersionDetail`); phantom
+  `change_summary` / `version_label` fields deleted (never populated by anything). History tab now shows
+  every change with a "Current" badge. Legacy `client_page_versions` + `page_version_on_publish` +
+  `create_page_version()` + `rollback_to_version()` retired in aidream CMS migration `0004`
+  (table archived to `graveyard.client_page_versions`; `last_published_at` write moved into
+  `publish_page_draft`). Verified live end-to-end on `dev-website`. Closes the
+  `cms-versioning-fe-cutover` handoff.

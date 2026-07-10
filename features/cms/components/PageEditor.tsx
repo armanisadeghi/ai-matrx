@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
-import type { ClientPage } from "@/features/cms/types";
+import type { ClientPage, PageVersionOperation } from "@/features/cms/types";
 import { useCmsVersions } from "@/features/cms/hooks/useCmsVersions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,13 @@ interface PageEditorProps {
   onCreate: (params: Record<string, unknown>) => Promise<ClientPage>;
   onClose: () => void;
 }
+
+/** How a `history.row_versions` operation reads to a human. */
+const VERSION_OPERATION_LABEL: Record<PageVersionOperation, string> = {
+  INSERT: "Page created",
+  UPDATE: "Content changed",
+  DELETE: "Page deleted",
+};
 
 type EditorTab =
   | "html"
@@ -261,6 +268,9 @@ export default function PageEditor({
     setIsRollingBack(true);
     try {
       await onRollback(page.id, rollbackTarget);
+      // The restore is itself a versioned change — refetch so the new entry
+      // (and the moved "current" marker) appear.
+      await versions.fetchVersions(page.id);
     } finally {
       setIsRollingBack(false);
       setRollbackTarget(null);
@@ -659,9 +669,22 @@ export default function PageEditor({
         {activeTab === "versions" && page && (
           <div className="h-full overflow-auto">
             <div className="p-6 max-w-2xl mx-auto space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">
-                Version History
-              </h3>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Version History
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Every change is captured — edits, draft saves, publishes, and
+                  rollbacks. Restoring brings back that version&apos;s content
+                  as a new version; nothing is erased.
+                </p>
+              </div>
+              {versions.error && (
+                <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  {versions.error}
+                </div>
+              )}
               {versions.isLoading ? (
                 <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -669,41 +692,40 @@ export default function PageEditor({
                 </div>
               ) : versions.versions.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  No versions yet. Versions are created automatically when you
-                  publish.
+                  No history for this page yet.
                 </p>
               ) : (
                 <div className="space-y-2">
                   {versions.versions.map((v) => (
                     <div
                       key={v.id}
-                      className="rounded-lg border border-border p-3 flex items-center justify-between hover:bg-muted/20 transition-colors"
+                      className={`rounded-lg border p-3 flex items-center justify-between transition-colors ${
+                        v.is_current
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-border hover:bg-muted/20"
+                      }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                           v{v.version_number}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-foreground">
-                            Version {v.version_number}
-                            {v.version_label && (
-                              <span className="text-muted-foreground font-normal ml-2">
-                                — {v.version_label}
-                              </span>
+                          <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                            {VERSION_OPERATION_LABEL[v.operation]}
+                            {v.is_current && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                Current
+                              </Badge>
                             )}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(v.published_at).toLocaleString(
-                              undefined,
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                                hour: "numeric",
-                                minute: "2-digit",
-                              },
-                            )}
-                            {v.change_summary && ` · ${v.change_summary}`}
+                            {new Date(v.occurred_at).toLocaleString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
                           </p>
                         </div>
                       </div>
@@ -711,12 +733,18 @@ export default function PageEditor({
                         variant="ghost"
                         size="sm"
                         className="gap-1.5 text-xs"
-                        disabled={!onRollback}
-                        title={onRollback ? undefined : "Save the page before rolling back"}
+                        disabled={!onRollback || v.is_current}
+                        title={
+                          v.is_current
+                            ? "This is the page's current content"
+                            : onRollback
+                              ? undefined
+                              : "Save the page before restoring"
+                        }
                         onClick={() => handleRollback(v.version_number)}
                       >
                         <RotateCcw className="h-3 w-3" />
-                        Rollback
+                        Restore
                       </Button>
                     </div>
                   ))}
@@ -741,9 +769,9 @@ export default function PageEditor({
       <ConfirmDialog
         open={rollbackTarget !== null}
         onOpenChange={(open) => !isRollingBack && !open && setRollbackTarget(null)}
-        title={`Rollback to version ${rollbackTarget}?`}
-        description="Current content will be replaced with this version."
-        confirmLabel="Rollback"
+        title={`Restore version ${rollbackTarget}?`}
+        description="This version's content replaces the page's current content. The restore is recorded as a new version, so the current content stays in the history."
+        confirmLabel="Restore"
         variant="destructive"
         busy={isRollingBack}
         onConfirm={confirmRollback}

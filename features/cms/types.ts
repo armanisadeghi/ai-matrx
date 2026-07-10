@@ -105,12 +105,33 @@ export interface ClientPageSummary {
 }
 
 // ─── Page Version ──────────────────────────────────────────────────────
+// The canonical append-only history (`history.row_versions` on the CMS project):
+// EVERY change to a page — create, edit, draft save, publish, rollback — is one
+// row. Shapes mirror aidream's `VersionSummary` / `VersionRead`
+// (`services/cms/dtos.py`) 1:1 so both surfaces agree.
+
+export type PageVersionOperation = "INSERT" | "UPDATE" | "DELETE";
+
 export interface ClientPageVersion {
+  /** `history.row_versions.id` — a bigint, carried as a string. */
   id: string;
   page_id: string;
+  /** The page's `version` at the time of the change. Rollback targets this. */
   version_number: number;
-  version_label: string | null;
-  html_content: string;
+  operation: PageVersionOperation;
+  /** `actor_id`, falling back to the snapshot's `last_published_by`. */
+  published_by: string | null;
+  occurred_at: string;
+  /** True when this version is the page's live content right now. */
+  is_current: boolean;
+}
+
+/** A version plus the full content snapshot it captured. */
+export interface ClientPageVersionDetail extends ClientPageVersion {
+  title: string | null;
+  slug: string | null;
+  is_published: boolean | null;
+  html_content: string | null;
   css_content: string | null;
   js_content: string | null;
   meta_title: string | null;
@@ -118,10 +139,6 @@ export interface ClientPageVersion {
   meta_keywords: string | null;
   og_image: string | null;
   canonical_url: string | null;
-  published_by: string | null;
-  published_at: string;
-  change_summary: string | null;
-  created_at: string;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import type {
     ClientPage,
     ClientPageSummary,
     ClientPageVersion,
+    ClientPageVersionDetail,
     ClientComponent,
     ClientActivityLog,
     AgentWritePolicy,
@@ -223,13 +224,15 @@ export const CmsPageService = {
 // ── Versions ─────────────────────────────────────────────────────────────────
 
 export const CmsVersionService = {
+    /** Full change history for a page, newest first. Every change is an entry. */
     async listVersions(pageId: string): Promise<ClientPageVersion[]> {
         const res = await callApi<{ versions: ClientPageVersion[] }>('versions', 'list', { pageId });
         return res.versions;
     },
 
-    async getVersion(versionId: string): Promise<ClientPageVersion> {
-        const res = await callApi<{ version: ClientPageVersion }>('versions', 'get', { versionId });
+    /** One history entry (by its `id`) with the content snapshot it captured. */
+    async getVersion(versionId: string): Promise<ClientPageVersionDetail> {
+        const res = await callApi<{ version: ClientPageVersionDetail }>('versions', 'get', { versionId });
         return res.version;
     },
 };

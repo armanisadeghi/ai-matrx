@@ -275,8 +275,10 @@ export async function POST(request: NextRequest) {
         }
 
         // FK chain (client_pages, client_components, client_assets,
-        // client_activity_log, client_page_versions) is ON DELETE CASCADE —
-        // verified live against viyklljfdhtidwecakwx (2026-07-09).
+        // client_activity_log) is ON DELETE CASCADE — verified live against
+        // viyklljfdhtidwecakwx (2026-07-10). Page history in
+        // `history.row_versions` has no FK and is deliberately NOT cascaded:
+        // the append-only log outlives the rows it describes.
         const { error } = await db.from("client_sites").delete().eq("id", siteId);
 
         if (error) {

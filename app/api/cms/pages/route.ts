@@ -451,7 +451,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, discarded: data });
       }
 
-      // ── Rollback to version (RPC) ────────────────────────────────
+      // ── Rollback to version (canonical restore) ──────────────────
+      // `version_restore` restores CONTENT columns only, and is itself a
+      // versioned UPDATE — history is appended to, never rewritten. It returns
+      // the page's new version number. Same restore aidream's
+      // `page_service.rollback` runs (`platform.version_restore`).
       case "rollback": {
         const { pageId, versionNumber } = params;
         if (!pageId || versionNumber === undefined) {
@@ -468,9 +472,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { data, error } = await db.rpc("rollback_to_version", {
-          page_uuid: pageId,
-          version_num: versionNumber,
+        const { data: newVersion, error } = await db.rpc("version_restore", {
+          p_token: "client_page",
+          p_id: pageId,
+          p_version: versionNumber,
         });
 
         if (error) {
@@ -489,13 +494,16 @@ export async function POST(request: NextRequest) {
           activityType: "page.rollback",
           entityType: "page",
           entityId: pageId,
-          description: `Rolled back "${page?.title ?? pageId}" to version ${versionNumber}`,
+          description: `Rolled back content of "${page?.title ?? pageId}" to version ${versionNumber} (now version ${newVersion})`,
           userId: user.id,
           userEmail: user.email,
-          changes: { versionNumber },
+          changes: {
+            restored_from_version: versionNumber,
+            new_version: newVersion,
+          },
         });
 
-        return NextResponse.json({ success: true, rolledBack: data, page });
+        return NextResponse.json({ success: true, newVersion, page });
       }
 
       // ── Delete page ──────────────────────────────────────────────
