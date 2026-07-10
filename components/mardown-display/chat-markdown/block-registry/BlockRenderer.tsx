@@ -29,6 +29,7 @@ import {
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { Loader2 } from "lucide-react";
+import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 
 /** Language for ``` fences with no info string (plain text / notes / prose). */
 const DEFAULT_UNLABELED_FENCE_LANGUAGE = "markdown";
@@ -876,6 +877,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             content={block.content}
             className="my-3"
             isStreamActive={isStreamActive}
+            conversationId={conversationId}
+            messageId={messageId}
             onCodeChange={
               isStreamActive
                 ? undefined
@@ -923,9 +926,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         );
       }
 
-      // Regular code block
+      // Regular code block — attach-to-context when we have a real message id
       return (
-        <BlockComponents.CodeBlock
+        <CodeBlockWithContextAttach
           key={index}
           code={block.content}
           language={block.language || DEFAULT_UNLABELED_FENCE_LANGUAGE}
@@ -937,6 +940,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
               : (newCode: string) => replaceBlockContent(block.content, newCode)
           }
           isStreamActive={isStreamActive}
+          conversationId={conversationId}
+          messageId={messageId}
         />
       );
     }
@@ -1133,6 +1138,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             fallbackMetadata={artifactMeta}
             fallbackServerData={block.serverData}
             messageId={messageId}
+            conversationId={conversationId}
             taskId={taskId}
           />
         );
@@ -1145,6 +1151,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           serverData={block.serverData}
           isStreamActive={isStreamActive}
           messageId={messageId}
+          conversationId={conversationId}
           taskId={taskId}
         />
       );

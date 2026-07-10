@@ -1,6 +1,6 @@
 "use client";
 
-import React, { lazy, Suspense, useMemo, useRef, useState } from "react";
+import React, { Suspense, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Copy,
@@ -39,12 +39,10 @@ import {
   defaultJsonFilename,
 } from "@/components/mardown-display/blocks/json/json-tabular-utils";
 import { stringifyCompact } from "@/components/mardown-display/blocks/json/json-compact-stringify";
+import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 
 // Lazy-loaded — these are heavy and most JSON blocks never reach beyond
 // the default Code view.
-const CodeBlock = lazy(
-  () => import("@/features/code-editor/components/code-block/CodeBlock"),
-);
 const JsonTableView = dynamic(
   () => import("@/components/mardown-display/blocks/json/JsonTableView"),
   { ssr: false, loading: () => <PaneFallback label="Loading table…" /> },
@@ -90,6 +88,9 @@ interface JsonBlockProps {
   allowEdit?: boolean;
   customBuiltinKeys?: string[];
   onCodeChange?: (newCode: string) => void;
+  /** When set with messageId, enables "Add to conversation context". */
+  conversationId?: string | null;
+  messageId?: string | null;
 }
 
 /**
@@ -112,6 +113,8 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   allowEdit = true,
   customBuiltinKeys = [],
   onCodeChange,
+  conversationId,
+  messageId,
 }) => {
   const [mode, setMode] = useState<ViewMode>("code");
   const [saveNewOpen, setSaveNewOpen] = useState(false);
@@ -330,7 +333,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
-          <CodeBlock
+          <CodeBlockWithContextAttach
             code={content}
             language="json"
             className={className}
@@ -338,6 +341,8 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
             allowEdit={allowEdit}
             customBuiltinKeys={customBuiltinKeys}
             onCodeChange={onCodeChange}
+            conversationId={conversationId}
+            messageId={messageId}
           />
         </Suspense>
       </div>
@@ -391,7 +396,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
     >
       {mode === "code" ? (
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
-          <CodeBlock
+          <CodeBlockWithContextAttach
             code={effectiveContent}
             language="json"
             className={className}
@@ -408,6 +413,8 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
             }
             headerLeftSlot={viewToggle}
             extraMenuItems={fullMenuItems}
+            conversationId={conversationId}
+            messageId={messageId}
           />
         </Suspense>
       ) : (

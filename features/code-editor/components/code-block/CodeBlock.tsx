@@ -63,6 +63,8 @@ interface CodeBlockProps {
   extraMenuItems?: CodeBlockMenuItem[];
 }
 
+export type { CodeBlockProps };
+
 const CodeBlock: React.FC<CodeBlockProps> = ({
   code: initialCode,
   language: rawLanguage = "text",

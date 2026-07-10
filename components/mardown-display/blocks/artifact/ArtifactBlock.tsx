@@ -51,6 +51,7 @@ interface ArtifactBlockProps {
   structuredServerData?: Record<string, unknown> | null;
   isStreamActive?: boolean;
   messageId?: string;
+  conversationId?: string;
   taskId?: string;
 }
 
@@ -72,6 +73,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
   structuredServerData,
   isStreamActive,
   messageId,
+  conversationId,
   taskId,
 }) => {
   const { open } = useCanvas();
@@ -184,6 +186,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
           isStreamActive={isStreamActive}
           taskId={taskId}
           messageId={messageId}
+          conversationId={conversationId}
         />
       );
     }
@@ -213,6 +216,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
           metadata={metadata as Record<string, unknown> | undefined}
           artifactId={artifactId}
           messageId={messageId}
+          conversationId={conversationId}
           taskId={dedupKey}
           isStreamActive={isStreamActive}
         />

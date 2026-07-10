@@ -109,7 +109,12 @@ import {
   reflectAgentMaterializedThunk,
   syncWorkingDocumentFromAgentThunk,
 } from "../instance-working-document/instance-working-document.thunks";
+import {
+  applyAgentCanvasItemDelta,
+  syncCanvasItemContextFromAgentThunk,
+} from "../instance-context/sync-canvas-item-context.thunk";
 import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
+import { isCanvasItemContextKey } from "@/features/agents/utils/canvasItemContext";
 import { StreamingJsonTracker } from "@/utils/json/streaming-json-tracker";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
 import { deriveAnswerText } from "../active-requests/active-requests.selectors";
@@ -845,6 +850,19 @@ export async function processStream({
               // content our copy no longer matches.
               contextDeltaAppliedKeys.delete(cd.key);
             }
+          } else if (isCanvasItemContextKey(cd.key)) {
+            const applied = dispatch(
+              applyAgentCanvasItemDelta({
+                conversationId,
+                key: cd.key,
+                delta: cd,
+              }),
+            );
+            if (applied) {
+              contextDeltaAppliedKeys.add(cd.key);
+            } else {
+              contextDeltaAppliedKeys.delete(cd.key);
+            }
           }
         } else if (
           d.type === "context_changed" ||
@@ -879,6 +897,18 @@ export async function processStream({
                 syncWorkingDocumentFromAgentThunk({ conversationId }),
               );
             }
+          } else if (isCanvasItemContextKey(cd.key)) {
+            if (
+              d.type === "context_persisted" ||
+              !contextDeltaAppliedKeys.has(cd.key)
+            ) {
+              void dispatch(
+                syncCanvasItemContextFromAgentThunk({
+                  conversationId,
+                  artifactId: cd.key,
+                }),
+              );
+            }
           }
         } else if ((d as { type?: string }).type === "context_conflict") {
           // A concurrent USER edit raced the agent's write this turn. The agent's
@@ -895,6 +925,18 @@ export async function processStream({
             void dispatch(
               syncWorkingDocumentFromAgentThunk({ conversationId }),
             );
+          } else if (isCanvasItemContextKey(cd.key ?? "")) {
+            console.warn(
+              "[canvas-item] context_conflict — concurrent edit raced the agent; " +
+                "both versions are in artifact history",
+              { conversationId, artifactId: cd.key, baseVersion: cd.base_version },
+            );
+            void dispatch(
+              syncCanvasItemContextFromAgentThunk({
+                conversationId,
+                artifactId: cd.key!,
+              }),
+            );
           }
         } else if (d.type === "context_persist_failed") {
           // Server failed to persist a mutable context object. Surface loudly
@@ -904,6 +946,11 @@ export async function processStream({
             console.error(
               "[working-document] backend failed to persist working document",
               { conversationId, error: cd.error },
+            );
+          } else if (isCanvasItemContextKey(cd.key)) {
+            console.error(
+              "[canvas-item] backend failed to persist canvas artifact edit",
+              { conversationId, artifactId: cd.key, error: cd.error },
             );
           }
         } else if (isMediaBlockData(d)) {

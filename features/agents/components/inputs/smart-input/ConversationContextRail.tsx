@@ -41,6 +41,7 @@ import {
   Layers,
   MoreHorizontal,
   NotebookPen,
+  Code2,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -61,6 +62,7 @@ import {
 import {
   openCanvas,
   closeCanvas,
+  openArtifactInCanvas,
   selectCanvasIsOpen,
   selectCurrentCanvasItem,
 } from "@/features/canvas/redux/canvasSlice";
@@ -74,6 +76,10 @@ import {
 } from "@/features/agents/components/context-slots-display/contextSlotIcons";
 import { ContextSlotDetailSheet } from "@/features/agents/components/context-slots-display/ContextSlotDetailSheet";
 import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
+import {
+  isCanvasItemContextKey,
+  isCanvasItemContextValue,
+} from "@/features/agents/utils/canvasItemContext";
 import { scratchScopeId } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
@@ -185,9 +191,8 @@ export function ConversationContextRail({
 
   // ── Canvas state for the doc pills' visibility toggle ─────────────────────
   const canvasOpen = useAppSelector(selectCanvasIsOpen);
-  const currentCanvasSourceId = useAppSelector(
-    (s) => selectCurrentCanvasItem(s)?.sourceMessageId ?? null,
-  );
+  const currentCanvasItem = useAppSelector(selectCurrentCanvasItem);
+  const currentCanvasSourceId = currentCanvasItem?.sourceMessageId ?? null;
 
   // ── Agent lists (plan / tasks / todos). Hydrate + live-subscribe here so the
   // rail is the single owner now that the standalone chip is gone. ──────────
@@ -372,6 +377,46 @@ export function ConversationContextRail({
       // already have their slice-driven pills above — never re-surface their
       // published context values as generic pills.
       if (docKindForContextKey(e.key) !== null) continue;
+
+      // Pinned canvas artifacts (key = canvas_items UUID) — open in canvas
+      // with version history; X unpins from context (row is kept).
+      if (
+        isCanvasItemContextKey(e.key) &&
+        isCanvasItemContextValue(e.value)
+      ) {
+        const label = e.label?.trim() || e.value.label || "Artifact";
+        out.push({
+          id: `artifact:${e.key}`,
+          icon: Code2,
+          label,
+          word: label.split(/\s+/)[0] ?? "Code",
+          detail: `v${e.value.source.base_version}`,
+          hint: "Click: open in canvas · X: unpin from context",
+          tone: "primary",
+          active:
+            canvasOpen &&
+            (currentCanvasSourceId === e.key ||
+              currentCanvasItem?.savedItemId === e.key ||
+              currentCanvasItem?.content?.metadata?.canvasItemId === e.key),
+          onOpen: () => {
+            dispatch(
+              openArtifactInCanvas({
+                artifactId: e.key,
+                type: "code",
+                metadata: {
+                  title: label,
+                  canvasItemId: e.key,
+                  conversationId,
+                },
+              }),
+            );
+          },
+          onRemove: () =>
+            dispatch(removeContextEntry({ conversationId, key: e.key })),
+        });
+        continue;
+      }
+
       const Icon = CONTEXT_TYPE_ICON[e.type] ?? FALLBACK_CONTEXT_ICON;
       const label = e.label?.trim() || e.key;
       out.push({
@@ -409,6 +454,8 @@ export function ConversationContextRail({
     layerDrawer.open,
     canvasOpen,
     currentCanvasSourceId,
+    currentCanvasItem?.savedItemId,
+    currentCanvasItem?.content?.metadata?.canvasItemId,
     scratchScope,
   ]);
 
