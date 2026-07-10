@@ -67,6 +67,28 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- **2026-07-10** — **P5 adaptivity + anti-burnout gaps closed (recovery-after-absence, signal-triggered re-plan, mode-agnostic hero).**
+  (1) **Recovery plan after an absence** — the new-vs-competitors capability. `study/planner/recovery.ts`:
+  `detectAbsence(plan, lastSessionAt, now)` fires on either signal — ≥2 past study days with pending
+  blocks, OR ≥3 days since the last session — gated on runway (exam today/later) AND (for the session-gap
+  signal) on the plan predating the gap so it self-clears after a rebuild (no nag loop). `buildRecoveryDraft`
+  rebuilds the REMAINING window deterministically (no agent) by reusing `buildPlan` with a new
+  `PlanInput.reentry` ramp (first study day ×0.4, second ×0.7 — verified 3/6/9 items vs 9 flat) that eases
+  the return instead of a guilt wall; the overdue backlog rides the existing load-smoother (spread under the
+  daily cap, weak-first). Surfaced in `StudyPlanView` as a supportive "Welcome back" affordance (never shame
+  copy). (2) **Adaptive re-plan trigger** — `study/planner/staleness.ts` `computePlanStaleness` compares the
+  plan's stored `config.summary` to the LIVE snapshot, gated on new sessions since `last_planned_at`; a
+  material weak/due jump surfaces a one-tap "your plan is out of date → re-plan now" prompt in `StudyPlanView`
+  (absence takes priority; never both). **Design choice:** honest one-tap prompt evaluated on planner load,
+  NOT silent full-auto — re-planning reads a live snapshot that may be mid-session, so the learner stays in
+  control. (3) **Anti-burnout cap coordination** — `useDueReview` now honors the active plan's `daily_item_cap`
+  (via new lightweight `planService.getActiveDailyItemCap()`) as its per-session limit when the caller doesn't
+  override, so the due queue and planner no longer cap independently. (4) **Mode-agnostic hero** — `StudyTodayCard`
+  swapped its hardcoded `fc_card` `listDue`/`listWeakest` for `listAllMastery` + new pure `dashboard/nextActions.ts`
+  (`dueWeakByMode`/`modeReviewHref`/`modeWeakHref`), so quiz/game/audio due+weak items surface alongside
+  flashcards (like `useStudyAnalytics`). `tools.ts` planner copy updated truthfully (recovery + signal-triggered
+  re-plan). Verified: planner route 200 + mounts; the live admin plan (3 of 4 days missed, no session since
+  7-07) triggers the recovery affordance; ramp/absence-self-clear/staleness proven deterministically.
 - **2026-07-07** — **P9 Universal Ingest + Data Ownership shipped.** New consumer feature
   `features/education/onboard/` (own [FEATURE.md](./onboard/FEATURE.md)) + the shared cross-tool
   **content converter contract** `features/education/convert/` (own [FEATURE.md](./convert/FEATURE.md)).

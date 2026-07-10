@@ -31,11 +31,16 @@ import { cn } from "@/lib/utils";
 import { studyService } from "../service/studyService";
 import { planService } from "../service/planService";
 import { blockHref, blockIcon } from "../planner/blockLinks";
+import {
+  dueWeakByMode,
+  modeReviewHref,
+  modeWeakHref,
+} from "./nextActions";
 import type { StudyPlanBlockRow } from "../planner/types";
 import type { StudyGoalRow } from "../types";
 
-const ITEM_TYPE = "fc_card";
 const MIN_PER_REVIEW = 0.6;
+const MIN_PER_WEAK = 1.2;
 
 interface NextAction {
   key: string;
@@ -72,19 +77,19 @@ export function StudyTodayCard() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [planRes, dueRes, weakRes, goalsRes, streakRes] = await Promise.all(
-        [
-          planService.getActivePlan(),
-          studyService.listDue(ITEM_TYPE, 500),
-          studyService.listWeakest(ITEM_TYPE),
-          studyService.listGoals({ status: "active" }),
-          studyService.getStreak(),
-        ],
-      );
+      const [planRes, masteryRes, goalsRes, streakRes] = await Promise.all([
+        planService.getActivePlan(),
+        // Mode-agnostic: the whole cross-mode mastery snapshot (like
+        // useStudyAnalytics) so quiz / game / audio due+weak items surface too,
+        // not just fc_card.
+        studyService.listAllMastery(),
+        studyService.listGoals({ status: "active" }),
+        studyService.getStreak(),
+      ]);
       if (cancelled) return;
 
-      const dueCount = dueRes.data?.length ?? 0;
-      const weakCount = weakRes.data?.length ?? 0;
+      const now = new Date();
+      const modeSignals = dueWeakByMode(masteryRes.data ?? [], now);
       const goals = goalsRes.data ?? [];
       const currentStreak = streakRes.data?.current_streak ?? 0;
       setStreak(currentStreak);
@@ -119,27 +124,29 @@ export function StudyTodayCard() {
         }
       }
 
-      // 2) No plan blocks → synthesize from the live spine signal.
+      // 2) No plan blocks → synthesize from the live spine signal, per mode.
       if (built.length === 0 && !isRestDayEntry(todayEntry)) {
-        if (dueCount > 0) {
-          built.push({
-            key: "due",
-            icon: CalendarClock,
-            label: `Review ${dueCount} due card${dueCount === 1 ? "" : "s"}`,
-            why: "Reviewing right as items come due is what makes spaced repetition work.",
-            minutes: Math.max(1, Math.round(dueCount * MIN_PER_REVIEW)),
-            href: "/education/flashcards/review",
-          });
-        }
-        if (weakCount > 0) {
-          built.push({
-            key: "weak",
-            icon: Flame,
-            label: `Drill ${weakCount} weak area${weakCount === 1 ? "" : "s"}`,
-            why: "The smallest set of material causing the most errors — biggest gain per minute.",
-            minutes: Math.max(1, Math.round(weakCount * 1.2)),
-            href: "/education/flashcards/weak-areas",
-          });
+        for (const sig of modeSignals) {
+          if (sig.due > 0) {
+            built.push({
+              key: `due-${sig.itemType}`,
+              icon: CalendarClock,
+              label: `${sig.label}: review ${sig.due} due`,
+              why: "Reviewing right as items come due is what makes spaced repetition work.",
+              minutes: Math.max(1, Math.round(sig.due * MIN_PER_REVIEW)),
+              href: modeReviewHref(sig.itemType),
+            });
+          }
+          if (sig.weak > 0) {
+            built.push({
+              key: `weak-${sig.itemType}`,
+              icon: Flame,
+              label: `${sig.label}: drill ${sig.weak} weak`,
+              why: "The smallest set of material causing the most errors — biggest gain per minute.",
+              minutes: Math.max(1, Math.round(sig.weak * MIN_PER_WEAK)),
+              href: modeWeakHref(sig.itemType),
+            });
+          }
         }
       }
 

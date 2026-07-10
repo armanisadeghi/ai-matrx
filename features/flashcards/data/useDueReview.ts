@@ -55,8 +55,13 @@ function progressDone(
 
 export function useDueReview(options: { limit?: number } = {}): UseDueReviewResult {
   // Generous per-session cap; a due session studies a batch, more resurface next
-  // visit. (Kept close to the progress-page "N due" count to avoid a big mismatch.)
-  const { limit = 100 } = options;
+  // visit. (Kept close to the progress-page "N due" count to avoid a big
+  // mismatch.) When the caller doesn't force a limit AND the learner has an
+  // active study plan with an anti-burnout daily item cap, we honor THAT cap so
+  // the due queue and the planner never fight over "how much is too much today"
+  // — one number, sourced from the plan (P5 anti-burnout coordination).
+  const DEFAULT_LIMIT = 100;
+  const explicitLimit = options.limit;
 
   const [cards, setCards] = useState<CardWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,8 +87,16 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
       setIsFlipped(false);
       setMasteryByCard({});
 
+      // Resolve the effective per-session cap: caller override wins; otherwise
+      // the active plan's daily item cap; otherwise the generous default.
+      const effectiveLimit =
+        explicitLimit ??
+        (await planService.getActiveDailyItemCap()) ??
+        DEFAULT_LIMIT;
+      if (cancelled) return;
+
       // 1. The FSRS due queue (mastery rows, soonest-due first).
-      const dueRes = await studyService.listDue(FC_CARD_ITEM_TYPE, limit);
+      const dueRes = await studyService.listDue(FC_CARD_ITEM_TYPE, effectiveLimit);
       if (cancelled) return;
       if (dueRes.error) {
         setError(dueRes.error);
@@ -136,7 +149,7 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
     return () => {
       cancelled = true;
     };
-  }, [limit]);
+  }, [explicitLimit]);
 
   // ── Close the adaptive session (don't leak it 'active'; the reaper is only a
   //    6h backstop). A ref holds the close flag so the completion + unmount

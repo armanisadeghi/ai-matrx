@@ -157,17 +157,18 @@ export const EDU_TOOLS: EduToolEntry[] = [
     slug: "planner",
     name: "Study Planner",
     tagline: "A living plan around your exam calendar",
-    description: "AI day-by-day study schedule from exam dates + mastery + available time, with one-tap re-plan when performance changes.",
+    description: "AI day-by-day study schedule from exam dates + mastery + available time. It notices when your performance drifts or you've been away, and offers a gentle re-plan — never a guilt wall of overdue cards.",
     icon: CalendarClock,
     letter: "Pl",
-    status: "live", // P5 — AI day-by-day plan (Study Planner agent → heuristic fallback), calendar agenda, adaptive re-plan, anti-burnout load-smoothing; + goals CRUD
+    status: "live", // P5 — AI day-by-day plan (Study Planner agent → heuristic fallback), calendar agenda, signal-triggered re-plan, recovery-after-absence, anti-burnout load-smoothing; + goals CRUD
     accessTier: "trial",
     visionRef: "VISION §12 Personalized Study Planner",
     capabilities: [
       "AI day-by-day plan from exam date + per-topic mastery (FSRS) + daily time",
       "Calendar / agenda view with per-day load and block-level deep links",
-      "Adaptive re-planning on new performance data (re-plan in place)",
-      "Anti-burnout: honored rest days, gentle daily caps, tapered practice-test finish",
+      "Detects when new performance data makes your plan stale → one-tap re-plan",
+      "Recovery plan after an absence — triages the backlog, eases you back in gently",
+      "Anti-burnout: honored rest days, gentle daily caps (shared with the due queue), tapered finish",
     ],
   },
   {
