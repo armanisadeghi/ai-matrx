@@ -26,6 +26,7 @@ export function DuplicateToEditButton({
   resourceType,
   resourceId,
   returnPath,
+  shareToken,
   label,
   size = "lg",
   variant = "default",
@@ -35,6 +36,13 @@ export function DuplicateToEditButton({
   resourceId: string;
   /** Where to return the viewer after sign-up (they finish the copy here). */
   returnPath: string;
+  /**
+   * The no-login share-link token, passed ONLY on the `/s/[token]` link lane.
+   * It authorizes forking a resource shared purely by no-login link (a private
+   * resource with an active link). Omit on public/`/p/e` and in-app view
+   * surfaces — those fork token-less via public/link visibility or a grant.
+   */
+  shareToken?: string;
   /** Override the default per-type verb ("Study these flashcards", …). */
   label?: string;
   size?: "sm" | "default" | "lg";
@@ -73,7 +81,7 @@ export function DuplicateToEditButton({
         router.push(`/sign-up?redirectTo=${encodeURIComponent(returnPath)}`);
         return;
       }
-      const result = await forkSharedResource(resourceType, resourceId);
+      const result = await forkSharedResource(resourceType, resourceId, shareToken);
       if (result.success && result.path) {
         toast.success("Saved to your account");
         router.push(result.path);

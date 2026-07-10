@@ -162,17 +162,27 @@ export interface ForkResult {
 /**
  * "Save a copy & use it" — fork a SHARED resource into the current user's own
  * account so a recipient can continue/use it (chat takeover, study a set, take a
- * quiz). Requires auth. The DB RPCs gate on the resource actually being shared,
- * so you can only fork what was shared with you. Returns the path to the copy.
+ * quiz). Requires auth.
+ *
+ * `shareToken` is the no-login share-link token, passed ONLY when the viewer is
+ * on the `/s/[token]` link lane. The DB RPCs authorize a link fork solely on a
+ * VALID, ACTIVE token for THAT resource (SECURITY FIX — a caller-independent
+ * "any active link exists" check previously let a stranger fork a private
+ * resource the moment its owner had ever minted one link). Public/link
+ * visibility and explicit grants stay forkable token-less; the token is only
+ * needed to authorize a private resource shared purely by no-login link. Returns
+ * the path to the copy.
  */
 export async function forkSharedResource(
   resourceType: string,
   resourceId: string,
+  shareToken?: string,
 ): Promise<ForkResult> {
   try {
     if (resourceType === "conversation") {
       const { data, error } = await supabase.rpc("fork_shared_conversation", {
         p_conversation_id: resourceId,
+        p_token: shareToken ?? undefined,
       });
       if (error) return { success: false, error: error.message };
       const r = data as { success: boolean; error?: string; conversation_id?: string };
@@ -183,6 +193,7 @@ export async function forkSharedResource(
     if (resourceType === "fc_set") {
       const { data, error } = await supabase.rpc("fork_shared_flashcard_set", {
         p_set_id: resourceId,
+        p_token: shareToken ?? undefined,
       });
       if (error) return { success: false, error: error.message };
       const r = data as { success: boolean; error?: string; set_id?: string };
@@ -193,6 +204,7 @@ export async function forkSharedResource(
     if (resourceType === "quiz_sessions") {
       const { data, error } = await supabase.rpc("fork_shared_quiz", {
         p_quiz_id: resourceId,
+        p_token: shareToken ?? undefined,
       });
       if (error) return { success: false, error: error.message };
       const r = data as { success: boolean; error?: string; quiz_id?: string };

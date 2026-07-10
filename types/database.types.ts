@@ -27467,11 +27467,17 @@ export type Database = {
         Returns: string
       }
       fork_shared_conversation: {
-        Args: { p_conversation_id: string }
+        Args: { p_conversation_id: string; p_token?: string }
         Returns: Json
       }
-      fork_shared_flashcard_set: { Args: { p_set_id: string }; Returns: Json }
-      fork_shared_quiz: { Args: { p_quiz_id: string }; Returns: Json }
+      fork_shared_flashcard_set: {
+        Args: { p_set_id: string; p_token?: string }
+        Returns: Json
+      }
+      fork_shared_quiz: {
+        Args: { p_quiz_id: string; p_token?: string }
+        Returns: Json
+      }
       game_room_by_code: {
         Args: { p_code: string }
         Returns: {
@@ -29721,6 +29727,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      share_link_authorizes: {
+        Args: {
+          p_resource_id: string
+          p_resource_type: string
+          p_token: string
+        }
+        Returns: boolean
       }
       share_resource_with_org: {
         Args: {

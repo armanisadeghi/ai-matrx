@@ -167,6 +167,7 @@ export function SharedResourceView({
               resourceType={result.resourceType}
               resourceId={result.resourceId}
               returnPath={`/s/${token}`}
+              shareToken={token}
             />
           )}
           <Button asChild size="sm" variant="outline">
