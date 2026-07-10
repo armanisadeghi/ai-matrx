@@ -181,7 +181,10 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
   const next = (): void => goTo(currentIndex + 1);
   const prev = (): void => goTo(currentIndex - 1);
 
-  const grade = async (result: ReviewResult) => {
+  const grade = async (
+    result: ReviewResult,
+    extra?: { confidence?: number },
+  ) => {
     const card = cards[currentIndex];
     if (!card) return null;
     setGrading(true);
@@ -192,6 +195,7 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
         method: STUDY_MODE,
         result,
         responseKind: "selected",
+        ...(extra?.confidence != null ? { confidence: extra.confidence } : {}),
         ...(session ? { sessionId: session.id } : {}),
       });
       if (res.error || !res.data) {

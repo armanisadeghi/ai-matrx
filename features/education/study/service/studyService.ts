@@ -18,6 +18,9 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { FsrsState } from "@/lib/srs/fsrs";
 import {
   mapResultToRating,
+  mapConfidenceToRating,
+  confidenceToResult,
+  asConfidence,
   nextState,
   retrievability as fsrsRetrievability,
 } from "@/lib/srs/fsrs";
@@ -314,8 +317,17 @@ export const studyService = {
     input: RecordAttemptInput,
   ): Promise<StudyResult<{ attemptId: string; mastery: ItemMasteryRow }>> {
     try {
+      // A 1–5 confidence tap (when present) is the authoritative grade: it sets
+      // the FSRS rating (uniquely reaching Easy(4)) AND, when the caller didn't
+      // pass an explicit `result`, derives the coarse ledger result. The raw
+      // confidence rides in `score.confidence` so the finer signal is preserved.
+      const confidence = asConfidence(input.confidence);
+      const effectiveResult: "correct" | "partial" | "incorrect" | null =
+        input.result ??
+        (confidence != null ? confidenceToResult(confidence) : null);
+
       let fsrsParams: Record<string, unknown> = {};
-      if (input.result != null) {
+      if (effectiveResult != null) {
         const priorRes = await this.getMastery({
           itemType: input.itemType,
           itemId: input.itemId,
@@ -323,7 +335,10 @@ export const studyService = {
         if (priorRes.error) return fail("recordAttempt", priorRes.error);
         const prev = masteryToFsrsState(priorRes.data);
         const now = new Date();
-        const rating = mapResultToRating(input.result);
+        const rating =
+          confidence != null
+            ? mapConfidenceToRating(confidence)
+            : mapResultToRating(effectiveResult);
         const next = nextState(prev, rating, now);
         fsrsParams = {
           p_difficulty: next.difficulty,
@@ -334,13 +349,20 @@ export const studyService = {
         };
       }
 
+      // Fold the raw confidence into the score jsonb without clobbering any
+      // caller-supplied score fields.
+      const scorePayload: Record<string, unknown> | null =
+        confidence != null
+          ? { ...(input.score ?? {}), confidence }
+          : (input.score ?? null);
+
       const { data, error } = await supabase.rpc("study_record_attempt", {
         p_item_type: input.itemType,
         p_item_id: input.itemId,
         ...(input.sessionId != null ? { p_session_id: input.sessionId } : {}),
         ...(input.method != null ? { p_method: input.method } : {}),
-        ...(input.result != null ? { p_result: input.result } : {}),
-        ...(input.score != null ? { p_score: input.score as never } : {}),
+        ...(effectiveResult != null ? { p_result: effectiveResult } : {}),
+        ...(scorePayload != null ? { p_score: scorePayload as never } : {}),
         ...(input.scoreValue != null
           ? { p_score_value: input.scoreValue }
           : {}),

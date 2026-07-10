@@ -105,6 +105,59 @@ export function mapResultToRating(result: "correct" | "partial" | "incorrect"): 
   }
 }
 
+/**
+ * A learner's one-tap self-rated CONFIDENCE on a 1–5 scale (Brainscape's most
+ * loved interaction): 1 = no idea, 2 = barely, 3 = shaky, 4 = knew it, 5 = knew
+ * it cold. Unlike the coarse correct/partial/incorrect result, the 5-point scale
+ * carries an explicit "too easy" signal (5), which is the ONLY input that can
+ * reach FSRS's Easy(4) rating — so confidence grading exercises the full
+ * scheduler range that the 3-way result never touches.
+ */
+export type Confidence = 1 | 2 | 3 | 4 | 5;
+
+const CONFIDENCE_VALUES: readonly Confidence[] = [1, 2, 3, 4, 5];
+
+/** Narrow an arbitrary number to a valid `Confidence`, or null. */
+export function asConfidence(value: unknown): Confidence | null {
+  return typeof value === "number" &&
+    (CONFIDENCE_VALUES as readonly number[]).includes(value)
+    ? (value as Confidence)
+    : null;
+}
+
+/**
+ * Map a 1–5 confidence tap to an FSRS rating. 1 and 2 both lapse (Again), since
+ * a learner who "barely" recalled still failed the retrieval; 3 → Hard, 4 →
+ * Good, 5 → Easy. The raw 1–5 value is persisted separately (study_attempt.score)
+ * so the finer signal is never lost to this collapse.
+ */
+export function mapConfidenceToRating(confidence: Confidence): FsrsRating {
+  switch (confidence) {
+    case 1:
+    case 2:
+      return 1;
+    case 3:
+      return 2;
+    case 4:
+      return 3;
+    case 5:
+      return 4;
+  }
+}
+
+/**
+ * Map a 1–5 confidence tap to the coarse study result the ledger records
+ * (`study_attempt.result`, which drives correct_count / accuracy): 1–2 =
+ * incorrect, 3 = partial, 4–5 = correct.
+ */
+export function confidenceToResult(
+  confidence: Confidence,
+): "correct" | "partial" | "incorrect" {
+  if (confidence >= 4) return "correct";
+  if (confidence === 3) return "partial";
+  return "incorrect";
+}
+
 // ─── Core math ────────────────────────────────────────────────────────────────
 
 function clampDifficulty(d: number): number {

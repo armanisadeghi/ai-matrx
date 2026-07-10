@@ -77,6 +77,14 @@ export interface RecordAttemptInput {
   sessionId?: string | null;
   method?: string;
   result?: "correct" | "partial" | "incorrect";
+  /**
+   * A one-tap 1–5 self-rated confidence (Brainscape-style). When supplied it
+   * drives the FSRS rating (uniquely able to reach Easy(4)) and — if `result`
+   * is omitted — derives the coarse ledger result. The raw value is persisted
+   * under `score.confidence` so the finer signal survives. See
+   * `lib/srs/fsrs.ts#mapConfidenceToRating` / `#confidenceToResult`.
+   */
+  confidence?: number | null;
   score?: Record<string, unknown> | null;
   scoreValue?: number | null;
   responseKind?:

@@ -47,7 +47,12 @@ import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { CardTrustFooter } from "@/features/education/trust/components/CardTrustFooter";
+import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
+import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
+import { RefusalNotice } from "@/features/education/trust/components/RefusalNotice";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
+import { FlashcardConfidenceRow } from "./FlashcardConfidenceRow";
+import { asConfidence, confidenceToResult, type Confidence } from "@/lib/srs/fsrs";
 import { helpLive, type HelpLiveResult } from "../../data/tutor/helpLive";
 import {
   reviewSession,
@@ -85,7 +90,10 @@ export interface StudyDeckProps {
   next: () => void;
   prev: () => void;
   goTo: (index: number) => void;
-  grade: (result: ReviewResult) => void | Promise<unknown>;
+  grade: (
+    result: ReviewResult,
+    extra?: { confidence?: number },
+  ) => void | Promise<unknown>;
   /** Copy for the empty (no-cards) state. */
   emptyTitle?: string;
   emptyBody?: string;
@@ -126,6 +134,23 @@ export interface StudyDeckProps {
   sessionId?: string | null;
   /** Set false to hide the "Ask AI" affordance even when a help agent is configured. */
   enableTutor?: boolean;
+  /**
+   * Offer the one-tap 1–5 confidence rating (the default, Brainscape-style) with
+   * a toggle down to the simple Again/Partial/Correct row. Set false to force the
+   * 3-way row only (e.g. a surface where fine confidence adds no signal). The
+   * learner's last choice persists across sessions.
+   */
+  enableConfidence?: boolean;
+}
+
+const GRADE_STYLE_KEY = "fc-grade-style";
+type GradeStyle = "confidence" | "simple";
+
+function readGradeStyle(): GradeStyle {
+  if (typeof window === "undefined") return "confidence";
+  return window.localStorage.getItem(GRADE_STYLE_KEY) === "simple"
+    ? "simple"
+    : "confidence";
 }
 
 export function StudyDeck(props: StudyDeckProps) {
@@ -154,11 +179,27 @@ export function StudyDeck(props: StudyDeckProps) {
     masteryByCard = {},
     sessionId = null,
     enableTutor = true,
+    enableConfidence = true,
   } = props;
 
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const [mobileDismissed, setMobileDismissed] = useState(false);
+
+  // Grade style — 1–5 confidence (default) vs. the simple 3-way row. Persisted
+  // across sessions so a learner's preference sticks. Ignored when the surface
+  // disables confidence (`enableConfidence = false` → always simple).
+  const [gradeStyle, setGradeStyle] = useState<GradeStyle>(readGradeStyle);
+  const useConfidence = enableConfidence && gradeStyle === "confidence";
+  const toggleGradeStyle = (): void => {
+    setGradeStyle((prev) => {
+      const nextStyle: GradeStyle = prev === "confidence" ? "simple" : "confidence";
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(GRADE_STYLE_KEY, nextStyle);
+      }
+      return nextStyle;
+    });
+  };
 
   // Completion once every card has a result this load (state so the user can
   // re-enter from the summary). Gated on `progress.total` rather than
@@ -273,8 +314,17 @@ export function StudyDeck(props: StudyDeckProps) {
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         prev();
+      } else if (!grading && useConfidence && /^[1-5]$/.test(e.key)) {
+        // 1–5 confidence taps — the confidence value drives both the FSRS
+        // grade and the coarse result recorded to the ledger.
+        e.preventDefault();
+        const confidence = asConfidence(Number(e.key));
+        if (confidence != null) {
+          handleGrade(confidenceToResult(confidence), confidence);
+        }
       } else if (
         !grading &&
+        !useConfidence &&
         (e.key === "1" || e.key === "2" || e.key === "3")
       ) {
         e.preventDefault();
@@ -283,7 +333,7 @@ export function StudyDeck(props: StudyDeckProps) {
           "2": "partial",
           "3": "correct",
         };
-        void grade(map[e.key]);
+        handleGrade(map[e.key]);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -299,6 +349,7 @@ export function StudyDeck(props: StudyDeckProps) {
     prev,
     grade,
     isMobile,
+    useConfidence,
   ]);
 
   const restart = () => {
@@ -307,10 +358,12 @@ export function StudyDeck(props: StudyDeckProps) {
     onRestart?.();
   };
 
-  const handleGrade = (result: ReviewResult): void => {
+  const handleGrade = (result: ReviewResult, confidence?: Confidence): void => {
     if (grading) return;
     const card = current;
-    void Promise.resolve(grade(result)).then(() => {
+    void Promise.resolve(
+      grade(result, confidence != null ? { confidence } : undefined),
+    ).then(() => {
       // Phase 4 stretch: cheap-model per-card micro-coaching. Fire-and-forget
       // (never blocks advancing to the next card) and cleanly no-ops until a
       // fc_micro_coach agent is authored (features/flashcards/data/agents.ts).
@@ -523,11 +576,43 @@ export function StudyDeck(props: StudyDeckProps) {
             </Button>
           </div>
 
-          <FlashcardGradeButtonRow
-            onGrade={handleGrade}
-            disabled={grading}
-            className="w-full"
-          />
+          {useConfidence ? (
+            <div className="flex flex-col gap-1">
+              <FlashcardConfidenceRow
+                onRate={(confidence) =>
+                  handleGrade(confidenceToResult(confidence), confidence)
+                }
+                disabled={grading}
+                className="w-full"
+              />
+              {enableConfidence && (
+                <button
+                  type="button"
+                  onClick={toggleGradeStyle}
+                  className="self-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+                >
+                  Use simple grading
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              <FlashcardGradeButtonRow
+                onGrade={handleGrade}
+                disabled={grading}
+                className="w-full"
+              />
+              {enableConfidence && (
+                <button
+                  type="button"
+                  onClick={toggleGradeStyle}
+                  className="self-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+                >
+                  Use 1–5 confidence rating
+                </button>
+              )}
+            </div>
+          )}
 
           {enableTutor && (
             <div className="flex flex-col gap-2">
@@ -650,17 +735,31 @@ function AskAiPanel({
         </div>
       )}
 
-      {result && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-          <p>{result.answer}</p>
-          {result.followups.length > 0 && (
-            <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs opacity-80">
-              {result.followups.map((f) => (
-                <li key={f}>{f}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+      {result && result.trust?.confidence === "not_in_material" ? (
+        <RefusalNotice message={result.answer} />
+      ) : (
+        result && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+            {result.trust && (
+              <div className="mb-1.5 flex items-center gap-2">
+                <ConfidenceBadge confidence={result.trust.confidence} />
+              </div>
+            )}
+            <p>{result.answer}</p>
+            {result.followups.length > 0 && (
+              <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs opacity-80">
+                {result.followups.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
+              </ul>
+            )}
+            {result.trust && result.trust.citations.length > 0 && (
+              <div className="mt-1.5">
+                <SourceCitations trust={result.trust} label="Sources" />
+              </div>
+            )}
+          </div>
+        )
       )}
       {unavailable && (
         <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">

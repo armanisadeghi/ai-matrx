@@ -81,6 +81,8 @@ export interface UseFlashcardStudyResult {
     extra?: {
       responseKind?: RecordAttemptInput["responseKind"];
       responseTranscript?: string;
+      /** 1–5 confidence tap — drives the FSRS grade (see recordAttempt). */
+      confidence?: number;
     },
   ) => Promise<ItemMasteryRow | null>;
   /** True while a grade write is in flight. */
@@ -299,6 +301,7 @@ export function useFlashcardStudy(
     extra?: {
       responseKind?: RecordAttemptInput["responseKind"];
       responseTranscript?: string;
+      confidence?: number;
     },
   ): Promise<ItemMasteryRow | null> => {
     const card = cards[currentIndex];
@@ -312,6 +315,7 @@ export function useFlashcardStudy(
         method: mode,
         result,
         responseKind: extra?.responseKind ?? "selected",
+        ...(extra?.confidence != null ? { confidence: extra.confidence } : {}),
         ...(extra?.responseTranscript
           ? { responseTranscript: extra.responseTranscript }
           : {}),
