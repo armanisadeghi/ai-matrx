@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 
-type LineKind = "command" | "stdout" | "stderr" | "info";
+type LineKind = "command" | "stdout" | "stderr" | "info" | "error";
 
 interface TerminalLine {
   id: number;
@@ -111,6 +111,7 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
       .map((line) => {
         if (line.kind === "command") return `$ ${line.text}`;
         if (line.kind === "stderr") return `[stderr] ${line.text}`;
+        if (line.kind === "error") return `[error] ${line.text}`;
         return line.text;
       })
       .join("\n");
@@ -155,7 +156,7 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
       if (aborted) {
         appendLine({ kind: "info", text: "(cancelled)" });
       } else {
-        appendLine({ kind: "stderr", text: extractErrorMessage(err) });
+        appendLine({ kind: "error", text: extractErrorMessage(err) });
       }
     } finally {
       abortRef.current = null;
@@ -291,8 +292,15 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
                     {line.text}
                   </span>
                 </span>
-              ) : line.kind === "stderr" ? (
+              ) : line.kind === "error" ? (
                 <span className="text-red-600 dark:text-red-400">
+                  {line.text}
+                </span>
+              ) : line.kind === "stderr" ? (
+                // stderr is a stream, not a failure signal — git/npm progress
+                // lands here on success. Keep default text color; only
+                // `error` (exec-layer failures) should look alarming.
+                <span className="text-neutral-800 dark:text-neutral-200">
                   {line.text}
                 </span>
               ) : line.kind === "info" ? (
@@ -357,7 +365,7 @@ async function execBuffered(
   if (!resp.ok) {
     const errBody = await resp.text().catch(() => resp.statusText);
     appendLine({
-      kind: "stderr",
+      kind: "error",
       text: `exec failed (${resp.status}): ${errBody}`,
     });
     return;

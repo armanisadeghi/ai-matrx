@@ -2,7 +2,7 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-04-28`
+**Last updated:** `2026-07-10`
 
 > The standalone, VSCode-style code workspace mounted at [`/code`](../../app/(a)/code/page.tsx). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
@@ -119,6 +119,7 @@ Tier selection happens at `New sandbox` time and sticks per-user (`userPreferenc
 
 ## Change log
 
+- `2026-07-10` — Terminal no longer force-paints stderr red. stderr is a stream (git/npm progress), not an error; red is reserved for real exec-layer failures.
 - `2026-07-09` — Explorer file-tree context menu: move async metadata (size / mtime / permissions) to a fixed-height footer; never conditionally insert rows that shift action items. Dir vs file actions use a same-slot swap (New file/folder ↔ Download).
 - `2026-07-09` — `/code` activity-view icons inject into the app shell Large-Route menu (`CodeSidebarMenu`); the resizable/collapsible file panel stays in the workspace. Duplicate 48px ActivityBar rail is hidden on the route host (`showActivityBar={false}`); floating windows and agent-app editor keep the embedded rail.
 - `2026-07-09` — Library side-panel header: title shortened to **Code**, dropped "Your saved code" subtitle; `SidePanelHeader` truncates title/subtitle so narrow panels don't wrap. Editable Monaco right-click now includes Format Document/Selection, Find, Go to Line, Word Wrap, and Command Palette via `createCodeEditorExtraSections`; Format also on the editor toolbar.

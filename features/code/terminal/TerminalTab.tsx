@@ -174,10 +174,15 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
           const result = await adapter.stream(
             command,
             (event) => {
-              if (event.type === "stdout" && event.text) {
+              // Write stdout and stderr the same way. stderr ≠ error —
+              // git/npm/docker put progress on stderr by design. Only the
+              // catch path below paints red (real exec-layer failures).
+              // Programs that want color emit their own ANSI.
+              if (
+                (event.type === "stdout" || event.type === "stderr") &&
+                event.text
+              ) {
                 state.term.write(ansiNormalize(event.text));
-              } else if (event.type === "stderr" && event.text) {
-                state.term.write(`${RED}${ansiNormalize(event.text)}${RESET}`);
               }
               // `info` and `exit` events are summarised after the await
               // resolves so we render a single trailing exit line.
@@ -194,7 +199,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
             state.term.write(ansiNormalize(result.stdout));
           }
           if (result.stderr) {
-            state.term.write(`${RED}${ansiNormalize(result.stderr)}${RESET}`);
+            state.term.write(ansiNormalize(result.stderr));
           }
           exitCode = result.exitCode;
           cwd = result.cwd;
@@ -639,12 +644,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
         s.term.write(
           `${PURPLE}[agent]${RESET} ${PROMPT_GREEN}${cwd}${RESET} ${PROMPT_BLUE}❯${RESET} ${line.text}\r\n`,
         );
-      } else if (line.type === "stdout") {
+      } else if (line.type === "stdout" || line.type === "stderr") {
+        // Same as live exec: do not force-red stderr (progress ≠ failure).
         s.term.write(ansiNormalize(line.text.replace(/\r?\n$/, "")) + "\r\n");
-      } else if (line.type === "stderr") {
-        s.term.write(
-          `${RED}${ansiNormalize(line.text.replace(/\r?\n$/, ""))}${RESET}\r\n`,
-        );
       } else {
         const text =
           line.exitCode !== undefined ? `exit ${line.exitCode}` : line.text;
