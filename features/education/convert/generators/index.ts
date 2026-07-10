@@ -17,6 +17,10 @@ import { deckGenerator } from "./deck";
 import { summaryGenerator } from "./summary";
 import { mindMapGenerator } from "./mindMap";
 import { notesGenerator } from "@/features/education/notes/notesGenerator";
+import {
+  quizGenerator,
+  practiceTestGenerator,
+} from "@/features/education/assessment/data/quizGenerator";
 
 // ── Live generators ────────────────────────────────────────────────────────
 registerGenerator(deckGenerator);
@@ -24,6 +28,10 @@ registerGenerator(summaryGenerator);
 registerGenerator(mindMapGenerator);
 // notes (P4 Smart Notes) → a real platform note. Owned by features/education/notes.
 registerGenerator(notesGenerator);
+// quiz + practice_test (P1 Assessment Engine) → a real education.assessment via
+// assessmentService. Owned by features/education/assessment.
+registerGenerator(quizGenerator);
+registerGenerator(practiceTestGenerator);
 
 // ── Progressive placeholders (register when the owning project lands) ────────
 function placeholder(
@@ -42,5 +50,4 @@ function placeholder(
 }
 
 registerGenerator(placeholder("audio", "Audio overview", "P3"));
-registerGenerator(placeholder("quiz", "Quiz", "P1"));
-registerGenerator(placeholder("practice_test", "Practice test", "P1"));
+// quiz + practice_test are LIVE (registered above) — no longer placeholders.

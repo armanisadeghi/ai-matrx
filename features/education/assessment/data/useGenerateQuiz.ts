@@ -162,8 +162,12 @@ function coerceQuestion(raw: unknown): NewAssessmentItemInput | null {
   };
 }
 
-/** Coerce the extracted object into a GeneratedQuiz (tolerant of drift). */
-function coerceGeneratedQuiz(value: unknown): GeneratedQuiz {
+/**
+ * Coerce the extracted object into a GeneratedQuiz (tolerant of drift). Exported
+ * so the converter-contract generator (quizGenerator.ts) reuses the SAME
+ * agent-payload normalization the hook uses — no second coercion path.
+ */
+export function coerceGeneratedQuiz(value: unknown): GeneratedQuiz {
   if (Array.isArray(value)) {
     const questions = value
       .map(coerceQuestion)
