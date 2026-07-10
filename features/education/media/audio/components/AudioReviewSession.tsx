@@ -167,11 +167,21 @@ export function AudioReviewSession({
     }
 
     const session = await studyService.createSession({
+      // The source is an fc_set (a "deck" in UI terms) — the study_session
+      // check constraint accepts 'set', never 'deck'. Passing 'deck' silently
+      // failed session creation (attempts still recorded, but orphaned from any
+      // session); use the canonical token FastFire uses.
       mode: AUDIO_REVIEW_METHOD,
-      sourceKind: "deck",
+      sourceKind: "set",
       sourceSetId: deckId,
     });
-    setSessionId(session.data?.id ?? null);
+    if (session.error || !session.data) {
+      toast.error(session.error ?? "Couldn't start the review session");
+      hardStopCapture();
+      capturingRef.current = false;
+      return;
+    }
+    setSessionId(session.data.id);
     setCards(ordered);
     setIndex(0);
     setResults([]);

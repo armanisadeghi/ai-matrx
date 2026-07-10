@@ -12,11 +12,11 @@
 // here or self-registered). Do NOT add a second dispatch.
 
 import { registerGenerator } from "../registry";
-import type { ConvertGenerator, TargetKind } from "../types";
 import { deckGenerator } from "./deck";
 import { summaryGenerator } from "./summary";
 import { mindMapGenerator } from "./mindMap";
 import { notesGenerator } from "@/features/education/notes/notesGenerator";
+import { audioStudyGenerator } from "@/features/education/media/audio/audioGenerator";
 import {
   quizGenerator,
   practiceTestGenerator,
@@ -32,22 +32,11 @@ registerGenerator(notesGenerator);
 // assessmentService. Owned by features/education/assessment.
 registerGenerator(quizGenerator);
 registerGenerator(practiceTestGenerator);
+// audio (P3 Audio Study) → a streamed audio overview via studyMediaService.
+// Owned by features/education/media.
+registerGenerator(audioStudyGenerator);
 
-// ── Progressive placeholders (register when the owning project lands) ────────
-function placeholder(
-  targetKind: TargetKind,
-  label: string,
-  owner: string,
-): ConvertGenerator {
-  return {
-    targetKind,
-    label,
-    available: false,
-    run() {
-      throw new Error(`${label} is coming soon (${owner})`);
-    },
-  };
-}
-
-registerGenerator(placeholder("audio", "Audio overview", "P3"));
-// quiz + practice_test are LIVE (registered above) — no longer placeholders.
+// ── Progressive placeholders ────────────────────────────────────────────────
+// All converter targets now have a live generator (deck / summary / mind_map /
+// notes / quiz / practice_test / audio). Re-add a placeholder(targetKind,label,
+// owner) here if a NEW TargetKind is introduced before its generator lands.

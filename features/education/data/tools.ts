@@ -109,6 +109,14 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "Generate broadcast-quality audio overviews, two-voice debates, and multi-host panels; audio review quizzes.",
     icon: Headphones,
     letter: "Au",
+    // P3 — FE path complete + proven end-to-end up to the backend handoff (deck
+    // resolution → buildAudioRequest → pc_studio_runs + study_media rows → NDJSON
+    // stream consumption → error persistence). Audio REVIEW → study-spine is
+    // PROVEN (study_attempt method='audio_review' verified via SQL). Audio
+    // GENERATION is currently UNVERIFIABLE LIVE: a backend outage blocks it — the
+    // podcast script agent returns prose instead of a <podcast_dialogue> block,
+    // and the whole agent-run pipeline fails resolve_call_profile for every model
+    // (both filed as critical feedback, aidream-owned). Re-verify once fixed.
     status: "live",
     accessTier: "trial",
     visionRef: "VISION §9 Audio Study",
@@ -126,13 +134,20 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "AI-generated mind maps, knowledge graphs, and diagrams with clickable nodes that link to cards and explanations.",
     icon: Network,
     letter: "Mm",
+    // P3 — clickable nodes SHIPPED: a node resolves to its source card (linkCards
+    // util, ~9/10 precise on a deck-grounded map) or offers "Ask my tutor about
+    // this" (AskTutorButton). Trust envelope now populated on both create paths.
+    // Rendering + node-click verified against real agent-generated diagrams.
+    // Fresh GENERATION is currently blocked by the platform-wide agent-run backend
+    // outage (resolve_call_profile fails for every model — filed, aidream-owned);
+    // re-verify a live generation once fixed.
     status: "live",
     accessTier: "free",
     visionRef: "VISION §10 Visual Learning",
     capabilities: [
       "Mind maps + knowledge graphs from notes/decks/docs",
       "Flowcharts, trees, comparison tables, timelines, Venn, cycle, cause-effect",
-      "SVG-quality, exportable, interactive clickable nodes",
+      "Clickable nodes → source card or Ask-tutor; exportable",
     ],
   },
   {

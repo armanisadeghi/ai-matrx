@@ -53,15 +53,17 @@ ingest pipeline normalizes EVERY input to a durable file.
 | `summary` | Study Summary agent (`92b607a4…`) → `studyMediaService` | `study_media` (`media_kind='summary'`) | `education.ingest_document` |
 | `mind_map` | Study Mind Map agent → `studyMediaService` | `study_media` (`media_kind='mind_map'`) | `education.mindmap_generate` |
 | `notes` | Study Notes agent (`f23562ce…`) → `NotesAPI.create` | `workbench.notes` (a real platform note) | `education.notes_generate` |
+| `audio` | `buildAudioRequest` → `studioRunsService` + `studyMediaService` (streamed podcast pipeline) | `study_media` (`media_kind='audio'`) + `pc_studio_runs` | `education.audio_generate` |
 
 Each generator: run the agent (`runAgentExtraction` — the shared launch+extract primitive),
 coerce, persist, add a `source` association edge to `ref.fileId`, return the result. Per-card
 TrustEnvelopes roll up via `mergeTrustEnvelopes`.
 
-**Known gap:** `mind_map` does NOT carry a TrustEnvelope — its agent's output schema
-(`diagram_spec { nodes, edges }`) has no `trust`/citations field, and `generators/mindMap.ts`
-hardcodes `trust: null`. Kit-generated mind maps render no citations even though
-`MindMapDetail` has the UI wired for them. Tracked in `KNOWN_DEFECTS.md` (D-mindmap-trust).
+**Envelopes without agent citations (`mind_map` / `audio`):** these agents return structure
+(`diagram_spec { nodes, edges }`) or audio, not a `trust`/citations field — so the generator
+derives a **grounded TrustEnvelope from the KNOWN source** via `sourceTrust.ts#buildSourceTrust`
+(cites the ingest anchor). `MindMapDetail` / `AudioStudyDetail` render `<SourceCitations/>` from
+it. (Previously `mindMap.ts` hardcoded `trust: null` — fixed 2026-07-10.)
 
 ## Registering a new generator (P1 / P3 / P4)
 
@@ -88,20 +90,32 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 - `useContentConverter.ts` — the React entry (`convert` + `convertMany`)
 - `runAgentExtraction.ts` — shared "launch JSON-extraction agent → get object" primitive
 - `trustMerge.ts` — roll per-item envelopes up to one artifact envelope
+- `sourceTrust.ts` — `buildSourceTrust`: a grounded envelope from the source for agents that
+  emit no citations (`mind_map`, `audio`)
 - `agents.ts` — converter-owned agent ids (the summary agent)
-- `generators/` — `deck.ts`, `summary.ts`, `mindMap.ts`, `index.ts` (registration)
+- `generators/` — `deck.ts`, `summary.ts`, `mindMap.ts`, `index.ts` (registration).
+  `audio` self-registers from `features/education/media/audio/audioGenerator.ts`
 
 ## Invariants
 
 - ONE dispatch. No second converter, no per-feature parallel path.
 - Generators are plain async functions (not hooks) so the dispatch runs from anywhere.
 - Every generated artifact links a `source` edge to `ref.fileId` — lineage is never optional.
-- Everything the agents emit carries the P0 TrustEnvelope; `trust` flows through unchanged.
-  (Not yet true for `mind_map` — see "Known gap" above.)
+- Everything the agents emit carries the P0 TrustEnvelope; `trust` flows through unchanged —
+  except `mind_map`/`audio`, whose agents emit no citations, so the generator derives a grounded
+  envelope from the source (`sourceTrust.ts`). No generator persists `trust: null`.
 - Ingest owns raw-input → text; generators own text → artifact. Never mix the two.
 
 ## Change log
 
+- **2026-07-10** — `audio` target went LIVE (P3 Audio Study). `audioStudyGenerator`
+  (`features/education/media/audio/audioGenerator.ts`) drives the canonical audio-create path
+  (`buildAudioRequest` → `studioRunsService` + `studyMediaService`, streamed) and self-registers.
+  Fixed `mindMap.ts` `trust: null` → grounded envelope; extracted the shared `sourceTrust.ts`
+  (`buildSourceTrust`) used by both `mind_map` and `audio`. All seven targets now have a live
+  generator. NOTE: live audio + mind-map GENERATION is currently blocked by an aidream backend
+  outage (podcast script agent + platform-wide agent-run `resolve_call_profile`); the FE path is
+  complete and filed.
 - **2026-07-10** — `notes` target went LIVE (P4 Smart Notes). `notesGenerator`
   (`features/education/notes/notesGenerator.ts`, Study Notes agent `f23562ce…`) turns source
   text into a real platform note (grounded, TrustEnvelope) and self-registers here.
