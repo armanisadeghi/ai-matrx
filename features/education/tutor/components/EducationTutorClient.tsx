@@ -295,6 +295,45 @@ export function EducationTutorClient({
   // to type. `afterMessages` keeps the real SmartAgentInput mounted.
   const messageCount = useAppSelector(selectMessageCount(conversationId ?? ""));
 
+  // ── Per-turn learner-memory refresh ───────────────────────────────────────
+  // Grounding is INJECTED at launch, but `request.context` is re-sent every
+  // turn — so if the learner studies mid-conversation (another tab/session),
+  // stale memory would keep riding along. After each new turn we re-assemble
+  // memory + material and overwrite the `learner_memory` / `study_material`
+  // slots (and refresh the trust strip), so the NEXT turn sees current spine
+  // data. Owner-only (a read-only sharee never sends) and gated on a changed
+  // message count so a streaming render doesn't refetch on every token.
+  const memoryRefreshedAtRef = useRef<number>(0);
+  useEffect(() => {
+    if (!conversationId || !authReady || isSharedView) return;
+    if (messageCount === 0 || messageCount === memoryRefreshedAtRef.current) return;
+    memoryRefreshedAtRef.current = messageCount;
+    const target = conversationId;
+    let cancelled = false;
+    (async () => {
+      try {
+        const grounding = await assembleTutorGrounding({ seed });
+        if (cancelled) return;
+        setTutorTrust(grounding.trust);
+        dispatch(
+          setContextEntries({
+            conversationId: target,
+            entries: [
+              { key: "learner_memory", value: grounding.learner_memory, type: "text", label: "Learner memory" },
+              { key: "study_material", value: grounding.study_material, type: "text", label: "Study material" },
+            ],
+          }),
+        );
+      } catch (err) {
+        console.error("[EducationTutorClient] memory refresh failed", err);
+        memoryRefreshedAtRef.current = 0; // allow a later retry
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, messageCount, authReady, isSharedView, seed, dispatch]);
+
   if (isInitializing || !conversationId) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-textured">
