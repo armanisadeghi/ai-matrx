@@ -57,6 +57,11 @@ Each generator: run the agent (`runAgentExtraction` — the shared launch+extrac
 coerce, persist, add a `source` association edge to `ref.fileId`, return the result. Per-card
 TrustEnvelopes roll up via `mergeTrustEnvelopes`.
 
+**Known gap:** `mind_map` does NOT carry a TrustEnvelope — its agent's output schema
+(`diagram_spec { nodes, edges }`) has no `trust`/citations field, and `generators/mindMap.ts`
+hardcodes `trust: null`. Kit-generated mind maps render no citations even though
+`MindMapDetail` has the UI wired for them. Tracked in `KNOWN_DEFECTS.md` (D-mindmap-trust).
+
 ## Registering a new generator (P1 / P3 / P4)
 
 Replace the placeholder in `generators/index.ts` (or self-register from your feature):
@@ -91,6 +96,7 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 - Generators are plain async functions (not hooks) so the dispatch runs from anywhere.
 - Every generated artifact links a `source` edge to `ref.fileId` — lineage is never optional.
 - Everything the agents emit carries the P0 TrustEnvelope; `trust` flows through unchanged.
+  (Not yet true for `mind_map` — see "Known gap" above.)
 - Ingest owns raw-input → text; generators own text → artifact. Never mix the two.
 
 ## Change log

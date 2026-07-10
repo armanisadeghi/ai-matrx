@@ -40,7 +40,7 @@ const FORMAT_ICON: Record<DeckExportFormat, typeof FileJson> = {
 };
 
 const PLEDGE = [
-  "Every deck, summary, and mind map you make is yours — export it anytime, in bulk.",
+  "Every deck you make is yours — export it anytime, in bulk.",
   "Open formats: JSON (full fidelity, round-trips), Markdown, Anki, and CSV. No lock-in.",
   "Your uploads live in your files. Delete a deck and it's gone — no shadow copies.",
   "We never sell your study data or show you ads. Ever.",
@@ -97,7 +97,8 @@ export function DataOwnershipPage() {
           <div>
             <h2 className="text-sm font-semibold text-foreground">Export everything</h2>
             <p className="text-xs text-muted-foreground">
-              A single .zip of every deck as JSON — your complete archive.
+              A single .zip of every deck as JSON. Summaries (Markdown export
+              on their own page) and mind maps aren't included yet.
             </p>
           </div>
         </div>
