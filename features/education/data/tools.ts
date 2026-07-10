@@ -156,7 +156,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     slug: "planner",
     name: "Study Planner",
     tagline: "A living plan around your exam calendar",
-    description: "AI day-by-day study schedule from exam dates + mastery + available time, re-planning automatically.",
+    description: "AI day-by-day study schedule from exam dates + mastery + available time, with one-tap re-plan when performance changes.",
     icon: CalendarClock,
     letter: "Pl",
     status: "live", // P5 — AI day-by-day plan (Study Planner agent → heuristic fallback), calendar agenda, adaptive re-plan, anti-burnout load-smoothing; + goals CRUD
