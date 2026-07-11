@@ -13,6 +13,7 @@ import {
   withTimeout,
 } from "@/features/pdf/utils/inactivity";
 import { supabase } from "@/utils/supabase/client";
+import { PROCESSED_DOCUMENTS_COLUMNS } from "@/utils/supabase/docprocDb";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { parseHttpError } from "@/lib/api/errors";
 import {
@@ -193,7 +194,9 @@ async function fetchProcessedDocument(
       const { data, error } = await (supabase as any)
         .schema("docproc")
         .from("processed_documents")
-        .select("*")
+        // NEVER select("*") here — storage_uri is server-only (column-grant
+        // scheme), so `*` fails with 42501. See docprocDb.ts.
+        .select(PROCESSED_DOCUMENTS_COLUMNS)
         .is("deleted_at", null)
         .eq("id", docId)
         // RLS already restricts to the owner, but include the predicate
