@@ -2236,6 +2236,80 @@ export type Database = {
           },
         ]
       }
+      model_offering_admin: {
+        Row: {
+          api_id: string | null
+          api_name: string | null
+          endpoint_display_name: string | null
+          endpoint_id: string | null
+          endpoint_internal_name: string | null
+          is_available: boolean | null
+          model_id: string | null
+          offering_id: string | null
+          points_per_million_cached_input: number | null
+          points_per_million_input: number | null
+          points_per_million_output: number | null
+          pricing: Json | null
+          priority: number | null
+          provider_model_id: string | null
+          token_billed: boolean | null
+          translator_key: string | null
+          transport: string | null
+          usage_basis: string | null
+          vendor: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offering_api_id_fkey"
+            columns: ["api_id"]
+            isOneToOne: false
+            referencedRelation: "api"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "endpoint"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "model_offering"
+            referencedColumns: ["served_via_endpoint_id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       model_public: {
         Row: {
           capabilities: Json | null
@@ -24907,55 +24981,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      add_field_to_group: {
-        Args: { p_field_id: string; p_group_id: string }
-        Returns: boolean
-      }
-      add_groups_to_applet: {
-        Args: { p_applet_id: string; p_group_ids: string[] }
-        Returns: {
-          accent_color: string | null
-          app_id: string | null
-          applet_icon: string | null
-          applet_submit_text: string | null
-          broker_map: Json | null
-          compiled_recipe_id: string | null
-          containers: Json | null
-          created_at: string
-          created_by: string | null
-          creator: string | null
-          data_destination_config: Json | null
-          data_source_config: Json | null
-          deleted_at: string | null
-          description: string | null
-          id: string
-          image_file_id: string | null
-          image_url: string | null
-          is_public: boolean | null
-          layout_type: string | null
-          metadata: Json
-          name: string
-          next_step_config: Json | null
-          organization_id: string
-          overview_label: string | null
-          primary_color: string | null
-          public_read: boolean | null
-          result_component_config: Json | null
-          slug: string
-          subcategory_id: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        SetofOptions: {
-          from: "*"
-          to: "custom_applet_configs"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       add_one_action: {
         Args: {
           p_id: string
@@ -25286,6 +25311,16 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "model_admin"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_model_offerings: {
+        Args: never
+        Returns: Database["ai"]["Views"]["model_offering_admin"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "model_offering_admin"
           isOneToOne: false
           isSetofReturn: true
         }
@@ -26481,48 +26516,27 @@ export type Database = {
         }
         Returns: Json
       }
-      create_agent_task:
-        | {
-            Args: {
-              p_agent_id?: string
-              p_auth_mode?: string
-              p_description?: string
-              p_expires_at?: string
-              p_max_concurrent?: number
-              p_max_runtime_seconds?: number
-              p_next_due_at?: string
-              p_persistent_conversation_id?: string
-              p_prompt: string
-              p_surfaces?: string[]
-              p_tags?: string[]
-              p_title: string
-              p_trigger_config: Json
-              p_trigger_type: string
-              p_variables?: Json
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_agent_id?: string
-              p_auth_mode?: string
-              p_description?: string
-              p_expires_at?: string
-              p_max_concurrent?: number
-              p_max_runtime_seconds?: number
-              p_next_due_at?: string
-              p_persistent_conversation_id?: string
-              p_prompt: string
-              p_queue?: string
-              p_surfaces?: string[]
-              p_tags?: string[]
-              p_title: string
-              p_trigger_config: Json
-              p_trigger_type: string
-              p_variables?: Json
-            }
-            Returns: string
-          }
+      create_agent_task: {
+        Args: {
+          p_agent_id?: string
+          p_auth_mode?: string
+          p_description?: string
+          p_expires_at?: string
+          p_max_concurrent?: number
+          p_max_runtime_seconds?: number
+          p_next_due_at?: string
+          p_persistent_conversation_id?: string
+          p_prompt: string
+          p_queue?: string
+          p_surfaces?: string[]
+          p_tags?: string[]
+          p_title: string
+          p_trigger_config: Json
+          p_trigger_type: string
+          p_variables?: Json
+        }
+        Returns: string
+      }
       create_bundle_with_lister: {
         Args: {
           p_description?: string
@@ -26530,17 +26544,6 @@ export type Database = {
           p_lister_tool_name?: string
           p_member_tool_names?: string[]
           p_name: string
-        }
-        Returns: string
-      }
-      create_component_group: {
-        Args: {
-          p_description?: string
-          p_field_ids?: string[]
-          p_help_text?: string
-          p_hide_description?: boolean
-          p_label: string
-          p_short_label?: string
         }
         Returns: string
       }
@@ -29711,36 +29714,6 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
-      }
-      refresh_all_fields_in_group: {
-        Args: { p_group_id: string }
-        Returns: boolean
-      }
-      refresh_all_groups_in_applet: {
-        Args: { p_applet_id: string }
-        Returns: Json
-      }
-      refresh_all_groups_in_applet_debug: {
-        Args: { p_applet_id: string }
-        Returns: {
-          db_data: Json
-          group_id: string
-          original_data: Json
-          step: string
-          updated_data: Json
-        }[]
-      }
-      refresh_field_in_group: {
-        Args: { p_field_id: string; p_group_id: string }
-        Returns: Json
-      }
-      refresh_group_in_applet: {
-        Args: { p_applet_id: string; p_group_id: string }
-        Returns: boolean
-      }
-      remove_field_from_group: {
-        Args: { p_field_id: string; p_group_id: string }
-        Returns: boolean
       }
       remove_sharing: {
         Args: { permission_id: string; user_id?: string }

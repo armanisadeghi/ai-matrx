@@ -14,12 +14,20 @@
  *               pricing + real serving vendors; full catalog incl. deprecated).
  *               The view itself has postgres-only grants — never read it
  *               directly from the client. The RPC is one-row-per-model
- *               (preferred offering only), so the admin variant ALSO reads
- *               `ai.offering` + `ai.endpoint` + `ai.api` directly (their RLS
- *               grants authenticated reads) and attaches EVERY offering —
- *               vendor, api, provider_model_id, real $ pricing, priority,
- *               availability — as `CatalogModel.admin.offerings`. Total
- *               transparency: nothing the admin variant shows is masked.
+ *               (preferred offering only), so the admin variant ALSO calls
+ *               `public.admin_model_offerings()` (same SECURITY DEFINER +
+ *               is_super_admin gate, over postgres-only view
+ *               `ai.model_offering_admin`) and attaches EVERY offering —
+ *               vendor, api, provider_model_id, real $ pricing, points,
+ *               priority, availability — as `CatalogModel.admin.offerings`.
+ *               NEVER read ai.offering/endpoint/api directly from the client
+ *               for this: vendor identity is super-admin-only and their RLS
+ *               is being locked down accordingly.
+ *
+ * POINTS are the platform's user currency (`points_per_million_input/output`
+ * on `ai.model_public` per model, `ai.model_offering` per offering) and are
+ * surfaced everywhere: `CatalogModel.pointsInput/pointsOutput`, per-tier on
+ * `CatalogTier`, per-offering on `AdminOffering` (admin shows $ AND points).
  *
  * The row is reshaped for display: pretty name only, the stored MAKER (the DB
  * resolves it — serving vendors like Groq/Cerebras are never exposed on
@@ -70,6 +78,10 @@ export interface CatalogTier {
   endpointId: string | null;
   /** Lower = preferred/faster (the server's default pick). */
   priority: number;
+  /** Points per 1M input tokens on this offering — the user currency. */
+  pointsInput: number | null;
+  /** Points per 1M output tokens on this offering — the user currency. */
+  pointsOutput: number | null;
 }
 
 /**
@@ -109,6 +121,11 @@ export interface AdminOffering {
   /** Lower = preferred (the server's default pick). */
   priority: number;
   isAvailable: boolean;
+  /** Points per 1M input tokens (user currency) — admin shows $ AND points. */
+  pointsInput: number | null;
+  /** Points per 1M output tokens (user currency). */
+  pointsOutput: number | null;
+  pointsCachedInput: number | null;
 }
 
 /** Reshaped, render-ready model row. */
@@ -134,6 +151,10 @@ export interface CatalogModel {
   isDeprecated: boolean;
   /** OUTPUT cost basis used for the price tier (points for user view). */
   outputCost: number | null;
+  /** Points per 1M input tokens — THE user currency, prominently displayed. */
+  pointsInput: number | null;
+  /** Points per 1M output tokens — THE user currency, prominently displayed. */
+  pointsOutput: number | null;
   usageBasis: string | null;
   tokenBilled: boolean | null;
   description: string | null;
@@ -228,6 +249,8 @@ function normalizePublic(
     isPremium: row.is_premium ?? false,
     isDeprecated: false,
     outputCost: row.points_per_million_output,
+    pointsInput: row.points_per_million_input,
+    pointsOutput: row.points_per_million_output,
     usageBasis: row.usage_basis,
     tokenBilled: row.token_billed,
     description: row.description,
@@ -281,6 +304,8 @@ function normalizeAdmin(
           servedVia: o.endpointDisplayName ?? o.vendor ?? "",
           endpointId: o.endpointId,
           priority: o.priority,
+          pointsInput: o.pointsInput,
+          pointsOutput: o.pointsOutput,
         }))
       : row.offering_id && row.endpoint_display_name
         ? [
@@ -289,6 +314,8 @@ function normalizeAdmin(
               servedVia: row.endpoint_display_name,
               endpointId: row.endpoint_id,
               priority: 0,
+              pointsInput: null,
+              pointsOutput: null,
             },
           ]
         : [],
@@ -304,6 +331,9 @@ function normalizeAdmin(
     isPremium: row.is_premium ?? false,
     isDeprecated: row.is_deprecated ?? false,
     outputCost: pricingOutputCost(row.pricing),
+    // Model-level points = the preferred offering's points (user currency).
+    pointsInput: offerings[0]?.pointsInput ?? null,
+    pointsOutput: offerings[0]?.pointsOutput ?? null,
     usageBasis: row.usage_basis,
     tokenBilled: row.token_billed,
     description: row.description,
@@ -340,65 +370,49 @@ async function loadCatalog(
   try {
     const supabase = createClient();
     if (variant === "admin") {
-      // ai.model_admin has NO grants to authenticated (vendor names are
-      // secret). The ONE read path is the SECURITY DEFINER RPC gated by
-      // is_super_admin() — non-admins get a loud 42501, never data.
-      // The RPC is one-row-per-model (preferred offering); the FULL offering
-      // list (every vendor/api/$ row) comes from direct ai.offering +
-      // ai.endpoint + ai.api reads, which RLS grants to authenticated.
-      const [rpcRes, offeringsRes, endpointsRes, apisRes] = await Promise.all([
+      // ai.model_admin / ai.model_offering_admin have NO client grants
+      // (vendor names are secret). The ONE read path is the SECURITY DEFINER
+      // RPC pair gated by is_super_admin() — non-admins get a loud 42501,
+      // never data. admin_model_catalog is one-row-per-model (preferred
+      // offering); admin_model_offerings returns EVERY offering with real
+      // vendor/api/$ data + points.
+      const [rpcRes, offeringsRes] = await Promise.all([
         supabase.rpc("admin_model_catalog"),
-        supabase
-          .schema("ai")
-          .from("offering")
-          .select(
-            "id, model_id, provider_model_id, pricing, usage_basis, token_billed, priority, is_available, endpoint_id, api_id",
-          )
-          .is("deleted_at", null)
-          .order("priority", { ascending: true }),
-        supabase
-          .schema("ai")
-          .from("endpoint")
-          .select("id, vendor, display_name, internal_name")
-          .is("deleted_at", null),
-        supabase
-          .schema("ai")
-          .from("api")
-          .select("id, name, translator_key, transport")
-          .is("deleted_at", null),
+        supabase.rpc("admin_model_offerings"),
       ]);
       if (rpcRes.error) throw rpcRes.error;
       if (offeringsRes.error) throw offeringsRes.error;
-      if (endpointsRes.error) throw endpointsRes.error;
-      if (apisRes.error) throw apisRes.error;
-      const endpointById = new Map(
-        (endpointsRes.data ?? []).map((e) => [e.id, e]),
-      );
-      const apiById = new Map((apisRes.data ?? []).map((a) => [a.id, a]));
       const offeringsByModel = new Map<string, AdminOffering[]>();
       for (const o of offeringsRes.data ?? []) {
-        if (typeof o.model_id !== "string" || typeof o.id !== "string") continue;
-        const endpoint = o.endpoint_id ? endpointById.get(o.endpoint_id) : undefined;
-        const api = o.api_id ? apiById.get(o.api_id) : undefined;
+        if (typeof o.model_id !== "string" || typeof o.offering_id !== "string") {
+          continue;
+        }
         const list = offeringsByModel.get(o.model_id) ?? [];
         list.push({
-          offeringId: o.id,
+          offeringId: o.offering_id,
           providerModelId: o.provider_model_id,
-          vendor: endpoint?.vendor ?? null,
+          vendor: o.vendor,
           endpointId: o.endpoint_id,
-          endpointDisplayName: endpoint?.display_name ?? null,
-          endpointInternalName: endpoint?.internal_name ?? null,
+          endpointDisplayName: o.endpoint_display_name,
+          endpointInternalName: o.endpoint_internal_name,
           apiId: o.api_id,
-          apiName: api?.name ?? null,
-          translatorKey: api?.translator_key ?? null,
-          transport: api?.transport ?? null,
+          apiName: o.api_name,
+          translatorKey: o.translator_key,
+          transport: o.transport,
           pricing: parsePricingBands(o.pricing),
           usageBasis: o.usage_basis,
           tokenBilled: o.token_billed,
           priority: o.priority ?? 100,
           isAvailable: o.is_available ?? false,
+          pointsInput: o.points_per_million_input,
+          pointsOutput: o.points_per_million_output,
+          pointsCachedInput: o.points_per_million_cached_input,
         });
         offeringsByModel.set(o.model_id, list);
+      }
+      // The RPC orders by (model_id, priority) already; keep it deterministic.
+      for (const list of offeringsByModel.values()) {
+        list.sort((a, b) => a.priority - b.priority);
       }
       const models = (rpcRes.data ?? [])
         .map((row) =>
@@ -417,7 +431,7 @@ async function loadCatalog(
         .schema("ai")
         .from("model_offering")
         .select(
-          "model_id, offering_id, served_via, served_via_endpoint_id, priority",
+          "model_id, offering_id, served_via, served_via_endpoint_id, priority, points_per_million_input, points_per_million_output",
         )
         .order("priority", { ascending: true }),
     ]);
@@ -436,6 +450,8 @@ async function loadCatalog(
         servedVia: r.served_via ?? "",
         endpointId: r.served_via_endpoint_id,
         priority: r.priority ?? 100,
+        pointsInput: r.points_per_million_input,
+        pointsOutput: r.points_per_million_output,
       });
       tiersByModel.set(r.model_id, list);
     }
