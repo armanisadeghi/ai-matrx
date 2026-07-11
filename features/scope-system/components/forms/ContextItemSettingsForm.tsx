@@ -313,6 +313,7 @@ export function ContextItemSettingsForm({
           autoGrow
           placeholder="What is this context item for? When should an agent use it?"
           disabled={busy}
+          enableTextStats={false}
         />
       </div>
 
@@ -617,6 +618,7 @@ export function ContextItemSettingsForm({
           autoGrow
           placeholder="Notes about the current state of this item"
           disabled={busy}
+          enableTextStats={false}
         />
       </div>
 

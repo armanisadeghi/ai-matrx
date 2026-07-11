@@ -27,14 +27,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
-import {
-  PanelLeftTapButton,
-  PanelRightTapButton,
-} from "@/components/icons/tap-buttons";
+import { Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Input } from "@/components/ui/input";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import {
@@ -44,7 +41,7 @@ import {
 import { useSyncStudioDocNames } from "./hooks/useSyncStudioDocNames";
 import { useStudioDocRename } from "./hooks/useStudioDocRename";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
-import { PdfStudioToolbar } from "./PdfStudioToolbar";
+import { PdfStudioHeaderControls } from "./PdfStudioHeaderControls";
 import { PdfStudioReader, type PdfPaneEditMode } from "./PdfStudioReader";
 import { PdfStudioInspector, type SectionKey } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
@@ -77,6 +74,8 @@ import {
 import { selectRunProgress } from "@/features/page-extraction/redux/selectors";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createPdfExtractorScope } from "@/features/surfaces/manifests/pdf-extractor.manifest";
 
 interface PdfStudioShellProps {
   initialDocumentId?: string;
@@ -575,24 +574,106 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [activePage, jumpToPage, togglePane, findOpen]);
 
+  // Header Agents chrome — live scope for `matrx-user/pdf-extractor`. Mirrors the
+  // Widgets tab defaults (full doc as active scope; current page always filled).
+  const getPdfExtractorScope = () => {
+    if (!activeDoc) {
+      return createPdfExtractorScope({
+        full_document_text: "",
+        current_page_text: "",
+        active_scope_text: "",
+        filename: "",
+        file_id: "",
+        total_pages: 0,
+        current_page: 0,
+        scope_kind: "full",
+        using_clean_text: false,
+      });
+    }
+    const fullText = activeDoc.cleanContent ?? activeDoc.content ?? "";
+    const usingClean = !!activeDoc.cleanContent;
+    const pageRow =
+      activePage != null
+        ? pages.find((p) => p.pageNumber === activePage)
+        : undefined;
+    const currentPageText = pageRow
+      ? usingClean
+        ? pageRow.cleanedText || pageRow.rawText
+        : pageRow.rawText
+      : "";
+    const fileId =
+      activeDoc.sourceKind === "cld_file" && activeDoc.sourceId
+        ? activeDoc.sourceId
+        : "";
+    const pageNumbers =
+      pages.length === 0
+        ? ""
+        : pages.length === 1
+          ? String(pages[0]!.pageNumber)
+          : `${pages[0]!.pageNumber}-${pages[pages.length - 1]!.pageNumber}`;
+
+    return createPdfExtractorScope({
+      full_document_text: fullText,
+      current_page_text: currentPageText,
+      active_scope_text: fullText,
+      filename: activeDoc.name,
+      file_id: fileId,
+      processed_document_id: activeDoc.id,
+      total_pages: pages.length || activeDoc.totalPages || 0,
+      current_page: activePage ?? 0,
+      page_numbers: pageNumbers || undefined,
+      scope_kind: "full",
+      using_clean_text: usingClean,
+      selection: fullText,
+      content: fullText,
+      selected_text: window.getSelection()?.toString().trim() ?? "",
+    });
+  };
+
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      {/* LEFT — sidebar (collapsible) */}
-      <div
-        className={cn(
-          "shrink-0 hidden md:flex flex-col border-r border-border transition-all duration-200",
-          sidebarOpen ? "w-64" : "w-11",
-        )}
-      >
-        {sidebarOpen ? (
-          <>
-            <div className="flex shrink-0 items-center justify-end border-b border-border">
-              <PanelLeftTapButton
-                variant="transparent"
-                onClick={() => setSidebarOpen(false)}
-                ariaLabel="Collapse sidebar"
-              />
-            </div>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/pdf-extractor"
+      surfaceLabel="PDF Extractor"
+      getScope={getPdfExtractorScope}
+      isEditable={false}
+    >
+      <PageHeader>
+        <PdfStudioHeaderControls
+          doc={activeDoc}
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen((v) => !v)}
+          inspectorOpen={inspectorOpen}
+          onToggleInspector={() => setInspectorOpen((v) => !v)}
+          activePage={activePage}
+          totalPages={activeDoc?.totalPages ?? pages.length}
+          onJumpToPage={jumpToPage}
+          onOpenFind={() => setFindOpen(true)}
+          onRunPipeline={handleRunPipeline}
+          pipelineRunning={pipelineRunning}
+          onRunAiClean={handleRunAiClean}
+          aiCleanRunning={aiCleanRunning}
+          onOpenKnowledgeAssets={() => setKnowledgeAssetsOpen(true)}
+          onOpenCopyPages={() => setCopyPagesOpen(true)}
+          onRefresh={() => void handleRefresh()}
+          refreshing={refreshing}
+          onOpenSource={handleOpenSource}
+          onRename={handleRenameDoc}
+          onDeleteDoc={handleDeleteDoc}
+        />
+      </PageHeader>
+
+      <div className="flex h-full min-h-0 bg-background">
+        {/* LEFT — sidebar (collapsible). Collapses to width 0 — expand only
+            from the shell header's PanelLeftTapButton (tasks pattern). */}
+        <div
+          className={cn(
+            "shrink-0 hidden md:flex flex-col overflow-hidden pt-[var(--shell-header-h)] transition-all duration-200",
+            sidebarOpen ? "w-64" : "w-0",
+          )}
+        >
+          {/* Border lives on `<aside>` inside — it starts below the padding
+              above, so it never bleeds into the transparent shell header. */}
+          {sidebarOpen && (
             <PdfStudioSidebar
               docsState={docsState}
               activeDocId={activeDoc?.id ?? null}
@@ -610,181 +691,156 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               activePage={activePage}
               onSelectPage={jumpToPage}
             />
-          </>
-        ) : (
-          <CollapsedPanelRail
-            chevron="right"
-            ariaLabel="Expand sidebar"
-            onClick={() => setSidebarOpen(true)}
-          />
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Upload drawer */}
-      <PdfStudioUploadDrawer
-        open={uploadOpen}
-        onOpenChange={setUploadOpen}
-        extractor={extractor}
-        onFirstDocReady={handleFirstUpload}
-        onUploadComplete={handleUploadComplete}
-      />
-
-      {/* Copy Pages overlay */}
-      {activeDoc && (
-        <CopyPagesOverlay
-          open={copyPagesOpen}
-          onClose={() => setCopyPagesOpen(false)}
-          doc={activeDoc}
-          pages={pages}
-          pagesLoading={pagesLoading}
-        />
-      )}
-
-      {/* Knowledge Asset Builder — resizable right drawer. Replaces the removed
-          inspector tab; the reader stays visible behind it. */}
-      {activeDoc && (
-        <MatrxDynamicPanelHost
-          open={knowledgeAssetsOpen}
-          onOpenChange={setKnowledgeAssetsOpen}
-          title="Knowledge Assets"
-          description={activeDoc.name}
-          position="right"
-          defaultSize={46}
-          minSize={28}
-          maxSize={80}
-          contentClassName="p-0"
-        >
-          <KnowledgeAssetPanel
-            doc={{
-              id: activeDoc.id,
-              name: activeDoc.name,
-              totalPages: activeDoc.totalPages,
-            }}
-          />
-        </MatrxDynamicPanelHost>
-      )}
-
-      {/* CENTER */}
-      <div className="flex-1 min-w-0 flex flex-col min-h-0">
-        <PdfStudioToolbar
-          doc={activeDoc}
-          activePage={activePage}
-          totalPages={activeDoc?.totalPages ?? pages.length}
-          onJumpToPage={jumpToPage}
-          onOpenFind={() => setFindOpen(true)}
-          onRunPipeline={handleRunPipeline}
-          pipelineRunning={pipelineRunning}
-          onRunAiClean={handleRunAiClean}
-          aiCleanRunning={aiCleanRunning}
-          liveStatus={liveStatus}
-          onOpenSource={handleOpenSource}
-          onOpenCopyPages={() => setCopyPagesOpen(true)}
-          onRefresh={() => void handleRefresh()}
-          refreshing={refreshing}
-          onRename={handleRenameDoc}
-          onDeleteDoc={handleDeleteDoc}
-          onOpenKnowledgeAssets={() => setKnowledgeAssetsOpen(true)}
+        {/* Upload drawer */}
+        <PdfStudioUploadDrawer
+          open={uploadOpen}
+          onOpenChange={setUploadOpen}
+          extractor={extractor}
+          onFirstDocReady={handleFirstUpload}
+          onUploadComplete={handleUploadComplete}
         />
 
-        {/* Hidden-panes restore strip */}
-        <PaneVisibilityStrip
-          visiblePanes={visiblePanes}
-          onTogglePane={togglePane}
-        />
-
-        {/* Find bar */}
-        {findOpen && (
-          <div className="shrink-0 px-4 py-1.5 border-b border-border bg-card/40 flex items-center gap-2">
-            <Search className="w-3.5 h-3.5 text-muted-foreground" />
-            <Input
-              autoFocus
-              value={findQuery}
-              onChange={(e) => setFindQuery(e.target.value)}
-              placeholder="Find in document…"
-              className="h-7 text-xs flex-1"
-              style={{ fontSize: "16px" }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setFindOpen(false);
-                  setFindQuery("");
-                }
-              }}
-            />
-            <span className="text-[10px] text-muted-foreground">
-              {findQuery
-                ? "highlighted in raw + cleaned"
-                : "press Esc to close"}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setFindOpen(false);
-                setFindQuery("");
-              }}
-              className="h-7 w-7 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
-              title="Close find (Esc)"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {/* Reader */}
-        {activeDoc ? (
-          <PdfStudioReader
+        {/* Copy Pages overlay */}
+        {activeDoc && (
+          <CopyPagesOverlay
+            open={copyPagesOpen}
+            onClose={() => setCopyPagesOpen(false)}
             doc={activeDoc}
             pages={pages}
-            loading={pagesLoading}
-            error={pagesError}
-            activePage={activePage}
-            onActivePage={handleActivePage}
-            pendingScrollPage={pendingScrollPage}
-            onScrollHandled={handleScrollHandled}
+            pagesLoading={pagesLoading}
+          />
+        )}
+
+        {/* Knowledge Asset Builder — resizable right drawer. Replaces the
+            removed inspector tab; the reader stays visible behind it. */}
+        {activeDoc && (
+          <MatrxDynamicPanelHost
+            open={knowledgeAssetsOpen}
+            onOpenChange={setKnowledgeAssetsOpen}
+            title="Knowledge Assets"
+            description={activeDoc.name}
+            position="right"
+            defaultSize={46}
+            minSize={28}
+            maxSize={80}
+            contentClassName="p-0"
+          >
+            <KnowledgeAssetPanel
+              doc={{
+                id: activeDoc.id,
+                name: activeDoc.name,
+                totalPages: activeDoc.totalPages,
+              }}
+            />
+          </MatrxDynamicPanelHost>
+        )}
+
+        {/* CENTER */}
+        <div className="flex-1 min-w-0 flex flex-col min-h-0 pt-[var(--shell-header-h)]">
+          {/* Live status — pipeline / AI clean streaming progress */}
+          <LiveStatusStrip
+            pipelineRunning={pipelineRunning}
+            aiCleanRunning={aiCleanRunning}
+            liveStatus={liveStatus}
+          />
+
+          {/* Hidden-panes restore strip */}
+          <PaneVisibilityStrip
             visiblePanes={visiblePanes}
             onTogglePane={togglePane}
-            findQuery={findQuery}
-            onRunPipeline={handleRunPipeline}
-            pipelineRunning={pipelineRunning}
-            onRunAiClean={handleRunAiClean}
-            aiCleanRunning={aiCleanRunning}
-            streamingCleanText={streamingCleanText}
-            streamingStatus={liveStatus}
-            onOpenUpload={() => setUploadOpen(true)}
-            editMode={pdfPaneEditMode}
-            cropPagesInput={cropPagesInput}
-            onEditModeCancel={handleEditModeCancel}
-            onRefreshPages={refreshPages}
-            onJumpToPage={jumpToPage}
-            onOpenChunkedRuns={handleOpenChunkedRuns}
           />
-        ) : docLoading ? (
-          <DocLoadingSkeleton />
-        ) : (
-          <EmptyShell
-            extractor={extractor}
-            onFirstDocReady={handleFirstUpload}
-            onUploadComplete={handleUploadComplete}
-          />
-        )}
-      </div>
 
-      {/* RIGHT — inspector (collapsible) */}
-      <div
-        className={cn(
-          "shrink-0 hidden lg:flex flex-col border-l border-border transition-all duration-200 min-h-0",
-          inspectorOpen ? "w-80 xl:w-96" : "w-11",
-        )}
-      >
-        {inspectorOpen ? (
-          <>
-            <div className="flex shrink-0 items-center justify-start border-b border-border">
-              <PanelRightTapButton
-                variant="transparent"
-                onClick={() => setInspectorOpen(false)}
-                ariaLabel="Collapse inspector"
+          {/* Find bar */}
+          {findOpen && (
+            <div className="shrink-0 px-4 py-1.5 border-b border-border bg-card/40 flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                autoFocus
+                value={findQuery}
+                onChange={(e) => setFindQuery(e.target.value)}
+                placeholder="Find in document…"
+                className="h-7 text-xs flex-1"
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setFindOpen(false);
+                    setFindQuery("");
+                  }
+                }}
               />
+              <span className="text-[10px] text-muted-foreground">
+                {findQuery
+                  ? "highlighted in raw + cleaned"
+                  : "press Esc to close"}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFindOpen(false);
+                  setFindQuery("");
+                }}
+                className="h-7 w-7 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
+                title="Close find (Esc)"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            {activeDoc ? (
+          )}
+
+          {/* Reader */}
+          {activeDoc ? (
+            <PdfStudioReader
+              doc={activeDoc}
+              pages={pages}
+              loading={pagesLoading}
+              error={pagesError}
+              activePage={activePage}
+              onActivePage={handleActivePage}
+              pendingScrollPage={pendingScrollPage}
+              onScrollHandled={handleScrollHandled}
+              visiblePanes={visiblePanes}
+              onTogglePane={togglePane}
+              findQuery={findQuery}
+              onRunPipeline={handleRunPipeline}
+              pipelineRunning={pipelineRunning}
+              onRunAiClean={handleRunAiClean}
+              aiCleanRunning={aiCleanRunning}
+              streamingCleanText={streamingCleanText}
+              streamingStatus={liveStatus}
+              onOpenUpload={() => setUploadOpen(true)}
+              editMode={pdfPaneEditMode}
+              cropPagesInput={cropPagesInput}
+              onEditModeCancel={handleEditModeCancel}
+              onRefreshPages={refreshPages}
+              onJumpToPage={jumpToPage}
+              onOpenChunkedRuns={handleOpenChunkedRuns}
+            />
+          ) : docLoading ? (
+            <DocLoadingSkeleton />
+          ) : (
+            <EmptyShell
+              extractor={extractor}
+              onFirstDocReady={handleFirstUpload}
+              onUploadComplete={handleUploadComplete}
+            />
+          )}
+        </div>
+
+        {/* RIGHT — inspector (collapsible). Collapses to width 0 — expand
+            only from the shell header's PanelRightTapButton (tasks pattern). */}
+        <div
+          className={cn(
+            "shrink-0 hidden lg:flex flex-col overflow-hidden pt-[var(--shell-header-h)] transition-all duration-200 min-h-0",
+            inspectorOpen ? "w-80 xl:w-96" : "w-0",
+          )}
+        >
+          {/* Border lives on `<aside>` inside (PdfStudioInspector) — starts
+              below the padding above, never bleeds into the shell header. */}
+          {inspectorOpen &&
+            (activeDoc ? (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <PdfStudioInspector
                   doc={activeDoc}
@@ -803,40 +859,37 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               </div>
             ) : (
               <div className="flex-1 bg-card/30" />
-            )}
-          </>
-        ) : (
-          <CollapsedPanelRail
-            chevron="left"
-            ariaLabel="Expand inspector"
-            onClick={() => setInspectorOpen(true)}
-          />
-        )}
+            ))}
+        </div>
       </div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
-/** Collapsed side rail — full-height hit target with a centered chevron hint. */
-function CollapsedPanelRail({
-  chevron,
-  ariaLabel,
-  onClick,
+/** Live status — pipeline / AI clean streaming progress, under the header. */
+function LiveStatusStrip({
+  pipelineRunning,
+  aiCleanRunning,
+  liveStatus,
 }: {
-  chevron: "left" | "right";
-  ariaLabel: string;
-  onClick: () => void;
+  pipelineRunning: boolean;
+  aiCleanRunning: boolean;
+  liveStatus: string | null;
 }) {
-  const Icon = chevron === "left" ? ChevronLeft : ChevronRight;
+  if (!pipelineRunning && !aiCleanRunning && !liveStatus) return null;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel}
-      className="flex min-h-0 flex-1 w-full items-center justify-center text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-    >
-      <Icon className="h-4 w-4 shrink-0" aria-hidden />
-    </button>
+    <div className="shrink-0 px-4 py-1 border-b border-border bg-primary/5 flex items-center gap-2 text-[10px]">
+      <Loader2 className="w-2.5 h-2.5 animate-spin text-primary shrink-0" />
+      <span className="font-medium text-primary shrink-0">
+        {aiCleanRunning ? "AI cleanup" : "Pipeline"} running
+      </span>
+      {liveStatus && (
+        <>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground truncate">{liveStatus}</span>
+        </>
+      )}
+    </div>
   );
 }
 

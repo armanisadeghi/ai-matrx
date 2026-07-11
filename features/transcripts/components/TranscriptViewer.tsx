@@ -48,6 +48,7 @@ import {
   buildTranscriptsContextData,
 } from "@/features/transcripts/agent-context/buildTranscriptsContextData";
 import { createTranscriptsExtraSections } from "@/features/transcripts/agent-context/transcriptsExtraSections";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
 // lightweight shell (imported statically); MenuContent lazy-loads on first
@@ -115,7 +116,9 @@ export function TranscriptViewer() {
     const end = el?.selectionEnd ?? start;
     const text = el?.value ?? editContent;
     const selectedText =
-      start !== end ? text.slice(Math.min(start, end), Math.max(start, end)) : "";
+      start !== end
+        ? text.slice(Math.min(start, end), Math.max(start, end))
+        : "";
     const contextData = buildTranscriptsContextData({
       transcript: activeTranscript ?? null,
       currentTime: audioRef.current?.currentTime ?? 0,
@@ -132,9 +135,7 @@ export function TranscriptViewer() {
     contextData.content = text;
     return buildApplicationScopeFromMenuContext({
       selectedText,
-      selectionRange: el
-        ? { type: "editable", element: el, start, end }
-        : null,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
       contextData,
     });
   }, [activeTranscript, editContent, isEditingMetadata]);
@@ -373,312 +374,323 @@ export function TranscriptViewer() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-background">
-      {/* Header */}
-      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-border shrink-0">
-        {isEditingMetadata ? (
-          <div className="space-y-3">
-            <ProInput
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              className="font-semibold text-base md:text-lg"
-              aria-label="Transcript title"
-            />
-            <ProTextarea
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              placeholder="Description"
-              rows={2}
-              className="text-sm"
-              // ProTextarea has no built-in iOS 16px guard; keep ≥16px so iOS
-              // Safari doesn't auto-zoom on focus (text-sm renders at 14px).
-              style={{ fontSize: "16px" }}
-            />
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleUpdateMetadata}>
-                <Save className="h-4 w-4 mr-1" /> Save
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setIsEditingMetadata(false)}
-              >
-                <X className="h-4 w-4 mr-1" /> Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-xl font-bold text-foreground">
-                {activeTranscript.title}
-              </h1>
-              {activeTranscript.description && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {activeTranscript.description}
-                </p>
-              )}
-              <div className="flex gap-2 mt-2">
-                {activeTranscript.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <ReferenceCopyButton
-                referenceType="transcript"
-                id={activeTranscript.id}
-                label={activeTranscript.title}
-                toastLabel={activeTranscript.title}
-                size="sm"
+    <SurfaceRuntimeProvider
+      surfaceName={TRANSCRIPTS_CONTEXT_MENU_PROPS.surfaceName}
+      surfaceLabel="Transcripts"
+      getScope={() =>
+        isEditingContent
+          ? getEditorApplicationScope()
+          : getViewerApplicationScope()
+      }
+      isEditable={isEditingContent}
+    >
+      <div className="flex-1 flex flex-col overflow-hidden bg-background">
+        {/* Header */}
+        <div className="px-4 md:px-6 py-3 md:py-4 border-b border-border shrink-0">
+          {isEditingMetadata ? (
+            <div className="space-y-3">
+              <ProInput
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="font-semibold text-base md:text-lg"
+                aria-label="Transcript title"
               />
-              {plainTranscriptText.trim().length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  title="Copy transcript text"
-                  onClick={() => void handleCopyAllText()}
-                >
-                  {copiedAll ? (
-                    <CheckCheck className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              )}
-              {plainTranscriptText.trim().length > 0 && !isEditingContent && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  title="Edit transcript text"
-                  onClick={startContentEdit}
-                >
-                  <FileText className="h-4 w-4" />
-                </Button>
-              )}
-              {transcriptContent.trim().length > 0 && (
-                <ContentActionBar
-                  content={transcriptContent}
-                  title={activeTranscript.title}
-                  metadata={{
-                    source: "transcripts",
-                    transcript_id: activeTranscript.id,
-                    description: activeTranscript.description,
-                    tags: activeTranscript.tags,
-                  }}
-                  instanceKey={`transcript-${activeTranscript.id}`}
-                  hideSpeaker
-                  hidePencil
-                />
-              )}
-              <PromoteToStudioButton transcript={activeTranscript} />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                title="Edit title & description"
-                onClick={() => setIsEditingMetadata(true)}
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Audio Player */}
-      {activeTranscript.source_type === "audio" && (
-        <div className="px-4 md:px-6 py-2 md:py-3 bg-muted/50 border-b border-border shrink-0">
-          <div className="flex flex-col gap-2">
-            {/* Hidden Audio Element */}
-            {audioUrl && (
-              <audio
-                ref={audioRef}
-                src={audioUrl}
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onEnded={() => setIsPlaying(false)}
-              />
-            )}
-
-            <div className="flex items-center gap-2 md:gap-4">
-              <Button
-                size="icon"
-                variant="outline"
-                className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0"
-                onClick={togglePlay}
-                disabled={!audioUrl}
-              >
-                {isLoadingUrl ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isPlaying ? (
-                  <Pause className="h-4 w-4" />
-                ) : (
-                  <Play className="h-4 w-4 ml-0.5" />
-                )}
-              </Button>
-
-              {/* Playback Speed Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 px-2 md:px-3 shrink-0 font-mono text-xs md:text-sm min-w-[52px] md:min-w-[60px]"
-                    disabled={!audioUrl}
-                    title="Playback speed"
-                  >
-                    <Gauge className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1 md:mr-1.5" />
-                    {formatSpeed(playbackSpeed)}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[140px]">
-                  {speedOptions.map((speed) => (
-                    <DropdownMenuItem
-                      key={speed}
-                      onSelect={() => handleSpeedChange(speed)}
-                      className="font-mono cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span>{formatSpeed(speed)}</span>
-                        {playbackSpeed === speed && (
-                          <Check className="h-4 w-4 ml-2 text-primary" />
-                        )}
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
-                <Slider
-                  value={[currentTime]}
-                  max={duration || 100}
-                  step={0.1}
-                  onValueChange={handleSeek}
-                  className="cursor-pointer"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{formatTime(duration)}</span>
-                </div>
-              </div>
-
-              {/* Volume Control - Hidden on mobile */}
-              <div className="hidden sm:flex items-center gap-2 w-20 md:w-24 shrink-0">
-                <Volume2 className="h-4 w-4 text-muted-foreground" />
-                <Slider
-                  value={[volume]}
-                  max={1}
-                  step={0.1}
-                  onValueChange={handleVolumeChange}
-                />
-              </div>
-
-              {activeTranscript.audio_file_path &&
-                !audioUrl &&
-                !isLoadingUrl && (
-                  <div className="text-xs text-red-500 flex items-center shrink-0">
-                    <X className="h-3 w-3 mr-1" />
-                    Failed to load audio
-                  </div>
-                )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Content */}
-      <div
-        ref={segmentContainerRef}
-        className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/30 pb-safe"
-      >
-        {isEditingContent ? (
-          <div className="max-w-3xl mx-auto space-y-3">
-            <EditableContextMenu
-              {...TRANSCRIPTS_CONTEXT_MENU_PROPS}
-              getTextarea={() => editContentRef.current}
-              getApplicationScope={getEditorApplicationScope}
-              onTextReplace={setEditContent}
-              onTextInsertBefore={(text) => insertEditContent(text, "before")}
-              onTextInsertAfter={(text) => insertEditContent(text, "after")}
-              extraSections={transcriptExtraSections}
-              contextData={surfaceScope as unknown as Record<string, unknown>}
-            >
               <ProTextarea
-                ref={editContentRef}
-                surfaceName={TRANSCRIPTS_CONTEXT_MENU_PROPS.surfaceName}
-                getApplicationScope={getEditorApplicationScope}
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                rows={16}
-                className="text-sm leading-relaxed min-h-[40dvh] resize-y"
-                disabled={contentSaveBusy}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Description"
+                rows={2}
+                className="text-sm"
                 // ProTextarea has no built-in iOS 16px guard; keep ≥16px so iOS
                 // Safari doesn't auto-zoom on focus (text-sm renders at 14px).
                 style={{ fontSize: "16px" }}
               />
-            </EditableContextMenu>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => void handleSaveContent()}
-                disabled={contentSaveBusy}
-              >
-                {contentSaveBusy ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-1" />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleUpdateMetadata}>
+                  <Save className="h-4 w-4 mr-1" /> Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsEditingMetadata(false)}
+                >
+                  <X className="h-4 w-4 mr-1" /> Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-xl font-bold text-foreground">
+                  {activeTranscript.title}
+                </h1>
+                {activeTranscript.description && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {activeTranscript.description}
+                  </p>
                 )}
-                Save
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={contentSaveBusy}
-                onClick={() => {
-                  setIsEditingContent(false);
-                  setEditContent("");
-                }}
-              >
-                <X className="h-4 w-4 mr-1" /> Cancel
-              </Button>
+                <div className="flex gap-2 mt-2">
+                  {activeTranscript.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <ReferenceCopyButton
+                  referenceType="transcript"
+                  id={activeTranscript.id}
+                  label={activeTranscript.title}
+                  toastLabel={activeTranscript.title}
+                  size="sm"
+                />
+                {plainTranscriptText.trim().length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Copy transcript text"
+                    onClick={() => void handleCopyAllText()}
+                  >
+                    {copiedAll ? (
+                      <CheckCheck className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+                {plainTranscriptText.trim().length > 0 && !isEditingContent && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Edit transcript text"
+                    onClick={startContentEdit}
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                )}
+                {transcriptContent.trim().length > 0 && (
+                  <ContentActionBar
+                    content={transcriptContent}
+                    title={activeTranscript.title}
+                    metadata={{
+                      source: "transcripts",
+                      transcript_id: activeTranscript.id,
+                      description: activeTranscript.description,
+                      tags: activeTranscript.tags,
+                    }}
+                    instanceKey={`transcript-${activeTranscript.id}`}
+                    hideSpeaker
+                    hidePencil
+                  />
+                )}
+                <PromoteToStudioButton transcript={activeTranscript} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  title="Edit title & description"
+                  onClick={() => setIsEditingMetadata(true)}
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Audio Player */}
+        {activeTranscript.source_type === "audio" && (
+          <div className="px-4 md:px-6 py-2 md:py-3 bg-muted/50 border-b border-border shrink-0">
+            <div className="flex flex-col gap-2">
+              {/* Hidden Audio Element */}
+              {audioUrl && (
+                <audio
+                  ref={audioRef}
+                  src={audioUrl}
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onEnded={() => setIsPlaying(false)}
+                />
+              )}
+
+              <div className="flex items-center gap-2 md:gap-4">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0"
+                  onClick={togglePlay}
+                  disabled={!audioUrl}
+                >
+                  {isLoadingUrl ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4 ml-0.5" />
+                  )}
+                </Button>
+
+                {/* Playback Speed Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 px-2 md:px-3 shrink-0 font-mono text-xs md:text-sm min-w-[52px] md:min-w-[60px]"
+                      disabled={!audioUrl}
+                      title="Playback speed"
+                    >
+                      <Gauge className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1 md:mr-1.5" />
+                      {formatSpeed(playbackSpeed)}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="min-w-[140px]">
+                    {speedOptions.map((speed) => (
+                      <DropdownMenuItem
+                        key={speed}
+                        onSelect={() => handleSpeedChange(speed)}
+                        className="font-mono cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span>{formatSpeed(speed)}</span>
+                          {playbackSpeed === speed && (
+                            <Check className="h-4 w-4 ml-2 text-primary" />
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
+                  <Slider
+                    value={[currentTime]}
+                    max={duration || 100}
+                    step={0.1}
+                    onValueChange={handleSeek}
+                    className="cursor-pointer"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+
+                {/* Volume Control - Hidden on mobile */}
+                <div className="hidden sm:flex items-center gap-2 w-20 md:w-24 shrink-0">
+                  <Volume2 className="h-4 w-4 text-muted-foreground" />
+                  <Slider
+                    value={[volume]}
+                    max={1}
+                    step={0.1}
+                    onValueChange={handleVolumeChange}
+                  />
+                </div>
+
+                {activeTranscript.audio_file_path &&
+                  !audioUrl &&
+                  !isLoadingUrl && (
+                    <div className="text-xs text-red-500 flex items-center shrink-0">
+                      <X className="h-3 w-3 mr-1" />
+                      Failed to load audio
+                    </div>
+                  )}
+              </div>
             </div>
           </div>
-        ) : (
-          <NonEditableContextMenu
-            {...TRANSCRIPTS_CONTEXT_MENU_PROPS}
-            getApplicationScope={getViewerApplicationScope}
-            extraSections={transcriptExtraSections}
-            // ApplicationScope.context is typed as object; the menu's
-            // contextData.context is string. We don't populate `context`
-            // here either way — surface values flow through the index
-            // signature — so widen at the boundary.
-            contextData={surfaceScope as unknown as Record<string, unknown>}
-          >
-            <Card className="border-0 shadow-none bg-transparent">
-              <CardContent className="p-0">
-                <AdvancedTranscriptViewer
-                  content={transcriptContent}
-                  hideTitle={true}
-                  transcriptId={activeTranscript?.id}
-                  onUpdateTranscript={handleUpdateSegments}
-                  onTimeClick={handleTranscriptTimeClick}
-                  currentTime={currentTime}
-                  showInlineActions
-                />
-              </CardContent>
-            </Card>
-          </NonEditableContextMenu>
         )}
+
+        {/* Content */}
+        <div
+          ref={segmentContainerRef}
+          className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/30 pb-safe"
+        >
+          {isEditingContent ? (
+            <div className="max-w-3xl mx-auto space-y-3">
+              <EditableContextMenu
+                {...TRANSCRIPTS_CONTEXT_MENU_PROPS}
+                getTextarea={() => editContentRef.current}
+                getApplicationScope={getEditorApplicationScope}
+                onTextReplace={setEditContent}
+                onTextInsertBefore={(text) => insertEditContent(text, "before")}
+                onTextInsertAfter={(text) => insertEditContent(text, "after")}
+                extraSections={transcriptExtraSections}
+                contextData={surfaceScope as unknown as Record<string, unknown>}
+              >
+                <ProTextarea
+                  ref={editContentRef}
+                  surfaceName={TRANSCRIPTS_CONTEXT_MENU_PROPS.surfaceName}
+                  getApplicationScope={getEditorApplicationScope}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={16}
+                  className="text-sm leading-relaxed min-h-[40dvh] resize-y"
+                  disabled={contentSaveBusy}
+                  // ProTextarea has no built-in iOS 16px guard; keep ≥16px so iOS
+                  // Safari doesn't auto-zoom on focus (text-sm renders at 14px).
+                  style={{ fontSize: "16px" }}
+                />
+              </EditableContextMenu>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => void handleSaveContent()}
+                  disabled={contentSaveBusy}
+                >
+                  {contentSaveBusy ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-1" />
+                  )}
+                  Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={contentSaveBusy}
+                  onClick={() => {
+                    setIsEditingContent(false);
+                    setEditContent("");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" /> Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <NonEditableContextMenu
+              {...TRANSCRIPTS_CONTEXT_MENU_PROPS}
+              getApplicationScope={getViewerApplicationScope}
+              extraSections={transcriptExtraSections}
+              // ApplicationScope.context is typed as object; the menu's
+              // contextData.context is string. We don't populate `context`
+              // here either way — surface values flow through the index
+              // signature — so widen at the boundary.
+              contextData={surfaceScope as unknown as Record<string, unknown>}
+            >
+              <Card className="border-0 shadow-none bg-transparent">
+                <CardContent className="p-0">
+                  <AdvancedTranscriptViewer
+                    content={transcriptContent}
+                    hideTitle={true}
+                    transcriptId={activeTranscript?.id}
+                    onUpdateTranscript={handleUpdateSegments}
+                    onTimeClick={handleTranscriptTimeClick}
+                    currentTime={currentTime}
+                    showInlineActions
+                  />
+                </CardContent>
+              </Card>
+            </NonEditableContextMenu>
+          )}
+        </div>
       </div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }

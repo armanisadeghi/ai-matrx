@@ -1928,34 +1928,42 @@ function PaneHeader({
 }) {
   const hasActions = !!(onCopyAll || onTogglePane);
   return (
-    <div className="shrink-0 px-2.5 py-1.5 border-b border-border flex items-center gap-1.5">
-      {icon}
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
-        {title}
-      </span>
-      {subtitle && (
-        <span className="text-[10px] text-muted-foreground">· {subtitle}</span>
-      )}
-      {hasActions && (
-        <div className="ml-auto flex items-center gap-0.5">
-          {onCopyAll && (
-            <CopyIconButton
-              getText={onCopyAll}
-              label={copyAllLabel ?? "Copy all pages"}
-            />
-          )}
-          {onTogglePane && (
-            <button
-              type="button"
-              onClick={onTogglePane}
-              className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
-              title="Hide pane"
-            >
-              <EyeOff className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-      )}
+    // Canonical studio sub-header row — same px-3 pt-2 pb-1.5 / h-7 envelope
+    // as the sidebar's Files/Pages toggle and the inspector's section nav,
+    // so every column's top row reads at the same size. No border — lines
+    // stay out of anything sitting near the shell header.
+    <div className="shrink-0 px-3 pt-2 pb-1.5">
+      <div className="h-7 flex items-center gap-1.5">
+        {icon}
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
+          {title}
+        </span>
+        {subtitle && (
+          <span className="text-[10px] text-muted-foreground">
+            · {subtitle}
+          </span>
+        )}
+        {hasActions && (
+          <div className="ml-auto flex items-center gap-0.5">
+            {onCopyAll && (
+              <CopyIconButton
+                getText={onCopyAll}
+                label={copyAllLabel ?? "Copy all pages"}
+              />
+            )}
+            {onTogglePane && (
+              <button
+                type="button"
+                onClick={onTogglePane}
+                className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
+                title="Hide pane"
+              >
+                <EyeOff className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2037,8 +2045,10 @@ function LegacyReaderFallback({ doc }: { doc: PdfDocument }) {
     <div className="flex flex-1 min-h-0">
       {/* PDF pane — use the proper renderer, not an iframe */}
       <div className="flex-1 min-w-0 flex flex-col border-r border-border bg-muted/10">
-        <div className="shrink-0 px-2.5 py-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-          Source PDF
+        <div className="shrink-0 px-3 pt-2 pb-1.5">
+          <div className="h-7 flex items-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            Source PDF
+          </div>
         </div>
         <div className="flex-1 min-h-0 overflow-hidden">
           {doc.sourceKind === "cld_file" && doc.sourceId ? (

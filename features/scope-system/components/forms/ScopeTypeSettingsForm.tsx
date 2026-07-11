@@ -186,6 +186,7 @@ export function ScopeTypeSettingsForm({
           autoGrow
           placeholder="What does this scope type represent?"
           disabled={busy}
+          enableTextStats={false}
         />
       </div>
 

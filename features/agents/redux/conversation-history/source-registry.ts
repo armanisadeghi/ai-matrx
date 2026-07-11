@@ -23,6 +23,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  Bot,
   Boxes,
   CalendarClock,
   Code2,
@@ -220,6 +221,7 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   "image-studio": { label: "Image Studio", icon: Image },
   "pdf-extractor": { label: "PDF Extractor", icon: FileText },
   "pro-textarea": { label: "ProTextarea", icon: PencilRuler },
+  "surface-chrome": { label: "Surface Agents", icon: Bot },
   "tool-call-visualization": {
     label: "Tool UI Generator",
     icon: Hammer,

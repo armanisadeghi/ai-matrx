@@ -126,8 +126,9 @@ export function PdfStudioSidebar({
 
   return (
     <aside className="flex flex-col h-full min-h-0 border-r border-border bg-card/30">
-      {/* Toggle: files ↔ pages */}
-      <div className="shrink-0 px-3 pt-2.5 pb-1.5">
+      {/* Toggle: files ↔ pages — the canonical studio sub-header row (same
+          px-3 pt-2 pb-1.5 / h-7 envelope every other column top-row matches). */}
+      <div className="shrink-0 px-3 pt-2 pb-1.5">
         <PdfStudioSidebarToggle
           view={inPagesView ? "pages" : "files"}
           onChange={onChangeView}

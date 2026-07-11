@@ -11,15 +11,15 @@ import type {
 
 /**
  * Surface name for this feature in the Surface Values system. Matches the
- * `matrx-user/content-extractor` row in `ui.ui_surface` and the
- * `contentExtractorManifest` in
- * `features/surfaces/manifests/content-extractor.manifest.ts`.
+ * `matrx-user/extractor-chunker` row in `ui.ui_surface` and the
+ * `extractorChunkerManifest` in
+ * `features/surfaces/manifests/extractor-chunker.manifest.ts`.
  *
  * Used by the variable-mapping editor to pull the canonical list of values
  * an agent can be wired to. Also handed to `launchAgentExecution` as
  * `runtime.surfaceName` so `agx_agent_surface` bindings can apply.
  */
-export const CONTENT_EXTRACTOR_SURFACE_NAME = "matrx-user/content-extractor";
+export const EXTRACTOR_CHUNKER_SURFACE_NAME = "matrx-user/extractor-chunker";
 
 /** Hard cap — above this we won't even let the user try.
  *  Above ~50 pages per call the medical/legal use case shows quality drops

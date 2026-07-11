@@ -237,6 +237,7 @@ export function ScopeEditView({
                 autoGrow
                 placeholder="Describe this scope (optional)"
                 disabled={savingBasics}
+                enableTextStats={false}
               />
             </div>
             <div className="flex justify-end">

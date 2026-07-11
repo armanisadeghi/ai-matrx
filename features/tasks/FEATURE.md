@@ -105,6 +105,10 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Related features
 
+## Change log
+
+- `2026-07-10` — **Header Surface Agents chrome: live scope.** `TaskEditorBody` mounts `SurfaceRuntimeProvider` (`matrx-user/tasks`) so the shell Agents button Runs with the same description-selection scope as the context menu.
+
 - **Depends on:** `features/organizations/` (parent scope), `features/scope-system/`, `features/sharing/` (share grants orthogonal to membership), `features/invitations/` (and its `project_invitations` extension)
 - **Depended on by:** `features/agents/` (task-scoped invocations), `features/transcripts/` (task-attached transcripts), `features/notes/` (project-scoped notes)
 - **Cross-links:** [`../scopes/FEATURE.md`](../scopes/FEATURE.md), [`../organizations/FEATURE.md`](../organizations/FEATURE.md)

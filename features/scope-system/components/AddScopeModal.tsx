@@ -285,6 +285,7 @@ export function AddScopeModal({
             maxHeight={600}
             autoGrow
             disabled={busy}
+            enableTextStats={false}
           />
         </div>
 

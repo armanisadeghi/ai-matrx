@@ -21,8 +21,10 @@ import type { SurfaceManifest } from "@/features/surfaces/types";
 import { BASELINE_VALUES, mergeBaselineValues } from "./_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { codeEditorManifest } from "./code-editor.manifest";
-import { pdfWidgetsManifest } from "./pdf-widgets.manifest";
-import { contentExtractorManifest } from "./content-extractor.manifest";
+import { pdfExtractorManifest } from "./pdf-extractor.manifest";
+import { extractorChunkerManifest } from "./extractor-chunker.manifest";
+import { analysisStudioManifest } from "./analysis-studio.manifest";
+import { scannerManifest } from "./scanner.manifest";
 import { transcriptsManifest } from "./transcripts.manifest";
 import { transcriptsCleanupManifest } from "./transcripts-cleanup.manifest";
 import { agentBuilderManifest } from "./agent-builder.manifest";
@@ -60,8 +62,10 @@ import { htmlPageManifest } from "./html-page.manifest";
 const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   notesEditorManifest,
   codeEditorManifest,
-  pdfWidgetsManifest,
-  contentExtractorManifest,
+  pdfExtractorManifest,
+  extractorChunkerManifest,
+  analysisStudioManifest,
+  scannerManifest,
   transcriptsManifest,
   transcriptsCleanupManifest,
   agentBuilderManifest,

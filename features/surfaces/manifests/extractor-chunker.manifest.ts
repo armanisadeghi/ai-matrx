@@ -1,7 +1,7 @@
 /**
- * Surface manifest — Content Extractor (`matrx-user/content-extractor`).
+ * Surface manifest — Extractor Chunker (`matrx-user/extractor-chunker`).
  *
- * The Content Extractor (a.k.a. page-extraction) surface runs an agent
+ * The Extractor Chunker (page-extraction Jobs) surface runs an agent
  * chunk-by-chunk across a document and persists each structured response
  * anchored to its source page(s). One Job declares: which agent to invoke,
  * the page scope, chunk size, source variations (cleaned text, raw OCR,
@@ -12,7 +12,7 @@
  * variables to. The Python backend reads the per-Job `variable_mapping`
  * (`{ surface_value_name: agent_variable_name }`) and routes accordingly.
  *
- * **Superset of `matrx-user/pdf-widgets`.** Everything the widgets
+ * **Superset of `matrx-user/pdf-extractor`.** Everything the parent
  * surface exposes (filename, file_id, processed_document_id,
  * current_page, total_pages, page_numbers, scope_kind, using_clean_text,
  * plus baselines) is inherited verbatim. On top of that we add the
@@ -33,7 +33,7 @@ import type {
   SurfaceValue,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
-import { getPdfWidgetsSurfaceSpecificValues } from "./pdf-widgets.manifest";
+import { getPdfExtractorSurfaceSpecificValues } from "./pdf-extractor.manifest";
 
 /**
  * Chunk-only values the Content Extractor adds on top of the widget
@@ -43,8 +43,8 @@ import { getPdfWidgetsSurfaceSpecificValues } from "./pdf-widgets.manifest";
  * Note: `filename`, `file_id`, `processed_document_id`, `current_page`,
  * `total_pages`, `page_numbers`, `scope_kind`, `using_clean_text`,
  * `full_document_text`, `current_page_text`, `page_range_text`,
- * `selected_text`, `active_scope_text` are inherited from `pdf-widgets`
- * via `getPdfWidgetsSurfaceSpecificValues()` — do not redeclare here.
+ * `selected_text`, `active_scope_text` are inherited from `pdf-extractor`
+ * via `getPdfExtractorSurfaceSpecificValues()` — do not redeclare here.
  *
  * Sort orders 50-99 — these sit BELOW the baseline `selection` (100)
  * and inherited widget values (200+) so the binding editor surfaces
@@ -149,8 +149,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
-export const contentExtractorManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/content-extractor",
+export const extractorChunkerManifest: SurfaceManifest = {
+  surfaceName: "matrx-user/extractor-chunker",
+  label: "Extractor Chunker",
   values: mergeBaselineValues(
     // Baseline:
     //   `selection` + `content` — back-compat aliases. The runtime
@@ -172,7 +173,7 @@ export const contentExtractorManifest: SurfaceManifest = {
     // `surfaceSpecific` that re-declares an inherited name (e.g.
     // `page_numbers`, `current_page` whose semantics differ in
     // chunked context) overrides the widget version.
-    [...getPdfWidgetsSurfaceSpecificValues(), ...surfaceSpecific],
+    [...getPdfExtractorSurfaceSpecificValues(), ...surfaceSpecific],
   ),
 };
 
@@ -191,13 +192,13 @@ export const contentExtractorManifest: SurfaceManifest = {
  * unified, the same payload will be handed to the launch thunk via
  * `runtime.applicationScope` + `runtime.surfaceName`.
  */
-export function createContentExtractorScope(values: {
+export function createExtractorChunkerScope(values: {
   // alwaysAvailable: true → required (chunk-specific)
   chunk_index: number;
   chunk_count: number;
   job_id: string;
   run_id: string;
-  // alwaysAvailable: true → required (inherited from pdf-widgets)
+  // alwaysAvailable: true → required (inherited from pdf-extractor)
   full_document_text: string;
   current_page_text: string;
   active_scope_text: string;
@@ -211,7 +212,7 @@ export function createContentExtractorScope(values: {
   clean_text?: string;
   raw_text?: string;
   pdf_page?: Record<string, unknown>;
-  // alwaysAvailable: false → optional (inherited from pdf-widgets)
+  // alwaysAvailable: false → optional (inherited from pdf-extractor)
   page_range_text?: string;
   selected_text?: string;
   processed_document_id?: string;

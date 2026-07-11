@@ -19,7 +19,7 @@
  * The editor used to be always-rendered, which buried the "just run
  * this" flow under a wall of inputs and falsely told the user variables
  * were "unmapped" (no mapping UI was wired). With the new
- * `matrx-user/content-extractor` surface + `VariableMappingEditor`, the
+ * `matrx-user/extractor-chunker` surface + `VariableMappingEditor`, the
  * full surface-value catalog is available as dropdowns, the legacy
  * heuristic is opt-in via an "Auto-suggest" button, and the user only
  * sees the editor when they're actually editing.

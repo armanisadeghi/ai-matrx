@@ -54,11 +54,11 @@ import { ManipulationPanel } from "./ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { CopyPagesOverlay } from "./CopyPagesOverlay";
-import { createPdfWidgetsScope } from "@/features/surfaces/manifests/pdf-widgets.manifest";
+import { createPdfExtractorScope } from "@/features/surfaces/manifests/pdf-extractor.manifest";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 
-const PDF_WIDGETS_SURFACE = "matrx-user/pdf-widgets";
+const PDF_EXTRACTOR_SURFACE = "matrx-user/pdf-extractor";
 
 // ─── Sub-tab type for per-extraction view ────────────────────────────────────
 
@@ -96,7 +96,7 @@ export function PdfExtractorFloatingWorkspace({
   const { launchAgent } = useAgentLauncher();
   const toast = useToastManager("pdf-extractor");
   const { sections: boundSections, refresh: refreshBoundAgents } =
-    useSurfaceBoundAgents(PDF_WIDGETS_SURFACE, {
+    useSurfaceBoundAgents(PDF_EXTRACTOR_SURFACE, {
       isEditable: false,
       includeDefaults: true,
     });
@@ -184,7 +184,7 @@ export function PdfExtractorFloatingWorkspace({
       const doc = activeTab?.document;
       try {
         await launchAgent(agentId, {
-          surfaceKey: `pdf-widgets:bound-agent:${agentId}`,
+          surfaceKey: `pdf-extractor:bound-agent:${agentId}`,
           sourceFeature: "pdf-extractor",
           config: {
             displayMode: "modal-full",
@@ -192,8 +192,8 @@ export function PdfExtractorFloatingWorkspace({
             showVariablePanel: true,
           },
           runtime: {
-            surfaceName: PDF_WIDGETS_SURFACE,
-            applicationScope: createPdfWidgetsScope({
+            surfaceName: PDF_EXTRACTOR_SURFACE,
+            applicationScope: createPdfExtractorScope({
               full_document_text: docText,
               active_scope_text: docText,
               selected_text: "",
@@ -850,7 +850,7 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
     }
     try {
       await launchAgent(agentId, {
-        surfaceKey: `pdf-widgets:bound-agent:${agentId}`,
+        surfaceKey: `pdf-extractor:bound-agent:${agentId}`,
         sourceFeature: "pdf-extractor",
         config: {
           displayMode: "modal-full",
@@ -858,8 +858,8 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
           showVariablePanel: true,
         },
         runtime: {
-          surfaceName: PDF_WIDGETS_SURFACE,
-          applicationScope: createPdfWidgetsScope({
+          surfaceName: PDF_EXTRACTOR_SURFACE,
+          applicationScope: createPdfExtractorScope({
             full_document_text: docText,
             active_scope_text: docText,
             selected_text: "",
@@ -904,8 +904,8 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
 
       {hasContent && (
         <SurfaceBoundAgentsList
-          surfaceName={PDF_WIDGETS_SURFACE}
-          surfaceLabel="PDF Widgets"
+          surfaceName={PDF_EXTRACTOR_SURFACE}
+          surfaceLabel="PDF Extractor"
           onRunAgent={handleRunAgent}
           runDisabled={!hasContent}
         />

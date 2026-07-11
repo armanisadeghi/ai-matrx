@@ -111,6 +111,12 @@ export interface SurfaceManifest {
   /** Matches `ui_surface.name`. */
   surfaceName: string;
   /**
+   * Human display name for chrome / pickers (e.g. "PDF Extractor").
+   * When omitted, UIs derive a Title Case label from the local slug
+   * (`pdf-extractor` → "PDF Extractor" via acronym-aware formatting).
+   */
+  label?: string;
+  /**
    * Canonical route for this surface (e.g. `/notes`, `/agents/builder`,
    * `/transcripts/scribe/:sessionId`). Mirrored to `ui_surface.url_pattern`
    * by manifest sync. When omitted, sync derives a default from the route

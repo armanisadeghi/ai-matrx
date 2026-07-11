@@ -13,7 +13,7 @@
  *   2. Extra inputs     — Named result rows pulled from other templates.
  *                         Each becomes its own option.
  *   3. Document         — filename, file id, total pages, etc.
- *   4. Scope text       — Inherited from `matrx-user/pdf-widgets` —
+ *   4. Scope text       — Inherited from `matrx-user/pdf-extractor` —
  *                         full_document_text, current_page_text,
  *                         page_range_text, selected_text, active_scope_text.
  *                         Useful when an agent wants whole-doc context
@@ -52,7 +52,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { CONTENT_EXTRACTOR_SURFACE_NAME } from "@/features/page-extraction/constants";
+import { EXTRACTOR_CHUNKER_SURFACE_NAME } from "@/features/page-extraction/constants";
 import type { SurfaceValue } from "@/features/surfaces/types";
 import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
 import {
@@ -226,7 +226,7 @@ export function VariableMappingEditor({
   onChange,
   onChangeExtraInputs,
 }: VariableMappingEditorProps) {
-  const manifest = getManifest(CONTENT_EXTRACTOR_SURFACE_NAME);
+  const manifest = getManifest(EXTRACTOR_CHUNKER_SURFACE_NAME);
   const surfaceValues = useMemo(() => manifest?.values ?? [], [manifest]);
   const byName = useMemo(
     () => new Map(surfaceValues.map((v) => [v.name, v] as const)),
@@ -504,7 +504,7 @@ function buildOptionGroups({
     }),
   );
 
-  // 4. Scope text — inherited from pdf-widgets. Whole-doc / page-level
+  // 4. Scope text — inherited from pdf-extractor. Whole-doc / page-level
   //    text for agents that need chunk context.
   groups.push(
     pickGroup({

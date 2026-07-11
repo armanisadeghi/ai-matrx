@@ -130,6 +130,36 @@ export async function bindAgentToSurface(
 }
 
 /**
+ * Detach an agent from a surface. Associations-only — removes the
+ * `agent` → `surface` edge so `agent.menu_surface` stops listing it.
+ */
+export async function unbindAgentFromSurface(args: {
+  agentId: string;
+  surfaceName: string;
+}): Promise<void> {
+  const { agentId, surfaceName } = args;
+  const surface = await getSurfaceByName(surfaceName);
+  if (!surface?.id) {
+    throw new Error(`Unknown surface: ${surfaceName}`);
+  }
+
+  const result = await associationsService.remove({
+    sourceType: "agent",
+    sourceId: agentId,
+    targetType: "surface",
+    targetId: surface.id,
+  });
+
+  if (!result.ok) {
+    throw new Error(
+      result.error.message || "Failed to remove agent from surface",
+    );
+  }
+
+  invalidateSurfaceBoundAgents(surfaceName);
+}
+
+/**
  * Launch-time mapping layers for (agent, surface), read from the
  * associations-backed `agent.menu_surface` view — NOT condemned
  * `agent.agent_surface`.

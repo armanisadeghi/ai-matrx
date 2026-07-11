@@ -3,13 +3,13 @@
  *
  * Two layers, merged & deduped:
  *  1. Surface-specific bindings — `agx_agent_surface` rows for the surface,
- *     bucketed by ownership (My agents / System / Shared / org).
+ *     bucketed by ownership (Public / Mine / Shared / org).
  *  2. The platform DEFAULT contracts — agents bound to `matrx-default/*` that
  *     qualify for this surface. These honor a user's (or the system's) default
  *     agents on EVERY qualifying surface, including bare/undeclared ones, so
  *     generic agents (clean-up, "help with this", summarize) appear everywhere
- *     without per-surface wiring. Surfaced as one "Default agents" section,
- *     deduped against the surface-specific ones so nothing shows twice.
+ *     without per-surface wiring. Folded into the Public section (deduped
+ *     against surface-specific binds so nothing shows twice).
  */
 
 import { supabase } from "@/utils/supabase/client";
@@ -20,10 +20,21 @@ export interface SurfaceBoundAgentEntry {
   name: string;
   /** Binding row used for provenance (org/user scope). */
   bindingId: string;
+  /**
+   * True when this agent is bound to the requested surface (can be detached
+   * here). False for platform default-contract agents folded into Public —
+   * those are not this surface's binds.
+   */
+  canDetach: boolean;
 }
 
 export interface SurfaceBoundAgentSection {
-  /** Display label, e.g. "My agents", "Public", "Acme Corp", "Default agents". */
+  /**
+   * Stable section id for UI layout:
+   * `public` | `mine` | `shared` | `org:<uuid>`
+   */
+  key: "public" | "mine" | "shared" | `org:${string}`;
+  /** Display label, e.g. "Public", "Mine", org name, "Shared with me". */
   label: string;
   /** Stable sort key — lower renders first. */
   sortOrder: number;
@@ -290,7 +301,7 @@ async function fetchMenuAgentsFromDb(
 
   const sections = bucketBindingRows(surfaceRows, currentUserId);
 
-  // Default agents — deduped against everything already shown for the surface.
+  // Default agents — fold into Public (deduped against everything already shown).
   const surfaceAgentIds = new Set<string>();
   for (const s of sections)
     for (const a of s.agents) surfaceAgentIds.add(a.agentId);
@@ -304,15 +315,25 @@ async function fetchMenuAgentsFromDb(
       agentId: agent.id,
       name: agent.name,
       bindingId: row.id,
+      canDetach: false,
     });
   }
   const defaultAgents = dedupeAgents(defaultEntries);
   if (defaultAgents.length > 0) {
-    sections.push({
-      label: "Default agents",
-      sortOrder: 500,
-      agents: defaultAgents,
-    });
+    const publicSection = sections.find((s) => s.key === "public");
+    if (publicSection) {
+      publicSection.agents = dedupeAgents([
+        ...publicSection.agents,
+        ...defaultAgents,
+      ]);
+    } else if (defaultAgents.length > 0) {
+      sections.push({
+        key: "public",
+        label: AGENT_PUBLIC_TAB_LABEL,
+        sortOrder: 10,
+        agents: defaultAgents,
+      });
+    }
   }
 
   return sections.sort((a, b) => a.sortOrder - b.sortOrder);
@@ -343,6 +364,7 @@ function bucketBindingRows(
       agentId: agent.id,
       name: agent.name,
       bindingId: row.id,
+      canDetach: true,
     };
 
     // One row → one section. (An agent can still appear in multiple sections
@@ -376,26 +398,23 @@ function bucketBindingRows(
 
   const sections: SurfaceBoundAgentSection[] = [];
 
-  const mineDeduped = dedupeAgents(mine);
-  if (mineDeduped.length > 0) {
-    sections.push({ label: "My agents", sortOrder: 10, agents: mineDeduped });
-  }
-
   const systemDeduped = dedupeAgents(system);
   if (systemDeduped.length > 0) {
     sections.push({
+      key: "public",
       label: AGENT_PUBLIC_TAB_LABEL,
-      sortOrder: 20,
+      sortOrder: 10,
       agents: systemDeduped,
     });
   }
 
-  const sharedDeduped = dedupeAgents(shared);
-  if (sharedDeduped.length > 0) {
+  const mineDeduped = dedupeAgents(mine);
+  if (mineDeduped.length > 0) {
     sections.push({
-      label: "Shared with me",
-      sortOrder: 30,
-      agents: sharedDeduped,
+      key: "mine",
+      label: "Mine",
+      sortOrder: 20,
+      agents: mineDeduped,
     });
   }
 
@@ -408,11 +427,23 @@ function bucketBindingRows(
     .filter((s) => s.agents.length > 0)
     .sort((a, b) => a.label.localeCompare(b.label));
 
-  for (const org of orgSections) {
+  for (let i = 0; i < orgSections.length; i++) {
+    const org = orgSections[i]!;
     sections.push({
+      key: `org:${org.orgId}`,
       label: org.label,
-      sortOrder: 100 + orgSections.indexOf(org),
+      sortOrder: 100 + i,
       agents: org.agents,
+    });
+  }
+
+  const sharedDeduped = dedupeAgents(shared);
+  if (sharedDeduped.length > 0) {
+    sections.push({
+      key: "shared",
+      label: "Shared with me",
+      sortOrder: 200,
+      agents: sharedDeduped,
     });
   }
 

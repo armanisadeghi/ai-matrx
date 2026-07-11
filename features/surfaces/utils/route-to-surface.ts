@@ -51,7 +51,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/files", surface: "matrx-user/files" },
   { prefix: "/projects", surface: "matrx-user/projects" },
   { prefix: "/lists", surface: "matrx-user/lists" },
-  { prefix: "/tools/pdf-extractor", surface: "matrx-user/pdf-widgets" },
+  { prefix: "/tools/pdf-extractor", surface: "matrx-user/pdf-extractor" },
+  { prefix: "/tools/scanner", surface: "matrx-user/scanner" },
   { prefix: "/tools", surface: "matrx-user/tools" },
   { prefix: "/documents", surface: "matrx-user/documents" },
   { prefix: "/settings", surface: "matrx-user/settings" },
@@ -75,8 +76,9 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/feedback", surface: "matrx-user/feedback" },
   { prefix: "/voice-pad", surface: "matrx-user/voice-pad" },
   { prefix: "/share", surface: "matrx-user/share" },
-  { prefix: "/content-extractor", surface: "matrx-user/content-extractor" },
-  { prefix: "/pdf-widgets", surface: "matrx-user/pdf-widgets" },
+  // Legacy path aliases (old surface names / bookmarks)
+  { prefix: "/content-extractor", surface: "matrx-user/extractor-chunker" },
+  { prefix: "/pdf-widgets", surface: "matrx-user/pdf-extractor" },
   { prefix: "/custom-apps", surface: "matrx-user/custom-apps" },
 
   // Admin routes — prefer matrx-admin/* when on the admin section.
@@ -96,6 +98,13 @@ export function surfaceFromPathname(
   // Strip the (authenticated) route group prefix Next.js doesn't include in the
   // URL but TS App Router sometimes reports.
   const stripped = pathname.replace(/^\/?\(authenticated\)/, "");
+
+  // Analysis Studio is `/files/f/[id]/studio` — must not steal plain file viewer
+  // (which correctly resolves to `matrx-user/files` via the `/files` prefix).
+  if (/^\/files\/f\/[^/]+\/studio(?:\/|$)/.test(stripped)) {
+    return "matrx-user/analysis-studio";
+  }
+
   for (const { prefix, surface } of SURFACE_ROUTE_MAPPINGS) {
     if (
       stripped === prefix ||

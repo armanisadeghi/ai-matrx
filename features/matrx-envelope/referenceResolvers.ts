@@ -17,8 +17,10 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { useEffect, useRef, useState } from "react";
 
 import { contextDb } from "@/utils/supabase/contextDb";
+import { supabase } from "@/utils/supabase/client";
 
 import type { KnownItemType } from "@/features/item-presentation/types";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
@@ -831,4 +833,66 @@ export function referenceFallbackLabel(
     if (typeof v === "string" && v.trim().length > 0) return v.trim();
   }
   return humanizeType(type);
+}
+
+export type ReferenceResolutionStatus = "idle" | "loading" | "ready" | "fallback";
+
+/**
+ * THE ONE place a reference item's live display value is resolved. Every chip
+ * — read-only (`ReferenceChip`) and editable (`PickerChip`) — must go through
+ * this hook instead of the static `referenceFallbackLabel` alone. A baked-in
+ * `label` hint (set at author time by a picker) is only ever a first-paint
+ * head start; it can go stale (the underlying entity gets renamed) or be
+ * absent entirely (a backfilled cell, a fence built server-side) — the live
+ * lookup is the source of truth, `referenceFallbackLabel` is only the
+ * loading/miss placeholder, never a substitute for it.
+ */
+export function useResolvedReferenceLabel(
+  item: ReferenceItem,
+  type: string,
+): { display: string; status: ReferenceResolutionStatus } {
+  const ref = coerceRefToStrings(item, `${type} reference`);
+  const resolver = getReferenceResolver(type);
+  const fallback = referenceFallbackLabel(item, type);
+
+  const [value, setValue] = useState<string | undefined>(undefined);
+  const [status, setStatus] = useState<ReferenceResolutionStatus>("idle");
+  const lastKey = useRef<string | null>(null);
+  const refKey = JSON.stringify(ref);
+
+  useEffect(() => {
+    if (!resolver) {
+      setStatus("fallback");
+      return undefined;
+    }
+    const key = `${type}:${refKey}`;
+    if (lastKey.current === key) return undefined;
+    lastKey.current = key;
+
+    let cancelled = false;
+    setStatus("loading");
+
+    Promise.resolve()
+      .then(() => resolver.resolveValue(supabase, ref))
+      .then((v) => {
+        if (cancelled) return;
+        if (typeof v === "string" && v.length > 0) {
+          setValue(v);
+          setStatus("ready");
+        } else {
+          setStatus("fallback");
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStatus("fallback");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // refKey captures the ref contents; resolver is stable per type.
+  }, [type, refKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { display: status === "ready" && value ? value : fallback, status };
 }

@@ -20,15 +20,10 @@ import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@/features/scopes/hooks/useContextValues";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import type {
-  ContextItemValue,
-  ScopeNode,
-  ScopeTypeNode,
-} from "@/features/scopes/types";
+import type { ScopeNode, ScopeTypeNode } from "@/features/scopes/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { Badge } from "@/components/ui/badge";
-import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
-import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
+import { ContextValueRow } from "@/features/scopes/components/reference/ContextValueRow";
 import type { ContextItemBodyProps } from "../types";
 
 // ── Organization ─────────────────────────────────────────────────────────────
@@ -220,53 +215,15 @@ export function ScopeLayerBody({ item, setTitle }: ContextItemBodyProps) {
       ) : (
         <ul className="divide-y divide-border/40">
           {valueList.map((v) => (
-            <ScopeValueRow
+            <ContextValueRow
               key={v.context_item_id}
               value={v}
               label={itemNames[v.context_item_id]}
+              className="px-4 py-2.5"
             />
           ))}
         </ul>
       )}
     </div>
-  );
-}
-
-function ScopeValueRow({
-  value,
-  label,
-}: {
-  value: ContextItemValue;
-  label?: string;
-}) {
-  // A reference cell's `value_text` is a ```matrx fence — route it through the
-  // ONE canonical reference renderer instead of dumping the raw fence string.
-  const referenceCell = parseReferenceCellValue(value.value_text);
-
-  const display: string = (() => {
-    if (value.value_text != null) return value.value_text;
-    if (value.value_number != null) return String(value.value_number);
-    if (value.value_boolean != null)
-      return value.value_boolean ? "true" : "false";
-    if (value.value_date != null) return value.value_date;
-    if (value.value_document_url) return value.value_document_url;
-    if (value.value_reference_id) return `→ ${value.value_reference_id}`;
-    if (value.value_json) return JSON.stringify(value.value_json);
-    return "(empty)";
-  })();
-
-  return (
-    <li className="flex items-start gap-3 px-4 py-2.5 text-xs">
-      <div className="w-1/3 shrink-0 truncate text-muted-foreground">
-        {label ?? value.context_item_id.slice(0, 8)}
-      </div>
-      <div className="flex-1 break-words text-foreground">
-        {referenceCell ? (
-          <ContextValueDisplay valueText={value.value_text} />
-        ) : (
-          display
-        )}
-      </div>
-    </li>
   );
 }

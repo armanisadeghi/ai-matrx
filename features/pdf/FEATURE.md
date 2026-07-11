@@ -55,13 +55,17 @@ One physical PDF = `cld_files` row. Two derived families, now sharing identity:
 - Scanner-produced PDFs (`Scans/`, `parent_file_id` set) get no `page1_url` grid thumbnail — the variant pipeline skips derivatives BY DESIGN; the grid falls back to live render.
 
 ## Change Log
+- 2026-07-11 — **Surface rename:** `matrx-user/pdf-extractor` → `matrx-user/pdf-extractor`; chunked child `extractor-chunker`; siblings `analysis-studio` + `scanner` registered.
+- 2026-07-10 — **PDF Studio: unified sub-header rows, no border bleed.** Sidebar/inspector column wrappers no longer duplicate the `border-r`/`border-l` already drawn by the inner `<aside>` — removing the redundant outer-wrapper border stops it from cutting through the transparent shell header at y=0 (the inner border already starts correctly below the `pt-[var(--shell-header-h)]` offset). Every column's top row (sidebar Files/Pages toggle, inspector section-nav pill, every reader `PaneHeader` incl. chunks pane + legacy fallback) now shares one canonical envelope — `px-3 pt-2 pb-1.5` wrapping an `h-7` content row, no `border-b` — instead of each picking its own padding/height/border. Inspector's section nav also switched from a flat button row to the same bordered pill control (`border border-border bg-background p-0.5`) the sidebar's toggle uses.
+- 2026-07-10 — **Header Surface Agents chrome: live scope.** `PdfStudioShell` mounts `SurfaceRuntimeProvider` (`matrx-user/pdf-extractor`) with full-doc + current-page scope (Widgets-tab defaults; no range picker in the header path yet).
+- 2026-07-10 — **PDF Studio: full-width shell header, sidebars evicted.** `/tools/pdf-extractor[/[id]]` now wires a real `<PageHeader>` (new `PdfStudioHeaderControls`) instead of three column-owned chrome strips — the left/right sidebar collapse rows and the fat center `PdfStudioToolbar` (back + title + ~9 action buttons) are gone. Header (full shell width, matches `/tasks`): `PanelLeftTapButton` + back + `PdfStudioDocTitle` on the left, the page jumper centered, a `MoreHorizontalTapButton` overflow menu (pipeline / AI clean / knowledge assets / copy pages / find / refresh / download / share / open source) + `PanelRightTapButton` on the right — zero gap between tap buttons, default glass variant. Sidebar/inspector now collapse to width 0 (no chevron rail) and only reopen from the header toggles; each of the three body columns clears the glass header via `pt-[var(--shell-header-h)]` (tasks pattern). `PdfStudioToolbar.tsx` deleted — its page jumper moved into `PdfStudioHeaderControls`, its live pipeline/AI-clean status strip now renders inline in `PdfStudioShell` under the header, above the pane-visibility strip.
 - 2026-07-10 — **PDF Widgets: Agent Settings opens with Surface tab.** Gear on
-  bound-agent rows passes `surfaceName: matrx-user/pdf-widgets` into
+  bound-agent rows passes `surfaceName: matrx-user/pdf-extractor` into
   `agentSettingsWindow` so Info | Surface panes appear (Surface = locked
   bind/mapping editor for that agent on this surface).
 - 2026-07-10 — **PDF Widgets: surface-bound agents + surface-first bind.** Inspector
   Widgets tab no longer hardcodes two shortcut UUIDs or links to `/agents/shortcuts`.
-  It lists agents from `useSurfaceBoundAgents("matrx-user/pdf-widgets")` (incl. default
+  It lists agents from `useSurfaceBoundAgents("matrx-user/pdf-extractor")` (incl. default
   contracts) and **Add custom agent** opens the new reusable `surfaceAgentBindWindow`
   (pick agent → scope → map values → bind). Run uses `launchAgent` with the full
   pdf-widgets application scope. Ask-this-document uses the first bound/default agent.

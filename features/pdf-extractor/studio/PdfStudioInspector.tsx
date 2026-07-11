@@ -35,13 +35,13 @@ import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
-import { createPdfWidgetsScope } from "@/features/surfaces/manifests/pdf-widgets.manifest";
+import { createPdfExtractorScope } from "@/features/surfaces/manifests/pdf-extractor.manifest";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 
-const PDF_WIDGETS_SURFACE = "matrx-user/pdf-widgets";
+const PDF_EXTRACTOR_SURFACE = "matrx-user/pdf-extractor";
 
 // NOTE: Knowledge Assets is NOT a tab here. A sixth flex-1 tab overflowed this
 // narrow right rail (no horizontal scroll). The Knowledge Asset Builder now
@@ -110,9 +110,11 @@ export function PdfStudioInspector({
 
   return (
     <aside className="flex flex-col h-full min-h-0 border-l border-border bg-card/30">
-      {/* Sticky section nav */}
-      <div className="shrink-0 border-b border-border">
-        <div className="flex items-center gap-0.5 px-2 py-1.5">
+      {/* Section nav — the canonical studio sub-header row (same px-3 pt-2
+          pb-1.5 envelope + pill control as the sidebar's Files/Pages toggle,
+          so every column's top row reads at the same size, no lines). */}
+      <div className="shrink-0 px-3 pt-2 pb-1.5">
+        <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5 h-7 text-[10px]">
           {SECTIONS.map((s) => {
             const Icon = s.icon;
             const active = section === s.key;
@@ -122,7 +124,7 @@ export function PdfStudioInspector({
                 type="button"
                 onClick={() => setSection(s.key)}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1 h-7 rounded-md px-1.5 text-[10px] font-medium transition-colors",
+                  "flex-1 flex items-center justify-center gap-1 h-6 rounded-md px-1.5 transition-colors",
                   active
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -190,7 +192,7 @@ export function PdfStudioInspector({
   );
 }
 
-// ── AI Actions panel (surface-bound agents for pdf-widgets) ───────────────
+// ── AI Actions panel (surface-bound agents for pdf-extractor) ───────────────
 
 import { useToastManager } from "@/hooks/useToastManager";
 import { Button } from "@/components/ui/button";
@@ -250,7 +252,7 @@ function AiActionsPanel({
   const [rangeInput, setRangeInput] = useState("");
 
   const { sections: boundSections, refresh: refreshBoundAgents } =
-    useSurfaceBoundAgents(PDF_WIDGETS_SURFACE, {
+    useSurfaceBoundAgents(PDF_EXTRACTOR_SURFACE, {
       isEditable: false,
       includeDefaults: true,
     });
@@ -362,7 +364,7 @@ function AiActionsPanel({
     const fileId =
       doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : "";
 
-    return createPdfWidgetsScope({
+    return createPdfExtractorScope({
       full_document_text: fullText,
       current_page_text: currentPageText,
       page_range_text: pageRangeText,
@@ -389,7 +391,7 @@ function AiActionsPanel({
 
     try {
       await launchAgent(agentId, {
-        surfaceKey: `pdf-widgets:bound-agent:${agentId}`,
+        surfaceKey: `pdf-extractor:bound-agent:${agentId}`,
         sourceFeature: "pdf-extractor",
         config: {
           displayMode: "modal-full",
@@ -398,7 +400,7 @@ function AiActionsPanel({
         },
         runtime: {
           applicationScope: buildApplicationScope(),
-          surfaceName: PDF_WIDGETS_SURFACE,
+          surfaceName: PDF_EXTRACTOR_SURFACE,
           ...(userInput ? { userInput } : {}),
         },
       });
@@ -409,8 +411,8 @@ function AiActionsPanel({
 
   const handleAddAgent = () => {
     openBind({
-      surfaceName: PDF_WIDGETS_SURFACE,
-      surfaceLabel: "PDF Widgets",
+      surfaceName: PDF_EXTRACTOR_SURFACE,
+      surfaceLabel: "PDF Extractor",
       onBound: () => {
         void refreshBoundAgents();
       },
@@ -567,8 +569,8 @@ function AiActionsPanel({
 
       {hasContent && (
         <SurfaceBoundAgentsList
-          surfaceName={PDF_WIDGETS_SURFACE}
-          surfaceLabel="PDF Widgets"
+          surfaceName={PDF_EXTRACTOR_SURFACE}
+          surfaceLabel="PDF Extractor"
           onRunAgent={(agentId) => handleRunAgent(agentId)}
           runDisabled={!hasContent}
         />

@@ -142,6 +142,46 @@ export function referenceCellSummary(parsed: ParsedReferenceCell): string {
   return `${parsed.items.length} ${referenceTypeLabel(parsed.type)}${parsed.items.length === 1 ? "" : "s"}`;
 }
 
+/** Any shape carrying the `value_*` columns — `ContextItemValue`, `ScopeContextRow`, `ResolvedSuggestionValue`, … */
+export interface ContextCellLike {
+  value_text?: string | null;
+  value_number?: number | null;
+  value_boolean?: boolean | null;
+  value_date?: string | null;
+  value_json?: unknown;
+  value_document_url?: string | null;
+}
+
+/**
+ * THE ONE plain-text summary of a context item's cell for dense contexts
+ * that can't render JSX (grid/table cells, tooltips, CSV-style exports).
+ * `null` means genuinely unset — callers that need an empty-string fallback
+ * (a table cell) coalesce it themselves; callers that distinguish "no
+ * current value" from "current value is an empty string" (suggestion
+ * accept/reject diffing) get that distinction for free.
+ *
+ * Always prefer `ContextValueDisplay` (live chips, type-appropriate render)
+ * when the surface can render a component; reach for this only when it
+ * genuinely can't.
+ */
+export function summarizeContextCell(cell: ContextCellLike): string | null {
+  const referenceCell = parseReferenceCellValue(cell.value_text ?? null);
+  if (referenceCell) return referenceCellSummary(referenceCell);
+  if (cell.value_text != null && cell.value_text !== "") return cell.value_text;
+  if (cell.value_number != null) return String(cell.value_number);
+  if (cell.value_boolean != null) return cell.value_boolean ? "Yes" : "No";
+  if (cell.value_date != null) return cell.value_date;
+  if (cell.value_document_url) return cell.value_document_url;
+  if (cell.value_json != null) {
+    try {
+      return JSON.stringify(cell.value_json);
+    } catch {
+      return String(cell.value_json);
+    }
+  }
+  return null;
+}
+
 export type ReferenceCellValidation =
   { valid: true } | { valid: false; error: string };
 

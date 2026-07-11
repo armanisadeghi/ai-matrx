@@ -155,6 +155,7 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
               className="font-mono text-sm"
               placeholder="{ }"
               disabled={busy}
+              enableTextStats={false}
             />
             {jsonError && (
               <p className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1">

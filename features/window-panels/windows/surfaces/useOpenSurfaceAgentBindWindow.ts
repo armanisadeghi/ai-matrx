@@ -5,7 +5,7 @@
  *
  *   const openBind = useOpenSurfaceAgentBindWindow();
  *   openBind({
- *     surfaceName: "matrx-user/pdf-widgets",
+ *     surfaceName: "matrx-user/pdf-extractor",
  *     onBound: (e) => refreshBoundAgents(),
  *   });
  */

@@ -125,40 +125,45 @@ function PaneHeader({
 }) {
   const hasActions = !!(onCopyAll || onClose);
   return (
-    <div className="shrink-0 px-2.5 py-1.5 border-b border-border flex items-center gap-1.5">
-      <Boxes className="w-3 h-3 text-primary" />
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
-        {RAG_VOCAB.segmentsShort}
-      </span>
-      {activePage != null && (
-        <span className="text-[10px] text-muted-foreground">
-          · Page {activePage}
-          {total > 0 && ` · ${rowCount}${total > rowCount ? `/${total}` : ""}`}
+    // Canonical studio sub-header row — matches every other column's top
+    // row (px-3 pt-2 pb-1.5 / h-7, no border).
+    <div className="shrink-0 px-3 pt-2 pb-1.5">
+      <div className="h-7 flex items-center gap-1.5">
+        <Boxes className="w-3 h-3 text-primary" />
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
+          {RAG_VOCAB.segmentsShort}
         </span>
-      )}
-      {status === "loading" && (
-        <Loader2 className="w-3 h-3 text-muted-foreground/70 animate-spin ml-1" />
-      )}
-      {hasActions && (
-        <div className="ml-auto flex items-center gap-0.5">
-          {onCopyAll && (
-            <CopyButton
-              getText={onCopyAll}
-              label={`Copy all ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
-            />
-          )}
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
-              title="Hide pane"
-            >
-              <EyeOff className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-      )}
+        {activePage != null && (
+          <span className="text-[10px] text-muted-foreground">
+            · Page {activePage}
+            {total > 0 &&
+              ` · ${rowCount}${total > rowCount ? `/${total}` : ""}`}
+          </span>
+        )}
+        {status === "loading" && (
+          <Loader2 className="w-3 h-3 text-muted-foreground/70 animate-spin ml-1" />
+        )}
+        {hasActions && (
+          <div className="ml-auto flex items-center gap-0.5">
+            {onCopyAll && (
+              <CopyButton
+                getText={onCopyAll}
+                label={`Copy all ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
+              />
+            )}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
+                title="Hide pane"
+              >
+                <EyeOff className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

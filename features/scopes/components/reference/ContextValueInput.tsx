@@ -182,6 +182,7 @@ export function ContextValueInput({
       }
       autoGrow
       disabled={disabled}
+      enableTextStats={false}
     />
   );
 }

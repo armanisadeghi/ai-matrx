@@ -324,6 +324,7 @@ export function NewScopeInline({
                   minHeight={80}
                   maxHeight={600}
                   autoGrow
+                  enableTextStats={false}
                 />
                 {item.description && (
                   <p className="text-xs text-muted-foreground">
@@ -382,6 +383,7 @@ export function NewScopeInline({
                   minHeight={80}
                   maxHeight={600}
                   autoGrow
+                  enableTextStats={false}
                 />
               </div>
             ))}

@@ -1,12 +1,11 @@
 /**
- * Surface manifest — PDF Widgets (`matrx-user/pdf-widgets`).
+ * Surface manifest — PDF Extractor (`matrx-user/pdf-extractor`).
  *
- * Drives the **Widgets** tab in the PDF Studio inspector (the right-hand
- * panel of `/pdf-extractor/...`). This is the "one-shot agent on a
- * document" surface — distinct from `matrx-user/content-extractor`,
+ * Drives one-shot agent runs on `/tools/pdf-extractor` (AI Actions / bound
+ * agents). Distinct from the child surface `matrx-user/extractor-chunker`,
  * which runs an agent chunk-by-chunk.
  *
- * The Widgets tab shows a 4-way scope picker (Full doc / Current page /
+ * The extractor shows a 4-way scope picker (Full doc / Current page /
  * Page range / Selected text) and a list of agent shortcuts attached
  * to this surface. The picker is for the *default* run target — but
  * **every scope is exposed as its own named SurfaceValue regardless of
@@ -21,7 +20,7 @@
  * exposing a value costs the user permanent access. Default to "yes,
  * expose it" — the binding editor groups things for readability.
  *
- * The chunked-run sibling surface (`matrx-user/content-extractor`)
+ * The chunked-run child surface (`matrx-user/extractor-chunker`)
  * inherits every value declared here so an agent that wires
  * `full_document_text` works in both surfaces. Whether each value is
  * *populated* at runtime in the chunked surface is a per-value
@@ -37,10 +36,10 @@ import type {
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 /**
- * Values the Widgets surface emits. The chunked-run surface re-exports
- * these via `getPdfWidgetsSurfaceSpecificValues()` below, so this array
- * is also the source of truth for "everything content-extractor
- * inherits from pdf-widgets."
+ * Values the PDF Extractor surface emits. The chunked-run child re-exports
+ * these via `getPdfExtractorSurfaceSpecificValues()` below, so this array
+ * is also the source of truth for "everything extractor-chunker
+ * inherits from pdf-extractor."
  *
  * Sort order groups (drives dropdown order in the binding editor):
  *
@@ -186,8 +185,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
-export const pdfWidgetsManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/pdf-widgets",
+export const pdfExtractorManifest: SurfaceManifest = {
+  surfaceName: "matrx-user/pdf-extractor",
+  label: "PDF Extractor",
   values: mergeBaselineValues(
     // Registry also injects the full baseline set. These overrides win so
     // the bind UI doesn't lead with generic editor labels ("Current
@@ -226,7 +226,7 @@ export const pdfWidgetsManifest: SurfaceManifest = {
         name: "text_before",
         label: "Text before (unused here)",
         description:
-          "Baseline editor value — not populated on PDF Widgets (no in-region caret). Kept so generic agents that map to it still resolve to empty rather than fail.",
+          "Baseline editor value — not populated on PDF Extractor (no in-region caret). Kept so generic agents that map to it still resolve to empty rather than fail.",
         valueType: "string",
         alwaysAvailable: false,
         typicalCharCount: 0,
@@ -236,7 +236,7 @@ export const pdfWidgetsManifest: SurfaceManifest = {
         name: "text_after",
         label: "Text after (unused here)",
         description:
-          "Baseline editor value — not populated on PDF Widgets. Kept for generic-agent compatibility; resolves empty.",
+          "Baseline editor value — not populated on PDF Extractor. Kept for generic-agent compatibility; resolves empty.",
         valueType: "string",
         alwaysAvailable: false,
         typicalCharCount: 0,
@@ -256,12 +256,12 @@ export const pdfWidgetsManifest: SurfaceManifest = {
 };
 
 /** Convenience accessor — the chunked-run surface inherits these values verbatim. */
-export function getPdfWidgetsSurfaceSpecificValues(): readonly SurfaceValue[] {
+export function getPdfExtractorSurfaceSpecificValues(): readonly SurfaceValue[] {
   return surfaceSpecific;
 }
 
 /**
- * Type-safe payload helper. The PDF Widgets surface code calls this
+ * Type-safe payload helper. The PDF Extractor surface code calls this
  * when assembling its `ApplicationScope` so TypeScript catches missing
  * required keys and unknown keys at the callsite.
  *
@@ -273,7 +273,7 @@ export function getPdfWidgetsSurfaceSpecificValues(): readonly SurfaceValue[] {
  * `full_document_text` so existing agents wired to the baseline keys
  * keep working.
  */
-export function createPdfWidgetsScope(values: {
+export function createPdfExtractorScope(values: {
   // alwaysAvailable: true → required
   full_document_text: string;
   current_page_text: string;

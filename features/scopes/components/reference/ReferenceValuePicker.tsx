@@ -37,7 +37,7 @@ import {
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { fetchEntityTitles } from "@/features/scopes/service/entityTitles";
-import { referenceFallbackLabel } from "@/features/matrx-envelope/referenceResolvers";
+import { useResolvedReferenceLabel } from "@/features/matrx-envelope/referenceResolvers";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import {
@@ -198,16 +198,21 @@ function PickerChip({
   onRemove?: () => void;
 }) {
   const hints = item as unknown as { url?: string; label?: string };
-  const label =
-    type === "url" && hints.url && !hints.label
-      ? hints.url
-      : referenceFallbackLabel(item, type);
+  // Live-resolve, same as the read-only ReferenceChip — a baked-in `label` is
+  // only a first-paint head start, never the source of truth. This is what a
+  // backfilled cell (no label at all) or a renamed entity (stale label) needs
+  // to still show the real current name here instead of a bare type name.
+  const { display, status } = useResolvedReferenceLabel(item, type);
+  const label = type === "url" && hints.url && !hints.label ? hints.url : display;
   const Icon = type === "url" ? Link2 : type === "file" ? FileText : null;
 
   return (
     <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-border bg-muted px-2 py-0.5 text-sm text-foreground">
       {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
       <span className="truncate">{label}</span>
+      {status === "loading" && (
+        <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
+      )}
       {onRemove && (
         <button
           type="button"

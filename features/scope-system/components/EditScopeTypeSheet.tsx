@@ -387,6 +387,7 @@ export function EditScopeTypeSheet({
               maxHeight={600}
               autoGrow
               disabled={busy}
+              enableTextStats={false}
             />
           </div>
 

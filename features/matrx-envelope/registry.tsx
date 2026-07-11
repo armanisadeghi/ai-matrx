@@ -15,7 +15,6 @@
  */
 
 import type { ComponentType } from "react";
-import { useEffect, useRef, useState } from "react";
 import {
   Link2,
   List,
@@ -40,7 +39,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { supabase } from "@/utils/supabase/client";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import type {
   MatrxEnvelope,
@@ -49,7 +47,7 @@ import type {
 import {
   coerceRefToStrings,
   getReferenceResolver,
-  referenceFallbackLabel,
+  useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
 import CreateProjectWithTasksRenderer from "@/features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer";
 
@@ -153,13 +151,10 @@ function chipIcon(type: string): ComponentType<{ className?: string }> {
   }
 }
 
-type ChipStatus = "idle" | "loading" | "ready" | "fallback";
-
 /**
  * One live reference chip. Its own component (a stable boundary) so it can use
- * hooks — the LIVE-value fetch effect + the window-panel opener. Mirrors
- * `useEnrichItem`: keyed on the item ids, `cancelled` guard, soft-fail, never
- * throws. Always shows SOMETHING (the item's display hint while loading / on miss).
+ * hooks — the window-panel opener + the shared live-resolution hook. Always
+ * shows SOMETHING (the item's display hint while loading / on miss).
  */
 function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
   const open = useOpenItemPresentation();
@@ -167,54 +162,9 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
   // whole item to string fields (resolvers read only the id keys they need).
   const ref = coerceRefToStrings(item, `${type} chip`);
   const resolver = getReferenceResolver(type);
-  const fallback = referenceFallbackLabel(item, type);
-
-  const [value, setValue] = useState<string | undefined>(undefined);
-  const [status, setStatus] = useState<ChipStatus>("idle");
-  const lastKey = useRef<string | null>(null);
-
-  // Stable dependency key over the ref's values so the effect re-runs on change.
-  const refKey = JSON.stringify(ref);
-
-  useEffect(() => {
-    if (!resolver) {
-      setStatus("fallback");
-      return undefined;
-    }
-    const key = `${type}:${refKey}`;
-    if (lastKey.current === key) return undefined;
-    lastKey.current = key;
-
-    let cancelled = false;
-    setStatus("loading");
-
-    // Defend the "never throws" contract at the call site too — a synchronous
-    // throw in a (future) resolver or getter degrades to fallback, never bubbles.
-    Promise.resolve()
-      .then(() => resolver.resolveValue(supabase, ref))
-      .then((v) => {
-        if (cancelled) return;
-        if (typeof v === "string" && v.length > 0) {
-          setValue(v);
-          setStatus("ready");
-        } else {
-          setStatus("fallback");
-        }
-      })
-      .catch(() => {
-        if (cancelled) return;
-        // Enhancement, not a requirement — degrade to display.label.
-        setStatus("fallback");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-    // refKey captures the ref contents; resolver is stable per type.
-  }, [type, refKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { display, status } = useResolvedReferenceLabel(item, type);
 
   const Icon = chipIcon(type);
-  const display = status === "ready" && value ? value : fallback;
 
   // `url` has no Matrx-owned entity to open in a window panel — it opens the
   // link itself in a new tab, bypassing the item-presentation opener.

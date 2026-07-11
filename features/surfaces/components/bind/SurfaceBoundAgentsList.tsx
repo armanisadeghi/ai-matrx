@@ -3,35 +3,27 @@
 /**
  * features/surfaces/components/bind/SurfaceBoundAgentsList.tsx
  *
- * The drop-in "agents on this surface" list used by product surfaces
- * (PDF Widgets is the reference). Lists agents bound to `surfaceName`,
- * offers Run / Settings per row, and an "Add custom agent" button that
- * opens the canonical `surfaceAgentBindWindow`. Settings opens
- * `agentSettingsWindow` with `surfaceName` so the Surface bindings tab
- * appears for in-context mapping edits.
+ * Drop-in "agents on this surface" list. Sections with agents only:
+ *   Public · Mine · Org names · Shared with me
  *
- * Surfaces own launch semantics (scope building, display mode) via
- * `onRunAgent`. This component owns bind/list/refresh only.
+ * Compact single-line rows: Play · name · Settings · Detach (when bound here).
  */
 
-import { useEffect, useMemo } from "react";
-import { Loader2, Play, Plus, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Play, Plus, Settings, Unlink } from "lucide-react";
+import { toast } from "sonner";
 
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
+import { unbindAgentFromSurface } from "@/features/surfaces/services/bind-agent-to-surface.service";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-
-export interface SurfaceBoundAgentRow {
-  agentId: string;
-  name: string;
-  bindingId: string;
-  sectionLabel: string;
-}
+import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
 
 export interface SurfaceBoundAgentsListProps {
   surfaceName: string;
-  /** Human label shown in the bind window (e.g. "PDF Widgets"). */
+  /** Human label shown in the bind / settings windows (e.g. "PDF Extractor"). */
   surfaceLabel: string;
   /**
    * Called when the user hits Play. Surfaces build their own
@@ -46,8 +38,6 @@ export interface SurfaceBoundAgentsListProps {
   isEditable?: boolean;
   includeDefaults?: boolean;
   className?: string;
-  /** Override the section heading. */
-  heading?: string;
   /** Override the empty-state copy. */
   emptyMessage?: string;
   /** Override the add-button label. */
@@ -63,7 +53,6 @@ export function SurfaceBoundAgentsList({
   isEditable = false,
   includeDefaults = true,
   className,
-  heading = "Agents on this surface",
   emptyMessage = "No agents bound yet. Add one to run it here.",
   addLabel = "Add custom agent",
 }: SurfaceBoundAgentsListProps) {
@@ -74,25 +63,13 @@ export function SurfaceBoundAgentsList({
     { isEditable, includeDefaults },
   );
 
+  const [detachTarget, setDetachTarget] =
+    useState<SurfaceBoundAgentEntry | null>(null);
+  const [detachBusy, setDetachBusy] = useState(false);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  // Flat list: one row per agentId (first section wins). Context menus keep
-  // sectioned lists; a duplicate key here was from the same binding landing
-  // in both "My agents" and an org bucket before that was fixed.
-  const agents = useMemo(() => {
-    const seen = new Set<string>();
-    const out: SurfaceBoundAgentRow[] = [];
-    for (const s of sections) {
-      for (const a of s.agents) {
-        if (seen.has(a.agentId)) continue;
-        seen.add(a.agentId);
-        out.push({ ...a, sectionLabel: s.label });
-      }
-    }
-    return out;
-  }, [sections]);
 
   const handleAdd = () => {
     openBind({
@@ -106,12 +83,10 @@ export function SurfaceBoundAgentsList({
 
   if (hideWhenEmpty && !loading && !hasAgents) return null;
 
-  return (
-    <div className={cn("space-y-1.5", className)}>
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-        {heading}
-      </p>
+  const visibleSections = sections.filter((s) => s.agents.length > 0);
 
+  return (
+    <div className={cn("space-y-3", className)}>
       {loading && !hasAgents && (
         <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
@@ -125,55 +100,106 @@ export function SurfaceBoundAgentsList({
         </p>
       )}
 
-      {agents.map((a) => (
-        <div
-          key={a.agentId}
-          className="flex items-center gap-2 px-2.5 py-2 bg-card border border-border rounded-md"
-        >
-          <button
-            type="button"
-            title={`Run ${a.name}`}
-            aria-label={`Run ${a.name}`}
-            disabled={runDisabled}
-            onClick={() => void onRunAgent(a.agentId)}
-            className="shrink-0 w-7 h-7 rounded-md bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium leading-tight truncate">
-              {a.name}
-            </p>
-            <p className="text-[10px] text-muted-foreground leading-snug mt-0.5 truncate">
-              {a.sectionLabel}
-            </p>
+      {visibleSections.map((section) => (
+        <div key={section.key} className="space-y-1">
+          <p className="px-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            {section.label}
+          </p>
+          <div className="space-y-0.5">
+            {section.agents.map((a) => (
+              <div
+                key={`${section.key}:${a.agentId}`}
+                className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-1.5"
+              >
+                <button
+                  type="button"
+                  title={`Run ${a.name}`}
+                  aria-label={`Run ${a.name}`}
+                  disabled={runDisabled}
+                  onClick={() => void onRunAgent(a.agentId)}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-primary hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <Play className="h-3 w-3 fill-current" />
+                </button>
+                <p className="min-w-0 flex-1 truncate text-xs font-medium leading-none">
+                  {a.name}
+                </p>
+                <button
+                  type="button"
+                  title={`Settings for ${a.name}`}
+                  aria-label={`Settings for ${a.name}`}
+                  onClick={() =>
+                    openSettings({
+                      initialAgentId: a.agentId,
+                      surfaceName,
+                      surfaceLabel,
+                    })
+                  }
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  <Settings className="h-3 w-3" />
+                </button>
+                {a.canDetach && (
+                  <button
+                    type="button"
+                    title={`Remove ${a.name} from ${surfaceLabel}`}
+                    aria-label={`Remove ${a.name} from ${surfaceLabel}`}
+                    onClick={() => setDetachTarget(a)}
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  >
+                    <Unlink className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
-          <button
-            type="button"
-            title={`Settings for ${a.name}`}
-            aria-label={`Settings for ${a.name}`}
-            onClick={() =>
-              openSettings({
-                initialAgentId: a.agentId,
-                surfaceName,
-                surfaceLabel,
-              })
-            }
-            className="shrink-0 w-7 h-7 rounded-md text-muted-foreground flex items-center justify-center hover:bg-accent hover:text-foreground transition-colors"
-          >
-            <Settings className="w-3.5 h-3.5" />
-          </button>
         </div>
       ))}
 
       <button
         type="button"
         onClick={handleAdd}
-        className="flex w-full items-center justify-center gap-1 px-2.5 py-2 bg-muted/30 border border-dashed border-border rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
+        className="flex h-7 w-full items-center justify-center gap-1 rounded-md border border-dashed border-border bg-muted/30 px-2 text-[10px] text-muted-foreground hover:bg-accent/40 hover:text-foreground transition-colors"
       >
-        <Plus className="w-3 h-3" />
+        <Plus className="h-3 w-3" />
         <span>{addLabel}</span>
       </button>
+
+      <ConfirmDialog
+        open={!!detachTarget}
+        onOpenChange={(open) => {
+          if (!open && !detachBusy) setDetachTarget(null);
+        }}
+        title="Remove from surface"
+        description={
+          <>
+            Remove <b>{detachTarget?.name}</b> from <b>{surfaceLabel}</b>? It
+            will no longer appear here or in this surface&apos;s context menu.
+          </>
+        }
+        confirmLabel="Remove"
+        variant="destructive"
+        busy={detachBusy}
+        onConfirm={async () => {
+          if (!detachTarget) return;
+          setDetachBusy(true);
+          try {
+            await unbindAgentFromSurface({
+              agentId: detachTarget.agentId,
+              surfaceName,
+            });
+            toast.success(`Removed from ${surfaceLabel}`);
+            setDetachTarget(null);
+            void refresh();
+          } catch (e) {
+            toast.error(
+              e instanceof Error ? e.message : "Could not remove agent",
+            );
+          } finally {
+            setDetachBusy(false);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -58,6 +58,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "sonner";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { FindReplaceBar } from "./FindReplaceBar";
 import { FindMatchOverlay } from "./FindMatchOverlay";
@@ -588,7 +589,12 @@ export function NoteContentEditor({
 
   // ── Render ────────────────────────────────────────────────────────
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+      surfaceLabel="Notes"
+      getScope={getApplicationScope}
+      isEditable={!readOnly}
+    >
       {/* Conflict resolution window */}
       {conflictRemote != null && (
         <NoteConflictWindow
@@ -724,7 +730,7 @@ export function NoteContentEditor({
         noteId={noteId}
         noteLabel={noteLabel}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
 

@@ -267,6 +267,7 @@ export function ScopeDetailEditor({
                   onChange={(e) => setDescriptionDraft(e.target.value)}
                   placeholder="Describe this scope (optional)"
                   disabled={savingDescription}
+                  enableTextStats={false}
                 />
                 <div className="flex items-center gap-2">
                   <Button

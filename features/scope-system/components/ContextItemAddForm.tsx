@@ -300,6 +300,7 @@ export function ContextItemAddForm({
             maxHeight={600}
             autoGrow
             className="mt-0.5"
+            enableTextStats={false}
           />
         </div>
       )}

@@ -173,9 +173,12 @@ export type SourceFeature =
 
   // ── Content extraction ───────────────────────────────────────────────────
   | "content-extractor"
+  | "extractor-chunker"
 
   // ── PDF (`pdf-*`) ────────────────────────────────────────────────────────
   | "pdf-widgets"
+  | "analysis-studio"
+  | "scanner"
   /** PDF Extractor studio + floating workspace (`/tools/pdf-extractor`, pdfExtractorWindow). */
   | "pdf-extractor"
 
@@ -190,6 +193,13 @@ export type SourceFeature =
   // ── Official components (reusable AI chrome) ─────────────────────────────
   /** Agent panel mounted inside `<ProTextarea>` (`ProTextareaAgentPanel`). */
   | "pro-textarea"
+  /**
+   * Universal shell-header Agents chrome (`SurfaceAgentsHeaderButton`).
+   * One literal for every page that launches via the shared surface agents
+   * popover — not a product surface; the real `runtime.surfaceName` carries
+   * the page identity.
+   */
+  | "surface-chrome"
 
   // ── Tool call visualization (admin) ──────────────────────────────────────
   /** Admin tool UI component generator (`useToolComponentAgent`). */

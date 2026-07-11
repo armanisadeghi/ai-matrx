@@ -71,25 +71,30 @@ export function BoundAgentsMenuSection({
             No agents available
           </div>
         ) : (
-          sections.map((section, sectionIdx) => (
-            <React.Fragment key={`${section.label}-${sectionIdx}`}>
-              {sectionIdx > 0 && (
-                <div className="my-1 border-t border-border" role="separator" />
-              )}
-              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">
-                {section.label.toUpperCase()}
-              </Label>
-              {section.agents.map((agent) => (
-                <Item
-                  key={`${section.label}:${agent.agentId}`}
-                  onSelect={() => onSelect(agent)}
-                >
-                  <Bot className="h-4 w-4 mr-2 text-indigo-500/80" />
-                  <span className="truncate">{agent.name}</span>
-                </Item>
-              ))}
-            </React.Fragment>
-          ))
+          sections
+            .filter((section) => section.agents.length > 0)
+            .map((section, sectionIdx) => (
+              <React.Fragment key={section.key}>
+                {sectionIdx > 0 && (
+                  <div
+                    className="my-1 border-t border-border"
+                    role="separator"
+                  />
+                )}
+                <Label className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">
+                  {section.label.toUpperCase()}
+                </Label>
+                {section.agents.map((agent) => (
+                  <Item
+                    key={`${section.key}:${agent.agentId}`}
+                    onSelect={() => onSelect(agent)}
+                  >
+                    <Bot className="h-4 w-4 mr-2 text-indigo-500/80" />
+                    <span className="truncate">{agent.name}</span>
+                  </Item>
+                ))}
+              </React.Fragment>
+            ))
         )}
       </SubContent>
     </Sub>
