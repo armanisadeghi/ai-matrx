@@ -57,7 +57,7 @@ type ObjectFrame = {
   path: JsonPath;
   value: Record<string, unknown>;
   expecting: "keyOrEnd" | "key" | "colon" | "value" | "commaOrEnd";
-  currentKey?: string;
+  currentKey?: string | undefined;
   keyCount: number;
 };
 
@@ -489,12 +489,12 @@ export class KindStreamParser {
     if (!ownerKind) return null;
 
     const fieldSchema = this.lookupSchema(ownerKind)?.fields[fieldName];
-    if (
-      fieldSchema?.type === "array" &&
-      fieldSchema.itemKinds.length === 1 &&
-      this.lookupSchema(fieldSchema.itemKinds[0])
-    ) {
-      return fieldSchema.itemKinds[0];
+    const soleItemKind =
+      fieldSchema?.type === "array" && fieldSchema.itemKinds.length === 1
+        ? fieldSchema.itemKinds[0]
+        : undefined;
+    if (soleItemKind !== undefined && this.lookupSchema(soleItemKind)) {
+      return soleItemKind;
     }
     return null;
   }
@@ -1077,8 +1077,8 @@ export class KindStreamParser {
       type: "kind_wait_end",
       path,
       outcome,
-      kind,
-      reason,
+      ...(kind !== undefined && { kind }),
+      ...(reason !== undefined && { reason }),
       at,
     });
   }
@@ -1144,6 +1144,9 @@ export class KindStreamParser {
     const pathKey = this.pathKey(path);
     for (let i = this.stack.length - 1; i >= 0; i--) {
       const frame = this.stack[i];
+      // `i` ranges over [0, stack.length) by construction, so `frame` is
+      // always defined here — unreachable, satisfies noUncheckedIndexedAccess.
+      if (!frame) continue;
       if (frame.kind === "object" && this.pathKey(frame.path) === pathKey) {
         return frame.value;
       }

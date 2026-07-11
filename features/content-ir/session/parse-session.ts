@@ -57,7 +57,9 @@ export class ParseSession {
 
     this.parser = createKindStreamParser({
       schemas: options.schemas,
-      expectedRootKind: options.expectedRootKind,
+      ...(options.expectedRootKind !== undefined && {
+        expectedRootKind: options.expectedRootKind,
+      }),
       onEvent: (event) => {
         this.tree.applyEvent(event);
         options.onEvent?.(event);

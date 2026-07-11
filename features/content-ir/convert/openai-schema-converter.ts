@@ -17,6 +17,24 @@ import {
 } from "../core/kind-schema.types";
 import { formatBlockLabel } from "../core/schema-structure";
 
+/**
+ * `FieldSchema.required`/`nullable` are `boolean | undefined` by omission —
+ * every consumer only ever does a truthy check (`field.required`), never
+ * `'required' in field`. Building the flags this way (key present only when
+ * true) is behavior-identical to the old `required: required || undefined`
+ * under exactOptionalPropertyTypes, which forbids an explicit `undefined`
+ * value for an optional key.
+ */
+function requiredNullableFlags(
+  required: boolean,
+  nullable?: boolean,
+): { required?: true; nullable?: true } {
+  return {
+    ...(required ? { required: true } : {}),
+    ...(nullable ? { nullable: true } : {}),
+  };
+}
+
 export type JsonSchemaNode = Record<string, unknown>;
 
 export type ConversionProblem = {
@@ -357,8 +375,7 @@ function convertProperty(
       }
       if (nullable) {
         return {
-          required: required || undefined,
-          nullable: true,
+          ...requiredNullableFlags(required, true),
           type: "string",
         };
       }
@@ -370,7 +387,7 @@ function convertProperty(
         message: `Converted anyOf/oneOf to union of scalars: ${[...scalarTypes].join(", ")}.`,
       });
       return {
-        required: required || undefined,
+        ...requiredNullableFlags(required),
         type: "union",
         scalars: [...scalarTypes],
       };
@@ -413,31 +430,27 @@ function convertProperty(
         });
       }
       return {
-        required: required || undefined,
-        nullable: nullable || undefined,
+        ...requiredNullableFlags(required, nullable),
         type: "enum",
         values,
       };
     }
     return {
-      required: required || undefined,
-      nullable: nullable || undefined,
+      ...requiredNullableFlags(required, nullable),
       type: "string",
     };
   }
 
   if (type === "number") {
     return {
-      required: required || undefined,
-      nullable: nullable || undefined,
+      ...requiredNullableFlags(required, nullable),
       type: "number",
     };
   }
 
   if (type === "boolean") {
     return {
-      required: required || undefined,
-      nullable: nullable || undefined,
+      ...requiredNullableFlags(required, nullable),
       type: "boolean",
     };
   }
@@ -467,22 +480,19 @@ function convertProperty(
 
     if (itemType === "string") {
       return {
-        required: required || undefined,
-        nullable: nullable || undefined,
+        ...requiredNullableFlags(required, nullable),
         type: "string[]",
       };
     }
     if (itemType === "number") {
       return {
-        required: required || undefined,
-        nullable: nullable || undefined,
+        ...requiredNullableFlags(required, nullable),
         type: "number[]",
       };
     }
     if (itemType === "boolean") {
       return {
-        required: required || undefined,
-        nullable: nullable || undefined,
+        ...requiredNullableFlags(required, nullable),
         type: "boolean[]",
       };
     }
@@ -546,8 +556,7 @@ function convertProperty(
       }
 
       return {
-        required: required || undefined,
-        nullable: nullable || undefined,
+        ...requiredNullableFlags(required, nullable),
         type: "array",
         itemKinds: [itemKindSlug],
       };
@@ -587,16 +596,14 @@ function convertProperty(
 
     if (referencedKind) {
       return {
-        required: required || undefined,
-        nullable: nullable || undefined,
+        ...requiredNullableFlags(required, nullable),
         type: "object",
         kind: referencedKind,
       };
     }
 
     return {
-      required: required || undefined,
-      nullable: nullable || undefined,
+      ...requiredNullableFlags(required, nullable),
       type: "inline_object",
       fields: nestedFields,
     };
@@ -839,10 +846,9 @@ function compareFieldSchemas(
         : blockRicher
           ? "block_richer"
           : "type_mismatch",
-      detail:
-        aiSummary !== blockSummary
-          ? `${aiSummary} vs ${blockSummary}`
-          : undefined,
+      ...(aiSummary !== blockSummary && {
+        detail: `${aiSummary} vs ${blockSummary}`,
+      }),
     };
   }
 

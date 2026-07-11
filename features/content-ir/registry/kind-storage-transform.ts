@@ -224,7 +224,13 @@ function restoreField(
           `object field "${path}" must have exactly one edge, found ${list.length}.`,
         );
       }
-      return { ...b, type: "object", kind: list[0].childKind };
+      const [edge] = list;
+      if (!edge) {
+        throw new KindStorageError(
+          `object field "${path}" must have exactly one edge, found 0.`,
+        );
+      }
+      return { ...b, type: "object", kind: edge.childKind };
     }
 
     case "array": {

@@ -115,7 +115,9 @@ export function normalizeJsonRegion(
   const tree = new IrTree();
   const parser = createKindStreamParser({
     schemas: options.schemas,
-    expectedRootKind: options.expectedRootKind,
+    ...(options.expectedRootKind !== undefined && {
+      expectedRootKind: options.expectedRootKind,
+    }),
     onEvent(event) {
       tree.applyEvent(event);
     },

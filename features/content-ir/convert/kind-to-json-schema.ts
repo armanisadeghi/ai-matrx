@@ -189,9 +189,10 @@ export function kindSchemaToJsonSchema(
           : refFor(field.kind);
 
       case "array": {
+        const [soleItemKind] = field.itemKinds;
         const items =
-          field.itemKinds.length === 1
-            ? refFor(field.itemKinds[0])
+          field.itemKinds.length === 1 && soleItemKind !== undefined
+            ? refFor(soleItemKind)
             : { anyOf: field.itemKinds.map(refFor) };
         return { type: withNull("array", field.nullable), items };
       }

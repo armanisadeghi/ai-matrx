@@ -95,7 +95,10 @@ describe("ParseSession + IrTree", () => {
 
     // Root's cards array reflects the child update via the COW spine.
     const rootCards = rootAfter?.value.cards as Array<Record<string, unknown>>;
-    expect(rootCards[2].back).toBe("c");
+    const rootCard2 = rootCards[2];
+    expect(rootCard2).toBeDefined();
+    if (!rootCard2) throw new Error("unreachable");
+    expect(rootCard2.back).toBe("c");
     // Unchanged siblings inside the root value keep identity too.
     expect(rootCards[0]).toBe(card0Before?.value);
   });
@@ -246,7 +249,10 @@ describe("pending-schema through the session (registry hook)", () => {
     expect(deliverers).toHaveLength(1);
 
     // Registry answers while the region is still live — upgrade in place.
-    deliverers[0]("timeline", {
+    const deliver = deliverers[0];
+    expect(deliver).toBeDefined();
+    if (!deliver) throw new Error("unreachable");
+    deliver("timeline", {
       kind: "timeline",
       fields: { title: { type: "string", required: true } },
     });

@@ -10,6 +10,23 @@
 
 import type { KindSchema } from "../../core/kind-schema.types";
 
+/**
+ * Looks up a kind in a fixture schema map, throwing loudly if it's missing.
+ * A fixture that silently yields `undefined` for an expected kind is a bad
+ * fixture — this makes the failure a clear error instead of a downstream
+ * type error or an inscrutable runtime crash.
+ */
+export function requireSchema(
+  schemas: Record<string, KindSchema>,
+  kind: string,
+): KindSchema {
+  const schema = schemas[kind];
+  if (!schema) {
+    throw new Error(`fixture bug: no schema registered for kind "${kind}"`);
+  }
+  return schema;
+}
+
 export const FLASHCARD_SCHEMAS: Record<string, KindSchema> = {
   flashcard_set: {
     kind: "flashcard_set",
@@ -94,7 +111,7 @@ export const SPECULATION_SCHEMAS: Record<string, KindSchema> = {
       },
     },
   },
-  flashcard: FLASHCARD_SCHEMAS.flashcard,
+  flashcard: requireSchema(FLASHCARD_SCHEMAS, "flashcard"),
 };
 
 export const FLASHCARD_SET_JSON = JSON.stringify({

@@ -71,7 +71,8 @@ describe("KindStreamParser goldens (flashcard fixture)", () => {
     // front arrives, then back, then topic → at least one partial before close.
     expect(card0Snapshots.length).toBeGreaterThanOrEqual(1);
     const first = card0Snapshots[0];
-    if (first.type !== "block_snapshot") throw new Error("unreachable");
+    expect(first).toBeDefined();
+    if (!first || first.type !== "block_snapshot") throw new Error("unreachable");
     expect(first.value.__kind).toBe("flashcard");
     expect(typeof first.value.front).toBe("string");
   });
@@ -82,7 +83,8 @@ describe("KindStreamParser goldens (flashcard fixture)", () => {
       (e) => e.type === "block_snapshot" && irPathKey(e.path) === "",
     );
     const last = rootSnapshots[rootSnapshots.length - 1];
-    if (last.type !== "block_snapshot") throw new Error("unreachable");
+    expect(last).toBeDefined();
+    if (!last || last.type !== "block_snapshot") throw new Error("unreachable");
 
     expect(last.value.audio_url).toBeUndefined();
     expect(last.residue?.extra?.audio_url).toBe("https://example.com/set.mp3");
@@ -91,7 +93,8 @@ describe("KindStreamParser goldens (flashcard fixture)", () => {
       (e) => e.type === "block_snapshot" && irPathKey(e.path) === "cards.0",
     );
     const lastCard = cardSnapshots[cardSnapshots.length - 1];
-    if (lastCard.type !== "block_snapshot") throw new Error("unreachable");
+    expect(lastCard).toBeDefined();
+    if (!lastCard || lastCard.type !== "block_snapshot") throw new Error("unreachable");
     expect(lastCard.residue?.extra).toEqual({
       image_ref: "img-123",
       sources: ["textbook-ch4"],

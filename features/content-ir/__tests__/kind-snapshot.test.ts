@@ -2,9 +2,9 @@ import {
   buildCompliantKindSnapshot,
   mergeResidueIntoValue,
 } from "../core/kind-snapshot";
-import { FLASHCARD_SCHEMAS } from "./fixtures/flashcards-fixture";
+import { FLASHCARD_SCHEMAS, requireSchema } from "./fixtures/flashcards-fixture";
 
-const flashcard = FLASHCARD_SCHEMAS.flashcard;
+const flashcard = requireSchema(FLASHCARD_SCHEMAS, "flashcard");
 
 describe("buildCompliantKindSnapshot residue channel", () => {
   it("stamps __kind and fills missing required fields with typed placeholders", () => {

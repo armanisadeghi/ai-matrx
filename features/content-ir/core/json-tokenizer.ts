@@ -38,6 +38,11 @@ export class JsonStreamTokenizer {
       const at = this.pos;
       this.pos += 1;
 
+      // `i < chunk.length` is the loop bound above, so `ch` is always a real
+      // character here — this guard is unreachable in practice, it only
+      // satisfies noUncheckedIndexedAccess's string-index typing.
+      if (ch === undefined) continue;
+
       if (this.mode === "primitive") {
         if (this.isDelimiter(ch)) {
           this.emitPrimitive();

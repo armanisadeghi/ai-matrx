@@ -25,7 +25,9 @@ function collect(
   const events: KindStreamEvent[] = [];
   const parser = createKindStreamParser({
     schemas: options?.schemas ?? FLASHCARD_SCHEMAS,
-    expectedRootKind: options?.expectedRootKind,
+    ...(options?.expectedRootKind !== undefined && {
+      expectedRootKind: options.expectedRootKind,
+    }),
     onEvent: (e) => events.push(e),
   });
   parser.push(input);
