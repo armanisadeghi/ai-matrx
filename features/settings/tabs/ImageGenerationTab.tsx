@@ -5,6 +5,7 @@ import { SettingsSwitch } from "@/components/official/settings/primitives/Settin
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
+import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
 import { useSetting } from "../hooks/useSetting";
 
 export default function ImageGenerationTab() {
@@ -24,6 +25,18 @@ export default function ImageGenerationTab() {
     "userPreferences.imageGeneration.useAiEnhancements",
   );
 
+  // Catalog-driven: the image-model options are the live catalog rows whose
+  // capabilities declare image output — never a hardcoded model-name list.
+  const { models, isLoading } = useModelCatalog("user");
+  const imageModels = models.filter((m) => m.output.includes("image"));
+  const modelOptions = imageModels.map((m) => ({ value: m.id, label: m.name }));
+  // A previously-stored value that is no longer a routable image model (or a
+  // legacy preset string like "standard") still renders — visibly marked — so
+  // the user's stored preference is never silently blanked or rewritten.
+  if (model && !isLoading && !imageModels.some((m) => m.id === model)) {
+    modelOptions.push({ value: model, label: `${model} (unavailable)` });
+  }
+
   return (
     <>
       <SettingsSubHeader
@@ -36,13 +49,8 @@ export default function ImageGenerationTab() {
           label="Model"
           value={model}
           onValueChange={setModel}
-          options={[
-            { value: "standard", label: "Standard" },
-            { value: "dall-e-3", label: "DALL·E 3" },
-            { value: "stable-diffusion", label: "Stable Diffusion" },
-            { value: "midjourney", label: "Midjourney" },
-            { value: "flux", label: "Flux" },
-          ]}
+          options={modelOptions}
+          placeholder={isLoading ? "Loading models..." : "Select a model"}
         />
         <SettingsSelect
           label="Resolution"

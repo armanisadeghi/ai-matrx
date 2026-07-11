@@ -171,6 +171,11 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-07-11` — **ImageGenerationTab model picker is catalog-driven.** The hardcoded model list
+  (`dall-e-3`/`stable-diffusion`/`midjourney`/`flux` — two of which were never catalog models) is
+  replaced by `useModelCatalog("user")` filtered to `output.includes("image")`; option values are
+  now model ids. A stored value that no longer resolves renders as "(unavailable)" instead of being
+  silently blanked. Never reintroduce a hardcoded model-name list — the capabilities jsonb decides.
 - `2026-07-10` — **Tutor preferences module.** Added the `tutor` module to `userPreferences`
   (`{ teachingMode: "Socratic"|"Direct"; personalityStyle }`, synced) so the AI Tutor's teaching
   style follows the learner across devices (was per-browser localStorage). Read/written via
