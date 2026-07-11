@@ -7659,6 +7659,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_component: Json | null
+          deleted_at: string | null
           depends_on: string[]
           description: string
           display_name: string
@@ -7673,6 +7674,7 @@ export type Database = {
           last_fed_at: string | null
           last_verified_at: string | null
           max_items: number
+          metadata: Json
           next_review_at: string | null
           refresh_task_id: string | null
           review_interval_days: number | null
@@ -7688,7 +7690,9 @@ export type Database = {
           tags: string[]
           template_item_key: string | null
           updated_at: string
+          updated_by: string | null
           value_type: Database["public"]["Enums"]["context_value_type"]
+          version: number
         }
         Insert: {
           allowed_reference_types?: string[] | null
@@ -7697,6 +7701,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_component?: Json | null
+          deleted_at?: string | null
           depends_on?: string[]
           description?: string
           display_name: string
@@ -7711,6 +7716,7 @@ export type Database = {
           last_fed_at?: string | null
           last_verified_at?: string | null
           max_items?: number
+          metadata?: Json
           next_review_at?: string | null
           refresh_task_id?: string | null
           review_interval_days?: number | null
@@ -7726,7 +7732,9 @@ export type Database = {
           tags?: string[]
           template_item_key?: string | null
           updated_at?: string
+          updated_by?: string | null
           value_type?: Database["public"]["Enums"]["context_value_type"]
+          version?: number
         }
         Update: {
           allowed_reference_types?: string[] | null
@@ -7735,6 +7743,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_component?: Json | null
+          deleted_at?: string | null
           depends_on?: string[]
           description?: string
           display_name?: string
@@ -7749,6 +7758,7 @@ export type Database = {
           last_fed_at?: string | null
           last_verified_at?: string | null
           max_items?: number
+          metadata?: Json
           next_review_at?: string | null
           refresh_task_id?: string | null
           review_interval_days?: number | null
@@ -7764,7 +7774,9 @@ export type Database = {
           tags?: string[]
           template_item_key?: string | null
           updated_at?: string
+          updated_by?: string | null
           value_type?: Database["public"]["Enums"]["context_value_type"]
+          version?: number
         }
         Relationships: [
           {
@@ -7833,6 +7845,7 @@ export type Database = {
           color: string
           created_at: string
           default_variable_keys: string[]
+          deleted_at: string | null
           description: string
           icon: string
           id: string
@@ -7840,16 +7853,20 @@ export type Database = {
           label_plural: string
           label_singular: string
           max_assignments_per_entity: number | null
+          metadata: Json
           organization_id: string
           parent_type_id: string | null
           slug: string | null
           sort_order: number
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           color?: string
           created_at?: string
           default_variable_keys?: string[]
+          deleted_at?: string | null
           description?: string
           icon?: string
           id?: string
@@ -7857,16 +7874,20 @@ export type Database = {
           label_plural: string
           label_singular: string
           max_assignments_per_entity?: number | null
+          metadata?: Json
           organization_id: string
           parent_type_id?: string | null
           slug?: string | null
           sort_order?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           color?: string
           created_at?: string
           default_variable_keys?: string[]
+          deleted_at?: string | null
           description?: string
           icon?: string
           id?: string
@@ -7874,11 +7895,14 @@ export type Database = {
           label_plural?: string
           label_singular?: string
           max_assignments_per_entity?: number | null
+          metadata?: Json
           organization_id?: string
           parent_type_id?: string | null
           slug?: string | null
           sort_order?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -7894,8 +7918,10 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string
           id: string
+          metadata: Json
           name: string
           organization_id: string
           parent_scope_id: string | null
@@ -7904,12 +7930,16 @@ export type Database = {
           slug: string | null
           sort_order: number
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           id?: string
+          metadata?: Json
           name: string
           organization_id: string
           parent_scope_id?: string | null
@@ -7918,12 +7948,16 @@ export type Database = {
           slug?: string | null
           sort_order?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           id?: string
+          metadata?: Json
           name?: string
           organization_id?: string
           parent_scope_id?: string | null
@@ -7932,6 +7966,8 @@ export type Database = {
           slug?: string | null
           sort_order?: number
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -25457,6 +25493,42 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_set_shareable_active: {
+        Args: { p_is_active: boolean; p_resource_type: string }
+        Returns: undefined
+      }
+      admin_shareable_registry_defaults: {
+        Args: { p_token: string }
+        Returns: {
+          already_registered: boolean
+          display_label: string
+          resource_type: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
+      admin_shareable_registry_list: {
+        Args: never
+        Returns: {
+          content_role: string
+          created_at: string
+          display_label: string
+          id_column: string
+          is_active: boolean
+          is_link_shareable: boolean
+          is_public_column: string
+          is_scopeable: boolean
+          notes: string
+          owner_column: string
+          public_columns: string[]
+          resource_type: string
+          rls_uses_has_permission: boolean
+          schema_name: string
+          table_name: string
+          updated_at: string
+          url_path_template: string
+        }[]
+      }
       admin_unregistered_pairs: {
         Args: never
         Returns: {
@@ -25490,6 +25562,26 @@ export type Database = {
           p_notes?: string
           p_source_type: string
           p_target_type: string
+        }
+        Returns: undefined
+      }
+      admin_upsert_shareable_resource: {
+        Args: {
+          p_content_role?: string
+          p_display_label: string
+          p_id_column?: string
+          p_is_active?: boolean
+          p_is_link_shareable?: boolean
+          p_is_public_column?: string
+          p_is_scopeable?: boolean
+          p_notes?: string
+          p_owner_column?: string
+          p_public_columns?: string[]
+          p_resource_type: string
+          p_rls_uses_has_permission?: boolean
+          p_schema_name: string
+          p_table_name: string
+          p_url_path_template: string
         }
         Returns: undefined
       }

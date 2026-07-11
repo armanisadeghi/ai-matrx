@@ -228,6 +228,10 @@ export function ScopesRouteHeader() {
       router.push(scopeTypeHref(orgSlugOrId, scopeType));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete");
+    } finally {
+      // The header lives in the persistent org layout, so it stays mounted
+      // after the post-delete navigation — always clear the busy flag or the
+      // spinner sticks forever.
       setDeleting(false);
     }
   }
