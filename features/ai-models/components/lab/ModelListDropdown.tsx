@@ -74,11 +74,16 @@ import {
   speedRatingLabel,
   type PriceTier,
 } from "@/features/ai-models/format";
+import {
+  SERVICE_LABEL,
+  SERVICE_LABEL_PLURAL,
+  serviceCountLabel,
+} from "@/features/ai-models/constants/service-label";
 
 const PANEL_HEIGHT = 440;
 const LIST_MAX_HEIGHT = "min(440px, 70dvh)";
 
-type SortKey = "name" | "maker" | "context" | "price";
+type SortKey = "name" | "maker" | "service" | "context" | "price";
 type RightPanel = "detail" | "filters" | null;
 
 const MODALITY_ICON: Record<Modality, typeof Type> = {
@@ -300,14 +305,14 @@ function ModelDetailCard({
           </div>
         </div>
 
-        {/* Serving tiers — the endpoint's PUBLIC Matrx brand only (Matrx
+        {/* Services — the endpoint's PUBLIC Matrx brand only (Matrx
             Fast / Matrx Lightning / ...). Never a vendor name. The first
             tier is the server's default route; per-request tier selection
             ships when the chat wire carries an endpoint hint. */}
         {model.tiers.length > 0 && model.tiers[0].servedVia && (
           <div>
             <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Served via
+              {model.tiers.length === 1 ? SERVICE_LABEL : SERVICE_LABEL_PLURAL}
             </dt>
             <dd className="flex flex-wrap gap-1">
               {model.tiers.map((t, i) => (
@@ -392,6 +397,10 @@ interface Filters {
   input: Set<Modality>;
   output: Set<Modality>;
   features: Set<FeatureBucket>;
+  /** Model makers (brand: OpenAI / Google / Anthropic …). Empty = any. */
+  makers: Set<string>;
+  /** Branded serving names (`served_via`: Matrx Fast / Lightning / …). Empty = any. */
+  services: Set<string>;
   interaction: Interaction | "any";
   multilingualOnly: boolean;
   sort: SortKey;
@@ -426,10 +435,16 @@ function FiltersPanel({
   filters,
   setFilters,
   variant,
+  makerOptions,
+  serviceOptions,
 }: {
   filters: Filters;
   setFilters: React.Dispatch<React.SetStateAction<Filters>>;
   variant: ModelCatalogVariant;
+  /** Distinct makers present in the catalog (sorted). */
+  makerOptions: string[];
+  /** Distinct branded serving names present in the catalog (sorted). */
+  serviceOptions: string[];
 }) {
   const toggleModality = (kind: "input" | "output", m: Modality) =>
     setFilters((f) => {
@@ -445,10 +460,18 @@ function FiltersPanel({
       else next.add(b);
       return { ...f, features: next };
     });
+  const toggleSetValue = (kind: "makers" | "services", value: string) =>
+    setFilters((f) => {
+      const next = new Set(f[kind]);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return { ...f, [kind]: next };
+    });
 
   const sortOptions: { key: SortKey; label: string }[] = [
     { key: "name", label: "Name" },
     { key: "maker", label: "Maker" },
+    { key: "service", label: SERVICE_LABEL },
     { key: "context", label: "Context" },
     ...(variant === "user"
       ? [{ key: "price" as const, label: "Usage" }]
@@ -469,6 +492,53 @@ function FiltersPanel({
               onClick={() => setFilters((f) => ({ ...f, sort: o.key }))}
             >
               {o.label}
+            </ChipToggle>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+          Maker
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <ChipToggle
+            active={filters.makers.size === 0}
+            onClick={() => setFilters((f) => ({ ...f, makers: new Set() }))}
+          >
+            Any
+          </ChipToggle>
+          {makerOptions.map((m) => (
+            <ChipToggle
+              key={m}
+              active={filters.makers.has(m)}
+              onClick={() => toggleSetValue("makers", m)}
+            >
+              {m}
+            </ChipToggle>
+          ))}
+        </div>
+      </div>
+
+      {/* Branded serving names ONLY (served_via) — never a real vendor. */}
+      <div>
+        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+          {SERVICE_LABEL}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <ChipToggle
+            active={filters.services.size === 0}
+            onClick={() => setFilters((f) => ({ ...f, services: new Set() }))}
+          >
+            Any
+          </ChipToggle>
+          {serviceOptions.map((s) => (
+            <ChipToggle
+              key={s}
+              active={filters.services.has(s)}
+              onClick={() => toggleSetValue("services", s)}
+            >
+              {s}
             </ChipToggle>
           ))}
         </div>
@@ -641,6 +711,15 @@ function ModelRow({
             dep
           </span>
         )}
+        {/* Availability: how many branded Services offer this model. */}
+        {model.tiers.length > 1 && (
+          <span
+            className="shrink-0 rounded border border-primary/40 bg-primary/10 px-1 text-[9px] font-medium text-foreground/80"
+            title={model.tiers.map((t) => t.servedVia).join(" · ")}
+          >
+            {serviceCountLabel(model.tiers.length)}
+          </span>
+        )}
       </span>
       <SpeedDots value={model.speedRating} />
       <span className="w-10 text-right">
@@ -678,6 +757,8 @@ export function ModelListDropdown({
     input: new Set(inputModalities),
     output: new Set(outputModalities ?? []),
     features: new Set<FeatureBucket>(),
+    makers: new Set<string>(),
+    services: new Set<string>(),
     interaction: "any",
     multilingualOnly: false,
     sort: "name",
@@ -700,11 +781,42 @@ export function ModelListDropdown({
 
   const selected = models.find((m) => m.id === value) ?? null;
 
+  // Distinct maker / Service option lists, derived from the loaded catalog.
+  const makerOptions = useMemo(
+    () =>
+      [...new Set(models.map((m) => m.maker).filter((v): v is string => !!v))].sort(
+        (a, b) => a.localeCompare(b),
+      ),
+    [models],
+  );
+  const serviceOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          models.flatMap((m) => m.tiers.map((t) => t.servedVia)).filter(Boolean),
+        ),
+      ].sort((a, b) => a.localeCompare(b)),
+    [models],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const rows = models.filter((m) => {
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
-      if (q && ![m.name, m.maker].some((f) => f?.toLowerCase().includes(q)))
+      // Search matches name, maker, AND branded Service names ("lightning").
+      if (
+        q &&
+        ![m.name, m.maker, ...m.tiers.map((t) => t.servedVia)].some((f) =>
+          f?.toLowerCase().includes(q),
+        )
+      )
+        return false;
+      if (filters.makers.size > 0 && (!m.maker || !filters.makers.has(m.maker)))
+        return false;
+      if (
+        filters.services.size > 0 &&
+        !m.tiers.some((t) => filters.services.has(t.servedVia))
+      )
         return false;
       for (const m2 of filters.input) if (!m.input.includes(m2)) return false;
       for (const m2 of filters.output) if (!m.output.includes(m2)) return false;
@@ -719,6 +831,14 @@ export function ModelListDropdown({
       switch (filters.sort) {
         case "maker":
           return (a.maker ?? "").localeCompare(b.maker ?? "");
+        case "service":
+          // Preferred (first) Service brand; models on more Services first
+          // within the same brand.
+          return (
+            (a.tiers[0]?.servedVia ?? "￿").localeCompare(
+              b.tiers[0]?.servedVia ?? "￿",
+            ) || b.tiers.length - a.tiers.length
+          );
         case "context":
           return (b.contextWindow ?? 0) - (a.contextWindow ?? 0);
         case "price":
@@ -741,6 +861,8 @@ export function ModelListDropdown({
     filters.input.size +
     filters.output.size +
     filters.features.size +
+    filters.makers.size +
+    filters.services.size +
     (filters.interaction !== "any" ? 1 : 0) +
     (filters.multilingualOnly ? 1 : 0);
 
@@ -961,6 +1083,8 @@ export function ModelListDropdown({
                     filters={filters}
                     setFilters={setFilters}
                     variant={variant}
+                    makerOptions={makerOptions}
+                    serviceOptions={serviceOptions}
                   />
                 </div>
               </>
@@ -999,6 +1123,8 @@ export function ModelListDropdown({
                 filters={filters}
                 setFilters={setFilters}
                 variant={variant}
+                makerOptions={makerOptions}
+                serviceOptions={serviceOptions}
               />
             ) : rightPanel === "detail" && hovered ? (
               <div
