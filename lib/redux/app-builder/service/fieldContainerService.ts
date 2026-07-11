@@ -3,8 +3,9 @@ import { supabase } from "@/utils/supabase/client";
 import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import type { Database, Json } from "@/types/database.types";
 
-import { ContainerBuilder } from "../types";
+import { ContainerBuilder, FieldBuilder } from "../types";
 import { FieldDefinition } from "@/types/customAppTypes";
+import { dbToFieldDefinition } from "./fieldComponentService";
 
 export type ComponentGroupRow =
   Database["graveyard"]["Tables"]["component_groups"]["Row"];
@@ -76,6 +77,83 @@ export const dbToComponentGroup = (
   };
 };
 /**
+ * The add_field_to_group / refresh_field_in_group / refresh_all_fields_in_group /
+ * remove_field_from_group / create_component_group RPC family was retired with the
+ * graveyard-schema move. A group's `fields` JSON is now composed client-side from
+ * graveyard.field_components library rows via the helpers below.
+ */
+
+const toFieldDefinition = (builder: FieldBuilder): FieldDefinition => {
+  const { isPublic, authenticatedRead, publicRead, isDirty, isLocal, ...field } =
+    builder;
+  return field;
+};
+
+/** Loads field definitions from the field_components library, keyed by id. */
+const fetchFieldDefinitionsByIds = async (
+  fieldIds: string[],
+): Promise<Map<string, FieldDefinition>> => {
+  if (fieldIds.length === 0) return new Map();
+
+  const { data, error } = await graveyardDb(supabase)
+    .from("field_components")
+    .select("*")
+    .in("id", fieldIds);
+
+  if (error) {
+    console.error("Error fetching field components for group:", error);
+    throw error;
+  }
+
+  return new Map(
+    (data ?? []).map((row) => [row.id, toFieldDefinition(dbToFieldDefinition(row))]),
+  );
+};
+
+const requireFieldDefinition = (
+  defs: Map<string, FieldDefinition>,
+  fieldId: string,
+): FieldDefinition => {
+  const def = defs.get(fieldId);
+  if (!def) {
+    throw new Error(
+      `Field component ${fieldId} not found in the field_components library`,
+    );
+  }
+  return def;
+};
+
+const requireComponentGroup = async (
+  groupId: string,
+): Promise<ContainerBuilder> => {
+  const group = await getComponentGroupById(groupId);
+  if (!group) {
+    throw new Error(`Component group ${groupId} not found`);
+  }
+  return group;
+};
+
+/** Persists a group's fields JSON and returns the updated group. */
+const updateGroupFields = async (
+  groupId: string,
+  fields: FieldDefinition[],
+): Promise<ContainerBuilder> => {
+  const { data, error } = await graveyardDb(supabase)
+    .from("component_groups")
+    .update({ fields })
+    .eq("id", groupId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating component group fields:", error);
+    throw error;
+  }
+
+  return dbToComponentGroup(data);
+};
+
+/**
  * Fetches all component groups for the current user
  */
 export const getAllComponentGroups = async (): Promise<ContainerBuilder[]> => {
@@ -124,44 +202,17 @@ export const createComponentGroup = async (
   group: ContainerBuilder,
 ): Promise<ContainerBuilder> => {
   try {
-    if (group.fields && group.fields.length > 0) {
-      const fieldIds = group.fields
-        .map((field) => field.id)
-        .filter(Boolean) as string[];
+    const fieldIds = (group.fields ?? [])
+      .map((field) => field.id)
+      .filter((id): id is string => Boolean(id));
+    const defs = await fetchFieldDefinitionsByIds(fieldIds);
+    const fields = fieldIds.map((id) => requireFieldDefinition(defs, id));
 
-      if (fieldIds.length > 0) {
-        const { data: createdId, error: rpcError } = await supabase.rpc(
-          "create_component_group",
-          {
-            p_label: group.label,
-            p_short_label: group.shortLabel || undefined,
-            p_description: group.description || undefined,
-            p_hide_description: group.hideDescription || false,
-            p_help_text: group.helpText || undefined,
-            p_field_ids: fieldIds,
-          },
-        );
-
-        if (rpcError) {
-          console.error("Error creating group with fields:", rpcError);
-          throw rpcError;
-        }
-
-        const newGroup = await getComponentGroupById(createdId);
-        if (!newGroup) {
-          throw new Error("Failed to retrieve newly created group");
-        }
-
-        return newGroup;
-      }
-    }
-
-    const dbData = await componentGroupToDBFormat(group);
-    const { fields, ...restData } = dbData;
+    const dbData = await componentGroupToDBFormat({ ...group, fields });
 
     const { data, error } = await graveyardDb(supabase)
       .from("component_groups")
-      .insert(restData)
+      .insert(dbData)
       .select()
       .single();
 
@@ -250,17 +301,8 @@ export const addFieldToGroup = async (
   fieldId: string,
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc("add_field_to_group", {
-      p_group_id: groupId,
-      p_field_id: fieldId,
-    });
-
-    if (error) {
-      console.error("Error adding field to group:", error);
-      throw error;
-    }
-
-    return !!data;
+    await addOrRefreshFieldInGroup(groupId, fieldId);
+    return true;
   } catch (err) {
     console.error("Exception in addFieldToGroup:", err);
     throw err;
@@ -268,52 +310,55 @@ export const addFieldToGroup = async (
 };
 
 /**
- * Adds or refreshes a single field in a component group
- * Now returns the updated component group instead of a boolean
+ * Adds or refreshes a single field in a component group from its
+ * field_components library definition. Returns the updated component group.
  */
 export const addOrRefreshFieldInGroup = async (
   groupId: string,
   fieldId: string,
 ): Promise<ContainerBuilder> => {
   try {
-    const { data, error } = await supabase.rpc("refresh_field_in_group", {
-      p_group_id: groupId,
-      p_field_id: fieldId,
-    });
+    const group = await requireComponentGroup(groupId);
+    const defs = await fetchFieldDefinitionsByIds([fieldId]);
+    const def = requireFieldDefinition(defs, fieldId);
 
-    if (error) {
-      console.error("Error refreshing field in group:", error);
-      throw error;
-    }
+    const fields = group.fields.some((field) => field.id === fieldId)
+      ? group.fields.map((field) => (field.id === fieldId ? def : field))
+      : [...group.fields, def];
 
-    if (!data) {
-      throw new Error("No data returned from refresh_field_in_group operation");
-    }
-
-    // refresh_field_in_group returns Json — cast through unknown for safety
-    return dbToComponentGroup(data as unknown as ComponentGroupRow);
+    return await updateGroupFields(groupId, fields);
   } catch (err) {
     console.error("Exception in addOrRefreshFieldInGroup:", err);
     throw err;
   }
 };
 /**
- * Refreshes all fields in a component group
+ * Refreshes all fields in a component group from their field_components
+ * library definitions. Fields whose library row no longer exists keep their
+ * stored definition (loudly).
  */
 export const refreshAllFieldsInGroup = async (
   groupId: string,
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc("refresh_all_fields_in_group", {
-      p_group_id: groupId,
+    const group = await requireComponentGroup(groupId);
+    const fieldIds = group.fields
+      .map((field) => field.id)
+      .filter((id): id is string => Boolean(id));
+    const defs = await fetchFieldDefinitionsByIds(fieldIds);
+
+    const fields = group.fields.map((field) => {
+      const refreshed = field.id ? defs.get(field.id) : undefined;
+      if (!refreshed && field.id) {
+        console.warn(
+          `refreshAllFieldsInGroup: field component ${field.id} no longer exists in the library — keeping the stored definition in group ${groupId}`,
+        );
+      }
+      return refreshed ?? field;
     });
 
-    if (error) {
-      console.error("Error refreshing all fields in group:", error);
-      throw error;
-    }
-
-    return !!data;
+    await updateGroupFields(groupId, fields);
+    return true;
   } catch (err) {
     console.error("Exception in refreshAllFieldsInGroup:", err);
     throw err;
@@ -328,17 +373,10 @@ export const removeFieldFromGroup = async (
   fieldId: string,
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc("remove_field_from_group", {
-      p_group_id: groupId,
-      p_field_id: fieldId,
-    });
-
-    if (error) {
-      console.error("Error removing field from group:", error);
-      throw error;
-    }
-
-    return !!data;
+    const group = await requireComponentGroup(groupId);
+    const fields = group.fields.filter((field) => field.id !== fieldId);
+    await updateGroupFields(groupId, fields);
+    return true;
   } catch (err) {
     console.error("Exception in removeFieldFromGroup:", err);
     throw err;

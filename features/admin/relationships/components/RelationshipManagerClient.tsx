@@ -20,7 +20,6 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Boxes,
   CircleSlash,
   Layers,
   Lock,
@@ -42,6 +41,7 @@ import { createClient } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +66,8 @@ import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface"
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { RuleEditorForm } from "./RuleEditorForm";
+import { ShareableRegistryPanel } from "./ShareableRegistryPanel";
+import { EntityExplorerEntry } from "./EntityExplorerEntry";
 
 import type {
   ContainerSide,
@@ -75,6 +77,7 @@ import type {
   RelationshipProblem,
   RelationshipRule,
   RelationshipSystemStatus,
+  ShareableRegistryRow,
 } from "../types";
 
 function ruleKey(rule: RelationshipRule): string {
@@ -144,12 +147,14 @@ interface Props {
   status: RelationshipSystemStatus | null;
   rules: RelationshipRule[];
   problems: RelationshipProblem[];
+  shareable: ShareableRegistryRow[];
 }
 
 export default function RelationshipManagerClient({
   status,
   rules,
   problems,
+  shareable,
 }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -160,7 +165,6 @@ export default function RelationshipManagerClient({
   /** Side-panel selection — independent of WindowPanel edit hydration. */
   const [sidePanelId, setSidePanelId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [confirmSave, setConfirmSave] = useState(false);
   /** The rule targeted for deletion — independent of the editor so a row-level
    *  delete doesn't also pop the editor sheet. */
   const [deleteTarget, setDeleteTarget] = useState<RelationshipRule | null>(
@@ -169,6 +173,10 @@ export default function RelationshipManagerClient({
   const [confirmRebuild, setConfirmRebuild] = useState(false);
   const [confirmEnforce, setConfirmEnforce] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Token to open in the shareable-registry panel (drift "Register as shareable"). */
+  const [pendingShareableToken, setPendingShareableToken] = useState<
+    string | null
+  >(null);
 
   const refresh = () => startTransition(() => router.refresh());
 
@@ -386,26 +394,23 @@ export default function RelationshipManagerClient({
   ).length;
 
   const editorConveys = editor !== null && editor.containerSide !== "none";
-  /** True when saving will change how (or whether) access cascades — a fresh
-   *  conveyance, or a side/ceiling change on an already-conveying rule. */
-  const editorChangesConveyance =
-    editor !== null &&
-    editorConveys &&
-    (editor.original === null ||
-      editor.original.container_side === "none" ||
-      editor.original.container_side !== editor.containerSide ||
-      editor.original.conveys_max !== editor.conveysMax);
-  /** Specifically a none/inactive → conveying flip (new access being granted). */
-  const editorNewlyConveys =
-    editorChangesConveyance &&
-    (editor?.original === null ||
-      editor?.original.container_side === "none" ||
-      !editor?.original.is_active);
+
+  const editorIsDuplicate =
+    editor?.mode === "create" &&
+    editor.sourceType.length > 0 &&
+    editor.targetType.length > 0 &&
+    rules.some(
+      (r) =>
+        r.source_type === editor.sourceType &&
+        r.target_type === editor.targetType &&
+        (r.label ?? "") === (editor.label || ""),
+    );
 
   const editorValid =
     editor !== null &&
     editor.sourceType.length > 0 &&
-    editor.targetType.length > 0;
+    editor.targetType.length > 0 &&
+    !editorIsDuplicate;
 
   // -- mutations ---------------------------------------------------------------
 
@@ -461,7 +466,6 @@ export default function RelationshipManagerClient({
       );
     } finally {
       setSaving(false);
-      setConfirmSave(false);
     }
   }
 
@@ -632,6 +636,7 @@ export default function RelationshipManagerClient({
         warningCount={warningCount}
         busy={busy}
         onRegister={registerKnown}
+        onRegisterShareable={(token) => setPendingShareableToken(token)}
         onEdit={(source, target, lbl) => {
           const rule = rules.find(
             (r) =>
@@ -643,28 +648,46 @@ export default function RelationshipManagerClient({
         }}
       />
 
-      {/* Direction doctrine — the one convention every rule must follow */}
-      <div className="flex items-start gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-        <MoveRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-        <span>
-          <span className="font-medium text-foreground">
-            Direction convention: little points to big.
-          </span>{" "}
-          The <span className="font-medium text-foreground">source</span> is the
-          content/child; the{" "}
-          <span className="font-medium text-foreground">target</span> is its
-          container (a task points to its project). The{" "}
-          <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1 font-medium text-primary">
-            <Boxes className="h-3 w-3" />
-            container
-          </span>{" "}
-          is tinted in every row. Container side{" "}
-          <span className="font-mono">target</span> is the norm;{" "}
-          <span className="font-mono">source</span> means the edge is stored
-          big→little — a deliberate, documented exception. A write in the wrong
-          direction of a registered pair is REJECTED at the DB; direction
-          changes happen here, in the registry, not in code.
-        </span>
+      {/* Direction legend — compact, high-contrast (not a novel) */}
+      <div className="overflow-x-auto rounded-md border border-border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="h-8 text-xs font-semibold text-foreground">
+                SMALL → LARGE
+              </TableHead>
+              <TableHead className="h-8 text-xs font-semibold text-foreground">
+                Conveys?
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow className="hover:bg-transparent">
+              <TableCell className="py-2 text-sm text-foreground">
+                Source → Target
+              </TableCell>
+              <TableCell className="py-2 text-sm text-foreground">
+                If you get access to the big thing, do you get the small thing?
+              </TableCell>
+            </TableRow>
+            <TableRow className="hover:bg-transparent">
+              <TableCell className="py-2 text-sm text-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="font-mono text-xs">(task)</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-primary" />
+                  <span className="font-mono text-xs">(project)</span>
+                </span>
+              </TableCell>
+              <TableCell className="py-2 text-sm text-foreground">
+                <span className="font-medium">Yes</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  — if I share my project, you see the tasks inside
+                </span>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Registry table — MatrxDataTable (sticky, every-column filter/sort) */}
@@ -798,14 +821,12 @@ export default function RelationshipManagerClient({
                   conveys={editorConveys}
                   valid={editorValid}
                   saving={saving}
+                  existingRules={rules}
                   onCancel={() => {
                     setEditor(null);
                     setSidePanelId(null);
                   }}
-                  onSave={() => {
-                    if (editorChangesConveyance) setConfirmSave(true);
-                    else void saveRule();
-                  }}
+                  onSave={() => void saveRule()}
                   onDelete={
                     editor.original
                       ? () => setDeleteTarget(editor.original)
@@ -849,6 +870,26 @@ export default function RelationshipManagerClient({
         />
       </div>
 
+      {/* Shareable resource registry — full CRUD, fixes conveying_container_not_shareable in place */}
+      <ShareableRegistryPanel
+        registry={shareable}
+        pendingToken={pendingShareableToken}
+        onPendingTokenConsumed={() => setPendingShareableToken(null)}
+        onMutated={refresh}
+      />
+
+      {/* Entity explorer — pick any entity type, see what targets it / what it targets */}
+      <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <Search className="h-4 w-4" />
+          Entity explorer
+          <span className="font-normal text-muted-foreground">
+            — sources on the left, targets on the right, for any entity type
+          </span>
+        </h2>
+        <EntityExplorerEntry rules={rules} />
+      </section>
+
       {/* Reachability inspector */}
       <ReachabilityInspector />
 
@@ -890,37 +931,14 @@ export default function RelationshipManagerClient({
             conveys={editorConveys}
             valid={editorValid}
             saving={saving}
+            existingRules={rules}
             onCancel={() => setEditor(null)}
-            onSave={() => {
-              if (editorChangesConveyance) setConfirmSave(true);
-              else void saveRule();
-            }}
+            onSave={() => void saveRule()}
           />
         </SidePanelSurface>
       ) : null}
 
       {/* Guards */}
-      <ConfirmDialog
-        open={confirmSave}
-        onOpenChange={setConfirmSave}
-        title={
-          editorNewlyConveys
-            ? "Make this relationship convey access?"
-            : "Change how this relationship conveys access?"
-        }
-        description={
-          editor
-            ? `${
-                editorNewlyConveys
-                  ? `This will immediately make ${editor.original?.edge_count ?? "any"} existing association(s) of this shape convey access`
-                  : `This changes the cascade (side/ceiling) on ${editor.original?.edge_count ?? "any"} existing association(s) of this shape`
-              }, and the reachability cache will rebuild. Continue?`
-            : undefined
-        }
-        confirmLabel="Apply"
-        busy={saving}
-        onConfirm={saveRule}
-      />
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
@@ -1054,6 +1072,22 @@ const PROBLEM_TITLES: Record<string, string> = {
   inactive_rule_with_edges: "Inactive rule, live edges",
 };
 
+const RELATIONSHIPS_LOCATION =
+  "AI Matrx Admin — Relationship Manager (/administration/relationships)";
+
+function problemHuman(p: RelationshipProblem): string {
+  const title = PROBLEM_TITLES[p.kind] ?? p.kind;
+  return [
+    `[${p.severity}] ${title}`,
+    `${p.source_type} → ${p.target_type}${p.label ? ` (label "${p.label}")` : ""}`,
+    p.detail,
+    p.edge_count > 0 ? `edges=${p.edge_count}` : null,
+    p.container_side ? `container_side=${p.container_side}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 /** The single unified drift report — every problem the admin must resolve. */
 function ProblemsPanel({
   problems,
@@ -1061,6 +1095,7 @@ function ProblemsPanel({
   warningCount,
   busy,
   onRegister,
+  onRegisterShareable,
   onEdit,
 }: {
   problems: RelationshipProblem[];
@@ -1068,6 +1103,7 @@ function ProblemsPanel({
   warningCount: number;
   busy: boolean;
   onRegister: (source: string, target: string, label: string | null) => void;
+  onRegisterShareable: (token: string) => void;
   onEdit: (source: string, target: string, label: string | null) => void;
 }) {
   if (problems.length === 0) {
@@ -1082,23 +1118,45 @@ function ProblemsPanel({
 
   return (
     <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
-      <h2 className="flex items-center gap-2 text-sm font-semibold">
-        <ShieldAlert className="h-4 w-4 text-destructive" />
-        Drift &amp; problems
-        {errorCount > 0 ? (
-          <Badge variant="destructive">
-            {errorCount} error{errorCount === 1 ? "" : "s"}
-          </Badge>
-        ) : null}
-        {warningCount > 0 ? (
-          <Badge
-            variant="outline"
-            className="border-amber-500/50 text-amber-600 dark:text-amber-500"
-          >
-            {warningCount} warning{warningCount === 1 ? "" : "s"}
-          </Badge>
-        ) : null}
-      </h2>
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          Drift &amp; problems
+          {errorCount > 0 ? (
+            <Badge variant="destructive">
+              {errorCount} error{errorCount === 1 ? "" : "s"}
+            </Badge>
+          ) : null}
+          {warningCount > 0 ? (
+            <Badge
+              variant="outline"
+              className="border-amber-500/50 text-amber-600 dark:text-amber-500"
+            >
+              {warningCount} warning{warningCount === 1 ? "" : "s"}
+            </Badge>
+          ) : null}
+        </h2>
+        <div className="ml-auto">
+          <CopyButtons
+            size="icon"
+            label="Drift & problems"
+            human={() => problems.map(problemHuman).join("\n\n---\n\n")}
+            agent={() => ({
+              kind: "relationship-problems",
+              location: RELATIONSHIPS_LOCATION,
+              description:
+                "Unified drift report from admin_relationship_problems().",
+              data: problems,
+              summary: problems.map(problemHuman).join("\n---\n"),
+              attributes: {
+                count: problems.length,
+                errors: errorCount,
+                warnings: warningCount,
+              },
+            })}
+          />
+        </div>
+      </div>
       <div className="overflow-x-auto rounded-md border border-border">
         <Table>
           <TableBody>
@@ -1133,29 +1191,65 @@ function ProblemsPanel({
                 <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
                   {p.edge_count > 0 ? `${p.edge_count} edges` : ""}
                 </TableCell>
-                <TableCell className="w-40 text-right">
-                  {p.kind === "unregistered_pair" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() =>
-                        onRegister(p.source_type, p.target_type, p.label)
-                      }
-                    >
-                      Register as known
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        onEdit(p.source_type, p.target_type, p.label)
-                      }
-                    >
-                      Open rule
-                    </Button>
-                  )}
+                <TableCell className="w-48 text-right">
+                  <div className="inline-flex items-center justify-end gap-0.5">
+                    <CopyButtons
+                      size="icon"
+                      label={PROBLEM_TITLES[p.kind] ?? p.kind}
+                      human={() => problemHuman(p)}
+                      agent={() => ({
+                        kind: "relationship-problem",
+                        location: RELATIONSHIPS_LOCATION,
+                        description:
+                          "One drift/problem row from the Relationship Manager.",
+                        data: p,
+                        summary: problemHuman(p),
+                        attributes: {
+                          kind: p.kind,
+                          severity: p.severity,
+                          source: p.source_type,
+                          target: p.target_type,
+                          label: p.label,
+                        },
+                      })}
+                    />
+                    {p.kind === "unregistered_pair" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() =>
+                          onRegister(p.source_type, p.target_type, p.label)
+                        }
+                      >
+                        Register as known
+                      </Button>
+                    ) : p.kind === "conveying_container_not_shareable" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          onRegisterShareable(
+                            p.container_side === "target"
+                              ? p.target_type
+                              : p.source_type,
+                          )
+                        }
+                      >
+                        Register as shareable
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          onEdit(p.source_type, p.target_type, p.label)
+                        }
+                      >
+                        Open rule
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

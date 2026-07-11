@@ -1,8 +1,8 @@
 # FEATURE.md — `admin/relationships` (Relationship Manager)
 
 **Status:** `active`
-**Route:** `/administration/relationships` (Super Admin — gated by the `(admin)` layout)
-**Owner surface for:** the reachability / containment registry admin control plane.
+**Routes:** `/administration/relationships` · `/administration/relationships/[token]` (Super Admin — gated by the `(admin)` layout)
+**Owner surface for:** the reachability / containment registry admin control plane, **and** the full `platform.shareable_resource_registry` CRUD (fixes `conveying_container_not_shareable` in place — `/administration/sharing` keeps its link-policy specialty view).
 
 ---
 
@@ -23,12 +23,30 @@ automatic full closure rebuild in the DB — the UI just `router.refresh()`es.
 
 - **Page (Server Component):** `app/(admin)/administration/relationships/page.tsx`
   — fetches `admin_relationship_system_status`, `admin_relationship_rules`,
-  `admin_unregistered_pairs`, `admin_relationship_problems` in parallel, throws
-  loudly on any RPC error, passes to the client island.
+  `admin_relationship_problems`, `admin_shareable_registry_list` in parallel,
+  throws loudly on any RPC error, passes to the client island.
 - **Client island:** `features/admin/relationships/components/RelationshipManagerClient.tsx`
   — all interactivity + mutations. Registry grid is **`MatrxDataTable`**
   (`components/official/matrx-data-table/`).
 - **Rule editor:** `RuleEditorForm.tsx` — side panel body for create/edit.
+- **Shareable registry:** `ShareableRegistryPanel.tsx` (table + CRUD) +
+  `ShareableResourceForm.tsx` (side-panel body). Drift row's "Register as
+  shareable" (kind `conveying_container_not_shareable`) sets a pending token
+  the panel consumes on mount — scrolls into view and opens pre-filled from
+  `admin_shareable_registry_defaults`.
+- **Entity explorer:**
+  - Core (route-agnostic): `EntityRelationshipOrbit.tsx` + pure helper
+    `buildOrbitGraph` (`features/admin/relationships/utils.ts`) — sources that
+    target the focus token (left), the focus (center), targets it points to
+    (right). Shape is React-Flow-ready (token + rule per neighbor) for a
+    future graph canvas — not wired in this PR.
+  - Route: `app/(admin)/administration/relationships/[token]/page.tsx` +
+    `EntityExplorerHeader.tsx` (back link + re-pick token).
+  - List-page + route-header entry point: `EntityExplorerEntry.tsx` — entity
+    picker with **Open page** (`router.push` + `useTransition`) and **Open in
+    window** (`EntityRelationshipOrbitWindow.tsx`, a `WindowPanel` composition
+    root reached only via `dynamic({ ssr: false })` — see `window-panels`
+    skill).
 - **Types:** `features/admin/relationships/types.ts` — every shape derived from the
   generated `Database` types; never hand-mirrored.
 - **Admin catalog:** `features/admin/constants/admin-categories.ts` ("Relationship Manager").
@@ -58,16 +76,45 @@ can't compute — a conveying rule whose container isn't in
 `shareable_resource_registry`, so the cascade is dead), `conveying_rule_no_edges`,
 `inactive_rule_with_edges`.
 
+### Shareable resource registry RPCs
+
+Migration: `migrations/relationship_manager_shareable_admin_rpcs.sql` (same
+`public.` wrapper / `is_super_admin()` re-check pattern). Full CRUD home for
+`platform.shareable_resource_registry`; absorbs the same `is_link_shareable` /
+`public_columns` levers `admin_set_share_policy` touches so this page owns the
+entire row — `/administration/sharing` keeps working unchanged on the same table.
+
+| RPC | Role |
+|---|---|
+| `admin_shareable_registry_list()` | Full rows for the registry table. |
+| `admin_shareable_registry_defaults(token)` | Prefill schema/table/label from `platform.entity_types` when registering a token that isn't shareable yet. |
+| `admin_upsert_shareable_resource(...)` | Create/update a row (ON CONFLICT on `resource_type`). Same "typo can't become a phantom public-column allowlist entry" guard as `admin_set_share_policy`. |
+| `admin_set_shareable_active(resource_type, active)` | Soft on/off — keeps history; flipping off re-creates `conveying_container_not_shareable` drift on purpose. |
+
 ## Key flows
 
 - **Define a rule:** New rule → pick source (content) + target (container) via
-  `EntityTypeCombobox` → container side + conveyance ceiling → upsert.
-- **Convey guardrail:** flipping a rule to conveying (or changing side/ceiling)
-  prompts a confirm naming how many existing edges start conveying.
-- **Resolve drift:** the Drift panel lists every problem with a per-row action
-  (Register-as-known for strays, Open-rule for the rest).
+  the tabular `EntityTypeCombobox` (existing pairs for the current label are
+  disabled + listed as chips) → container side + conveyance ceiling → upsert
+  immediately (no confirm).
+- **Resolve drift:** the Drift panel lists every problem with a per-row action —
+  **Register as known** for strays, **Register as shareable** for
+  `conveying_container_not_shareable` (opens the Shareable registry panel
+  pre-filled with the missing container token), **Open rule** for the rest.
 - **Enforce:** enforcement can only be enabled when unregistered pairs = 0
   (switch is disabled with a tooltip otherwise).
+- **Manage what can be shared:** the Shareable registry panel is full CRUD —
+  **Register resource** picks any entity token not yet registered (tabular
+  `EntityTypeCombobox`, already-registered tokens disabled) and prefills
+  schema/table/label from `platform.entity_types`; inline edit covers
+  active/RLS-grants/scopeable/link-shareable/notes; a toast reminds that
+  `utils/permissions/registry.ts` needs `pnpm tsx scripts/regen-shareable-registry-snapshot.ts`
+  after any register/upsert (no browser write to that file).
+- **Explore an entity type:** pick any token in the Entity explorer (or from
+  a drift/registry row) → **Open page** for the full `[token]` route or
+  **Open in window** for a non-blocking peek; clicking a neighbor chip
+  re-centers the orbit on that token (in-place, no navigation) via
+  `onSelectToken`.
 
 ## Invariants & gotchas
 
@@ -79,16 +126,24 @@ can't compute — a conveying rule whose container isn't in
 - **Cache is disposable.** Never write `platform.reachability` from the UI; the
   only affordance is Rebuild.
 - **Plain language is on-demand, never a table cell** — row tooltip + a live
-  sentence in the editor. The table itself is structured columns.
+  sentence in the editor. Between drift and the registry sits a compact
+  HIGH-CONTRAST legend (`SMALL → LARGE | Conveys?`), not prose.
 - Entity chips/pickers resolve through the **one** entity registry
   (`features/scopes/registry/entityRegistry`) → `components/entity-types/*`.
+- Drift panel + each problem row use `<CopyButtons>` (same Copy / Copy-for-AI
+  primitive as the registry table).
 
 ## Related features
 
 - Reachability rollout doc: `docs/db_changes/REACHABILITY-ROLLOUT.md`.
 - Sharing / permissions: `features/sharing/FEATURE.md` (grants + memberships that
-  the cascade composes with in `iam.has_access`).
+  the cascade composes with in `iam.has_access`); `/administration/sharing`
+  keeps its link-policy specialty view (`admin_list_share_policies` /
+  `admin_set_share_policy`) on the same `shareable_resource_registry` table —
+  not merged or deleted.
 - Canonical associations: `.claude/skills/canonical-associations`.
+- Window Panels (the `EntityRelationshipOrbitWindow` composition root):
+  `.claude/skills/window-panels`.
 
 ## Doctrine compliance
 
@@ -97,12 +152,35 @@ can't compute — a conveying rule whose container isn't in
 - **Table chrome:** `MatrxDataTable` — sticky headers, every-column filter/sort,
   toolbar facets, row → `SidePanelSurface` / `MatrxDynamicPanelHost`, panel icon →
   `WindowPanel`. Blocking `Sheet` retired for the rule editor.
+- **One core component, two shells:** `EntityRelationshipOrbit` is
+  route-agnostic — the `[token]` page and `EntityRelationshipOrbitWindow`
+  (WindowPanel) both render it unchanged; no fork.
+- **Bundle discipline:** `WindowPanel` reached only through
+  `dynamic(() => import(...), { ssr: false })` in `EntityExplorerEntry` — never
+  a static import from the list page or the `[token]` route.
 - Types derived from generated `Database` types; no `any`, no hand-mirroring.
-- Loud recovery: the page throws on any RPC load error rather than rendering a
+- Loud recovery: both pages throw on any RPC load error rather than rendering a
   half-empty control plane.
 
 ## Change log
 
+- **2026-07-11** — Shareable resource registry gets a full CRUD home here
+  (`ShareableRegistryPanel` / `ShareableResourceForm`; new RPCs
+  `admin_shareable_registry_list/_defaults`, `admin_upsert_shareable_resource`,
+  `admin_set_shareable_active`) — the drift panel's "Register as shareable"
+  fixes `conveying_container_not_shareable` in place. New entity-type explorer:
+  `EntityRelationshipOrbit` (+ pure `buildOrbitGraph` helper) rendered at
+  `/administration/relationships/[token]` and inside a page-local `WindowPanel`
+  (`EntityRelationshipOrbitWindow`, lazy-loaded) — one core component, two
+  shells, React-Flow-ready data shape for a future graph canvas.
+- **2026-07-11** — Drift panel: Copy / Copy-for-AI on the section + each row.
+  Direction novel between panels replaced with a compact high-contrast
+  `SMALL → LARGE | Conveys?` legend table.
+- **2026-07-11** — Save rule is immediate — no conveyance confirm dialog.
+- **2026-07-11** — New-rule sheet: `EntityTypeCombobox` is a wide tabular picker
+  (Name · Token · Table — full labels, no truncation). Create mode disables
+  source/target pairs that already exist for the current label and lists the
+  source’s existing targets as chips under the target field.
 - **2026-07-11** — Registry cut over to canonical `MatrxDataTable`; rule editor
   moves to `SidePanelSurface` (create) / table detail panel (edit). Panel icon
   opens a WindowPanel with **View / Edit** tabs (Edit = same RuleEditorForm).

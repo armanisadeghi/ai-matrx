@@ -20,10 +20,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import type { ContainerSide, PermissionLevel } from "../types";
+import type {
+  ContainerSide,
+  PermissionLevel,
+  RelationshipRule,
+} from "../types";
 
 function label(token: string): string {
   return tryGetEntityInfo(token)?.label ?? token;
+}
+
+function normLabel(value: string | null | undefined): string {
+  return value ?? "";
 }
 
 export interface RuleEditorState {
@@ -48,6 +56,12 @@ interface RuleEditorFormProps {
   onCancel: () => void;
   onSave: () => void;
   onDelete?: () => void;
+  /**
+   * Existing registry rules — used in create mode to disable source/target
+   * pairs that already exist (same source + target + label) and to list the
+   * targets already paired with the selected source.
+   */
+  existingRules?: RelationshipRule[];
 }
 
 export function RuleEditorForm({
@@ -61,7 +75,49 @@ export function RuleEditorForm({
   onCancel,
   onSave,
   onDelete,
+  existingRules = [],
 }: RuleEditorFormProps) {
+  const createMode = editor.mode === "create";
+  const editorLabel = normLabel(editor.label);
+
+  // Targets already paired with this source under the current label.
+  const existingTargetsForSource = createMode
+    ? existingRules.filter(
+        (r) =>
+          r.source_type === editor.sourceType &&
+          normLabel(r.label) === editorLabel,
+      )
+    : [];
+
+  // Sources already paired with this target under the current label.
+  const existingSourcesForTarget = createMode
+    ? existingRules.filter(
+        (r) =>
+          r.target_type === editor.targetType &&
+          normLabel(r.label) === editorLabel,
+      )
+    : [];
+
+  const disabledTargets: Map<string, string> | undefined =
+    createMode && editor.sourceType
+      ? new Map(
+          existingTargetsForSource.map((r) => [
+            r.target_type,
+            "Already have this rule",
+          ]),
+        )
+      : undefined;
+
+  const disabledSources: Map<string, string> | undefined =
+    createMode && editor.targetType
+      ? new Map(
+          existingSourcesForTarget.map((r) => [
+            r.source_type,
+            "Already have this rule",
+          ]),
+        )
+      : undefined;
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-3">
       <p className="text-xs text-muted-foreground">{sentence}</p>
@@ -69,11 +125,27 @@ export function RuleEditorForm({
       <div className="flex flex-col gap-2 rounded-md border border-border p-3">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium">Source (content)</span>
-          {editor.mode === "create" ? (
+          {createMode ? (
             <EntityTypeCombobox
               value={editor.sourceType || null}
-              onChange={(t) => onChange({ ...editor, sourceType: t })}
+              onChange={(t) => {
+                // Drop the target if the new source+target+label pair already exists.
+                const conflict =
+                  !!editor.targetType &&
+                  existingRules.some(
+                    (r) =>
+                      r.source_type === t &&
+                      r.target_type === editor.targetType &&
+                      normLabel(r.label) === editorLabel,
+                  );
+                onChange({
+                  ...editor,
+                  sourceType: t,
+                  targetType: conflict ? "" : editor.targetType,
+                });
+              }}
               placeholder="Select content type…"
+              disabledTokens={disabledSources}
             />
           ) : (
             <EntityTypeChip token={editor.sourceType} showToken />
@@ -84,15 +156,36 @@ export function RuleEditorForm({
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium">Target (container)</span>
-          {editor.mode === "create" ? (
+          {createMode ? (
             <EntityTypeCombobox
               value={editor.targetType || null}
               onChange={(t) => onChange({ ...editor, targetType: t })}
               placeholder="Select container type…"
+              disabledTokens={disabledTargets}
             />
           ) : (
             <EntityTypeChip token={editor.targetType} showToken />
           )}
+          {createMode &&
+          editor.sourceType &&
+          existingTargetsForSource.length > 0 ? (
+            <div className="flex flex-col gap-1.5 rounded-md border border-border/60 bg-muted/40 px-2 py-1.5">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Already have targets for {label(editor.sourceType)}
+                {editorLabel ? ` · "${editorLabel}"` : ""}
+              </span>
+              <div className="flex flex-wrap gap-1">
+                {existingTargetsForSource.map((r) => (
+                  <EntityTypeChip
+                    key={`${r.source_type}:${r.target_type}:${r.label ?? ""}`}
+                    token={r.target_type}
+                    showToken
+                    variant="muted"
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium">
@@ -101,10 +194,27 @@ export function RuleEditorForm({
               (optional — blank applies to any label)
             </span>
           </span>
-          {editor.mode === "create" ? (
+          {createMode ? (
             <Input
               value={editor.label}
-              onChange={(e) => onChange({ ...editor, label: e.target.value })}
+              onChange={(e) => {
+                const nextLabel = e.target.value;
+                // Drop the target if the new label makes this pair a duplicate.
+                const conflict =
+                  !!editor.sourceType &&
+                  !!editor.targetType &&
+                  existingRules.some(
+                    (r) =>
+                      r.source_type === editor.sourceType &&
+                      r.target_type === editor.targetType &&
+                      normLabel(r.label) === normLabel(nextLabel),
+                  );
+                onChange({
+                  ...editor,
+                  label: nextLabel,
+                  targetType: conflict ? "" : editor.targetType,
+                });
+              }}
               placeholder="e.g. attachment"
               className="h-8"
               style={{ fontSize: "16px" }}

@@ -17,21 +17,15 @@ import {
 } from "../../app-runner/types";
 import { RecipeInfo } from "@/features/recipes/types";
 import type { Database, Json } from "@/types/database.types";
-import type { DbRpcRow } from "@/types/supabase-rpc";
 import { isJsonArray, isJsonObject } from "@/types/json";
+import type { ContainerBuilder } from "../types";
+import { getComponentGroupById } from "./fieldContainerService";
 
 export type CustomAppletConfigDB =
   Database["public"]["Tables"]["custom_applet_configs"]["Row"];
 
 type CustomAppletConfigInsert =
   Database["public"]["Tables"]["custom_applet_configs"]["Insert"];
-
-// add_groups_to_applet returns a single setof custom_applet_configs row —
-// compile-time guard that CustomAppletConfigDB still matches the RPC's return shape.
-type _Check_AddGroupsToApplet =
-  CustomAppletConfigDB extends DbRpcRow<"add_groups_to_applet"> ? true : false;
-declare const _addGroupsToAppletCheck: _Check_AddGroupsToApplet;
-true satisfies typeof _addGroupsToAppletCheck;
 
 const KNOWN_LAYOUT_TYPES = [
   "horizontal",
@@ -635,29 +629,91 @@ export const getCompiledRecipeByVersionWithNeededBrokers = async (
 };
 
 /**
+ * The add_groups_to_applet / refresh_group_in_applet / refresh_all_groups_in_applet
+ * RPC family was retired with the graveyard-schema move. Applet containers are now
+ * composed client-side from graveyard.component_groups via the helpers below.
+ */
+
+const containerFromGroup = (group: ContainerBuilder): AppletContainer => ({
+  id: group.id,
+  label: group.label,
+  shortLabel: group.shortLabel,
+  description: group.description,
+  hideDescription: group.hideDescription,
+  helpText: group.helpText,
+  fields: group.fields ?? [],
+});
+
+const requireComponentGroup = async (
+  groupId: string,
+): Promise<ContainerBuilder> => {
+  const group = await getComponentGroupById(groupId);
+  if (!group) {
+    throw new Error(`Component group ${groupId} not found`);
+  }
+  return group;
+};
+
+const requireApplet = async (appletId: string): Promise<CustomAppletConfig> => {
+  const applet = await getCustomAppletConfigById(appletId);
+  if (!applet) {
+    throw new Error(`Applet ${appletId} not found`);
+  }
+  return applet;
+};
+
+/** Replaces containers matching an incoming id, appends the rest. */
+const upsertContainers = (
+  containers: AppletContainer[],
+  incoming: AppletContainer[],
+): AppletContainer[] => {
+  const result = [...containers];
+  for (const container of incoming) {
+    const index = result.findIndex((existing) => existing.id === container.id);
+    if (index >= 0) {
+      result[index] = container;
+    } else {
+      result.push(container);
+    }
+  }
+  return result;
+};
+
+/** Persists an applet's containers JSON and returns the updated applet. */
+const updateAppletContainers = async (
+  appletId: string,
+  containers: AppletContainer[],
+): Promise<CustomAppletConfig> => {
+  const { data, error } = await supabase
+    .from("custom_applet_configs")
+    .update({ containers })
+    .eq("id", appletId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating applet containers:", error);
+    throw error;
+  }
+
+  return dbToAppletConfig(data);
+};
+
+/**
  * Adds Containers to an applet as containers
  */
 export const addContainersToApplet = async (
   appletId: string,
   groupIds: string[],
 ): Promise<CustomAppletConfig | null> => {
-  console.log("addContainersToApplet appletId", appletId);
-  console.log("addContainersToApplet groupIds", groupIds);
-
   try {
-    const { data, error } = await supabase.rpc("add_groups_to_applet", {
-      p_applet_id: appletId,
-      p_group_ids: groupIds,
-    });
-
-    if (error) {
-      console.error("Error adding containers to applet:", error);
-      throw error;
-    }
-
-    console.log("addContainersToApplet data", data);
-
-    return dbToAppletConfig(data as unknown as CustomAppletConfigDB);
+    const applet = await requireApplet(appletId);
+    const groups = await Promise.all(groupIds.map(requireComponentGroup));
+    const containers = upsertContainers(
+      applet.containers ?? [],
+      groups.map(containerFromGroup),
+    );
+    return await updateAppletContainers(appletId, containers);
   } catch (err) {
     console.error("Exception in addContainersToApplet:", err);
     throw err;
@@ -665,52 +721,52 @@ export const addContainersToApplet = async (
 };
 
 /**
- * Recompiles a single group in an applet
+ * Recompiles a single group in an applet from its component_groups definition
  */
 export const recompileContainerInAppletById = async (
   appletId: string,
   groupId: string,
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc("refresh_group_in_applet", {
-      p_applet_id: appletId,
-      p_group_id: groupId,
-    });
-
-    if (error) {
-      console.error("Error recompiling group in applet:", error);
-      throw error;
-    }
-
-    return !!data;
+    const applet = await requireApplet(appletId);
+    const group = await requireComponentGroup(groupId);
+    const containers = upsertContainers(applet.containers ?? [], [
+      containerFromGroup(group),
+    ]);
+    await updateAppletContainers(appletId, containers);
+    return true;
   } catch (err) {
-    console.error("Exception in recompileGroupInAppletById:", err);
+    console.error("Exception in recompileContainerInAppletById:", err);
     throw err;
   }
 };
 
 /**
- * Recompiles all groups in an applet
+ * Recompiles all groups in an applet from their component_groups definitions.
+ * Containers whose source group no longer exists keep their stored definition
+ * (loudly).
  */
 export const recompileAllContainersInApplet = async (
   appletId: string,
 ): Promise<boolean> => {
   try {
-    console.log("Recompiling all containers in applet:", appletId);
-    const { data, error } = await supabase.rpc("refresh_all_groups_in_applet", {
-      p_applet_id: appletId,
-    });
-
-    console.log("Recompiled all containers in applet:", data);
-
-    if (error) {
-      console.error("Error recompiling all groups in applet:", error);
-      throw error;
-    }
-
-    return !!data;
+    const applet = await requireApplet(appletId);
+    const containers = await Promise.all(
+      (applet.containers ?? []).map(async (container) => {
+        const group = await getComponentGroupById(container.id);
+        if (!group) {
+          console.warn(
+            `recompileAllContainersInApplet: component group ${container.id} no longer exists — keeping the stored container in applet ${appletId}`,
+          );
+          return container;
+        }
+        return containerFromGroup(group);
+      }),
+    );
+    await updateAppletContainers(appletId, containers);
+    return true;
   } catch (err) {
-    console.error("Exception in recompileAllGroupsInApplet:", err);
+    console.error("Exception in recompileAllContainersInApplet:", err);
     throw err;
   }
 };

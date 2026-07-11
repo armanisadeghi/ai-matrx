@@ -775,7 +775,8 @@ function SelectionBar({
         <>
           <span className="text-muted-foreground">·</span>
           <span className="text-muted-foreground tabular-nums">
-            lines {Math.min(range.anchor, range.tail) + 1}–{Math.max(range.anchor, range.tail) + 1}
+            lines {Math.min(range.anchor, range.tail) + 1}–
+            {Math.max(range.anchor, range.tail) + 1}
           </span>
         </>
       )}
@@ -1422,7 +1423,7 @@ export default function CoolifyLogViewer({
         {viewMode === "raw" && (
           <pre
             ref={rawRef}
-            className="flex-1 overflow-auto p-3 text-xs font-mono leading-5 text-foreground whitespace-pre-wrap break-all"
+            className="flex-1 overflow-auto p-3 text-xs font-mono leading-5 text-foreground whitespace-pre-wrap break-all scrollbar-contrast-lg"
             style={{ scrollbarGutter: "stable" }}
           >
             {!rawLogs ? (
@@ -1438,7 +1439,7 @@ export default function CoolifyLogViewer({
         {(viewMode === "log-only" || viewMode === "split") && (
           <div
             ref={logRef}
-            className={`flex flex-col overflow-y-auto min-h-0 py-1 ${viewMode === "split" ? "w-1/2 border-r border-border" : "w-full"}`}
+            className={`flex flex-col overflow-y-auto min-h-0 py-1 scrollbar-contrast-lg ${viewMode === "split" ? "w-1/2 border-r border-border" : "w-full"}`}
             style={{ scrollbarGutter: "stable" }}
           >
             {loading && !rawLogs ? (

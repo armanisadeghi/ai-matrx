@@ -35,3 +35,11 @@ export type ProblemKind =
 export type PermissionLevel = Database["public"]["Enums"]["permission_level"];
 
 export type ContainerSide = "none" | "source" | "target";
+
+// -- Shareable resource registry (public.shareable_resource_registry admin) --
+
+export type ShareableRegistryRow =
+  Database["public"]["Functions"]["admin_shareable_registry_list"]["Returns"][number];
+
+export type ShareableRegistryDefaults =
+  Database["public"]["Functions"]["admin_shareable_registry_defaults"]["Returns"][number];
