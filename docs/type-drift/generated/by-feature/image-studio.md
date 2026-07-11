@@ -1,6 +1,6 @@
 # image-studio — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.109Z_
+_Generated: 2026-07-11T14:08:07.825Z_
 
 **3** actionable duplicates in this feature.
 
@@ -10,6 +10,6 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| BgRemoveParams | interface | api-types | 223 | duplicate |  |
-| InpaintParams | interface | api-types | 254 | duplicate |  |
-| ImageOpsCatalog | interface | api-types | 316 | duplicate |  |
+| BgRemoveParams | interface | api-types | 260 | duplicate |  |
+| InpaintParams | interface | api-types | 287 | duplicate |  |
+| ImageOpsCatalog | interface | api-types | 345 | duplicate |  |

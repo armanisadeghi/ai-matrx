@@ -1,6 +1,6 @@
 # research — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.118Z_
+_Generated: 2026-07-11T14:08:07.826Z_
 
 **8** actionable duplicates in this feature.
 
@@ -17,4 +17,4 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 | AutoConsolidatePassRequest | interface | api-types | 95 | duplicate |  |
 | GenerateTagsRequest | interface | api-types | 104 | duplicate |  |
 | ApplyTagsRequest | interface | api-types | 113 | duplicate |  |
-| ApplyTagsResponse | interface | api-types | 940 | duplicate |  |
+| ApplyTagsResponse | interface | api-types | 1012 | duplicate |  |

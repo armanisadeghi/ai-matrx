@@ -1,6 +1,6 @@
 # surfaces — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.118Z_
+_Generated: 2026-07-11T14:08:07.826Z_
 
 **3** actionable duplicates in this feature.
 
@@ -17,4 +17,4 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| SurfaceManifest | interface | api-types | 114 | duplicate |  |
+| SurfaceManifest | interface | api-types | 110 | duplicate |  |

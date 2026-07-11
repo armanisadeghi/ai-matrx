@@ -39,7 +39,9 @@ function channelLabel(channel: RequestRouting["channel"]): string {
       return "EC2 dedicated server";
     case "override":
       return "Per-conversation override (in-box proxy)";
-    default:
+    case "local-runtime":
+      return "Local runtime (Matrx Local engine)";
+    case "global":
       return "Global server";
   }
 }

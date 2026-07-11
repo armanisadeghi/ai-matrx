@@ -68,10 +68,7 @@ export type ToolSpec = ToolSpecRegistered | ToolSpecInline | ToolSpecAgent;
  *
  * Unknown capability names cause the backend to return 422.
  */
-export type ClientCapabilityName =
-  | "editor-state"
-  | "sandbox-fs"
-  | "agent-fs";
+export type ClientCapabilityName = "editor-state" | "sandbox-fs" | "agent-fs";
 
 /**
  * Per-capability payload shape. Keep this in sync with the backend's
@@ -93,16 +90,20 @@ export interface ClientCapabilityPayloads {
  * capability's schema and emits a single aggregated 422 if anything fails.
  */
 /**
- * Output-directive apply policy. The backend resolves a single effective value
- * through a cascade — agent → surface → user (user wins) — to decide what
- * happens when an agent emits an output directive:
+ * Output-directive apply policy. OpenAPI source of truth
+ * (`UserOverrides.apply_policy` / `ClientContext.apply_policy`).
+ * The backend resolves a single effective value through a cascade —
+ * agent → surface → user (user wins) — to decide what happens when an
+ * agent emits an output directive:
  *   - `auto` → apply the side effect immediately
  *   - `ask`  → show an approval card (the backend default)
  *   - `off`  → suppress the directive entirely
  * It rides on TWO request layers: `ClientContext.apply_policy` (the SURFACE
  * layer) and `UserOverrides.apply_policy` (the USER layer, highest priority).
  */
-export type ApplyPolicy = "auto" | "ask" | "off";
+export type ApplyPolicy = NonNullable<
+  NonNullable<components["schemas"]["UserOverrides"]["apply_policy"]>
+>;
 
 export interface ClientContext {
   /**

@@ -7,7 +7,11 @@
 // No `created_by=` filter — RLS + REPLICA IDENTITY FULL gates events so both
 // owned notes and shared-with-me notes arrive. Filter-by-owner hid sharee updates.
 
-import type { Middleware } from "@reduxjs/toolkit";
+import type {
+  Middleware,
+  ThunkDispatch,
+  UnknownAction,
+} from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { RealtimeChannel } from "@supabase/supabase-js";
@@ -19,6 +23,9 @@ import {
   setRealtimeConnected,
 } from "./slice";
 import { fetchNotesList, fetchSharedNotesList } from "./thunks";
+
+/** Thunk-aware dispatch — this middleware refreshes lists via async thunks. */
+type NotesDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
 
 let channel: RealtimeChannel | null = null;
 let subscribedUserId: string | null = null;
@@ -75,7 +82,12 @@ function clearReconnectTimer() {
  * - Unsubscribes on resetNotesState (logout / cleanup)
  * - Reconnects with backoff + list catch-up on CHANNEL_ERROR / TIMED_OUT
  */
-export const notesRealtimeMiddleware: Middleware = (storeApi) => {
+export const notesRealtimeMiddleware: Middleware<
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- RTK Middleware DispatchExt default
+  {},
+  RootState,
+  NotesDispatch
+> = (storeApi) => {
   const storeWithSync = storeApi as typeof storeApi & StoreWithSync;
 
   function scheduleReconnect(userId: string, reason: string) {

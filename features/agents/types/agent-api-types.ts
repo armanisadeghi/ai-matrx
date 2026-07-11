@@ -26,7 +26,6 @@ import type {
   DataInputBlock,
   ContentBlock,
 } from "./message-types";
-import { ClientToolResult } from "./request.types";
 import type { components } from "@/types/python-generated/api-types";
 
 // StructuredInputBase is defined in message-types.ts — not re-declared here.
@@ -71,6 +70,16 @@ export type LLMParams = NonNullableFields<components["schemas"]["LLMParams"]>;
  * the canonical LLMParams schema, remove it from here.
  */
 export interface FeLlmParams extends LLMParams {
+  // ── Call routing ────────────────────────────────────────────────────────
+  /**
+   * Pins the call to ONE exact `ai.offering` (model × endpoint × api uuid).
+   * Unset/undefined = "Auto" — the server picks the preferred offering by
+   * priority. Set from the Service chips in the model picker detail card
+   * (ModelListDropdown). Not yet in the canonical LLMParams schema — remove
+   * from here when it graduates.
+   */
+  offering_id?: string;
+
   // ── Legacy / pre-rename aliases ─────────────────────────────────────────
   /** Legacy image size (e.g. "1024x1024"). Python aliases → width+height or size config. */
   size?: string | number;
@@ -146,13 +155,18 @@ export type ChatRequestPayload = NonNullableFields<
  *   → actions_guidance → code_guidelines → safety_guidelines → content_blocks
  *   → append_sections → outro
  */
+/**
+ * Structured system instruction object — OpenAPI `SystemInstructionInput`.
+ * Pass a plain string for simple prompts, or this object for the full builder.
+ */
 export type SystemInstruction = components["schemas"]["SystemInstructionInput"];
 
 /**
- * Pass a plain string for simple system prompts, or a structured object
- * to use the full SystemInstruction builder on the server.
+ * Wire value for `system_instruction` fields: plain string OR structured object.
+ * Named deliberately so it does NOT collide with the OpenAPI schema name
+ * `SystemInstructionInput` (which is the object only).
  */
-export type SystemInstructionInput = string | SystemInstruction;
+export type SystemInstructionWire = string | SystemInstruction;
 
 // =============================================================================
 // IDE state — derived from auto-generated schemas
@@ -245,104 +259,21 @@ export type ContextValue =
   string | number | boolean | Record<string, unknown> | unknown[];
 
 // =============================================================================
-// Agent start request
+// Agent / conversation request bodies — OpenAPI is the sole source of truth
 // =============================================================================
 
-/**
- * POST /ai/agents/{agent_id}
- *
- * Starts a new agent conversation. All fields except user_input are optional.
- * The response is a JSONL stream of TypedStreamEvent objects.
- */
-export interface AgentStartRequest {
-  /**
-   * The user's message for this turn.
-   * - Plain string: treated as a single text block.
-   * - Array: a mixed list of typed content blocks.
-   */
-  user_input?: string | ContentBlock[] | null;
+/** POST /ai/agents/{agent_id} — OpenAPI `AgentStartRequest`. */
+export type AgentStartRequest = components["schemas"]["AgentStartRequest"];
 
-  /**
-   * Key-value substitution into {{variable_name}} placeholders in the
-   * agent's system prompt. Agent-defined defaults apply for missing keys.
-   */
-  variables?: Record<string, unknown> | null;
+/** POST /ai/conversations/{conversation_id} — OpenAPI `ConversationContinueRequest`. */
+export type ConversationContinueRequest =
+  components["schemas"]["ConversationContinueRequest"];
 
-  /**
-   * Override any LLM parameter for this request only.
-   * Does not affect the agent's stored configuration.
-   */
-  config_overrides?: LLMParams | null;
+/** POST /ai/conversations/{conversation_id}/tool_results — OpenAPI body. */
+export type ToolResultsRequest = components["schemas"]["ToolResultsRequest"];
 
-  /**
-   * Default true. Set false only for testing / non-streaming use.
-   */
-  stream?: boolean;
-
-  /**
-   * Enable verbose debug output in server logs. Default false.
-   */
-  debug?: boolean;
-
-  /**
-   * Additive tool injection. Each entry is a ToolSpec discriminated on
-   * `kind` — registered (server-side or delegated), inline (caller-supplied
-   * schema), or agent (project a saved agent as an opaque tool).
-   *
-   * Tools listed here are added on top of the capability defaults brought
-   * online by `client.capabilities` and the agent's own declared tools.
-   * Conflicting `(kind, delegate)` for the same name returns 422.
-   */
-  tools?: import("./tool-injection.types").ToolSpec[];
-
-  /**
-   * When set, this list becomes the entire active tool set for the turn —
-   * capability defaults skipped, agent's own declared tools skipped. Use
-   * when the caller wants full control. Send the full desired list to
-   * "subtract" anything; there is no per-tool subtraction API.
-   */
-  tools_replace?: import("./tool-injection.types").ToolSpec[] | null;
-
-  /**
-   * Capability envelope describing the calling client. Each capability the
-   * client declares enables a typed payload (validated server-side) and may
-   * bring tools online for the agent — e.g. `editor-state` brings
-   * `vsc_get_state` online; `sandbox-fs` carries the binding the fs/shell
-   * tools need to route into the container.
-   */
-  client?: import("./tool-injection.types").ClientContext;
-
-  /**
-   * Deferred context objects keyed by arbitrary string names.
-   *
-   * The system builds a manifest from these values and the agent's slot
-   * definitions. The manifest is appended as ephemeral text to the current
-   * user message (never persisted). The model uses ctx_get to retrieve items.
-   *
-   * Keys may match agent-defined context_slots (which supply type, label,
-   * description, max_inline_chars) or be completely ad-hoc (type is inferred).
-   */
-  context?: Record<string, ContextValue>;
-
-  /**
-   * Organizational scope — injected into AppContext and consumed automatically
-   * by every tool the model calls. The model never passes these in tool arguments.
-   *
-   * Effects by tool/system:
-   *   - memory_store/recall/search: scopes "project" memories to project_id,
-   *     "organization" memories to organization_id.
-   *   - fs_read/write/list, code_run, shell: sandboxes to
-   *     /projects/{user_id}/{project_id}/
-   *   - sub-agents (fork_for_child_agent): inherit the same scope.
-   *   - ctx_get: stamps active_scope metadata for manifest generation.
-   *
-   * If omitted the tools still work — memory is user-scoped only, filesystem is
-   * user-level only, and project/org scoping is unavailable.
-   */
-  organization_id?: string | null;
-  project_id?: string | null;
-  task_id?: string | null;
-}
+/** Response from POST …/tool_results — OpenAPI `ToolResultsResponse`. */
+export type ToolResultsResponse = components["schemas"]["ToolResultsResponse"];
 
 // =============================================================================
 // Custom tools (inline tool definitions — not stored in the tool registry)
@@ -360,52 +291,6 @@ export type CustomToolInputSchema =
  * or sent per-request. Follows the MCP Tool standard; always client-delegated.
  */
 export type CustomToolDefinition = components["schemas"]["CustomTool"];
-
-// =============================================================================
-// Conversation continue request
-// =============================================================================
-
-/**
- * POST /ai/conversations/{conversation_id}
- *
- * Continue an existing conversation (turn 2+).
- * - user_input is required (unlike AgentStartRequest where it is optional).
- * - variables is not accepted — variable substitution is session-level (turn 1 only).
- * - For ide_state: only selected_text and diagnostics are re-injected per turn.
- *   Stable fields (git, workspace, active_file) were set on turn 1.
- */
-export interface ConversationContinueRequest {
-  user_input: string | ContentBlock[];
-  config_overrides?: LLMParams | null;
-  stream?: boolean;
-  debug?: boolean;
-  /** Same shape and semantics as `AgentStartRequest.tools`. */
-  tools?: import("./tool-injection.types").ToolSpec[];
-  /** Same shape and semantics as `AgentStartRequest.tools_replace`. */
-  tools_replace?: import("./tool-injection.types").ToolSpec[] | null;
-  /** Same shape and semantics as `AgentStartRequest.client`. */
-  client?: import("./tool-injection.types").ClientContext;
-  context?: Record<string, ContextValue>;
-
-  /**
-   * Organizational scope — same semantics as AgentStartRequest.
-   * Typically omitted on turn 2+ if the scope is stable across the conversation.
-   * Only send if the scope changes mid-conversation (e.g., user switches project).
-   */
-  organization_id?: string | null;
-  project_id?: string | null;
-  task_id?: string | null;
-}
-
-/** POST /ai/conversations/{conversation_id}/tool_results */
-export interface ToolResultsRequest {
-  results: ClientToolResult[];
-}
-
-export interface ToolResultsResponse {
-  resolved: string[];
-  count: number;
-}
 
 // =============================================================================
 // Context system — slot and ctx_get types

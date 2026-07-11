@@ -28,6 +28,7 @@ import { Copy, Check } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceUIState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import type { BackendChannel } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
 import {
   selectActiveSandboxId,
   selectActiveSandboxProxyUrl,
@@ -155,7 +156,7 @@ export function BackendTargetPanel({
   const overrideTokenError = instanceUI?.serverOverrideAuthTokenError ?? null;
 
   // For display only — the runtime decision lives in resolveBackendForConversation.
-  const channel: "global" | "override" = overrideUrl ? "override" : "global";
+  const channel: BackendChannel = overrideUrl ? "override" : "global";
   const effectiveUrl = overrideUrl ?? globalBaseUrl ?? "(unconfigured)";
 
   // We don't store exp in the slice (it would leak through devtools dumps).

@@ -9,7 +9,10 @@
 // Consumers: `features/shell/components/DeferredShellData.tsx`,
 // `hooks/usePublicAuthSync.ts`, `hooks/useApiAuth.ts`.
 
-import { setUserAuth, type UserAuthState } from "@/lib/redux/slices/userAuthSlice";
+import {
+  setUserAuth,
+  type UserAuthState,
+} from "@/lib/redux/slices/userAuthSlice";
 import {
   setUserProfile,
   type UserProfileState,
@@ -17,37 +20,44 @@ import {
 import type { UserData } from "@/utils/userDataMapper";
 import type { Dispatch } from "@reduxjs/toolkit";
 
-const AUTH_KEYS = [
-  "id",
-  "email",
-  "phone",
-  "emailConfirmedAt",
-  "lastSignInAt",
-  "appMetadata",
-  "identities",
-  "isAdmin",
-  "adminLevel",
-  "accessToken",
-  "tokenExpiresAt",
-] as const satisfies readonly (keyof UserAuthState)[];
-
-const PROFILE_KEYS = [
-  "userMetadata",
-  "fingerprintId",
-  "shellDataLoaded",
-] as const satisfies readonly (keyof UserProfileState)[];
-
 type LegacyUserPayload = Partial<UserData> & Partial<UserProfileState>;
 
-/** Copies `key` from `source` to `target` only when both sides agree it's a valid key. */
-function copyKeyIfPresent<Target extends object>(
-  target: Target,
-  source: LegacyUserPayload,
-  key: keyof Target & keyof LegacyUserPayload,
-): void {
-  if (key in source) {
-    target[key] = source[key] as Target[typeof key];
+/**
+ * Per-field picks — a loop over `keyof` loses key↔value correlation under
+ * strictFunctionTypes, so each field is named explicitly (no cast).
+ */
+function pickAuthFields(source: LegacyUserPayload): Partial<UserAuthState> {
+  const out: Partial<UserAuthState> = {};
+  if (source.id !== undefined) out.id = source.id;
+  if (source.email !== undefined) out.email = source.email;
+  if (source.phone !== undefined) out.phone = source.phone;
+  if (source.emailConfirmedAt !== undefined) {
+    out.emailConfirmedAt = source.emailConfirmedAt;
   }
+  if (source.lastSignInAt !== undefined) out.lastSignInAt = source.lastSignInAt;
+  if (source.appMetadata !== undefined) out.appMetadata = source.appMetadata;
+  if (source.identities !== undefined) out.identities = source.identities;
+  if (source.isAdmin !== undefined) out.isAdmin = source.isAdmin;
+  if (source.adminLevel !== undefined) out.adminLevel = source.adminLevel;
+  if (source.accessToken !== undefined) out.accessToken = source.accessToken;
+  if (source.tokenExpiresAt !== undefined) {
+    out.tokenExpiresAt = source.tokenExpiresAt;
+  }
+  return out;
+}
+
+function pickProfileFields(
+  source: LegacyUserPayload,
+): Partial<UserProfileState> {
+  const out: Partial<UserProfileState> = {};
+  if (source.userMetadata !== undefined) out.userMetadata = source.userMetadata;
+  if (source.fingerprintId !== undefined) {
+    out.fingerprintId = source.fingerprintId;
+  }
+  if (source.shellDataLoaded !== undefined) {
+    out.shellDataLoaded = source.shellDataLoaded;
+  }
+  return out;
 }
 
 /**
@@ -64,15 +74,8 @@ function copyKeyIfPresent<Target extends object>(
  */
 export const setUserData =
   (payload: LegacyUserPayload) => (dispatch: Dispatch) => {
-    const authPart: Partial<UserAuthState> = {};
-    const profilePart: Partial<UserProfileState> = {};
-
-    for (const key of AUTH_KEYS) {
-      copyKeyIfPresent(authPart, payload, key);
-    }
-    for (const key of PROFILE_KEYS) {
-      copyKeyIfPresent(profilePart, payload, key);
-    }
+    const authPart = pickAuthFields(payload);
+    const profilePart = pickProfileFields(payload);
 
     if (Object.keys(authPart).length > 0) {
       dispatch(setUserAuth(authPart));

@@ -425,8 +425,8 @@ export async function assembleManualRequest(
       request.sandbox = sandboxBinding as ChatRequestPayload["sandbox"];
   }
   if (structuredSystemInstruction) {
-    // ChatRequest.system_instruction accepts `string | SystemInstructionInput`
-    // (SystemInstructionInput = string | SystemInstruction) — the structured
+    // ChatRequest.system_instruction accepts `string | SystemInstruction`
+    // (OpenAPI `SystemInstructionInput` object, or a plain string) — the structured
     // object is a valid value here directly, no string coercion needed.
     request.system_instruction = structuredSystemInstruction;
   }

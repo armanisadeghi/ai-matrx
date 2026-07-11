@@ -53,14 +53,21 @@ import { RefusalNotice } from "@/features/education/trust/components/RefusalNoti
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { FlashcardConfidenceRow } from "./FlashcardConfidenceRow";
 import { MatchingCardPlayer } from "./MatchingCardPlayer";
-import { asConfidence, confidenceToResult, type Confidence } from "@/lib/srs/fsrs";
+import {
+  asConfidence,
+  confidenceToResult,
+  type Confidence,
+} from "@/lib/srs/fsrs";
 import {
   asCardKind,
   CARD_KIND,
   matchingPairs,
   studyFaces,
 } from "../../utils/cardVariants";
-import { helpLive, type HelpLiveResult } from "@/features/education/tutor/lanes/helpLive";
+import {
+  helpLive,
+  type HelpLiveResult,
+} from "@/features/education/tutor/lanes/helpLive";
 import {
   reviewSession,
   type ReviewSessionResult,
@@ -200,7 +207,8 @@ export function StudyDeck(props: StudyDeckProps) {
   const useConfidence = enableConfidence && gradeStyle === "confidence";
   const toggleGradeStyle = (): void => {
     setGradeStyle((prev) => {
-      const nextStyle: GradeStyle = prev === "confidence" ? "simple" : "confidence";
+      const nextStyle: GradeStyle =
+        prev === "confidence" ? "simple" : "confidence";
       if (typeof window !== "undefined") {
         window.localStorage.setItem(GRADE_STYLE_KEY, nextStyle);
       }
@@ -227,6 +235,8 @@ export function StudyDeck(props: StudyDeckProps) {
 
   // ── Phase 4: "Ask AI" live help ─────────────────────────────────────────
   const current = cards[currentIndex];
+  // Declared here (before keyboard effect) — matching cards skip grade hotkeys.
+  const currentKind = asCardKind(current?.card_kind);
   const [askOpen, setAskOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
@@ -514,7 +524,6 @@ export function StudyDeck(props: StudyDeckProps) {
 
   // Card variant — matching branches to its own player; cloze/basic flip, with
   // cloze rendering its blanked/revealed faces (studyFaces) instead of raw markup.
-  const currentKind = asCardKind(current.card_kind);
   const cardFaces = studyFaces(current);
 
   return (

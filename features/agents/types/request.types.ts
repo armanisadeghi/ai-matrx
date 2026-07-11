@@ -38,6 +38,8 @@ import type {
   StructuredOutputPayload,
   ProviderRetryPayload,
 } from "@/types/python-generated/stream-events";
+import type { components } from "@/types/python-generated/api-types";
+import type { BackendChannel } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
 
 // =============================================================================
 // Client-Side Metrics
@@ -113,12 +115,7 @@ export interface ClientMetrics {
 // =============================================================================
 
 export type ToolLifecycleStatus =
-  | "started"
-  | "progress"
-  | "step"
-  | "result_preview"
-  | "completed"
-  | "error";
+  "started" | "progress" | "step" | "result_preview" | "completed" | "error";
 
 export interface ToolLifecycleEntry {
   callId: string;
@@ -357,8 +354,12 @@ export interface ActiveRequest {
 export interface RequestRouting {
   /** Full URL the request was POSTed to (e.g. https://sandbox.matrxserver.com/ai/agents/<id>). */
   url: string;
-  /** Which backend channel resolved it: global / override (in-box proxy) / ec2-dedicated. */
-  channel: "global" | "override" | "ec2-dedicated";
+  /**
+   * Which backend channel resolved it. Canonical: `BackendChannel` in
+   * `resolve-base-url.ts` (global / override / ec2-dedicated / local-runtime).
+   * Do NOT re-declare this union — a stale copy already dropped `local-runtime`.
+   */
+  channel: BackendChannel;
   /** The active server toggle at send time (production / localhost / custom / …). */
   activeServer: string;
   /**
@@ -748,167 +749,49 @@ export interface PendingToolCall {
 }
 
 // =============================================================================
-// API Request Payloads
+// API Request Payloads — OpenAPI is the sole source of truth
+//
+// NEVER hand-mirror these. Alias from `components["schemas"][...]` (or the
+// named re-exports in `@/lib/api/types`). A hand-written copy already dropped
+// `UserOverrides.add`/`remove` and the camelCase `ClientToolResult` collided
+// with the wire schema while carrying the wrong shape.
 // =============================================================================
 
-/**
- * USER-layer overrides on the request — the highest-priority leg of the
- * backend's apply-policy cascade (agent → surface → user). Mirrors the
- * backend `UserOverrides` object. Sent only when a field is explicitly set;
- * an omitted `user` (or omitted field) lets the backend resolve from the
- * surface / agent / default below it.
- */
-export interface UserOverrides {
-  /** User's chosen output-directive apply policy. See `ApplyPolicy`. */
-  apply_policy?: import("./tool-injection.types").ApplyPolicy;
-}
+/** USER-layer overrides — OpenAPI `UserOverrides` (add / remove / apply_policy). */
+export type UserOverrides = components["schemas"]["UserOverrides"];
 
 /**
- * Assembled snake_case wire payload for POST /ai/agents/{agent_id}.
- * Built by assembleRequest() from all instance slices + appContextSlice.
- * Scope fields are snapshotted at execution time.
+ * Outbound body for POST /ai/agents/{agent_id} while it is being assembled.
  *
- * Tool injection uses the unified contract — `tools`, `tools_replace`, and
- * `client` replace the legacy `client_tools`, `custom_tools`, `ide_state`,
- * and `sandbox` fields. See `features/agents/types/tool-injection.types.ts`.
+ * OpenAPI marks server-defaulted fields as required on `AgentStartRequest`.
+ * The client only sends overrides and relies on server defaults, so the
+ * assembled shape is `Partial` of the wire schema.
+ *
+ * `user_input` is refined: OpenAPI collapses message parts to
+ * `{ [key: string]: unknown }[]` (lossy codegen). The real part union is
+ * `MessagePart` from stream-events (same Python source). Escalate upstream
+ * if OpenAPI gains a proper MessagePart schema — then drop this Omit.
  */
-export interface AssembledAgentStartRequest {
-  /** USER-layer overrides (apply policy, …). See `UserOverrides`. */
-  user?: UserOverrides;
-  user_input?: string | MessagePart[];
-  variables?: Record<string, unknown>;
-  config_overrides?: Record<string, unknown>;
-  context?: Record<string, unknown>;
-  /** Additive tools — added on top of capability defaults + agent's saved tool set. */
-  tools?: import("./tool-injection.types").ToolSpec[];
-  /** When set, becomes the entire active tool set for the turn. */
-  tools_replace?: import("./tool-injection.types").ToolSpec[] | null;
-  /** Capability envelope — declares what the calling surface can do. */
-  client?: import("./tool-injection.types").ClientContext;
-  /**
-   * Per-turn skill visibility override. When present, replaces the agent's
-   * persisted `skill_config` for this request only — used by the Smart Input
-   * skills picker (`addedSkills` merged into `included`).
-   */
-  skill_config?: Record<string, unknown>;
-  /**
-   * Top-level sandbox binding. aidream hydrates
-   * `ctx.metadata["active_sandbox"]` — which the matrx-ai fs/shell tools read
-   * to route into the container — ONLY from this field. The same payload also
-   * rides in `client.state["sandbox-fs"]`, but that lands on a different
-   * metadata key the proxy does not read; until aidream bridges the two, this
-   * top-level field is what actually routes tools into the box. Promoted from
-   * the `sandbox-fs` capability in the execute thunk — never assembled here.
-   */
-  sandbox?: import("./tool-injection.types").ClientCapabilityPayloads["sandbox-fs"];
-  conversation_id?: string;
-  is_new?: boolean | null;
-  organization_id?: string;
-  project_id?: string;
-  task_id?: string;
-  /**
-   * Active scope selections (ctx_scopes ids) from appContextSlice at send
-   * time. The server unions them with the conversation's tags inside
-   * resolve_full_context so the selected scopes' context cells reach the
-   * agent. Membership-validated server-side; ignored by pre-scope_ids
-   * backend deploys (pydantic extra='ignore').
-   */
-  scope_ids?: string[];
-  source_app?: string;
-  source_feature?: string;
-  stream?: boolean;
-  debug?: boolean;
-  /** Admin: render every assistant turn as a single block instead of a streaming thread. */
-  block_mode?: boolean;
-  /** Admin: capture a full server-side snapshot of the request + response for offline inspection. */
-  snapshot?: boolean;
-  /**
-   * Admin-only Observational Memory toggle (tri-state):
-   *   null / omitted → inherit the conversation's persisted state
-   *   true           → enable + persist on cx_conversation.metadata
-   *   false          → disable + persist
-   * Non-admin values are silently ignored by the server.
-   */
-  memory?: boolean | null;
-  /** Admin-only: per-conversation Observer/Reflector model override. */
-  memory_model?: string | null;
-  /** Admin-only: "thread" (default) or "resource" scope for memory. */
-  memory_scope?: "thread" | "resource";
-}
+export type AssembledAgentStartRequest = Omit<
+  Partial<components["schemas"]["AgentStartRequest"]>,
+  "user_input"
+> & {
+  user_input?: string | MessagePart[] | null;
+};
 
 /**
- * Assembled snake_case wire payload for POST /ai/conversations/{conversation_id}.
+ * Outbound body for POST /ai/conversations/{conversation_id} while assembling.
+ * Same Partial + MessagePart refinement as `AssembledAgentStartRequest`.
  */
-export interface AssembledConversationRequest {
-  /** USER-layer overrides (apply policy, …). See `UserOverrides`. */
-  user?: UserOverrides;
-  /**
-   * Omitted on a retry (`retry: true`). On a normal continuation it carries
-   * the user's turn. Exactly one of `user_input` / `retry` must be present —
-   * the backend returns 422 `user_input_required` if neither is.
-   */
-  user_input?: string | MessagePart[];
-  /**
-   * Re-run the conversation's current persisted state with NO new input. The
-   * backend re-attempts the last turn; because a failed assistant turn is
-   * persisted `is_visible_to_model=false`, the model's context ends at the
-   * user's message and it tries again. See
-   * `aidream/api/docs/CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md`.
-   */
-  retry?: boolean;
-  config_overrides?: Record<string, unknown>;
-  context?: Record<string, unknown>;
-  tools?: import("./tool-injection.types").ToolSpec[];
-  tools_replace?: import("./tool-injection.types").ToolSpec[] | null;
-  client?: import("./tool-injection.types").ClientContext;
-  /** See `AssembledAgentStartRequest.skill_config` — forwarded on every turn. */
-  skill_config?: Record<string, unknown>;
-  /** See `AssembledAgentStartRequest.sandbox` — same top-level binding, forwarded on every turn. */
-  sandbox?: import("./tool-injection.types").ClientCapabilityPayloads["sandbox-fs"];
-  organization_id?: string;
-  project_id?: string;
-  task_id?: string;
-  /** See `AssembledAgentStartRequest.scope_ids` — re-sent each turn so the latest selection applies. */
-  scope_ids?: string[];
-  stream?: boolean;
-  debug?: boolean;
-  /** Admin: render every assistant turn as a single block instead of a streaming thread. */
-  block_mode?: boolean;
-  /** Admin: capture a full server-side snapshot of the request + response for offline inspection. */
-  snapshot?: boolean;
-  /**
-   * Admin-only Observational Memory toggle (tri-state):
-   *   null / omitted → inherit conversation's persisted state
-   *   true           → enable + persist
-   *   false          → disable + persist
-   */
-  memory?: boolean | null;
-  /** Admin-only: per-conversation Observer/Reflector model override. */
-  memory_model?: string | null;
-  /** Admin-only: "thread" (default) or "resource" scope for memory. */
-  memory_scope?: "thread" | "resource";
-}
+export type AssembledConversationRequest = Omit<
+  Partial<components["schemas"]["ConversationContinueRequest"]>,
+  "user_input"
+> & {
+  user_input?: string | MessagePart[] | null;
+};
 
 /**
- * Snake_case wire format for a single client tool result.
- * Used in POST /ai/conversations/{id}/tool_results.
+ * Wire shape for one client tool result
+ * (POST /ai/conversations/{id}/tool_results).
  */
-export interface ClientToolResultWire {
-  call_id: string;
-  tool_name: string;
-  output?: unknown;
-  is_error?: boolean;
-  error_message?: string | null;
-}
-
-/**
- * Internal (camelCase) representation of a tool result before wire serialization.
- * The execute thunk maps these to ClientToolResultWire before sending.
- */
-export interface ClientToolResult {
-  callId: string;
-  toolName: string;
-  output?: unknown;
-  isError?: boolean;
-  errorMessage?: string;
-}
+export type ClientToolResult = components["schemas"]["ClientToolResult"];

@@ -1,20 +1,21 @@
 # podcasts — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.113Z_
+_Generated: 2026-07-11T14:08:07.826Z_
 
-**3** actionable duplicates in this feature.
+**9** actionable duplicates in this feature.
 
 Regenerate: `pnpm generate:type-drift-hitlists`
 
-## `features/podcasts/generator/types.ts` (2)
+## `features/podcasts/generator/types.ts` (9)
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
 | PodcastGenerateRequest | interface | api-types | 104 | duplicate |  |
-| StageStatus | type | api-types | 297 | duplicate |  |
-
-## `features/podcasts/studio/runs/run-types.ts` (1)
-
-| Type | Kind | Source | Line | Status | Notes |
-| --- | --- | --- | --- | --- | --- |
-| RunAsset | interface | api-types | 37 | duplicate |  |
+| PodcastRunEvent | interface | stream-events | 161 | duplicate |  |
+| PodcastStageStartedEvent | interface | stream-events | 167 | duplicate |  |
+| PodcastStageEvent | interface | stream-events | 175 | duplicate |  |
+| PodcastMetadataEvent | interface | stream-events | 186 | duplicate |  |
+| PodcastAssetEvent | interface | stream-events | 194 | duplicate |  |
+| PodcastOfficialVideoEvent | interface | stream-events | 211 | duplicate |  |
+| PodcastCompleteEvent | interface | stream-events | 218 | duplicate |  |
+| StageStatus | type | api-types | 310 | duplicate |  |

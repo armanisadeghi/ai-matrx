@@ -1,6 +1,6 @@
 # kg-graph — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.109Z_
+_Generated: 2026-07-11T14:08:07.825Z_
 
 **5** actionable duplicates in this feature.
 

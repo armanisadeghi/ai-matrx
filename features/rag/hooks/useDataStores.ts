@@ -3,12 +3,13 @@
 /**
  * Hooks for `rag.data_stores` and `rag.data_store_members`.
  *
- * All reads/writes go through the FastAPI HTTP endpoints at
- * `/rag/data-stores/*`. The earlier Supabase-direct path didn't work
- * because PostgREST only exposes the `public` schema by default —
- * adding `rag` to the exposed schemas is a Supabase-dashboard config
- * change. The HTTP endpoints use the service-role pool with explicit
- * user_id checks, so they work regardless of PostgREST config.
+ * Direct-to-Supabase (rag.* is PostgREST-exposed): the two visibility-aware
+ * reads (owner + org + library-grant legs, member counts, polymorphic member
+ * label enrichment) call the `rag.fn_list_user_data_stores` /
+ * `rag.fn_get_user_data_store` SECURITY DEFINER functions (identity resolved
+ * from auth.uid() only — see the migration). Writes are plain `.schema("rag")`
+ * inserts/updates/deletes, gated by RLS (owner OR org-member on
+ * `data_stores`; the same pattern already existed on `data_store_members`).
  *
  * Lazy by design: nothing fires until a consumer mounts.
  */
@@ -16,14 +17,18 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { del, getJson, patchJson, postJson } from "@/lib/python-client";
+import { createClient } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
+import type { Database } from "@/types/database.types";
 import type {
   DataStore,
   DataStoreWithMemberCount,
 } from "@/features/rag/types/data-stores";
 
+type DataStoreUpdate = Database["rag"]["Tables"]["data_stores"]["Update"];
+
 // ---------------------------------------------------------------------------
-// Wire shapes returned by /rag/data-stores/* (snake_case Pydantic).
+// Wire shapes returned by the rag.* RPCs/tables (snake_case).
 // Mapped to the camelCase DataStore / DataStoreMember shapes the rest
 // of the app expects.
 // ---------------------------------------------------------------------------
@@ -138,11 +143,14 @@ export function useDataStores(): {
 
     (async () => {
       try {
-        const { data } = await getJson<ApiDataStoreSummary[]>(
-          "/rag/data-stores?include_inactive=false",
+        const supabase = createClient();
+        const { data, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_list_user_data_stores",
+          { p_include_inactive: false },
         );
+        if (rpcError) throw rpcError;
         if (cancelled) return;
-        setStores(data.map(summaryToStore));
+        setStores(((data ?? []) as ApiDataStoreSummary[]).map(summaryToStore));
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Could not load data stores");
@@ -166,18 +174,27 @@ export function useDataStores(): {
     }) => {
       if (!userId) return null;
       try {
-        const { data } = await postJson<ApiDataStoreDetail>(
-          "/rag/data-stores",
-          {
+        const supabase = createClient();
+        const { data, error: insertError } = await ragDb(supabase)
+          .from("data_stores")
+          .insert({
             name: input.name,
-            description: input.description ?? undefined,
+            description: input.description ?? null,
             kind: input.kind ?? "general",
-            short_code: input.shortCode ?? undefined,
-            organization_id: input.organizationId ?? undefined,
-          },
-        );
+            short_code: input.shortCode ?? null,
+            organization_id: input.organizationId ?? null,
+            created_by: userId,
+          })
+          .select(
+            "id, name, short_code, description, kind, organization_id, is_active, settings",
+          )
+          .single();
+        if (insertError) throw insertError;
         refresh();
-        return detailToStore(data);
+        return detailToStore({
+          ...(data as ApiDataStoreDetail),
+          members: [],
+        });
       } catch (e) {
         setError(
           e instanceof Error ? e.message : "Could not create data store",
@@ -207,6 +224,7 @@ export interface EnrichedMember {
 }
 
 export function useDataStoreDetail(storeId: string | null) {
+  const userId = useAppSelector(selectUserId);
   const [store, setStore] = useState<DataStore | null>(null);
   const [members, setMembers] = useState<EnrichedMember[]>([]);
   const [loading, setLoading] = useState(false);
@@ -227,10 +245,17 @@ export function useDataStoreDetail(storeId: string | null) {
 
     (async () => {
       try {
-        const { data: detail } = await getJson<ApiDataStoreDetail>(
-          `/rag/data-stores/${encodeURIComponent(storeId)}`,
+        const supabase = createClient();
+        const { data: raw, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_get_user_data_store",
+          { p_store_id: storeId, p_member_limit: 500 },
         );
+        if (rpcError) throw rpcError;
         if (cancelled) return;
+        if (!raw) {
+          throw new Error("data_store not found");
+        }
+        const detail = raw as unknown as ApiDataStoreDetail;
         setStore(detailToStore(detail));
         setMembers(
           (detail.members ?? []).map((m) => ({
@@ -258,16 +283,26 @@ export function useDataStoreDetail(storeId: string | null) {
 
   const addMember = useCallback(
     async (input: { sourceKind: string; sourceId: string; notes?: string }) => {
-      if (!storeId) return false;
+      if (!storeId || !userId) return false;
       try {
-        await postJson<ApiDataStoreDetail>(
-          `/rag/data-stores/${encodeURIComponent(storeId)}/members`,
-          {
-            source_kind: input.sourceKind,
-            source_id: input.sourceId,
-            notes: input.notes ?? undefined,
-          },
-        );
+        const supabase = createClient();
+        // Idempotent membership write — revives a soft-deleted binding, mirrors
+        // the previous server-side upsert (on_conflict data_store_id/source_kind/source_id).
+        const { error: upsertError } = await ragDb(supabase)
+          .from("data_store_members")
+          .upsert(
+            {
+              data_store_id: storeId,
+              source_kind: input.sourceKind,
+              source_id: input.sourceId,
+              added_by: userId,
+              notes: input.notes ?? null,
+              added_at: new Date().toISOString(),
+              deleted_at: null,
+            },
+            { onConflict: "data_store_id,source_kind,source_id" },
+          );
+        if (upsertError) throw upsertError;
         refresh();
         return true;
       } catch (e) {
@@ -275,16 +310,21 @@ export function useDataStoreDetail(storeId: string | null) {
         return false;
       }
     },
-    [storeId, refresh],
+    [storeId, userId, refresh],
   );
 
   const removeMember = useCallback(
     async (sourceKind: string, sourceId: string) => {
       if (!storeId) return false;
       try {
-        await del(
-          `/rag/data-stores/${encodeURIComponent(storeId)}/members/${encodeURIComponent(sourceKind)}/${encodeURIComponent(sourceId)}`,
-        );
+        const supabase = createClient();
+        const { error: deleteError } = await ragDb(supabase)
+          .from("data_store_members")
+          .delete()
+          .eq("data_store_id", storeId)
+          .eq("source_kind", sourceKind)
+          .eq("source_id", sourceId);
+        if (deleteError) throw deleteError;
         refresh();
         return true;
       } catch (e) {
@@ -304,18 +344,20 @@ export function useDataStoreDetail(storeId: string | null) {
       isActive?: boolean;
     }) => {
       if (!storeId) return false;
-      const body: Record<string, unknown> = {};
+      const body: DataStoreUpdate = {};
       if (patch.name !== undefined) body.name = patch.name;
       if (patch.description !== undefined) body.description = patch.description;
       if (patch.shortCode !== undefined) body.short_code = patch.shortCode;
       if (patch.isActive !== undefined) body.is_active = patch.isActive;
-      // Backend doesn't accept `kind` patches today; ignore silently.
+      // `kind` intentionally not patchable (matches previous backend behavior).
       if (Object.keys(body).length === 0) return true;
       try {
-        await patchJson<ApiDataStoreDetail>(
-          `/rag/data-stores/${encodeURIComponent(storeId)}`,
-          body,
-        );
+        const supabase = createClient();
+        const { error: updateError } = await ragDb(supabase)
+          .from("data_stores")
+          .update(body)
+          .eq("id", storeId);
+        if (updateError) throw updateError;
         refresh();
         return true;
       } catch (e) {
@@ -331,7 +373,12 @@ export function useDataStoreDetail(storeId: string | null) {
   const deleteStore = useCallback(async () => {
     if (!storeId) return false;
     try {
-      await del(`/rag/data-stores/${encodeURIComponent(storeId)}`);
+      const supabase = createClient();
+      const { error: deleteError } = await ragDb(supabase)
+        .from("data_stores")
+        .delete()
+        .eq("id", storeId);
+      if (deleteError) throw deleteError;
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not delete data store");
@@ -422,10 +469,14 @@ export function useDataStoreMembersRich(storeId: string | null) {
     setError(null);
     (async () => {
       try {
-        const { data } = await getJson<ApiRichMembersResponse>(
-          `/rag/data-stores/${encodeURIComponent(storeId)}/members-rich`,
+        const supabase = createClient();
+        const { data: raw, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_data_store_members_rich",
+          { p_store_id: storeId },
         );
+        if (rpcError) throw rpcError;
         if (cancelled) return;
+        const data = raw as unknown as ApiRichMembersResponse | null;
         const list = Array.isArray(data?.members) ? data.members : [];
         setMembers(
           list.map((m) => ({
@@ -469,6 +520,7 @@ export function useDataStoreMembersRich(storeId: string | null) {
 // ---------------------------------------------------------------------------
 
 export function useDocumentDataStores(processedDocumentId: string | null) {
+  const userId = useAppSelector(selectUserId);
   const list = useDataStores();
   const [memberOf, setMemberOf] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -486,27 +538,20 @@ export function useDocumentDataStores(processedDocumentId: string | null) {
 
     (async () => {
       try {
-        // Fan out one detail-fetch per visible store. Each returns its
-        // member list; we check for our doc id in each.
-        const results = await Promise.all(
-          list.stores.map(async (s) => {
-            try {
-              const { data } = await getJson<ApiDataStoreDetail>(
-                `/rag/data-stores/${encodeURIComponent(s.id)}`,
-              );
-              const isMember = (data.members ?? []).some(
-                (m) =>
-                  m.source_kind === "processed_document" &&
-                  m.source_id === processedDocumentId,
-              );
-              return isMember ? s.id : null;
-            } catch {
-              return null;
-            }
-          }),
-        );
+        // One query: RLS on data_store_members already scopes to stores the
+        // caller can see (owner/org), so no N+1 detail-fetch fan-out needed.
+        const supabase = createClient();
+        const { data, error: selectError } = await ragDb(supabase)
+          .from("data_store_members")
+          .select("data_store_id")
+          .eq("source_kind", "processed_document")
+          .eq("source_id", processedDocumentId)
+          .is("deleted_at", null);
+        if (selectError) throw selectError;
         if (cancelled) return;
-        setMemberOf(new Set(results.filter(Boolean) as string[]));
+        setMemberOf(
+          new Set((data ?? []).map((r) => r.data_store_id as string)),
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -519,31 +564,44 @@ export function useDocumentDataStores(processedDocumentId: string | null) {
 
   const bind = useCallback(
     async (dataStoreId: string) => {
-      if (!processedDocumentId) return false;
+      if (!processedDocumentId || !userId) return false;
       try {
-        await postJson<ApiDataStoreDetail>(
-          `/rag/data-stores/${encodeURIComponent(dataStoreId)}/members`,
-          {
-            source_kind: "processed_document",
-            source_id: processedDocumentId,
-          },
-        );
+        const supabase = createClient();
+        const { error: upsertError } = await ragDb(supabase)
+          .from("data_store_members")
+          .upsert(
+            {
+              data_store_id: dataStoreId,
+              source_kind: "processed_document",
+              source_id: processedDocumentId,
+              added_by: userId,
+              added_at: new Date().toISOString(),
+              deleted_at: null,
+            },
+            { onConflict: "data_store_id,source_kind,source_id" },
+          );
+        if (upsertError) throw upsertError;
         refresh();
         return true;
       } catch {
         return false;
       }
     },
-    [processedDocumentId, refresh],
+    [processedDocumentId, userId, refresh],
   );
 
   const unbind = useCallback(
     async (dataStoreId: string) => {
       if (!processedDocumentId) return false;
       try {
-        await del(
-          `/rag/data-stores/${encodeURIComponent(dataStoreId)}/members/processed_document/${encodeURIComponent(processedDocumentId)}`,
-        );
+        const supabase = createClient();
+        const { error: deleteError } = await ragDb(supabase)
+          .from("data_store_members")
+          .delete()
+          .eq("data_store_id", dataStoreId)
+          .eq("source_kind", "processed_document")
+          .eq("source_id", processedDocumentId);
+        if (deleteError) throw deleteError;
         refresh();
         return true;
       } catch {

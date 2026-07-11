@@ -653,6 +653,24 @@ export const componentList: ComponentEntry[] = [
     tags: ["tooltip", "help", "info", "contextual", "copy", "hover"],
   },
   {
+    id: "matrx-data-table",
+    name: "Matrx Data Table",
+    path: "components/official/matrx-data-table/MatrxDataTable.tsx",
+    description:
+      "Canonical data table: sticky headers, every-column sort/filter, toolbar facets, row → SidePanelSurface, panel icon → WindowPanel",
+    categories: ["data-display", "interactive", "dashboards"],
+    tags: [
+      "table",
+      "filter",
+      "sort",
+      "sticky",
+      "panel",
+      "window",
+      "canonical",
+      "matrx",
+    ],
+  },
+  {
     id: "applet-list-table",
     name: "Applet List Table",
     path: "features/applet/builder/modules/applet-builder/AppletListTable.tsx",

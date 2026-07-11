@@ -60,6 +60,7 @@ import {
   INPUT_MODALITIES,
   OUTPUT_MODALITIES,
   type CatalogModel,
+  type CatalogTier,
   type Modality,
   type ModelCatalogVariant,
   type Interaction,
@@ -109,6 +110,18 @@ interface ModelListDropdownProps {
   inputModalities: Modality[];
   /** Optional — output modalities the model must produce (seeds the filter). */
   outputModalities?: Modality[];
+  /**
+   * Currently pinned `ai.offering` uuid (agent settings `offering_id`).
+   * Only meaningful together with `onOfferingPinChange`. null/undefined =
+   * "Auto (preferred)" — the server picks the preferred offering.
+   */
+  pinnedOfferingId?: string | null;
+  /**
+   * Enables the Service-chip pinning UI in the detail card. Called with the
+   * offering uuid to pin, or `undefined` to clear the pin (back to Auto).
+   * Selecting a model whose offerings don't include the current pin clears it.
+   */
+  onOfferingPinChange?: (offeringId: string | undefined) => void;
   className?: string;
 }
 
@@ -177,17 +190,40 @@ function ModalityIcons({ list }: { list: Modality[] }) {
 
 // ── Detail card (right column / mobile sub-view) ─────────────────────────────
 
+// Service-chip styling — the selected style is the exact "default tier"
+// highlight this card always used; unselected matches the plain tier chip.
+const SERVICE_CHIP_SELECTED =
+  "rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-foreground";
+const SERVICE_CHIP_UNSELECTED =
+  "rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground/80";
+
 function ModelDetailCard({
   model,
   tier,
   variant,
   onSelect,
+  isCurrentModel,
+  pinnedOfferingId,
+  onPinOffering,
 }: {
   model: CatalogModel;
   tier: PriceTier | null;
   variant: ModelCatalogVariant;
   onSelect: () => void;
+  /** Whether this card shows the currently-selected model. */
+  isCurrentModel?: boolean;
+  /** Pinned ai.offering uuid (offering_id) — only shown as selected on the current model. */
+  pinnedOfferingId?: string | null;
+  /** When provided, Service chips become pin toggles (undefined = Auto). */
+  onPinOffering?: (
+    model: CatalogModel,
+    offeringId: string | undefined,
+  ) => void;
 }) {
+  // A pin only renders as selected on the model it belongs to.
+  const pinnedHere = (t: CatalogTier) =>
+    !!isCurrentModel && !!pinnedOfferingId && t.offeringId === pinnedOfferingId;
+  const anyPinnedHere = model.tiers.some(pinnedHere);
   return (
     <div className="flex h-full flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -306,32 +342,85 @@ function ModelDetailCard({
         </div>
 
         {/* Services — the endpoint's PUBLIC Matrx brand only (Matrx
-            Fast / Matrx Lightning / ...). Never a vendor name. The first
-            tier is the server's default route; per-request tier selection
-            ships when the chat wire carries an endpoint hint. */}
+            Fast / Matrx Lightning / ...). Never a vendor name. When
+            `onPinOffering` is provided the chips are pin toggles: clicking a
+            Service pins the call to that exact offering (persisted as
+            settings.offering_id); "Auto" (the default) lets the server pick
+            the preferred offering by priority. Clicking the pinned chip
+            unpins (back to Auto). Otherwise the chips are display-only and
+            the first (preferred) tier is highlighted. */}
         {model.tiers.length > 0 && model.tiers[0].servedVia && (
           <div>
             <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
               {model.tiers.length === 1 ? SERVICE_LABEL : SERVICE_LABEL_PLURAL}
             </dt>
             <dd className="flex flex-wrap gap-1">
-              {model.tiers.map((t, i) => (
-                <span
-                  key={t.offeringId}
-                  className={
-                    i === 0
-                      ? "rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
-                      : "rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground/80"
-                  }
-                  title={
-                    i === 0
-                      ? "Default serving tier"
-                      : "Also available on this tier"
-                  }
-                >
-                  {t.servedVia}
-                </span>
-              ))}
+              {onPinOffering ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onPinOffering(model, undefined)}
+                    title="Auto — the server picks the preferred Service for each call"
+                    className={cn(
+                      "transition-colors",
+                      !anyPinnedHere
+                        ? SERVICE_CHIP_SELECTED
+                        : cn(
+                            SERVICE_CHIP_UNSELECTED,
+                            "hover:bg-muted/60 hover:text-foreground",
+                          ),
+                    )}
+                  >
+                    Auto
+                  </button>
+                  {model.tiers.map((t) => {
+                    const pinned = pinnedHere(t);
+                    return (
+                      <button
+                        key={t.offeringId}
+                        type="button"
+                        onClick={() =>
+                          onPinOffering(model, pinned ? undefined : t.offeringId)
+                        }
+                        title={
+                          pinned
+                            ? "Pinned — every call uses this Service. Click to return to Auto."
+                            : `Pin every call to ${t.servedVia}`
+                        }
+                        className={cn(
+                          "transition-colors",
+                          pinned
+                            ? SERVICE_CHIP_SELECTED
+                            : cn(
+                                SERVICE_CHIP_UNSELECTED,
+                                "hover:bg-muted/60 hover:text-foreground",
+                              ),
+                        )}
+                      >
+                        {t.servedVia}
+                      </button>
+                    );
+                  })}
+                </>
+              ) : (
+                model.tiers.map((t, i) => (
+                  <span
+                    key={t.offeringId}
+                    className={
+                      i === 0
+                        ? SERVICE_CHIP_SELECTED
+                        : SERVICE_CHIP_UNSELECTED
+                    }
+                    title={
+                      i === 0
+                        ? "Default serving tier"
+                        : "Also available on this tier"
+                    }
+                  >
+                    {t.servedVia}
+                  </span>
+                ))
+              )}
             </dd>
           </div>
         )}
@@ -737,6 +826,8 @@ export function ModelListDropdown({
   variant,
   inputModalities,
   outputModalities,
+  pinnedOfferingId,
+  onOfferingPinChange,
   className,
 }: ModelListDropdownProps) {
   const isMobile = useIsMobile();
@@ -880,8 +971,37 @@ export function ModelListDropdown({
   };
 
   const handleSelect = (id: string) => {
+    // A pinned offering belongs to exactly one model — selecting a model whose
+    // offerings don't include the pin clears it (back to Auto), loudly.
+    if (onOfferingPinChange && pinnedOfferingId) {
+      const next = models.find((m) => m.id === id);
+      const pinStillValid =
+        next?.tiers.some((t) => t.offeringId === pinnedOfferingId) ?? false;
+      if (!pinStillValid) {
+        console.warn(
+          `[ModelListDropdown] Cleared pinned Service offering ${pinnedOfferingId} — it does not belong to the newly selected model ${id}; routing returns to Auto (preferred).`,
+        );
+        onOfferingPinChange(undefined);
+      }
+    }
     onValueChange(id);
     handleOpen(false);
+  };
+
+  /**
+   * Pin/unpin a Service offering from the detail card. Pinning an offering of
+   * a model that isn't currently selected also selects that model — the pin is
+   * the exact call (model × endpoint × api), so the two always move together.
+   * `undefined` clears the pin (Auto). The popover/drawer stays open so the
+   * toggle state is visible.
+   */
+  const handlePinOffering = (
+    model: CatalogModel,
+    offeringId: string | undefined,
+  ) => {
+    if (!onOfferingPinChange) return;
+    if (model.id !== value) onValueChange(model.id);
+    onOfferingPinChange(offeringId);
   };
 
   const trigger = (
@@ -1067,6 +1187,11 @@ export function ModelListDropdown({
                     tier={costRatingTier(mobileDetail.costRating)}
                     variant={variant}
                     onSelect={() => handleSelect(mobileDetail.id)}
+                    isCurrentModel={mobileDetail.id === value}
+                    pinnedOfferingId={pinnedOfferingId}
+                    onPinOffering={
+                      onOfferingPinChange ? handlePinOffering : undefined
+                    }
                   />
                 </div>
               </>
@@ -1136,6 +1261,11 @@ export function ModelListDropdown({
                   tier={costRatingTier(hovered.costRating)}
                   variant={variant}
                   onSelect={() => handleSelect(hovered.id)}
+                  isCurrentModel={hovered.id === value}
+                  pinnedOfferingId={pinnedOfferingId}
+                  onPinOffering={
+                    onOfferingPinChange ? handlePinOffering : undefined
+                  }
                 />
               </div>
             ) : (

@@ -17,7 +17,10 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { CxContentBlock, CxTextContent } from "@/features/public-chat/types/cx-tables";
+import type {
+  CxContentBlock,
+  CxTextContent,
+} from "@/features/public-chat/types/cx-tables";
 import { reconstructBlockMarkdown } from "@/features/agents/redux/execution-system/utils/assemble-cx-content-blocks";
 import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
@@ -96,7 +99,7 @@ function rewriteFenceToArtifact(
     body,
     wire,
     fenceMarkdown(language, body),
-  ) as CxContentBlock[] | null;
+  );
 }
 
 function messageStillHasFence(
@@ -128,7 +131,10 @@ function findExistingArtifactIdForBody(
     let m: RegExpExecArray | null;
     re.lastIndex = 0;
     while ((m = re.exec(text)) !== null) {
-      if ((m[2] ?? "").trim() === body.trim() && isMaterializedArtifactId(m[1])) {
+      if (
+        (m[2] ?? "").trim() === body.trim() &&
+        isMaterializedArtifactId(m[1])
+      ) {
         return m[1]!;
       }
     }
@@ -149,14 +155,8 @@ async function nextArtifactIndex(messageId: string): Promise<number> {
   return max + 1;
 }
 
-function extractBody(row: {
-  content: unknown;
-}): string {
-  const stored = row.content as
-    | { data?: unknown }
-    | string
-    | null
-    | undefined;
+function extractBody(row: { content: unknown }): string {
+  const stored = row.content as { data?: unknown } | string | null | undefined;
   if (stored && typeof stored === "object" && "data" in stored) {
     return typeof stored.data === "string"
       ? stored.data
@@ -170,7 +170,10 @@ function extractBody(row: {
 async function resolveLatestInChain(id: string) {
   const history = await canvasArtifactService.getVersionHistory(id);
   if (history.length > 0) {
-    return history.reduce((max, r) => (r.version > max.version ? r : max), history[0]!);
+    return history.reduce(
+      (max, r) => (r.version > max.version ? r : max),
+      history[0]!,
+    );
   }
   return canvasArtifactService.getById(id);
 }
@@ -204,7 +207,10 @@ async function findOrphanCanvasRowForBody(
 }
 
 /** Prefer the chain root UUID as the durable context / R1 key. */
-function chainRootId(row: { id: string; parent_canvas_id: string | null }): string {
+function chainRootId(row: {
+  id: string;
+  parent_canvas_id: string | null;
+}): string {
   return row.parent_canvas_id ?? row.id;
 }
 
@@ -323,7 +329,9 @@ export async function attachBlockAsEditableContext(
       artifactId = chainRootId(latest);
       version = latest.version;
       rowContent = extractBody(latest) || body;
-      steps.push(`reusing orphan canvas row ${artifactId} (prior failed rewrite)`);
+      steps.push(
+        `reusing orphan canvas row ${artifactId} (prior failed rewrite)`,
+      );
     }
   }
 
@@ -420,8 +428,7 @@ export async function attachBlockAsEditableContext(
   steps.push("refetchSingleMessage + clear _streamRequestId cohort");
   await deps.dispatch(refetchSingleMessage({ conversationId, messageId }));
   const afterState = deps.getState();
-  const entry =
-    afterState.messages.byConversationId[conversationId];
+  const entry = afterState.messages.byConversationId[conversationId];
   const streamReqId = entry?.byId?.[messageId]?._streamRequestId;
   if (streamReqId && entry) {
     for (const mid of entry.orderedIds) {

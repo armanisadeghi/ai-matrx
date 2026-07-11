@@ -88,10 +88,16 @@ function suggestedActionFor(
  *
  * Algorithm:
  *   1. Run validation engine against (oldSettings + newModelControls + newConstraints).
- *   2. Dedupe issues by key, keeping the most severe category.
- *   3. For each issue, derive: the new-model default, and a suggested action.
- *   4. Compute compatibleSettings (keys without any issue on the new model).
- *   5. Compute newModelDefaults via getModelDefaults(newModel).
+ *   2. Flag a pinned `offering_id` that does not belong to the new model
+ *      (checked against the model's catalog offerings) — suggested action: clear.
+ *   3. Dedupe issues by key, keeping the most severe category.
+ *   4. For each issue, derive: the new-model default, and a suggested action.
+ *   5. Compute compatibleSettings (keys without any issue on the new model).
+ *   6. Compute newModelDefaults via getModelDefaults(newModel).
+ *
+ * @param newModelOfferingIds The new model's ai.offering uuids from the model
+ *   catalog (CatalogModel.tiers). Pass `null` when the catalog hasn't loaded —
+ *   the offering check is then skipped (never guess-clear a pin without data).
  */
 export function analyzeModelChange(
   oldSettings: FeLlmParams,
@@ -99,6 +105,7 @@ export function analyzeModelChange(
   newModel: unknown,
   newModelControls: NormalizedControls | null,
   newModelConstraints: ModelConstraint[] | null,
+  newModelOfferingIds: string[] | null = null,
 ): ModelChangePlan {
   const safeSettings: FeLlmParams = oldSettings ?? ({} as FeLlmParams);
   const resolved = resolveConfig(
@@ -132,12 +139,38 @@ export function analyzeModelChange(
     }
   }
 
+  // Pinned offering check — a pinned offering_id belongs to exactly one model
+  // (an ai.offering IS a model × endpoint × api), so a pin from the previous
+  // model can never be valid on the new one unless it's in the new model's
+  // offering list. The validation engine can't see the catalog, so this is
+  // checked here against CatalogModel.tiers and surfaced as a normal
+  // reconciliation row (default action: clear → back to "Auto (preferred)").
+  const pinnedOfferingId = safeSettings.offering_id;
+  const staleOfferingPin =
+    typeof pinnedOfferingId === "string" &&
+    pinnedOfferingId.length > 0 &&
+    newModelOfferingIds !== null &&
+    !newModelOfferingIds.includes(pinnedOfferingId);
+
   const newModelDefaults = getModelDefaults(newModel) as FeLlmParams;
 
   const incompatible: IncompatibleRow[] = [];
   const issuedKeys = new Set<string>();
+  if (staleOfferingPin) {
+    issuedKeys.add("offering_id");
+    incompatible.push({
+      key: "offering_id",
+      currentValue: pinnedOfferingId,
+      issue: "unsupported-key",
+      issueMessage:
+        "Pinned Service offering belongs to the previous model — clearing returns routing to Auto (preferred)",
+      newModelDefault: undefined,
+      suggestedAction: "clear",
+    });
+  }
   for (const issue of pickedByKey.values()) {
     const key = issue.key;
+    if (issuedKeys.has(key)) continue; // already rowed (e.g. stale offering pin)
     issuedKeys.add(key);
     const kind = mapIssueToKind(issue);
     const control = getControlForKey(newModelControls, key);

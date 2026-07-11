@@ -463,6 +463,10 @@ const unsupportedByModel: ValidationRule = {
     for (const [key, value] of Object.entries(settings)) {
       if (value === null || value === undefined) continue;
       if (key === "model_id") continue;
+      // offering_id is a routing key (pins the exact ai.offering for the call),
+      // never a model control — staleness across model swaps is checked against
+      // the catalog by the reconciliation flow, not against controls here.
+      if (key === "offering_id") continue;
       // Model-gated UI flags moved OUT of settings into agent.uiGates; they no
       // longer appear here. Guard defensively in case a flattened value lingers.
       if (isUiGateKey(key)) continue;

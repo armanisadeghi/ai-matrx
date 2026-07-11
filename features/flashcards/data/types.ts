@@ -9,7 +9,7 @@
 // card↔category themes) are NOT columns — they are `platform.associations` edges,
 // reached through `associationsService`. See the role vocabulary in EDGE_ROLE.
 
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 
 type Edu = Database["education"]["Tables"];
@@ -51,10 +51,17 @@ export interface NewCardInput {
    * Structured payload for a rich card VARIANT (matching pairs, etc.) → the
    * existing `fc_card.dynamic_content` jsonb column. Never a parallel table.
    * See `features/flashcards/utils/cardVariants.ts` for the per-kind shapes.
+   * Typed as DB `Json` (= unknown) so writers can pass MatchingContent etc.
+   * without a Record index-signature wedge.
    */
-  dynamic_content?: Record<string, unknown> | null;
+  dynamic_content?: Json | null;
   /** Optional lineage: the source passage this card came from (§ from-source flow). */
-  source?: { file_id: string; processed_document_id?: string; chunk_id?: string; page?: number };
+  source?: {
+    file_id: string;
+    processed_document_id?: string;
+    chunk_id?: string;
+    page?: number;
+  };
   /**
    * P0 TrustEnvelope — the citations + confidence this card is grounded in
    * (`features/education/trust`). Persisted on `fc_card.metadata.trust`; the

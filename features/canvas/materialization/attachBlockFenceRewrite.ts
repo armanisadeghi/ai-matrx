@@ -1,15 +1,17 @@
 /**
  * Pure fence ↔ R1 rewrite helpers for attachBlockAsEditableContext.
- * Kept dependency-free so identical-fence behavior is unit-testable.
+ * Kept dependency-light so identical-fence behavior is unit-testable.
+ *
+ * Operates on the canonical `CxContentBlock` union — never a parallel
+ * "text block" shape with an index signature.
  */
 
-export interface TextContentBlock {
-  type?: string;
-  text?: string;
-  [key: string]: unknown;
-}
+import type {
+  CxContentBlock,
+  CxTextContent,
+} from "@/features/public-chat/types/cx-tables";
 
-function isTextBlock(b: TextContentBlock): boolean {
+function isTextBlock(b: CxContentBlock): b is CxTextContent {
   return b.type === "text";
 }
 
@@ -34,16 +36,16 @@ export function softFenceRegex(language: string, body: string): RegExp {
  * Identical fences share one canvas UUID. Returns null when no fence is found.
  */
 export function rewriteAllMatchingFences(
-  content: TextContentBlock[],
+  content: CxContentBlock[],
   language: string,
   body: string,
   wire: string,
   fenceMarkdown: string,
-): TextContentBlock[] | null {
+): CxContentBlock[] | null {
   let replaced = false;
-  const out: TextContentBlock[] = content.map((block) => {
+  const out: CxContentBlock[] = content.map((block) => {
     if (!isTextBlock(block)) return block;
-    let text = typeof block.text === "string" ? block.text : "";
+    let text = block.text;
     if (text.includes(fenceMarkdown)) {
       const next = text.split(fenceMarkdown).join(wire);
       if (next !== text) {
@@ -60,9 +62,7 @@ export function rewriteAllMatchingFences(
         text = next;
       }
     }
-    if (text === (typeof block.text === "string" ? block.text : "")) {
-      return block;
-    }
+    if (text === block.text) return block;
     return { ...block, text };
   });
   return replaced ? out : null;
@@ -70,7 +70,7 @@ export function rewriteAllMatchingFences(
 
 /** True when any text block still contains a raw fence for this body. */
 export function messageStillHasFence(
-  content: TextContentBlock[],
+  content: CxContentBlock[],
   language: string,
   body: string,
   fenceMarkdown: string,
@@ -78,10 +78,9 @@ export function messageStillHasFence(
   const soft = softFenceRegex(language, body);
   for (const block of content) {
     if (!isTextBlock(block)) continue;
-    const text = typeof block.text === "string" ? block.text : "";
-    if (text.includes(fenceMarkdown)) return true;
+    if (block.text.includes(fenceMarkdown)) return true;
     soft.lastIndex = 0;
-    if (soft.test(text)) return true;
+    if (soft.test(block.text)) return true;
   }
   return false;
 }

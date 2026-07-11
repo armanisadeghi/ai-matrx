@@ -1,6 +1,6 @@
 # tasks — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.118Z_
+_Generated: 2026-07-11T14:08:07.826Z_
 
 **7** actionable duplicates in this feature.
 
@@ -12,8 +12,8 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 | --- | --- | --- | --- | --- | --- |
 | ProgressItem | interface | stream-events | 9 | duplicate |  |
 | ProgressCategory | interface | stream-events | 19 | duplicate |  |
-| TimelineEvent | interface | stream-events | 63 | duplicate |  |
-| TimelinePeriod | interface | stream-events | 72 | duplicate |  |
-| TroubleshootingStep | interface | stream-events | 120 | duplicate |  |
-| TroubleshootingSolution | interface | stream-events | 130 | duplicate |  |
-| TroubleshootingIssue | interface | stream-events | 139 | duplicate |  |
+| TimelineEvent | interface | stream-events | 60 | duplicate |  |
+| TimelinePeriod | interface | stream-events | 69 | duplicate |  |
+| TroubleshootingStep | interface | stream-events | 114 | duplicate |  |
+| TroubleshootingSolution | interface | stream-events | 124 | duplicate |  |
+| TroubleshootingIssue | interface | stream-events | 133 | duplicate |  |

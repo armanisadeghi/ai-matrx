@@ -56,7 +56,11 @@ import { MasteryTierPill } from "@/features/education/study/components/MasteryDi
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { CardTrustFooter } from "@/features/education/trust/components/CardTrustFooter";
 import { fcService } from "../../data/fcService";
-import type { NewCardInput, SetWithCards, CardWithDetails } from "../../data/types";
+import type {
+  NewCardInput,
+  SetWithCards,
+  CardWithDetails,
+} from "../../data/types";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { FolderTagPicker } from "../organize/FolderTagPicker";
 import {
@@ -193,7 +197,9 @@ export function EditSetView({ setId }: { setId: string }) {
     }
   };
 
-  const [deleteTarget, setDeleteTarget] = useState<CardWithDetails | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CardWithDetails | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
   const [reordering, setReordering] = useState(false);
 
@@ -256,7 +262,12 @@ export function EditSetView({ setId }: { setId: string }) {
                 <History className="mr-1.5 h-4 w-4" />
                 History
               </Button>
-              <Button variant="outline" size="sm" onClick={goView} disabled={isPending}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goView}
+                disabled={isPending}
+              >
                 <Eye className="mr-1.5 h-4 w-4" />
                 View set
               </Button>
@@ -354,7 +365,9 @@ export function EditSetView({ setId }: { setId: string }) {
                     visibility={data.set.visibility}
                     onChange={(v) =>
                       setData((prev) =>
-                        prev ? { ...prev, set: { ...prev.set, visibility: v } } : prev,
+                        prev
+                          ? { ...prev, set: { ...prev.set, visibility: v } }
+                          : prev,
                       )
                     }
                   />
@@ -389,11 +402,15 @@ export function EditSetView({ setId }: { setId: string }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => void addCard(CARD_KIND.basic)}>
+                  <DropdownMenuItem
+                    onClick={() => void addCard(CARD_KIND.basic)}
+                  >
                     <Plus className="mr-2 h-4 w-4 text-muted-foreground" />
                     Basic (front / back)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => void addCard(CARD_KIND.cloze)}>
+                  <DropdownMenuItem
+                    onClick={() => void addCard(CARD_KIND.cloze)}
+                  >
                     <Scissors className="mr-2 h-4 w-4 text-muted-foreground" />
                     Cloze deletion
                   </DropdownMenuItem>
@@ -497,7 +514,7 @@ function CardEditor({
           ? {
               front: v.front.trim(),
               card_kind: CARD_KIND.matching,
-              dynamic_content: matchingDynamicContent(v.pairs) as never,
+              dynamic_content: matchingDynamicContent(v.pairs),
             }
           : kind === CARD_KIND.cloze
             ? {
@@ -613,7 +630,12 @@ function CardEditor({
       </div>
 
       {kind === CARD_KIND.matching ? (
-        <MatchingPairsEditor pairs={pairs} onChange={(p) => editCard({ pairs: p })} prompt={front} onPromptChange={(v) => editCard({ front: v })} />
+        <MatchingPairsEditor
+          pairs={pairs}
+          onChange={(p) => editCard({ pairs: p })}
+          prompt={front}
+          onPromptChange={(v) => editCard({ front: v })}
+        />
       ) : kind === CARD_KIND.cloze ? (
         <div className="space-y-2">
           <div>

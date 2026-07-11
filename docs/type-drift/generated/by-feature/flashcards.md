@@ -1,4 +1,4 @@
-# page-extraction — type drift hitlist
+# flashcards — type drift hitlist
 
 _Generated: 2026-07-11T14:08:07.825Z_
 
@@ -6,8 +6,8 @@ _Generated: 2026-07-11T14:08:07.825Z_
 
 Regenerate: `pnpm generate:type-drift-hitlists`
 
-## `features/page-extraction/types.ts` (1)
+## `features/flashcards/data/quiz/buildQuizQuestions.ts` (1)
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| RunExtractionRequest | interface | api-types | 377 | duplicate |  |
+| QuizQuestion | interface | stream-events | 13 | duplicate |  |

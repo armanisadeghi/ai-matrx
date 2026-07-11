@@ -2,6 +2,7 @@ import {
   messageStillHasFence,
   rewriteAllMatchingFences,
 } from "@/features/canvas/materialization/attachBlockFenceRewrite";
+import type { CxTextContent } from "@/features/public-chat/types/cx-tables";
 
 const BODY = "console.log(1)";
 const FENCE = "```ts\n" + BODY + "\n```";
@@ -10,36 +11,32 @@ const WIRE =
   BODY +
   "</artifact>";
 
+function textBlock(text: string): CxTextContent {
+  return { type: "text", text };
+}
+
 describe("attachBlockFenceRewrite", () => {
   it("rewrites every identical fence to the same artifact wire", () => {
-    const content = [
-      {
-        type: "text",
-        text: `First:\n\n${FENCE}\n\nSecond:\n\n${FENCE}\n`,
-      },
-    ];
+    const content = [textBlock(`First:\n\n${FENCE}\n\nSecond:\n\n${FENCE}\n`)];
     const out = rewriteAllMatchingFences(content, "ts", BODY, WIRE, FENCE);
     expect(out).not.toBeNull();
-    const text = out![0]!.text!;
-    expect(text.split(WIRE).length - 1).toBe(2);
-    expect(text.includes(FENCE)).toBe(false);
+    const first = out![0]!;
+    expect(first.type).toBe("text");
+    if (first.type !== "text") return;
+    expect(first.text.split(WIRE).length - 1).toBe(2);
+    expect(first.text.includes(FENCE)).toBe(false);
     expect(messageStillHasFence(out!, "ts", BODY, FENCE)).toBe(false);
   });
 
   it("returns null when the fence is absent", () => {
-    const content = [{ type: "text", text: "no code here" }];
+    const content = [textBlock("no code here")];
     expect(
       rewriteAllMatchingFences(content, "ts", BODY, WIRE, FENCE),
     ).toBeNull();
   });
 
   it("detects remaining raw fences after a partial rewrite", () => {
-    const content = [
-      {
-        type: "text",
-        text: `${WIRE}\n\n${FENCE}`,
-      },
-    ];
+    const content = [textBlock(`${WIRE}\n\n${FENCE}`)];
     expect(messageStillHasFence(content, "ts", BODY, FENCE)).toBe(true);
   });
 });

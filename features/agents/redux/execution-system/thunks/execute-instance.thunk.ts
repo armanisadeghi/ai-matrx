@@ -360,7 +360,10 @@ export const executeInstance = createAsyncThunk<
       // capabilities registry.
       const _caps = getCapabilitiesForConversation(state, conversationId);
       if (_caps) {
-        const _validation = validateMessageBlocks(payload.user_input, _caps);
+        const _validation = validateMessageBlocks(
+          payload.user_input ?? undefined,
+          _caps,
+        );
         if (_validation.ok === false) {
           console.warn(
             `[executeInstance] capabilities warning (rejected: ${_validation.rejected.join(", ")}): ${_validation.message}`,
@@ -428,8 +431,7 @@ export const executeInstance = createAsyncThunk<
       const assembledUserText = Array.isArray(payload.user_input)
         ? ((
             payload.user_input.find((b) => b.type === "text") as
-              | (MessagePart & { text?: string })
-              | undefined
+              (MessagePart & { text?: string }) | undefined
           )?.text ?? "")
         : typeof payload.user_input === "string"
           ? payload.user_input
@@ -590,8 +592,7 @@ export const executeInstance = createAsyncThunk<
       const pendingBypass = dispatch(
         consumePendingCacheBypass(conversationId) as never,
       ) as unknown as
-        | import("../message-crud/cache-bypass.slice").CacheBypassFlags
-        | null;
+        import("../message-crud/cache-bypass.slice").CacheBypassFlags | null;
 
       if (isContinuation) {
         // Turn 2+: POST /ai/conversations/{conversationId}
@@ -774,9 +775,8 @@ export const executeInstance = createAsyncThunk<
         // path — route through the ONE sanctioned clear helper so a live
         // next-message draft is never wiped (and never trips a false violation
         // scream); the just-failed message clears as before.
-        const { clearComposerIfUnsubmitted } = await import(
-          "../instance-user-input/clear-composer.thunk"
-        );
+        const { clearComposerIfUnsubmitted } =
+          await import("../instance-user-input/clear-composer.thunk");
         dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
       }
       return rejectWithValue(message);

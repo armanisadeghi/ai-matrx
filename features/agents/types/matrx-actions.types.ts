@@ -1,3 +1,5 @@
+import type { ApplyPolicy } from "./tool-injection.types";
+
 /**
  * Matrx Actions — the agent's apply configuration.
  *
@@ -13,7 +15,8 @@
  * rebrand of the retired `settings["output_apply"]` key — that name exists nowhere.
  */
 
-export type MatrxActionApplyPolicy = "auto" | "ask" | "off";
+/** Same union as OpenAPI `UserOverrides.apply_policy` / `ClientContext.apply_policy`. */
+export type MatrxActionApplyPolicy = ApplyPolicy;
 
 export interface MatrxActionsConfig {
   /** The action types this agent can perform — `verb:noun` (canonical catalog),

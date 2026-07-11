@@ -13,8 +13,16 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectAgentModelId,
   selectAgentModelMissing,
+  selectAgentSettings,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
+import {
+  setAgentField,
+  setAgentSettings,
+} from "@/features/agents/redux/agent-definition/slice";
+import type {
+  FeLlmParams,
+  LLMParams,
+} from "@/features/agents/types/agent-api-types";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { AgentVariablesModal } from "@/features/agents/components/variables-management/AgentVariablesModal";
@@ -38,6 +46,14 @@ export function AgentModelConfiguration({
   const modelMissing = useAppSelector((state) =>
     selectAgentModelMissing(state, agentId),
   );
+  // Agent settings blob — offering_id (the Service pin) lives here alongside
+  // temperature etc., persisted through the exact same save path (setAgentSettings
+  // marks the record dirty → saveAgent/saveAgentField writes agent.definition.settings).
+  const settings = useAppSelector((state) =>
+    selectAgentSettings(state, agentId),
+  );
+  const pinnedOfferingId =
+    (settings as FeLlmParams | null)?.offering_id ?? null;
   // TEMP (model-picker Lab): toggle the rich data-validation picker + its
   // user/admin variant. Remove once the ui-bakeoff winner replaces SmartModelSelect.
   const [labVariant, setLabVariant] = useState<ModelCatalogVariant | null>(
@@ -57,6 +73,43 @@ export function AgentModelConfiguration({
       );
     },
     [agentId, dispatch],
+  );
+
+  /**
+   * Pin/unpin the exact ai.offering the agent's calls route through.
+   * `undefined` = "Auto (preferred)" — the key is REMOVED from settings (never
+   * stored as null/undefined) so the server picks the preferred offering.
+   * Same save path as every other setting (temperature, top_p, ...).
+   */
+  const handleOfferingPinChange = useCallback(
+    (offeringId: string | undefined) => {
+      // Loud guard: settings === null means the agent record hasn't hydrated —
+      // writing `{ offering_id }` over it would silently drop every real
+      // setting on save (same round-trip bug AgentSettingsCore guards against).
+      if (settings === null) {
+        console.error(
+          `[AgentModelConfiguration] Refused to pin offering ${String(
+            offeringId,
+          )} — agent ${agentId} settings not hydrated yet; the write would clobber existing settings.`,
+        );
+        return;
+      }
+      const next: Record<string, unknown> = {
+        ...(settings as Record<string, unknown>),
+      };
+      if (offeringId === undefined) {
+        delete next.offering_id;
+      } else {
+        next.offering_id = offeringId;
+      }
+      // Same FeLlmParams → LLMParams cast used at every setAgentSettings call
+      // site (see AgentSettingsCore) — the FE superset isn't structurally
+      // identical to the backend contract.
+      dispatch(
+        setAgentSettings({ id: agentId, settings: next as LLMParams }),
+      );
+    },
+    [agentId, dispatch, settings],
   );
 
   return (
@@ -88,6 +141,8 @@ export function AgentModelConfiguration({
               variant={effectiveLabVariant}
               inputModalities={[]}
               outputModalities={["text"]}
+              pinnedOfferingId={pinnedOfferingId}
+              onOfferingPinChange={handleOfferingPinChange}
             />
           ) : (
             <SmartModelSelect

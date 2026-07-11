@@ -1,6 +1,6 @@
 # files — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.109Z_
+_Generated: 2026-07-11T14:08:07.825Z_
 
 **27** actionable duplicates in this feature.
 
@@ -16,28 +16,28 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| ImageBlock | type | stream-events | 223 | duplicate |  |
-| VideoBlock | type | stream-events | 231 | duplicate |  |
-| AudioBlock | type | stream-events | 239 | duplicate |  |
-| DocumentBlock | type | stream-events | 247 | duplicate |  |
-| YouTubeBlock | type | stream-events | 250 | duplicate |  |
+| ImageBlock | type | stream-events | 217 | duplicate |  |
+| VideoBlock | type | stream-events | 225 | duplicate |  |
+| AudioBlock | type | stream-events | 233 | duplicate |  |
+| DocumentBlock | type | stream-events | 241 | duplicate |  |
+| YouTubeBlock | type | stream-events | 244 | duplicate |  |
 
 ## `features/files/types.ts` (12)
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| MediaRef | interface | api-types | 62 | duplicate |  |
-| CreateFolderRequest | interface | api-types | 850 | duplicate |  |
-| BulkResultItem | interface | api-types | 899 | duplicate |  |
-| BulkResponse | interface | api-types | 915 | duplicate |  |
-| StorageUsageResponse | interface | api-types | 930 | duplicate |  |
-| TrashListResponse | interface | api-types | 959 | duplicate |  |
-| SearchFilesResponse | interface | api-types | 973 | duplicate |  |
-| RenameFileRequest | interface | api-types | 990 | duplicate |  |
-| CopyFileRequest | interface | api-types | 995 | duplicate |  |
-| AssetVariant | interface | api-types | 1221 | duplicate |  |
-| Asset | interface | api-types | 1274 | duplicate |  |
-| AssetPatchRequest | interface | api-types | 1308 | duplicate |  |
+| MediaRef | interface | api-types | 74 | duplicate |  |
+| CreateFolderRequest | interface | api-types | 879 | duplicate |  |
+| BulkResultItem | interface | api-types | 928 | duplicate |  |
+| BulkResponse | interface | api-types | 944 | duplicate |  |
+| StorageUsageResponse | interface | api-types | 959 | duplicate |  |
+| TrashListResponse | interface | api-types | 988 | duplicate |  |
+| SearchFilesResponse | interface | api-types | 1002 | duplicate |  |
+| RenameFileRequest | interface | api-types | 1019 | duplicate |  |
+| CopyFileRequest | interface | api-types | 1024 | duplicate |  |
+| AssetVariant | interface | api-types | 1250 | duplicate |  |
+| Asset | interface | api-types | 1297 | duplicate |  |
+| AssetPatchRequest | interface | api-types | 1331 | duplicate |  |
 
 ## `features/files/virtual-sources/types.ts` (9)
 

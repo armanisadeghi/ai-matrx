@@ -67,7 +67,7 @@ const EMPTY_SKILL_CONFIG: SkillConfig = {
 export function attachSkillConfigFromState(
   state: RootState,
   conversationId: string,
-  payload: { skill_config?: Record<string, unknown> },
+  payload: { skill_config?: Record<string, unknown> | null },
 ): void {
   const instance = state.conversations.byConversationId[conversationId];
   if (!instance) return;

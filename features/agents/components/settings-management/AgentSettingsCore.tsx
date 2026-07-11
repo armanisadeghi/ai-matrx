@@ -62,6 +62,7 @@ import {
   selectModelRegistryLoading,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
+import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
 import type {
   LLMParams,
   FeLlmParams,
@@ -1032,6 +1033,26 @@ export function AgentSettingsCore({
 
   const { normalizedControls, error } = useModelControls(models, modelId ?? "");
 
+  // Model catalog (ai.model_offering tiers) — the client source of each
+  // model's offering uuids. The model-swap reconciliation checks a pinned
+  // settings.offering_id against the NEW model's offerings and clears stale
+  // pins (an ai.offering is model × endpoint × api — it belongs to exactly
+  // one model, so a pin never survives a genuine model change).
+  const { models: catalogModels } = useModelCatalog("user");
+  const offeringIdsByModel = useMemo(() => {
+    // Not loaded (or failed) → null: the offering check is skipped rather than
+    // guess-clearing a pin without data.
+    if (catalogModels.length === 0) return null;
+    const map = new Map<string, string[]>();
+    for (const m of catalogModels) {
+      map.set(
+        m.id,
+        m.tiers.map((t) => t.offeringId),
+      );
+    }
+    return map;
+  }, [catalogModels]);
+
   // `settings` is null until the agent record hydrates (selectAgentSettings →
   // `record?.settings ?? null`). Hooks below read this nullable value directly
   // (they already tolerate null); the render body reads the guaranteed-non-null
@@ -1155,6 +1176,11 @@ export function AgentSettingsCore({
       newModel,
       newControls,
       newConstraints,
+      // Catalog loaded but model absent → [] (pin can't belong to it → clear).
+      // Catalog not loaded → null (check skipped, never guess-clear).
+      offeringIdsByModel
+        ? (offeringIdsByModel.get(newModelId) ?? [])
+        : null,
     );
 
     if (plan.incompatible.length === 0) {

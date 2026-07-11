@@ -1,10 +1,20 @@
 # (non-feature) — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.103Z_
+_Generated: 2026-07-11T14:08:07.824Z_
 
-**19** actionable duplicates in this feature.
+**24** actionable duplicates in this feature.
 
 Regenerate: `pnpm generate:type-drift-hitlists`
+
+## `app/(core)/podcast/studio/run-f/_mock/events.ts` (5)
+
+| Type | Kind | Source | Line | Status | Notes |
+| --- | --- | --- | --- | --- | --- |
+| PodcastStageStartedEvent | interface | stream-events | 7 | duplicate |  |
+| PodcastStageEvent | interface | stream-events | 15 | duplicate |  |
+| PodcastMetadataEvent | interface | stream-events | 26 | duplicate |  |
+| PodcastAssetEvent | interface | stream-events | 34 | duplicate |  |
+| PodcastCompleteEvent | interface | stream-events | 44 | duplicate |  |
 
 ## `app/(dev)/demos/local-tools/_lib/types.ts` (1)
 
@@ -24,6 +34,13 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 | --- | --- | --- | --- | --- | --- |
 | ComputeTarget | interface | api-types | 44 | duplicate |  |
 | ComputeTargetListResponse | interface | api-types | 61 | duplicate |  |
+
+## `components/mardown-display/blocks/cooking-recipes/parseRecipeMarkdown.ts` (2)
+
+| Type | Kind | Source | Line | Status | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Ingredient | interface | stream-events | 1 | duplicate |  |
+| RecipeStep | interface | stream-events | 6 | duplicate |  |
 
 ## `components/mardown-display/blocks/diagram/parseDiagramJSON.ts` (2)
 
@@ -62,12 +79,6 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 | --- | --- | --- | --- | --- | --- |
 | Position | interface | api-types | 1 | duplicate |  |
 
-## `components/mardown-display/markdown-classification/processors/processor-registry.ts` (1)
-
-| Type | Kind | Source | Line | Status | Notes |
-| --- | --- | --- | --- | --- | --- |
-| Position | interface | api-types | 18 | duplicate |  |
-
 ## `components/mardown-display/markdown-classification/processors/types.ts` (1)
 
 | Type | Kind | Source | Line | Status | Notes |
@@ -84,18 +95,17 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| ValidationError | interface | api-types | 4 | duplicate |  |
+| ValidationError | interface | api-types | 5 | duplicate |  |
 
-## `components/ui/JsonComponents/types.ts` (2)
+## `components/ui/JsonComponents/types.ts` (1)
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| ValidationError | interface | api-types | 5 | duplicate |  |
-| ValidationError | interface | api-types | 63 | duplicate |  |
+| ValidationError | interface | api-types | 6 | duplicate |  |
 
 ## `lib/redux/app-runner/validations/appRunnerValidations.ts` (2)
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
 | ValidationIssue | interface | api-types | 5 | duplicate |  |
-| ValidationResult | interface | api-types | 12 | duplicate |  |
+| ValidationResult | interface | api-types | 13 | duplicate |  |

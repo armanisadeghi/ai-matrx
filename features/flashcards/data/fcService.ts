@@ -264,7 +264,7 @@ export const fcService = {
         },
         // Rich-variant payload (matching pairs, …) → the existing jsonb column.
         ...(c.dynamic_content != null
-          ? { dynamic_content: c.dynamic_content as never }
+          ? { dynamic_content: c.dynamic_content }
           : {}),
       }));
       const { data, error } = await EDU()
@@ -361,7 +361,10 @@ export const fcService = {
           orgId: opts.orgId,
         });
         if (!edge.ok)
-          console.error("[fcService.addSubCards] expands_into edge failed:", edge);
+          console.error(
+            "[fcService.addSubCards] expands_into edge failed:",
+            edge,
+          );
       }),
     );
     return res;
@@ -379,9 +382,10 @@ export const fcService = {
       // `listForTargets` returned 0 edges for a stranger on a public deck, which
       // loaded an empty deck into cross-account multiplayer games (KNOWN_DEFECTS
       // D37). Strict superset — same-org reads are unchanged.
-      const edgesRes = await associationsService.listForTargetsVisible("fc_set", [
-        setId,
-      ]);
+      const edgesRes = await associationsService.listForTargetsVisible(
+        "fc_set",
+        [setId],
+      );
       if (!edgesRes.ok)
         return fail("getSetWithCards", "failed to load membership edges");
       const members = edgesRes.data.edges

@@ -26,7 +26,9 @@ automatic full closure rebuild in the DB — the UI just `router.refresh()`es.
   `admin_unregistered_pairs`, `admin_relationship_problems` in parallel, throws
   loudly on any RPC error, passes to the client island.
 - **Client island:** `features/admin/relationships/components/RelationshipManagerClient.tsx`
-  — all interactivity + mutations.
+  — all interactivity + mutations. Registry grid is **`MatrxDataTable`**
+  (`components/official/matrx-data-table/`).
+- **Rule editor:** `RuleEditorForm.tsx` — side panel body for create/edit.
 - **Types:** `features/admin/relationships/types.ts` — every shape derived from the
   generated `Database` types; never hand-mirrored.
 - **Admin catalog:** `features/admin/constants/admin-categories.ts` ("Relationship Manager").
@@ -92,12 +94,18 @@ can't compute — a conveying rule whose container isn't in
 
 - **Reusable primitives extracted:** `components/entity-types/EntityTypeChip` +
   `EntityTypeCombobox` (consumed here; available to every association surface).
+- **Table chrome:** `MatrxDataTable` — sticky headers, every-column filter/sort,
+  toolbar facets, row → `SidePanelSurface` / `MatrxDynamicPanelHost`, panel icon →
+  `WindowPanel`. Blocking `Sheet` retired for the rule editor.
 - Types derived from generated `Database` types; no `any`, no hand-mirroring.
 - Loud recovery: the page throws on any RPC load error rather than rendering a
   half-empty control plane.
 
 ## Change log
 
+- **2026-07-11** — Registry cut over to canonical `MatrxDataTable`; rule editor
+  moves to `SidePanelSurface` (create) / table detail panel (edit). Panel icon
+  opens a WindowPanel over the row.
 - **2026-07-09** — Full-CRUD rewrite: structured columnar registry (chips + a
   direction glyph, not prose), New/Edit/Delete rules, unified
   `admin_relationship_problems()` drift panel (adds the shareable-registry gap

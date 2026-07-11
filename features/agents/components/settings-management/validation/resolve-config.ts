@@ -16,6 +16,14 @@ const UI_GATE_RECOGNIZED = new Set<string>([...UI_GATE_KEYS, "multi_speaker"]);
 
 const LEGACY_REMAP_KEYS = new Set(["max_tokens", "output_format", "n"]);
 
+// Call-routing keys — server-consumed, but NOT model controls (like model_id,
+// they never appear in a model's controls schema). `offering_id` pins the call
+// to one exact ai.offering (model × endpoint × api); unset = the server picks
+// the preferred offering ("Auto"). Registered here so a pinned offering is
+// never flagged "unrecognized"; staleness across model swaps is handled by the
+// reconciliation flow (reconciliation/analyze.ts), not by key recognition.
+const ROUTING_KEYS = new Set<string>(["offering_id"]);
+
 /**
  * Builds the canonical set of keys recognized by the system.
  *
@@ -25,6 +33,7 @@ const LEGACY_REMAP_KEYS = new Set(["max_tokens", "output_format", "n"]);
  *   3. UI gate keys (now in agent.uiGates) + multi_speaker — registered
  *      defensively so a lingering flattened value never trips "unrecognized key"
  *   4. Legacy DB keys that are remapped at normalization time
+ *   5. Routing keys (offering_id) — server-consumed, never model controls
  *
  * This replaces the hardcoded `recognizedKeys` set that previously lived
  * inside AgentSettingsCore and could drift from the schema.
@@ -36,6 +45,7 @@ export function buildRecognizedKeys(
     ...LLM_PARAMS_KEYS,
     ...UI_GATE_RECOGNIZED,
     ...LEGACY_REMAP_KEYS,
+    ...ROUTING_KEYS,
   ]);
 
   if (normalizedControls) {

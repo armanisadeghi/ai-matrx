@@ -272,6 +272,8 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
   const tools = request.tools;
   const toolsReplace = request.tools_replace;
   const clientEnvelope = request.client;
+  // OpenAPI ClientContext.capabilities is optional; omit ≡ none declared.
+  const clientCapabilities = clientEnvelope?.capabilities;
   const hasContextSection =
     slotMatched.length > 0 || adHoc.length > 0 || declaredUnset.length > 0;
 
@@ -369,7 +371,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
 
       {/* ── User input ───────────────────────────────────────────────────── */}
       <StatSection title="User input">
-        {userInput === undefined ? (
+        {userInput == null ? (
           <div className="text-[11px] text-muted-foreground/60 italic py-1">
             — empty (will not be sent) —
           </div>
@@ -443,14 +445,14 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
               <div className="flex flex-wrap gap-1">
                 {tools.map((spec, i) => (
                   <span
-                    key={`${spec.kind}-${("name" in spec ? spec.name : spec.agent_id)}-${i}`}
+                    key={`${spec.kind}-${"name" in spec ? spec.name : spec.agent_id}-${i}`}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/40 bg-muted/30 font-mono text-[10px] text-foreground/90"
                     title={JSON.stringify(spec)}
                   >
-                    <span className="text-muted-foreground/70">{spec.kind}</span>
-                    <span>
-                      {"name" in spec ? spec.name : spec.agent_id}
+                    <span className="text-muted-foreground/70">
+                      {spec.kind}
                     </span>
+                    <span>{"name" in spec ? spec.name : spec.agent_id}</span>
                     {"delegate" in spec && spec.delegate ? (
                       <span className="text-amber-600 dark:text-amber-400">
                         ↳client
@@ -463,21 +465,20 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
             {toolsReplace && toolsReplace.length > 0 && (
               <div className="mt-2">
                 <div className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 mb-0.5">
-                  tools_replace — overrides agent's saved set ({toolsReplace.length})
+                  tools_replace — overrides agent's saved set (
+                  {toolsReplace.length})
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {toolsReplace.map((spec, i) => (
                     <span
-                      key={`r-${spec.kind}-${("name" in spec ? spec.name : spec.agent_id)}-${i}`}
+                      key={`r-${spec.kind}-${"name" in spec ? spec.name : spec.agent_id}-${i}`}
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 font-mono text-[10px] text-foreground/90"
                       title={JSON.stringify(spec)}
                     >
                       <span className="text-muted-foreground/70">
                         {spec.kind}
                       </span>
-                      <span>
-                        {"name" in spec ? spec.name : spec.agent_id}
-                      </span>
+                      <span>{"name" in spec ? spec.name : spec.agent_id}</span>
                     </span>
                   ))}
                 </div>
@@ -493,10 +494,10 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
 
       {/* ── Client capability envelope ───────────────────────────────────── */}
       <StatSection title="Client capabilities">
-        {clientEnvelope && clientEnvelope.capabilities.length > 0 ? (
+        {clientCapabilities && clientCapabilities.length > 0 ? (
           <>
             <div className="flex flex-wrap gap-1 mb-1">
-              {clientEnvelope.capabilities.map((cap) => (
+              {clientCapabilities.map((cap) => (
                 <span
                   key={cap}
                   className="inline-flex items-center px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 font-mono text-[10px] text-foreground/90"
@@ -510,7 +511,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
                 Capability state (raw JSON)
               </summary>
               <pre className="mt-1 font-mono text-[11px] text-foreground/90 bg-muted/30 border border-border/40 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all">
-                {JSON.stringify(clientEnvelope.state, null, 2)}
+                {JSON.stringify(clientEnvelope?.state, null, 2)}
               </pre>
             </details>
           </>

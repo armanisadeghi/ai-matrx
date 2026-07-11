@@ -1,16 +1,10 @@
 # rag — type drift hitlist
 
-_Generated: 2026-07-01T23:23:32.113Z_
+_Generated: 2026-07-11T14:08:07.826Z_
 
-**32** actionable duplicates in this feature.
+**31** actionable duplicates in this feature.
 
 Regenerate: `pnpm generate:type-drift-hitlists`
-
-## `features/rag/api/ingest.ts` (1)
-
-| Type | Kind | Source | Line | Status | Notes |
-| --- | --- | --- | --- | --- | --- |
-| IngestResponse | interface | api-types | 25 | duplicate |  |
 
 ## `features/rag/api/rag-jobs.ts` (1)
 
@@ -52,10 +46,10 @@ Regenerate: `pnpm generate:type-drift-hitlists`
 | DocumentLineage | interface | api-types | 32 | duplicate |  |
 | PageSummary | interface | api-types | 40 | duplicate |  |
 | DocumentDetail | interface | api-types | 55 | duplicate |  |
-| PageDetail | interface | api-types | 101 | duplicate |  |
-| ChunkRow | interface | api-types | 126 | duplicate |  |
-| LineageNode | interface | api-types | 139 | duplicate |  |
-| LineageTree | interface | api-types | 148 | duplicate |  |
+| PageDetail | interface | api-types | 100 | duplicate |  |
+| ChunkRow | interface | api-types | 125 | duplicate |  |
+| LineageNode | interface | api-types | 138 | duplicate |  |
+| LineageTree | interface | api-types | 147 | duplicate |  |
 
 ## `features/rag/types/library.ts` (6)
 
