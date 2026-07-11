@@ -13,7 +13,13 @@
  *               `is_super_admin()`) returning `ai.model_admin` rows (raw $
  *               pricing + real serving vendors; full catalog incl. deprecated).
  *               The view itself has postgres-only grants — never read it
- *               directly from the client.
+ *               directly from the client. The RPC is one-row-per-model
+ *               (preferred offering only), so the admin variant ALSO reads
+ *               `ai.offering` + `ai.endpoint` + `ai.api` directly (their RLS
+ *               grants authenticated reads) and attaches EVERY offering —
+ *               vendor, api, provider_model_id, real $ pricing, priority,
+ *               availability — as `CatalogModel.admin.offerings`. Total
+ *               transparency: nothing the admin variant shows is masked.
  *
  * The row is reshaped for display: pretty name only, the stored MAKER (the DB
  * resolves it — serving vendors like Groq/Cerebras are never exposed on
@@ -66,6 +72,45 @@ export interface CatalogTier {
   priority: number;
 }
 
+/**
+ * One real $ pricing band from `ai.offering.pricing` (array of tiers:
+ * `{ max_tokens, input_price, output_price, cached_input_price }`, prices in
+ * $ per million tokens unless `usage_basis` says otherwise). ADMIN eyes only.
+ */
+export interface AdminPricingBand {
+  maxTokens: number | null;
+  inputPrice: number | null;
+  outputPrice: number | null;
+  cachedInputPrice: number | null;
+}
+
+/**
+ * One full `ai.offering` row joined to its endpoint + api — the exact call
+ * (model × endpoint × api × provider_model_id) with REAL vendor/wire/$ data.
+ * ADMIN eyes only; never rendered outside the admin variant.
+ */
+export interface AdminOffering {
+  offeringId: string;
+  /** The actual model id sent on a raw call to the vendor. */
+  providerModelId: string | null;
+  /** Real serving vendor (ai.endpoint.vendor) — never user-facing. */
+  vendor: string | null;
+  endpointId: string | null;
+  endpointDisplayName: string | null;
+  endpointInternalName: string | null;
+  apiId: string | null;
+  apiName: string | null;
+  translatorKey: string | null;
+  transport: string | null;
+  /** Real $ pricing bands (parsed from ai.offering.pricing). */
+  pricing: AdminPricingBand[];
+  usageBasis: string | null;
+  tokenBilled: boolean | null;
+  /** Lower = preferred (the server's default pick). */
+  priority: number;
+  isAvailable: boolean;
+}
+
 /** Reshaped, render-ready model row. */
 export interface CatalogModel {
   id: string;
@@ -114,6 +159,11 @@ export interface CatalogModel {
     transport: string | null;
     offeringId: string | null;
     providerModelId: string | null;
+    /**
+     * EVERY offering of this model (priority-ordered, preferred first) with
+     * real vendor/api/provider_model_id/$ pricing — total transparency.
+     */
+    offerings: AdminOffering[];
   };
 }
 
@@ -185,22 +235,54 @@ function normalizePublic(
   };
 }
 
-function pricingOutputCost(pricing: Json | null): number | null {
-  if (typeof pricing !== "object" || pricing === null || Array.isArray(pricing)) {
-    return null;
+/**
+ * Parse `ai.offering.pricing` — canonically an ARRAY of tier objects
+ * (`[{ max_tokens, input_price, output_price, cached_input_price }]`); a bare
+ * object is treated as a single band. Unknown shapes yield [] (shown as "—").
+ */
+function parsePricingBands(pricing: Json | null): AdminPricingBand[] {
+  const asBand = (v: unknown): AdminPricingBand | null => {
+    if (typeof v !== "object" || v === null || Array.isArray(v)) return null;
+    const o = v as Record<string, unknown>;
+    const num = (x: unknown): number | null => (typeof x === "number" ? x : null);
+    return {
+      maxTokens: num(o.max_tokens),
+      inputPrice: num(o.input_price),
+      outputPrice: num(o.output_price),
+      cachedInputPrice: num(o.cached_input_price),
+    };
+  };
+  if (Array.isArray(pricing)) {
+    return pricing
+      .map(asBand)
+      .filter((b): b is AdminPricingBand => b !== null);
   }
-  const p = pricing as Record<string, unknown>;
-  const candidate = p.output ?? p.output_per_million ?? p.per_million_output;
-  return typeof candidate === "number" ? candidate : null;
+  const single = asBand(pricing);
+  return single ? [single] : [];
 }
 
-function normalizeAdmin(row: ModelAdminRow): CatalogModel | null {
+/** Real $ output price (first band) — the admin price sort/display basis. */
+function pricingOutputCost(pricing: Json | null): number | null {
+  return parsePricingBands(pricing)[0]?.outputPrice ?? null;
+}
+
+function normalizeAdmin(
+  row: ModelAdminRow,
+  offerings: AdminOffering[],
+): CatalogModel | null {
   if (!row.id || !row.name) return null;
   return {
-    // Admin view is one-row-per-model (preferred offering only); the branded
-    // endpoint display name doubles as its tier.
-    tiers:
-      row.offering_id && row.endpoint_display_name
+    // Every offering is a serving tier (priority-ordered, preferred first);
+    // the branded endpoint display name doubles as the tier brand. Falls back
+    // to the RPC's preferred-offering columns if the offerings read was empty.
+    tiers: offerings.length
+      ? offerings.map((o) => ({
+          offeringId: o.offeringId,
+          servedVia: o.endpointDisplayName ?? o.vendor ?? "",
+          endpointId: o.endpointId,
+          priority: o.priority,
+        }))
+      : row.offering_id && row.endpoint_display_name
         ? [
             {
               offeringId: row.offering_id,
@@ -238,6 +320,7 @@ function normalizeAdmin(row: ModelAdminRow): CatalogModel | null {
       transport: row.transport,
       offeringId: row.offering_id,
       providerModelId: row.provider_model_id,
+      offerings,
     },
   };
 }
@@ -260,10 +343,67 @@ async function loadCatalog(
       // ai.model_admin has NO grants to authenticated (vendor names are
       // secret). The ONE read path is the SECURITY DEFINER RPC gated by
       // is_super_admin() — non-admins get a loud 42501, never data.
-      const { data, error } = await supabase.rpc("admin_model_catalog");
-      if (error) throw error;
-      const models = (data ?? [])
-        .map(normalizeAdmin)
+      // The RPC is one-row-per-model (preferred offering); the FULL offering
+      // list (every vendor/api/$ row) comes from direct ai.offering +
+      // ai.endpoint + ai.api reads, which RLS grants to authenticated.
+      const [rpcRes, offeringsRes, endpointsRes, apisRes] = await Promise.all([
+        supabase.rpc("admin_model_catalog"),
+        supabase
+          .schema("ai")
+          .from("offering")
+          .select(
+            "id, model_id, provider_model_id, pricing, usage_basis, token_billed, priority, is_available, endpoint_id, api_id",
+          )
+          .is("deleted_at", null)
+          .order("priority", { ascending: true }),
+        supabase
+          .schema("ai")
+          .from("endpoint")
+          .select("id, vendor, display_name, internal_name")
+          .is("deleted_at", null),
+        supabase
+          .schema("ai")
+          .from("api")
+          .select("id, name, translator_key, transport")
+          .is("deleted_at", null),
+      ]);
+      if (rpcRes.error) throw rpcRes.error;
+      if (offeringsRes.error) throw offeringsRes.error;
+      if (endpointsRes.error) throw endpointsRes.error;
+      if (apisRes.error) throw apisRes.error;
+      const endpointById = new Map(
+        (endpointsRes.data ?? []).map((e) => [e.id, e]),
+      );
+      const apiById = new Map((apisRes.data ?? []).map((a) => [a.id, a]));
+      const offeringsByModel = new Map<string, AdminOffering[]>();
+      for (const o of offeringsRes.data ?? []) {
+        if (typeof o.model_id !== "string" || typeof o.id !== "string") continue;
+        const endpoint = o.endpoint_id ? endpointById.get(o.endpoint_id) : undefined;
+        const api = o.api_id ? apiById.get(o.api_id) : undefined;
+        const list = offeringsByModel.get(o.model_id) ?? [];
+        list.push({
+          offeringId: o.id,
+          providerModelId: o.provider_model_id,
+          vendor: endpoint?.vendor ?? null,
+          endpointId: o.endpoint_id,
+          endpointDisplayName: endpoint?.display_name ?? null,
+          endpointInternalName: endpoint?.internal_name ?? null,
+          apiId: o.api_id,
+          apiName: api?.name ?? null,
+          translatorKey: api?.translator_key ?? null,
+          transport: api?.transport ?? null,
+          pricing: parsePricingBands(o.pricing),
+          usageBasis: o.usage_basis,
+          tokenBilled: o.token_billed,
+          priority: o.priority ?? 100,
+          isAvailable: o.is_available ?? false,
+        });
+        offeringsByModel.set(o.model_id, list);
+      }
+      const models = (rpcRes.data ?? [])
+        .map((row) =>
+          normalizeAdmin(row, row.id ? (offeringsByModel.get(row.id) ?? []) : []),
+        )
         .filter((m): m is CatalogModel => m !== null);
       return { models, error: null };
     }

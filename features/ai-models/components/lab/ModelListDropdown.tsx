@@ -1,25 +1,35 @@
 "use client";
 
 /**
- * ModelListDropdown — model picker built on the AgentListDropdown concept.
+ * ModelListDropdown — THE canonical model picker (formerly the "lab" picker).
  *
- * Desktop: a fixed two-column popover — a tabular list on the left, a detail
+ * Desktop: a fixed-footprint popover — a tabular list on the left, a detail
  * card on the right that swaps to filter/sort panels. The footprint NEVER
- * resizes, so hovering a row (→ detail) or opening a filter panel doesn't shift
- * anything. Mobile: a bottom drawer with detail / filter sub-views.
+ * resizes while open, so hovering a row (→ detail) or opening a filter panel
+ * doesn't shift anything. Mobile: a bottom drawer with detail / filter
+ * sub-views.
  *
  * Rows are dense and tabular (Maker · Name · Speed · Usage). Full capability
  * data (modalities, every feature bucket incl. "Other", interaction,
  * multilingual, pricing) lives in the always-present detail card — nothing is
- * ever hidden. The count sits at the BOTTOM, not in prime real estate.
+ * ever hidden. Modality/capability chips render straight from the stored
+ * `capabilities` JSON (via useModelCatalog.parseCaps) — never hardcoded — so
+ * data fixes flow through untouched. The count sits at the BOTTOM.
+ *
+ * Variants (internal — no prop): "user" is the default for everyone. Super
+ * admins (selectIsSuperAdmin) get an "Admin" toggle in the bottom bar that
+ * switches the picker into the admin variant IN PLACE — total transparency:
+ * the popover widens with a third "Offerings" column showing, per offering,
+ * the REAL provider_model_id / vendor / api / translator / transport /
+ * $ pricing / priority / availability as explicit labeled rows, and every
+ * displayed dimension (deprecated, vendor, api, availability, premium, maker,
+ * service) is filterable and sortable. The DB enforces the same gate: the
+ * admin catalog is only reachable via the `admin_model_catalog()` RPC
+ * (42501 for non-admins).
  *
  * Filters (input/output modalities, features, interaction, language) are
  * seeded from props and adjustable. `inputModalities` is REQUIRED — a caller
  * must declare what the model has to accept; there is no default.
- *
- * TEMPORARY: the data comes from messy transitional views (see useModelCatalog)
- * and maker/speed/pricing are derived stopgaps. Replaced by the ui-bakeoff
- * winner. Favorites is the next step (needs a userPreferences shape change).
  */
 
 import { useMemo, useRef, useState } from "react";
@@ -29,6 +39,7 @@ import {
   Languages,
   MousePointerClick,
   Search,
+  Shield,
   SlidersHorizontal,
   Star,
   Type,
@@ -42,6 +53,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { selectFavoriteModelIds } from "@/lib/redux/preferences/userPreferenceSelectors";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
   Popover,
   PopoverTrigger,
@@ -59,6 +71,7 @@ import {
   useModelCatalog,
   INPUT_MODALITIES,
   OUTPUT_MODALITIES,
+  type AdminOffering,
   type CatalogModel,
   type CatalogTier,
   type Modality,
@@ -83,9 +96,34 @@ import {
 
 const PANEL_HEIGHT = 440;
 const LIST_MAX_HEIGHT = "min(440px, 70dvh)";
+// Fixed column widths — the popover width is their sum per variant.
+const LIST_WIDTH = 400;
+const DETAIL_WIDTH = 360; // widened so modality/capability rows never wrap
+const ADMIN_PANEL_WIDTH = 400; // admin-only third column (offerings)
 
-type SortKey = "name" | "maker" | "service" | "context" | "price";
+type SortKey =
+  | "name"
+  | "maker"
+  | "service"
+  | "context"
+  | "price"
+  | "vendor"
+  | "api"
+  | "deprecated"
+  | "availability"
+  | "premium";
+
+/** Sorts that only exist in the admin variant (reset on leaving admin). */
+const ADMIN_ONLY_SORTS: ReadonlySet<SortKey> = new Set([
+  "vendor",
+  "api",
+  "deprecated",
+  "availability",
+  "premium",
+]);
+
 type RightPanel = "detail" | "filters" | null;
+type TriState = "any" | "yes" | "no";
 
 const MODALITY_ICON: Record<Modality, typeof Type> = {
   text: Type,
@@ -105,7 +143,6 @@ const INTERACTION_LABEL: Record<Interaction, string> = {
 interface ModelListDropdownProps {
   value: string | null | undefined;
   onValueChange: (modelId: string) => void;
-  variant: ModelCatalogVariant;
   /** REQUIRED — input modalities the model must accept (seeds the filter). */
   inputModalities: Modality[];
   /** Optional — output modalities the model must produce (seeds the filter). */
@@ -169,14 +206,15 @@ function UsageTier({ tier }: { tier: PriceTier | null }) {
 function ModalityIcons({ list }: { list: Modality[] }) {
   if (list.length === 0)
     return <span className="text-[11px] text-muted-foreground/50">—</span>;
+  // Chips render straight from stored capabilities — and NEVER wrap.
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex flex-nowrap items-center gap-1 whitespace-nowrap">
       {list.map((m) => {
         const Icon = MODALITY_ICON[m];
         return (
           <span
             key={m}
-            className="inline-flex items-center gap-0.5 text-xs text-foreground/70"
+            className="inline-flex shrink-0 items-center gap-0.5 text-xs text-foreground/70"
             title={m}
           >
             <Icon className="h-3 w-3" />
@@ -185,6 +223,165 @@ function ModalityIcons({ list }: { list: Modality[] }) {
         );
       })}
     </span>
+  );
+}
+
+// ── Admin offerings section (explicit, labeled, nothing hidden) ─────────────
+
+/** One explicit "Label: value" row — never an inline abbreviation. */
+function AdminRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string | null;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline gap-2 whitespace-nowrap">
+      <span className="w-[76px] shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "min-w-0 truncate text-[11px] text-foreground/90",
+          mono && "font-mono",
+        )}
+        title={value ?? undefined}
+      >
+        {value ?? "—"}
+      </span>
+    </div>
+  );
+}
+
+function fmtUsd(n: number | null): string {
+  return n == null ? "—" : `$${n}`;
+}
+
+function AdminOfferingBlock({
+  offering,
+  index,
+  total,
+}: {
+  offering: AdminOffering;
+  index: number;
+  total: number;
+}) {
+  const unit = offering.usageBasis ? `/ ${offering.usageBasis}` : "/ 1M tokens";
+  return (
+    <div className="rounded-md border border-border p-2">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="truncate text-[11px] font-semibold text-foreground">
+          Offering {index + 1} of {total}
+          {index === 0 ? " — preferred" : ""}
+        </span>
+        <span
+          className={cn(
+            "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium",
+            offering.isAvailable
+              ? "bg-primary/10 text-foreground/80"
+              : "bg-destructive/15 text-destructive",
+          )}
+        >
+          {offering.isAvailable ? "Available" : "Unavailable"}
+        </span>
+      </div>
+      <div className="space-y-0.5">
+        <AdminRow label="Model" value={offering.providerModelId} mono />
+        <AdminRow label="Vendor" value={offering.vendor} mono />
+        <AdminRow label="API" value={offering.apiName} mono />
+        <AdminRow label="Translator" value={offering.translatorKey} mono />
+        <AdminRow label="Transport" value={offering.transport} mono />
+        <AdminRow
+          label="Endpoint"
+          value={
+            offering.endpointDisplayName || offering.endpointInternalName
+              ? `${offering.endpointDisplayName ?? "—"} (${offering.endpointInternalName ?? "—"})`
+              : null
+          }
+        />
+        <AdminRow label="Priority" value={String(offering.priority)} mono />
+        {offering.pricing.length === 0 ? (
+          <AdminRow label="Pricing" value="— (no pricing rows)" />
+        ) : (
+          offering.pricing.map((band, i) => (
+            <div key={i} className="space-y-0.5">
+              {band.maxTokens != null && (
+                <AdminRow
+                  label={`Band ${i + 1}`}
+                  value={`≤ ${band.maxTokens.toLocaleString()} tokens`}
+                />
+              )}
+              <AdminRow
+                label="Input $"
+                value={`${fmtUsd(band.inputPrice)} ${unit}`}
+                mono
+              />
+              <AdminRow
+                label="Output $"
+                value={`${fmtUsd(band.outputPrice)} ${unit}`}
+                mono
+              />
+              <AdminRow
+                label="Cached $"
+                value={`${fmtUsd(band.cachedInputPrice)} ${unit}`}
+                mono
+              />
+            </div>
+          ))
+        )}
+        {/* null usage_basis = standard $/1M-token billing (usageBasis SSOT).
+            The loud MISSING case is media-specific and lives in the pricing
+            editor/validator — here we just state the raw facts. */}
+        <AdminRow
+          label="Billing"
+          value={
+            offering.usageBasis
+              ? `Usage basis: ${offering.usageBasis}`
+              : offering.tokenBilled
+                ? "Token-billed (provider-reported tokens)"
+                : "Standard $ / 1M tokens"
+          }
+        />
+        <AdminRow label="Offering" value={offering.offeringId} mono />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Total-transparency panel (admin variant only): EVERY offering of the model
+ * with real vendor / api / provider_model_id / $ pricing / priority /
+ * availability, as explicit labeled rows. Desktop: the popover's third
+ * column. Mobile: appended below the detail card.
+ */
+function AdminOfferingsSection({ model }: { model: CatalogModel }) {
+  const offerings = model.admin?.offerings ?? [];
+  return (
+    <div className="flex h-full flex-col">
+      <div className="shrink-0 border-b border-border px-3 py-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+        Offerings — real vendor / wire data ({offerings.length})
+      </div>
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
+        {offerings.length === 0 ? (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">
+            No offerings — this model is not callable (a model without an
+            `ai.offering` row cannot be routed).
+          </div>
+        ) : (
+          offerings.map((o, i) => (
+            <AdminOfferingBlock
+              key={o.offeringId}
+              offering={o}
+              index={i}
+              total={offerings.length}
+            />
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -205,6 +402,7 @@ function ModelDetailCard({
   isCurrentModel,
   pinnedOfferingId,
   onPinOffering,
+  includeAdminSection,
 }: {
   model: CatalogModel;
   tier: PriceTier | null;
@@ -219,6 +417,8 @@ function ModelDetailCard({
     model: CatalogModel,
     offeringId: string | undefined,
   ) => void;
+  /** Mobile only: append the admin offerings section inside the card scroll. */
+  includeAdminSection?: boolean;
 }) {
   // A pin only renders as selected on the model it belongs to.
   const pinnedHere = (t: CatalogTier) =>
@@ -288,7 +488,7 @@ function ModelDetailCard({
               {model.features.buckets.map((b) => (
                 <span
                   key={b}
-                  className="rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground/80"
+                  className="whitespace-nowrap rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground/80"
                   title={FEATURE_BUCKETS[b].description}
                 >
                   {FEATURE_BUCKETS[b].label}
@@ -342,7 +542,8 @@ function ModelDetailCard({
         </div>
 
         {/* Services — the endpoint's PUBLIC Matrx brand only (Matrx
-            Fast / Matrx Lightning / ...). Never a vendor name. When
+            Fast / Matrx Lightning / ...). Never a vendor name (the admin
+            variant's Offerings column carries the real vendor). When
             `onPinOffering` is provided the chips are pin toggles: clicking a
             Service pins the call to that exact offering (persisted as
             settings.offering_id); "Auto" (the default) lets the server pick
@@ -432,27 +633,6 @@ function ModelDetailCard({
           </div>
         )}
 
-        {variant === "admin" && model.admin && (
-          <div className="mt-1 space-y-1 rounded bg-muted/40 p-2 text-[11px]">
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Admin
-            </div>
-            {model.admin.vendor && <div>Vendor: {model.admin.vendor}</div>}
-            {model.admin.translatorKey && (
-              <div>Translator: {model.admin.translatorKey}</div>
-            )}
-            {(model.admin.endpointDisplayName ||
-              model.admin.endpointInternalName) && (
-              <div>
-                Endpoint:{" "}
-                {model.admin.endpointDisplayName ||
-                  model.admin.endpointInternalName}
-              </div>
-            )}
-            {model.admin.apiName && <div>API: {model.admin.apiName}</div>}
-          </div>
-        )}
-
         {/* Never hide data: the complete raw feature set, always. */}
         {model.features.raw.length > 0 && (
           <div>
@@ -465,6 +645,13 @@ function ModelDetailCard({
           </div>
         )}
       </dl>
+
+      {/* Mobile: the admin offerings section lives inside the card scroll. */}
+      {includeAdminSection && variant === "admin" && (
+        <div className="mt-3 rounded-md border border-border">
+          <AdminOfferingsSection model={model} />
+        </div>
+      )}
       </div>
       {/* Fixed footer — the Select button never moves. */}
       <div className="shrink-0 border-t border-border p-3">
@@ -493,6 +680,17 @@ interface Filters {
   interaction: Interaction | "any";
   multilingualOnly: boolean;
   sort: SortKey;
+  // ── Admin-only dimensions (always "any"/empty in the user variant) ──
+  /** Real serving vendors (ai.endpoint.vendor). Empty = any. */
+  vendors: Set<string>;
+  /** Real api names (ai.api.name). Empty = any. */
+  apis: Set<string>;
+  /** yes = deprecated only, no = active only. */
+  deprecated: TriState;
+  /** yes = has an available offering, no = none available. */
+  availability: TriState;
+  /** yes = premium only, no = standard only. */
+  premium: TriState;
 }
 
 function ChipToggle({
@@ -520,12 +718,63 @@ function ChipToggle({
   );
 }
 
+function TriStateChips({
+  value,
+  onChange,
+  yesLabel,
+  noLabel,
+}: {
+  value: TriState;
+  onChange: (next: TriState) => void;
+  yesLabel: string;
+  noLabel: string;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {(
+        [
+          ["any", "Any"],
+          ["yes", yesLabel],
+          ["no", noLabel],
+        ] as const
+      ).map(([key, label]) => (
+        <ChipToggle
+          key={key}
+          active={value === key}
+          onClick={() => onChange(key)}
+        >
+          {label}
+        </ChipToggle>
+      ))}
+    </div>
+  );
+}
+
+function FilterSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function FiltersPanel({
   filters,
   setFilters,
   variant,
   makerOptions,
   serviceOptions,
+  vendorOptions,
+  apiOptions,
 }: {
   filters: Filters;
   setFilters: React.Dispatch<React.SetStateAction<Filters>>;
@@ -534,6 +783,10 @@ function FiltersPanel({
   makerOptions: string[];
   /** Distinct branded serving names present in the catalog (sorted). */
   serviceOptions: string[];
+  /** Admin: distinct real vendors present in the catalog (sorted). */
+  vendorOptions: string[];
+  /** Admin: distinct real api names present in the catalog (sorted). */
+  apiOptions: string[];
 }) {
   const toggleModality = (kind: "input" | "output", m: Modality) =>
     setFilters((f) => {
@@ -549,7 +802,10 @@ function FiltersPanel({
       else next.add(b);
       return { ...f, features: next };
     });
-  const toggleSetValue = (kind: "makers" | "services", value: string) =>
+  const toggleSetValue = (
+    kind: "makers" | "services" | "vendors" | "apis",
+    value: string,
+  ) =>
     setFilters((f) => {
       const next = new Set(f[kind]);
       if (next.has(value)) next.delete(value);
@@ -562,17 +818,48 @@ function FiltersPanel({
     { key: "maker", label: "Maker" },
     { key: "service", label: SERVICE_LABEL },
     { key: "context", label: "Context" },
-    ...(variant === "user"
-      ? [{ key: "price" as const, label: "Usage" }]
+    { key: "price", label: variant === "admin" ? "Price ($/M out)" : "Usage" },
+    ...(variant === "admin"
+      ? ([
+          { key: "vendor", label: "Vendor" },
+          { key: "api", label: "API" },
+          { key: "deprecated", label: "Deprecated" },
+          { key: "availability", label: "Availability" },
+          { key: "premium", label: "Premium" },
+        ] as { key: SortKey; label: string }[])
       : []),
   ];
 
+  const setChip = (kind: "makers" | "services" | "vendors" | "apis") => (
+    <div className="flex flex-wrap gap-1">
+      <ChipToggle
+        active={filters[kind].size === 0}
+        onClick={() => setFilters((f) => ({ ...f, [kind]: new Set() }))}
+      >
+        Any
+      </ChipToggle>
+      {(kind === "makers"
+        ? makerOptions
+        : kind === "services"
+          ? serviceOptions
+          : kind === "vendors"
+            ? vendorOptions
+            : apiOptions
+      ).map((v) => (
+        <ChipToggle
+          key={v}
+          active={filters[kind].has(v)}
+          onClick={() => toggleSetValue(kind, v)}
+        >
+          {v}
+        </ChipToggle>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs">
-      <div>
-        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-          Sort by
-        </div>
+      <FilterSection label="Sort by">
         <div className="flex flex-wrap gap-1">
           {sortOptions.map((o) => (
             <ChipToggle
@@ -584,59 +871,10 @@ function FiltersPanel({
             </ChipToggle>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      <div>
-        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-          Maker
-        </div>
-        <div className="flex flex-wrap gap-1">
-          <ChipToggle
-            active={filters.makers.size === 0}
-            onClick={() => setFilters((f) => ({ ...f, makers: new Set() }))}
-          >
-            Any
-          </ChipToggle>
-          {makerOptions.map((m) => (
-            <ChipToggle
-              key={m}
-              active={filters.makers.has(m)}
-              onClick={() => toggleSetValue("makers", m)}
-            >
-              {m}
-            </ChipToggle>
-          ))}
-        </div>
-      </div>
-
-      {/* Branded serving names ONLY (served_via) — never a real vendor. */}
-      <div>
-        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-          {SERVICE_LABEL}
-        </div>
-        <div className="flex flex-wrap gap-1">
-          <ChipToggle
-            active={filters.services.size === 0}
-            onClick={() => setFilters((f) => ({ ...f, services: new Set() }))}
-          >
-            Any
-          </ChipToggle>
-          {serviceOptions.map((s) => (
-            <ChipToggle
-              key={s}
-              active={filters.services.has(s)}
-              onClick={() => toggleSetValue("services", s)}
-            >
-              {s}
-            </ChipToggle>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-          Input
-        </div>
+      {/* Modality filters at the TOP of the filter area (owner spec). */}
+      <FilterSection label="Input">
         <div className="flex flex-wrap gap-1">
           <ChipToggle
             active={filters.input.size === 0}
@@ -654,12 +892,9 @@ function FiltersPanel({
             </ChipToggle>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      <div>
-        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-          Output
-        </div>
+      <FilterSection label="Output">
         <div className="flex flex-wrap gap-1">
           <ChipToggle
             active={filters.output.size === 0}
@@ -677,12 +912,9 @@ function FiltersPanel({
             </ChipToggle>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      <div>
-        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-          Features
-        </div>
+      <FilterSection label="Features">
         <div className="flex flex-wrap gap-1">
           {FEATURE_BUCKET_ORDER.map((b) => (
             <ChipToggle
@@ -694,12 +926,9 @@ function FiltersPanel({
             </ChipToggle>
           ))}
         </div>
-      </div>
+      </FilterSection>
 
-      <div>
-        <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-          Interaction
-        </div>
+      <FilterSection label="Interaction">
         <div className="flex flex-wrap gap-1">
           {(["any", "turn", "single", "extraction", "realtime"] as const).map(
             (i) => (
@@ -715,7 +944,7 @@ function FiltersPanel({
             ),
           )}
         </div>
-      </div>
+      </FilterSection>
 
       <ChipToggle
         active={filters.multilingualOnly}
@@ -727,6 +956,50 @@ function FiltersPanel({
           <Languages className="h-3 w-3" /> Multilingual only
         </span>
       </ChipToggle>
+
+      {/* Admin-only dimensions — everything displayed is filterable. */}
+      {variant === "admin" && (
+        <>
+          <FilterSection label="Deprecated">
+            <TriStateChips
+              value={filters.deprecated}
+              onChange={(v) => setFilters((f) => ({ ...f, deprecated: v }))}
+              yesLabel="Deprecated only"
+              noLabel="Active only"
+            />
+          </FilterSection>
+
+          <FilterSection label="Availability">
+            <TriStateChips
+              value={filters.availability}
+              onChange={(v) => setFilters((f) => ({ ...f, availability: v }))}
+              yesLabel="Available"
+              noLabel="Unavailable"
+            />
+          </FilterSection>
+
+          <FilterSection label="Premium">
+            <TriStateChips
+              value={filters.premium}
+              onChange={(v) => setFilters((f) => ({ ...f, premium: v }))}
+              yesLabel="Premium only"
+              noLabel="Standard only"
+            />
+          </FilterSection>
+
+          {/* Real serving vendors — ADMIN eyes only. */}
+          <FilterSection label="Vendor">{setChip("vendors")}</FilterSection>
+
+          {/* Real wire APIs — ADMIN eyes only. */}
+          <FilterSection label="API">{setChip("apis")}</FilterSection>
+        </>
+      )}
+
+      {/* Maker + Service at the BOTTOM of the filter area (owner spec). */}
+      <FilterSection label="Maker">{setChip("makers")}</FilterSection>
+
+      {/* Branded serving names ONLY (served_via) — never a real vendor. */}
+      <FilterSection label={SERVICE_LABEL}>{setChip("services")}</FilterSection>
     </div>
   );
 }
@@ -736,6 +1009,7 @@ function FiltersPanel({
 function ModelRow({
   model,
   tier,
+  variant,
   selected,
   isFavorite,
   onSelect,
@@ -744,12 +1018,16 @@ function ModelRow({
 }: {
   model: CatalogModel;
   tier: PriceTier | null;
+  variant: ModelCatalogVariant;
   selected: boolean;
   isFavorite: boolean;
   onSelect: () => void;
   onHover?: () => void;
   onToggleFavorite: () => void;
 }) {
+  const unavailable =
+    variant === "admin" &&
+    !(model.admin?.offerings ?? []).some((o) => o.isAvailable);
   return (
     <div
       role="button"
@@ -800,6 +1078,14 @@ function ModelRow({
             dep
           </span>
         )}
+        {unavailable && (
+          <span
+            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive"
+            title="No available offerings — not callable"
+          >
+            off
+          </span>
+        )}
         {/* Availability: how many branded Services offer this model. */}
         {model.tiers.length > 1 && (
           <span
@@ -823,7 +1109,6 @@ function ModelRow({
 export function ModelListDropdown({
   value,
   onValueChange,
-  variant,
   inputModalities,
   outputModalities,
   pinnedOfferingId,
@@ -834,6 +1119,13 @@ export function ModelListDropdown({
   const dialogContainer = useDialogContainer();
   const dispatch = useAppDispatch();
   const favoriteIds = useAppSelector(selectFavoriteModelIds);
+  // The admin variant is super-admin only. The toggle is invisible to
+  // everyone else, and the DB enforces the same gate (admin_model_catalog
+  // raises 42501 for non-admins) — the UI gate is convenience, not security.
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const [adminMode, setAdminMode] = useState(false);
+  const variant: ModelCatalogVariant =
+    adminMode && isSuperAdmin ? "admin" : "user";
   const { models, isLoading, error } = useModelCatalog(variant);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -853,7 +1145,32 @@ export function ModelListDropdown({
     interaction: "any",
     multilingualOnly: false,
     sort: "name",
+    vendors: new Set<string>(),
+    apis: new Set<string>(),
+    deprecated: "any",
+    availability: "any",
+    premium: "any",
   }));
+
+  /**
+   * Switch user ⇄ admin in place. Leaving admin clears every admin-only
+   * dimension (they'd otherwise filter/sort invisibly with no UI to undo).
+   */
+  const setVariantMode = (nextAdmin: boolean) => {
+    setAdminMode(nextAdmin);
+    setHovered(null);
+    if (!nextAdmin) {
+      setFilters((f) => ({
+        ...f,
+        vendors: new Set<string>(),
+        apis: new Set<string>(),
+        deprecated: "any",
+        availability: "any",
+        premium: "any",
+        sort: ADMIN_ONLY_SORTS.has(f.sort) ? "name" : f.sort,
+      }));
+    }
+  };
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
@@ -872,7 +1189,7 @@ export function ModelListDropdown({
 
   const selected = models.find((m) => m.id === value) ?? null;
 
-  // Distinct maker / Service option lists, derived from the loaded catalog.
+  // Distinct maker / Service / vendor / API option lists from the catalog.
   const makerOptions = useMemo(
     () =>
       [...new Set(models.map((m) => m.maker).filter((v): v is string => !!v))].sort(
@@ -889,18 +1206,50 @@ export function ModelListDropdown({
       ].sort((a, b) => a.localeCompare(b)),
     [models],
   );
+  const vendorOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          models
+            .flatMap((m) => (m.admin?.offerings ?? []).map((o) => o.vendor))
+            .filter((v): v is string => !!v),
+        ),
+      ].sort((a, b) => a.localeCompare(b)),
+    [models],
+  );
+  const apiOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          models
+            .flatMap((m) => (m.admin?.offerings ?? []).map((o) => o.apiName))
+            .filter((v): v is string => !!v),
+        ),
+      ].sort((a, b) => a.localeCompare(b)),
+    [models],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const hasAvailable = (m: CatalogModel) =>
+      (m.admin?.offerings ?? []).some((o) => o.isAvailable);
     const rows = models.filter((m) => {
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
-      // Search matches name, maker, AND branded Service names ("lightning").
-      if (
-        q &&
-        ![m.name, m.maker, ...m.tiers.map((t) => t.servedVia)].some((f) =>
-          f?.toLowerCase().includes(q),
-        )
-      )
+      // Search matches name, maker, branded Service names — and, in the
+      // admin variant, real vendor / api / provider_model_id too.
+      const haystack = [
+        m.name,
+        m.maker,
+        ...m.tiers.map((t) => t.servedVia),
+        ...(variant === "admin"
+          ? (m.admin?.offerings ?? []).flatMap((o) => [
+              o.vendor,
+              o.apiName,
+              o.providerModelId,
+            ])
+          : []),
+      ];
+      if (q && !haystack.some((f) => f?.toLowerCase().includes(q)))
         return false;
       if (filters.makers.size > 0 && (!m.maker || !filters.makers.has(m.maker)))
         return false;
@@ -909,6 +1258,29 @@ export function ModelListDropdown({
         !m.tiers.some((t) => filters.services.has(t.servedVia))
       )
         return false;
+      if (
+        filters.vendors.size > 0 &&
+        !(m.admin?.offerings ?? []).some(
+          (o) => o.vendor != null && filters.vendors.has(o.vendor),
+        )
+      )
+        return false;
+      if (
+        filters.apis.size > 0 &&
+        !(m.admin?.offerings ?? []).some(
+          (o) => o.apiName != null && filters.apis.has(o.apiName),
+        )
+      )
+        return false;
+      if (filters.deprecated !== "any") {
+        if ((filters.deprecated === "yes") !== m.isDeprecated) return false;
+      }
+      if (filters.availability !== "any") {
+        if ((filters.availability === "yes") !== hasAvailable(m)) return false;
+      }
+      if (filters.premium !== "any") {
+        if ((filters.premium === "yes") !== m.isPremium) return false;
+      }
       for (const m2 of filters.input) if (!m.input.includes(m2)) return false;
       for (const m2 of filters.output) if (!m.output.includes(m2)) return false;
       for (const b of filters.features)
@@ -932,8 +1304,40 @@ export function ModelListDropdown({
           );
         case "context":
           return (b.contextWindow ?? 0) - (a.contextWindow ?? 0);
-        case "price":
-          return (a.costRating ?? Infinity) - (b.costRating ?? Infinity);
+        case "price": {
+          // User: curated cost rating. Admin: real $ output price (first
+          // pricing band of the preferred offering). Nulls last.
+          const price = (m: CatalogModel) =>
+            (variant === "admin" ? m.outputCost : m.costRating) ?? Infinity;
+          return price(a) - price(b) || a.name.localeCompare(b.name);
+        }
+        case "vendor":
+          return (
+            (a.admin?.offerings[0]?.vendor ?? "￿").localeCompare(
+              b.admin?.offerings[0]?.vendor ?? "￿",
+            ) || a.name.localeCompare(b.name)
+          );
+        case "api":
+          return (
+            (a.admin?.offerings[0]?.apiName ?? "￿").localeCompare(
+              b.admin?.offerings[0]?.apiName ?? "￿",
+            ) || a.name.localeCompare(b.name)
+          );
+        case "deprecated":
+          return (
+            Number(a.isDeprecated) - Number(b.isDeprecated) ||
+            a.name.localeCompare(b.name)
+          );
+        case "availability": {
+          const avail = (m: CatalogModel) =>
+            (m.admin?.offerings ?? []).filter((o) => o.isAvailable).length;
+          return avail(b) - avail(a) || a.name.localeCompare(b.name);
+        }
+        case "premium":
+          return (
+            Number(b.isPremium) - Number(a.isPremium) ||
+            a.name.localeCompare(b.name)
+          );
         default:
           return a.name.localeCompare(b.name);
       }
@@ -946,7 +1350,7 @@ export function ModelListDropdown({
       return [...favs, ...rest];
     }
     return sorted;
-  }, [models, query, filters, tab, favoriteSet]);
+  }, [models, query, filters, tab, favoriteSet, variant]);
 
   const activeFilterCount =
     filters.input.size +
@@ -954,6 +1358,11 @@ export function ModelListDropdown({
     filters.features.size +
     filters.makers.size +
     filters.services.size +
+    filters.vendors.size +
+    filters.apis.size +
+    (filters.deprecated !== "any" ? 1 : 0) +
+    (filters.availability !== "any" ? 1 : 0) +
+    (filters.premium !== "any" ? 1 : 0) +
     (filters.interaction !== "any" ? 1 : 0) +
     (filters.multilingualOnly ? 1 : 0);
 
@@ -1120,7 +1529,8 @@ export function ModelListDropdown({
             <div className="mt-0.5 font-mono text-[11px] opacity-80">{error}</div>
             {variant === "admin" && (
               <div className="mt-1 text-[11px] text-muted-foreground">
-                If this is a 42501, `ai.model_admin` isn&apos;t granted to your role.
+                If this is a 42501, the admin_model_catalog RPC rejected your
+                role (super admin required).
               </div>
             )}
           </div>
@@ -1138,6 +1548,7 @@ export function ModelListDropdown({
               key={m.id}
               model={m}
               tier={costRatingTier(m.costRating)}
+              variant={variant}
               selected={m.id === value}
               isFavorite={favoriteSet.has(m.id)}
               onToggleFavorite={() => toggleFavorite(m.id)}
@@ -1157,10 +1568,33 @@ export function ModelListDropdown({
         )}
       </div>
 
-      {/* Count — at the BOTTOM, not prime real estate */}
-      <div className="border-t border-border px-2 py-1 text-[10px] text-muted-foreground">
-        {filtered.length} of {models.length} model
-        {models.length === 1 ? "" : "s"}
+      {/* Count — at the BOTTOM, not prime real estate. Super admins also get
+          the in-place admin-variant toggle here. */}
+      <div className="flex items-center justify-between gap-2 border-t border-border px-2 py-1 text-[10px] text-muted-foreground">
+        <span>
+          {filtered.length} of {models.length} model
+          {models.length === 1 ? "" : "s"}
+        </span>
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={() => setVariantMode(variant !== "admin")}
+            title={
+              variant === "admin"
+                ? "Admin view — real vendor/api/$ data. Click to return to the user view."
+                : "Switch to the admin view (real vendor/api/$ data)"
+            }
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors",
+              variant === "admin"
+                ? "bg-primary/10 text-foreground"
+                : "hover:text-foreground",
+            )}
+          >
+            <Shield className="h-3 w-3" />
+            Admin
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1192,6 +1626,7 @@ export function ModelListDropdown({
                     onPinOffering={
                       onOfferingPinChange ? handlePinOffering : undefined
                     }
+                    includeAdminSection
                   />
                 </div>
               </>
@@ -1210,6 +1645,8 @@ export function ModelListDropdown({
                     variant={variant}
                     makerOptions={makerOptions}
                     serviceOptions={serviceOptions}
+                    vendorOptions={vendorOptions}
+                    apiOptions={apiOptions}
                   />
                 </div>
               </>
@@ -1223,6 +1660,9 @@ export function ModelListDropdown({
   }
 
   // ── Desktop ──
+  const popoverWidth =
+    LIST_WIDTH + DETAIL_WIDTH + (variant === "admin" ? ADMIN_PANEL_WIDTH : 0);
+  const adminPanelModel = hovered ?? selected;
   return (
     <Popover open={open} onOpenChange={handleOpen} modal={false}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
@@ -1232,16 +1672,24 @@ export function ModelListDropdown({
         collisionPadding={12}
         sticky="always"
         container={dialogContainer ?? undefined}
-        className="w-[720px] overflow-hidden p-0"
-        style={{ height: PANEL_HEIGHT, maxHeight: LIST_MAX_HEIGHT }}
+        className="overflow-hidden p-0"
+        style={{
+          width: popoverWidth,
+          maxWidth: "calc(100vw - 24px)",
+          height: PANEL_HEIGHT,
+          maxHeight: LIST_MAX_HEIGHT,
+        }}
       >
         <div className="flex h-full">
-          <div className="flex w-[400px] shrink-0 flex-col border-r border-border">
+          <div
+            className="flex shrink-0 flex-col border-r border-border"
+            style={{ width: LIST_WIDTH }}
+          >
             {listPanel}
           </div>
           <div
-            className="flex w-[320px] shrink-0 flex-col overflow-hidden"
-            style={{ height: PANEL_HEIGHT }}
+            className="flex shrink-0 flex-col overflow-hidden"
+            style={{ width: DETAIL_WIDTH, height: PANEL_HEIGHT }}
           >
             {rightPanel === "filters" ? (
               <FiltersPanel
@@ -1250,6 +1698,8 @@ export function ModelListDropdown({
                 variant={variant}
                 makerOptions={makerOptions}
                 serviceOptions={serviceOptions}
+                vendorOptions={vendorOptions}
+                apiOptions={apiOptions}
               />
             ) : rightPanel === "detail" && hovered ? (
               <div
@@ -1277,6 +1727,25 @@ export function ModelListDropdown({
               </div>
             )}
           </div>
+          {/* Admin extension column — the LARGE total-transparency section. */}
+          {variant === "admin" && (
+            <div
+              className="flex shrink-0 flex-col overflow-hidden border-l border-border"
+              style={{ width: ADMIN_PANEL_WIDTH, height: PANEL_HEIGHT }}
+            >
+              {adminPanelModel ? (
+                <AdminOfferingsSection model={adminPanelModel} />
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                  <Shield className="h-6 w-6 text-muted-foreground/40" />
+                  <p className="text-xs leading-relaxed text-muted-foreground/70">
+                    Hover a model to see every offering&apos;s real vendor,
+                    api, provider model id and $ pricing.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>
