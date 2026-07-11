@@ -147,6 +147,47 @@ const slice = createSlice({
       scope.includeEmptySource = includeEmptySource;
       invalidateScopeWindow(scope);
     },
+    /**
+     * Seeds a scope's source filter from its SURFACE DEFAULT — once per
+     * default value. Hosts call this on every mount; `key` identifies the
+     * resolved default, so a remount re-seeds with the same key and no-ops,
+     * leaving the user's filter-tree selection intact. When the default itself
+     * changes (a preferences edit), the key changes and the seed applies.
+     *
+     * This is what keeps the two writers (surface default vs. filter tree)
+     * from fighting: the default writes only on first sight, the tree owns
+     * every write after that.
+     */
+    seedScopeSourceFilter(
+      state,
+      action: PayloadAction<{
+        scopeId: string;
+        key: string;
+        includeSourceFeatures: string[];
+        includeSourceApps: string[];
+        includeEmptySource: boolean;
+      }>,
+    ) {
+      const {
+        scopeId,
+        key,
+        includeSourceFeatures,
+        includeSourceApps,
+        includeEmptySource,
+      } = action.payload;
+      const scope = ensureScope(state, scopeId);
+      if (scope.seededSourceKey === key) return;
+      scope.seededSourceKey = key;
+      const unchanged =
+        sameStringArray(scope.includeSourceFeatures, includeSourceFeatures) &&
+        sameStringArray(scope.includeSourceApps, includeSourceApps) &&
+        scope.includeEmptySource === includeEmptySource;
+      if (unchanged) return;
+      scope.includeSourceFeatures = includeSourceFeatures;
+      scope.includeSourceApps = includeSourceApps;
+      scope.includeEmptySource = includeEmptySource;
+      invalidateScopeWindow(scope);
+    },
     setScopeAgentIds(
       state,
       action: PayloadAction<{ scopeId: string; agentIds: string[] }>,
@@ -290,6 +331,7 @@ export const {
   configureScope,
   setScopeAgentIds,
   setScopeSourceFilter,
+  seedScopeSourceFilter,
   setScopeSearch,
   setScopeGrouping,
   setScopeStatus,

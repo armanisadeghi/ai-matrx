@@ -55,6 +55,7 @@ import {
 } from "@/features/agents/redux/conversation-history/selectors";
 import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
+  seedScopeSourceFilter,
   setScopeAgentIds,
   setScopeGrouping,
   setScopeSearch,
@@ -228,12 +229,28 @@ function useConversationHistoryController(
     [agentIds],
   );
   const excludeKey = JSON.stringify(excludeSourceFeatures ?? []);
-  // Re-seed when the *resolved default* changes (prefs edit). Tree edits write
-  // to the scope (not prefs), so they never re-trigger this — they persist.
+  // Identity of the *resolved default*. Seeding is keyed on it, so this effect
+  // applies the default only the first time a scope sees it (and again if a
+  // prefs edit changes it) — never on a bare remount, which would otherwise
+  // stomp whatever the user just picked in the filter tree.
   const resolvedKey = surfaceId ? JSON.stringify(resolvedSource) : "";
 
   useEffect(() => {
     dispatch(setScopeAgentIds({ scopeId, agentIds: agentIds.slice() }));
+    if (surfaceId) {
+      dispatch(
+        seedScopeSourceFilter({
+          scopeId,
+          key: resolvedKey,
+          includeSourceFeatures: resolvedSource.includeSourceFeatures,
+          includeSourceApps: resolvedSource.includeSourceApps,
+          includeEmptySource: resolvedSource.includeEmptySource,
+        }),
+      );
+    }
+    // The source filter now lives on the scope (seeded above or set by the
+    // tree); the thunk reads it from there. Passing it here would re-assert the
+    // default on every mount.
     const fetchArgs: FetchConversationHistoryArgs = {
       scopeId,
       agentIds: agentIds.slice(),
@@ -243,13 +260,9 @@ function useConversationHistoryController(
     if (excludeSourceFeatures !== undefined) {
       fetchArgs.excludeSourceFeatures = excludeSourceFeatures;
     }
-    if (surfaceId) {
-      fetchArgs.includeSourceFeatures = resolvedSource.includeSourceFeatures;
-      fetchArgs.includeSourceApps = resolvedSource.includeSourceApps;
-      fetchArgs.includeEmptySource = resolvedSource.includeEmptySource;
-    }
     void dispatch(fetchConversationHistory(fetchArgs));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // `agentIds` / `resolvedSource` / `excludeSourceFeatures` are represented by
+    // their stable string keys below — the raw values are new objects each render.
   }, [
     dispatch,
     scopeId,

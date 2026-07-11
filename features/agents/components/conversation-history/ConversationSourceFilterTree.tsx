@@ -307,6 +307,24 @@ export const ConversationSourceFilterTree: React.FC<
 
   const clearAll = useCallback(() => commit(new Set(), false), [commit]);
 
+  // Every selectable leaf in the live tree (features + the empty/Generic node).
+  const allFeatureKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const app of tree) for (const k of appFeatureKeys(app)) keys.add(k);
+    keys.delete(EMPTY_SOURCE_KEY);
+    return keys;
+  }, [tree]);
+
+  const hasEmptyNode = useMemo(
+    () => tree.some((app) => appFeatureKeys(app).includes(EMPTY_SOURCE_KEY)),
+    [tree],
+  );
+
+  const selectAll = useCallback(
+    () => commit(new Set(allFeatureKeys), hasEmptyNode),
+    [commit, allFeatureKeys, hasEmptyNode],
+  );
+
   const resetToDefaults = useCallback(() => {
     const def: SurfaceFilterPref = getSurfaceDefault(surfaceId);
     dispatch(
@@ -414,20 +432,22 @@ export const ConversationSourceFilterTree: React.FC<
           ))}
         </div>
 
-        {/* Footer */}
+        {/* Footer — the select-all / clear toggle is ALWAYS live in both
+            directions. "No filter" is the show-everything state, so clearing
+            and selecting every source list the same rows; the button still has
+            to be able to walk back out of either one. */}
         <div className="flex items-center justify-between border-t border-border px-3 py-2">
           <span className="text-[10px] text-muted-foreground">
             {activeCount === 0
-              ? "Showing everything"
+              ? "No filter — showing everything"
               : `${activeCount} source${activeCount === 1 ? "" : "s"} selected`}
           </span>
           <button
             type="button"
-            onClick={clearAll}
-            disabled={activeCount === 0}
-            className="text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-40"
+            onClick={activeCount === 0 ? selectAll : clearAll}
+            className="text-[10px] font-medium text-muted-foreground hover:text-foreground"
           >
-            Show all
+            {activeCount === 0 ? "Select all" : "Clear filter"}
           </button>
         </div>
       </PopoverContent>
@@ -436,6 +456,17 @@ export const ConversationSourceFilterTree: React.FC<
 };
 
 // ── Rows ─────────────────────────────────────────────────────────────────────
+
+const triBoxClass = (state: TriState): string =>
+  cn(
+    "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border transition-colors",
+    state === "empty"
+      ? "border-muted-foreground/40"
+      : "border-primary bg-primary text-primary-foreground",
+  );
+
+const triAriaChecked = (state: TriState): boolean | "mixed" =>
+  state === "checked" ? true : state === "indeterminate" ? "mixed" : false;
 
 interface TriCheckboxProps {
   state: TriState;
@@ -447,24 +478,26 @@ const TriCheckbox: React.FC<TriCheckboxProps> = ({ state, onClick, label }) => (
   <button
     type="button"
     role="checkbox"
-    aria-checked={
-      state === "checked" ? true : state === "indeterminate" ? "mixed" : false
-    }
+    aria-checked={triAriaChecked(state)}
     aria-label={label}
     onClick={(e) => {
       e.stopPropagation();
       onClick();
     }}
-    className={cn(
-      "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border transition-colors",
-      state === "empty"
-        ? "border-muted-foreground/40"
-        : "border-primary bg-primary text-primary-foreground",
-    )}
+    className={triBoxClass(state)}
   >
     {state === "checked" && <CheckMark />}
     {state === "indeterminate" && <Minus className="h-2.5 w-2.5" />}
   </button>
+);
+
+/** Presentational twin for rows whose whole surface is already the button —
+ *  a nested <button> there is invalid DOM and swallows the row's own click. */
+const TriBox: React.FC<{ state: TriState }> = ({ state }) => (
+  <span aria-hidden className={triBoxClass(state)}>
+    {state === "checked" && <CheckMark />}
+    {state === "indeterminate" && <Minus className="h-2.5 w-2.5" />}
+  </span>
 );
 
 const CheckMark: React.FC = () => (
@@ -634,15 +667,14 @@ const FeatureRow: React.FC<FeatureRowProps> = ({
   return (
     <button
       type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={feature.label}
       onClick={onToggle}
       className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left hover:bg-accent/50"
     >
       <span className="w-4" aria-hidden />
-      <TriCheckbox
-        state={checked ? "checked" : "empty"}
-        onClick={onToggle}
-        label={feature.label}
-      />
+      <TriBox state={checked ? "checked" : "empty"} />
       <FeatureIcon
         className={cn(
           "h-3.5 w-3.5 shrink-0",

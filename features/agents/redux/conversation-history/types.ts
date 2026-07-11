@@ -71,6 +71,14 @@ export interface ConversationHistoryScopeState {
    * allow-lists above.
    */
   includeEmptySource: boolean;
+  /**
+   * Identity of the surface default this scope's source filter was seeded
+   * from (`seedScopeSourceFilter`). A scope is seeded ONCE per default value:
+   * on remount the host re-seeds with the same key and it no-ops, so a user's
+   * filter-tree selection survives the panel closing and reopening. It re-seeds
+   * only when the surface default itself changes (a preferences edit).
+   */
+  seededSourceKey: string | null;
   /** Typed-in filter (client-side filter over fetched items). */
   searchTerm: string;
   /** Active grouping. */
@@ -126,6 +134,7 @@ export const defaultScopeState: ConversationHistoryScopeState = {
   includeSourceFeatures: [],
   includeSourceApps: [],
   includeEmptySource: false,
+  seededSourceKey: null,
   searchTerm: "",
   grouping: "date",
   pageSize: 30,
