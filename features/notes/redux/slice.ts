@@ -207,6 +207,26 @@ function markRecordClean(record: NoteRecord): void {
   // Undo stacks are preserved across saves (user can still undo after save)
 }
 
+/**
+ * Clear dirty only for fields whose current value still matches what we wrote.
+ * Edits that landed mid-save stay dirty so the next autosave persists them.
+ */
+function markSavedSnapshotClean(
+  record: NoteRecord,
+  savedSnapshot: Partial<Record<NoteUndoableField, Note[NoteUndoableField]>>,
+): void {
+  for (const field of Object.keys(savedSnapshot) as NoteUndoableField[]) {
+    if (!record._dirtyFields.has(field)) continue;
+    if (record[field] === savedSnapshot[field]) {
+      record._dirtyFields.delete(field);
+    }
+  }
+  record._dirty = record._dirtyFields.size > 0;
+  if (!record._dirty) {
+    record._fieldHistory = {};
+  }
+}
+
 // ── Apply fetch status (never downgrades) ───────────────────────────────────
 
 function applyFetchStatus(record: NoteRecord, status: NoteFetchStatus): void {
@@ -461,7 +481,18 @@ const notesSlice = createSlice({
 
     markNoteSaved(
       state,
-      action: PayloadAction<{ id: string; updatedAt?: string }>,
+      action: PayloadAction<{
+        id: string;
+        updatedAt?: string;
+        /**
+         * Fields written in this save. When provided, only those fields are
+         * cleared from dirty — and only if the live value still matches —
+         * so keystrokes that landed mid-flight are not discarded.
+         */
+        savedSnapshot?: Partial<
+          Record<NoteUndoableField, Note[NoteUndoableField]>
+        >;
+      }>,
     ) {
       const record = state.notes[action.payload.id];
       if (!record) return;
@@ -470,9 +501,11 @@ const notesSlice = createSlice({
       if (action.payload.updatedAt) {
         record.updated_at = action.payload.updatedAt;
       }
-      markRecordClean(record);
-      // Echo window ends with the save — leave _pendingDispatchIds to its
-      // timed cleanup so the realtime echo of THIS write is still suppressed.
+      if (action.payload.savedSnapshot) {
+        markSavedSnapshotClean(record, action.payload.savedSnapshot);
+      } else {
+        markRecordClean(record);
+      }
       state._savingNoteIds = state._savingNoteIds.filter(
         (id) => id !== action.payload.id,
       );

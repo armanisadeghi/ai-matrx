@@ -2,11 +2,13 @@
 
 // features/scopes/components/context-assignment/ContextStatusButton.tsx
 //
-// The per-entity context nudge: a small icon button that is AMBER (caution)
-// when the entity has no context and GREEN (set) when it does. Clicking opens
-// the assignment popover for that entity. Drop it on note tabs, file rows,
-// preview headers — anywhere an entity's context status must be visible at a
-// glance without being subtle.
+// The per-entity context nudge: amber when unset, green when set. Clicking
+// opens the assignment popover. Built on TapTargetButton so it sits flush in
+// shell headers next to other tap buttons (zero gap / padding around it).
+//
+// Two appearances:
+//   • glass (default) — glass pill + status-colored icon (header chrome)
+//   • solid — filled amber/green pill when you want the status to pop
 //
 // Data: by default it reads the entity's scope assignments via the canonical
 // per-entity cache (one fetch per entity, Redux-cached). List surfaces that
@@ -14,8 +16,10 @@
 // per-row fetch entirely (fetch discipline: N rows ≠ N requests).
 
 import React from "react";
-import { ShieldAlert, ShieldCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  ShieldAlertTapButton,
+  ShieldCheckTapButton,
+} from "@/components/icons/tap-buttons";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import {
   ContextAssignmentPopover,
@@ -33,17 +37,38 @@ export interface ContextStatusButtonProps extends Omit<
   knownScopeCount?: number;
   /** Entity has non-scope context (e.g. a note's organization_id/project_id). */
   hasOtherContext?: boolean;
+  /**
+   * Tap-button appearance.
+   * - `glass` (default) — shell chrome; status via icon color
+   * - `solid` — filled amber (unset) / green (set) when status should pop
+   */
+  variant?: "glass" | "solid";
+  /** @deprecated Tap geometry is fixed — kept so existing callers type-check. */
   size?: "xs" | "sm";
+  /** Extra class on the glass icon color path (ignored for solid). */
   buttonClassName?: string;
-  /** Render scope-count text inside the same bordered, clickable control. */
+  /** Render scope-count text inside the tap pill (`None` / `N scopes`). */
   showScopeLabel?: boolean;
 }
+
+const SOLID_SET = {
+  bgColor: "bg-emerald-500",
+  iconColor: "text-white",
+  hoverBgColor: "hover:bg-emerald-600",
+} as const;
+
+const SOLID_UNSET = {
+  bgColor: "bg-amber-500",
+  iconColor: "text-white",
+  hoverBgColor: "hover:bg-amber-600",
+} as const;
 
 export function ContextStatusButton({
   subject,
   knownScopeCount,
   hasOtherContext = false,
-  size = "sm",
+  variant = "glass",
+  size: _size,
   buttonClassName,
   showScopeLabel = false,
   ...popoverProps
@@ -56,48 +81,42 @@ export function ContextStatusButton({
   const scopeCount = skipFetch ? knownScopeCount : entityScopes.scopeIds.length;
   const hasContext = (scopeCount ?? 0) > 0 || hasOtherContext;
 
-  const iconCls = size === "xs" ? "h-3.5 w-3.5" : "h-4 w-4";
-  const labelCls = size === "xs" ? "text-[10px]" : "text-xs";
   const scopeLabel =
     (scopeCount ?? 0) === 0
       ? "None"
       : `${scopeCount} scope${scopeCount === 1 ? "" : "s"}`;
 
+  const ariaLabel = hasContext
+    ? "Context is set — click to review or change"
+    : "No context set — click to assign";
+
+  const label = showScopeLabel ? scopeLabel : undefined;
+
+  const solidProps = hasContext ? SOLID_SET : SOLID_UNSET;
+  const glassClassName = hasContext
+    ? "text-emerald-600 dark:text-emerald-400"
+    : "text-amber-600 dark:text-amber-400";
+
+  const shared = {
+    ariaLabel,
+    tooltip: ariaLabel,
+    label,
+    ...(variant === "solid"
+      ? solidProps
+      : { className: buttonClassName ?? glassClassName }),
+  } as const;
+
+  const trigger = hasContext ? (
+    <ShieldCheckTapButton variant={variant} {...shared} />
+  ) : (
+    <ShieldAlertTapButton variant={variant} {...shared} />
+  );
+
   return (
     <ContextAssignmentPopover
       {...popoverProps}
       subject={subject}
-      trigger={
-        <button
-          type="button"
-          title={
-            hasContext
-              ? "Context is set — click to review or change"
-              : "No context set — click to assign"
-          }
-          className={cn(
-            "inline-flex shrink-0 cursor-pointer items-center justify-center rounded border transition-colors",
-            showScopeLabel
-              ? size === "xs"
-                ? "gap-1 px-1.5 py-0.5"
-                : "gap-1.5 px-2 py-0.5"
-              : "p-0.5",
-            hasContext
-              ? "border-emerald-500/60 text-emerald-600 hover:bg-emerald-100 dark:border-emerald-400/50 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
-              : "border-amber-500/60 text-amber-600 hover:bg-amber-100 dark:border-amber-400/50 dark:text-amber-400 dark:hover:bg-amber-950/50",
-            buttonClassName,
-          )}
-        >
-          {hasContext ? (
-            <ShieldCheck className={iconCls} />
-          ) : (
-            <ShieldAlert className={iconCls} />
-          )}
-          {showScopeLabel && (
-            <span className={cn(labelCls, "font-medium")}>{scopeLabel}</span>
-          )}
-        </button>
-      }
+      trigger={trigger}
     />
   );
 }

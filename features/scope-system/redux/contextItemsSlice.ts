@@ -49,6 +49,15 @@ export interface ContextItem {
   sort_order?: number;
   status_note?: string | null;
   review_interval_days?: number | null;
+  /**
+   * Reference-cell config (value_type "reference" only): the Matrx
+   * reference-fence types this item may point at (features/matrx-envelope
+   * REFERENCE_TYPES), how many items its fence may carry, and, when "scope"
+   * is allowed, which scope types. See features/scopes/utils/referenceCell.ts.
+   */
+  allowed_reference_types?: string[] | null;
+  max_items?: number;
+  allowed_scope_type_ids?: string[] | null;
 }
 
 const adapter = createEntityAdapter<ContextItem>({
@@ -105,6 +114,9 @@ export const updateContextItem = createAsyncThunk(
     status_note?: string | null;
     review_interval_days?: number | null;
     sort_order?: number;
+    allowed_reference_types?: string[] | null;
+    max_items?: number;
+    allowed_scope_type_ids?: string[] | null;
   }) => {
     const patch: TablesUpdate<{ schema: "context" }, "context_items"> = {};
     if (params.display_name !== undefined)
@@ -126,6 +138,11 @@ export const updateContextItem = createAsyncThunk(
       patch.status_note = params.status_note;
     if (params.review_interval_days !== undefined)
       patch.review_interval_days = params.review_interval_days;
+    if (params.allowed_reference_types !== undefined)
+      patch.allowed_reference_types = params.allowed_reference_types;
+    if (params.max_items !== undefined) patch.max_items = params.max_items;
+    if (params.allowed_scope_type_ids !== undefined)
+      patch.allowed_scope_type_ids = params.allowed_scope_type_ids;
     const { data, error } = await contextDb(supabase)
       .from("context_items")
       .update(patch)
@@ -165,6 +182,9 @@ export const createContextItem = createAsyncThunk(
     tags?: string[];
     slug?: string;
     sort_order?: number;
+    allowed_reference_types?: string[];
+    max_items?: number;
+    allowed_scope_type_ids?: string[];
   }) => {
     const { data, error } = await supabase.rpc("create_context_item", {
       p_scope_type_id: params.scope_type_id,
@@ -178,6 +198,9 @@ export const createContextItem = createAsyncThunk(
       p_tags: params.tags ?? [],
       p_slug: params.slug ?? undefined,
       p_sort_order: params.sort_order ?? undefined,
+      p_allowed_reference_types: params.allowed_reference_types ?? undefined,
+      p_max_items: params.max_items ?? undefined,
+      p_allowed_scope_type_ids: params.allowed_scope_type_ids ?? undefined,
     });
     if (error) throw error;
     return data as ContextItem;

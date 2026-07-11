@@ -38,7 +38,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 // Legacy openFilePreview removed in Phase 11 — we just open the source URL
 // in a new tab now (signed / share URLs are browser-loadable directly).
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useToastManager } from "@/hooks/useToastManager";
 import { GitBranch, Wrench, Columns2, Database } from "lucide-react";
 import {
@@ -54,6 +54,11 @@ import { ManipulationPanel } from "./ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { CopyPagesOverlay } from "./CopyPagesOverlay";
+import { createPdfWidgetsScope } from "@/features/surfaces/manifests/pdf-widgets.manifest";
+import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
+import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+
+const PDF_WIDGETS_SURFACE = "matrx-user/pdf-widgets";
 
 // ─── Sub-tab type for per-extraction view ────────────────────────────────────
 
@@ -67,26 +72,6 @@ type ContentSubTab =
   | "manipulate"
   | "stores"
   | "lineage";
-
-// ─── Shortcut registry ───────────────────────────────────────────────────────
-// Shortcuts available from the PDF Workspace. Each one is triggered with the
-// document text bound to `selection` (most shortcut authors map this to their
-// agent's primary input variable). Add more entries here to expose them.
-
-interface PdfShortcutEntry {
-  id: string;
-  label: string;
-  description: string;
-}
-
-const PDF_SHORTCUTS: PdfShortcutEntry[] = [
-  {
-    id: "dba439a3-a495-4e57-893a-2176cf14ab8d",
-    label: "Analyze Document",
-    description:
-      "Run analysis in a floating window — uses cleaned content when available, otherwise the raw extraction.",
-  },
-];
 
 // Above this character count we open Save to Notes in `plain` editor mode so
 // the markdown preview pane doesn't try to render the full extraction at once.
@@ -108,8 +93,17 @@ export function PdfExtractorFloatingWorkspace({
 }) {
   const extractor = usePdfExtractor();
   const dispatch = useAppDispatch();
-  const triggerShortcut = useShortcutTrigger();
+  const { launchAgent } = useAgentLauncher();
   const toast = useToastManager("pdf-extractor");
+  const { sections: boundSections, refresh: refreshBoundAgents } =
+    useSurfaceBoundAgents(PDF_WIDGETS_SURFACE, {
+      isEditable: false,
+      includeDefaults: true,
+    });
+
+  React.useEffect(() => {
+    void refreshBoundAgents();
+  }, [refreshBoundAgents]);
 
   // Open `initialDocumentId` once on mount. Goes through the lazy-fetch
   // path so the per-tab loading spinner shows correctly.
@@ -136,6 +130,13 @@ export function PdfExtractorFloatingWorkspace({
     if (!doc) return "";
     return doc.cleanContent ?? doc.content ?? "";
   }, [activeTab]);
+
+  const firstBoundAgent = useMemo(() => {
+    for (const s of boundSections) {
+      if (s.agents[0]) return s.agents[0];
+    }
+    return null;
+  }, [boundSections]);
 
   // ── Footer actions ──────────────────────────────────────────────────────
 
@@ -174,26 +175,52 @@ export function PdfExtractorFloatingWorkspace({
     }
   }, [activeTab]);
 
-  const handleRunShortcut = useCallback(
-    async (shortcutId: string) => {
+  const handleRunBoundAgent = useCallback(
+    async (agentId: string) => {
       if (!docText) {
         toast.error("Nothing to send to the agent yet");
         return;
       }
+      const doc = activeTab?.document;
       try {
-        await triggerShortcut(shortcutId, {
-          scope: { selection: docText },
+        await launchAgent(agentId, {
+          surfaceKey: `pdf-widgets:bound-agent:${agentId}`,
           sourceFeature: "pdf-extractor",
+          config: {
+            displayMode: "modal-full",
+            allowChat: true,
+            showVariablePanel: true,
+          },
+          runtime: {
+            surfaceName: PDF_WIDGETS_SURFACE,
+            applicationScope: createPdfWidgetsScope({
+              full_document_text: docText,
+              active_scope_text: docText,
+              selected_text: "",
+              current_page_text: "",
+              page_range_text: "",
+              filename: doc?.name ?? "",
+              file_id:
+                doc?.sourceKind === "cld_file" && doc.sourceId
+                  ? doc.sourceId
+                  : "",
+              processed_document_id: doc?.id ?? "",
+              total_pages: doc?.totalPages ?? 0,
+              current_page: 0,
+              scope_kind: "full",
+              using_clean_text: !!doc?.cleanContent,
+              selection: docText,
+              content: docText,
+            }),
+          },
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Could not run agent";
         toast.error(msg);
       }
     },
-    [docText, triggerShortcut, toast],
+    [docText, activeTab, launchAgent, toast],
   );
-
-  const defaultShortcut = PDF_SHORTCUTS[0];
 
   const footer = useMemo(() => {
     if (extractor.activeTabId === "new") {
@@ -218,11 +245,11 @@ export function PdfExtractorFloatingWorkspace({
                 onClick={handleViewOriginal}
               />
             )}
-          {defaultShortcut && activeTab.document.content && (
+          {firstBoundAgent && activeTab.document.content && (
             <FooterButton
               icon={<Zap className="w-2.5 h-2.5" />}
-              label={defaultShortcut.label}
-              onClick={() => handleRunShortcut(defaultShortcut.id)}
+              label={firstBoundAgent.name}
+              onClick={() => void handleRunBoundAgent(firstBoundAgent.agentId)}
             />
           )}
           <FooterButton
@@ -241,8 +268,8 @@ export function PdfExtractorFloatingWorkspace({
     activeTab,
     handleViewOriginal,
     handleSaveToNotes,
-    handleRunShortcut,
-    defaultShortcut,
+    handleRunBoundAgent,
+    firstBoundAgent,
     extractor,
   ]);
 
@@ -276,10 +303,7 @@ export function PdfExtractorFloatingWorkspace({
       urlSyncId="default"
       footer={footer}
     >
-      <PdfExtractorWindowContent
-        extractor={extractor}
-        onRunShortcut={handleRunShortcut}
-      />
+      <PdfExtractorWindowContent extractor={extractor} />
     </WindowPanel>
   );
 }
@@ -288,10 +312,8 @@ export function PdfExtractorFloatingWorkspace({
 
 function PdfExtractorWindowContent({
   extractor,
-  onRunShortcut,
 }: {
   extractor: ReturnType<typeof usePdfExtractor>;
-  onRunShortcut: (shortcutId: string) => void | Promise<void>;
 }) {
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -313,7 +335,6 @@ function PdfExtractorWindowContent({
             onClean={extractor.cleanContent}
             onRefresh={extractor.refreshDocument}
             onRunPipeline={extractor.runFullPipeline}
-            onRunShortcut={onRunShortcut}
           />
         ) : (
           <EmptyState message="Select a tab or start a new extraction" />
@@ -606,7 +627,6 @@ function ExtractionTabContent({
   onClean,
   onRefresh,
   onRunPipeline,
-  onRunShortcut,
 }: {
   tab: ExtractionTab;
   onClean: (docId: string) => Promise<void>;
@@ -618,7 +638,6 @@ function ExtractionTabContent({
     docId: string,
     options?: { force_ocr?: boolean; persist_output?: boolean },
   ) => Promise<{ success: boolean; childDocId: string | null }>;
-  onRunShortcut: (shortcutId: string) => void | Promise<void>;
 }) {
   const [subTab, setSubTab] = useState<ContentSubTab>("text");
   const [copyPagesOpen, setCopyPagesOpen] = useState(false);
@@ -787,9 +806,7 @@ function ExtractionTabContent({
         {subTab === "clean" && (
           <AiCleanView tab={tab} onClean={onClean} onRefresh={onRefresh} />
         )}
-        {subTab === "ai" && (
-          <AiActionsView doc={doc} onRunShortcut={onRunShortcut} />
-        )}
+        {subTab === "ai" && <AiActionsView doc={doc} />}
         {subTab === "manipulate" && (
           <ManipulationPanel
             doc={doc}
@@ -818,16 +835,53 @@ function ExtractionTabContent({
 
 // ─── AI Actions View ─────────────────────────────────────────────────────────
 
-function AiActionsView({
-  doc,
-  onRunShortcut,
-}: {
-  doc: PdfDocument;
-  onRunShortcut: (shortcutId: string) => void | Promise<void>;
-}) {
+function AiActionsView({ doc }: { doc: PdfDocument }) {
+  const { launchAgent } = useAgentLauncher();
+  const toast = useToastManager("pdf-extractor");
   const hasContent = !!(doc.cleanContent ?? doc.content);
   const usingClean = !!doc.cleanContent;
   const charCount = (doc.cleanContent ?? doc.content ?? "").length;
+  const docText = doc.cleanContent ?? doc.content ?? "";
+
+  const handleRunAgent = async (agentId: string) => {
+    if (!docText) {
+      toast.error("Nothing to send to the agent yet");
+      return;
+    }
+    try {
+      await launchAgent(agentId, {
+        surfaceKey: `pdf-widgets:bound-agent:${agentId}`,
+        sourceFeature: "pdf-extractor",
+        config: {
+          displayMode: "modal-full",
+          allowChat: true,
+          showVariablePanel: true,
+        },
+        runtime: {
+          surfaceName: PDF_WIDGETS_SURFACE,
+          applicationScope: createPdfWidgetsScope({
+            full_document_text: docText,
+            active_scope_text: docText,
+            selected_text: "",
+            current_page_text: "",
+            page_range_text: "",
+            filename: doc.name,
+            file_id:
+              doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : "",
+            processed_document_id: doc.id,
+            total_pages: doc.totalPages ?? 0,
+            current_page: 0,
+            scope_kind: "full",
+            using_clean_text: usingClean,
+            selection: docText,
+            content: docText,
+          }),
+        },
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not run agent");
+    }
+  };
 
   return (
     <div className="p-3 space-y-2">
@@ -849,38 +903,13 @@ function AiActionsView({
       )}
 
       {hasContent && (
-        <div className="space-y-1.5">
-          {PDF_SHORTCUTS.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-start gap-2 px-2.5 py-2 bg-card border border-border rounded-md"
-            >
-              <div className="shrink-0 w-6 h-6 rounded bg-primary/10 flex items-center justify-center mt-0.5">
-                <Zap className="w-3 h-3 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium leading-tight">{s.label}</p>
-                <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                  {s.description}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                className="h-7 text-[10px] px-2 shrink-0"
-                onClick={() => onRunShortcut(s.id)}
-              >
-                Run
-              </Button>
-            </div>
-          ))}
-        </div>
+        <SurfaceBoundAgentsList
+          surfaceName={PDF_WIDGETS_SURFACE}
+          surfaceLabel="PDF Widgets"
+          onRunAgent={handleRunAgent}
+          runDisabled={!hasContent}
+        />
       )}
-
-      <p className="text-[10px] text-muted-foreground/70 pt-1 leading-snug">
-        Each agent receives the document text as <code>selection</code>. Long
-        documents may degrade quality — consider running AI Clean first or
-        chunking large files.
-      </p>
     </div>
   );
 }

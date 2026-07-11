@@ -106,6 +106,14 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      name: "CatalogRowActions",
+      filePath: "features/page-extraction/data-review/CatalogRowActions.tsx",
+      description:
+        "Per-row ⋯ menu on the catalog — download + Send to without opening the grid.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
       name: "OpenDestinationDialog",
       filePath:
         "features/page-extraction/data-review/OpenDestinationDialog.tsx",

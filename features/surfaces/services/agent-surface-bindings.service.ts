@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { getSurfaceByName } from "@/features/surfaces/services/surfaces.service";
 import { invalidateSurfaceBoundAgents } from "@/features/surfaces/services/surface-bound-agents.service";
+import { fetchSurfaceBindingLayersFromAssociations } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import {
   isValueMappingMap,
   type ValueMappingMap,
@@ -248,6 +249,14 @@ export async function fetchSurfaceBindingLayers(
   agentId: string,
   surfaceName: string,
 ): Promise<MappingLayer[]> {
+  // Prefer associations-backed menu_surface (canonical). Fall back to
+  // condemned agent_surface only for legacy rows that never dual-wrote.
+  const fromAssociations = await fetchSurfaceBindingLayersFromAssociations(
+    agentId,
+    surfaceName,
+  );
+  if (fromAssociations.length > 0) return fromAssociations;
+
   const { data, error } = await sb()
     .schema("agent")
     .from("agent_surface")

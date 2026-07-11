@@ -230,26 +230,50 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
 
 /**
  * Update an existing note.
- * Simple UPDATE by ID — no optimistic locking.
- * The DB has an auto-update trigger on updated_at, so timestamp-based locking
- * (WHERE updated_at = ?) always fails. Concurrent-session conflicts are handled
- * via the Supabase Realtime subscription in NotesContext instead.
+ *
+ * Optional `expectedUpdatedAt` enables atomic optimistic locking
+ * (`.eq("updated_at", expected)`). The BEFORE UPDATE `_touch_row` trigger
+ * only mutates NEW — the WHERE still matches the OLD row. Prefer the Redux
+ * autosave / `saveNote` path for the live `/notes` UI; this helper remains
+ * for legacy surfaces (NotesLayout, useAutoSave, mobile dock).
  */
 export async function updateNote(
   id: string,
   updates: UpdateNoteInput,
+  options?: { expectedUpdatedAt?: string | null },
 ): Promise<Note> {
-  const { data, error } = await supabase
+  let query = supabase
     .schema("workbench")
     .from("notes")
     .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+    .eq("id", id);
+
+  if (options?.expectedUpdatedAt) {
+    query = query.eq("updated_at", options.expectedUpdatedAt);
+  }
+
+  const { data, error } = await query.select().maybeSingle();
 
   if (error) {
     console.error("Error updating note:", error);
     throw error;
+  }
+
+  if (!data) {
+    if (options?.expectedUpdatedAt) {
+      const { data: stillThere } = await supabase
+        .schema("workbench")
+        .from("notes")
+        .select("id")
+        .eq("id", id)
+        .maybeSingle();
+      if (stillThere) {
+        throw new Error(
+          "Conflict: note was modified on another device or tab. Please refresh.",
+        );
+      }
+    }
+    throw new Error("You don't have permission to save this note.");
   }
 
   return data;

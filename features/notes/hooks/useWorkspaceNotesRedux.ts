@@ -172,23 +172,40 @@ export function useWorkspaceNotesRedux() {
             return;
           }
 
-          const { data, error } = await supabase
+          let query = supabase
             .schema("workbench")
             .from("notes")
             .update(updates)
-            .eq("id", noteId)
+            .eq("id", noteId);
+          if (record.updated_at) {
+            query = query.eq("updated_at", record.updated_at);
+          }
+          const { data, error } = await query
             .select("updated_at")
-            .single();
+            .maybeSingle();
 
           if (error) {
             dispatch(markNoteSaveError({ id: noteId, error: error.message }));
             return;
           }
 
+          if (!data) {
+            dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
+            return;
+          }
+
           dispatch(
             markNoteSaved({
               id: noteId,
-              updatedAt: data?.updated_at ?? undefined,
+              updatedAt: data.updated_at ?? undefined,
+              savedSnapshot: {
+                ...(updates.content !== undefined
+                  ? { content: content as Note["content"] }
+                  : {}),
+                ...(updates.label !== undefined
+                  ? { label: label as Note["label"] }
+                  : {}),
+              },
             }),
           );
 
@@ -230,11 +247,7 @@ export function useWorkspaceNotesRedux() {
       }
       const record = notesMap[noteId];
       if (!record || !record._dirty) return;
-      scheduleSave(
-        noteId,
-        record.label ?? "New Note",
-        record.content ?? "",
-      );
+      scheduleSave(noteId, record.label ?? "New Note", record.content ?? "");
     },
     [notesMap, scheduleSave],
   );

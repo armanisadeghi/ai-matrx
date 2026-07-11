@@ -24,6 +24,8 @@ import { useContextValues } from "@/features/scopes/hooks/useContextValues";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
+import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
 import type {
   ContextItemValue,
   OrgNode,
@@ -238,6 +240,10 @@ function ContextValueRow({
   value: ContextItemValue;
   label?: string;
 }) {
+  // A reference cell's `value_text` is a ```matrx fence — route it through the
+  // ONE canonical reference renderer instead of dumping the raw fence string.
+  const referenceCell = parseReferenceCellValue(value.value_text);
+
   // React Compiler auto-memoizes — no manual `useMemo` (CLAUDE.md).
   const display: string = (() => {
     if (value.value_text != null) return value.value_text;
@@ -256,7 +262,13 @@ function ContextValueRow({
       <div className="text-muted-foreground shrink-0 w-1/3 truncate">
         {label ?? value.context_item_id.slice(0, 8)}
       </div>
-      <div className="flex-1 break-words text-foreground">{display}</div>
+      <div className="flex-1 break-words text-foreground">
+        {referenceCell ? (
+          <ContextValueDisplay valueText={value.value_text} />
+        ) : (
+          display
+        )}
+      </div>
       <div className="text-muted-foreground/60 shrink-0">v{value.version}</div>
     </li>
   );

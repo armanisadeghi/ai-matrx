@@ -497,6 +497,27 @@ export function TriangleAlertTapButton(props: TapButtonProps) {
   );
 }
 
+// lucide: shield-check (context set)
+export function ShieldCheckTapButton(props: TapButtonProps) {
+  return (
+    <Wrap ariaLabel="Context set" {...props}>
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="m9 12 2 2 4-4" />
+    </Wrap>
+  );
+}
+
+// lucide: shield-alert (context unset)
+export function ShieldAlertTapButton(props: TapButtonProps) {
+  return (
+    <Wrap ariaLabel="No context" {...props}>
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="M12 8v4" />
+      <path d="M12 16h.01" />
+    </Wrap>
+  );
+}
+
 // lucide: bug v0.577.0 (major update — full insect anatomy)
 export function BugTapButton(props: TapButtonProps) {
   return (
@@ -650,17 +671,21 @@ export function ClearTapButton(props: TapButtonProps) {
   );
 }
 
-// lucide: retry (hand-crafted refresh arc — kept as-is, intentionally distinct from reset)
+// lucide: refresh-cw v1.22.0 (dual arrows — was a broken hand-crafted Heroicons-style path)
 export function RetryTapButton(props: TapButtonProps) {
   return (
     <Wrap ariaLabel="Retry" {...props}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0011.667-1.046M9.75 6.75l-2.766 2.266a8.25 8.25 0 001.046 11.667"
-      />
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16H3v5" />
     </Wrap>
   );
+}
+
+/** Alias — same Lucide refresh-cw glyph as RetryTapButton. */
+export function RefreshCwTapButton(props: TapButtonProps) {
+  return <RetryTapButton ariaLabel="Refresh" {...props} />;
 }
 
 // lucide: loading spinner (custom animated — no Lucide equivalent)

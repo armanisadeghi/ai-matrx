@@ -16,7 +16,17 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { getJob } from "@/features/page-extraction/api/jobs";
+import { listResults } from "@/features/page-extraction/api/runs";
+import {
+  cellValueFor,
+  humanizeKey,
+  inferColumnsFromRows,
+  normalizeResultRows,
+  parseTemplateColumns,
+} from "@/features/page-extraction/utils/columns";
 import type {
+  ColumnType,
   JobKind,
   PageExtractionJob,
   RunStatus,
@@ -222,4 +232,40 @@ export async function duplicateJob(jobId: string): Promise<string> {
     .single();
   if (insErr) throw insErr;
   return (created as { id: string }).id;
+}
+
+/**
+ * Load a job's results into the same (columns, rows) shape the dataset grid
+ * uses for Export / Send to — so the catalog can push without opening the grid.
+ */
+export async function loadDatasetExportView(jobId: string): Promise<{
+  name: string;
+  columns: Array<{ key: string; label: string; type?: ColumnType }>;
+  rows: Array<Record<string, unknown>>;
+}> {
+  const job = await getJob(jobId);
+  if (!job) throw new Error("Dataset not found");
+  const results = await listResults({ jobId });
+  const { rows: normalized } = normalizeResultRows(results);
+  const tpl = parseTemplateColumns(job.output_schema);
+  const columns =
+    tpl && tpl.length > 0
+      ? tpl
+      : inferColumnsFromRows(normalized).map((key) => ({
+          key,
+          label: humanizeKey(key),
+          type: "string" as const,
+          source: "agent" as const,
+          agentField: key,
+        }));
+
+  return {
+    name: job.name,
+    columns: columns.map((c) => ({ key: c.key, label: c.label, type: c.type })),
+    rows: normalized.map((row) => {
+      const out: Record<string, unknown> = {};
+      for (const c of columns) out[c.key] = cellValueFor(row, c);
+      return out;
+    }),
+  };
 }

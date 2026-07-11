@@ -153,7 +153,9 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
   return (
     <>
       <div className="flex items-center gap-2 min-w-0">
-        <Label className="text-xs text-muted-foreground shrink-0">Variables</Label>
+        <Label className="text-xs text-muted-foreground shrink-0">
+          Variables
+        </Label>
 
         <ScrollFade
           orientation="horizontal"
@@ -213,7 +215,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
             title="Batch add variables and context slots from a scope type"
           >
             <Layers className="w-3.5 h-3.5" />
-            Batch add from scope
+            Batch add
           </button>
         </div>
       </div>
@@ -230,18 +232,18 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
             orientation="horizontal"
             className="flex items-center gap-1.5 flex-nowrap min-w-0 flex-1 py-0.5"
           >
-          {undeclaredNames.map((name) => (
-            <button
-              key={name}
-              onClick={() => handleAddClick(name)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shrink-0"
-              title={`Found in messages — click to define ${name}`}
-            >
-              <AlertCircle className="w-3 h-3 shrink-0" />
-              <span>{name}</span>
-              <Plus className="w-3 h-3 shrink-0 opacity-70" />
-            </button>
-          ))}
+            {undeclaredNames.map((name) => (
+              <button
+                key={name}
+                onClick={() => handleAddClick(name)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shrink-0"
+                title={`Found in messages — click to define ${name}`}
+              >
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>{name}</span>
+                <Plus className="w-3 h-3 shrink-0 opacity-70" />
+              </button>
+            ))}
           </ScrollFade>
         </div>
       )}

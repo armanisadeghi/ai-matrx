@@ -12,10 +12,7 @@
 export const MATRX_VERSION = 1 as const;
 
 export type MatrxKind =
-  | "output_directive"
-  | "reference"
-  | "secret"
-  | "validation";
+  "output_directive" | "reference" | "secret" | "validation";
 
 /** The universal outer shell. Items are unknown until routed by `(kind, type)`. */
 export interface MatrxEnvelope<Item = Record<string, unknown>> {
@@ -168,6 +165,7 @@ export const REFERENCE_TYPES = [
   "scope",
   "context_item",
   "context_value",
+  "url",
 ] as const;
 
 export type ReferenceType = (typeof REFERENCE_TYPES)[number];
@@ -248,6 +246,15 @@ export interface TableCellRefItem extends ReferenceItemHints {
 export interface RecordRefItem extends ReferenceItemHints {
   id: string;
 }
+/**
+ * An arbitrary external URL — the one reference type with no Matrx-owned id.
+ * Covers anything not already modeled by a canonical entity type (a public
+ * web page, a third-party doc link, …). Context items that allow `file` for
+ * "our" documents allow `url` alongside it for links we don't own.
+ */
+export interface UrlRefItem extends ReferenceItemHints {
+  url: string;
+}
 
 /**
  * The canonical reference item — a flat union over the reference taxonomy. Every
@@ -269,7 +276,8 @@ export type ReferenceItem =
   | DocumentPageRefItem
   | FilePageRefItem
   | ContextValueRefItem
-  | RecordRefItem;
+  | RecordRefItem
+  | UrlRefItem;
 
 // ── Output-schema builder (generic; mirrors aidream's schema_gen) ─────────────
 

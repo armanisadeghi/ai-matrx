@@ -165,9 +165,8 @@ function slotToForm(slot: ContextSlot): SlotFormState {
   const legacyId = legacySlotId(slot);
 
   // Decode max_inline_chars into the three-mode UI (shared canonical helper).
-  const { mode: inlineMode, customChars: inlineCustomChars } = decodeInlinePolicy(
-    slot.max_inline_chars,
-  );
+  const { mode: inlineMode, customChars: inlineCustomChars } =
+    decodeInlinePolicy(slot.max_inline_chars);
 
   const source = slot.source;
   const isCtx = source?.kind === "ctx_item";
@@ -215,7 +214,8 @@ function formToContextSlot(form: SlotFormState): {
     mode: form.inlineMode,
     customChars: form.inlineCustomChars,
   });
-  if ("error" in encodedInline) return { slot: null, error: encodedInline.error };
+  if ("error" in encodedInline)
+    return { slot: null, error: encodedInline.error };
   if (encodedInline.maxInlineChars !== null) {
     slot.max_inline_chars = encodedInline.maxInlineChars;
   }
@@ -233,7 +233,10 @@ function formToContextSlot(form: SlotFormState): {
   // and — when also mutable+auto — is the same source used for write-back.
   if (form.ctxBound) {
     if (!form.ctxItemId.trim()) {
-      return { slot: null, error: "Choose a context item to bind this slot to." };
+      return {
+        slot: null,
+        error: "Choose a context item to bind this slot to.",
+      };
     }
     slot.source = {
       kind: "ctx_item",
@@ -333,7 +336,9 @@ function SlotEditorFields({
                   }
                   patch.label = sel.item.display_name;
                   patch.description = sel.item.description ?? "";
-                  const nextType = contextItemValueTypeToSlotType(sel.item.value_type);
+                  const nextType = contextItemValueTypeToSlotType(
+                    sel.item.value_type,
+                  );
                   patch.type = nextType;
                   patch.inlineMode = SUGGESTED_INLINE_MODE_BY_TYPE[nextType];
                   patch.inlineCustomChars = "";
@@ -353,9 +358,13 @@ function SlotEditorFields({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="empty">Empty — leave the slot unfilled</SelectItem>
+                  <SelectItem value="empty">
+                    Empty — leave the slot unfilled
+                  </SelectItem>
                   <SelectItem value="skip">Skip — same as empty</SelectItem>
-                  <SelectItem value="error">Error — refuse to run if missing</SelectItem>
+                  <SelectItem value="error">
+                    Error — refuse to run if missing
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -839,7 +848,9 @@ export function AgentContextSlotsManager({
   return (
     <>
       <div className="flex items-center gap-2 min-w-0">
-        <Label className="text-xs text-muted-foreground shrink-0">Context</Label>
+        <Label className="text-xs text-muted-foreground shrink-0">
+          Context
+        </Label>
 
         <ScrollFade
           orientation="horizontal"
@@ -860,7 +871,9 @@ export function AgentContextSlotsManager({
                 <span
                   className="cursor-pointer transition-colors hover:text-primary truncate max-w-[160px]"
                   onClick={() => openEdit(i)}
-                  title={detail ? `${key} — ${detail}` : `${key} (click to edit)`}
+                  title={
+                    detail ? `${key} — ${detail}` : `${key} (click to edit)`
+                  }
                 >
                   {key}
                 </span>
@@ -894,7 +907,7 @@ export function AgentContextSlotsManager({
             title="Batch add variables and context slots from a scope type"
           >
             <Layers className="w-3.5 h-3.5" />
-            Batch add from scope
+            Batch add
           </button>
         </div>
       </div>

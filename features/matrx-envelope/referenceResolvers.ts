@@ -747,6 +747,18 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: () => undefined,
     resolveValue: async (_supabase, ref) => stringify(ref.label ?? ref.key),
   },
+
+  /**
+   * `url` — `{ url, label? }`, an arbitrary external link. Nothing to fetch
+   * (the URL itself IS the value); `openId` always `undefined` since the chip
+   * opens it directly in a new tab (see registry.tsx's `isExternalUrl` path),
+   * never through the item-presentation opener. `openItemType` is unused here.
+   */
+  url: {
+    openItemType: "file",
+    openId: () => undefined,
+    resolveValue: async (_supabase, ref) => stringify(ref.label) ?? ref.url,
+  },
 };
 
 /** Resolve a reference `type` to its resolver, or `undefined` (graceful chip). */

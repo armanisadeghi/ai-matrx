@@ -79,6 +79,10 @@ import {
 } from "@/features/scope-system/utils/scopeRoutes";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
+import {
+  parseReferenceCellValue,
+  referenceCellSummary,
+} from "@/features/scopes/utils/referenceCell";
 import type {
   KgAcceptResult,
   KgDecisionResponse,
@@ -781,6 +785,11 @@ function ScopeTableRow({
 }
 
 function renderValue(row: ScopeContextRow): string {
+  // A reference cell's `value_text` is a ```matrx fence — summarize it (e.g.
+  // "QME Report.pdf" / "3 Files") instead of dumping the raw fence JSON; this
+  // dense grid cell can't render the chip-based `ContextValueDisplay`.
+  const referenceCell = parseReferenceCellValue(row.value_text);
+  if (referenceCell) return referenceCellSummary(referenceCell);
   if (row.value_text) return row.value_text;
   if (row.value_number != null) return String(row.value_number);
   if (row.value_boolean != null) return row.value_boolean ? "Yes" : "No";

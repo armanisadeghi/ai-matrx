@@ -33,6 +33,7 @@ import type { Note, CreateNoteInput } from "../types";
 import type {
   NoteRecord,
   NoteScopeAssignment,
+  NoteUndoableField,
   SharedNotePermissionLevel,
 } from "./notes.types";
 import {
@@ -41,7 +42,6 @@ import {
   markNoteSaving,
   markNoteSaved,
   markNoteSaveError,
-  clearSavingNoteId,
   setListStatus,
   setListError,
   setActiveNote,
@@ -65,9 +65,6 @@ function dispatchCustomEvent(name: string, detail?: unknown): void {
     window.dispatchEvent(new CustomEvent(name, { detail }));
   }
 }
-
-// Echo suppression timeout (ms)
-const SAVING_NOTE_ID_TIMEOUT = 3000;
 
 // ---------------------------------------------------------------------------
 // 1. fetchNotesList
@@ -208,13 +205,10 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
 // ---------------------------------------------------------------------------
 
 /**
- * Save dirty fields with concurrency check.
+ * Save dirty fields with atomic concurrency check.
  * - Reads note from state, checks _dirty and _dirtyFields
- * - Builds update object from only dirty fields
- * - Concurrency check: fetch server updated_at, compare with local
- * - If conflict: dispatch error, don't save
- * - If ok: markNoteSaving → update → markNoteSaved
- * - Echo suppression: manage _savingNoteIds with 3s timeout
+ * - UPDATE … WHERE updated_at = local (0 rows ⇒ conflict / RLS deny)
+ * - markNoteSaved gets a savedSnapshot so mid-save keystrokes stay dirty
  * - Label change: dispatch custom event "notes:labelChange"
  */
 export const saveNote = createAsyncThunk<void, string>(
@@ -227,68 +221,72 @@ export const saveNote = createAsyncThunk<void, string>(
       return;
     }
 
-    // Build update object from only dirty fields
+    // Build update object from only dirty fields (snapshot for mid-save safety)
     const updates: Record<string, unknown> = {};
+    const savedSnapshot: Partial<
+      Record<NoteUndoableField, Note[NoteUndoableField]>
+    > = {};
     const dirtyFields = Array.from(record._dirtyFields);
     const hasLabelChange = dirtyFields.includes("label");
 
     for (const field of dirtyFields) {
       updates[field] = record[field];
-    }
-
-    // Concurrency check: fetch server updated_at
-    const { data: serverNote, error: fetchError } = await supabase
-      .schema("workbench")
-      .from("notes")
-      .select("updated_at")
-      .eq("id", noteId)
-      .single();
-
-    if (fetchError) {
-      dispatch(markNoteSaveError({ id: noteId, error: fetchError.message }));
-      throw fetchError;
-    }
-
-    if (serverNote && serverNote.updated_at !== record.updated_at) {
-      const conflictMsg =
-        "Conflict: note was modified on another device or tab. Please refresh.";
-      dispatch(markNoteSaveError({ id: noteId, error: conflictMsg }));
-      throw new Error(conflictMsg);
+      savedSnapshot[field] = record[field];
     }
 
     // Proceed with save
     dispatch(markNoteSaving(noteId));
 
-    const { data, error } = await supabase
+    // Atomic optimistic lock via updated_at predicate (OLD row; trigger only
+    // mutates NEW). 0 rows ⇒ conflict or RLS deny.
+    let query = supabase
       .schema("workbench")
       .from("notes")
       .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
-      .eq("id", noteId)
-      .select("updated_at")
-      .single();
+      .eq("id", noteId);
+
+    if (record.updated_at) {
+      query = query.eq("updated_at", record.updated_at);
+    }
+
+    const { data, error } = await query.select("updated_at").maybeSingle();
 
     if (error) {
-      // A viewer-level sharee's UPDATE is silently filtered by RLS (0 rows →
-      // PGRST116 via .single()). That means the user's edits are NOT saved —
-      // scream, never let it read as "fine".
       const friendly = noteSaveErrorMessage(error);
       dispatch(markNoteSaveError({ id: noteId, error: friendly }));
       toastNoteWriteBlocked(noteId, friendly);
       throw error;
     }
 
+    if (!data) {
+      const { data: stillThere } = await supabase
+        .schema("workbench")
+        .from("notes")
+        .select("updated_at")
+        .eq("id", noteId)
+        .maybeSingle();
+
+      if (!stillThere) {
+        const friendly = "You don't have permission to save this note.";
+        dispatch(markNoteSaveError({ id: noteId, error: friendly }));
+        toastNoteWriteBlocked(noteId, friendly);
+        throw new Error(friendly);
+      }
+
+      const conflictMsg =
+        "Conflict: note was modified on another device or tab. Please refresh.";
+      dispatch(markNoteSaveError({ id: noteId, error: "conflict" }));
+      throw new Error(conflictMsg);
+    }
+
     clearNoteWriteBlockedToast(noteId);
     dispatch(
       markNoteSaved({
         id: noteId,
-        updatedAt: data?.updated_at ?? undefined,
+        updatedAt: data.updated_at ?? undefined,
+        savedSnapshot,
       }),
     );
-
-    // Echo suppression: clear saving ID after timeout
-    setTimeout(() => {
-      dispatch(clearSavingNoteId(noteId));
-    }, SAVING_NOTE_ID_TIMEOUT);
 
     // Dispatch label change event if label was dirty
     if (hasLabelChange) {
@@ -706,18 +704,28 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
 // 11b. fetchSharedNotesList
 // ---------------------------------------------------------------------------
 
+let sharedListFetchSeq = 0;
+
 /**
  * Fetch notes shared WITH the current user (direct + org grants) via the
  * `get_notes_shared_with_me` RPC. Upserts them into the store flagged
  * `_sharedWithMe` (with the effective permission level + owner email) so the
  * sidebar can render a "Shared with me" section while the owner-only list
  * selectors keep excluding them from folders.
+ *
+ * Stale overlapping fetches are ignored via a monotonic seq so an older
+ * response cannot prune notes that a newer fetch still includes. Dirty
+ * shared notes are never removed on revoke (user keeps their local edits
+ * until they discard / conflict-resolve).
  */
 export const fetchSharedNotesList = createAsyncThunk<void, void>(
   "notes/fetchSharedNotesList",
   async (_, { dispatch, getState }) => {
+    const seq = ++sharedListFetchSeq;
     const { data, error } = await supabase.rpc("get_notes_shared_with_me");
     if (error) throw error;
+    // A newer fetch started while we were in flight — drop this result.
+    if (seq !== sharedListFetchSeq) return;
 
     const incomingIds = new Set((data ?? []).map((row) => row.id as string));
 
@@ -748,11 +756,14 @@ export const fetchSharedNotesList = createAsyncThunk<void, void>(
       );
     }
 
+    if (seq !== sharedListFetchSeq) return;
+
     // Revoked shares must leave the store — otherwise the sharee keeps a
-    // stale editable cache after access is removed.
+    // stale editable cache after access is removed. Skip dirty notes so
+    // in-progress edits aren't silently discarded by a focus refetch.
     const state = getState() as RootState;
     for (const note of Object.values(state.notes.notes)) {
-      if (note._sharedWithMe && !incomingIds.has(note.id)) {
+      if (note._sharedWithMe && !incomingIds.has(note.id) && !note._dirty) {
         dispatch(removeNote(note.id));
       }
     }

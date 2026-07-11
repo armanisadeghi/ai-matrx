@@ -21,6 +21,15 @@ const OVERLAY_ID = "agentSettingsWindow" as const;
 
 export interface OpenAgentSettingsWindowOptions {
   initialAgentId?: string;
+  /**
+   * When set, Agent Settings shows a Surface tab for this surface's
+   * agent↔surface bindings (defaults the pane to Surface).
+   */
+  surfaceName?: string;
+  /** Optional pretty label for the Surface tab / bind header. */
+  surfaceLabel?: string;
+  /** Override which pane opens first when `surfaceName` is set. */
+  initialView?: "info" | "surface";
 }
 
 export interface AgentSettingsWindowHandle {
@@ -36,6 +45,9 @@ export function useOpenAgentSettingsWindow() {
           overlayId: OVERLAY_ID,
           data: {
             initialAgentId: opts.initialAgentId,
+            surfaceName: opts.surfaceName,
+            surfaceLabel: opts.surfaceLabel,
+            initialView: opts.initialView,
           },
         }),
       );
@@ -52,11 +64,22 @@ export function useOpenAgentSettingsWindow() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function AgentSettingsWindowController(props: OpenAgentSettingsWindowOptions): null {
+export function AgentSettingsWindowController(
+  props: OpenAgentSettingsWindowOptions,
+): null {
   const open = useOpenAgentSettingsWindow();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.initialAgentId]);
+    // Intentionally key on the identity fields that change the panel —
+    // remounting on every props object identity would thrash the overlay.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open is stable
+  }, [
+    open,
+    props.initialAgentId,
+    props.surfaceName,
+    props.surfaceLabel,
+    props.initialView,
+  ]);
   return null;
 }

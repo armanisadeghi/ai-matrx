@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DownloadTapButton } from "@/components/icons/tap-buttons";
 
 import {
   downloadBlob,
@@ -52,11 +53,14 @@ export function ExportMenu({
   columns,
   rows,
   disabled,
+  iconOnly = false,
 }: {
   name: string;
   columns: ExportMenuColumn[];
   rows: ExportRow[];
   disabled?: boolean;
+  /** Shell header mode — icon tap target, no text label. */
+  iconOnly?: boolean;
 }) {
   const slug = fileSlug(name);
   const empty = rows.length === 0 || columns.length === 0;
@@ -75,10 +79,14 @@ export function ExportMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled || empty}>
-          <Download className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Export</span>
-        </Button>
+        {iconOnly ? (
+          <DownloadTapButton ariaLabel="Export" disabled={disabled || empty} />
+        ) : (
+          <Button variant="outline" size="sm" disabled={disabled || empty}>
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export</span>
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Download</DropdownMenuLabel>

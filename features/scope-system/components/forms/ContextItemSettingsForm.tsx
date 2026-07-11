@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Loader2,
   Trash2,
@@ -8,12 +8,14 @@ import {
   Hash,
   Tag as TagIcon,
   AlertTriangle,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -46,6 +48,15 @@ import {
 import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
 import { componentToValueType } from "@/features/scope-system/utils/componentValueType";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  makeSelectScopeType,
+  makeSelectScopeTypesForOrg,
+} from "@/features/scopes/redux/selectors/tree";
+import {
+  CONTEXT_REFERENCE_TYPE_OPTIONS,
+  referenceTypeLabel,
+} from "@/features/scopes/utils/referenceCell";
 
 interface ContextItemSettingsFormProps {
   itemId: string;
@@ -88,6 +99,14 @@ export function ContextItemSettingsForm({
   const [reviewIntervalDays, setReviewIntervalDays] = useState("");
   const [sortOrder, setSortOrder] = useState("");
 
+  // Reference config — only meaningful when isReference is true.
+  const [isReference, setIsReference] = useState(false);
+  const [allowedReferenceTypes, setAllowedReferenceTypes] = useState<string[]>(
+    [],
+  );
+  const [maxItems, setMaxItems] = useState("1");
+  const [allowedScopeTypeIds, setAllowedScopeTypeIds] = useState<string[]>([]);
+
   useEffect(() => {
     if (!item) return;
     setDisplayName(item.display_name);
@@ -106,7 +125,37 @@ export function ContextItemSettingsForm({
         : "",
     );
     setSortOrder(item.sort_order != null ? String(item.sort_order) : "");
+    setIsReference(item.value_type === "reference");
+    setAllowedReferenceTypes(item.allowed_reference_types ?? []);
+    setMaxItems(item.max_items != null ? String(item.max_items) : "1");
+    setAllowedScopeTypeIds(item.allowed_scope_type_ids ?? []);
   }, [item]);
+
+  // Org scope types, for the "scope" reference type's allowed-scope-type filter.
+  useEffect(() => {
+    void dispatch(ensureScopeTree());
+  }, [dispatch]);
+  const selectScopeType = useMemo(() => makeSelectScopeType(), []);
+  const scopeTypeNode = useAppSelector((s) =>
+    selectScopeType(s, item?.scope_type_id ?? null),
+  );
+  const orgId = scopeTypeNode?.organization_id ?? null;
+  const selectScopeTypesForOrg = useMemo(
+    () => makeSelectScopeTypesForOrg(),
+    [],
+  );
+  const orgScopeTypes = useAppSelector((s) => selectScopeTypesForOrg(s, orgId));
+
+  function toggleReferenceType(t: string) {
+    setAllowedReferenceTypes((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+    );
+  }
+  function toggleAllowedScopeType(id: string) {
+    setAllowedScopeTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   function addTag() {
     const next = tagInput.trim().toLowerCase().replace(/\s+/g, "_");
@@ -133,10 +182,18 @@ export function ContextItemSettingsForm({
       toast.error(`"${trimmedSlug}" is a reserved word — choose another slug`);
       return;
     }
+    if (isReference && allowedReferenceTypes.length === 0) {
+      toast.error("Select at least one reference type");
+      return;
+    }
+    const maxItemsNum = Math.max(1, Number(maxItems) || 1);
     setBusy(true);
     try {
-      // The chosen component drives the storage discriminator; keep value_type in sync.
-      const derivedValueType = componentToValueType(customComponent);
+      // Reference items skip the custom-component derivation entirely — the
+      // two value sources are mutually exclusive on one item.
+      const derivedValueType = isReference
+        ? "reference"
+        : componentToValueType(customComponent);
       await dispatch(
         updateContextItem({
           id: item.id,
@@ -145,7 +202,7 @@ export function ContextItemSettingsForm({
           description: description.trim(),
           category: category.trim() || null,
           value_type: derivedValueType,
-          custom_component: customComponent ?? null,
+          custom_component: isReference ? null : (customComponent ?? null),
           fetch_hint: fetchHint,
           sensitivity,
           tags,
@@ -154,6 +211,12 @@ export function ContextItemSettingsForm({
             ? Number(reviewIntervalDays)
             : null,
           sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
+          allowed_reference_types: isReference ? allowedReferenceTypes : null,
+          max_items: isReference ? maxItemsNum : 1,
+          allowed_scope_type_ids:
+            isReference && allowedReferenceTypes.includes("scope")
+              ? allowedScopeTypeIds
+              : null,
         }),
       ).unwrap();
       dispatch(listScopeTypeItems(item.scope_type_id));
@@ -270,34 +333,144 @@ export function ContextItemSettingsForm({
         </datalist>
       </div>
 
-      {/* ── Input component (shared with the Agent Builder) ──────────────── */}
-      <div className="space-y-2 rounded-lg border border-border p-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs font-medium">Input component</Label>
-          <span className="text-[10px] text-muted-foreground">
-            stored as{" "}
-            <code className="font-mono">
-              {VALUE_TYPE_CONFIG[derivedValueType]?.label ?? derivedValueType}
-            </code>
-          </span>
+      {/* ── Reference — mutually exclusive with the custom-component input ── */}
+      <div className="space-y-3 rounded-lg border border-border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <Label className="text-xs font-medium inline-flex items-center gap-1.5">
+              <Link2 className="h-3.5 w-3.5" />
+              Store a reference
+            </Label>
+            <p className="text-[10px] text-muted-foreground">
+              Points at a file, scope, link, or other Matrx entity instead of a
+              typed-in value — stored as a canonical{" "}
+              <code className="font-mono">matrx</code> reference fence.
+            </p>
+          </div>
+          <Switch
+            checked={isReference}
+            onCheckedChange={setIsReference}
+            disabled={busy}
+          />
         </div>
-        <p className="text-[10px] text-muted-foreground">
-          The same components used in the Agent Builder. The storage type is
-          derived automatically from the component you pick.
-        </p>
-        <CustomComponentConfigurator
-          value={customComponent}
-          onChange={setCustomComponent}
-          readonly={busy}
-        />
-        {derivedValueType !== item.value_type && (
-          <p className="text-[10px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
-            <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
-            Storage type changes to {derivedValueType} on save — existing values
-            won&apos;t auto-convert.
-          </p>
+
+        {isReference && (
+          <div className="space-y-3 pt-1">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Allowed types</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {CONTEXT_REFERENCE_TYPE_OPTIONS.map((t) => {
+                  const active = allowedReferenceTypes.includes(t);
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => toggleReferenceType(t)}
+                      className={`rounded-md border px-2 py-1 text-xs transition-colors ${
+                        active
+                          ? "border-primary/50 bg-primary/10 text-foreground"
+                          : "border-border text-muted-foreground hover:text-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {referenceTypeLabel(t)}
+                    </button>
+                  );
+                })}
+              </div>
+              {allowedReferenceTypes.length === 0 && (
+                <p className="text-[10px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
+                  <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+                  Select at least one type.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Max items</Label>
+              <Input
+                type="number"
+                min={1}
+                value={maxItems}
+                onChange={(e) => setMaxItems(e.target.value)}
+                style={{ fontSize: "16px" }}
+                disabled={busy}
+                className="w-28"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                1 = a single value. Higher allows a list (e.g. a report that can
+                carry several files).
+              </p>
+            </div>
+
+            {allowedReferenceTypes.includes("scope") && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Allowed scope types</Label>
+                {orgScopeTypes.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground">
+                    Loading scope types…
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {orgScopeTypes.map((st) => {
+                      const active = allowedScopeTypeIds.includes(st.id);
+                      return (
+                        <button
+                          key={st.id}
+                          type="button"
+                          disabled={busy}
+                          onClick={() => toggleAllowedScopeType(st.id)}
+                          className={`rounded-md border px-2 py-1 text-xs transition-colors ${
+                            active
+                              ? "border-primary/50 bg-primary/10 text-foreground"
+                              : "border-border text-muted-foreground hover:text-foreground hover:bg-accent"
+                          }`}
+                        >
+                          {st.label_singular}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground">
+                  Leave all unselected to allow any scope type in the org.
+                </p>
+              </div>
+            )}
+          </div>
         )}
       </div>
+
+      {/* ── Input component (shared with the Agent Builder) ──────────────── */}
+      {!isReference && (
+        <div className="space-y-2 rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-medium">Input component</Label>
+            <span className="text-[10px] text-muted-foreground">
+              stored as{" "}
+              <code className="font-mono">
+                {VALUE_TYPE_CONFIG[derivedValueType]?.label ?? derivedValueType}
+              </code>
+            </span>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            The same components used in the Agent Builder. The storage type is
+            derived automatically from the component you pick.
+          </p>
+          <CustomComponentConfigurator
+            value={customComponent}
+            onChange={setCustomComponent}
+            readonly={busy}
+          />
+          {derivedValueType !== item.value_type && (
+            <p className="text-[10px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
+              <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+              Storage type changes to {derivedValueType} on save — existing
+              values won&apos;t auto-convert.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <Label className="text-xs">Fetch hint</Label>

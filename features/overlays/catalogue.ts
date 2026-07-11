@@ -340,6 +340,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  extractionCellEditorWindow: {
+    label: "Extraction Cell Editor Window",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   feedbackDialog: {
     label: "Feedback Dialog",
     instanceMode: "singleton",
@@ -632,6 +637,11 @@ export const OVERLAY_CATALOGUE = {
   },
   smartCodeEditorWindow: {
     label: "Smart Code Editor Window",
+    instanceMode: "multi",
+    isWindow: true,
+  },
+  surfaceAgentBindWindow: {
+    label: "Add Agent to Surface",
     instanceMode: "multi",
     isWindow: true,
   },

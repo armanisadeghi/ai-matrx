@@ -17,18 +17,15 @@ import {
   Zap,
   Database,
   Wrench,
-  SquareStack,
   FileText,
   BookOpen,
   Layers,
   MousePointerClick,
   Repeat,
-  Plus,
   MessageCircleQuestion,
   ArrowRight,
   Loader2,
 } from "lucide-react";
-import Link from "next/link";
 import { ChunkingConfigForm } from "@/features/page-extraction/components/ChunkingConfigForm";
 import { cn } from "@/lib/utils";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
@@ -39,6 +36,12 @@ import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 import { createPdfWidgetsScope } from "@/features/surfaces/manifests/pdf-widgets.manifest";
+import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
+import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
+
+const PDF_WIDGETS_SURFACE = "matrx-user/pdf-widgets";
 
 // NOTE: Knowledge Assets is NOT a tab here. A sixth flex-1 tab overflowed this
 // narrow right rail (no horizontal scroll). The Knowledge Asset Builder now
@@ -187,20 +190,13 @@ export function PdfStudioInspector({
   );
 }
 
-// ── AI Actions panel (inspector-flavoured, shortcut registry) ─────────────
+// ── AI Actions panel (surface-bound agents for pdf-widgets) ───────────────
 
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type AgentScope = "full" | "current" | "range" | "selection";
-
-interface PdfShortcutEntry {
-  id: string;
-  label: string;
-  description: string;
-}
 
 /** Design's Ask-tab suggestion grid — generic, doc-type-agnostic prompts. */
 const SUGGESTED_QUESTIONS = [
@@ -209,20 +205,6 @@ const SUGGESTED_QUESTIONS = [
   "What dates or deadlines appear?",
   "Who are the parties involved?",
 ] as const;
-
-const PDF_SHORTCUTS: PdfShortcutEntry[] = [
-  {
-    id: "dba439a3-a495-4e57-893a-2176cf14ab8d",
-    label: "Analyze Document",
-    description:
-      "Floating-window agent — reads selected scope, full doc available as context.",
-  },
-  {
-    id: "b967ddc1-7c00-4ccd-af89-26b5c0c7968d",
-    label: "WC Extractor",
-    description: "Extract Workers Compensation data from the document",
-  },
-];
 
 const SCOPE_OPTIONS: {
   key: AgentScope;
@@ -255,17 +237,35 @@ function AiActionsPanel({
   doc,
   pages,
   activePage,
-  onRunShortcut,
 }: {
   doc: PdfDocument;
   pages: PdfPageRow[];
   activePage: number | null;
-  onRunShortcut: (shortcutId: string) => void | Promise<void>;
+  onRunShortcut?: (shortcutId: string) => void | Promise<void>;
 }) {
-  const trigger = useShortcutTrigger();
+  const { launchAgent } = useAgentLauncher();
+  const openBind = useOpenSurfaceAgentBindWindow();
   const toast = useToastManager("pdf-extractor");
   const [scope, setScope] = useState<AgentScope>("full");
   const [rangeInput, setRangeInput] = useState("");
+
+  const { sections: boundSections, refresh: refreshBoundAgents } =
+    useSurfaceBoundAgents(PDF_WIDGETS_SURFACE, {
+      isEditable: false,
+      includeDefaults: true,
+    });
+
+  useEffect(() => {
+    void refreshBoundAgents();
+  }, [refreshBoundAgents]);
+
+  // First bound agent powers "Ask this document".
+  const askAgentId = (() => {
+    for (const s of boundSections) {
+      if (s.agents[0]) return s.agents[0].agentId;
+    }
+    return null;
+  })();
 
   const fullText = doc.cleanContent ?? doc.content ?? "";
   const usingClean = !!doc.cleanContent;
@@ -275,11 +275,6 @@ function AiActionsPanel({
     return usingClean ? p.cleanedText || p.rawText : p.rawText;
   }
 
-  // Build text for each scope independently. Agents wired to specific
-  // scope variables (full_document_text / current_page_text /
-  // page_range_text / selected_text) always get their slice regardless
-  // of the picker — the picker only drives `active_scope_text` and the
-  // legacy `selection` alias.
   const currentPageText = (() => {
     if (activePage == null) return "";
     const p = pages.find((r) => r.pageNumber === activePage);
@@ -350,25 +345,9 @@ function AiActionsPanel({
     return null;
   })();
 
-  const handleRun = async (shortcutId: string, userInput?: string) => {
-    if (!hasContent) {
-      toast.error("Nothing to send to the agent yet");
-      return;
-    }
-
-    // Grab the live browser selection at click time. We always emit it
-    // as `selected_text` regardless of which scope is picked so agents
-    // wired specifically to browser selection always get a chance.
+  const buildApplicationScope = () => {
     const browserSelection = window.getSelection()?.toString().trim() ?? "";
-
-    // Resolve the picker-driven value (the "active scope" the user
-    // chose). May fall back to fullText with a warning toast when
-    // their pick has no content (e.g. picked "Selected text" but
-    // nothing's highlighted).
     const activeScopeText = getActiveScopeText();
-
-    // Compute a human-friendly page range string for whichever scope
-    // the user picked. Empty for "selection" (no page anchor).
     const pageNumbers = (() => {
       if (scope === "full") {
         if (pages.length === 0) return "";
@@ -383,38 +362,43 @@ function AiActionsPanel({
     const fileId =
       doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : "";
 
-    const applicationScope = createPdfWidgetsScope({
-      // Explicit scope-text variables — independent of the picker so an
-      // agent author can wire to a specific source.
+    return createPdfWidgetsScope({
       full_document_text: fullText,
       current_page_text: currentPageText,
       page_range_text: pageRangeText,
       selected_text: browserSelection,
-      // Picker-driven mirror — "follow the user's choice".
       active_scope_text: activeScopeText,
-      // Document metadata.
       filename: doc.name,
       file_id: fileId,
       processed_document_id: doc.id,
       total_pages: pages.length || doc.totalPages || 0,
-      // Runtime state.
       current_page: activePage ?? 0,
       page_numbers: pageNumbers || undefined,
       scope_kind: scope,
       using_clean_text: usingClean,
-      // Back-compat aliases so the existing two shortcuts (Analyze
-      // Document, WC Extractor) — which wire to `selection` / `content`
-      // — keep working without touching their mappings.
       selection: activeScopeText,
       content: fullText,
     });
+  };
+
+  const handleRunAgent = async (agentId: string, userInput?: string) => {
+    if (!hasContent) {
+      toast.error("Nothing to send to the agent yet");
+      return;
+    }
 
     try {
-      await trigger(shortcutId, {
-        scope: applicationScope,
+      await launchAgent(agentId, {
+        surfaceKey: `pdf-widgets:bound-agent:${agentId}`,
         sourceFeature: "pdf-extractor",
+        config: {
+          displayMode: "modal-full",
+          allowChat: true,
+          showVariablePanel: true,
+        },
         runtime: {
-          surfaceName: "matrx-user/pdf-widgets",
+          applicationScope: buildApplicationScope(),
+          surfaceName: PDF_WIDGETS_SURFACE,
           ...(userInput ? { userInput } : {}),
         },
       });
@@ -423,19 +407,30 @@ function AiActionsPanel({
     }
   };
 
-  // ── Ask this document (design: Ask tab — question box + suggestions) ──
-  // Rides the Analyze Document shortcut: the question seeds the first user
-  // message (runtime.userInput) and the doc text travels as scope.
-  const ASK_SHORTCUT_ID = PDF_SHORTCUTS[0].id;
+  const handleAddAgent = () => {
+    openBind({
+      surfaceName: PDF_WIDGETS_SURFACE,
+      surfaceLabel: "PDF Widgets",
+      onBound: () => {
+        void refreshBoundAgents();
+      },
+    });
+  };
+
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
 
   const ask = async (q: string) => {
     const trimmed = q.trim();
     if (!trimmed || asking) return;
+    if (!askAgentId) {
+      toast.error("Add an agent to this surface first");
+      handleAddAgent();
+      return;
+    }
     setAsking(true);
     try {
-      await handleRun(ASK_SHORTCUT_ID, trimmed);
+      await handleRunAgent(askAgentId, trimmed);
       setQuestion("");
     } finally {
       setAsking(false);
@@ -444,7 +439,6 @@ function AiActionsPanel({
 
   return (
     <div className="p-3 space-y-3">
-      {/* Header */}
       <div className="flex items-center gap-1.5">
         <Rocket className="w-3.5 h-3.5 text-primary" />
         <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
@@ -456,7 +450,6 @@ function AiActionsPanel({
         </span>
       </div>
 
-      {/* Scope picker */}
       <div className="space-y-1.5">
         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
           Scope
@@ -519,7 +512,6 @@ function AiActionsPanel({
         </p>
       )}
 
-      {/* Ask this document (design: Ask tab) */}
       {hasContent && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5">
@@ -573,46 +565,13 @@ function AiActionsPanel({
         </div>
       )}
 
-      {/* Widget list — single-shot agents wired to the
-          `matrx-user/pdf-widgets` surface. Each run sends the full
-          surface payload (every scope-text variable + metadata), so
-          agents wired to `full_document_text`, `current_page_text`,
-          `page_range_text`, `selected_text`, or `active_scope_text`
-          all work side-by-side. */}
       {hasContent && (
-        <div className="space-y-1.5">
-          {PDF_SHORTCUTS.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-start gap-2 px-2.5 py-2 bg-card border border-border rounded-md"
-            >
-              <div className="shrink-0 w-6 h-6 rounded bg-primary/10 flex items-center justify-center mt-0.5">
-                <SquareStack className="w-3 h-3 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium leading-tight">{s.label}</p>
-                <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                  {s.description}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                className="h-7 text-[10px] px-2 shrink-0"
-                onClick={() => void handleRun(s.id)}
-              >
-                Run
-              </Button>
-            </div>
-          ))}
-
-          <Link
-            href="/agents/shortcuts"
-            className="flex items-center justify-center gap-1 px-2.5 py-2 bg-muted/30 border border-dashed border-border rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors"
-          >
-            <Plus className="w-3 h-3" />
-            <span>Attach one of your agents</span>
-          </Link>
-        </div>
+        <SurfaceBoundAgentsList
+          surfaceName={PDF_WIDGETS_SURFACE}
+          surfaceLabel="PDF Widgets"
+          onRunAgent={(agentId) => handleRunAgent(agentId)}
+          runDisabled={!hasContent}
+        />
       )}
     </div>
   );

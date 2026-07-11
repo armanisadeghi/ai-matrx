@@ -22,7 +22,6 @@ import {
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowUpDown,
   Columns3,
   Copy,
@@ -31,7 +30,6 @@ import {
   GripVertical,
   Layers,
   Loader2,
-  MoreHorizontal,
   Pencil,
   Trash2,
   X,
@@ -66,18 +64,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  ChevronLeftTapButton,
+  MoreHorizontalTapButton,
+} from "@/components/icons/tap-buttons";
 import { cn } from "@/lib/utils";
 
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   getJob,
   updateJob,
   clearJobResults,
   deleteJob,
 } from "@/features/page-extraction/api/jobs";
-import {
-  listResults,
-  updateResultPayloadField,
-} from "@/features/page-extraction/api/runs";
+import { listResults } from "@/features/page-extraction/api/runs";
 import {
   augmentColumnsWithUncovered,
   buildMergedDuplicateView,
@@ -96,9 +96,11 @@ import type {
 } from "@/features/page-extraction/types";
 
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
+import { useOpenExtractionCellEditor } from "@/features/overlays/openers/extractionCellEditorWindow";
 import { ExportMenu } from "./ExportMenu";
 import { SendToMenu } from "./SendToMenu";
 import { RunsPopover } from "./RunsPopover";
+import { ExtractionCellDisplay } from "./ExtractionCellDisplay";
 import { deleteResultRows, duplicateJob } from "./data";
 import { cellToString } from "./export";
 import { EXTRACTION_ENTITY_TYPE, EXTRACTIONS_ROUTE } from "./constants";
@@ -124,10 +126,20 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   const [pageSize, setPageSize] = useState<number>(100);
   const [pageIndex, setPageIndex] = useState(0);
 
-  const [editing, setEditing] = useState<{ rowId: string; key: string } | null>(
-    null,
-  );
-  const [editDraft, setEditDraft] = useState("");
+  const openCellEditor = useOpenExtractionCellEditor({
+    onSaved: (e) => {
+      setResults((rs) =>
+        rs.map((r) =>
+          r.id === e.target.rowId
+            ? {
+                ...r,
+                payload: { ...r.payload, [e.target.writeKey]: e.value },
+              }
+            : r,
+        ),
+      );
+    },
+  });
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
 
@@ -323,38 +335,6 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     [sortKey],
   );
 
-  const commitEdit = useCallback(async () => {
-    if (!editing) return;
-    const row = displayRows.find((r) => r.id === editing.rowId);
-    const col = columns.find((c) => c.key === editing.key);
-    setEditing(null);
-    if (!row || !col || editing.rowId.includes("#")) return;
-    const writeKey = editKeyFor(col);
-    if (!writeKey) return;
-    const prev = cellToString(cellValueFor(row, col));
-    if (prev === editDraft) return;
-    try {
-      await updateResultPayloadField({
-        resultId: row.id,
-        currentPayload: row.payload,
-        key: writeKey,
-        value: editDraft,
-      });
-      setResults((rs) =>
-        rs.map((r) =>
-          r.id === row.id
-            ? { ...r, payload: { ...r.payload, [writeKey]: editDraft } }
-            : r,
-        ),
-      );
-      toast.success("Saved");
-    } catch (e) {
-      toast.error("Could not save", {
-        description: e instanceof Error ? e.message : undefined,
-      });
-    }
-  }, [editing, editDraft, displayRows, columns]);
-
   const commitRename = useCallback(async () => {
     setRenaming(false);
     const next = nameDraft.trim();
@@ -451,460 +431,468 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-textured">
-      {/* Header */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={() => startTransition(() => router.push(EXTRACTIONS_ROUTE))}
-          title="Back to all extractions"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+    <>
+      <PageHeader>
+        <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
+          <ChevronLeftTapButton
+            href={EXTRACTIONS_ROUTE}
+            ariaLabel="Back to all extractions"
+          />
+          <div className="ml-2 flex min-w-0 flex-1 items-center gap-1.5">
+            {renaming ? (
+              <Input
+                autoFocus
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onBlur={() => void commitRename()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void commitRename();
+                  if (e.key === "Escape") {
+                    setRenaming(false);
+                    setNameDraft(job?.name ?? "");
+                  }
+                }}
+                className="h-7 max-w-sm text-sm"
+                style={{ fontSize: "16px" }}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setRenaming(true)}
+                className="group flex min-w-0 items-center gap-1"
+                title="Rename"
+              >
+                <h1 className="truncate text-sm font-medium text-foreground">
+                  {job?.name ?? "Loading…"}
+                </h1>
+                <Pencil className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" />
+              </button>
+            )}
+            {job?.kind === "validation" && (
+              <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">
+                validation
+              </span>
+            )}
+          </div>
 
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          {renaming ? (
+          <div className="ml-auto shrink-0 flex items-center">
+            {job && (
+              <ContextStatusButton
+                size="sm"
+                subject={{
+                  entityType: EXTRACTION_ENTITY_TYPE,
+                  entityId: job.id,
+                  title: job.name,
+                  subtitle: "Extraction dataset",
+                  icon: Layers,
+                }}
+                onSaved={(r) => r.ok && toast.success("Context updated")}
+              />
+            )}
+            <RunsPopover
+              jobId={jobId}
+              selectedRunId={selectedRunId}
+              onSelectRun={setSelectedRunId}
+              onChanged={() => void loadResults()}
+              iconOnly
+            />
+            <SendToMenu
+              name={job?.name ?? "extraction"}
+              columns={exportColumns}
+              rows={exportRows}
+              disabled={loading}
+              iconOnly
+            />
+            <ExportMenu
+              name={job?.name ?? "extraction"}
+              columns={exportColumns}
+              rows={exportRows}
+              disabled={loading}
+              iconOnly
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <MoreHorizontalTapButton ariaLabel="More actions" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={jumpToSource}
+                  disabled={!job?.processed_document_id}
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" /> Open source PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void onDuplicate()}>
+                  <Copy className="mr-2 h-4 w-4" /> Duplicate template
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setConfirmKind("clear")}
+                  disabled={results.length === 0}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Clear all rows
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setConfirmKind("archive")}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Archive dataset
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </PageHeader>
+
+      <div className="flex h-full w-full flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
+        {/* Sub-toolbar — search / columns / merge */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+          <div className="relative min-w-[180px] flex-1 max-w-sm">
             <Input
-              autoFocus
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              onBlur={() => void commitRename()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void commitRename();
-                if (e.key === "Escape") {
-                  setRenaming(false);
-                  setNameDraft(job?.name ?? "");
-                }
-              }}
-              className="h-8 max-w-sm text-base sm:text-sm"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search rows…"
+              className="h-8 text-base sm:text-sm"
               style={{ fontSize: "16px" }}
             />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setRenaming(true)}
-              className="group flex min-w-0 items-center gap-1.5"
-              title="Rename"
-            >
-              <span className="truncate text-base font-semibold">
-                {job?.name ?? "Loading…"}
-              </span>
-              <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" />
-            </button>
-          )}
-          {job?.kind === "validation" && (
-            <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">
-              validation
-            </span>
-          )}
-        </div>
+          </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1.5">
-          {job && (
-            <ContextStatusButton
-              size="sm"
-              showScopeLabel
-              subject={{
-                entityType: EXTRACTION_ENTITY_TYPE,
-                entityId: job.id,
-                title: job.name,
-                subtitle: "Extraction dataset",
-                icon: Layers,
-              }}
-              onSaved={(r) => r.ok && toast.success("Context updated")}
-            />
-          )}
-          <RunsPopover
-            jobId={jobId}
-            selectedRunId={selectedRunId}
-            onSelectRun={setSelectedRunId}
-            onChanged={() => void loadResults()}
-          />
-          <SendToMenu
-            name={job?.name ?? "extraction"}
-            columns={exportColumns}
-            rows={exportRows}
-            disabled={loading}
-          />
-          <ExportMenu
-            name={job?.name ?? "extraction"}
-            columns={exportColumns}
-            rows={exportRows}
-            disabled={loading}
-          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
+              <Button variant="outline" size="sm">
+                <Columns3 className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  Columns ({visibleColumns.length}/{columns.length})
+                </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                onClick={jumpToSource}
-                disabled={!job?.processed_document_id}
-              >
-                <ExternalLink className="mr-2 h-4 w-4" /> Open source PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => void onDuplicate()}>
-                <Copy className="mr-2 h-4 w-4" /> Duplicate template
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setConfirmKind("clear")}
-                disabled={results.length === 0}
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Clear all rows
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setConfirmKind("archive")}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Archive dataset
-              </DropdownMenuItem>
+            <DropdownMenuContent
+              align="start"
+              className="max-h-80 w-56 overflow-y-auto"
+            >
+              <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+              {columns.map((c) => (
+                <DropdownMenuCheckboxItem
+                  key={c.key}
+                  checked={!hidden.has(c.key)}
+                  onCheckedChange={(on) =>
+                    setHidden((prev) => {
+                      const next = new Set(prev);
+                      if (on) next.delete(c.key);
+                      else next.add(c.key);
+                      return next;
+                    })
+                  }
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {c.label}
+                </DropdownMenuCheckboxItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <div className="relative min-w-[180px] flex-1 max-w-sm">
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search rows…"
-            className="h-8 text-base sm:text-sm"
-            style={{ fontSize: "16px" }}
-          />
+          <Button
+            variant={merge ? "default" : "outline"}
+            size="sm"
+            onClick={() => setMerge((v) => !v)}
+            title="Merge duplicate rows flagged by a validation pass"
+          >
+            <Layers className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Merge dupes</span>
+          </Button>
+
+          <div className="ml-auto text-xs text-muted-foreground">
+            {loading ? "Loading…" : `${sorted.length.toLocaleString()} rows`}
+          </div>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Columns3 className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">
-                Columns ({visibleColumns.length}/{columns.length})
-              </span>
+        {/* Recovery banner — loud if a wrapped payload reached the client */}
+        {unwrappedCount > 0 && (
+          <div className="flex items-start gap-2 border-b border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {unwrappedCount} stored row
+              {unwrappedCount === 1 ? " was" : "s were"} still wrapped and had
+              to be unwrapped in the browser. The backend should store flat rows
+              — please report this dataset.
+            </span>
+          </div>
+        )}
+
+        {/* Bulk action bar */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2 border-b border-border bg-accent/40 px-3 py-1.5 text-sm">
+            <span className="font-medium">{selected.size} selected</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-destructive"
+              onClick={() => setConfirmKind("bulk")}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            className="max-h-80 w-56 overflow-y-auto"
-          >
-            <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
-            {columns.map((c) => (
-              <DropdownMenuCheckboxItem
-                key={c.key}
-                checked={!hidden.has(c.key)}
-                onCheckedChange={(on) =>
-                  setHidden((prev) => {
-                    const next = new Set(prev);
-                    if (on) next.delete(c.key);
-                    else next.add(c.key);
-                    return next;
-                  })
-                }
-                onSelect={(e) => e.preventDefault()}
-              >
-                {c.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button
-          variant={merge ? "default" : "outline"}
-          size="sm"
-          onClick={() => setMerge((v) => !v)}
-          title="Merge duplicate rows flagged by a validation pass"
-        >
-          <Layers className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Merge dupes</span>
-        </Button>
-
-        <div className="ml-auto text-xs text-muted-foreground">
-          {loading ? "Loading…" : `${sorted.length.toLocaleString()} rows`}
-        </div>
-      </div>
-
-      {/* Recovery banner — loud if a wrapped payload reached the client */}
-      {unwrappedCount > 0 && (
-        <div className="flex items-start gap-2 border-b border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-300">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            {unwrappedCount} stored row
-            {unwrappedCount === 1 ? " was" : "s were"} still wrapped and had to
-            be unwrapped in the browser. The backend should store flat rows —
-            please report this dataset.
-          </span>
-        </div>
-      )}
-
-      {/* Bulk action bar */}
-      {selected.size > 0 && (
-        <div className="flex items-center gap-2 border-b border-border bg-accent/40 px-3 py-1.5 text-sm">
-          <span className="font-medium">{selected.size} selected</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-destructive"
-            onClick={() => setConfirmKind("bulk")}
-          >
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7"
-            onClick={() => setSelected(new Set())}
-          >
-            <X className="mr-1.5 h-3.5 w-3.5" /> Clear
-          </Button>
-        </div>
-      )}
-
-      {/* Grid */}
-      <div className="flex-1 overflow-auto">
-        {loading ? (
-          <div className="flex h-40 items-center justify-center text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading rows…
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7"
+              onClick={() => setSelected(new Set())}
+            >
+              <X className="mr-1.5 h-3.5 w-3.5" /> Clear
+            </Button>
           </div>
-        ) : error ? (
-          <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-            {error}
-          </div>
-        ) : sorted.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 p-12 text-center text-muted-foreground">
-            <Eye className="h-8 w-8 opacity-50" />
-            <div className="text-sm font-medium">No rows to show</div>
-            <div className="text-xs">
-              {results.length === 0
-                ? "This dataset has no extracted rows yet."
-                : "No rows match your search."}
+        )}
+
+        {/* Grid */}
+        <div className="flex-1 overflow-auto">
+          {loading ? (
+            <div className="flex h-40 items-center justify-center text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading rows…
             </div>
-          </div>
-        ) : (
-          <table className="w-full border-collapse text-sm">
-            <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur">
-              <tr className="text-left text-xs text-muted-foreground">
-                <th className="w-8 px-2 py-2">
-                  <Checkbox
-                    checked={allPageSelected}
-                    onCheckedChange={togglePageSelection}
-                    aria-label="Select page"
-                  />
-                </th>
-                <th className="w-14 px-2 py-2 font-medium">Page</th>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={onColumnDragEnd}
-                >
-                  <SortableContext
-                    items={visibleColumns.map((c) => c.key)}
-                    strategy={horizontalListSortingStrategy}
-                  >
-                    {visibleColumns.map((c) => (
-                      <SortableHeaderCell
-                        key={c.key}
-                        column={c}
-                        active={sortKey === c.key}
-                        onToggleSort={toggleSort}
-                      />
-                    ))}
-                  </SortableContext>
-                </DndContext>
-                <th className="w-10 px-2 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {paged.map((row) => {
-                const mergedCount = mergedCountById.get(row.id) ?? 0;
-                const isSel = selected.has(row.id);
-                return (
-                  <tr
-                    key={row.id}
-                    className={cn(
-                      "group border-t border-border/50 hover:bg-accent/30",
-                      isSel && "bg-primary/5",
-                    )}
-                  >
-                    <td className="px-2 py-1.5 align-top">
+          ) : error ? (
+            <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+              {error}
+            </div>
+          ) : sorted.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 p-12 text-center text-muted-foreground">
+              <Eye className="h-8 w-8 opacity-50" />
+              <div className="text-sm font-medium">No rows to show</div>
+              <div className="text-xs">
+                {results.length === 0
+                  ? "This dataset has no extracted rows yet."
+                  : "No rows match your search."}
+              </div>
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onColumnDragEnd}
+            >
+              <table className="w-full border-collapse text-sm">
+                <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur">
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="w-8 px-2 py-2">
                       <Checkbox
-                        checked={isSel}
-                        onCheckedChange={(on) =>
-                          setSelected((prev) => {
-                            const next = new Set(prev);
-                            if (on) next.add(row.id);
-                            else next.delete(row.id);
-                            return next;
-                          })
-                        }
-                        aria-label="Select row"
+                        checked={allPageSelected}
+                        onCheckedChange={togglePageSelection}
+                        aria-label="Select page"
                       />
-                    </td>
-                    <td className="px-2 py-1.5 align-top text-xs text-muted-foreground tabular-nums">
-                      {row.canonical_page ??
-                        ((row.source_pages ?? []).join(",") || "—")}
-                    </td>
-                    {visibleColumns.map((c) => {
-                      const editable = COLUMN_SOURCE_META[c.source]?.editable;
-                      const isEditing =
-                        editing?.rowId === row.id && editing?.key === c.key;
-                      const value = cellToString(cellValueFor(row, c));
-                      return (
-                        <td
+                    </th>
+                    <th className="w-14 px-2 py-2 font-medium">Page</th>
+                    <SortableContext
+                      items={visibleColumns.map((c) => c.key)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {visibleColumns.map((c) => (
+                        <SortableHeaderCell
                           key={c.key}
-                          className={cn(
-                            "max-w-[360px] px-3 py-1.5 align-top",
-                            editable &&
-                              !row.id.includes("#") &&
-                              "cursor-text hover:bg-primary/5",
-                          )}
-                          title={
-                            editable && !row.id.includes("#")
-                              ? "Double-click to edit"
-                              : undefined
-                          }
-                          onDoubleClick={() => {
-                            if (editable && !row.id.includes("#")) {
-                              setEditing({ rowId: row.id, key: c.key });
-                              setEditDraft(value);
+                          column={c}
+                          active={sortKey === c.key}
+                          onToggleSort={toggleSort}
+                        />
+                      ))}
+                    </SortableContext>
+                    <th className="w-10 px-2 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.map((row) => {
+                    const mergedCount = mergedCountById.get(row.id) ?? 0;
+                    const isSel = selected.has(row.id);
+                    return (
+                      <tr
+                        key={row.id}
+                        className={cn(
+                          "group border-t border-border/50 hover:bg-accent/30",
+                          isSel && "bg-primary/5",
+                        )}
+                      >
+                        <td className="px-2 py-1.5 align-top">
+                          <Checkbox
+                            checked={isSel}
+                            onCheckedChange={(on) =>
+                              setSelected((prev) => {
+                                const next = new Set(prev);
+                                if (on) next.add(row.id);
+                                else next.delete(row.id);
+                                return next;
+                              })
                             }
-                          }}
-                        >
-                          {isEditing ? (
-                            <Input
-                              autoFocus
-                              value={editDraft}
-                              onChange={(e) => setEditDraft(e.target.value)}
-                              onBlur={() => void commitEdit()}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") void commitEdit();
-                                if (e.key === "Escape") setEditing(null);
-                              }}
-                              className="h-7 text-base sm:text-sm"
-                              style={{ fontSize: "16px" }}
-                            />
-                          ) : (
-                            <div className="flex items-start gap-1 whitespace-pre-wrap break-words">
-                              <span className="min-w-0 flex-1">
-                                {value || (
-                                  <span className="text-muted-foreground/40">
-                                    —
-                                  </span>
-                                )}
-                                {c.key === visibleColumns[0]?.key &&
-                                  mergedCount > 0 && (
-                                    <span className="ml-1.5 rounded bg-secondary/15 px-1 py-0.5 text-[10px] font-medium text-secondary">
-                                      +{mergedCount} merged
-                                    </span>
-                                  )}
-                              </span>
-                              {editable && !row.id.includes("#") && (
-                                <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-60" />
+                            aria-label="Select row"
+                          />
+                        </td>
+                        <td className="px-2 py-1.5 align-top text-xs text-muted-foreground tabular-nums">
+                          {row.canonical_page ??
+                            ((row.source_pages ?? []).join(",") || "—")}
+                        </td>
+                        {visibleColumns.map((c) => {
+                          const editable =
+                            COLUMN_SOURCE_META[c.source]?.editable;
+                          const value = cellToString(cellValueFor(row, c));
+                          const writeKey = editKeyFor(c);
+                          const pageLabel =
+                            row.canonical_page != null
+                              ? String(row.canonical_page)
+                              : (row.source_pages ?? []).join(",") || "—";
+                          const openEditor = () => {
+                            if (
+                              !editable ||
+                              row.id.includes("#") ||
+                              !writeKey
+                            ) {
+                              return;
+                            }
+                            openCellEditor({
+                              rowId: row.id,
+                              columnKey: c.key,
+                              columnLabel: c.label,
+                              pageLabel,
+                              value,
+                              writeKey,
+                              currentPayload: (row.payload ?? {}) as Record<
+                                string,
+                                unknown
+                              >,
+                            });
+                          };
+                          return (
+                            <td
+                              key={c.key}
+                              className={cn(
+                                "max-w-[360px] px-3 py-1.5 align-top",
+                                editable &&
+                                  !row.id.includes("#") &&
+                                  "cursor-text hover:bg-primary/5",
                               )}
-                            </div>
+                              title={
+                                editable && !row.id.includes("#")
+                                  ? "Double-click to edit"
+                                  : undefined
+                              }
+                              onDoubleClick={openEditor}
+                            >
+                              <div className="flex items-start gap-1">
+                                <span className="min-w-0 flex-1">
+                                  <ExtractionCellDisplay value={value} />
+                                  {c.key === visibleColumns[0]?.key &&
+                                    mergedCount > 0 && (
+                                      <span className="ml-1.5 rounded bg-secondary/15 px-1 py-0.5 text-[10px] font-medium text-secondary">
+                                        +{mergedCount} merged
+                                      </span>
+                                    )}
+                                </span>
+                                {editable && !row.id.includes("#") && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openEditor();
+                                    }}
+                                    className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent group-hover:opacity-60"
+                                    title="Edit cell"
+                                    aria-label="Edit cell"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                        <td className="px-1 py-1.5 align-top">
+                          {!row.id.includes("#") && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                              title="Delete row"
+                              onClick={() => void deleteOneRow(row.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
                           )}
                         </td>
-                      );
-                    })}
-                    <td className="px-1 py-1.5 align-top">
-                      {!row.id.includes("#") && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                          title="Delete row"
-                          onClick={() => void deleteOneRow(row.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Pagination footer */}
-      {!loading && sorted.length > 0 && (
-        <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-1.5 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span>Rows per page</span>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="rounded border border-border bg-background px-1.5 py-0.5"
-            >
-              {PAGE_SIZES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>
-              {safePage * pageSize + 1}–
-              {Math.min((safePage + 1) * pageSize, sorted.length)} of{" "}
-              {sorted.length.toLocaleString()}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7"
-              disabled={safePage === 0}
-              onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
-            >
-              Prev
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7"
-              disabled={safePage >= pageCount - 1}
-              onClick={() =>
-                setPageIndex((p) => Math.min(pageCount - 1, p + 1))
-              }
-            >
-              Next
-            </Button>
-          </div>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </DndContext>
+          )}
         </div>
-      )}
 
-      <ConfirmDialog
-        open={confirmKind !== null}
-        onOpenChange={(o) => {
-          if (!o && !busy) setConfirmKind(null);
-        }}
-        title={
-          confirmKind === "clear"
-            ? "Clear all rows?"
-            : confirmKind === "bulk"
-              ? `Delete ${selected.size} row${selected.size === 1 ? "" : "s"}?`
-              : "Archive dataset?"
-        }
-        description={
-          confirmKind === "clear"
-            ? "Every extracted row for this dataset will be permanently deleted. The template is kept."
-            : confirmKind === "bulk"
-              ? "The selected rows will be permanently deleted."
-              : "The dataset is hidden from listings. Its rows stay queryable and it can be restored by an admin."
-        }
-        confirmLabel={confirmKind === "archive" ? "Archive" : "Delete"}
-        variant="destructive"
-        busy={busy}
-        onConfirm={runConfirmed}
-      />
-    </div>
+        {/* Pagination footer */}
+        {!loading && sorted.length > 0 && (
+          <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-1.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span>Rows per page</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="rounded border border-border bg-background px-1.5 py-0.5"
+              >
+                {PAGE_SIZES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>
+                {safePage * pageSize + 1}–
+                {Math.min((safePage + 1) * pageSize, sorted.length)} of{" "}
+                {sorted.length.toLocaleString()}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7"
+                disabled={safePage === 0}
+                onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+              >
+                Prev
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7"
+                disabled={safePage >= pageCount - 1}
+                onClick={() =>
+                  setPageIndex((p) => Math.min(pageCount - 1, p + 1))
+                }
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <ConfirmDialog
+          open={confirmKind !== null}
+          onOpenChange={(o) => {
+            if (!o && !busy) setConfirmKind(null);
+          }}
+          title={
+            confirmKind === "clear"
+              ? "Clear all rows?"
+              : confirmKind === "bulk"
+                ? `Delete ${selected.size} row${selected.size === 1 ? "" : "s"}?`
+                : "Archive dataset?"
+          }
+          description={
+            confirmKind === "clear"
+              ? "Every extracted row for this dataset will be permanently deleted. The template is kept."
+              : confirmKind === "bulk"
+                ? "The selected rows will be permanently deleted."
+                : "The dataset is hidden from listings. Its rows stay queryable and it can be restored by an admin."
+          }
+          confirmLabel={confirmKind === "archive" ? "Archive" : "Delete"}
+          variant="destructive"
+          busy={busy}
+          onConfirm={runConfirmed}
+        />
+      </div>
+    </>
   );
 }
 

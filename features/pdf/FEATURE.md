@@ -55,6 +55,16 @@ One physical PDF = `cld_files` row. Two derived families, now sharing identity:
 - Scanner-produced PDFs (`Scans/`, `parent_file_id` set) get no `page1_url` grid thumbnail — the variant pipeline skips derivatives BY DESIGN; the grid falls back to live render.
 
 ## Change Log
+- 2026-07-10 — **PDF Widgets: Agent Settings opens with Surface tab.** Gear on
+  bound-agent rows passes `surfaceName: matrx-user/pdf-widgets` into
+  `agentSettingsWindow` so Info | Surface panes appear (Surface = locked
+  bind/mapping editor for that agent on this surface).
+- 2026-07-10 — **PDF Widgets: surface-bound agents + surface-first bind.** Inspector
+  Widgets tab no longer hardcodes two shortcut UUIDs or links to `/agents/shortcuts`.
+  It lists agents from `useSurfaceBoundAgents("matrx-user/pdf-widgets")` (incl. default
+  contracts) and **Add custom agent** opens the new reusable `surfaceAgentBindWindow`
+  (pick agent → scope → map values → bind). Run uses `launchAgent` with the full
+  pdf-widgets application scope. Ask-this-document uses the first bound/default agent.
 - 2026-07-10 — **Results-surface parity + real scan thumbnails (final design deltas).**
   Extractor toolbar: Download (authed blob; `downloadFile` now exported from the
   `@/features/files` public surface) + Share (canonical `shareModalWindow`) + Indexed pill;

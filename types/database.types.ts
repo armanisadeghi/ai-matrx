@@ -7553,6 +7553,8 @@ export type Database = {
       }
       context_items: {
         Row: {
+          allowed_reference_types: string[] | null
+          allowed_scope_type_ids: string[] | null
           category: string | null
           created_at: string
           created_by: string | null
@@ -7570,6 +7572,7 @@ export type Database = {
           key: string
           last_fed_at: string | null
           last_verified_at: string | null
+          max_items: number
           next_review_at: string | null
           refresh_task_id: string | null
           review_interval_days: number | null
@@ -7588,6 +7591,8 @@ export type Database = {
           value_type: Database["public"]["Enums"]["context_value_type"]
         }
         Insert: {
+          allowed_reference_types?: string[] | null
+          allowed_scope_type_ids?: string[] | null
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -7605,6 +7610,7 @@ export type Database = {
           key: string
           last_fed_at?: string | null
           last_verified_at?: string | null
+          max_items?: number
           next_review_at?: string | null
           refresh_task_id?: string | null
           review_interval_days?: number | null
@@ -7623,6 +7629,8 @@ export type Database = {
           value_type?: Database["public"]["Enums"]["context_value_type"]
         }
         Update: {
+          allowed_reference_types?: string[] | null
+          allowed_scope_type_ids?: string[] | null
           category?: string | null
           created_at?: string
           created_by?: string | null
@@ -7640,6 +7648,7 @@ export type Database = {
           key?: string
           last_fed_at?: string | null
           last_verified_at?: string | null
+          max_items?: number
           next_review_at?: string | null
           refresh_task_id?: string | null
           review_interval_days?: number | null
@@ -7663,6 +7672,58 @@ export type Database = {
             columns: ["scope_type_id"]
             isOneToOne: false
             referencedRelation: "scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      context_value_refs: {
+        Row: {
+          context_item_id: string
+          created_at: string
+          id: string
+          ref_key: string
+          ref_type: string
+          scope_id: string
+          value_id: string
+        }
+        Insert: {
+          context_item_id: string
+          created_at?: string
+          id?: string
+          ref_key: string
+          ref_type: string
+          scope_id: string
+          value_id: string
+        }
+        Update: {
+          context_item_id?: string
+          created_at?: string
+          id?: string
+          ref_key?: string
+          ref_type?: string
+          scope_id?: string
+          value_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "context_value_refs_context_item_id_fkey"
+            columns: ["context_item_id"]
+            isOneToOne: false
+            referencedRelation: "context_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "context_value_refs_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "context_value_refs_value_id_fkey"
+            columns: ["value_id"]
+            isOneToOne: false
+            referencedRelation: "context_item_values"
             referencedColumns: ["id"]
           },
         ]
@@ -7964,7 +8025,68 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      index_reference_value: {
+        Args: {
+          p_item_id: string
+          p_scope_id: string
+          p_value_id: string
+          p_value_text: string
+        }
+        Returns: undefined
+      }
+      parse_reference_fence: { Args: { p_value_text: string }; Returns: Json }
+      reference_item_ref_key: {
+        Args: { p_item: Json; p_type: string }
+        Returns: string
+      }
+      validate_reference_value: {
+        Args: { p_item_id: string; p_value_text: string }
+        Returns: undefined
+      }
+      write_context_value: {
+        Args: {
+          p_actor?: string
+          p_change_summary?: string
+          p_item_id: string
+          p_scope_id: string
+          p_source_type?: string
+          p_value_boolean?: boolean
+          p_value_date?: string
+          p_value_document_url?: string
+          p_value_json?: Json
+          p_value_number?: number
+          p_value_text?: string
+        }
+        Returns: {
+          authored_by: string | null
+          change_summary: string | null
+          char_count: number | null
+          context_item_id: string
+          created_at: string
+          data_point_count: number | null
+          has_nested_objects: boolean
+          id: string
+          is_current: boolean
+          scope_id: string
+          source_type: Database["public"]["Enums"]["context_source_type"]
+          value_boolean: boolean | null
+          value_date: string | null
+          value_document_size_bytes: number | null
+          value_document_url: string | null
+          value_json: Json | null
+          value_number: number | null
+          value_reference_id: string | null
+          value_reference_type: string | null
+          value_text: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "context_item_values"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
@@ -26373,22 +26495,42 @@ export type Database = {
         }
         Returns: string
       }
-      create_context_item: {
-        Args: {
-          p_category?: string
-          p_description?: string
-          p_display_name: string
-          p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-          p_key: string
-          p_scope_type_id: string
-          p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          p_slug?: string
-          p_sort_order?: number
-          p_tags?: string[]
-          p_value_type: Database["public"]["Enums"]["context_value_type"]
-        }
-        Returns: Json
-      }
+      create_context_item:
+        | {
+            Args: {
+              p_category?: string
+              p_description?: string
+              p_display_name: string
+              p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
+              p_key: string
+              p_scope_type_id: string
+              p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+              p_slug?: string
+              p_sort_order?: number
+              p_tags?: string[]
+              p_value_type: Database["public"]["Enums"]["context_value_type"]
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_allowed_reference_types?: string[]
+              p_allowed_scope_type_ids?: string[]
+              p_category?: string
+              p_description?: string
+              p_display_name: string
+              p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
+              p_key: string
+              p_max_items?: number
+              p_scope_type_id: string
+              p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+              p_slug?: string
+              p_sort_order?: number
+              p_tags?: string[]
+              p_value_type: Database["public"]["Enums"]["context_value_type"]
+            }
+            Returns: Json
+          }
       create_new_user_table_dynamic: {
         Args: {
           p_authenticated_read?: boolean
@@ -28871,6 +29013,10 @@ export type Database = {
           mastery_gain: number
           user_id: string
         }[]
+      }
+      list_context_value_refs: {
+        Args: { p_ref_key: string; p_ref_type: string }
+        Returns: Json
       }
       list_entities_by_scopes: {
         Args: {

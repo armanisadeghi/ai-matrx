@@ -46,6 +46,7 @@ import type {
   ContextTemplate,
   OrgNode,
   ProjectNode,
+  ReferencingContextValue,
   ResolvedSuggestionItem,
   ResolvedSuggestionTarget,
   ResolvedSuggestionValue,
@@ -136,7 +137,8 @@ export const scopesService = {
       const orgsP =
         orgIds.length > 0
           ? supabase
-              .schema("iam").from("organizations")
+              .schema("iam")
+              .from("organizations")
               .select("id, name, slug, is_personal")
               .in("id", orgIds)
           : Promise.resolve({
@@ -444,7 +446,8 @@ export const scopesService = {
         .single();
 
       const orgP = supabase
-        .schema("iam").from("organizations")
+        .schema("iam")
+        .from("organizations")
         .select("id, name, slug, is_personal")
         .eq("id", scope.organization_id)
         .single();
@@ -955,6 +958,34 @@ export const scopesService = {
 
   revertContextValue: notYetImplemented("revert_context_value"),
   deleteContextValue: notYetImplemented("delete_context_value"),
+
+  /**
+   * Reverse lookup over the `context_value_refs` index — every CURRENT
+   * reference cell (across every org the caller belongs to) whose fence
+   * contains an item of `refType` pointing at `refKey` (a file id, scope id,
+   * URL, etc.). E.g. "which matters have this PDF as their QME Report?" via
+   * `listReferencingValues("file", fileId)`. Backed by the
+   * `list_context_value_refs` SECURITY DEFINER RPC (membership-checked
+   * inside the function, so this never touches `context.context_value_refs`
+   * directly).
+   */
+  async listReferencingValues(
+    refType: string,
+    refKey: string,
+  ): Promise<ScopesRpcResult<ReferencingContextValue[]>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("list_context_value_refs", {
+        p_ref_type: refType,
+        p_ref_key: refKey,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      const rows = Array.isArray(data) ? data : [];
+      return ok(rows as unknown as ReferencingContextValue[]);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
 
   applyTemplate: notYetImplemented("apply_template"),
 };

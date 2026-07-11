@@ -12,10 +12,16 @@ intent is decided by the item's **position** (in-content fence = resolve in plac
 variable binding = the variable-map key IS the slot), never a field on the item.
 (Mirrors [`docs/protocol/MATRX_REFERENCES.md`](../../docs/protocol/MATRX_REFERENCES.md).)
 
-**7-type taxonomy** (`REFERENCE_TYPES`): `picklist`, `picklist_group`, `picklist_item`,
+**8-type taxonomy** (`REFERENCE_TYPES`): `picklist`, `picklist_group`, `picklist_item`,
 `table`, `table_column`, `table_row`, `table_cell` (+ `dataset_cell` as a registered
-legacy alias of `table_cell`). Example items: `picklist_item` = `{ list_id, item_id, label? }`;
-`table_cell` = `{ table_id, row_id, column_name, table_name?, column_display_name? }`.
+legacy alias of `table_cell`), and `url`. Example items: `picklist_item` = `{ list_id, item_id, label? }`;
+`table_cell` = `{ table_id, row_id, column_name, table_name?, column_display_name? }`;
+`url` (`UrlRefItem`) = `{ url, label? }` — the one type with **no Matrx-owned id**, a
+plain external link. Never resolved server-side (nothing to look up); the chip opens
+`url` directly in a new tab instead of routing through `resolveValue`/`openItemType`.
+Built via `urlReference.ts` (`buildUrlReferenceFence`/`buildMultiUrlReferenceFence`).
+First consumer: context reference cells (`features/scopes/FEATURE.md` §"Context
+reference cells") — a `reference` context item can allow `url` alongside `file`/`scope`/etc.
 
 **Bookmarks ARE reference items.** The UI's `input_table` / `input_list` bookmarks
 carry the same identity ids under a bookmark-spelled `type`; `bookmarkToReference.ts`
@@ -56,9 +62,10 @@ render through the SAME live chip renderer.
   `resolveValue` fetches the LIVE value from Supabase (never throws; returns `undefined` on miss
   → chip falls back to the item's display hint); `openItemType` is the `item-presentation`
   `KnownItemType` reused for click-to-open, `openId` is the underlying entity (picklist / table,
-  NOT the cell). All 7 types registered (+ `dataset_cell` alias): `picklist`/`picklist_group`/
+  NOT the cell). All 7 record types registered (+ `dataset_cell` alias): `picklist`/`picklist_group`/
   `picklist_item` over `udt_picklists`/`udt_picklist_items`; `table`/`table_column`/`table_row`/
-  `table_cell` over `udt_datasets`/`udt_dataset_fields`/`udt_dataset_rows`. Adding a reference
+  `table_cell` over `udt_datasets`/`udt_dataset_fields`/`udt_dataset_rows`. `url` is registered too
+  but returns the URL/label as-is (`resolveValue` is a no-op — nothing to look up). Adding a reference
   type = one entry here.
 - `MatrxEnvelopeBlock.tsx` — the ```matrx fence renderer: (1) parse + recognize the
   outer envelope (bad JSON → raw `<pre>`, never throws); (2) `getEnvelopeRenderer` →
@@ -120,6 +127,13 @@ render through the SAME live chip renderer.
 
 ## Change Log
 
+- 2026-07-11 — **`url` added to the reference taxonomy (8-type).** New `UrlRefItem { url, label? }`
+  in `envelope.ts`; `urlReference.ts` (`buildUrlReferenceFence`/`buildMultiUrlReferenceFence`);
+  `registry.tsx` `ReferenceChip` opens `url` directly via `window.open` (never routes through
+  `resolveValue`/`openItemType` — nothing to look up); `referenceResolvers.ts` gained a `url`
+  entry that returns the URL/label as-is. First consumer: `features/scopes/FEATURE.md`
+  §"Context reference cells" — a `reference` context item's `allowed_reference_types` can now
+  include `url` for plain external links alongside `file`/`scope`/etc.
 - 2026-06-24 — **`create_project_with_tasks` envelope renderer.** New
   `directives/createProjectWithTasks/` (optimistic card, 3-poll DB resolve, click-to-open).
   Registered in `registry.tsx`. Bare structured-output JSON with `matrx_version` now

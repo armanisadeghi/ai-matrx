@@ -1,7 +1,8 @@
 // features/notes/redux/realtimeMiddleware.ts
 // Single Supabase realtime subscription for notes, managed as Redux middleware.
 // Starts on fetchNotesList.fulfilled, stops on resetNotesState (logout).
-// Echo suppression: _savingNoteIds + _pendingDispatchIds + sync-engine isPendingEcho.
+// Echo suppression: content-aware while `_savingNoteIds` / sync-engine
+// `isPendingEcho` — only drop payloads that match local content+label.
 //
 // No `created_by=` filter — RLS + REPLICA IDENTITY FULL gates events so both
 // owned notes and shared-with-me notes arrive. Filter-by-owner hid sharee updates.
@@ -30,14 +31,35 @@ type StoreWithSync = {
   _sync?: { engineApi?: () => SyncEngineApi | null };
 };
 
-function isOwnEcho(storeApi: StoreWithSync, noteId: string): boolean {
+function isOwnEcho(
+  storeApi: StoreWithSync,
+  noteId: string,
+  newRecord?: Record<string, unknown>,
+): boolean {
   const state = storeApi.getState() as RootState;
-  // Only suppress while a save is in flight. The old 10s `_pendingDispatchIds`
-  // window dropped collaborator edits that arrived right after a local save.
-  if (state.notes._savingNoteIds.includes(noteId)) return true;
+  const saving = state.notes._savingNoteIds.includes(noteId);
   const engineApi = storeApi._sync?.engineApi?.() ?? null;
-  if (engineApi?.isPendingEcho?.("notes", noteId)) return true;
-  return false;
+  const syncPending = engineApi?.isPendingEcho?.("notes", noteId) ?? false;
+
+  if (!saving && !syncPending) return false;
+
+  // While a local save is in flight, only suppress payloads that match our
+  // live local content (true echo). A collaborator's divergent write must
+  // reach upsertNoteFromServer so dirty locals surface as conflict.
+  if (newRecord) {
+    const local = state.notes.notes[noteId];
+    if (!local) return true;
+    const remoteContent = newRecord.content;
+    const remoteLabel = newRecord.label;
+    const contentMatches =
+      remoteContent === undefined || remoteContent === local.content;
+    const labelMatches =
+      remoteLabel === undefined || remoteLabel === local.label;
+    if (contentMatches && labelMatches) return true;
+    return false;
+  }
+
+  return true;
 }
 
 function clearReconnectTimer() {
@@ -81,7 +103,7 @@ export const notesRealtimeMiddleware: Middleware = (storeApi) => {
     if (eventType === "UPDATE" && newRecord) {
       const noteId = newRecord.id as string;
 
-      if (isOwnEcho(storeWithSync, noteId)) {
+      if (isOwnEcho(storeWithSync, noteId, newRecord)) {
         console.log("[Notes RT] Echo suppressed for", noteId);
         return;
       }
@@ -121,7 +143,7 @@ export const notesRealtimeMiddleware: Middleware = (storeApi) => {
     if (eventType === "INSERT" && newRecord) {
       if (newRecord.deleted_at) return;
       const noteId = newRecord.id as string;
-      if (isOwnEcho(storeWithSync, noteId)) {
+      if (isOwnEcho(storeWithSync, noteId, newRecord)) {
         console.log("[Notes RT] INSERT echo suppressed for", noteId);
         return;
       }

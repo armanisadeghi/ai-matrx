@@ -5,16 +5,8 @@ import { Loader2, Pencil, AlertTriangle, Info } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -23,7 +15,8 @@ import {
   type ScopeContextRow,
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
+import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 
 interface EditScopeValueSheetProps {
@@ -71,9 +64,7 @@ export function EditScopeValueSheet({
   const row = rows?.find((r) => r.item_id === itemId);
 
   const [busy, setBusy] = useState(false);
-  const [value, setValue] = useState("");
-  const [booleanValue, setBooleanValue] = useState<string>("");
-  const [customValue, setCustomValue] = useState<unknown>("");
+  const [value, setValue] = useState<unknown>("");
   const [changeSummary, setChangeSummary] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [editingItemDef, setEditingItemDef] = useState(false);
@@ -82,13 +73,10 @@ export function EditScopeValueSheet({
 
   useEffect(() => {
     if (!open || !row) return;
-    setValue(rowToString(row));
-    setBooleanValue(
-      row.value_boolean == null ? "" : row.value_boolean ? "true" : "false",
-    );
-    setCustomValue(rowToComponentValue(row));
+    setValue(hasCustom ? rowToComponentValue(row) : rowToString(row));
     setChangeSummary("");
     setJsonError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, row]);
 
   if (!row) return null;
@@ -104,10 +92,7 @@ export function EditScopeValueSheet({
 
     // Custom component: route whatever the Smart-Input emits via the shared mapper.
     if (hasCustom) {
-      Object.assign(
-        payload,
-        buildScopeValuePayload(customValue, row.value_type),
-      );
+      Object.assign(payload, buildScopeValuePayload(value, row.value_type));
       setBusy(true);
       try {
         await dispatch(setScopeContextValue(payload)).unwrap();
@@ -121,7 +106,23 @@ export function EditScopeValueSheet({
       return;
     }
 
-    const trimmed = value.trim();
+    if (row.value_type === "reference") {
+      payload.value_text =
+        typeof value === "string" && value.trim() ? value : null;
+      setBusy(true);
+      try {
+        await dispatch(setScopeContextValue(payload)).unwrap();
+        toast.success("Saved");
+        onOpenChange(false);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to save");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    const trimmed = typeof value === "string" ? value.trim() : "";
 
     if (row.value_type === "number") {
       if (trimmed === "") {
@@ -135,8 +136,8 @@ export function EditScopeValueSheet({
         payload.value_number = n;
       }
     } else if (row.value_type === "boolean") {
-      if (booleanValue === "true") payload.value_boolean = true;
-      else if (booleanValue === "false") payload.value_boolean = false;
+      if (trimmed === "true") payload.value_boolean = true;
+      else if (trimmed === "false") payload.value_boolean = false;
       else payload.value_text = null;
     } else if (row.value_type === "date") {
       payload.value_date = trimmed || null;
@@ -223,85 +224,44 @@ export function EditScopeValueSheet({
             </div>
           )}
 
-          {hasCustom ? (
-            <div className="space-y-1.5">
-              <Label className="text-xs">Value</Label>
-              <VariableInputComponent
-                value={customValue}
-                onChange={setCustomValue}
-                variableName={row.display_name}
-                customComponent={row.custom_component ?? undefined}
-                hideLabel
-              />
-            </div>
-          ) : row.value_type === "boolean" ? (
-            <div className="space-y-1.5">
-              <Label className="text-xs">Value</Label>
-              <Select
-                value={booleanValue}
-                onValueChange={setBooleanValue}
-                disabled={busy}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Yes / True</SelectItem>
-                  <SelectItem value="false">No / False</SelectItem>
-                  <SelectItem value="">— (empty)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          ) : row.value_type === "date" ? (
-            <div className="space-y-1.5">
-              <Label className="text-xs">Value</Label>
-              <Input
-                type="date"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                style={{ fontSize: "16px" }}
-                disabled={busy}
-              />
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <Label className="text-xs">
-                Value
-                {(row.value_type === "object" ||
-                  row.value_type === "array") && (
-                  <span className="ml-1.5 text-muted-foreground font-normal">
-                    (parsed as JSON)
-                  </span>
-                )}
-              </Label>
-              <ProTextarea
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                minHeight={200}
-                maxHeight={600}
-                autoGrow
-                className={
-                  row.value_type === "object" || row.value_type === "array"
-                    ? "font-mono text-sm"
-                    : undefined
-                }
-                placeholder={
-                  row.value_type === "object" || row.value_type === "array"
-                    ? "{ }"
-                    : row.value_type === "document"
-                      ? "https://..."
-                      : "Enter the value"
-                }
-                disabled={busy}
-              />
-              {jsonError && (
-                <p className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                  {jsonError}
-                </p>
+          <div className="space-y-1.5">
+            <Label className="text-xs">
+              Value
+              {(row.value_type === "object" || row.value_type === "array") && (
+                <span className="ml-1.5 text-muted-foreground font-normal">
+                  (parsed as JSON)
+                </span>
               )}
-            </div>
-          )}
+            </Label>
+            <ContextValueInput
+              valueType={row.value_type}
+              customComponent={row.custom_component}
+              value={value}
+              onChange={setValue}
+              onCommit={setValue}
+              referenceConfig={
+                row.value_type === "reference"
+                  ? referenceConfigFromItem(row)
+                  : null
+              }
+              scopeId={scopeId}
+              displayName={row.display_name}
+              placeholder={
+                row.value_type === "document"
+                  ? "https://..."
+                  : "Enter the value"
+              }
+              minHeight={200}
+              maxHeight={600}
+              disabled={busy}
+            />
+            {jsonError && (
+              <p className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                {jsonError}
+              </p>
+            )}
+          </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs">Change summary (optional)</Label>

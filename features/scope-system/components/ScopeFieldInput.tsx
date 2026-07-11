@@ -10,12 +10,11 @@ import {
   Maximize2,
   ArrowUpRight,
 } from "lucide-react";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
+import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
+import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { EditScopeValueSheet } from "./EditScopeValueSheet";
 
@@ -153,9 +152,6 @@ export function ScopeFieldInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialKey]);
 
-  const isJsonType = row.value_type === "object" || row.value_type === "array";
-  const stringValue = typeof value === "string" ? value : canonical(value);
-
   return (
     <>
       <div className="space-y-1.5">
@@ -208,53 +204,29 @@ export function ScopeFieldInput({
             </Button>
           </div>
         </div>
-        {hasCustom ? (
-          <VariableInputComponent
-            value={value}
-            onChange={(v) => {
-              isDirtyRef.current = true;
-              setValue(v);
-              scheduleCommit(v);
-            }}
-            variableName={row.display_name}
-            customComponent={row.custom_component ?? undefined}
-            hideLabel
-            compact
-          />
-        ) : row.value_type === "date" ? (
-          <Input
-            id={`field-${row.item_id}`}
-            type="date"
-            value={stringValue}
-            onChange={(e) => {
-              isDirtyRef.current = true;
-              setValue(e.target.value);
-            }}
-            onBlur={(e) => {
-              isDirtyRef.current = false;
-              commit(e.target.value);
-            }}
-            style={{ fontSize: "16px" }}
-          />
-        ) : (
-          <ProTextarea
-            id={`field-${row.item_id}`}
-            value={stringValue}
-            onChange={(e) => {
-              isDirtyRef.current = true;
-              setValue(e.target.value);
-            }}
-            onBlur={(e) => {
-              isDirtyRef.current = false;
-              commit(e.target.value);
-            }}
-            placeholder={placeholderForType(row.value_type)}
-            minHeight={80}
-            maxHeight={600}
-            className={isJsonType ? "font-mono text-sm" : undefined}
-            autoGrow
-          />
-        )}
+        <ContextValueInput
+          id={`field-${row.item_id}`}
+          valueType={row.value_type}
+          customComponent={row.custom_component}
+          value={value}
+          onChange={(v) => {
+            isDirtyRef.current = true;
+            setValue(v);
+            if (hasCustom) scheduleCommit(v);
+          }}
+          onCommit={(v) => {
+            isDirtyRef.current = false;
+            commit(v);
+          }}
+          referenceConfig={
+            row.value_type === "reference" ? referenceConfigFromItem(row) : null
+          }
+          scopeId={scopeId}
+          displayName={row.display_name}
+          placeholder={placeholderForType(row.value_type)}
+          minHeight={80}
+          maxHeight={600}
+        />
         {row.description && (
           <p className="text-xs text-muted-foreground">{row.description}</p>
         )}

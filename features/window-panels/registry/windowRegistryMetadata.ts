@@ -198,6 +198,26 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Extraction cell editor ───────────────────────────────────────────────
+  {
+    slug: "extraction-cell-editor-window",
+    overlayId: "extractionCellEditorWindow",
+    kind: "window",
+    label: "Extraction Cell Editor",
+    defaultData: {
+      rowId: null,
+      columnKey: null,
+      columnLabel: "",
+      pageLabel: "",
+      value: "",
+      writeKey: null,
+      currentPayload: {},
+      callbackGroupId: null,
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Quick Task Create ─────────────────────────────────────────────────────
   {
     slug: "task-quick-create-window",
@@ -466,7 +486,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     overlayId: "agentSettingsWindow",
     kind: "window",
     label: "Agent Settings",
-    defaultData: { initialAgentId: null },
+    defaultData: {
+      initialAgentId: null,
+      surfaceName: null,
+      surfaceLabel: null,
+      initialView: null,
+    },
     mobilePresentation: "drawer",
     mobileSidebarAs: "drawer",
     urlSync: { key: "agent-settings" },
@@ -566,6 +591,25 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
     mobileSidebarAs: "drawer",
     instanceMode: "singleton",
+  },
+
+  // ── Surface-first agent bind ──────────────────────────────────────────────
+  // Pick an agent while standing on a surface, map values, save binding.
+  // Open via `useOpenSurfaceAgentBindWindow({ surfaceName, onBound })`.
+  {
+    slug: "surface-agent-bind-window",
+    overlayId: "surfaceAgentBindWindow",
+    kind: "window",
+    label: "Add Agent to Surface",
+    defaultData: {
+      surfaceName: "",
+      surfaceLabel: null as string | null,
+      initialAgentId: null as string | null,
+      callbackGroupId: null as string | null,
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
   },
 
   // ── Error Inspector (admin) ───────────────────────────────────────────────

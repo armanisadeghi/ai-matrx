@@ -154,7 +154,8 @@ const PromptPreviewWindow = lazyOverlay(
   { ssr: false },
 );
 const ScopeBatchImportWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/agents/ScopeBatchImportWindow"),
+  () =>
+    import("@/features/window-panels/windows/agents/ScopeBatchImportWindow"),
   { ssr: false },
 );
 const AgentMemoryWindow = lazyOverlay(
@@ -574,6 +575,13 @@ const SurfaceContextInspectorWindow = lazyOverlay(
     import("@/features/window-panels/windows/admin/SurfaceContextInspectorWindow"),
   { ssr: false },
 );
+const SurfaceAgentBindWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/surfaces/SurfaceAgentBindWindow").then(
+      (m) => ({ default: m.SurfaceAgentBindWindow }),
+    ),
+  { ssr: false },
+);
 const ContextAssignmentWindow = lazyOverlay(
   () =>
     import("@/features/scopes/components/context-assignment/ContextAssignmentWindow").then(
@@ -757,6 +765,11 @@ const TaskQuickCreateWindow = lazyOverlay(
 );
 const TaskEditorWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/tasks/TaskEditorWindow"),
+  { ssr: false },
+);
+const ExtractionCellEditorWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/page-extraction/ExtractionCellEditorWindow"),
   { ssr: false },
 );
 const ToolCallWindowPanel = lazyOverlay(
@@ -1461,6 +1474,9 @@ export default function OverlayController() {
     diffViewerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "diffViewerWindow"),
     ),
+    extractionCellEditorWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "extractionCellEditorWindow"),
+    ),
     fullScreenEditor: useAppSelector((s) =>
       selectOpenInstances(s, "fullScreenEditor"),
     ),
@@ -1487,6 +1503,9 @@ export default function OverlayController() {
     ),
     smartCodeEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "smartCodeEditorWindow"),
+    ),
+    surfaceAgentBindWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "surfaceAgentBindWindow"),
     ),
     taskEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "taskEditorWindow"),
@@ -2212,6 +2231,21 @@ export default function OverlayController() {
             initialAgentId={
               typeof data?.initialAgentId === "string"
                 ? data.initialAgentId
+                : undefined
+            }
+            surfaceName={
+              typeof data?.surfaceName === "string"
+                ? data.surfaceName
+                : undefined
+            }
+            surfaceLabel={
+              typeof data?.surfaceLabel === "string"
+                ? data.surfaceLabel
+                : undefined
+            }
+            initialView={
+              data?.initialView === "info" || data?.initialView === "surface"
+                ? data.initialView
                 : undefined
             }
           />
@@ -4531,6 +4565,42 @@ export default function OverlayController() {
         );
       })()}
 
+      {/* surfaceAgentBindWindow — multi-instance */}
+      {instancesById.surfaceAgentBindWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <SurfaceAgentBindWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "surfaceAgentBindWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            surfaceName={
+              typeof data?.surfaceName === "string" ? data.surfaceName : ""
+            }
+            surfaceLabel={
+              typeof data?.surfaceLabel === "string" ? data.surfaceLabel : null
+            }
+            initialAgentId={
+              typeof data?.initialAgentId === "string"
+                ? data.initialAgentId
+                : null
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+          />
+        );
+      })}
+
       {/* surfaceContextInspector */}
       {(() => {
         const isOpen = isOpenById.surfaceContextInspector;
@@ -4790,6 +4860,55 @@ export default function OverlayController() {
               dispatch(
                 closeOverlay({
                   overlayId: "taskEditorWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+          />
+        );
+      })}
+
+      {/* extractionCellEditorWindow — multi-instance, one window per cell */}
+      {instancesById.extractionCellEditorWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const rowId = typeof data?.rowId === "string" ? data.rowId : null;
+        const columnKey =
+          typeof data?.columnKey === "string" ? data.columnKey : null;
+        const writeKey =
+          typeof data?.writeKey === "string" ? data.writeKey : null;
+        if (!rowId || !columnKey || !writeKey) return null;
+        const currentPayload =
+          data?.currentPayload &&
+          typeof data.currentPayload === "object" &&
+          !Array.isArray(data.currentPayload)
+            ? (data.currentPayload as Record<string, unknown>)
+            : {};
+        return (
+          <ExtractionCellEditorWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            target={{
+              rowId,
+              columnKey,
+              columnLabel:
+                typeof data?.columnLabel === "string"
+                  ? data.columnLabel
+                  : columnKey,
+              pageLabel:
+                typeof data?.pageLabel === "string" ? data.pageLabel : "—",
+              value: typeof data?.value === "string" ? data.value : "",
+              writeKey,
+              currentPayload,
+            }}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "extractionCellEditorWindow",
                   instanceId: inst.instanceId,
                 }),
               )

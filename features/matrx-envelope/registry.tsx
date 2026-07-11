@@ -146,6 +146,8 @@ function chipIcon(type: string): ComponentType<{ className?: string }> {
     case "media":
     case "file_page":
       return File;
+    case "url":
+      return Link2;
     default:
       return Link2;
   }
@@ -214,11 +216,19 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
   const Icon = chipIcon(type);
   const display = status === "ready" && value ? value : fallback;
 
+  // `url` has no Matrx-owned entity to open in a window panel — it opens the
+  // link itself in a new tab, bypassing the item-presentation opener.
+  const isExternalUrl = type === "url" && typeof ref.url === "string";
   const openId = resolver?.openId(ref);
   const openType = resolver?.openItemType;
-  const canOpen = !!openId && !!openType && UUID_RE.test(openId);
+  const canOpen =
+    isExternalUrl || (!!openId && !!openType && UUID_RE.test(openId));
 
   const handleClick = () => {
+    if (isExternalUrl) {
+      window.open(ref.url, "_blank", "noopener,noreferrer");
+      return;
+    }
     if (canOpen && openId && openType) {
       open(openType, openId, { name: display });
     }
@@ -229,7 +239,7 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
       type="button"
       onClick={handleClick}
       disabled={!canOpen}
-      title={canOpen ? `Open ${openType}` : display}
+      title={isExternalUrl ? ref.url : canOpen ? `Open ${openType}` : display}
       className={cn(
         "inline-flex items-center gap-1 rounded-md border border-border",
         "bg-muted px-2 py-0.5 text-sm text-foreground align-middle max-w-full",

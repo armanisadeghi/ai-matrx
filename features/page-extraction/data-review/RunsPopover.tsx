@@ -26,6 +26,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { HistoryTapButton } from "@/components/icons/tap-buttons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 
@@ -53,11 +54,14 @@ export function RunsPopover({
   selectedRunId,
   onSelectRun,
   onChanged,
+  iconOnly = false,
 }: {
   jobId: string;
   selectedRunId: string | null;
   onSelectRun: (runId: string | null) => void;
   onChanged: () => void;
+  /** Shell header mode — icon tap target, no text label. */
+  iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [runs, setRuns] = useState<PageExtractionRun[]>([]);
@@ -174,11 +178,15 @@ export function RunsPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          <History className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{label}</span>
-          <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
-        </Button>
+        {iconOnly ? (
+          <HistoryTapButton ariaLabel={label} tooltip={label} />
+        ) : (
+          <Button variant="outline" size="sm">
+            <History className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{label}</span>
+            <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <div className="border-b border-border px-3 py-2 text-xs font-medium text-muted-foreground">

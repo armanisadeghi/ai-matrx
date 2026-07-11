@@ -27,6 +27,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SendTapButton } from "@/components/icons/tap-buttons";
 
 import type { ExportColumn, ExportRow } from "./export";
 import { pushToDataset, pushToWorkbook } from "./export-targets";
@@ -50,11 +51,14 @@ export function SendToMenu({
   columns,
   rows,
   disabled,
+  iconOnly = false,
 }: {
   name: string;
   columns: ExportColumn[];
   rows: ExportRow[];
   disabled?: boolean;
+  /** Shell header mode — icon tap target, no text label. */
+  iconOnly?: boolean;
 }) {
   const [pushing, setPushing] = useState<Target | null>(null);
   const [created, setCreated] = useState<CreatedState | null>(null);
@@ -98,18 +102,25 @@ export function SendToMenu({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={disabled || empty || !!pushing}
-          >
-            {pushing ? (
-              <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
-            ) : (
-              <Send className="h-4 w-4 sm:mr-2" />
-            )}
-            <span className="hidden sm:inline">Send to</span>
-          </Button>
+          {iconOnly ? (
+            <SendTapButton
+              ariaLabel="Send to"
+              disabled={disabled || empty || !!pushing}
+            />
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={disabled || empty || !!pushing}
+            >
+              {pushing ? (
+                <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
+              ) : (
+                <Send className="h-4 w-4 sm:mr-2" />
+              )}
+              <span className="hidden sm:inline">Send to</span>
+            </Button>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuLabel>Push this dataset to…</DropdownMenuLabel>

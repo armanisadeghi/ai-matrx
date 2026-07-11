@@ -11,12 +11,13 @@ import {
   type AgentScope,
 } from "@/features/agent-shortcuts/constants";
 import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
-import {
-  SurfaceVariableBindingList,
-  type BindingTarget,
-} from "./SurfaceVariableBinding";
+import { SurfaceVariableBindingList } from "./SurfaceVariableBinding";
+import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import type { SurfaceValue, ValueMapping } from "@/features/surfaces/types";
+
+/** Re-export for existing admin callers. */
+export { buildBindingTargets };
 
 /**
  * Singleton "Default" surface (sentinel). The user's binding on this
@@ -176,31 +177,6 @@ function EmptyState({ title, body }: { title: string; body: string }) {
       </p>
     </div>
   );
-}
-
-export function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
-  const targets: BindingTarget[] = [];
-  const seen = new Set<string>();
-  for (const v of agent.variableDefinitions ?? []) {
-    if (seen.has(v.name)) continue;
-    seen.add(v.name);
-    targets.push({
-      name: v.name,
-      description: v.helpText,
-      required: v.required ?? false,
-      defaultValue: v.defaultValue,
-    });
-  }
-  for (const slot of agent.contextSlots ?? []) {
-    if (seen.has(slot.key)) continue;
-    seen.add(slot.key);
-    targets.push({
-      name: slot.key,
-      label: slot.label,
-      description: slot.description,
-    });
-  }
-  return targets;
 }
 
 interface BindingFormProps {

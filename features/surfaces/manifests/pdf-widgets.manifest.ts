@@ -189,18 +189,10 @@ const surfaceSpecific: SurfaceValue[] = [
 export const pdfWidgetsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/pdf-widgets",
   values: mergeBaselineValues(
-    // Baseline values:
-    //   `selection` — kept as a back-compat alias of `active_scope_text`.
-    //     Existing agents that wire variables to `selection` keep working
-    //     because the runtime duplicates `active_scope_text` into it.
-    //     New agents should prefer `active_scope_text` (clearer name).
-    //   `content`   — kept as a back-compat alias of `full_document_text`
-    //     for the same reason. New agents should prefer `full_document_text`.
-    //   `text_before` / `text_after` — unused on this surface (the picker
-    //     model has no "selection within a region" concept). Declared
-    //     for cross-surface consistency; the binding editor groups them
-    //     under "advanced".
-    //   `context`   — free-form escape hatch.
+    // Registry also injects the full baseline set. These overrides win so
+    // the bind UI doesn't lead with generic editor labels ("Current
+    // selection", "Text before selection") that don't match this surface.
+    // Real PDF values stay at sort 200–430; legacy aliases sink to 9xxx.
     pickBaseline(
       "selection",
       "content",
@@ -208,7 +200,58 @@ export const pdfWidgetsManifest: SurfaceManifest = {
       "text_after",
       "context",
     ),
-    surfaceSpecific,
+    [
+      ...surfaceSpecific,
+      {
+        name: "selection",
+        label: "Active scope (legacy alias)",
+        description:
+          "Legacy alias of `active_scope_text` — same value the scope picker chose at Run. Prefer `active_scope_text` for new agents.",
+        valueType: "string",
+        alwaysAvailable: true,
+        typicalCharCount: 4000,
+        sortOrder: 9100,
+      },
+      {
+        name: "content",
+        label: "Full document (legacy alias)",
+        description:
+          "Legacy alias of `full_document_text`. Prefer `full_document_text` for new agents.",
+        valueType: "string",
+        alwaysAvailable: true,
+        typicalCharCount: 12000,
+        sortOrder: 9110,
+      },
+      {
+        name: "text_before",
+        label: "Text before (unused here)",
+        description:
+          "Baseline editor value — not populated on PDF Widgets (no in-region caret). Kept so generic agents that map to it still resolve to empty rather than fail.",
+        valueType: "string",
+        alwaysAvailable: false,
+        typicalCharCount: 0,
+        sortOrder: 9200,
+      },
+      {
+        name: "text_after",
+        label: "Text after (unused here)",
+        description:
+          "Baseline editor value — not populated on PDF Widgets. Kept for generic-agent compatibility; resolves empty.",
+        valueType: "string",
+        alwaysAvailable: false,
+        typicalCharCount: 0,
+        sortOrder: 9210,
+      },
+      {
+        name: "context",
+        label: "Free-form context",
+        description: "Loose escape hatch. Prefer the named PDF values above.",
+        valueType: "object",
+        alwaysAvailable: false,
+        typicalCharCount: 1000,
+        sortOrder: 9999,
+      },
+    ],
   ),
 };
 

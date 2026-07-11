@@ -423,6 +423,25 @@ export interface ContextItemValue {
   created_at: string;
 }
 
+/**
+ * One row from `public.list_context_value_refs` — a context item value whose
+ * reference fence points at the queried `(ref_type, ref_key)` (e.g. "which
+ * matters point at this file?"). Reverse of the forward lookup on the cell
+ * itself; see `scopesService.listReferencingValues`.
+ */
+export interface ReferencingContextValue {
+  scope_id: string;
+  scope_name: string;
+  scope_type_id: string;
+  organization_id: string;
+  context_item_id: string;
+  item_key: string;
+  item_display_name: string;
+  value_id: string;
+  is_current: boolean;
+  created_at: string;
+}
+
 export interface ScopeValuesEntry {
   status: "idle" | "loading" | "ready" | "error";
   fetchedAt: number | null;

@@ -27,6 +27,8 @@ import type {
 } from "@/features/scopes/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { Badge } from "@/components/ui/badge";
+import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
+import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
 import type { ContextItemBodyProps } from "../types";
 
 // ── Organization ─────────────────────────────────────────────────────────────
@@ -237,6 +239,10 @@ function ScopeValueRow({
   value: ContextItemValue;
   label?: string;
 }) {
+  // A reference cell's `value_text` is a ```matrx fence — route it through the
+  // ONE canonical reference renderer instead of dumping the raw fence string.
+  const referenceCell = parseReferenceCellValue(value.value_text);
+
   const display: string = (() => {
     if (value.value_text != null) return value.value_text;
     if (value.value_number != null) return String(value.value_number);
@@ -254,7 +260,13 @@ function ScopeValueRow({
       <div className="w-1/3 shrink-0 truncate text-muted-foreground">
         {label ?? value.context_item_id.slice(0, 8)}
       </div>
-      <div className="flex-1 break-words text-foreground">{display}</div>
+      <div className="flex-1 break-words text-foreground">
+        {referenceCell ? (
+          <ContextValueDisplay valueText={value.value_text} />
+        ) : (
+          display
+        )}
+      </div>
     </li>
   );
 }

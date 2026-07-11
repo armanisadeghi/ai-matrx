@@ -345,6 +345,8 @@ function bucketBindingRows(
       bindingId: row.id,
     };
 
+    // One row → one section. (An agent can still appear in multiple sections
+    // when it has *different* binding rows at different scope tiers.)
     if (agent.agent_type === "builtin") {
       system.push(entry);
       continue;
@@ -358,6 +360,7 @@ function bucketBindingRows(
       };
       bucket.agents.push(entry);
       byOrg.set(row.organization_id, bucket);
+      continue;
     }
 
     const isOwner = currentUserId != null && agent.user_id === currentUserId;

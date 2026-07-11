@@ -19,12 +19,9 @@ import {
 import { useRouter } from "next/navigation";
 import {
   ArrowUpDown,
-  Database,
   FileText,
   Filter,
   Loader2,
-  Plus,
-  RefreshCw,
   Search,
   ShieldCheck,
   Table2,
@@ -32,9 +29,15 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  LoadingTapButton,
+  PlusTapButton,
+  RefreshCwTapButton,
+} from "@/components/icons/tap-buttons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   ContextAssignmentField,
   type ContextSelection,
@@ -47,6 +50,7 @@ import {
 } from "@/features/scopes/components/context-assignment/data";
 
 import { listExtractionCatalog, type ExtractionCatalogEntry } from "./data";
+import { CatalogRowActions } from "./CatalogRowActions";
 import { EXTRACTION_ENTITY_TYPE } from "./constants";
 
 type SortKey = "updated" | "name" | "rows" | "source";
@@ -157,228 +161,228 @@ export function ExtractionCatalogClient() {
     [router],
   );
 
-  const totalRows = useMemo(
-    () => entries.reduce((acc, e) => acc + e.rowCount, 0),
-    [entries],
-  );
-
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden bg-textured">
-      {/* Header */}
-      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 min-w-0">
-          <Database className="h-5 w-5 text-primary shrink-0" />
-          <div className="min-w-0">
-            <h1 className="text-lg font-semibold leading-tight">
-              Extraction Data
-            </h1>
-            <p className="text-xs text-muted-foreground truncate">
-              {entries.length} dataset{entries.length === 1 ? "" : "s"} ·{" "}
-              {totalRows.toLocaleString()} extracted row
-              {totalRows === 1 ? "" : "s"} across your documents
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void load()}
-            disabled={loading}
-            title="Refresh"
-          >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-          </Button>
-          <Button
-            size="sm"
-            onClick={() =>
-              startTransition(() => router.push("/tools/pdf-extractor"))
-            }
-            title="New extraction"
-          >
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">New extraction</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-col gap-2 border-b border-border px-4 py-2">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search datasets and sources…"
-              className="h-9 pl-8 text-base sm:text-sm"
-              style={{ fontSize: "16px" }}
+    <>
+      <PageHeader>
+        <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
+          <h1 className="text-sm font-medium text-foreground truncate">
+            Extraction Data
+          </h1>
+          <div className="ml-auto shrink-0 flex items-center">
+            {loading ? (
+              <LoadingTapButton ariaLabel="Refreshing" disabled />
+            ) : (
+              <RefreshCwTapButton
+                ariaLabel="Refresh"
+                onClick={() => void load()}
+              />
+            )}
+            <PlusTapButton
+              variant="solid"
+              ariaLabel="New extraction"
+              onClick={() =>
+                startTransition(() => router.push("/tools/pdf-extractor"))
+              }
+              disabled={isPending}
             />
           </div>
-          <Button
-            variant={
-              showFilter || filterScopeIds.length > 0 ? "default" : "outline"
-            }
-            size="sm"
-            onClick={() => setShowFilter((v) => !v)}
-            title="Filter by context"
-          >
-            <Filter className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">
-              Context
-              {filterScopeIds.length > 0 ? ` (${filterScopeIds.length})` : ""}
-            </span>
-          </Button>
         </div>
-        {showFilter && (
-          <div className="rounded-md border border-border bg-card p-2">
-            <ContextAssignmentField
-              mode="filter"
-              writeMode="preview"
-              sectionHeight={220}
-              onSelectionChange={onFilterChange}
-            />
-          </div>
-        )}
-      </div>
+      </PageHeader>
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="flex h-40 items-center justify-center text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading datasets…
+      <div className="w-full h-full flex flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
+        {/* Sub-toolbar — search / context filter (below shell header) */}
+        <div className="flex flex-col gap-2 border-b border-border px-4 py-2">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search datasets and sources…"
+                className="h-9 pl-8 text-base sm:text-sm"
+                style={{ fontSize: "16px" }}
+              />
+            </div>
+            <Button
+              variant={
+                showFilter || filterScopeIds.length > 0 ? "default" : "outline"
+              }
+              size="sm"
+              onClick={() => setShowFilter((v) => !v)}
+              title="Filter by context"
+            >
+              <Filter className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">
+                Context
+                {filterScopeIds.length > 0 ? ` (${filterScopeIds.length})` : ""}
+              </span>
+            </Button>
           </div>
-        ) : error ? (
-          <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-            {error}
-          </div>
-        ) : visible.length === 0 ? (
-          <EmptyState hasAny={entries.length > 0} />
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
-              <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                <Th
-                  onClick={() => toggleSort("name")}
-                  active={sortKey === "name"}
-                >
-                  Dataset
-                </Th>
-                <Th
-                  onClick={() => toggleSort("source")}
-                  active={sortKey === "source"}
-                >
-                  Source
-                </Th>
-                <Th
-                  onClick={() => toggleSort("rows")}
-                  active={sortKey === "rows"}
-                  className="text-right"
-                >
-                  Rows
-                </Th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <Th
-                  onClick={() => toggleSort("updated")}
-                  active={sortKey === "updated"}
-                >
-                  Updated
-                </Th>
-                <th className="px-3 py-2 font-medium text-center">Context</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((e) => {
-                const tags = scopesByJob[e.jobId] ?? [];
-                const isNav = navigatingId === e.jobId && isPending;
-                return (
-                  <tr
-                    key={e.jobId}
-                    onClick={() => open(e.jobId)}
-                    className="group cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/50"
+          {showFilter && (
+            <div className="rounded-md border border-border bg-card p-2">
+              <ContextAssignmentField
+                mode="filter"
+                writeMode="preview"
+                sectionHeight={220}
+                onSelectionChange={onFilterChange}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex h-40 items-center justify-center text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading
+              datasets…
+            </div>
+          ) : error ? (
+            <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+              {error}
+            </div>
+          ) : visible.length === 0 ? (
+            <EmptyState hasAny={entries.length > 0} />
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
+                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                  <Th
+                    onClick={() => toggleSort("name")}
+                    active={sortKey === "name"}
                   >
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        {isNav ? (
-                          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+                    Dataset
+                  </Th>
+                  <Th
+                    onClick={() => toggleSort("source")}
+                    active={sortKey === "source"}
+                  >
+                    Source
+                  </Th>
+                  <Th
+                    onClick={() => toggleSort("rows")}
+                    active={sortKey === "rows"}
+                    className="text-right"
+                  >
+                    Rows
+                  </Th>
+                  <th className="px-3 py-2 font-medium">Status</th>
+                  <Th
+                    onClick={() => toggleSort("updated")}
+                    active={sortKey === "updated"}
+                  >
+                    Updated
+                  </Th>
+                  <th className="px-3 py-2 font-medium text-center">Context</th>
+                  <th className="px-2 py-2 font-medium text-right w-10">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((e) => {
+                  const tags = scopesByJob[e.jobId] ?? [];
+                  const isNav = navigatingId === e.jobId && isPending;
+                  return (
+                    <tr
+                      key={e.jobId}
+                      onClick={() => open(e.jobId)}
+                      className="group cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/50"
+                    >
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          {isNav ? (
+                            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+                          ) : (
+                            <Table2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          )}
+                          <span className="font-medium">{e.name}</span>
+                          {e.kind === "validation" && (
+                            <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">
+                              validation
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate max-w-[220px]">
+                            {e.sourceName}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {e.rowCount.toLocaleString()}
+                      </td>
+                      <td className="px-3 py-2">
+                        {e.latestRunStatus ? (
+                          <span
+                            className={cn(
+                              "rounded px-1.5 py-0.5 text-[11px] font-medium capitalize",
+                              STATUS_STYLES[e.latestRunStatus] ??
+                                STATUS_STYLES.cancelled,
+                            )}
+                          >
+                            {e.latestRunStatus}
+                          </span>
                         ) : (
-                          <Table2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        )}
-                        <span className="font-medium">{e.name}</span>
-                        {e.kind === "validation" && (
-                          <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">
-                            validation
+                          <span className="text-xs text-muted-foreground">
+                            —
                           </span>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <FileText className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate max-w-[220px]">
-                          {e.sourceName}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {e.rowCount.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-2">
-                      {e.latestRunStatus ? (
-                        <span
-                          className={cn(
-                            "rounded px-1.5 py-0.5 text-[11px] font-medium capitalize",
-                            STATUS_STYLES[e.latestRunStatus] ??
-                              STATUS_STYLES.cancelled,
-                          )}
-                        >
-                          {e.latestRunStatus}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
-                      {formatRelative(e.updatedAt)}
-                    </td>
-                    <td
-                      className="px-3 py-2 text-center"
-                      onClick={(ev) => ev.stopPropagation()}
-                    >
-                      <ContextStatusButton
-                        size="xs"
-                        knownScopeCount={tags.length}
-                        subject={{
-                          entityType: EXTRACTION_ENTITY_TYPE,
-                          entityId: e.jobId,
-                          title: e.name,
-                          subtitle: e.sourceName,
-                          icon: Table2,
-                        }}
-                        onSaved={(r) => {
-                          if (r.ok) {
-                            setRowScopes(
-                              EXTRACTION_ENTITY_TYPE,
-                              e.jobId,
-                              r.selection.scopeIds,
-                            );
-                            setScopesByJob((prev) => ({
-                              ...prev,
-                              [e.jobId]: r.selection.scopeIds,
-                            }));
-                            toast.success("Context updated");
-                          }
-                        }}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                        {formatRelative(e.updatedAt)}
+                      </td>
+                      <td
+                        className="px-3 py-2 text-center"
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
+                        <ContextStatusButton
+                          size="xs"
+                          knownScopeCount={tags.length}
+                          subject={{
+                            entityType: EXTRACTION_ENTITY_TYPE,
+                            entityId: e.jobId,
+                            title: e.name,
+                            subtitle: e.sourceName,
+                            icon: Table2,
+                          }}
+                          onSaved={(r) => {
+                            if (r.ok) {
+                              setRowScopes(
+                                EXTRACTION_ENTITY_TYPE,
+                                e.jobId,
+                                r.selection.scopeIds,
+                              );
+                              setScopesByJob((prev) => ({
+                                ...prev,
+                                [e.jobId]: r.selection.scopeIds,
+                              }));
+                              toast.success("Context updated");
+                            }
+                          }}
+                        />
+                      </td>
+                      <td
+                        className="px-2 py-2 text-right"
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
+                        <CatalogRowActions
+                          jobId={e.jobId}
+                          rowCount={e.rowCount}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

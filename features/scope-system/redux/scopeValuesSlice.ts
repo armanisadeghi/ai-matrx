@@ -36,6 +36,10 @@ export interface ScopeContextRow {
   value_document_url: string | null;
   version: number | null;
   updated_at: string | null;
+  /** Reference-cell config (value_type "reference" only) — see contextItemsSlice.ContextItem. */
+  allowed_reference_types?: string[] | null;
+  max_items?: number;
+  allowed_scope_type_ids?: string[] | null;
 }
 
 interface ScopeValuesState {
@@ -253,6 +257,9 @@ export const makeEmptyRowFromItem = (item: ContextItem): ScopeContextRow => ({
   value_document_url: null,
   version: null,
   updated_at: null,
+  allowed_reference_types: item.allowed_reference_types,
+  max_items: item.max_items,
+  allowed_scope_type_ids: item.allowed_scope_type_ids,
 });
 
 export const selectFilledCount = createSelector(
