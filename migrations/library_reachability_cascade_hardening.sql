@@ -626,6 +626,9 @@ CREATE TRIGGER trg_processed_documents_file_assoc
 
 -- ---------------------------------------------------------------------------
 -- 6. Page-image files → processed_document (Conveys viewer)
+-- SUPERSEDED 2026-07-11 by page_image_assoc_retarget_to_source_file.sql:
+-- file→processed_document made a non-shareable container; canonical is now
+-- page_image file → source PDF file (role=page_image). Left for history only.
 -- ---------------------------------------------------------------------------
 INSERT INTO platform.association_types (
   source_type, target_type, label, container_side, conveys_max, is_active, notes

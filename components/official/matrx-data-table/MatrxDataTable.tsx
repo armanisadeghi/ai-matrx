@@ -1,30 +1,42 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { PanelRight, Search, X } from "lucide-react";
+import { Eraser, PanelRight, Search, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import GenericTablePagination from "@/components/generic-table/GenericTablePagination";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
 import { ColumnHeaderCell } from "./ColumnHeaderCell";
 import { DataRowInspector } from "./DataRowInspector";
 import DataRowWindow from "./DataRowWindow.dynamic";
-import { ToolbarFacets } from "./ToolbarFacets";
+import { DirtySavePill } from "./DirtySavePill";
+import { EditableTableCell } from "./EditableTableCell";
+import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
+import { ToolbarFacets, resetToolbarFacets } from "./ToolbarFacets";
 import {
   collectSelectOptions,
   resolveFilterKind,
   type ResolvedFilterKind,
 } from "./infer-filter";
 import {
+  applyRowEdits,
   columnId,
   countActiveColumnFilters,
   filterAndSortRows,
   getCellValue,
   stringifyCellValue,
 } from "./filter-engine";
+import {
+  buildRowAgentInput,
+  buildViewAgentInput,
+  buildViewHuman,
+} from "./tableCopy";
 import type {
+  CellEditsMap,
   ColumnFiltersState,
   MatrxColumnDef,
   MatrxDataTableProps,
@@ -34,9 +46,10 @@ import type {
 /**
  * MatrxDataTable — the official canonical data table.
  *
- * Sticky headers · every column sortable + filterable · toolbar facets
- * (button groups today; radios/switches later) · row → SidePanelSurface
- * (MatrxDynamicPanelHost) · panel icon → WindowPanel (custom ReactNode ok).
+ * Sticky headers · every-column sort/filter (searchable selects) · toolbar
+ * facets with per-facet + global clear · any-of cross-column search ·
+ * Copy/Copy-for-AI (row + this view) · inline edit with dirty Save/Cancel pill ·
+ * row → SidePanelSurface · panel icon → WindowPanel.
  */
 export function MatrxDataTable<T>({
   data,
@@ -46,6 +59,8 @@ export function MatrxDataTable<T>({
   toolbar,
   detail,
   window: windowConfig,
+  copy,
+  edit,
   selectedId: controlledSelectedId,
   onSelectedIdChange,
   rowActions,
@@ -65,6 +80,16 @@ export function MatrxDataTable<T>({
   const setSearchValue = (v: string) => {
     if (!searchControlled) setInternalSearch(v);
     toolbar?.onSearchChange?.(v);
+  };
+
+  const [internalAnyOf, setInternalAnyOf] = useState("");
+  const anyOfControlled = toolbar?.anyOf?.value !== undefined;
+  const anyOfValue = anyOfControlled
+    ? (toolbar?.anyOf?.value ?? "")
+    : internalAnyOf;
+  const setAnyOfValue = (v: string) => {
+    if (!anyOfControlled) setInternalAnyOf(v);
+    toolbar?.anyOf?.onChange?.(v);
   };
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>({});
@@ -87,6 +112,8 @@ export function MatrxDataTable<T>({
   };
 
   const [windowRowId, setWindowRowId] = useState<string | null>(null);
+  const [edits, setEdits] = useState<CellEditsMap>({});
+  const [saving, setSaving] = useState(false);
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => !c.hidden),
@@ -120,13 +147,25 @@ export function MatrxDataTable<T>({
         columnFilters,
         sort,
         toolbar?.search === false ? "" : searchValue,
+        toolbar?.anyOf
+          ? { columnIds: toolbar.anyOf.columnIds, query: anyOfValue }
+          : undefined,
       ),
-    [data, visibleColumns, columnFilters, sort, searchValue, toolbar?.search],
+    [
+      data,
+      visibleColumns,
+      columnFilters,
+      sort,
+      searchValue,
+      toolbar?.search,
+      toolbar?.anyOf,
+      anyOfValue,
+    ],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [searchValue, columnFilters, sort, pageSize]);
+  }, [searchValue, anyOfValue, columnFilters, sort, pageSize]);
 
   const totalItems = processed.length;
   const effectivePageSize =
@@ -152,8 +191,31 @@ export function MatrxDataTable<T>({
   const detailEnabled = detail?.enabled !== false;
   const windowEnabled =
     windowConfig?.enabled !== false && (detailEnabled || Boolean(windowConfig));
+  const editEnabled = Boolean(edit?.enabled && edit.onSave);
+  const copyEnabled = Boolean(copy);
+  const showRowCopy = copyEnabled && copy?.showRow !== false;
+  const showToolbarCopy = copyEnabled && copy?.showToolbar !== false;
 
   const activeFilterCount = countActiveColumnFilters(columnFilters);
+  const facetActive = (toolbar?.facets ?? []).some((f) => {
+    if (f.type !== "button-group") return false;
+    const def = f.defaultValue ?? f.options[0]?.value;
+    return def !== undefined && f.value !== def;
+  });
+  const hasActiveFilters =
+    activeFilterCount > 0 ||
+    Boolean(searchValue.trim()) ||
+    Boolean(anyOfValue.trim()) ||
+    facetActive;
+
+  const changeCount = useMemo(() => {
+    let n = 0;
+    for (const fields of Object.values(edits)) {
+      n += Object.keys(fields).length;
+    }
+    return n;
+  }, [edits]);
+
   const showSearch = toolbar?.search !== false;
 
   const openDetail = (row: T) => {
@@ -161,30 +223,70 @@ export function MatrxDataTable<T>({
       onRowOpen?.(row);
       return;
     }
-    const id = getRowId(row);
-    setSelectedId(id);
+    setSelectedId(getRowId(row));
     onRowOpen?.(row);
   };
 
   const openWindow = (row: T, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    // Prefer window.onOpen so consumers can hydrate the Edit tab without also
+    // opening the side panel (onRowOpen is reserved for row-click → detail).
+    if (windowConfig?.onOpen) {
+      windowConfig.onOpen(row);
+    } else {
+      onRowOpen?.(row);
+    }
     setWindowRowId(getRowId(row));
   };
 
   const clearAllFilters = () => {
     setColumnFilters({});
     setSearchValue("");
+    setAnyOfValue("");
+    resetToolbarFacets(toolbar?.facets);
   };
+
+  const commitCell = (rowId: string, field: string, next: unknown) => {
+    setEdits((prev) => {
+      const rowEdits = { ...(prev[rowId] ?? {}), [field]: next };
+      return { ...prev, [rowId]: rowEdits };
+    });
+  };
+
+  const handleSaveEdits = async () => {
+    if (!edit?.onSave || changeCount === 0) return;
+    setSaving(true);
+    try {
+      await edit.onSave(edits, data);
+      setEdits({});
+      toast.success("Changes saved");
+    } catch (e) {
+      toast.error(
+        `Couldn't save: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdits = () => {
+    setEdits({});
+    edit?.onCancel?.();
+  };
+
+  const showActionsCol = windowEnabled || Boolean(rowActions) || showRowCopy;
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col gap-2", className)}>
       {/* Toolbar */}
       {(showSearch ||
+        toolbar?.anyOf ||
         (toolbar?.facets && toolbar.facets.length > 0) ||
         toolbar?.leading ||
         toolbar?.actions ||
-        activeFilterCount > 0) && (
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        hasActiveFilters ||
+        showToolbarCopy) && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           {showSearch ? (
             <div className="relative w-full max-w-xs">
               <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -207,20 +309,59 @@ export function MatrxDataTable<T>({
             </div>
           ) : null}
 
+          {toolbar?.anyOf ? (
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={anyOfValue}
+                onChange={(e) => setAnyOfValue(e.target.value)}
+                placeholder={toolbar.anyOf.placeholder ?? "Match any of…"}
+                className="h-8 pl-7 pr-7 text-sm"
+                style={{ fontSize: "16px" }}
+              />
+              {anyOfValue ? (
+                <button
+                  type="button"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  onClick={() => setAnyOfValue("")}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
           {toolbar?.facets ? <ToolbarFacets facets={toolbar.facets} /> : null}
           {toolbar?.leading}
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            {activeFilterCount > 0 ? (
+            {hasActiveFilters ? (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 className="h-7 gap-1 px-2 text-xs text-muted-foreground"
                 onClick={clearAllFilters}
+                title="Clear all filters"
               >
-                Clear filters ({activeFilterCount})
+                <Eraser className="h-3.5 w-3.5" />
+                Clear all
               </Button>
+            ) : null}
+            {showToolbarCopy && copy ? (
+              <CopyButtons
+                size="icon"
+                label={copy.listLabel ?? `${copy.label} view`}
+                human={() => buildViewHuman(copy, processed, visibleColumns)}
+                agent={() =>
+                  buildViewAgentInput(copy, processed, data, {
+                    search: searchValue,
+                    anyOf: anyOfValue,
+                    filterCount: activeFilterCount,
+                    sort: sort ? `${sort.id}:${sort.direction}` : null,
+                  })
+                }
+              />
             ) : null}
             {toolbar?.actions}
           </div>
@@ -294,8 +435,8 @@ export function MatrxDataTable<T>({
                   </th>
                 );
               })}
-              {(windowEnabled || rowActions) && (
-                <th className="h-9 w-20 px-2 text-right align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {showActionsCol && (
+                <th className="h-9 w-28 px-2 text-right align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Actions
                 </th>
               )}
@@ -310,7 +451,7 @@ export function MatrxDataTable<T>({
                       <Skeleton className="h-5 w-full" />
                     </td>
                   ))}
-                  {(windowEnabled || rowActions) && (
+                  {showActionsCol && (
                     <td className="px-2 py-2">
                       <Skeleton className="ml-auto h-5 w-10" />
                     </td>
@@ -320,10 +461,7 @@ export function MatrxDataTable<T>({
             ) : paginated.length === 0 ? (
               <tr>
                 <td
-                  colSpan={
-                    visibleColumns.length +
-                    (windowEnabled || rowActions ? 1 : 0)
-                  }
+                  colSpan={visibleColumns.length + (showActionsCol ? 1 : 0)}
                   className="px-4 py-12 text-center"
                 >
                   <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
@@ -344,6 +482,8 @@ export function MatrxDataTable<T>({
               paginated.map((row, index) => {
                 const id = getRowId(row);
                 const isSelected = selectedId === id;
+                const rowEdits = edits[id];
+                const displayRow = applyRowEdits(row, rowEdits);
                 return (
                   <tr
                     key={id}
@@ -356,25 +496,56 @@ export function MatrxDataTable<T>({
                       zebra && index % 2 === 1 && !isSelected && "bg-muted/20",
                     )}
                   >
-                    {visibleColumns.map((col) => (
-                      <td
-                        key={columnId(col)}
-                        className={cn(
-                          "px-2 py-1.5 align-middle",
-                          col.className,
-                          col.align === "center" && "text-center",
-                          col.align === "right" && "text-right",
-                        )}
-                      >
-                        {renderCell(row, col, index)}
-                      </td>
-                    ))}
-                    {(windowEnabled || rowActions) && (
+                    {visibleColumns.map((col) => {
+                      const field = col.accessorKey
+                        ? String(col.accessorKey)
+                        : columnId(col);
+                      const display = renderCell(displayRow, col, index);
+                      const editable = Boolean(editEnabled && col.editable);
+                      const dirty = Boolean(rowEdits && field in rowEdits);
+                      return (
+                        <td
+                          key={columnId(col)}
+                          className={cn(
+                            "px-2 py-1.5 align-middle",
+                            col.className,
+                            col.align === "center" && "text-center",
+                            col.align === "right" && "text-right",
+                          )}
+                        >
+                          {editable && col.editable ? (
+                            <EditableTableCell
+                              value={
+                                rowEdits && field in rowEdits
+                                  ? rowEdits[field]
+                                  : getCellValue(row, col)
+                              }
+                              editType={col.editable}
+                              editOptions={col.editOptions}
+                              display={display}
+                              dirty={dirty}
+                              onCommit={(next) => commitCell(id, field, next)}
+                            />
+                          ) : (
+                            display
+                          )}
+                        </td>
+                      );
+                    })}
+                    {showActionsCol && (
                       <td className="px-2 py-1.5 text-right align-middle">
                         <div
                           className="inline-flex items-center justify-end gap-0.5"
                           onClick={(e) => e.stopPropagation()}
                         >
+                          {showRowCopy && copy ? (
+                            <CopyButtons
+                              size="icon"
+                              label={copy.label}
+                              human={() => copy.humanRow(displayRow)}
+                              agent={() => buildRowAgentInput(copy, displayRow)}
+                            />
+                          ) : null}
                           {rowActions?.(row)}
                           {windowEnabled ? (
                             <Button
@@ -399,7 +570,6 @@ export function MatrxDataTable<T>({
         </table>
       </div>
 
-      {/* Pagination */}
       {defaultPageSize !== 0 && totalItems > 0 ? (
         <div className="shrink-0">
           <GenericTablePagination
@@ -418,7 +588,6 @@ export function MatrxDataTable<T>({
         </div>
       ) : null}
 
-      {/* Side panel — canonical MatrxDynamicPanelHost via SidePanelSurface */}
       {detailEnabled && selectedRow ? (
         <SidePanelSurface
           title={resolveStringTitle(
@@ -432,6 +601,14 @@ export function MatrxDataTable<T>({
           defaultWidth={detail?.defaultWidth ?? 480}
           headerActions={
             <div className="flex items-center gap-1">
+              {copy && showRowCopy ? (
+                <CopyButtons
+                  size="icon"
+                  label={copy.label}
+                  human={() => copy.humanRow(selectedRow)}
+                  agent={() => buildRowAgentInput(copy, selectedRow)}
+                />
+              ) : null}
               {detail?.headerActions?.(selectedRow)}
               {windowEnabled ? (
                 <Button
@@ -454,7 +631,6 @@ export function MatrxDataTable<T>({
         </SidePanelSurface>
       ) : null}
 
-      {/* WindowPanel — lazy, page-local, custom ReactNode supported */}
       {windowRow ? (
         <DataRowWindow
           isOpen
@@ -467,9 +643,27 @@ export function MatrxDataTable<T>({
           width={windowConfig?.width}
           height={windowConfig?.height}
           windowId={`matrx-data-row-${getRowId(windowRow)}`}
+          defaultTab={windowConfig?.defaultTab}
+          viewContent={windowConfig?.renderView?.(windowRow)}
+          editContent={
+            windowConfig?.renderEdit === false
+              ? undefined
+              : windowConfig?.renderEdit
+                ? windowConfig.renderEdit(windowRow)
+                : detail?.render?.(windowRow)
+          }
         >
           {windowConfig?.render?.(windowRow)}
         </DataRowWindow>
+      ) : null}
+
+      {editEnabled ? (
+        <DirtySavePill
+          changeCount={changeCount}
+          saving={saving}
+          onSave={() => void handleSaveEdits()}
+          onCancel={handleCancelEdits}
+        />
       ) : null}
     </div>
   );
@@ -481,9 +675,34 @@ function renderCell<T>(
   index: number,
 ): ReactNode {
   if (col.cell) return col.cell(row, index);
+
+  const raw = getCellValue(row, col);
+  const kind = col.cellKind ?? "auto";
+  const asUuid =
+    kind === "uuid" || kind === "fk" || (kind === "auto" && isUuidValue(raw));
+
+  if (asUuid && typeof raw === "string") {
+    const forbidden =
+      typeof col.fk?.forbidden === "function"
+        ? col.fk.forbidden(raw, row)
+        : Boolean(col.fk?.forbidden);
+    return (
+      <MatrxUuidCell
+        value={raw}
+        label={
+          col.fk?.label ??
+          (typeof col.header === "string" ? col.header : col.id)
+        }
+        forbidden={forbidden}
+        href={col.fk?.href?.(raw, row)}
+        onOpen={col.fk?.onOpen ? (id) => col.fk!.onOpen!(id, row) : undefined}
+      />
+    );
+  }
+
   return (
     <span className="text-sm text-foreground">
-      {stringifyCellValue(getCellValue(row, col)) || "—"}
+      {stringifyCellValue(raw) || "—"}
     </span>
   );
 }

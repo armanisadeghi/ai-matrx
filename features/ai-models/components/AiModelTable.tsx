@@ -6,12 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -47,6 +41,7 @@ import {
 } from "lucide-react";
 import type { AiModel, AiProvider } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
 import {
   DEFAULT_AI_MODEL_FILTERS,
@@ -141,38 +136,7 @@ function JsonSummaryBadge({ data, label }: { data: unknown; label?: string }) {
 }
 
 function UuidCell({ value }: { value: string }) {
-  const [copied, setCopied] = React.useState(false);
-  const copy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-  return (
-    <TooltipProvider delayDuration={300}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="flex items-center gap-1 text-xs font-mono text-muted-foreground group cursor-default">
-            {value.slice(0, 8)}…
-            <button
-              onClick={copy}
-              className="opacity-0 group-hover:opacity-100 transition-opacity rounded hover:text-foreground"
-              title="Copy full ID"
-            >
-              {copied ? (
-                <span className="text-green-500 text-xs">✓</span>
-              ) : (
-                <Copy className="h-3 w-3" />
-              )}
-            </button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          <p className="font-mono text-xs">{value}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+  return <MatrxUuidCell value={value} label="Model ID" />;
 }
 
 // ─── Column definitions ───────────────────────────────────────────────────────

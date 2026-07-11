@@ -12,7 +12,7 @@ Sharing a container must cascade to its contents: *"If I share a Thread with you
 
 **The load-bearing invariant:** `platform.associations` + `platform.association_types` + `iam.permissions` + `iam.memberships` are the source of truth. `platform.reachability` is a **disposable cache** — rebuildable at any moment via `platform.rebuild_reachability()`. Never hand-edit it. Never treat it as truth.
 
-**Shared Knowledge (2026-07-10):** library `data_store_grants` ride this same graph — `file→data_store`, `processed_document→file`, page-image `file→processed_document` (all `conveys_max=viewer`). `iam.has_access` / `has_access_as` admit grant readers on those containers. See `features/rag/FEATURE.md` § Shared Knowledge Resources. Migrations: `library_store_file_reachability_cascade.sql` + `library_reachability_cascade_hardening.sql`.
+**Shared Knowledge (2026-07-10, page_image retarget 2026-07-11):** library `data_store_grants` ride this same graph — `file→data_store`, `processed_document→file`, page-image `file→file` (all `conveys_max=viewer`). `iam.has_access` / `has_access_as` admit grant readers on those containers. See `features/rag/FEATURE.md` § Shared Knowledge Resources. Migrations: `library_store_file_reachability_cascade.sql` + `library_reachability_cascade_hardening.sql` + `page_image_assoc_retarget_to_source_file.sql`.
 
 ---
 

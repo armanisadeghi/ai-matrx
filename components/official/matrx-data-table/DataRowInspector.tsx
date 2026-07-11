@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
 
 function formatValue(value: unknown): string {
   if (value == null) return "—";
@@ -27,8 +28,9 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Default detail / window body for any row. Renders a scannable key/value
- * inspector. Pass a custom `renderDetail` / `renderWindow` to replace it.
+ * Default detail / window View body for any row. Renders a scannable key/value
+ * inspector. UUID-shaped values use MatrxUuidCell (short + copy). Pass a custom
+ * `renderView` / `renderDetail` to replace it.
  */
 export function DataRowInspector({
   row,
@@ -55,6 +57,22 @@ export function DataRowInspector({
       <div className="min-h-0 flex-1 overflow-auto p-3">
         <dl className="space-y-2">
           {entries.map(([key, value]) => {
+            if (isUuidValue(value)) {
+              return (
+                <div
+                  key={key}
+                  className="grid grid-cols-[minmax(7rem,9rem)_1fr] gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2"
+                >
+                  <dt className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {key}
+                  </dt>
+                  <dd className="min-w-0">
+                    <MatrxUuidCell value={value} label={key} />
+                  </dd>
+                </div>
+              );
+            }
+
             const formatted = formatValue(value);
             const multiline = formatted.includes("\n") || formatted.length > 80;
             return (

@@ -139,7 +139,7 @@ Shared Knowledge open-path is done. Both adversarial re-audits returned **APPROV
 - `library_store_file_reachability_cascade.sql` — store grants → reachability → `has_access`
 - `library_reachability_cascade_hardening.sql` — fixes from the first REJECT:
   - `entity_row_access_attrs` (processed docs with `owner_id`, no `visibility`)
-  - page-image `file→processed_document` edges (231 under AMA store)
+  - page-image `file→file` edges (page render → source PDF; was wrongly `file→processed_document`)
   - sync triggers drop OLD edges on identity UPDATE
   - `has_access_as` locked to **service_role** only
 

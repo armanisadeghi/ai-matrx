@@ -212,6 +212,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/chat/{id}",
     rlsUsesHasPermission: true,
   },
+  data_store: {
+    resourceType: "data_store",
+    tableName: "data_stores",
+    schemaName: "rag",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: "visibility",
+    displayLabel: "Data Store",
+    urlPathTemplate: "/rag/data-stores/{id}",
+    rlsUsesHasPermission: false,
+  },
   dm_conversation: {
     resourceType: "dm_conversation",
     tableName: "dm_conversations",

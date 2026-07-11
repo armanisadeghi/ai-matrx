@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -16,6 +16,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Select,
   SelectContent,
@@ -36,7 +44,6 @@ interface ColumnHeaderCellProps {
   onSortAsc: () => void;
   onSortDesc: () => void;
   onClearSort: () => void;
-  /** Header click cycles asc ↔ desc (or starts at asc). */
   onHeaderSortClick: () => void;
   filterKind: ResolvedFilterKind | null;
   filterValue: ColumnFilterValue | undefined;
@@ -102,81 +109,96 @@ export function ColumnHeaderCell({
       )}
 
       {filterKind ? (
-        <Popover>
-          <PopoverTrigger asChild>
+        <div className="inline-flex items-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                title="Sort or filter column"
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  "rounded p-0.5 transition-colors",
+                  filterActive
+                    ? "text-primary hover:text-primary/80"
+                    : "text-muted-foreground/40 hover:text-muted-foreground",
+                )}
+              >
+                <ListFilter
+                  className={cn("h-3 w-3", filterActive && "fill-primary/20")}
+                />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-64 p-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {sortable ? (
+                <>
+                  <div className="flex flex-col gap-0.5 pb-2">
+                    <Button
+                      variant={
+                        isSorted && sortDirection === "asc"
+                          ? "secondary"
+                          : "ghost"
+                      }
+                      size="sm"
+                      className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+                      onClick={onSortAsc}
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                      Sort ascending
+                    </Button>
+                    <Button
+                      variant={
+                        isSorted && sortDirection === "desc"
+                          ? "secondary"
+                          : "ghost"
+                      }
+                      size="sm"
+                      className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+                      onClick={onSortDesc}
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                      Sort descending
+                    </Button>
+                    {isSorted ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 justify-start gap-2 px-2 text-xs font-normal text-muted-foreground"
+                        onClick={onClearSort}
+                      >
+                        <ListX className="h-3.5 w-3.5" />
+                        Clear sort
+                      </Button>
+                    ) : null}
+                  </div>
+                  <div className="mb-2 h-px bg-border" />
+                </>
+              ) : null}
+              <FilterBody
+                kind={filterKind}
+                value={filterValue}
+                onChange={onFilterChange}
+                selectOptions={selectOptions}
+              />
+            </PopoverContent>
+          </Popover>
+          {filterActive ? (
             <button
               type="button"
-              title="Sort or filter column"
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                "rounded p-0.5 transition-colors",
-                filterActive
-                  ? "text-primary hover:text-primary/80"
-                  : "text-muted-foreground/40 hover:text-muted-foreground",
-              )}
+              title="Clear this filter"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFilterChange(undefined);
+              }}
+              className="rounded p-0.5 text-primary hover:bg-muted hover:text-foreground"
             >
-              <ListFilter
-                className={cn("h-3 w-3", filterActive && "fill-primary/20")}
-              />
+              <X className="h-3 w-3" />
             </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            className="w-60 p-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {sortable ? (
-              <>
-                <div className="flex flex-col gap-0.5 pb-2">
-                  <Button
-                    variant={
-                      isSorted && sortDirection === "asc"
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    size="sm"
-                    className="h-8 justify-start gap-2 px-2 text-xs font-normal"
-                    onClick={onSortAsc}
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                    Sort ascending
-                  </Button>
-                  <Button
-                    variant={
-                      isSorted && sortDirection === "desc"
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    size="sm"
-                    className="h-8 justify-start gap-2 px-2 text-xs font-normal"
-                    onClick={onSortDesc}
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-                    Sort descending
-                  </Button>
-                  {isSorted ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 justify-start gap-2 px-2 text-xs font-normal text-muted-foreground"
-                      onClick={onClearSort}
-                    >
-                      <ListX className="h-3.5 w-3.5" />
-                      Clear sort
-                    </Button>
-                  ) : null}
-                </div>
-                <div className="mb-2 h-px bg-border" />
-              </>
-            ) : null}
-            <FilterBody
-              kind={filterKind}
-              value={filterValue}
-              onChange={onFilterChange}
-              selectOptions={selectOptions}
-            />
-          </PopoverContent>
-        </Popover>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
@@ -230,31 +252,12 @@ function FilterBody({
   }
 
   if (kind === "select") {
-    const selected = value?.kind === "select" ? value.value : "__all__";
     return (
-      <div className="space-y-1.5 px-1">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          Filter
-        </p>
-        <Select
-          value={selected}
-          onValueChange={(v) =>
-            onChange(v === "__all__" ? undefined : { kind: "select", value: v })
-          }
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">All</SelectItem>
-            {selectOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <SearchableSelectFilter
+        value={value?.kind === "select" ? value.value : undefined}
+        options={selectOptions}
+        onChange={onChange}
+      />
     );
   }
 
@@ -287,6 +290,80 @@ function FilterBody({
   }
 
   return <NumberFilterBody value={value} onChange={onChange} />;
+}
+
+function SearchableSelectFilter({
+  value,
+  options,
+  onChange,
+}: {
+  value: string | undefined;
+  options: Array<{ value: string; label: string }>;
+  onChange: (next: ColumnFilterValue | undefined) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter(
+      (o) =>
+        o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
+    );
+  }, [options, query]);
+
+  return (
+    <div className="space-y-1 px-0">
+      <div className="flex items-center justify-between px-1 pb-1">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          Filter
+        </p>
+        {value ? (
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground hover:text-foreground"
+            onClick={() => onChange(undefined)}
+          >
+            clear
+          </button>
+        ) : null}
+      </div>
+      <Command className="rounded-md border border-border" shouldFilter={false}>
+        <CommandInput
+          value={query}
+          onValueChange={setQuery}
+          placeholder="Search options…"
+          className="h-8 text-sm"
+        />
+        <CommandList className="max-h-48">
+          <CommandEmpty className="py-3 text-xs text-muted-foreground">
+            No matches
+          </CommandEmpty>
+          <CommandGroup>
+            <CommandItem
+              value="__all__"
+              onSelect={() => onChange(undefined)}
+              className="text-xs"
+            >
+              All
+            </CommandItem>
+            {filtered.map((o) => (
+              <CommandItem
+                key={o.value}
+                value={o.value}
+                onSelect={() => onChange({ kind: "select", value: o.value })}
+                className={cn(
+                  "text-xs",
+                  value === o.value && "bg-accent text-accent-foreground",
+                )}
+              >
+                {o.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </div>
+  );
 }
 
 function NumberFilterBody({

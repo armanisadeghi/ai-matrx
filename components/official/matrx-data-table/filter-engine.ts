@@ -83,9 +83,11 @@ export function filterAndSortRows<T>(
   columnFilters: ColumnFiltersState,
   sort: SortState | null,
   globalSearch: string,
+  anyOf?: { columnIds: string[]; query: string },
 ): T[] {
   const colById = new Map(columns.map((c) => [columnId(c), c]));
   const q = globalSearch.trim().toLowerCase();
+  const anyQ = anyOf?.query.trim().toLowerCase() ?? "";
 
   let result = rows.filter((row) => {
     for (const [id, filter] of Object.entries(columnFilters)) {
@@ -94,6 +96,18 @@ export function filterAndSortRows<T>(
       if (!col || col.filter === false) continue;
       if (!passesColumnFilter(getCellValue(row, col), filter)) return false;
     }
+
+    if (anyQ && anyOf) {
+      const hit = anyOf.columnIds.some((id) => {
+        const col = colById.get(id);
+        if (!col) return false;
+        return stringifyCellValue(getCellValue(row, col))
+          .toLowerCase()
+          .includes(anyQ);
+      });
+      if (!hit) return false;
+    }
+
     if (!q) return true;
     return columns.some((col) => {
       if (col.filter === false && !col.accessorKey && !col.accessorFn) {
@@ -155,4 +169,13 @@ export function isColumnFilterActive(
     case "number":
       return filter.min !== undefined || filter.max !== undefined;
   }
+}
+
+/** Apply draft edits onto a row for display (shallow field merge). */
+export function applyRowEdits<T>(
+  row: T,
+  edits: Record<string, unknown> | undefined,
+): T {
+  if (!edits || Object.keys(edits).length === 0) return row;
+  return { ...row, ...edits };
 }

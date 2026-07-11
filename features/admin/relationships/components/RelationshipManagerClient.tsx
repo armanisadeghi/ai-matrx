@@ -157,6 +157,8 @@ export default function RelationshipManagerClient({
 
   const [filter, setFilter] = useState<RuleFilter>("all");
   const [editor, setEditor] = useState<EditorState | null>(null);
+  /** Side-panel selection — independent of WindowPanel edit hydration. */
+  const [sidePanelId, setSidePanelId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
   /** The rule targeted for deletion — independent of the editor so a row-level
@@ -222,6 +224,13 @@ export default function RelationshipManagerClient({
           { value: "source", label: "container ← content" },
           { value: "none", label: "known only" },
         ],
+        accessorKey: "container_side",
+        editable: "select",
+        editOptions: [
+          { value: "target", label: "target (convention)" },
+          { value: "source", label: "source (big→little)" },
+          { value: "none", label: "none" },
+        ],
         cell: (rule) => <DirectionGlyph side={rule.container_side} />,
         align: "center",
         width: 64,
@@ -246,6 +255,12 @@ export default function RelationshipManagerClient({
         header: "Conveys",
         accessorFn: (r) =>
           r.container_side !== "none" && r.is_active ? r.conveys_max : "",
+        editable: "select",
+        editOptions: [
+          { value: "viewer", label: "viewer" },
+          { value: "editor", label: "editor" },
+          { value: "admin", label: "admin" },
+        ],
         cell: (rule) =>
           rule.container_side !== "none" && rule.is_active ? (
             <ConveyPill level={rule.conveys_max} />
@@ -337,6 +352,29 @@ export default function RelationshipManagerClient({
         },
         width: 160,
       },
+      {
+        id: "notes",
+        accessorKey: "notes",
+        header: "Notes",
+        editable: "string",
+        cell: (rule) => (
+          <span className="line-clamp-2 text-xs text-muted-foreground">
+            {rule.notes?.trim() || "—"}
+          </span>
+        ),
+        width: 180,
+      },
+      {
+        id: "is_active",
+        accessorKey: "is_active",
+        header: "Active",
+        filter: "boolean",
+        editable: "boolean",
+        cell: (rule) => (
+          <span className="text-xs">{rule.is_active ? "Yes" : "No"}</span>
+        ),
+        width: 72,
+      },
     ];
   }, []);
 
@@ -372,6 +410,7 @@ export default function RelationshipManagerClient({
   // -- mutations ---------------------------------------------------------------
 
   function openCreate() {
+    setSidePanelId(null);
     setEditor({ ...EMPTY_EDITOR });
   }
 
@@ -387,6 +426,11 @@ export default function RelationshipManagerClient({
       notes: rule.notes ?? "",
       original: rule,
     });
+  }
+
+  function openEditInSidePanel(rule: RelationshipRule) {
+    openEdit(rule);
+    setSidePanelId(ruleKey(rule));
   }
 
   async function saveRule() {
@@ -409,6 +453,7 @@ export default function RelationshipManagerClient({
           : "Rule saved — closure cache rebuilt",
       );
       setEditor(null);
+      setSidePanelId(null);
       refresh();
     } catch (e) {
       toast.error(
@@ -442,6 +487,7 @@ export default function RelationshipManagerClient({
           ? null
           : cur,
       );
+      setSidePanelId((id) => (id && id === ruleKey(target) ? null : id));
       refresh();
     } catch (e) {
       toast.error(
@@ -593,7 +639,7 @@ export default function RelationshipManagerClient({
               r.target_type === target &&
               (r.label ?? "") === (lbl ?? ""),
           );
-          if (rule) openEdit(rule);
+          if (rule) openEditInSidePanel(rule);
         }}
       />
 
@@ -635,12 +681,17 @@ export default function RelationshipManagerClient({
           }}
           toolbar={{
             search: true,
-            searchPlaceholder: "Search types…",
+            searchPlaceholder: "Search all fields…",
+            anyOf: {
+              columnIds: ["source_type", "target_type"],
+              placeholder: "Entity type (source or target)…",
+            },
             facets: [
               {
                 type: "button-group",
                 id: "rule-facet",
                 value: filter,
+                defaultValue: "all",
                 options: [
                   { value: "all", label: "All" },
                   { value: "conveying", label: "Conveys access" },
@@ -651,15 +702,72 @@ export default function RelationshipManagerClient({
               },
             ],
           }}
-          selectedId={
-            editor?.mode === "edit" && editor.original
-              ? ruleKey(editor.original)
-              : null
-          }
-          onSelectedIdChange={(id) => {
-            if (!id) setEditor(null);
+          copy={{
+            label: "Relationship rule",
+            listLabel: "Relationship rules (this view)",
+            location:
+              "AI Matrx Admin — Relationship Manager (/administration/relationships)",
+            rowKind: "relationship-rule",
+            listKind: "relationship-rules",
+            rowDescription:
+              "One platform.association_types rule from the Relationship Manager.",
+            listDescription:
+              "Filtered/sorted relationship rules currently visible in the registry table.",
+            humanRow: (r) =>
+              [
+                ruleSentence(r),
+                `source=${r.source_type} target=${r.target_type} label=${r.label ?? "(any)"}`,
+                `side=${r.container_side} conveys=${r.conveys_max} active=${r.is_active}`,
+                `edges=${r.edge_count} closure=${r.closure_rows} reverse=${r.reverse_edge_count}`,
+                r.notes ? `notes: ${r.notes}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            rowAttributes: (r) => ({
+              source: r.source_type,
+              target: r.target_type,
+              label: r.label,
+              side: r.container_side,
+              active: r.is_active,
+            }),
+            listAttributes: (visible, all) => ({
+              visible: visible.length,
+              total: all.length,
+              facet: filter,
+            }),
           }}
-          onRowOpen={(rule) => openEdit(rule)}
+          edit={{
+            enabled: true,
+            onSave: async (editsMap) => {
+              const keys = Object.keys(editsMap);
+              for (const key of keys) {
+                const rule = rules.find((r) => ruleKey(r) === key);
+                if (!rule) continue;
+                const patch = editsMap[key] ?? {};
+                const next = { ...rule, ...patch } as RelationshipRule;
+                const { error } = await supabase.rpc(
+                  "admin_upsert_relationship_rule",
+                  {
+                    p_source_type: next.source_type,
+                    p_target_type: next.target_type,
+                    p_label: next.label ?? undefined,
+                    p_container_side: next.container_side,
+                    p_conveys_max: next.conveys_max,
+                    p_is_active: next.is_active,
+                    p_notes: next.notes ?? undefined,
+                  },
+                );
+                if (error) throw error;
+              }
+              refresh();
+            },
+          }}
+          selectedId={sidePanelId}
+          onSelectedIdChange={(id) => {
+            setSidePanelId(id);
+            if (!id && editor?.mode === "edit") setEditor(null);
+          }}
+          onRowOpen={(rule) => openEditInSidePanel(rule)}
           detail={{
             title: (rule) =>
               `Edit: ${label(rule.source_type)} → ${label(rule.target_type)}`,
@@ -690,7 +798,10 @@ export default function RelationshipManagerClient({
                   conveys={editorConveys}
                   valid={editorValid}
                   saving={saving}
-                  onCancel={() => setEditor(null)}
+                  onCancel={() => {
+                    setEditor(null);
+                    setSidePanelId(null);
+                  }}
                   onSave={() => {
                     if (editorChangesConveyance) setConfirmSave(true);
                     else void saveRule();
@@ -706,6 +817,12 @@ export default function RelationshipManagerClient({
           window={{
             title: (rule) =>
               `${label(rule.source_type)} → ${label(rule.target_type)}`,
+            defaultTab: "edit",
+            onOpen: (rule) => openEdit(rule),
+            width: 760,
+            height: 640,
+            // Edit tab reuses detail.render (RuleEditorForm) via MatrxDataTable
+            // fallback. View tab = DataRowInspector.
           }}
           rowActions={(rule) => (
             <>
@@ -714,7 +831,7 @@ export default function RelationshipManagerClient({
                 variant="ghost"
                 className="h-7 w-7"
                 title="Edit rule"
-                onClick={() => openEdit(rule)}
+                onClick={() => openEditInSidePanel(rule)}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </Button>

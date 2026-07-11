@@ -38,14 +38,6 @@ export default async function RelationshipsAdminPage() {
 
   return (
     <div className="min-h-dvh bg-textured">
-      <div className="flex items-center gap-2 px-4 pt-4">
-        <Network className="h-5 w-5 text-primary" />
-        <h1 className="text-lg font-semibold">Relationship Manager</h1>
-        <p className="ml-2 text-sm text-muted-foreground">
-          Which relationships exist, which convey access, and what every
-          container reaches.
-        </p>
-      </div>
       <RelationshipManagerClient
         status={statusRes.data?.[0] ?? null}
         rules={rulesRes.data ?? []}

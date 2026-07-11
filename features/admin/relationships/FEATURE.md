@@ -105,7 +105,9 @@ can't compute — a conveying rule whose container isn't in
 
 - **2026-07-11** — Registry cut over to canonical `MatrxDataTable`; rule editor
   moves to `SidePanelSurface` (create) / table detail panel (edit). Panel icon
-  opens a WindowPanel over the row.
+  opens a WindowPanel with **View / Edit** tabs (Edit = same RuleEditorForm).
+  Follow-up: searchable filters, clear-all, any-of entity search (source OR
+  target), Copy/Copy-for-AI, deferred inline edit with Save/Cancel pill.
 - **2026-07-09** — Full-CRUD rewrite: structured columnar registry (chips + a
   direction glyph, not prose), New/Edit/Delete rules, unified
   `admin_relationship_problems()` drift panel (adds the shareable-registry gap

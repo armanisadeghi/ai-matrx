@@ -132,6 +132,17 @@
     "is_active": true
   },
   {
+    "resource_type": "data_store",
+    "table_name": "data_stores",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": "visibility",
+    "display_label": "Data Store",
+    "url_path_template": "/rag/data-stores/{id}",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
     "resource_type": "dm_conversation",
     "table_name": "dm_conversations",
     "id_column": "id",
