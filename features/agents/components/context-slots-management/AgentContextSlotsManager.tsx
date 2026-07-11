@@ -13,14 +13,17 @@
  */
 
 import { useState, useCallback, useMemo } from "react";
-import { Plus, X, ChevronDown } from "lucide-react";
+import { Plus, X, ChevronDown, Layers } from "lucide-react";
+import { useOpenScopeBatchImportWindow } from "@/features/overlays/openers/scopeBatchImportWindow";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ContextItemPicker } from "@/features/scope-system/components/ContextItemPicker";
+import { contextItemValueTypeToSlotType } from "@/features/agents/utils/context-item-slot-mapping";
 import {
   Select,
   SelectContent,
@@ -292,8 +295,83 @@ function SlotEditorFields({
 
   return (
     <div className="space-y-5 py-1">
+      {/* ──────────────────── Scope binding ──────────────────── */}
+      <Section
+        title="Scope binding"
+        subtitle="Bind to a context item to fill this slot's key, label, description, and type from it automatically — you can still edit any of them below. Leave unbound to configure a fully custom slot."
+      >
+        <Field>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox
+              checked={form.ctxBound}
+              onCheckedChange={(c) => onChange({ ctxBound: c === true })}
+            />
+            <span className="text-xs">Bind to a context item</span>
+          </label>
+        </Field>
+        {form.ctxBound && (
+          <Field className="pl-6 pt-1 space-y-2">
+            <ContextItemPicker
+              value={{
+                scopeTypeId: form.ctxScopeTypeId,
+                contextItemId: form.ctxItemId,
+              }}
+              onChange={(sel) => {
+                const patch: Partial<SlotFormState> = {
+                  ctxItemId: sel.contextItemId,
+                  ctxScopeTypeId: sel.scopeTypeId,
+                  ctxItemKey: sel.itemKey,
+                };
+                if (sel.item) {
+                  // Pick auto-fills identity from the item; the key stays
+                  // locked once a slot exists (its key can't be renamed).
+                  if (!isEdit) {
+                    const suggestedKey = sanitizeVariableName(
+                      sel.item.key || sel.item.display_name,
+                    );
+                    if (suggestedKey) patch.key = suggestedKey;
+                  }
+                  patch.label = sel.item.display_name;
+                  patch.description = sel.item.description ?? "";
+                  const nextType = contextItemValueTypeToSlotType(sel.item.value_type);
+                  patch.type = nextType;
+                  patch.inlineMode = SUGGESTED_INLINE_MODE_BY_TYPE[nextType];
+                  patch.inlineCustomChars = "";
+                }
+                onChange(patch);
+              }}
+            />
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                When no scope provides it
+              </Label>
+              <Select
+                value={form.ctxOnMissing}
+                onValueChange={(v) => onChange({ ctxOnMissing: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="empty">Empty — leave the slot unfilled</SelectItem>
+                  <SelectItem value="skip">Skip — same as empty</SelectItem>
+                  <SelectItem value="error">Error — refuse to run if missing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </Field>
+        )}
+      </Section>
+
       {/* ──────────────────── Identity ──────────────────── */}
-      <Section title="Identity">
+      <Section
+        title="Identity"
+        subtitle={
+          form.ctxBound
+            ? "Pre-filled from the bound context item — edit freely."
+            : undefined
+        }
+      >
         <Field>
           <Label htmlFor="slot-key" className="text-xs">
             Context key
@@ -378,57 +456,6 @@ function SlotEditorFields({
             style={{ fontSize: "16px" }}
           />
         </Field>
-      </Section>
-
-      {/* ──────────────────── Scope binding ──────────────────── */}
-      <Section
-        title="Scope binding"
-        subtitle="Optionally fill this slot from a scope context item. When the active scope provides a value, it's used automatically; with no context set, the slot simply stays empty (no requirement)."
-      >
-        <Field>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox
-              checked={form.ctxBound}
-              onCheckedChange={(c) => onChange({ ctxBound: c === true })}
-            />
-            <span className="text-xs">Bind to a context item (auto-fill from scope)</span>
-          </label>
-        </Field>
-        {form.ctxBound && (
-          <Field className="pl-6 pt-1 space-y-2">
-            <ContextItemPicker
-              value={{
-                scopeTypeId: form.ctxScopeTypeId,
-                contextItemId: form.ctxItemId,
-              }}
-              onChange={(sel) =>
-                onChange({
-                  ctxItemId: sel.contextItemId,
-                  ctxScopeTypeId: sel.scopeTypeId,
-                  ctxItemKey: sel.itemKey,
-                })
-              }
-            />
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                When no scope provides it
-              </Label>
-              <Select
-                value={form.ctxOnMissing}
-                onValueChange={(v) => onChange({ ctxOnMissing: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="empty">Empty — leave the slot unfilled</SelectItem>
-                  <SelectItem value="skip">Skip — same as empty</SelectItem>
-                  <SelectItem value="error">Error — refuse to run if missing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </Field>
-        )}
       </Section>
 
       {/* ──────────────────── Inline policy ──────────────────── */}
@@ -703,6 +730,7 @@ export function AgentContextSlotsManager({
 }: AgentContextSlotsManagerProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
+  const openBatchImport = useOpenScopeBatchImportWindow();
   const slotsRaw = useAppSelector((state) =>
     selectAgentContextSlots(state, agentId),
   );
@@ -810,48 +838,65 @@ export function AgentContextSlotsManager({
 
   return (
     <>
-      <div className="flex items-center gap-2 flex-wrap">
-        <Label className="text-xs text-muted-foreground">Context</Label>
+      <div className="flex items-center gap-2 min-w-0">
+        <Label className="text-xs text-muted-foreground shrink-0">Context</Label>
 
-        {slots.map((slot, i) => {
-          const key = getSlotKey(slot);
-          const detail = slot.label?.trim()
-            ? slot.label
-            : slot.description?.trim()
-              ? slot.description
-              : "";
-          return (
-            <div
-              key={`${key}-${i}`}
-              className="inline-flex items-center gap-1.5 px-2.5 rounded-md text-xs font-medium bg-muted text-foreground border border-border group"
-            >
-              <span
-                className="cursor-pointer transition-colors hover:text-primary truncate max-w-[160px]"
-                onClick={() => openEdit(i)}
-                title={detail ? `${key} — ${detail}` : `${key} (click to edit)`}
-              >
-                {key}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleDelete(i)}
-                title="Remove context slot"
-                className="hover:text-destructive transition-colors shrink-0"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          );
-        })}
-
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-          onClick={openAdd}
+        <ScrollFade
+          orientation="horizontal"
+          className="flex items-center gap-1.5 flex-nowrap min-w-0 flex-1 py-0.5"
         >
-          <Plus className="w-3.5 h-3.5" />
-          Add
-        </button>
+          {slots.map((slot, i) => {
+            const key = getSlotKey(slot);
+            const detail = slot.label?.trim()
+              ? slot.label
+              : slot.description?.trim()
+                ? slot.description
+                : "";
+            return (
+              <div
+                key={`${key}-${i}`}
+                className="inline-flex items-center gap-1.5 px-2.5 rounded-md text-xs font-medium bg-muted text-foreground border border-border group shrink-0"
+              >
+                <span
+                  className="cursor-pointer transition-colors hover:text-primary truncate max-w-[160px]"
+                  onClick={() => openEdit(i)}
+                  title={detail ? `${key} — ${detail}` : `${key} (click to edit)`}
+                >
+                  {key}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(i)}
+                  title="Remove context slot"
+                  className="hover:text-destructive transition-colors shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+        </ScrollFade>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+            onClick={openAdd}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add
+          </button>
+
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+            onClick={() => openBatchImport({ agentId })}
+            title="Batch add variables and context slots from a scope type"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Batch add from scope
+          </button>
+        </div>
       </div>
 
       {isMobile ? (

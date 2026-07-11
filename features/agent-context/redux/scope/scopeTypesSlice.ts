@@ -5,6 +5,7 @@ import {
   createEntityAdapter,
   createAsyncThunk,
   createSelector,
+  weakMapMemoize,
   PayloadAction,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
@@ -211,6 +212,10 @@ export const selectScopeTypesLoadedForOrg = (
 export const selectScopeTypesError = (state: StateWithScopeTypes) =>
   state.scopeTypes.error;
 
+// weakMapMemoize: this selector can have multiple simultaneous callers with
+// different `orgId`s in the same render pass (e.g. two open scope-binding
+// pickers) — the default size-1 cache would thrash between them, forcing a
+// recompute (new array reference) on every call.
 export const selectScopeTypesByOrg = createSelector(
   [selectAllScopeTypes, (_state: StateWithScopeTypes, orgId: string) => orgId],
   // is_system scope types are PLATFORM infrastructure (the "Environment" home for ambient
@@ -223,6 +228,7 @@ export const selectScopeTypesByOrg = createSelector(
     );
     return filtered.length > 0 ? filtered : EMPTY_SCOPE_TYPES;
   },
+  { memoize: weakMapMemoize, argsMemoize: weakMapMemoize },
 );
 
 /**

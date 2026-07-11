@@ -153,6 +153,10 @@ const PromptPreviewWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/PromptPreviewWindow"),
   { ssr: false },
 );
+const ScopeBatchImportWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/ScopeBatchImportWindow"),
+  { ssr: false },
+);
 const AgentMemoryWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentMemoryWindow"),
   { ssr: false },
@@ -1108,6 +1112,9 @@ export default function OverlayController() {
     promptPreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "promptPreviewWindow"),
     ),
+    scopeBatchImportWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "scopeBatchImportWindow"),
+    ),
     agentMemoryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentMemoryWindow"),
     ),
@@ -1384,6 +1391,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     promptPreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "promptPreviewWindow"),
+    ) as Record<string, unknown> | null,
+    scopeBatchImportWindow: useAppSelector((s) =>
+      selectOverlayData(s, "scopeBatchImportWindow"),
     ) as Record<string, unknown> | null,
   };
 
@@ -1826,6 +1836,25 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "promptPreviewWindow" }))
             }
             conversationId={conversationId}
+          />
+        );
+      })()}
+
+      {/* scopeBatchImportWindow */}
+      {(() => {
+        const isOpen = isOpenById.scopeBatchImportWindow;
+        const data = dataById.scopeBatchImportWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const agentId = typeof data?.agentId === "string" ? data.agentId : "";
+        if (!agentId) return null;
+        return (
+          <ScopeBatchImportWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "scopeBatchImportWindow" }))
+            }
+            agentId={agentId}
           />
         );
       })()}

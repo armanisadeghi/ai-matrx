@@ -9,12 +9,14 @@
 
 import { Check, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { DefaultOrgSwitch } from "@/features/organizations/components/DefaultOrgSwitch";
 import { MenuGroup } from "./MenuGroup";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
 
 export default function UserMenuOrgSection() {
+  const isMounted = useIsMounted();
   const {
     activeOrgId,
     promptForOrg,
@@ -32,7 +34,7 @@ export default function UserMenuOrgSection() {
       label="Organization"
       iconClassName={promptForOrg ? "[&_svg]:text-red-500" : undefined}
     >
-      {loading ? (
+      {!isMounted || loading ? (
         <div className="space-y-1 px-3 py-1">
           <div className="h-5 animate-pulse rounded-full bg-muted" />
           <div className="h-5 animate-pulse rounded-full bg-muted" />

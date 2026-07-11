@@ -54,7 +54,13 @@ export function useSurfaceBoundAgents(
       );
       setSections(grouped);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load agents");
+      const message =
+        err instanceof Error ? err.message : "Failed to load agents";
+      console.error(
+        "[useSurfaceBoundAgents] failed to load bound agents for context menu",
+        { surfaceName, currentUserId, isEditable, includeDefaults, err },
+      );
+      setError(message);
       setSections([]);
     } finally {
       setLoading(false);

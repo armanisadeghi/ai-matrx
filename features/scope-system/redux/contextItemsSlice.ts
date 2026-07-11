@@ -5,6 +5,7 @@ import {
   createEntityAdapter,
   createAsyncThunk,
   createSelector,
+  weakMapMemoize,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { contextDb } from "@/utils/supabase/contextDb";
@@ -232,6 +233,12 @@ const adapterSelectors = adapter.getSelectors(
 export const selectAllContextItems = adapterSelectors.selectAll;
 export const selectContextItemById = adapterSelectors.selectById;
 
+// weakMapMemoize (not the default size-1 lruMemoize): this selector now has
+// multiple simultaneous callers with different `typeId`s in the same render
+// pass (ContextItemPicker + the scope batch-import tool) — a size-1 cache
+// thrashes between them, forcing a recompute (and a fresh array reference)
+// on every call and tripping Redux's "selector returned a different result
+// for the same parameters" warning.
 export const selectItemsByType = createSelector(
   [
     selectAllContextItems,
@@ -242,6 +249,7 @@ export const selectItemsByType = createSelector(
     const filtered = items.filter((i) => i.scope_type_id === typeId);
     return filtered.length > 0 ? filtered : EMPTY_CONTEXT_ITEMS;
   },
+  { memoize: weakMapMemoize, argsMemoize: weakMapMemoize },
 );
 
 /**

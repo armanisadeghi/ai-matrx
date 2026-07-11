@@ -10,9 +10,11 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { Plus, X, AlertCircle } from "lucide-react";
+import { Plus, X, AlertCircle, Layers } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useOpenScopeBatchImportWindow } from "@/features/overlays/openers/scopeBatchImportWindow";
 import {
   selectAgentVariableDefinitions,
   selectAgentMessages,
@@ -47,6 +49,7 @@ function isStillFresh(v: VariableDefinition): boolean {
 
 export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
   const dispatch = useAppDispatch();
+  const openBatchImport = useOpenScopeBatchImportWindow();
   const rawVariables = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),
   );
@@ -149,69 +152,89 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
 
   return (
     <>
-      <div className="flex items-center gap-2 flex-wrap">
-        <Label className="text-xs text-muted-foreground">Variables</Label>
+      <div className="flex items-center gap-2 min-w-0">
+        <Label className="text-xs text-muted-foreground shrink-0">Variables</Label>
 
-        {variables.map((variable) => {
-          const isUsed = isVariableUsedInText(variable.name, allText);
-          return (
-            <div
-              key={variable.name}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium group ${
-                isUsed
-                  ? "bg-muted text-foreground border border-border"
-                  : "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-              }`}
-            >
-              {!isUsed && <AlertCircle className="w-3 h-3 shrink-0" />}
-              <span
-                className={`cursor-pointer transition-colors ${
-                  isUsed
-                    ? "hover:text-primary"
-                    : "hover:text-amber-900 dark:hover:text-amber-100"
-                }`}
-                onClick={() => handleEditClick(variable.name)}
-                title={
-                  isUsed
-                    ? "Click to edit"
-                    : "Not used in messages — click to edit"
-                }
-              >
-                {variable.name}
-              </span>
-              <button
-                onClick={() => handleRemove(variable.name)}
-                title="Remove variable"
-                className="hover:text-destructive transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          );
-        })}
-
-        <button
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-          onClick={() => handleAddClick()}
+        <ScrollFade
+          orientation="horizontal"
+          className="flex items-center gap-1.5 flex-nowrap min-w-0 flex-1 py-0.5"
         >
-          <Plus className="w-3.5 h-3.5" />
-          Add
-        </button>
+          {variables.map((variable) => {
+            const isUsed = isVariableUsedInText(variable.name, allText);
+            return (
+              <div
+                key={variable.name}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium group shrink-0 ${
+                  isUsed
+                    ? "bg-muted text-foreground border border-border"
+                    : "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                }`}
+              >
+                {!isUsed && <AlertCircle className="w-3 h-3 shrink-0" />}
+                <span
+                  className={`cursor-pointer transition-colors ${
+                    isUsed
+                      ? "hover:text-primary"
+                      : "hover:text-amber-900 dark:hover:text-amber-100"
+                  }`}
+                  onClick={() => handleEditClick(variable.name)}
+                  title={
+                    isUsed
+                      ? "Click to edit"
+                      : "Not used in messages — click to edit"
+                  }
+                >
+                  {variable.name}
+                </span>
+                <button
+                  onClick={() => handleRemove(variable.name)}
+                  title="Remove variable"
+                  className="hover:text-destructive transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+        </ScrollFade>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+            onClick={() => handleAddClick()}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add
+          </button>
+
+          <button
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+            onClick={() => openBatchImport({ agentId })}
+            title="Batch add variables and context slots from a scope type"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Batch add from scope
+          </button>
+        </div>
       </div>
 
       {undeclaredNames.length > 0 && (
-        <div className="mt-3 flex items-center gap-2 flex-wrap">
-          <Label className="text-xs text-muted-foreground">
+        <div className="mt-3 flex items-center gap-2 min-w-0">
+          <Label className="text-xs text-muted-foreground shrink-0">
             Undeclared
             <span className="ml-1 text-foreground/60">
               ({undeclaredNames.length})
             </span>
           </Label>
+          <ScrollFade
+            orientation="horizontal"
+            className="flex items-center gap-1.5 flex-nowrap min-w-0 flex-1 py-0.5"
+          >
           {undeclaredNames.map((name) => (
             <button
               key={name}
               onClick={() => handleAddClick(name)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shrink-0"
               title={`Found in messages — click to define ${name}`}
             >
               <AlertCircle className="w-3 h-3 shrink-0" />
@@ -219,6 +242,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
               <Plus className="w-3 h-3 shrink-0 opacity-70" />
             </button>
           ))}
+          </ScrollFade>
         </div>
       )}
 

@@ -28,6 +28,7 @@ import {
   listScopeTypeItems,
   selectItemsByType,
   selectItemsLoadedForType,
+  type ContextItem,
 } from "@/features/scope-system/redux/contextItemsSlice";
 
 export interface ContextItemSelection {
@@ -35,6 +36,8 @@ export interface ContextItemSelection {
   scopeTypeId: string;
   contextItemId: string;
   itemKey: string;
+  /** The full picked item — present only when `contextItemId` changed in this emit. */
+  item?: ContextItem;
 }
 
 interface ContextItemPickerProps {
@@ -83,6 +86,7 @@ export function ContextItemPicker({
       scopeTypeId: next.scopeTypeId ?? scopeTypeId,
       contextItemId: next.contextItemId ?? value.contextItemId ?? "",
       itemKey: next.itemKey ?? "",
+      item: next.item,
     });
 
   return (
@@ -140,7 +144,8 @@ export function ContextItemPicker({
           value={value.contextItemId || ""}
           onValueChange={(itemId) => {
             const item = items.find((i) => i.id === itemId);
-            if (item) emit({ contextItemId: item.id, itemKey: item.key });
+            if (item)
+              emit({ contextItemId: item.id, itemKey: item.key, item });
           }}
           disabled={readonly || !scopeTypeId}
         >

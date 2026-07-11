@@ -3,8 +3,9 @@
  *
  * Industry is an access-control input (it gates Shared Knowledge Resources) and
  * a classification spine (it seeds default scope templates and structures
- * per-industry tooling / public pages). It is admin-curated — tenants cannot
- * edit it — and lives in `public.industries` + `public.org_industries`.
+ * per-industry tooling / public pages). Taxonomy nodes are admin-curated;
+ * org membership (`org_industries`) is editable by org owner/admin.
+ * Lives in `iam.industries` + `iam.org_industries`.
  *
  * Faceted, not a rigid tree: each node carries a `facet` and an optional
  * `parentId` for nesting WITHIN a facet, so the same leaf ("Legal → Workers'
@@ -12,10 +13,7 @@
  */
 
 export type IndustryFacet =
-  | "domain"
-  | "practice_area"
-  | "jurisdiction"
-  | "specialty";
+  "domain" | "practice_area" | "jurisdiction" | "specialty";
 
 export interface Industry {
   id: string;

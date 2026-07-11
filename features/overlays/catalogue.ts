@@ -110,6 +110,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  scopeBatchImportWindow: {
+    label: "Batch Add from Scope Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentCreateAppWindow: {
     label: "Agent Create App Window",
     instanceMode: "singleton",

@@ -2,7 +2,8 @@
  * Industries data access. Reads go direct to Supabase (`iam.industries` /
  * `iam.org_industries` are PostgREST-exposed, read-only taxonomy). WRITES go
  * through the SECURITY DEFINER RPCs (`industry_upsert`, `industry_assign_org`,
- * `industry_unassign_org`) — super-admin gated in the DB — never a raw insert.
+ * `industry_unassign_org`) — never a raw insert. Taxonomy upsert is
+ * super-admin only; assign/unassign allow org owner/admin or super-admin.
  */
 
 import { supabase } from "@/utils/supabase/client";
@@ -34,17 +35,26 @@ function rowToIndustry(r: IndustryRow): Industry {
   };
 }
 
-export async function fetchIndustries(includeInactive = false): Promise<Industry[]> {
-  let q = supabase.schema("iam").from("industries").select("*").order("sort_order");
+export async function fetchIndustries(
+  includeInactive = false,
+): Promise<Industry[]> {
+  let q = supabase
+    .schema("iam")
+    .from("industries")
+    .select("*")
+    .order("sort_order");
   if (!includeInactive) q = q.eq("is_active", true);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
   return (data ?? []).map((r) => rowToIndustry(r as IndustryRow));
 }
 
-export async function fetchOrgIndustries(orgId: string): Promise<OrgIndustry[]> {
+export async function fetchOrgIndustries(
+  orgId: string,
+): Promise<OrgIndustry[]> {
   const { data, error } = await supabase
-    .schema("iam").from("org_industries")
+    .schema("iam")
+    .from("org_industries")
     .select("organization_id, industry_id, is_primary")
     .eq("organization_id", orgId);
   if (error) throw new Error(error.message);

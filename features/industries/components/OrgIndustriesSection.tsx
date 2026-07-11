@@ -5,11 +5,12 @@
  *
  * Industry membership is an ACCESS-CONTROL INPUT (it grants access to shared
  * knowledge libraries published to that industry) and a classification spine
- * (it seeds default scope templates). So assignment is SUPER-ADMIN ONLY — the
- * DB RPC enforces it; non-admins see the memberships read-only.
+ * (it seeds default scope templates). Org owners/admins can assign/unassign;
+ * Matrx super-admins can too. Members see memberships read-only. The DB RPC
+ * enforces the same gate.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Building2, Loader2, Lock, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,18 +23,18 @@ import {
 import { toast } from "sonner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { useUserRole } from "@/features/organizations/hooks";
 import { useIndustries, useOrgIndustries } from "@/features/industries/hooks";
 
 export function OrgIndustriesSection({ orgId }: { orgId: string }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const { canManageSettings } = useUserRole(orgId);
+  const canEdit = isSuperAdmin || canManageSettings;
   const { industries } = useIndustries();
   const { orgIndustries, loading, assign, unassign } = useOrgIndustries(orgId);
   const [adding, setAdding] = useState("");
 
-  const byId = useMemo(
-    () => new Map(industries.map((i) => [i.id, i])),
-    [industries],
-  );
+  const byId = new Map(industries.map((i) => [i.id, i]));
   const assigned = orgIndustries.map((oi) => ({
     ...oi,
     industry: byId.get(oi.industryId),
@@ -47,10 +48,10 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
       <div className="flex items-center gap-2">
         <Building2 className="h-4 w-4 text-muted-foreground" />
         <h3 className="text-sm font-semibold">Industries</h3>
-        {!isSuperAdmin && (
+        {!canEdit && (
           <Lock
             className="h-3 w-3 text-muted-foreground"
-            aria-label="Super-admin only"
+            aria-label="Org admin only"
           />
         )}
       </div>
@@ -81,7 +82,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                   primary
                 </span>
               )}
-              {isSuperAdmin && (
+              {canEdit && (
                 <button
                   type="button"
                   onClick={async () => {
@@ -100,7 +101,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
         </div>
       )}
 
-      {isSuperAdmin && unassigned.length > 0 && (
+      {canEdit && unassigned.length > 0 && (
         <div className="flex items-center gap-2">
           <Select value={adding} onValueChange={setAdding}>
             <SelectTrigger className="h-8 w-56">

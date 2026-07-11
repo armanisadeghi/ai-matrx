@@ -9,7 +9,7 @@ A platform-curated, **faceted** taxonomy of industries/sub-industries — separa
 1. **An access-control input** — it gates [Shared Knowledge Resources](../rag/FEATURE.md#shared-knowledge-resources): a resource published to industry X is readable by every org in X.
 2. **A classification spine** — it seeds default scope templates onto an org (`industries.default_template_id → ctx_templates`) and structures per-industry tooling and (later) public "taste" pages.
 
-Because it is an ACL input, it is **admin-curated, never tenant-editable** — a tenant must not grant itself industry resources by typing a string. This is the load-bearing reason it is NOT modeled on `ctx_scope_*` (those are user-authored, per-tenant dimensions).
+The **taxonomy** (`industries` rows) is **admin-curated** — tenants cannot invent industry nodes. **Org membership** (`org_industries`) is **org-admin editable** — owners/admins pick which curated nodes their org belongs to. That is the load-bearing reason industry is NOT modeled on `ctx_scope_*` (those are free-form user-authored dimensions).
 
 ## Faceted, not a rigid tree
 
@@ -22,27 +22,35 @@ Each node carries a `facet` (`domain | practice_area | jurisdiction | specialty`
 | `public.industries` | taxonomy nodes (slug, name, facet, parent_id, default_template_id, …) |
 | `public.org_industries` | M2M: an org belongs to ≥ 0 industries (is_primary) |
 
-Reads are PostgREST-exposed (anon-readable taxonomy, drives public pages later). **Writes go only through SECURITY DEFINER RPCs**, super-admin gated, audited to `public.library_audit_log`:
-`industry_upsert` · `industry_assign_org` · `industry_unassign_org`.
+Reads are PostgREST-exposed (anon-readable taxonomy, drives public pages later). **Writes go only through SECURITY DEFINER RPCs**, audited to `public.library_audit_log`:
 
-Migrations: `aidream/db/migrations/0116_industries_taxonomy.sql` (+ `0118` RPCs, `0119` seed).
+| RPC | Who |
+|---|---|
+| `industry_upsert` | Matrx **super-admin** only (taxonomy) |
+| `industry_assign_org` / `industry_unassign_org` | **Org owner/admin** of that org, or Matrx super-admin |
+
+Auth is always `auth.uid()` — never trust `p_actor` for authorization.
+
+Migrations: `aidream/db/migrations/0116_industries_taxonomy.sql` (+ `0118` RPCs, `0119` seed); gate relax: `migrations/industry_assign_org_admin_gate.sql`.
 
 ## Entry points (FE)
 
 - `types.ts` — `Industry`, `OrgIndustry`, `IndustryFacet`.
 - `service.ts` — Supabase reads + the RPC writes (never a raw insert).
 - `hooks.ts` — `useIndustries()`, `useOrgIndustries(orgId)` (+ `assign`/`unassign`).
-- `components/OrgIndustriesSection.tsx` — manage one org's memberships; rendered in `features/organizations/components/OrgManage.tsx`. Super-admin edits; members see read-only.
+- `components/OrgIndustriesSection.tsx` — manage one org's memberships; rendered in `features/organizations/components/OrgManage.tsx`. Org owner/admin (or Matrx super-admin) edits; members see read-only.
 
 Consumed by the RAG publish panel (`features/rag/components/data-stores/DataStorePublishPanel.tsx`) for the industry audience picker.
 
 ## Doctrine
 
-- Industry assignment is a **protected operation** (ACL input) — one mutation path (the RPCs), one audit log; never `.from('org_industries').insert()`.
+- Industry **assignment** is a gated mutation (ACL input) — one path (the RPCs), one audit log; never `.from('org_industries').insert()`. Gate = org admin of that org **or** Matrx super-admin.
+- Industry **taxonomy** stays Matrx super-admin only (`industry_upsert`).
 - Reads direct-Supabase (public schema); writes via `supabase.rpc(...)`.
 - Reconcile-later: the marketing `IndustryId` enum (`features/pricing/.../industries.ts`) and the `INDUSTRY_CATEGORIES` template keys (`features/agent-context/constants.ts`) are NOT force-merged in v1 — the DB taxonomy is the source of truth they converge onto in the template-seeding phase.
 
 ## Change log
 
+- 2026-07-10 — Org owner/admin (not only Matrx super-admin) can assign/unassign industries via `industry_assign_org` / `industry_unassign_org`; taxonomy upsert stays super-admin. Auth against `auth.uid()` only.
 - 2026-07-10 — Shared Knowledge open path: industry grants on a library store cascade via platform reachability (`file→data_store` Conveys viewer) into `iam.has_access` / file download / Source Inspector. See [`features/rag/FEATURE.md`](../rag/FEATURE.md#shared-knowledge-resources).
 - 2026-06-21 — v1: faceted `industries` + `org_industries`, RPC family, seed taxonomy (legal / workers-comp / ca-workers-comp / medical / us-ca), FE feature + org-assignment section. Powers Shared Knowledge Resources entitlement.

@@ -1,11 +1,15 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import { getSurfaceByName } from "@/features/surfaces/services/surfaces.service";
+import { invalidateSurfaceBoundAgents } from "@/features/surfaces/services/surface-bound-agents.service";
 import {
   isValueMappingMap,
   type ValueMappingMap,
 } from "@/features/surfaces/types";
 import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mappings";
+import type { Json } from "@/types/database.types";
 
 // =============================================================================
 // ⛔️ CONDEMNED MODULE — DO NOT EXTEND. Replacement in progress.
@@ -41,6 +45,12 @@ import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mapping
 //        per-table M2M like `agent_surface`. No new M2M relationships are
 //        allowed outside canonical associations. This whole module is slated
 //        for removal once the association-backed binding lands.
+//
+// TEMPORARY BRIDGE (2026-07-10): after every condemned `agent_surface` write we
+// dual-write the same edge to `platform.associations` so `agent.menu_surface`
+// (what the context menu reads) can see it. Without this bridge, binds "succeed"
+// in the admin UI and never appear in any context menu. Remove the bridge when
+// the write path is fully cut over to associationsService.
 //
 // Tracking: features/surfaces/FEATURE.md (Condemned section) + the
 // canonical-associations / context-assignment skills.
@@ -91,6 +101,119 @@ interface RawBindingRow {
   task_id: string | null;
   value_mappings: unknown;
   created_at: string;
+}
+
+/**
+ * Mirror a condemned `agent_surface` row onto `platform.associations` so the
+ * context menu (`agent.menu_surface`) can see it. Loud on every failure —
+ * a silent dual-write miss is exactly the bug that hid bound agents.
+ */
+async function syncAssociationEdge(
+  binding: AgentSurfaceBinding,
+): Promise<void> {
+  try {
+    const surface = await getSurfaceByName(binding.surfaceName);
+    if (!surface?.id) {
+      console.error(
+        "[agent-surface-bindings] ASSOCIATION DUAL-WRITE FAILED — ui_surface row missing; context menu will NOT show this agent",
+        {
+          agentId: binding.agentId,
+          surfaceName: binding.surfaceName,
+          bindingId: binding.id,
+        },
+      );
+      return;
+    }
+
+    const tier = binding.userId
+      ? "user"
+      : binding.organizationId
+        ? "org"
+        : "global";
+
+    const metadata: Json = {
+      tier,
+      user_id: binding.userId,
+      project_id: binding.projectId,
+      task_id: binding.taskId,
+      visibility: "internal",
+      version: 1,
+      legacy_id: binding.id,
+      legacy_table: "agent.agent_surface",
+      value_mappings: binding.valueMappings as unknown as Json,
+      bridge: "dual-write-from-condemned-agent-surface",
+    };
+
+    const result = await associationsService.add({
+      sourceType: "agent",
+      sourceId: binding.agentId,
+      targetType: "surface",
+      targetId: surface.id,
+      orgId: binding.organizationId ?? undefined,
+      metadata,
+    });
+
+    if (!result.ok) {
+      console.error(
+        "[agent-surface-bindings] ASSOCIATION DUAL-WRITE FAILED — agent_surface row exists but menu_surface will stay empty for this bind",
+        {
+          agentId: binding.agentId,
+          surfaceName: binding.surfaceName,
+          bindingId: binding.id,
+          surfaceId: surface.id,
+          error: result.error,
+        },
+      );
+      return;
+    }
+
+    invalidateSurfaceBoundAgents(binding.surfaceName);
+  } catch (err) {
+    console.error(
+      "[agent-surface-bindings] ASSOCIATION DUAL-WRITE THREW — context menu will NOT show this agent",
+      {
+        agentId: binding.agentId,
+        surfaceName: binding.surfaceName,
+        bindingId: binding.id,
+        err,
+      },
+    );
+  }
+}
+
+async function removeAssociationEdge(args: {
+  agentId: string;
+  surfaceName: string;
+}): Promise<void> {
+  try {
+    const surface = await getSurfaceByName(args.surfaceName);
+    if (!surface?.id) {
+      console.error(
+        "[agent-surface-bindings] ASSOCIATION DUAL-REMOVE SKIPPED — ui_surface row missing",
+        args,
+      );
+      return;
+    }
+    const result = await associationsService.remove({
+      sourceType: "agent",
+      sourceId: args.agentId,
+      targetType: "surface",
+      targetId: surface.id,
+    });
+    if (!result.ok) {
+      console.error(
+        "[agent-surface-bindings] ASSOCIATION DUAL-REMOVE FAILED — menu may keep showing a deleted bind",
+        { ...args, surfaceId: surface.id, error: result.error },
+      );
+      return;
+    }
+    invalidateSurfaceBoundAgents(args.surfaceName);
+  } catch (err) {
+    console.error("[agent-surface-bindings] ASSOCIATION DUAL-REMOVE THREW", {
+      ...args,
+      err,
+    });
+  }
 }
 
 function fromRow(row: RawBindingRow): AgentSurfaceBinding {
@@ -233,7 +356,10 @@ export async function upsertAgentSurfaceBinding(args: {
       )
       .single();
     if (error) throw error;
-    return fromRow(data as unknown as RawBindingRow);
+    const saved = fromRow(data as unknown as RawBindingRow);
+    // Bridge: menu reads platform.associations via agent.menu_surface.
+    await syncAssociationEdge(saved);
+    return saved;
   }
 
   const { data, error } = await sb()
@@ -262,7 +388,10 @@ export async function upsertAgentSurfaceBinding(args: {
     )
     .single();
   if (error) throw error;
-  return fromRow(data as unknown as RawBindingRow);
+  const saved = fromRow(data as unknown as RawBindingRow);
+  // Bridge: menu reads platform.associations via agent.menu_surface.
+  await syncAssociationEdge(saved);
+  return saved;
 }
 
 async function findBinding(
@@ -303,12 +432,28 @@ async function findBinding(
 }
 
 export async function deleteAgentSurfaceBinding(id: string): Promise<void> {
+  // Capture identity before delete so we can remove the association edge too.
+  const { data: existing, error: lookupError } = await sb()
+    .schema("agent")
+    .from("agent_surface")
+    .select("agent_id, surface_name")
+    .eq("id", id)
+    .maybeSingle();
+  if (lookupError) throw lookupError;
+
   const { error } = await sb()
     .schema("agent")
     .from("agent_surface")
     .delete()
     .eq("id", id);
   if (error) throw error;
+
+  if (existing?.agent_id && existing?.surface_name) {
+    await removeAssociationEdge({
+      agentId: existing.agent_id as string,
+      surfaceName: existing.surface_name as string,
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

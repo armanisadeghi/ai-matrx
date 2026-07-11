@@ -244,19 +244,49 @@ async function fetchMenuAgentsFromDb(
   // `agent_surface` moved into the `agent` schema). The view also inner-joins
   // the safe agent card, so it only returns surfaces whose agent is visible to
   // the current user — agents you can't access simply won't appear.
+  //
+  // Source of truth: platform.associations (NOT the condemned agent.agent_surface
+  // table). A bind that only lands in agent_surface will never appear here.
   const { data, error } = await supabase
     .schema("agent")
     .from("menu_surface")
     .select("*")
     .in("surface_name", allNames);
 
-  if (error) throw error;
+  if (error) {
+    console.error(
+      "[surface-bound-agents] menu_surface fetch FAILED — bound agents will be missing from the context menu",
+      {
+        surfaceName,
+        defaultNames,
+        currentUserId,
+        allNames,
+        error,
+      },
+    );
+    throw error;
+  }
 
   const rows = ((data ?? []) as unknown as MenuSurfaceRow[]).map(toBindingRow);
   const surfaceRows = surfaceName
     ? rows.filter((r) => r.surface_name === surfaceName)
     : [];
   const defaultRows = rows.filter((r) => r.surface_name !== surfaceName);
+
+  if (surfaceName && surfaceRows.length === 0) {
+    // Loud empty-state: distinguishes "no binds" from "binds exist only on the
+    // condemned agent_surface table / card RLS filtered everything out".
+    console.warn(
+      "[surface-bound-agents] menu_surface returned 0 rows for surface — if you just bound an agent and expected it here, the bind likely never dual-wrote to platform.associations (or agent.card RLS hid it)",
+      {
+        surfaceName,
+        defaultNames,
+        currentUserId,
+        totalRowsIncludingDefaults: rows.length,
+        defaultRowCount: defaultRows.length,
+      },
+    );
+  }
 
   const sections = bucketBindingRows(surfaceRows, currentUserId);
 
