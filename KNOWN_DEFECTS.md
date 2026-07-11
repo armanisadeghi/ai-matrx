@@ -12,6 +12,9 @@ The ledger of known bugs and gaps on the frontend. Twin of aidream's `KNOWN_DEFE
 
 ## OPEN
 
+### D43 — app-builder services call 5 RPCs that no longer exist in the live DB (2026-07-11)
+`lib/redux/app-builder/service/customAppletService.ts` + `fieldContainerService.ts` call `add_field_to_group`, `add_groups_to_applet`, `refresh_all_groups_in_applet`, `refresh_field_in_group`, `refresh_group_in_applet` — verified gone from live `pg_proc` (Matrx Main), so these paths were already 404-broken at runtime. Surfaced as 9 `pnpm type-check` errors by the 2026-07-11 `pnpm db-types` regen (the types now reflect the live DB; do NOT re-add the names by hand). **Fix path:** app-builder is `(transitional)` legacy — either restore/replace the RPCs if the feature is still wanted, or delete the dead service methods + their callers. Per the type-safety skill: no casts/suppressions.
+
 ### D40 — aidream podcast audio pipeline never reaches a `ready` episode: root cause MOVED script→TTS (2026-07-10)
 **Decides: aidream (podcast pipeline + Google TTS provider, NOT frontend — filed here as the P3 blocker it caused).** Still `0` `education.study_media` rows with `media_kind='audio'` at `status='ready'`, but the failing stage moved after the backend redeploy. Two facts, verified live 2026-07-10 ~17:45 UTC via `POST https://server.app.matrxserver.com/podcast/generate` (real admin JWT, `buildAudioRequest({format:'overview',sourceKind:'note'})` from a real 7-card deck, streamed NDJSON):
 - **FIXED — the script agent.** `create_script` now emits a complete, valid `<podcast_dialogue>…</podcast_dialogue>` (two named hosts "Leo"/"Maya", full multi-turn dialogue) plus a `<speaker_settings>` block. The old "returned prose/thinking, not a script" failure no longer reproduces. The pipeline now also streams over the **agent V2 event vocabulary** (`reasoning`/`data`/`record_update`/`completion`/`info`/`error`), not the legacy `podcast_*` events.

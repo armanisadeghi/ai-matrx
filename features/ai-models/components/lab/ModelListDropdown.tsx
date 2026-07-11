@@ -9,7 +9,9 @@
  * doesn't shift anything. Mobile: a bottom drawer with detail / filter
  * sub-views.
  *
- * Rows are dense and tabular (Maker · Name · Speed · Usage). Full capability
+ * Rows are dense and tabular (Maker · Name · Speed · Points · Usage) —
+ * POINTS are the platform's user currency (points_per_million output shown in
+ * the row; in · out in the detail card, labeled plainly). Full capability
  * data (modalities, every feature bucket incl. "Other", interaction,
  * multilingual, pricing) lives in the always-present detail card — nothing is
  * ever hidden. Modality/capability chips render straight from the stored
@@ -97,7 +99,7 @@ import {
 const PANEL_HEIGHT = 440;
 const LIST_MAX_HEIGHT = "min(440px, 70dvh)";
 // Fixed column widths — the popover width is their sum per variant.
-const LIST_WIDTH = 400;
+const LIST_WIDTH = 448; // widened for the Points column (the user currency)
 const DETAIL_WIDTH = 360; // widened so modality/capability rows never wrap
 const ADMIN_PANEL_WIDTH = 400; // admin-only third column (offerings)
 
@@ -260,6 +262,21 @@ function fmtUsd(n: number | null): string {
   return n == null ? "—" : `$${n}`;
 }
 
+/** Points (the user currency) — full number, e.g. "1,050". */
+function fmtPoints(n: number | null): string {
+  return n == null ? "—" : n.toLocaleString();
+}
+
+/** Points for the dense list row — compact, e.g. "150K". */
+function fmtPointsCompact(n: number | null): string {
+  return n == null
+    ? "—"
+    : new Intl.NumberFormat(undefined, {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(n);
+}
+
 function AdminOfferingBlock({
   offering,
   index,
@@ -303,6 +320,32 @@ function AdminOfferingBlock({
           }
         />
         <AdminRow label="Priority" value={String(offering.priority)} mono />
+        {/* Points — the user currency — shown ALONGSIDE the real $ pricing. */}
+        <AdminRow
+          label="Points in"
+          value={
+            offering.pointsInput == null
+              ? null
+              : `${fmtPoints(offering.pointsInput)} / 1M`
+          }
+          mono
+        />
+        <AdminRow
+          label="Points out"
+          value={
+            offering.pointsOutput == null
+              ? null
+              : `${fmtPoints(offering.pointsOutput)} / 1M`
+          }
+          mono
+        />
+        {offering.pointsCachedInput != null && (
+          <AdminRow
+            label="Points cached"
+            value={`${fmtPoints(offering.pointsCachedInput)} / 1M`}
+            mono
+          />
+        )}
         {offering.pricing.length === 0 ? (
           <AdminRow label="Pricing" value="— (no pricing rows)" />
         ) : (
@@ -499,6 +542,20 @@ function ModelDetailCard({
         )}
 
         <div className="grid grid-cols-2 gap-2">
+          {/* POINTS — the platform's user currency, front and center. */}
+          <div className="col-span-2">
+            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Points / 1M tokens
+            </dt>
+            <dd
+              className="whitespace-nowrap text-sm font-semibold tabular-nums text-foreground"
+              title="Points per 1 million tokens — what usage actually costs you"
+            >
+              {model.pointsInput == null && model.pointsOutput == null
+                ? "—"
+                : `${fmtPoints(model.pointsInput)} in · ${fmtPoints(model.pointsOutput)} out`}
+            </dd>
+          </div>
           <div>
             <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Context
@@ -1041,7 +1098,7 @@ function ModelRow({
       }}
       onMouseEnter={onHover}
       className={cn(
-        "grid w-full cursor-pointer grid-cols-[auto_minmax(0,72px)_minmax(0,1fr)_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
+        "grid w-full cursor-pointer grid-cols-[auto_minmax(0,72px)_minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
         "hover:bg-muted/60 focus:bg-muted/60 focus:outline-none",
         selected && "bg-muted",
       )}
@@ -1097,6 +1154,17 @@ function ModelRow({
         )}
       </span>
       <SpeedDots value={model.speedRating} />
+      {/* Points — the user currency (per 1M output tokens). */}
+      <span
+        className="w-11 whitespace-nowrap text-right font-mono text-[11px] tabular-nums text-foreground/80"
+        title={
+          model.pointsOutput == null
+            ? "No points pricing yet"
+            : `${fmtPoints(model.pointsInput)} in · ${fmtPoints(model.pointsOutput)} out points / 1M tokens`
+        }
+      >
+        {fmtPointsCompact(model.pointsOutput)}
+      </span>
       <span className="w-10 text-right">
         <UsageTier tier={tier} />
       </span>
@@ -1513,11 +1581,17 @@ export function ModelListDropdown({
       </div>
 
       {/* Column header */}
-      <div className="grid grid-cols-[auto_minmax(0,72px)_minmax(0,1fr)_auto_auto] gap-2 border-b border-border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="grid grid-cols-[auto_minmax(0,72px)_minmax(0,1fr)_auto_auto_auto] gap-2 border-b border-border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
         <span className="w-4" />
         <span>Maker</span>
         <span>Name</span>
         <span>Speed</span>
+        <span
+          className="w-11 text-right"
+          title="Points per 1M output tokens — the usage currency"
+        >
+          Points
+        </span>
         <span className="w-10 text-right">Usage</span>
       </div>
 
