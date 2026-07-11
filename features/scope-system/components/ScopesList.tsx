@@ -19,6 +19,7 @@ import {
   Plus,
   Settings2,
   Tag as TagIcon,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { NewScopeInline } from "./NewScopeInline";
 import { ContextItemAddForm } from "./ContextItemAddForm";
@@ -49,6 +51,7 @@ import {
   fetchScopes,
   selectScopesByType,
   updateScope,
+  deleteScope,
 } from "@/features/agent-context/redux/scope/scopesSlice";
 import {
   selectScopeTypeBySlugOrId,
@@ -57,6 +60,7 @@ import {
 import {
   listScopeTypeItems,
   updateContextItem,
+  deleteContextItem,
   selectItemsByType,
   selectItemsLoadedForType,
   type ContextItem,
@@ -133,6 +137,8 @@ export function ScopesList({
   const [editingType, setEditingType] = useState(false);
   const [addingItem, setAddingItem] = useState(false);
   const [movingId, setMovingId] = useState<string | null>(null);
+  const [deletingScopeId, setDeletingScopeId] = useState<string | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [reorderScopesOpen, setReorderScopesOpen] = useState(false);
   const [reorderItemsOpen, setReorderItemsOpen] = useState(false);
 
@@ -197,6 +203,50 @@ export function ScopesList({
       ),
     );
     toast.success("Order saved");
+  }
+
+  async function handleDeleteScope(id: string, name: string) {
+    const singular = scopeType?.label_singular.toLowerCase() ?? "scope";
+    if (
+      !(await confirm({
+        title: `Delete ${name}?`,
+        description: `This permanently removes this ${singular} and all of its context values. This cannot be undone.`,
+        confirmLabel: "Delete",
+        variant: "destructive",
+      }))
+    )
+      return;
+    setDeletingScopeId(id);
+    try {
+      await dispatch(deleteScope(id)).unwrap();
+      toast.success(`${name} deleted`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    } finally {
+      setDeletingScopeId(null);
+    }
+  }
+
+  async function handleDeleteItem(id: string, name: string) {
+    if (
+      !(await confirm({
+        title: `Delete "${name}"?`,
+        description:
+          "This removes the context item from every scope of this type. Existing values are retained but hidden.",
+        confirmLabel: "Delete",
+        variant: "destructive",
+      }))
+    )
+      return;
+    setDeletingItemId(id);
+    try {
+      await dispatch(deleteContextItem(id)).unwrap();
+      toast.success(`"${name}" deleted`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    } finally {
+      setDeletingItemId(null);
+    }
   }
 
   if (!scopeType) {
@@ -409,6 +459,9 @@ export function ScopesList({
                       accept={suggestions.accept}
                       reject={suggestions.reject}
                       defer={suggestions.defer}
+                      canManage={canManage}
+                      deleting={deletingScopeId === scope.id}
+                      onDelete={() => handleDeleteScope(scope.id, scope.name)}
                       onClick={() =>
                         router.push(scopeHref(orgSlugOrId, scopeType, scope))
                       }
@@ -515,6 +568,8 @@ export function ScopesList({
                   }
                   onMoveUp={() => moveItem(index, "up")}
                   onMoveDown={() => moveItem(index, "down")}
+                  deleting={deletingItemId === item.id}
+                  onDelete={() => handleDeleteItem(item.id, item.display_name)}
                 />
               ))}
 
@@ -575,9 +630,11 @@ interface ContextItemRowProps {
   moving: boolean;
   disabled: boolean;
   canManage: boolean;
+  deleting: boolean;
   onEdit: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onDelete: () => void;
 }
 
 function ContextItemRow({
@@ -588,9 +645,11 @@ function ContextItemRow({
   moving,
   disabled,
   canManage,
+  deleting,
   onEdit,
   onMoveUp,
   onMoveDown,
+  onDelete,
 }: ContextItemRowProps) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/30 transition-colors group">
@@ -667,15 +726,31 @@ function ContextItemRow({
         )}
       </div>
       {canManage && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onEdit}
-          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity h-7 px-2"
-          aria-label={`Edit ${item.display_name}`}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+            className="h-7 px-2"
+            aria-label={`Edit ${item.display_name}`}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            disabled={deleting}
+            className="h-7 px-2 text-muted-foreground hover:text-destructive"
+            aria-label={`Delete ${item.display_name}`}
+          >
+            {deleting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -690,6 +765,9 @@ interface ScopeTableRowProps {
   accept: (id: string) => Promise<KgAcceptResult>;
   reject: (id: string) => Promise<KgDecisionResponse>;
   defer: (id: string) => Promise<KgDecisionResponse>;
+  canManage: boolean;
+  deleting: boolean;
+  onDelete: () => void;
   onClick: () => void;
 }
 
@@ -702,6 +780,9 @@ function ScopeTableRow({
   accept,
   reject,
   defer,
+  canManage,
+  deleting,
+  onDelete,
   onClick,
 }: ScopeTableRowProps) {
   const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
@@ -725,6 +806,24 @@ function ScopeTableRow({
                 align="start"
               />
             </span>
+          )}
+          {canManage && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              disabled={deleting}
+              aria-label={`Delete ${scopeName}`}
+              className="ml-auto shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive disabled:opacity-50"
+            >
+              {deleting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+            </button>
           )}
           <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </span>
