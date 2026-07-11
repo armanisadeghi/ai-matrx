@@ -19,8 +19,10 @@
  * callers with an explicit Save button can pass the same setter to both.
  */
 
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -52,6 +54,14 @@ export interface ContextValueInputProps {
   minHeight?: number;
   maxHeight?: number;
   className?: string;
+  /**
+   * Dense-form mode: a plain `Textarea` (no mic, no AI-actions menu, no text
+   * stats) styled to match a same-row `Input`/`Select` — for quick,
+   * secondary value entry inside compact forms (e.g. the inline "add a
+   * context item" row). Omit (default) for a real editing surface where
+   * `ProTextarea`'s voice/cleanup richness earns its keep.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -92,10 +102,12 @@ export function ContextValueInput({
   displayName,
   disabled,
   placeholder,
-  minHeight = 80,
+  minHeight,
   maxHeight = 600,
   className,
+  compact = false,
 }: ContextValueInputProps) {
+  const resolvedMinHeight = minHeight ?? (compact ? 40 : 80);
   if (customComponent) {
     // No built-in commit boundary here (no blur, no discrete "done" click for
     // every custom-component kind) — the caller owns whether/when to debounce
@@ -178,6 +190,27 @@ export function ContextValueInput({
 
   const isJsonType = valueType === "object" || valueType === "array";
   const current = typeof value === "string" ? value : "";
+
+  if (compact) {
+    // Plain Textarea, styled to sit flush next to a same-row Input/Select —
+    // no mic, no AI-actions menu, no stats bar. See `compact` prop doc above.
+    return (
+      <Textarea
+        id={id}
+        value={current}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={(e) => onCommit?.(e.target.value)}
+        placeholder={placeholder ?? placeholderForType(valueType)}
+        minHeight={resolvedMinHeight}
+        maxHeight={maxHeight}
+        autoGrow
+        disabled={disabled}
+        style={{ fontSize: "16px" }}
+        className={cn(isJsonType && "font-mono", className)}
+      />
+    );
+  }
+
   return (
     <ProTextarea
       id={id}
@@ -185,7 +218,7 @@ export function ContextValueInput({
       onChange={(e) => onChange(e.target.value)}
       onBlur={(e) => onCommit?.(e.target.value)}
       placeholder={placeholder ?? placeholderForType(valueType)}
-      minHeight={minHeight}
+      minHeight={resolvedMinHeight}
       maxHeight={maxHeight}
       className={
         isJsonType ? `font-mono text-sm ${className ?? ""}` : className

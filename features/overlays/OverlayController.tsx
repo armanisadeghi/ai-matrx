@@ -646,6 +646,10 @@ const QuickNoteSaveWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/notes/QuickNoteSaveWindow"),
   { ssr: false },
 );
+const SetContextValueWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/scopes/SetContextValueWindow"),
+  { ssr: false },
+);
 const QuickNotesSheet = lazyOverlay(
   () =>
     import("@/features/notes/actions/QuickNotesSheet").then((m) => ({
@@ -1072,6 +1076,9 @@ export default function OverlayController() {
     quickNoteSaveWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickNoteSaveWindow"),
     ),
+    setContextValueWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "setContextValueWindow"),
+    ),
     kgSuggestionsDrawer: useAppSelector((s) =>
       selectIsOverlayOpen(s, "kgSuggestionsDrawer"),
     ),
@@ -1359,6 +1366,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     quickNoteSaveWindow: useAppSelector((s) =>
       selectOverlayData(s, "quickNoteSaveWindow"),
+    ) as Record<string, unknown> | null,
+    setContextValueWindow: useAppSelector((s) =>
+      selectOverlayData(s, "setContextValueWindow"),
     ) as Record<string, unknown> | null,
     quickNotes: useAppSelector((s) =>
       selectOverlayData(s, "quickNotes"),
@@ -4169,6 +4179,30 @@ export default function OverlayController() {
             defaultNoteName={
               typeof data?.defaultNoteName === "string"
                 ? data.defaultNoteName
+                : undefined
+            }
+            initialEditorMode={
+              data?.initialEditorMode as EditorMode | undefined
+            }
+          />
+        );
+      })()}
+
+      {/* setContextValueWindow */}
+      {(() => {
+        const isOpen = isOpenById.setContextValueWindow;
+        const data = dataById.setContextValueWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <SetContextValueWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "setContextValueWindow" }))
+            }
+            initialContent={
+              typeof data?.initialContent === "string"
+                ? data.initialContent
                 : undefined
             }
             initialEditorMode={

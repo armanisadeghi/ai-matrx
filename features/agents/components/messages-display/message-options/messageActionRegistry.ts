@@ -41,6 +41,7 @@ import {
   Undo2,
   ListFilter,
   History,
+  Layers,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import {
@@ -394,6 +395,32 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
       showToast: false,
     },
     {
+      key: "set-context-value",
+      icon: Layers,
+      iconColor: "text-emerald-500 dark:text-emerald-400",
+      label: "Set Context Value",
+      action: () => {
+        if (
+          !requireAuth(
+            ctx,
+            "set-context-value",
+            "Set context value",
+            "Sign in to save message content into a scope's context item.",
+          )
+        )
+          return;
+        dispatch(
+          openOverlay({
+            overlayId: "setContextValueWindow",
+            data: { initialContent: turnText },
+          }),
+        );
+        onClose();
+      },
+      category: "Actions",
+      showToast: false,
+    },
+    {
       key: "html-preview",
       icon: Eye,
       iconColor: "text-indigo-500 dark:text-indigo-400",
@@ -568,7 +595,10 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
         // Lazy-import so Univer (heavy) stays out of the chat bundle until used.
         const { pushMarkdownToDocument } =
           await import("@/features/data-tables/export-targets");
-        const res = await pushMarkdownToDocument(content, deriveMessageTitle(ctx));
+        const res = await pushMarkdownToDocument(
+          content,
+          deriveMessageTitle(ctx),
+        );
         if (!res.ok || !res.href) {
           // showToast is false on this item, so AdvancedMenu won't surface a
           // thrown error — toast it ourselves.

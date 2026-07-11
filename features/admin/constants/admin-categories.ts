@@ -564,6 +564,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/feature-docs/dotdirs",
         isNew: true,
       },
+      {
+        title: "CMS Agent Activity",
+        description:
+          "Fleet-wide CMS visibility — agent/human write activity, per-site page tree with preview/live links, agent write-policy editor, and validation-exception approvals.",
+        iconName: "Globe",
+        link: "/administration/cms-agents",
+        isNew: true,
+      },
     ],
   },
   {
@@ -689,6 +697,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "View every account and flip the onboarding flag. New users are routed to /welcome instead of the dashboard on login.",
         iconName: "Users",
         link: "/administration/users",
+      },
+      {
+        title: "Entitlements & Usage",
+        description:
+          "Capability registry with live enforcement flags and free-tier limits, plus a 30-day usage rollup across the platform.",
+        iconName: "Gauge",
+        link: "/administration/entitlements",
+        isNew: true,
       },
     ],
   },

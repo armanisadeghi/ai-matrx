@@ -99,13 +99,11 @@ export function ContextItemAddForm({
   const [value, setValue] = useState<unknown>("");
 
   // Reference config — only meaningful in "reference" mode.
-  const [allowedReferenceTypes, setAllowedReferenceTypes] = useState<
-    string[]
-  >([]);
-  const [maxItems, setMaxItems] = useState("1");
-  const [allowedScopeTypeIds, setAllowedScopeTypeIds] = useState<string[]>(
+  const [allowedReferenceTypes, setAllowedReferenceTypes] = useState<string[]>(
     [],
   );
+  const [maxItems, setMaxItems] = useState("1");
+  const [allowedScopeTypeIds, setAllowedScopeTypeIds] = useState<string[]>([]);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
@@ -134,9 +132,7 @@ export function ContextItemAddForm({
     void dispatch(ensureScopeTree());
   }, [dispatch]);
   const selectScopeType = useMemo(() => makeSelectScopeType(), []);
-  const scopeTypeNode = useAppSelector((s) =>
-    selectScopeType(s, scopeTypeId),
-  );
+  const scopeTypeNode = useAppSelector((s) => selectScopeType(s, scopeTypeId));
   const orgId = scopeTypeNode?.organization_id ?? null;
   const selectScopeTypesForOrg = useMemo(
     () => makeSelectScopeTypesForOrg(),
@@ -156,7 +152,9 @@ export function ContextItemAddForm({
   function resetFields() {
     setName("");
     setEntryMode(defaultValueType === "reference" ? "reference" : "direct");
-    setPrimitiveType(defaultValueType === "reference" ? "string" : defaultValueType);
+    setPrimitiveType(
+      defaultValueType === "reference" ? "string" : defaultValueType,
+    );
     setDescription("");
     setCategory("");
     setTags([]);
@@ -269,9 +267,7 @@ export function ContextItemAddForm({
 
       {/* Value type — Direct Entry vs. Reference, the first decision */}
       <div className="space-y-2">
-        <Label className="text-[10px] text-muted-foreground">
-          Value type
-        </Label>
+        <Label className="text-[10px] text-muted-foreground">Value type</Label>
         <EntryModeToggle
           value={entryMode}
           onChange={setEntryMode}
@@ -289,6 +285,7 @@ export function ContextItemAddForm({
             orgScopeTypes={orgScopeTypes}
             disabled={busy}
             className="space-y-2 rounded-md border border-border bg-background/60 p-2.5"
+            labelClassName="text-[10px] text-muted-foreground"
           />
         ) : (
           <Select
@@ -402,8 +399,9 @@ export function ContextItemAddForm({
             onChange={setValue}
             placeholder="Leave blank to fill later"
             disabled={busy}
-            minHeight={56}
-            maxHeight={600}
+            compact
+            minHeight={40}
+            maxHeight={300}
             className="mt-0.5"
           />
         </div>

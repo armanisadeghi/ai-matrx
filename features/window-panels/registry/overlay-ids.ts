@@ -134,6 +134,7 @@ export const OVERLAY_IDS = [
   "scopeEditWindow",
   "scratchpadPanel",
   "scraperWindow",
+  "setContextValueWindow",
   "shareModal",
   "shareModalWindow",
   "singleMessageWindow",

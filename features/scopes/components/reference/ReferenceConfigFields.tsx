@@ -23,6 +23,8 @@ export interface ReferenceConfigFieldsProps {
   orgScopeTypes: ReferenceConfigOrgScopeType[];
   disabled?: boolean;
   className?: string;
+  /** Match the host form's own label convention (defaults to the `text-xs` used by `ContextItemSettingsForm`). */
+  labelClassName?: string;
 }
 
 /**
@@ -43,11 +45,12 @@ export function ReferenceConfigFields({
   orgScopeTypes,
   disabled,
   className,
+  labelClassName = "text-xs",
 }: ReferenceConfigFieldsProps) {
   return (
     <div className={className ? className : "space-y-3"}>
       <div className="space-y-1.5">
-        <Label className="text-xs">Allowed types</Label>
+        <Label className={labelClassName}>Allowed types</Label>
         <div className="flex flex-wrap gap-1.5">
           {CONTEXT_REFERENCE_TYPE_OPTIONS.map((t) => {
             const active = allowedReferenceTypes.includes(t);
@@ -77,7 +80,7 @@ export function ReferenceConfigFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">Max items</Label>
+        <Label className={labelClassName}>Max items</Label>
         <Input
           type="number"
           min={1}
@@ -88,14 +91,14 @@ export function ReferenceConfigFields({
           className="w-28"
         />
         <p className="text-[10px] text-muted-foreground">
-          1 = a single value. Higher allows a list (e.g. a report that can
-          carry several files).
+          1 = a single value. Higher allows a list (e.g. a report that can carry
+          several files).
         </p>
       </div>
 
       {allowedReferenceTypes.includes("scope") && (
         <div className="space-y-1.5">
-          <Label className="text-xs">Allowed scope types</Label>
+          <Label className={labelClassName}>Allowed scope types</Label>
           {orgScopeTypes.length === 0 ? (
             <p className="text-[10px] text-muted-foreground">
               Loading scope types…

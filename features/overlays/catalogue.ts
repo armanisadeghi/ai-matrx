@@ -615,6 +615,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  setContextValueWindow: {
+    label: "Set Context Value Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   shareModal: {
     label: "Share Modal",
     instanceMode: "multi",
