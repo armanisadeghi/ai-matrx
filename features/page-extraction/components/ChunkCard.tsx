@@ -1,28 +1,24 @@
 /**
  * features/page-extraction/components/ChunkCard.tsx
  *
- * One CHUNK as a card. A chunk is FIRST AND FOREMOST a slice of input
- * data — the pages plus their content that will be (or were) sent to
- * the agent. The agent's response, when there is one, is shown as a
- * SECONDARY section inside the expanded card so the user can audit
- * what the agent did with their input.
+ * One CHUNK as a card.
  *
  *   ┌─────────────────────────────────────────────────────────┐
- *   │ ▸ chunk 3 — pages 21-30 · 18,704 chars       ⟳ running  │
+ *   │ chunk 3 — pages 21-30 · 18,704 chars         ⟳ running  │
  *   │   Cleaned text: 18,704 · Raw text: -                     │
  *   ├─────────────────────────────────────────────────────────┤
- *   │ INPUT (sent to agent)                                    │
- *   │ --- Page 21 ---                                          │
- *   │ <chunk text...>                                          │
- *   │                                                          │
- *   │ AGENT OUTPUT (3 rows extracted)                          │
- *   │ [streaming buffer or final raw_response]                 │
+ *   │ ▸ Input (sent to agent)          ← folded unless clicked │
+ *   │ AGENT OUTPUT (streaming)         ← always visible live   │
+ *   │ [MarkdownStream…]                                        │
  *   └─────────────────────────────────────────────────────────┘
+ *
+ * Input stays collapsed by default — the live signal is the agent
+ * response streaming in, not the source text dump.
  */
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -33,6 +29,7 @@ import {
   Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import MarkdownStream from "@/components/MarkdownStream";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { SOURCE_VARIATION_BY_KIND } from "@/features/page-extraction/constants";
@@ -53,16 +50,8 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
   const isTerminal =
     pageRun?.status === "completed" || pageRun?.status === "failed";
 
-  // Auto-expand on running/terminal so the user sees the input + output
-  // without an extra click. They can still collapse manually.
-  const [expanded, setExpanded] = useState(false);
-  const userOverride = useRef(false);
-  useEffect(() => {
-    if (userOverride.current) return;
-    if (isRunning || (isTerminal && (pageRun?.rawResponse?.length ?? 0) > 0)) {
-      setExpanded(true);
-    }
-  }, [isRunning, isTerminal, pageRun?.rawResponse]);
+  // Input is opt-in only — never auto-open. Responses stream in below.
+  const [inputExpanded, setInputExpanded] = useState(false);
 
   const pageLabel = formatPageRange(chunk.pageNumbers);
   const statusIcon = pageRunStatusIcon(pageRun);
@@ -83,6 +72,10 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
   const ranButEmpty =
     isTerminal && outputText.length === 0 && pageRun?.error == null;
 
+  // Show the output section whenever this chunk has an active/finished run
+  // (including the thinking spinner and empty-result placeholder).
+  const showOutput = pageRun != null;
+
   return (
     <div
       className={cn(
@@ -96,21 +89,6 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
     >
       {/* Header row */}
       <div className="flex items-center gap-1.5 px-2 py-1.5">
-        <button
-          type="button"
-          className="shrink-0 text-muted-foreground hover:text-foreground"
-          onClick={() => {
-            userOverride.current = true;
-            setExpanded((v) => !v);
-          }}
-          title={expanded ? "Collapse" : "Expand"}
-        >
-          {expanded ? (
-            <ChevronDown className="w-3 h-3" />
-          ) : (
-            <ChevronRight className="w-3 h-3" />
-          )}
-        </button>
         <span className="font-mono font-semibold text-foreground/80 text-[10px]">
           chunk {chunk.chunkIndex + 1}
         </span>
@@ -166,62 +144,76 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
         </div>
       )}
 
-      {/* Expanded body — INPUT first, OUTPUT below if present */}
-      {expanded && (
-        <div className="border-t border-border bg-background/60 divide-y divide-border">
-          {/* INPUT — always shown */}
-          <Section
-            icon={<FileText className="w-3 h-3" />}
-            label="Input (sent to agent)"
+      <div className="border-t border-border bg-background/60 divide-y divide-border">
+        {/* INPUT — folded unless the user opens it */}
+        <div className="px-2 py-1.5 space-y-1">
+          <button
+            type="button"
+            className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground font-medium hover:text-foreground transition-colors"
+            onClick={() => setInputExpanded((v) => !v)}
+            title={inputExpanded ? "Hide input" : "Show input sent to agent"}
           >
-            {chunk.preview ? (
-              <pre className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed text-foreground/85 max-h-48 overflow-y-auto">
+            {inputExpanded ? (
+              <ChevronDown className="w-3 h-3" />
+            ) : (
+              <ChevronRight className="w-3 h-3" />
+            )}
+            <FileText className="w-3 h-3" />
+            Input (sent to agent)
+          </button>
+          {inputExpanded &&
+            (chunk.preview ? (
+              <pre className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed text-foreground/85">
                 {chunk.preview}
               </pre>
             ) : (
               <p className="italic text-muted-foreground text-[10px]">
                 (No text in this chunk for the selected variations.)
               </p>
-            )}
-          </Section>
-
-          {/* OUTPUT — only when the chunk has run (or is running) */}
-          {pageRun && (
-            <Section
-              icon={<Compass className="w-3 h-3" />}
-              label={
-                isRunning
-                  ? "Agent output (streaming)"
-                  : pageRun.status === "failed"
-                    ? "Agent output (incomplete)"
-                    : "Agent output"
-              }
-            >
-              {hasOutput ? (
-                <pre
-                  className={cn(
-                    "whitespace-pre-wrap font-mono text-[10px] leading-relaxed text-foreground/85 max-h-48 overflow-y-auto",
-                    isRunning && "border-l-2 border-primary/50 pl-2",
-                  )}
-                >
-                  {outputText}
-                </pre>
-              ) : isRunning ? (
-                <p className="italic text-muted-foreground text-[10px] flex items-center gap-1.5">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  {isThinking
-                    ? "Thinking…"
-                    : "Reasoning and structuring output..."}
-                </p>
-              ) : ranButEmpty ? (
-                <p className="italic text-muted-foreground text-[10px]">
-                  (Agent returned no output for this chunk.)
-                </p>
-              ) : null}
-            </Section>
-          )}
+            ))}
         </div>
-      )}
+
+        {/* OUTPUT — always open while running / after a run */}
+        {showOutput && (
+          <Section
+            icon={<Compass className="w-3 h-3" />}
+            label={
+              isRunning
+                ? "Agent output (streaming)"
+                : pageRun.status === "failed"
+                  ? "Agent output (incomplete)"
+                  : "Agent output"
+            }
+          >
+            {hasOutput ? (
+              <div
+                className={cn(
+                  "text-[11px] leading-relaxed text-foreground/85",
+                  isRunning && "border-l-2 border-primary/50 pl-2",
+                )}
+              >
+                <MarkdownStream
+                  content={outputText}
+                  isStreamActive={isRunning}
+                  hideCopyButton
+                  allowFullScreenEditor={false}
+                />
+              </div>
+            ) : isRunning ? (
+              <p className="italic text-muted-foreground text-[10px] flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                {isThinking
+                  ? "Thinking…"
+                  : "Reasoning and structuring output..."}
+              </p>
+            ) : ranButEmpty ? (
+              <p className="italic text-muted-foreground text-[10px]">
+                (Agent returned no output for this chunk.)
+              </p>
+            ) : null}
+          </Section>
+        )}
+      </div>
     </div>
   );
 }

@@ -56,6 +56,7 @@ import {
   PROJECTS_CONTEXT_MENU_PROPS,
 } from "@/features/projects/agent-context/buildProjectsContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ProjectContextPicker } from "@/features/projects/components/ProjectContextSection";
 import {
   CONTENT_ROLES,
@@ -243,242 +244,249 @@ export function ProjectWorkspace() {
   });
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/projects")}
-          className="text-muted-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          All projects
-        </Button>
+    <SurfaceRuntimeProvider
+      surfaceName={PROJECTS_CONTEXT_MENU_PROPS.surfaceName}
+      surfaceLabel="Projects"
+      getScope={getApplicationScope}
+      isEditable={false}
+    >
+      <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
+        <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/projects")}
+            className="text-muted-foreground"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            All projects
+          </Button>
 
-        {/* Hero */}
-        <Card className="p-5 md:p-6 relative overflow-hidden">
-          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500" />
-          <div className="flex items-start gap-4">
-            <span className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <FolderKanban className="h-6 w-6" />
-            </span>
-            {/* Presentational surface region — right-click the project's
+          {/* Hero */}
+          <Card className="p-5 md:p-6 relative overflow-hidden">
+            <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500" />
+            <div className="flex items-start gap-4">
+              <span className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <FolderKanban className="h-6 w-6" />
+              </span>
+              {/* Presentational surface region — right-click the project's
                 identity/overview the user reads to run an agent on it. The
                 description editor below mounts its own editable Pro menu. */}
-            <NonEditableContextMenu
-              {...PROJECTS_CONTEXT_MENU_PROPS}
-              getApplicationScope={getApplicationScope}
-              contextData={contextData}
-              extraSections={projectsExtraSections}
-            >
-              <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <InlineProjectName
-                  project={project}
-                  canEdit={canManageSettings}
-                  onPatch={applyPatch}
-                />
-                {role && (
-                  <Badge variant="outline" className="text-xs capitalize">
-                    You: {role}
-                  </Badge>
-                )}
-              </div>
+              <NonEditableContextMenu
+                {...PROJECTS_CONTEXT_MENU_PROPS}
+                getApplicationScope={getApplicationScope}
+                contextData={contextData}
+                extraSections={projectsExtraSections}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <InlineProjectName
+                      project={project}
+                      canEdit={canManageSettings}
+                      onPatch={applyPatch}
+                    />
+                    {role && (
+                      <Badge variant="outline" className="text-xs capitalize">
+                        You: {role}
+                      </Badge>
+                    )}
+                  </div>
 
-              {/* Editable meta: status / priority / dates */}
-              <div className="mt-3">
-                <ProjectMetaRow
-                  project={project}
-                  canEdit={canManageSettings}
-                  onPatch={applyPatch}
-                  showOrg={false}
-                />
-              </div>
+                  {/* Editable meta: status / priority / dates */}
+                  <div className="mt-3">
+                    <ProjectMetaRow
+                      project={project}
+                      canEdit={canManageSettings}
+                      onPatch={applyPatch}
+                      showOrg={false}
+                    />
+                  </div>
 
-              {/* Context: org + scope types/scopes (persists to project) */}
-              <div className="mt-3 max-w-xl">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                  Context
-                </p>
-                <ProjectContextPicker
-                  project={project}
-                  canEdit={canManageSettings}
-                  onPatch={applyPatch}
-                />
-              </div>
+                  {/* Context: org + scope types/scopes (persists to project) */}
+                  <div className="mt-3 max-w-xl">
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                      Context
+                    </p>
+                    <ProjectContextPicker
+                      project={project}
+                      canEdit={canManageSettings}
+                      onPatch={applyPatch}
+                    />
+                  </div>
 
-              {/* Description (always available to edit in place). The editable
+                  {/* Description (always available to edit in place). The editable
                   ProTextarea inside gets the surface "…" agent menu via
                   surfaceName + getApplicationScope. */}
-              <div className="mt-3">
-                <InlineProjectDescription
-                  project={project}
-                  canEdit={canManageSettings}
-                  onPatch={applyPatch}
-                  surfaceName={PROJECTS_CONTEXT_MENU_PROPS.surfaceName}
-                  getApplicationScope={getApplicationScope}
-                />
-              </div>
+                  <div className="mt-3">
+                    <InlineProjectDescription
+                      project={project}
+                      canEdit={canManageSettings}
+                      onPatch={applyPatch}
+                      surfaceName={PROJECTS_CONTEXT_MENU_PROPS.surfaceName}
+                      getApplicationScope={getApplicationScope}
+                    />
+                  </div>
 
-              {/* Stats */}
-              <div className="flex items-center gap-5 flex-wrap mt-4">
-                <Stat
-                  icon={<ListTodo className="h-4 w-4" />}
-                  value={taskCounts.open}
-                  label="open"
-                />
-                <Stat
-                  icon={<ListTodo className="h-4 w-4" />}
-                  value={taskCounts.done}
-                  label="done"
-                />
-                <Stat
-                  icon={<Boxes className="h-4 w-4" />}
-                  value={countsLoading ? "…" : totalResources}
-                  label="resources"
-                />
-                <Stat
-                  icon={<Users className="h-4 w-4" />}
-                  value={members.length}
-                  label={members.length === 1 ? "member" : "members"}
-                />
-              </div>
-              </div>
-            </NonEditableContextMenu>
+                  {/* Stats */}
+                  <div className="flex items-center gap-5 flex-wrap mt-4">
+                    <Stat
+                      icon={<ListTodo className="h-4 w-4" />}
+                      value={taskCounts.open}
+                      label="open"
+                    />
+                    <Stat
+                      icon={<ListTodo className="h-4 w-4" />}
+                      value={taskCounts.done}
+                      label="done"
+                    />
+                    <Stat
+                      icon={<Boxes className="h-4 w-4" />}
+                      value={countsLoading ? "…" : totalResources}
+                      label="resources"
+                    />
+                    <Stat
+                      icon={<Users className="h-4 w-4" />}
+                      value={members.length}
+                      label={members.length === 1 ? "member" : "members"}
+                    />
+                  </div>
+                </div>
+              </NonEditableContextMenu>
 
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              <div className="flex items-center gap-2">
-                <ReferenceCopyButton
-                  referenceType="project"
-                  id={project.id}
-                  label={project.name}
-                  toastLabel={project.name}
-                  size="md"
-                  className="h-8 w-8"
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex items-center gap-2">
+                  <ReferenceCopyButton
+                    referenceType="project"
+                    id={project.id}
+                    label={project.name}
+                    toastLabel={project.name}
+                    size="md"
+                    className="h-8 w-8"
+                  />
+                  <ProjectCopyForAiButton
+                    projectId={project.id}
+                    projectName={project.name}
+                    location="Projects — project workspace"
+                  />
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={kgHref}>
+                      <Network className="h-4 w-4 mr-1.5" />
+                      Graph
+                    </Link>
+                  </Button>
+                  {role && (
+                    <Button asChild size="sm">
+                      <Link href={`/projects/${project.id}/settings`}>
+                        <Settings className="h-4 w-4 mr-1.5" />
+                        Manage
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Tasks */}
+          <Card className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <ListTodo className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <h2 className="text-lg font-semibold">Tasks</h2>
+            </div>
+            <ProjectTaskList
+              projectId={project.id}
+              organizationId={project.organizationId}
+              onCountsChange={setTaskCounts}
+            />
+          </Card>
+
+          {/* Associated resources */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <Boxes className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Associated resources</h2>
+              <span className="text-xs text-muted-foreground">
+                Everything linked to this project
+              </span>
+            </div>
+            {CONTENT_ROLES.map((r) => {
+              const entries = entriesByRole(r.id).filter(
+                (e) => !EXCLUDE_FROM_RESOURCES.has(e.key),
+              );
+              return (
+                <OrgResourceRoleSection
+                  key={r.id}
+                  role={r.id}
+                  entries={entries}
+                  counts={counts}
+                  loading={countsLoading}
+                  onOpen={(entry) => setSheetEntry(entry)}
                 />
-                <ProjectCopyForAiButton
-                  projectId={project.id}
-                  projectName={project.name}
-                  location="Projects — project workspace"
-                />
-                <Button asChild variant="outline" size="sm">
-                  <Link href={kgHref}>
-                    <Network className="h-4 w-4 mr-1.5" />
-                    Graph
-                  </Link>
-                </Button>
+              );
+            })}
+          </div>
+
+          {/* Scopes & Knowledge — read-only Scope Type: Scope display */}
+          <Card className="p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-base font-semibold">Scopes</h2>
+              <div className="flex items-center gap-1">
                 {role && (
-                  <Button asChild size="sm">
-                    <Link href={`/projects/${project.id}/settings`}>
-                      <Settings className="h-4 w-4 mr-1.5" />
-                      Manage
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                  >
+                    <Link href={`/projects/${project.id}/settings#scopes`}>
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                      Edit scopes
                     </Link>
                   </Button>
                 )}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Tasks */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <ListTodo className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            <h2 className="text-lg font-semibold">Tasks</h2>
-          </div>
-          <ProjectTaskList
-            projectId={project.id}
-            organizationId={project.organizationId}
-            onCountsChange={setTaskCounts}
-          />
-        </Card>
-
-        {/* Associated resources */}
-        <div className="space-y-5">
-          <div className="flex items-center gap-2">
-            <Boxes className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Associated resources</h2>
-            <span className="text-xs text-muted-foreground">
-              Everything linked to this project
-            </span>
-          </div>
-          {CONTENT_ROLES.map((r) => {
-            const entries = entriesByRole(r.id).filter(
-              (e) => !EXCLUDE_FROM_RESOURCES.has(e.key),
-            );
-            return (
-              <OrgResourceRoleSection
-                key={r.id}
-                role={r.id}
-                entries={entries}
-                counts={counts}
-                loading={countsLoading}
-                onOpen={(entry) => setSheetEntry(entry)}
-              />
-            );
-          })}
-        </div>
-
-        {/* Scopes & Knowledge — read-only Scope Type: Scope display */}
-        <Card className="p-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="text-base font-semibold">Scopes</h2>
-            <div className="flex items-center gap-1">
-              {role && (
                 <Button
                   asChild
                   variant="ghost"
                   size="sm"
                   className="text-muted-foreground"
                 >
-                  <Link href={`/projects/${project.id}/settings#scopes`}>
-                    <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                    Edit scopes
+                  <Link href={kgHref}>
+                    Knowledge graph
+                    <ChevronRight className="h-4 w-4 ml-1" />
                   </Link>
                 </Button>
-              )}
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground"
-              >
-                <Link href={kgHref}>
-                  Knowledge graph
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Link>
-              </Button>
+              </div>
             </div>
-          </div>
-          <AssignedScopesDisplay
-            entityType="project"
-            entityId={project.id}
-            organizationId={project.organizationId}
+            <AssignedScopesDisplay
+              entityType="project"
+              entityId={project.id}
+              organizationId={project.organizationId}
+            />
+          </Card>
+
+          {/* Details & all FK references (a useful audit summary, collapsible) */}
+          <details className="group">
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground select-none">
+              Details &amp; references
+            </summary>
+            <div className="mt-3 space-y-4">
+              <ProjectDetails project={project} />
+              <ProjectReferencesPanel projectId={project.id} />
+            </div>
+          </details>
+        </div>
+
+        {project && (
+          <ContainerResourceSheet
+            open={sheetEntry !== null}
+            onOpenChange={(o) => !o && setSheetEntry(null)}
+            entry={sheetEntry}
+            column="project_id"
+            value={project.id}
           />
-        </Card>
-
-        {/* Details & all FK references (a useful audit summary, collapsible) */}
-        <details className="group">
-          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground select-none">
-            Details &amp; references
-          </summary>
-          <div className="mt-3 space-y-4">
-            <ProjectDetails project={project} />
-            <ProjectReferencesPanel projectId={project.id} />
-          </div>
-        </details>
+        )}
       </div>
-
-      {project && (
-        <ContainerResourceSheet
-          open={sheetEntry !== null}
-          onOpenChange={(o) => !o && setSheetEntry(null)}
-          entry={sheetEntry}
-          column="project_id"
-          value={project.id}
-        />
-      )}
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

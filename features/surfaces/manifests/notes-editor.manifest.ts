@@ -253,6 +253,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const notesEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/notes",
+  label: "Notes",
   values: mergeBaselineValues(
     // Baseline:
     //   `selection` / `text_before` / `text_after` — the universal text-editor

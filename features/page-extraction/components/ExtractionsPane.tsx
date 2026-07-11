@@ -78,8 +78,8 @@ export function ExtractionsPane({
       : "/knowledge/extractions";
 
   return (
-    <div className="flex flex-col h-full bg-card">
-      <div className="flex items-center gap-1">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden bg-card">
+      <div className="flex shrink-0 items-center gap-1">
         <div className="min-w-0 flex-1">
           <JobPicker fileId={fileId} />
         </div>
@@ -96,7 +96,10 @@ export function ExtractionsPane({
       </div>
       <RunProgressBar jobId={jobId} />
 
-      <Tabs defaultValue="chunks" className="flex-1 min-h-0 flex flex-col">
+      <Tabs
+        defaultValue="chunks"
+        className="flex-1 min-h-0 flex flex-col overflow-hidden"
+      >
         <TabsList className="shrink-0 mx-2 mt-2 grid grid-cols-2 h-7 text-[10px]">
           <TabsTrigger value="chunks" className="text-[10px]">
             Chunks
@@ -107,7 +110,7 @@ export function ExtractionsPane({
         </TabsList>
         <TabsContent
           value="chunks"
-          className="flex-1 min-h-0 mt-1 data-[state=inactive]:hidden"
+          className="flex-1 min-h-0 mt-1 overflow-hidden data-[state=inactive]:hidden"
         >
           {fileId ? (
             <ChunksTab
@@ -123,7 +126,7 @@ export function ExtractionsPane({
         </TabsContent>
         <TabsContent
           value="results"
-          className="flex-1 min-h-0 mt-1 data-[state=inactive]:hidden"
+          className="flex-1 min-h-0 mt-1 overflow-hidden data-[state=inactive]:hidden"
         >
           {/* Show ALL results for the template. Filtering to the current
               page hid every row when the user was on page 1 and findings

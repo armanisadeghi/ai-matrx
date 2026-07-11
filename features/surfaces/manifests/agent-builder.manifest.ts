@@ -299,6 +299,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const agentBuilderManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-builder",
+  label: "Agent Builder",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,

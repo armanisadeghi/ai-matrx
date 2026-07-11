@@ -38,6 +38,7 @@ import {
   buildScraperContextData,
   SCRAPER_CONTEXT_MENU_PROPS,
 } from "@/features/scraper/agent-context/buildScraperContextData";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createScraperExtraSections } from "@/features/scraper/agent-context/scraperExtraSections";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { useScraperKeywordSearchForm } from "@/features/scraper/hooks/useScraperKeywordSearchForm";
@@ -646,8 +647,7 @@ export function ScraperFloatingWorkspace({
   // operations (open / copy / images) ride along via extraSections.
   const presentationalExtras = createScraperExtraSections({
     onOpenInBrowser: selectedScraped
-      ? () =>
-          window.open(selectedScraped.url, "_blank", "noopener,noreferrer")
+      ? () => window.open(selectedScraped.url, "_blank", "noopener,noreferrer")
       : undefined,
     onCopyText: selectedScraped ? () => void handleCopy() : undefined,
     onViewImages: hasImages ? openImages : undefined,
@@ -693,36 +693,43 @@ export function ScraperFloatingWorkspace({
   );
 
   return (
-    <WindowPanel
-      title="Web Scraper"
-      width={680}
-      height={540}
-      minWidth={440}
-      minHeight={340}
-      onClose={onClose}
-      sidebar={sidebarContent}
-      sidebarDefaultSize={400}
-      sidebarMinSize={250}
-      defaultSidebarOpen
-      sidebarClassName="bg-muted/10"
-      actionsLeft={leftActions}
-      actionsRight={rightActions}
-      footer={footerContent}
-      urlSyncKey="scraper"
-      overlayId="scraperWindow"
-      onCollectData={() => ({
-        mode,
-        url,
-        keyword: keywordForm.keywords ?? "",
-        maxPages: 1,
-        results: scrapedResults,
-        scrapeStates: {},
-        selectedIndex: selectedScrapedIndex,
-        activeTab,
-      })}
+    <SurfaceRuntimeProvider
+      surfaceName={SCRAPER_CONTEXT_MENU_PROPS.surfaceName}
+      surfaceLabel="Scraper"
+      getScope={getConfigApplicationScope}
+      isEditable
     >
-      {mainContent}
-    </WindowPanel>
+      <WindowPanel
+        title="Web Scraper"
+        width={680}
+        height={540}
+        minWidth={440}
+        minHeight={340}
+        onClose={onClose}
+        sidebar={sidebarContent}
+        sidebarDefaultSize={400}
+        sidebarMinSize={250}
+        defaultSidebarOpen
+        sidebarClassName="bg-muted/10"
+        actionsLeft={leftActions}
+        actionsRight={rightActions}
+        footer={footerContent}
+        urlSyncKey="scraper"
+        overlayId="scraperWindow"
+        onCollectData={() => ({
+          mode,
+          url,
+          keyword: keywordForm.keywords ?? "",
+          maxPages: 1,
+          results: scrapedResults,
+          scrapeStates: {},
+          selectedIndex: selectedScrapedIndex,
+          activeTab,
+        })}
+      >
+        {mainContent}
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }
 

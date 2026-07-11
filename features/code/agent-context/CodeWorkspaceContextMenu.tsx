@@ -39,6 +39,7 @@ import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 interface CodeWorkspaceContextMenuProps {
   children: React.ReactNode;
@@ -227,18 +228,25 @@ export function CodeWorkspaceContextMenu({
   });
 
   return (
-    <div className={className}>
-      <EditableContextMenu
-        {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
-        contextData={getContextData()}
-        getApplicationScope={getApplicationScope}
-        extraSections={editorExtraSections}
-        onTextReplace={handleTextReplace}
-        onTextInsertBefore={handleTextInsertBefore}
-        onTextInsertAfter={handleTextInsertAfter}
-      >
-        {children}
-      </EditableContextMenu>
-    </div>
+    <SurfaceRuntimeProvider
+      surfaceName={CODE_WORKSPACE_CONTEXT_MENU_PROPS.surfaceName}
+      surfaceLabel="Code Editor"
+      getScope={getApplicationScope}
+      isEditable
+    >
+      <div className={className}>
+        <EditableContextMenu
+          {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
+          contextData={getContextData()}
+          getApplicationScope={getApplicationScope}
+          extraSections={editorExtraSections}
+          onTextReplace={handleTextReplace}
+          onTextInsertBefore={handleTextInsertBefore}
+          onTextInsertAfter={handleTextInsertAfter}
+        >
+          {children}
+        </EditableContextMenu>
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

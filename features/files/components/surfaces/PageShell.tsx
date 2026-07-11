@@ -115,6 +115,7 @@ import {
 } from "@/features/files/agent-context/buildFilesContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v2/utils/selection-tracking";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useFileShortcuts } from "./useFileShortcuts";
 import { RenameHost } from "@/features/files/components/core/RenameDialog/RenameHost";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
@@ -722,291 +723,300 @@ function PageShellDesktop({
   }, [groupRef, previewMaximized, showPreviewPane]);
 
   return (
-    <DndContext
-      sensors={dndSensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
+    <SurfaceRuntimeProvider
+      surfaceName={FILES_CONTEXT_MENU_PROPS.surfaceName}
+      surfaceLabel="Files"
+      getScope={getFilesApplicationScope}
+      isEditable={false}
     >
-      <div
-        className={cn("flex h-full overflow-hidden bg-background", className)}
+      <DndContext
+        sensors={dndSensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
-        {/* Collapsed sidebar = slim icon rail. Expanding swaps it back for the
-         * full NavSidebar. Hidden during preview-maximize so it doesn't eat
-         * width from the full-bleed preview. */}
-        {sidebarCollapsed && !previewMaximized && (
-          <IconRail section={section} onExpand={expandSidebar} />
-        )}
-
-        <ResizablePanelGroup
-          orientation="horizontal"
-          autoSave="matrx-cloud-files-dropbox-v4"
-          className="h-full min-h-0 w-full"
-          groupRef={groupRef}
+        <div
+          className={cn("flex h-full overflow-hidden bg-background", className)}
         >
-          {/* Nav sidebar — collapsible so the imperative maximize call below
-           * can drive its size to 0 without minSize fighting it. Normal drag
-           * UX is unaffected (minSize is still respected during pointer drag,
-           * with auto-collapse only at the lower bound). */}
-          <ResizablePanel
-            id={PANEL_IDS.SIDE}
-            panelRef={sidebarPanelRef}
-            defaultSize={pct(sidebarDefaultPercent)}
-            minSize={pct(sidebarMinPercent)}
-            maxSize={pct(40)}
-            collapsible
-            collapsedSize="0%"
-            onResize={handleSidebarResize}
-            className="border-r border-border/70"
-          >
-            <NavSidebar section={section} onCollapse={collapseSidebar} />
-          </ResizablePanel>
-
-          <ResizableHandle
-            disabled={previewMaximized || sidebarCollapsed}
-            className={cn(
-              (previewMaximized || sidebarCollapsed) &&
-                "pointer-events-none !opacity-0",
-            )}
-          />
-
-          {/* Main — also collapsible for the same maximize-to-100 path. */}
-          <ResizablePanel
-            id={PANEL_IDS.MAIN}
-            minSize={pct(showPreviewPane ? 30 : 40)}
-            collapsible
-            collapsedSize="0%"
-          >
-            <div className="flex h-full flex-col overflow-hidden">
-              <TopBar
-                parentFolderId={activeFolderId}
-                searchQuery={searchQuery}
-                onSearchChange={handleSearchChange}
-              />
-
-              {section === "folders" ? (
-                <FolderExplorer
-                  onSelectFolder={handleSelectFolder}
-                  onSelectFile={handleSelectFile}
-                />
-              ) : (
-                <>
-                  <ContentHeader
-                    section={section}
-                    activeFolderId={activeFolderId}
-                    activeFilter={chipFilter}
-                    onFilterToggle={handleFilterToggle}
-                    showActions={
-                      !showPlaceholder &&
-                      section !== "trash" &&
-                      section !== "starred"
-                    }
-                    showFilterRow={
-                      !showPlaceholder &&
-                      section !== "trash" &&
-                      section !== "starred"
-                    }
-                  />
-
-                  <div className="flex-1 overflow-hidden">
-                    {showPlaceholder ? (
-                      <SectionPlaceholder section={section} />
-                    ) : isEmpty && section === "all" ? (
-                      <FileUploadDropzone
-                        parentFolderId={null}
-                        mode="overlay"
-                        className="h-full w-full"
-                        onUploadStart={handleUploadStart}
-                        onUploaded={handleUploadedIds}
-                        onOpenFile={handleOpenUploadedFile}
-                      >
-                        <OnboardingEmptyState />
-                      </FileUploadDropzone>
-                    ) : section === "starred" ? (
-                      <EmptyState
-                        icon={Star}
-                        title="Starred items"
-                        comingSoon
-                        description="Star any file or folder to pin it here for quick access."
-                      />
-                    ) : showTableOrGrid ? (
-                      <FileUploadDropzone
-                        parentFolderId={activeFolderId}
-                        mode="overlay"
-                        className="h-full w-full"
-                        onUploadStart={handleUploadStart}
-                        onUploaded={handleUploadedIds}
-                        onOpenFile={handleOpenUploadedFile}
-                      >
-                        {viewMode === "grid" ? (
-                          <FileGrid
-                            folders={searchScopedFolders}
-                            files={searchScopedFiles}
-                            permissionsByResourceId={permissionsByResourceId}
-                            section={section}
-                            searchQuery={searchQuery}
-                            filter={effectiveFilter}
-                            treeWideSearch={isSearching}
-                            onActivateFolder={handleSelectFolder}
-                            onActivateFile={handleSelectFile}
-                            emptyState={
-                              section === "photos" ||
-                              section === "shared" ||
-                              section === "recents" ||
-                              section === "trash" ? (
-                                <SectionPlaceholder section={section} />
-                              ) : undefined
-                            }
-                          />
-                        ) : (
-                          <FileTable
-                            folders={searchScopedFolders}
-                            files={searchScopedFiles}
-                            permissionsByResourceId={permissionsByResourceId}
-                            section={section}
-                            searchQuery={searchQuery}
-                            filter={effectiveFilter}
-                            treeWideSearch={isSearching}
-                            onActivateFolder={handleSelectFolder}
-                            onActivateFile={handleSelectFile}
-                            emptyState={
-                              section === "photos" ||
-                              section === "shared" ||
-                              section === "recents" ||
-                              section === "trash" ? (
-                                <SectionPlaceholder section={section} />
-                              ) : undefined
-                            }
-                          />
-                        )}
-                      </FileUploadDropzone>
-                    ) : null}
-                  </div>
-                </>
-              )}
-            </div>
-          </ResizablePanel>
-
-          {/* Preview pane — only mounted when a file is selected. The user
-           * always has an escape: the Close (X) button on the header bar
-           * clears `activeFileId`, which collapses this panel and reveals the
-           * full file list behind it. The list itself is also still partially
-           * visible behind the resize handle — clicking it (e.g. picking a
-           * different file) just swaps the previewed file. autoSave keeps the
-           * preferred width across mounts. */}
-          {showPreviewPane && activeFile && (
-            <>
-              <ResizableHandle
-                disabled={previewMaximized}
-                className={cn(
-                  previewMaximized && "pointer-events-none !opacity-0",
-                )}
-              />
-              <ResizablePanel
-                id={PANEL_IDS.PREVIEW}
-                defaultSize={pct(PREVIEW_DEFAULT_PCT)}
-                minSize={pct(PREVIEW_MIN_PCT)}
-                maxSize={pct(100)}
-                className="border-l border-border/70"
-              >
-                {/* Read-only surface mount: right-clicking the preview offers
-                 * Files-bound agent actions about the active file (describe,
-                 * classify, extract…) with the live browser scope. No text-
-                 * replace callbacks — the preview is presentational. The
-                 * `asChild` trigger clones onto this wrapper div (PreviewPane
-                 * is a plain component, not ref-forwarding). */}
-                <NonEditableContextMenu
-                  {...FILES_CONTEXT_MENU_PROPS}
-                  getApplicationScope={getFilesApplicationScope}
-                  contextData={filesContextData}
-                >
-                  <div className="flex h-full min-h-0 flex-col">
-                    <PreviewPane
-                      key={activeFile.id}
-                      fileId={activeFile.id}
-                      isMaximized={previewMaximized}
-                      onToggleMaximize={togglePreviewMaximize}
-                    />
-                  </div>
-                </NonEditableContextMenu>
-              </ResizablePanel>
-            </>
+          {/* Collapsed sidebar = slim icon rail. Expanding swaps it back for the
+           * full NavSidebar. Hidden during preview-maximize so it doesn't eat
+           * width from the full-bleed preview. */}
+          {sidebarCollapsed && !previewMaximized && (
+            <IconRail section={section} onExpand={expandSidebar} />
           )}
-        </ResizablePanelGroup>
 
-        {/* Bulk-actions toolbar — fixed-position pill at the bottom of the
-         * viewport. Renders nothing unless one or more rows are selected. */}
-        <BulkActionsBar />
+          <ResizablePanelGroup
+            orientation="horizontal"
+            autoSave="matrx-cloud-files-dropbox-v4"
+            className="h-full min-h-0 w-full"
+            groupRef={groupRef}
+          >
+            {/* Nav sidebar — collapsible so the imperative maximize call below
+             * can drive its size to 0 without minSize fighting it. Normal drag
+             * UX is unaffected (minSize is still respected during pointer drag,
+             * with auto-collapse only at the lower bound). */}
+            <ResizablePanel
+              id={PANEL_IDS.SIDE}
+              panelRef={sidebarPanelRef}
+              defaultSize={pct(sidebarDefaultPercent)}
+              minSize={pct(sidebarMinPercent)}
+              maxSize={pct(40)}
+              collapsible
+              collapsedSize="0%"
+              onResize={handleSidebarResize}
+              className="border-r border-border/70"
+            >
+              <NavSidebar section={section} onCollapse={collapseSidebar} />
+            </ResizablePanel>
 
-        {/* Confirm dialog for keyboard-shortcut deletes. Destructive ops
-         * always go through a dialog so an accidental Backspace press
-         * doesn't quietly trash files. */}
-        <AlertDialog
-          open={shortcuts.pendingDelete !== null}
-          onOpenChange={(open) => {
-            if (!open) shortcuts.clearPendingDelete();
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {shortcuts.pendingDelete?.kind === "batch"
-                  ? `Delete ${shortcuts.pendingDelete.ids.length} files?`
-                  : "Delete file?"}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {shortcuts.pendingDelete?.kind === "batch"
-                  ? "These files will move to trash. You can restore them for 30 days before bytes are removed."
-                  : "This will move the file to trash. You can restore it from versions for 30 days before bytes are removed."}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => void shortcuts.confirmDelete()}>
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        <RenameHost />
-        <CloudFileEditorHost />
-        <UploadContextPrompt
-          open={uploadPromptNames !== null}
-          onOpenChange={(o) => {
-            if (!o) setUploadPromptNames(null);
-          }}
-          fileNames={uploadPromptNames ?? []}
-          awaitFileIds={() => uploadIdsPromise.current}
-        />
-        {/* Render-less Redux → URL bridge. Sees every UI-state change
-         *  and writes it back to `?…` via `router.replace`. The reverse
-         *  direction (URL → Redux) happens once on mount via
-         *  `useOneShotUiHydration` from the server-parsed `initialUiPatch`. */}
-        <FilesRouteSelectionSync
-          initialFolderId={initialFolderId}
-          initialFolderPath={initialFolderPath}
-          initialFileId={initialFileId}
-        />
-        <FilesUrlSync />
-      </div>
-
-      <DragOverlay dropAnimation={null}>
-        {dragLabel ? (
-          <div className="pointer-events-none flex items-center gap-2 rounded-md border bg-popover px-3 py-1.5 text-xs shadow-md">
-            <FileIcon
-              fileName={dragLabel.includes(".") ? dragLabel : undefined}
-              isFolder={!dragLabel.includes(".")}
-              size={14}
+            <ResizableHandle
+              disabled={previewMaximized || sidebarCollapsed}
+              className={cn(
+                (previewMaximized || sidebarCollapsed) &&
+                  "pointer-events-none !opacity-0",
+              )}
             />
-            <span className="max-w-[200px] truncate font-medium">
-              {dragLabel}
-            </span>
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+
+            {/* Main — also collapsible for the same maximize-to-100 path. */}
+            <ResizablePanel
+              id={PANEL_IDS.MAIN}
+              minSize={pct(showPreviewPane ? 30 : 40)}
+              collapsible
+              collapsedSize="0%"
+            >
+              <div className="flex h-full flex-col overflow-hidden">
+                <TopBar
+                  parentFolderId={activeFolderId}
+                  searchQuery={searchQuery}
+                  onSearchChange={handleSearchChange}
+                />
+
+                {section === "folders" ? (
+                  <FolderExplorer
+                    onSelectFolder={handleSelectFolder}
+                    onSelectFile={handleSelectFile}
+                  />
+                ) : (
+                  <>
+                    <ContentHeader
+                      section={section}
+                      activeFolderId={activeFolderId}
+                      activeFilter={chipFilter}
+                      onFilterToggle={handleFilterToggle}
+                      showActions={
+                        !showPlaceholder &&
+                        section !== "trash" &&
+                        section !== "starred"
+                      }
+                      showFilterRow={
+                        !showPlaceholder &&
+                        section !== "trash" &&
+                        section !== "starred"
+                      }
+                    />
+
+                    <div className="flex-1 overflow-hidden">
+                      {showPlaceholder ? (
+                        <SectionPlaceholder section={section} />
+                      ) : isEmpty && section === "all" ? (
+                        <FileUploadDropzone
+                          parentFolderId={null}
+                          mode="overlay"
+                          className="h-full w-full"
+                          onUploadStart={handleUploadStart}
+                          onUploaded={handleUploadedIds}
+                          onOpenFile={handleOpenUploadedFile}
+                        >
+                          <OnboardingEmptyState />
+                        </FileUploadDropzone>
+                      ) : section === "starred" ? (
+                        <EmptyState
+                          icon={Star}
+                          title="Starred items"
+                          comingSoon
+                          description="Star any file or folder to pin it here for quick access."
+                        />
+                      ) : showTableOrGrid ? (
+                        <FileUploadDropzone
+                          parentFolderId={activeFolderId}
+                          mode="overlay"
+                          className="h-full w-full"
+                          onUploadStart={handleUploadStart}
+                          onUploaded={handleUploadedIds}
+                          onOpenFile={handleOpenUploadedFile}
+                        >
+                          {viewMode === "grid" ? (
+                            <FileGrid
+                              folders={searchScopedFolders}
+                              files={searchScopedFiles}
+                              permissionsByResourceId={permissionsByResourceId}
+                              section={section}
+                              searchQuery={searchQuery}
+                              filter={effectiveFilter}
+                              treeWideSearch={isSearching}
+                              onActivateFolder={handleSelectFolder}
+                              onActivateFile={handleSelectFile}
+                              emptyState={
+                                section === "photos" ||
+                                section === "shared" ||
+                                section === "recents" ||
+                                section === "trash" ? (
+                                  <SectionPlaceholder section={section} />
+                                ) : undefined
+                              }
+                            />
+                          ) : (
+                            <FileTable
+                              folders={searchScopedFolders}
+                              files={searchScopedFiles}
+                              permissionsByResourceId={permissionsByResourceId}
+                              section={section}
+                              searchQuery={searchQuery}
+                              filter={effectiveFilter}
+                              treeWideSearch={isSearching}
+                              onActivateFolder={handleSelectFolder}
+                              onActivateFile={handleSelectFile}
+                              emptyState={
+                                section === "photos" ||
+                                section === "shared" ||
+                                section === "recents" ||
+                                section === "trash" ? (
+                                  <SectionPlaceholder section={section} />
+                                ) : undefined
+                              }
+                            />
+                          )}
+                        </FileUploadDropzone>
+                      ) : null}
+                    </div>
+                  </>
+                )}
+              </div>
+            </ResizablePanel>
+
+            {/* Preview pane — only mounted when a file is selected. The user
+             * always has an escape: the Close (X) button on the header bar
+             * clears `activeFileId`, which collapses this panel and reveals the
+             * full file list behind it. The list itself is also still partially
+             * visible behind the resize handle — clicking it (e.g. picking a
+             * different file) just swaps the previewed file. autoSave keeps the
+             * preferred width across mounts. */}
+            {showPreviewPane && activeFile && (
+              <>
+                <ResizableHandle
+                  disabled={previewMaximized}
+                  className={cn(
+                    previewMaximized && "pointer-events-none !opacity-0",
+                  )}
+                />
+                <ResizablePanel
+                  id={PANEL_IDS.PREVIEW}
+                  defaultSize={pct(PREVIEW_DEFAULT_PCT)}
+                  minSize={pct(PREVIEW_MIN_PCT)}
+                  maxSize={pct(100)}
+                  className="border-l border-border/70"
+                >
+                  {/* Read-only surface mount: right-clicking the preview offers
+                   * Files-bound agent actions about the active file (describe,
+                   * classify, extract…) with the live browser scope. No text-
+                   * replace callbacks — the preview is presentational. The
+                   * `asChild` trigger clones onto this wrapper div (PreviewPane
+                   * is a plain component, not ref-forwarding). */}
+                  <NonEditableContextMenu
+                    {...FILES_CONTEXT_MENU_PROPS}
+                    getApplicationScope={getFilesApplicationScope}
+                    contextData={filesContextData}
+                  >
+                    <div className="flex h-full min-h-0 flex-col">
+                      <PreviewPane
+                        key={activeFile.id}
+                        fileId={activeFile.id}
+                        isMaximized={previewMaximized}
+                        onToggleMaximize={togglePreviewMaximize}
+                      />
+                    </div>
+                  </NonEditableContextMenu>
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
+
+          {/* Bulk-actions toolbar — fixed-position pill at the bottom of the
+           * viewport. Renders nothing unless one or more rows are selected. */}
+          <BulkActionsBar />
+
+          {/* Confirm dialog for keyboard-shortcut deletes. Destructive ops
+           * always go through a dialog so an accidental Backspace press
+           * doesn't quietly trash files. */}
+          <AlertDialog
+            open={shortcuts.pendingDelete !== null}
+            onOpenChange={(open) => {
+              if (!open) shortcuts.clearPendingDelete();
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {shortcuts.pendingDelete?.kind === "batch"
+                    ? `Delete ${shortcuts.pendingDelete.ids.length} files?`
+                    : "Delete file?"}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {shortcuts.pendingDelete?.kind === "batch"
+                    ? "These files will move to trash. You can restore them for 30 days before bytes are removed."
+                    : "This will move the file to trash. You can restore it from versions for 30 days before bytes are removed."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void shortcuts.confirmDelete()}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <RenameHost />
+          <CloudFileEditorHost />
+          <UploadContextPrompt
+            open={uploadPromptNames !== null}
+            onOpenChange={(o) => {
+              if (!o) setUploadPromptNames(null);
+            }}
+            fileNames={uploadPromptNames ?? []}
+            awaitFileIds={() => uploadIdsPromise.current}
+          />
+          {/* Render-less Redux → URL bridge. Sees every UI-state change
+           *  and writes it back to `?…` via `router.replace`. The reverse
+           *  direction (URL → Redux) happens once on mount via
+           *  `useOneShotUiHydration` from the server-parsed `initialUiPatch`. */}
+          <FilesRouteSelectionSync
+            initialFolderId={initialFolderId}
+            initialFolderPath={initialFolderPath}
+            initialFileId={initialFileId}
+          />
+          <FilesUrlSync />
+        </div>
+
+        <DragOverlay dropAnimation={null}>
+          {dragLabel ? (
+            <div className="pointer-events-none flex items-center gap-2 rounded-md border bg-popover px-3 py-1.5 text-xs shadow-md">
+              <FileIcon
+                fileName={dragLabel.includes(".") ? dragLabel : undefined}
+                isFolder={!dragLabel.includes(".")}
+                size={14}
+              />
+              <span className="max-w-[200px] truncate font-medium">
+                {dragLabel}
+              </span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </SurfaceRuntimeProvider>
   );
 }
 

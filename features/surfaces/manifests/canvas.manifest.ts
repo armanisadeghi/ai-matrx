@@ -100,6 +100,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const canvasManifest: SurfaceManifest = {
   surfaceName: "matrx-user/canvas",
+  label: "Canvas",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,

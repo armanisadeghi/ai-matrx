@@ -157,10 +157,12 @@ export function ChunksTab({
     );
   }
 
+  // One scroll for the whole tab body (stats + every expanded chunk). Nested
+  // max-height scroll regions inside cards fight the pane and make it feel
+  // like the Extractions column "won't scroll as a whole."
   return (
-    <div className="flex flex-col h-full">
-      {/* Stats strip */}
-      <div className="shrink-0 px-3 py-2 border-b border-border bg-card/40 text-[10px] text-muted-foreground">
+    <div className="h-full min-h-0 overflow-y-auto">
+      <div className="px-3 py-2 border-b border-border bg-card/40 text-[10px] text-muted-foreground">
         <div className="font-medium text-foreground/80">
           {stats.chunkCount} chunk{stats.chunkCount === 1 ? "" : "s"} ·{" "}
           {stats.totalChars.toLocaleString()} chars total
@@ -190,8 +192,7 @@ export function ChunksTab({
         </div>
       </div>
 
-      {/* Chunk list */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
+      <div className="p-2 space-y-2">
         {chunks.map((chunk) => (
           <ChunkCard
             key={chunk.chunkIndex}

@@ -77,6 +77,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const assistantMessageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/assistant-message",
+  label: "Assistant Message",
   urlPattern: "/chat",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),

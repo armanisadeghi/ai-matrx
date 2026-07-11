@@ -363,6 +363,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const transcriptsCleanupManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts-cleanup",
+  label: "Transcript Cleanup",
   values: mergeBaselineValues(
     pickBaseline(
       "selection",

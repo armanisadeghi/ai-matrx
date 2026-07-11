@@ -156,6 +156,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const tasksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/tasks",
+  label: "Tasks",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,

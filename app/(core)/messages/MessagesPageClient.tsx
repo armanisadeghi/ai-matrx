@@ -3,10 +3,16 @@
 import { useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { closeMessaging } from "@/features/messaging/redux/messagingSlice";
+import {
+  closeMessaging,
+  selectConversations,
+  selectTotalUnreadCount,
+} from "@/features/messaging/redux/messagingSlice";
 import { ConversationList } from "@/features/messaging/components/ConversationList";
 import { MessagesHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { MessageSquare } from "lucide-react";
+import { createMessagesScope } from "@/features/surfaces/manifests/messages.manifest";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 /**
  * Authenticated-only client island for `/messages`. The parent page
@@ -18,13 +24,31 @@ export default function MessagesPageClient() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const userId = user?.id ?? undefined;
+  const conversations = useAppSelector(selectConversations);
+  const totalUnreadCount = useAppSelector(selectTotalUnreadCount);
 
   useEffect(() => {
     dispatch(closeMessaging());
   }, [dispatch]);
 
+  const getScope = () =>
+    createMessagesScope({
+      total_unread_count: totalUnreadCount,
+      all_conversations: conversations.map((c) => ({
+        id: c.id,
+        title: c.display_name ?? c.group_name ?? null,
+        unread_count: c.unread_count ?? 0,
+        last_message_at: c.updated_at,
+      })),
+    });
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/messages"
+      surfaceLabel="Messages"
+      getScope={getScope}
+      isEditable={false}
+    >
       <MessagesHeader title="Messages" />
 
       {/* Mobile: Full-screen conversation list */}
@@ -44,9 +68,10 @@ export default function MessagesPageClient() {
           Select a conversation
         </h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm">
-          Choose a conversation from the list or start a new one to begin messaging
+          Choose a conversation from the list or start a new one to begin
+          messaging
         </p>
       </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

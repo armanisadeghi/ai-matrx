@@ -30,6 +30,20 @@ import {
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
+import {
+  buildChatContextData,
+  CHAT_CONTEXT_MENU_PROPS,
+} from "./agent-context/buildChatContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import {
+  extractFlatText,
+  selectConversationMessages,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 
 interface ChatRoomClientProps {
   agentId: string;
@@ -379,22 +393,96 @@ export function ChatRoomClient({
     );
   }
 
+  // Header Agents chrome — live Run scope from Redux at click time (draft +
+  // transcript + agent). Plain fn; React Compiler memoizes. DOM selection in
+  // the composer is best-effort via activeElement when it's a textarea.
+  const getChatScope = () => {
+    const state = store.getState();
+    const draft = selectUserInputText(conversationId)(state) ?? "";
+    const records = selectConversationMessages(conversationId)(state);
+    const messages = records.map((r) => ({
+      id: r.id,
+      role: r.role,
+      text: extractFlatText(r),
+      created_at: r.createdAt ?? undefined,
+    }));
+    let lastUserMessage: string | null = null;
+    let lastAssistantMessage: string | null = null;
+    for (const m of messages) {
+      if (m.role === "user" && m.text) lastUserMessage = m.text;
+      if (m.role === "assistant" && m.text) lastAssistantMessage = m.text;
+    }
+
+    let selectionStart = 0;
+    let selectionEnd = 0;
+    const active = document.activeElement;
+    if (
+      active instanceof HTMLTextAreaElement &&
+      (active.value === draft || draft.length === 0)
+    ) {
+      selectionStart = active.selectionStart ?? 0;
+      selectionEnd = active.selectionEnd ?? 0;
+    }
+
+    const contextData = buildChatContextData({
+      inputDraft: draft,
+      selectionStart,
+      selectionEnd,
+      conversationId,
+      conversationTitle: selectConversationTitle(conversationId)(state),
+      conversationStatus:
+        state.conversations?.byConversationId?.[conversationId]?.status ?? null,
+      isStreaming: selectIsStreaming(conversationId)(state),
+      agentId,
+      agentName: selectAgentName(state, agentId) ?? null,
+      lastUserMessage,
+      lastAssistantMessage,
+      messages,
+    });
+
+    const selectedText =
+      selectionEnd > selectionStart
+        ? draft.slice(selectionStart, selectionEnd)
+        : "";
+
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange:
+        active instanceof HTMLTextAreaElement
+          ? {
+              type: "editable",
+              element: active,
+              start: selectionStart,
+              end: selectionEnd,
+            }
+          : null,
+      contextData,
+    });
+  };
+
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-textured">
-      <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
-        <AgentConversationColumn
-          conversationId={conversationId}
-          surfaceKey={surfaceKey}
-          constrainWidth
-          edgeToEdgeScroll
-          smartInputProps={{
-            sendButtonVariant: "blue",
-            // Lives in the Chat Options (+) → Preferences tab now.
-            showSubmitOnEnterToggle: false,
-          }}
-          landingContent={landingContent}
-        />
+    <SurfaceRuntimeProvider
+      surfaceName={CHAT_CONTEXT_MENU_PROPS.surfaceName}
+      surfaceLabel="Chat"
+      getScope={getChatScope}
+      isEditable
+    >
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
+        <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
+          <AgentConversationColumn
+            conversationId={conversationId}
+            surfaceKey={surfaceKey}
+            constrainWidth
+            edgeToEdgeScroll
+            smartInputProps={{
+              sendButtonVariant: "blue",
+              // Lives in the Chat Options (+) → Preferences tab now.
+              showSubmitOnEnterToggle: false,
+            }}
+            landingContent={landingContent}
+          />
+        </div>
       </div>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }

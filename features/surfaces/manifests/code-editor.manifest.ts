@@ -151,6 +151,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const codeEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/code-editor",
+  label: "Code Editor",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,

@@ -21,6 +21,7 @@ import {
 
 export const workingDocumentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/working-document",
+  label: "Working Document",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     CONVERSATION_DOCUMENT_VALUES,

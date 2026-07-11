@@ -180,6 +180,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const chatManifest: SurfaceManifest = {
   surfaceName: "matrx-user/chat",
+  label: "Chat",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,

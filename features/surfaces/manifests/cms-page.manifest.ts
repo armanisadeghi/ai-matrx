@@ -239,6 +239,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const cmsPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-page",
+  label: "CMS Page",
   urlPattern: "/cms/[siteId]/pages/[pageId]",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "context"),

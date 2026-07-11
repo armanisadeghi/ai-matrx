@@ -22,6 +22,7 @@ import {
 
 export const scratchpadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scratchpad",
+  label: "Scratchpad",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     CONVERSATION_DOCUMENT_VALUES,

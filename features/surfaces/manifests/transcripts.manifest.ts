@@ -297,6 +297,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const transcriptsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts",
+  label: "Transcripts",
   values: mergeBaselineValues(
     // Baseline:
     //   `selection` — browser text selection on the rendered segments. Lazily

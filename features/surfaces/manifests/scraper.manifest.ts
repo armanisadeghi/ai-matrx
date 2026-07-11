@@ -171,6 +171,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const scraperManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scraper",
+  label: "Scraper",
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,

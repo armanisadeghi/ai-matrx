@@ -53,6 +53,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const cmsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms",
+  label: "CMS",
   urlPattern: "/cms",
   values: mergeBaselineValues(
     pickBaseline("content", "context"),

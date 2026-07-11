@@ -40,6 +40,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const warRoomManifest: SurfaceManifest = {
   surfaceName: "matrx-user/war-room",
+  label: "War Room",
   values: mergeBaselineValues(
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,

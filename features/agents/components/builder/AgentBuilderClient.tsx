@@ -6,6 +6,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
 import { useAgentAutoSave } from "@/features/agents/hooks/useAgentAutoSave";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
+import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
+import { AGENT_BUILDER_CONTEXT_MENU_PROPS } from "@/features/agents/agent-context/buildAgentBuilderContextData";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileBuilderSkeleton } from "./AgentBuilderSkeletons";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
@@ -34,6 +37,7 @@ export function AgentBuilderClient({
   const isReady = useAppSelector((state) =>
     selectAgentReadyForBuilder(state, agentId),
   );
+  const getAgentBuilderScope = useAgentBuilderSurfaceScope(agentId);
 
   useEffect(() => {
     setMounted(true);
@@ -46,12 +50,28 @@ export function AgentBuilderClient({
   // hydration completes, which would otherwise render skeleton on server and real UI on client.
   if (!mounted || !isReady) return <>{fallback}</>;
 
-  if (isMobile) return <AgentBuilderMobile agentId={agentId} />;
+  if (isMobile) {
+    return (
+      <SurfaceRuntimeProvider
+        surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
+        surfaceLabel="Agent Builder"
+        getScope={getAgentBuilderScope}
+        isEditable
+      >
+        <AgentBuilderMobile agentId={agentId} />
+      </SurfaceRuntimeProvider>
+    );
+  }
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
+      surfaceLabel="Agent Builder"
+      getScope={getAgentBuilderScope}
+      isEditable
+    >
       <DebugSessionActivator />
       {desktopContent}
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
