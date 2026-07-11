@@ -43,13 +43,16 @@ AS $$
     ),
 
     -- ── AI models ─────────────────────────────────────────────
+    -- `maker` = ai.provider.name via the provider_id FK (ai_024 renamed
+    -- model_provider → provider_id; see ssr_shell_models_provider_id_fix.sql).
     'ai_models', (
       SELECT COALESCE(json_agg(row_to_json(m)), '[]'::json)
       FROM (
-        SELECT *
-        FROM ai.model_definition
-        WHERE is_deprecated = false
-        ORDER BY common_name ASC
+        SELECT md.*, p.name AS maker
+        FROM ai.model_definition md
+        LEFT JOIN ai.provider p ON p.id = md.provider_id
+        WHERE md.is_deprecated = false
+        ORDER BY md.common_name ASC
       ) m
     ),
 
