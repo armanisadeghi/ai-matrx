@@ -1753,6 +1753,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "offering_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "model_offering"
+            referencedColumns: ["served_via_endpoint_id"]
+          },
+          {
             foreignKeyName: "offering_model_id_fkey"
             columns: ["model_id"]
             isOneToOne: false
@@ -2154,6 +2161,13 @@ export type Database = {
             referencedRelation: "endpoint"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "offering_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "model_offering"
+            referencedColumns: ["served_via_endpoint_id"]
+          },
         ]
       }
       model_config: {
@@ -2186,6 +2200,8 @@ export type Database = {
           points_per_million_input: number | null
           points_per_million_output: number | null
           priority: number | null
+          served_via: string | null
+          served_via_endpoint_id: string | null
           token_billed: boolean | null
           usage_basis: string | null
         }
@@ -19130,7 +19146,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_access_for: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       has_org_access: { Args: { p_org: string }; Returns: boolean }
+      has_org_access_for: {
+        Args: { p_org: string; p_user_id: string }
+        Returns: boolean
+      }
       has_org_admin: { Args: { p_org: string }; Returns: boolean }
       has_org_owner: { Args: { p_org: string }; Returns: boolean }
       is_org_member: {
@@ -26495,42 +26524,25 @@ export type Database = {
         }
         Returns: string
       }
-      create_context_item:
-        | {
-            Args: {
-              p_category?: string
-              p_description?: string
-              p_display_name: string
-              p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-              p_key: string
-              p_scope_type_id: string
-              p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-              p_slug?: string
-              p_sort_order?: number
-              p_tags?: string[]
-              p_value_type: Database["public"]["Enums"]["context_value_type"]
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_allowed_reference_types?: string[]
-              p_allowed_scope_type_ids?: string[]
-              p_category?: string
-              p_description?: string
-              p_display_name: string
-              p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-              p_key: string
-              p_max_items?: number
-              p_scope_type_id: string
-              p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-              p_slug?: string
-              p_sort_order?: number
-              p_tags?: string[]
-              p_value_type: Database["public"]["Enums"]["context_value_type"]
-            }
-            Returns: Json
-          }
+      create_context_item: {
+        Args: {
+          p_allowed_reference_types?: string[]
+          p_allowed_scope_type_ids?: string[]
+          p_category?: string
+          p_description?: string
+          p_display_name: string
+          p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
+          p_key: string
+          p_max_items?: number
+          p_scope_type_id: string
+          p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          p_slug?: string
+          p_sort_order?: number
+          p_tags?: string[]
+          p_value_type: Database["public"]["Enums"]["context_value_type"]
+        }
+        Returns: Json
+      }
       create_new_user_table_dynamic: {
         Args: {
           p_authenticated_read?: boolean
@@ -28819,6 +28831,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_permission_for: {
+        Args: {
+          p_required_permission: Database["public"]["Enums"]["permission_level"]
+          p_resource_id: string
+          p_resource_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       industry_assign_org: {
         Args: {
           p_actor?: string
@@ -28982,6 +29003,10 @@ export type Database = {
         Returns: boolean
       }
       is_org_admin: { Args: { p_org_id: string }; Returns: boolean }
+      is_org_admin_for: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_org_member: { Args: { p_org_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_resource_owner: {
@@ -28989,6 +29014,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      is_super_admin_for: { Args: { p_user_id: string }; Returns: boolean }
       is_super_admin_user: { Args: { p_user: string }; Returns: boolean }
       is_system_path: { Args: { p_path: string }; Returns: boolean }
       kg_caller_can_target_scope: {

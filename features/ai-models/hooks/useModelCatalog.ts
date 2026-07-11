@@ -5,7 +5,10 @@
  *
  * Two variants, each reading its canonical view directly (client → Supabase):
  *   - "user"  → `ai.model_public`  (anon + authenticated; masked, points pricing).
- *               Filtered to ROUTABLE models via `ai.model_offering`.
+ *               Filtered to ROUTABLE models via `ai.model_offering`, which also
+ *               supplies each model's serving TIERS (`served_via` — the
+ *               endpoint's public Matrx brand: "Matrx Fast", "Matrx Lightning",
+ *               "Matrx Standard", ... — never the real vendor).
  *   - "admin" → `ai.model_admin`   (super-admin; raw $ pricing + service internals;
  *               full catalog incl. deprecated).
  *
@@ -43,6 +46,23 @@ export const OUTPUT_MODALITIES: Modality[] = [
 
 export type Interaction = "turn" | "single" | "extraction" | "realtime";
 
+/**
+ * One serving tier for a model — a row of `ai.model_offering`, identified to
+ * users ONLY by the endpoint's public Matrx brand (`served_via`: "Matrx Fast",
+ * "Matrx Lightning", "Matrx Standard", ...). The real vendor never leaves
+ * `ai.model_admin`. `endpointId` is the opaque uuid a future request-wire
+ * endpoint hint would echo back to the server (resolve_call_profile).
+ */
+export interface CatalogTier {
+  offeringId: string;
+  /** Public Matrx brand of the serving endpoint — never a vendor name. */
+  servedVia: string;
+  /** Opaque endpoint uuid (safe wire hint) — no vendor identity. */
+  endpointId: string | null;
+  /** Lower = preferred/faster (the server's default pick). */
+  priority: number;
+}
+
 /** Reshaped, render-ready model row. */
 export interface CatalogModel {
   id: string;
@@ -70,6 +90,12 @@ export interface CatalogModel {
   tokenBilled: boolean | null;
   description: string | null;
   releaseDate: string | null;
+  /**
+   * Serving tiers (priority-ordered, preferred first) — user variant only.
+   * Multi-tier models (e.g. GPT OSS 120B on Matrx Lightning / Matrx Fast /
+   * Matrx Standard) list every brand; the first is the server's default.
+   */
+  tiers: CatalogTier[];
   /** admin-only extras — present only for variant === "admin" */
   admin?: {
     pricing: Json | null;
@@ -130,9 +156,13 @@ function parseCaps(raw: unknown): {
   };
 }
 
-function normalizePublic(row: ModelPublicRow): CatalogModel | null {
+function normalizePublic(
+  row: ModelPublicRow,
+  tiers: CatalogTier[],
+): CatalogModel | null {
   if (!row.id || !row.name) return null;
   return {
+    tiers,
     id: row.id,
     name: row.common_name || row.name,
     maker: row.maker,
@@ -164,6 +194,19 @@ function pricingOutputCost(pricing: Json | null): number | null {
 function normalizeAdmin(row: ModelAdminRow): CatalogModel | null {
   if (!row.id || !row.name) return null;
   return {
+    // Admin view is one-row-per-model (preferred offering only); the branded
+    // endpoint display name doubles as its tier.
+    tiers:
+      row.offering_id && row.endpoint_display_name
+        ? [
+            {
+              offeringId: row.offering_id,
+              servedVia: row.endpoint_display_name,
+              endpointId: row.endpoint_id,
+              priority: 0,
+            },
+          ]
+        : [],
     id: row.id,
     name: row.common_name || row.name,
     maker: row.maker,
@@ -228,19 +271,38 @@ async function loadCatalog(
         .from("model_public")
         .select("*")
         .order("common_name", { ascending: true, nullsFirst: false }),
-      supabase.schema("ai").from("model_offering").select("model_id"),
+      supabase
+        .schema("ai")
+        .from("model_offering")
+        .select(
+          "model_id, offering_id, served_via, served_via_endpoint_id, priority",
+        )
+        .order("priority", { ascending: true }),
     ]);
     if (publicRes.error) throw publicRes.error;
     if (offeringRes.error) throw offeringRes.error;
-    const routable = new Set(
-      (offeringRes.data ?? [])
-        .map((r) => r.model_id)
-        .filter((id): id is string => typeof id === "string"),
-    );
+    // Group the routable offerings into per-model serving tiers, preferred
+    // (lowest priority) first — the branded tier list the picker displays.
+    const tiersByModel = new Map<string, CatalogTier[]>();
+    for (const r of offeringRes.data ?? []) {
+      if (typeof r.model_id !== "string" || typeof r.offering_id !== "string") {
+        continue;
+      }
+      const list = tiersByModel.get(r.model_id) ?? [];
+      list.push({
+        offeringId: r.offering_id,
+        servedVia: r.served_via ?? "",
+        endpointId: r.served_via_endpoint_id,
+        priority: r.priority ?? 100,
+      });
+      tiersByModel.set(r.model_id, list);
+    }
     const models = (publicRes.data ?? [])
-      .map(normalizePublic)
+      .map((row) =>
+        normalizePublic(row, row.id ? (tiersByModel.get(row.id) ?? []) : []),
+      )
       .filter((m): m is CatalogModel => m !== null)
-      .filter((m) => routable.has(m.id));
+      .filter((m) => tiersByModel.has(m.id));
     return { models, error: null };
   } catch (err: unknown) {
     const message =

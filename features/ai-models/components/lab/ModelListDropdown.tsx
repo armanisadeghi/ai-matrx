@@ -300,6 +300,37 @@ function ModelDetailCard({
           </div>
         </div>
 
+        {/* Serving tiers — the endpoint's PUBLIC Matrx brand only (Matrx
+            Fast / Matrx Lightning / ...). Never a vendor name. The first
+            tier is the server's default route; per-request tier selection
+            ships when the chat wire carries an endpoint hint. */}
+        {model.tiers.length > 0 && model.tiers[0].servedVia && (
+          <div>
+            <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Served via
+            </dt>
+            <dd className="flex flex-wrap gap-1">
+              {model.tiers.map((t, i) => (
+                <span
+                  key={t.offeringId}
+                  className={
+                    i === 0
+                      ? "rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
+                      : "rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground/80"
+                  }
+                  title={
+                    i === 0
+                      ? "Default serving tier"
+                      : "Also available on this tier"
+                  }
+                >
+                  {t.servedVia}
+                </span>
+              ))}
+            </dd>
+          </div>
+        )}
+
         {model.multilingual && (
           <div className="flex items-center gap-1 text-foreground/80">
             <Languages className="h-3.5 w-3.5" />
