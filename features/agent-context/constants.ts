@@ -331,11 +331,3 @@ export const DEFAULT_CATEGORIES = [
   "Team & Culture",
 ] as const;
 
-// Reference types for the reference value type
-export const REFERENCE_TYPES = [
-  { value: "recipe", label: "Recipe" },
-  { value: "workflow", label: "Workflow" },
-  { value: "ai_agent", label: "AI Agent" },
-  { value: "prompt", label: "Prompt" },
-  { value: "context_item", label: "Context Item" },
-] as const;

@@ -60,8 +60,8 @@ import {
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
-import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
+import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import {
   FeedConfigEditor,
@@ -84,6 +84,12 @@ import type {
 type ValueType = DB["public"]["Enums"]["context_value_type"];
 type Sensitivity = DB["public"]["Enums"]["context_sensitivity"];
 
+// Direct-entry primitives only. "reference" is deliberately excluded — System
+// Context resources have no reference-authoring path yet (no
+// allowed_reference_types / max_items / allowed_scope_type_ids config UI, and
+// `ContextValueInput`'s reference branch requires those). Selecting it here
+// used to silently produce a dead "Reference picker unavailable" value editor.
+// Wire the scope-system's `ReferenceConfigFields` in before reintroducing it.
 const VALUE_TYPE_OPTIONS: { value: ValueType; label: string }[] = [
   { value: "string", label: "Text (string)" },
   { value: "number", label: "Number" },
@@ -92,7 +98,6 @@ const VALUE_TYPE_OPTIONS: { value: ValueType; label: string }[] = [
   { value: "object", label: "Object (JSON)" },
   { value: "array", label: "Array (JSON)" },
   { value: "document", label: "Document / media" },
-  { value: "reference", label: "Reference" },
 ];
 
 const SENSITIVITY_OPTIONS: { value: Sensitivity; label: string }[] = [
@@ -160,9 +165,8 @@ export default function SystemContextPage() {
   const [scopeFilter, setScopeFilter] = useState<string>("all");
   const [editing, setEditing] = useState<SystemContextItem | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
-  const [addItemPreset, setAddItemPreset] = useState<SystemContextCategory | null>(
-    null,
-  );
+  const [addItemPreset, setAddItemPreset] =
+    useState<SystemContextCategory | null>(null);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -197,7 +201,9 @@ export default function SystemContextPage() {
         { method: "DELETE" },
       );
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
         toast.error(`Delete failed: ${error}`);
         return;
       }
@@ -221,7 +227,9 @@ export default function SystemContextPage() {
         { method: "DELETE" },
       );
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
         toast.error(`Delete failed: ${error}`);
         return;
       }
@@ -288,10 +296,8 @@ export default function SystemContextPage() {
               with no scope set — ambient (date / time / user), curated globals,
               and industry datasets. Stored in the member-less{" "}
               <code className="text-xs">matrx-system</code> org; served globally
-              because their scope types are <code className="text-xs">
-                is_system
-              </code>
-              .
+              because their scope types are{" "}
+              <code className="text-xs">is_system</code>.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -381,11 +387,15 @@ export default function SystemContextPage() {
                 key={c.scope_type_id}
                 type="button"
                 size="sm"
-                variant={scopeFilter === c.scope_type_id ? "default" : "outline"}
+                variant={
+                  scopeFilter === c.scope_type_id ? "default" : "outline"
+                }
                 onClick={() => setScopeFilter(c.scope_type_id)}
               >
                 {c.label_singular}
-                <span className="ml-1.5 text-xs opacity-70">{c.item_count}</span>
+                <span className="ml-1.5 text-xs opacity-70">
+                  {c.item_count}
+                </span>
               </Button>
             ))}
           </div>
@@ -471,11 +481,15 @@ function PreviewDialog({ onClose }: { onClose: () => void }) {
     (async () => {
       const res = await fetch("/api/admin/system-context?preview=1");
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
         if (!cancelled) setError(String(error));
         return;
       }
-      const { resolved } = (await res.json()) as { resolved: ResolvedPreviewEntry[] };
+      const { resolved } = (await res.json()) as {
+        resolved: ResolvedPreviewEntry[];
+      };
       if (!cancelled) setEntries(resolved);
     })();
     return () => {
@@ -492,9 +506,10 @@ function PreviewDialog({ onClose }: { onClose: () => void }) {
           </DialogTitle>
           <DialogDescription>
             The live global system context — what every agent gets with no scope
-            selected, straight from <code className="text-xs">resolve_full_context</code>.
-            Ambient values compute fresh per request; dataset feeds arrive as
-            pointers agents query with the RAG tools.
+            selected, straight from{" "}
+            <code className="text-xs">resolve_full_context</code>. Ambient
+            values compute fresh per request; dataset feeds arrive as pointers
+            agents query with the RAG tools.
           </DialogDescription>
         </DialogHeader>
 
@@ -511,7 +526,10 @@ function PreviewDialog({ onClose }: { onClose: () => void }) {
         ) : (
           <div className="space-y-2 py-1">
             {entries.map((e) => (
-              <div key={e.key} className="rounded-md border border-border bg-card p-3">
+              <div
+                key={e.key}
+                className="rounded-md border border-border bg-card p-3"
+              >
                 <div className="flex items-center gap-2">
                   <code className="font-mono text-xs font-semibold text-foreground">
                     {e.key}
@@ -893,7 +911,9 @@ function EditItemDialog({
         }),
       });
       if (!patchRes.ok) {
-        const { error } = await patchRes.json().catch(() => ({ error: patchRes.statusText }));
+        const { error } = await patchRes
+          .json()
+          .catch(() => ({ error: patchRes.statusText }));
         toast.error(`Save failed: ${error}`);
         return;
       }
@@ -912,7 +932,9 @@ function EditItemDialog({
           }),
         });
         if (!vRes.ok) {
-          const { error } = await vRes.json().catch(() => ({ error: vRes.statusText }));
+          const { error } = await vRes
+            .json()
+            .catch(() => ({ error: vRes.statusText }));
           toast.error(`Saved definition, but value failed: ${error}`);
           return;
         }
@@ -943,7 +965,10 @@ function EditItemDialog({
 
         <div className="space-y-3 py-1">
           <Field label="Display name">
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
           </Field>
           <Field label="Description" hint="Optional.">
             <Textarea
@@ -953,11 +978,18 @@ function EditItemDialog({
             />
           </Field>
           <Field label="Sensitivity">
-            <Select value={sensitivity} onValueChange={(v) => setSensitivity(v as Sensitivity)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={sensitivity}
+              onValueChange={(v) => setSensitivity(v as Sensitivity)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {SENSITIVITY_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -981,19 +1013,26 @@ function EditItemDialog({
                   : "No scope to write to."
               }
             >
-              <ItemValueField
+              <ContextValueInput
                 valueType={item.value_type}
                 customComponent={customComponent}
-                variableName={displayName || item.key}
+                displayName={displayName || item.key}
                 value={value}
                 onChange={setValue}
+                minHeight={56}
+                maxHeight={400}
               />
             </Field>
           )}
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button type="button" onClick={save} disabled={saving}>
@@ -1003,64 +1042,6 @@ function EditItemDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// One value field that honors the item's component when set, else falls back to
-// a type-appropriate plain input. Shared by the edit + add dialogs.
-function ItemValueField({
-  valueType,
-  customComponent,
-  variableName,
-  value,
-  onChange,
-}: {
-  valueType: ValueType;
-  customComponent: VariableCustomComponent | undefined;
-  variableName: string;
-  value: unknown;
-  onChange: (v: unknown) => void;
-}) {
-  if (customComponent) {
-    return (
-      <VariableInputComponent
-        value={value}
-        onChange={onChange}
-        variableName={variableName}
-        customComponent={customComponent}
-        hideLabel
-      />
-    );
-  }
-
-  const isJson = valueType === "object" || valueType === "array";
-  const isMultiline = isJson || valueType === "string" || valueType === "document";
-  const str = typeof value === "string" ? value : value == null ? "" : String(value);
-
-  if (isMultiline) {
-    return (
-      <Textarea
-        value={str}
-        onChange={(e) => onChange(e.target.value)}
-        rows={isJson ? 8 : 4}
-        placeholder={isJson ? (valueType === "array" ? "[]" : "{}") : "Value"}
-        className={isJson ? "font-mono text-xs" : ""}
-      />
-    );
-  }
-  return (
-    <Input
-      value={str}
-      onChange={(e) => onChange(e.target.value)}
-      type={valueType === "number" ? "number" : "text"}
-      placeholder={
-        valueType === "boolean"
-          ? "true or false"
-          : valueType === "date"
-            ? "YYYY-MM-DD"
-            : "Value"
-      }
-    />
   );
 }
 
@@ -1095,7 +1076,9 @@ function NewScopeTypeDialog({
         }),
       });
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
         toast.error(`Create failed: ${error}`);
         return;
       }
@@ -1112,8 +1095,8 @@ function NewScopeTypeDialog({
         <DialogHeader>
           <DialogTitle>New System category</DialogTitle>
           <DialogDescription>
-            A platform-wide scope type (e.g. Company, Brand, Platform). Its items
-            resolve for every user. Created as a system category in the
+            A platform-wide scope type (e.g. Company, Brand, Platform). Its
+            items resolve for every user. Created as a system category in the
             member-less <code className="text-xs">matrx-system</code> org.
           </DialogDescription>
         </DialogHeader>
@@ -1143,7 +1126,12 @@ function NewScopeTypeDialog({
           </Field>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button type="button" onClick={save} disabled={saving}>
@@ -1208,7 +1196,9 @@ function AddItemDialog({
     }
 
     const hasValue =
-      isManual && value != null && !(typeof value === "string" && value.trim() === "");
+      isManual &&
+      value != null &&
+      !(typeof value === "string" && value.trim() === "");
     setSaving(true);
     try {
       const res = await fetch("/api/admin/system-context", {
@@ -1231,7 +1221,9 @@ function AddItemDialog({
         }),
       });
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        const { error } = await res
+          .json()
+          .catch(() => ({ error: res.statusText }));
         toast.error(`Create failed: ${error}`);
         return;
       }
@@ -1249,9 +1241,9 @@ function AddItemDialog({
         <DialogHeader>
           <DialogTitle>Add System context resource</DialogTitle>
           <DialogDescription>
-            A reusable, platform-wide resource. Define what it is, then choose how
-            it stays populated — link a dataset, run an agent, hit an API, scrape
-            the web, or (rarely) set a value by hand.
+            A reusable, platform-wide resource. Define what it is, then choose
+            how it stays populated — link a dataset, run an agent, hit an API,
+            scrape the web, or (rarely) set a value by hand.
           </DialogDescription>
         </DialogHeader>
 
@@ -1275,7 +1267,9 @@ function AddItemDialog({
             <Field
               label="Key"
               hint={keyValid ? "lowercase_with_underscores" : undefined}
-              error={!keyValid ? "lowercase letters, numbers, _ only" : undefined}
+              error={
+                !keyValid ? "lowercase letters, numbers, _ only" : undefined
+              }
             >
               <Input
                 value={key}
@@ -1363,13 +1357,18 @@ function AddItemDialog({
                 />
               </div>
 
-              <Field label="Initial value" hint="Optional — you can set it later.">
-                <ItemValueField
+              <Field
+                label="Initial value"
+                hint="Optional — you can set it later."
+              >
+                <ContextValueInput
                   valueType={valueType}
                   customComponent={customComponent}
-                  variableName={displayName || key || "value"}
+                  displayName={displayName || key || "value"}
                   value={value}
                   onChange={setValue}
+                  minHeight={56}
+                  maxHeight={400}
                 />
               </Field>
             </>
@@ -1377,7 +1376,12 @@ function AddItemDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button type="button" onClick={save} disabled={saving}>

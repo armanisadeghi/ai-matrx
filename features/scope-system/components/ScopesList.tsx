@@ -14,6 +14,7 @@ import {
   Layers,
   ListChecks,
   Loader2,
+  PanelsTopLeft,
   Pencil,
   Plus,
   Settings2,
@@ -37,7 +38,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { EditContextItemSheet } from "./EditContextItemSheet";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { NewScopeInline } from "./NewScopeInline";
 import { ContextItemAddForm } from "./ContextItemAddForm";
@@ -77,12 +77,10 @@ import {
   contextItemsHref,
   contextItemHref,
 } from "@/features/scope-system/utils/scopeRoutes";
+import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextItemsWindow";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
-import {
-  parseReferenceCellValue,
-  referenceCellSummary,
-} from "@/features/scopes/utils/referenceCell";
+import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import type {
   KgAcceptResult,
   KgDecisionResponse,
@@ -129,10 +127,10 @@ export function ScopesList({
     selectItemsLoadedForType(s, resolvedTypeId ?? ""),
   );
   const suggestions = useScopeSuggestions();
+  const openContextItemsWindow = useOpenContextItemsWindow();
 
   const [adding, setAdding] = useState(false);
   const [editingType, setEditingType] = useState(false);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [addingItem, setAddingItem] = useState(false);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [reorderScopesOpen, setReorderScopesOpen] = useState(false);
@@ -457,6 +455,18 @@ export function ScopesList({
                 Open page
               </Link>
             </Button>
+            {canManage && resolvedTypeId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  openContextItemsWindow({ scopeTypeId: resolvedTypeId })
+                }
+              >
+                <PanelsTopLeft className="h-3.5 w-3.5 mr-1.5" />
+                Manage in panel
+              </Button>
+            )}
             {canManage && items.length > 1 && (
               <Button
                 variant="outline"
@@ -497,7 +507,12 @@ export function ScopesList({
                   moving={movingId === item.id}
                   disabled={movingId !== null}
                   canManage={canManage}
-                  onEdit={() => setEditingItemId(item.id)}
+                  onEdit={() =>
+                    openContextItemsWindow({
+                      scopeTypeId: item.scope_type_id,
+                      initialItemId: item.id,
+                    })
+                  }
                   onMoveUp={() => moveItem(index, "up")}
                   onMoveDown={() => moveItem(index, "down")}
                 />
@@ -525,14 +540,6 @@ export function ScopesList({
           </Card>
         )}
       </div>
-
-      <EditContextItemSheet
-        open={editingItemId !== null}
-        onOpenChange={(o) => {
-          if (!o) setEditingItemId(null);
-        }}
-        itemId={editingItemId}
-      />
 
       <ReorderDialog
         open={reorderScopesOpen}
@@ -785,22 +792,5 @@ function ScopeTableRow({
 }
 
 function renderValue(row: ScopeContextRow): string {
-  // A reference cell's `value_text` is a ```matrx fence — summarize it (e.g.
-  // "QME Report.pdf" / "3 Files") instead of dumping the raw fence JSON; this
-  // dense grid cell can't render the chip-based `ContextValueDisplay`.
-  const referenceCell = parseReferenceCellValue(row.value_text);
-  if (referenceCell) return referenceCellSummary(referenceCell);
-  if (row.value_text) return row.value_text;
-  if (row.value_number != null) return String(row.value_number);
-  if (row.value_boolean != null) return row.value_boolean ? "Yes" : "No";
-  if (row.value_date) return row.value_date;
-  if (row.value_document_url) return row.value_document_url;
-  if (row.value_json) {
-    try {
-      return JSON.stringify(row.value_json);
-    } catch {
-      return "";
-    }
-  }
-  return "";
+  return summarizeContextCell(row) ?? "";
 }

@@ -673,6 +673,25 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
+  // ── Context Items Manager ──────────────────────────────────────────────────
+  // Add/Edit/Manage every context item on a scope type: sidebar list + a
+  // closeable tab per open item (or a "new item" draft tab). See
+  // `features/window-panels/windows/context-scopes/ContextItemsWindow.tsx`.
+  {
+    slug: "context-items-window",
+    overlayId: "contextItemsWindow",
+    kind: "window",
+    label: "Context Items",
+    defaultData: {
+      scopeTypeId: null,
+      initialItemId: null,
+      openNewOnMount: false,
+    },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+    mobileSidebarAs: "drawer",
+  },
+
   // ── Canvas Viewer ─────────────────────────────────────────────────────────
   {
     slug: "canvas-viewer-window",

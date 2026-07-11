@@ -11,6 +11,7 @@ import {
   Home,
   ListChecks,
   Loader2,
+  PanelsTopLeft,
   Pencil,
   Plus,
   Tag as TagIcon,
@@ -45,6 +46,7 @@ import {
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { EditContextItemSheet } from "./EditContextItemSheet";
+import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextItemsWindow";
 import { ReorderDialog } from "./ReorderDialog";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
@@ -232,6 +234,7 @@ function ContextItemsTypeView({
   const [addingItem, setAddingItem] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [reorderOpen, setReorderOpen] = useState(false);
+  const openContextItemsWindow = useOpenContextItemsWindow();
 
   useEffect(() => {
     if (resolvedTypeId) dispatch(listScopeTypeItems(resolvedTypeId));
@@ -286,6 +289,17 @@ function ContextItemsTypeView({
           </div>
           {canManage && (
             <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  resolvedTypeId &&
+                  openContextItemsWindow({ scopeTypeId: resolvedTypeId })
+                }
+              >
+                <PanelsTopLeft className="h-3.5 w-3.5 mr-1.5" />
+                Manage in panel
+              </Button>
               {items.length > 1 && (
                 <Button
                   variant="outline"

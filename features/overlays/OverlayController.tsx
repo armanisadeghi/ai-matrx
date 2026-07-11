@@ -45,6 +45,7 @@ import type { ProcessAdapter } from "@/features/code/adapters/ProcessAdapter";
 import type { ContentEditorSeedDocument } from "@/features/window-panels/windows/content-editors/useOpenContentEditorWindow";
 import type { HierarchyCreationWindowData } from "@/features/window-panels/windows/context-scopes/HierarchyCreationWindow";
 import type { ScopeEditWindowData } from "@/features/window-panels/windows/context-scopes/ScopeEditWindow";
+import type { ContextItemsWindowData } from "@/features/window-panels/windows/context-scopes/ContextItemsWindow";
 import type { EntityType } from "@/features/scopes/types";
 import type { AssetPreset } from "@/features/files/types";
 import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
@@ -490,6 +491,11 @@ const HierarchyCreationWindow = lazyOverlay(
 const ScopeEditWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/ScopeEditWindow"),
+  { ssr: false },
+);
+const ContextItemsWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/context-scopes/ContextItemsWindow"),
   { ssr: false },
 );
 const HtmlPreviewBridge = lazyOverlay(
@@ -1009,6 +1015,9 @@ export default function OverlayController() {
     scopeEditWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scopeEditWindow"),
     ),
+    contextItemsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "contextItemsWindow"),
+    ),
     imagePeekHost: useAppSelector((s) =>
       selectIsOverlayOpen(s, "imagePeekHost"),
     ),
@@ -1287,6 +1296,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     scopeEditWindow: useAppSelector((s) =>
       selectOverlayData(s, "scopeEditWindow"),
+    ) as Record<string, unknown> | null,
+    contextItemsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "contextItemsWindow"),
     ) as Record<string, unknown> | null,
     imagePeekHost: useAppSelector((s) =>
       selectOverlayData(s, "imagePeekHost"),
@@ -3370,6 +3382,34 @@ export default function OverlayController() {
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "scopeEditWindow" }))
+            }
+            data={data}
+          />
+        );
+      })()}
+
+      {/* contextItemsWindow */}
+      {(() => {
+        const isOpen = isOpenById.contextItemsWindow;
+        const raw = dataById.contextItemsWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const data: ContextItemsWindowData | undefined =
+          raw && typeof raw.scopeTypeId === "string"
+            ? {
+                scopeTypeId: raw.scopeTypeId,
+                initialItemId:
+                  typeof raw.initialItemId === "string"
+                    ? raw.initialItemId
+                    : null,
+                openNewOnMount: raw.openNewOnMount === true,
+              }
+            : undefined;
+        return (
+          <ContextItemsWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "contextItemsWindow" }))
             }
             data={data}
           />

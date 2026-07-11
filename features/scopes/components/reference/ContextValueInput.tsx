@@ -54,7 +54,17 @@ export interface ContextValueInputProps {
   className?: string;
 }
 
-function placeholderForType(t: ContextValueType): string {
+/**
+ * THE ONE type-appropriate placeholder for a primitive value type. `fallback`
+ * lets a caller customize only the "nothing more specific applies" case
+ * (e.g. `ScopeFieldInput`'s "…leave to save" autosave hint) without forking
+ * the whole switch — every other caller either omits it or passes its own
+ * `placeholder` prop straight to `ContextValueInput`, bypassing this.
+ */
+export function placeholderForType(
+  t: ContextValueType,
+  fallback = "Type a value",
+): string {
   switch (t) {
     case "number":
       return "Enter a number";
@@ -66,7 +76,7 @@ function placeholderForType(t: ContextValueType): string {
     case "array":
       return "{ }";
     default:
-      return "Type a value";
+      return fallback;
   }
 }
 

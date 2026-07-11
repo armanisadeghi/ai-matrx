@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Loader2, Plus, X, Info, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -16,12 +15,14 @@ import {
   selectItemsLoadedForType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
+import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
 import {
   slugifyKey,
   toSlug,
   isValidSlug,
   isReservedSlug,
 } from "@/features/scope-system/utils/slugify";
+import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 
 interface NewScopeInlineProps {
@@ -51,15 +52,22 @@ const newRow = (): NewItemRow => ({
 /**
  * Inline form for adding a scope. Renders, stacked top-to-bottom:
  * - Name + description (compact)
- * - One textarea per existing context item on the scope type
+ * - One `ContextValueInput` per existing context item on the scope type
+ *   (type-appropriate editor — text/number/boolean/date/custom-component; a
+ *   `reference` item can't be set here since there's no scope id yet — it
+ *   shows a "set after creating" note instead)
  * - "Add context item" rows that let the user define brand-new context items
- *   with values, right here
+ *   with values, right here (always `value_type="string"` — matching
+ *   `createContextItem`'s default when no type is specified)
  *
  * On submit: create_scope → set_scope_context_value for each existing filled
- * item → create_context_item + set_scope_context_value for each new (name,
- * value) pair. New items propagate to every other scope of the type.
+ * item (via `buildScopeValuePayload`, so a boolean/number/date item lands in
+ * its real column, not as raw text) → create_context_item +
+ * set_scope_context_value for each new (name, value) pair. New items
+ * propagate to every other scope of the type.
  *
- * IMPORTANT: every value editor is a Textarea (never an Input). Inputs were
+ * IMPORTANT: every value editor renders through `ContextValueInput`, which
+ * uses `ProTextarea` for text — never a plain `Input`. Inputs were once
  * silently swapped to Textareas above a char-count threshold, which unmounts
  * the focused field mid-keystroke. That bug caused the "I can't even type
  * into the fields" feedback.
@@ -84,7 +92,9 @@ export function NewScopeInline({
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
-  const [existingValues, setExistingValues] = useState<Record<string, string>>(
+  // Unknown, not string — a custom-component item's draft is a structured
+  // object (see `buildScopeValuePayload`), everything else is a string.
+  const [existingValues, setExistingValues] = useState<Record<string, unknown>>(
     {},
   );
   const [newItems, setNewItems] = useState<NewItemRow[]>([]);
@@ -95,8 +105,14 @@ export function NewScopeInline({
     if (!itemsLoaded) dispatch(listScopeTypeItems(typeId));
   }, [dispatch, typeId, itemsLoaded]);
 
-  function setExistingValue(itemId: string, value: string) {
+  function setExistingValue(itemId: string, value: unknown) {
     setExistingValues((prev) => ({ ...prev, [itemId]: value }));
+  }
+
+  function isEmptyDraft(v: unknown): boolean {
+    if (v == null) return true;
+    if (typeof v === "string") return v.trim() === "";
+    return false;
   }
 
   function addNewItemRow() {
@@ -144,13 +160,14 @@ export function NewScopeInline({
       ).unwrap();
 
       for (const item of items) {
-        const v = (existingValues[item.id] ?? "").trim();
-        if (!v) continue;
+        if (item.value_type === "reference") continue; // no scope id existed yet to point at
+        const draft = existingValues[item.id];
+        if (isEmptyDraft(draft)) continue;
         await dispatch(
           setScopeContextValue({
             scope_id: scope.id,
             context_item_id: item.id,
-            value_text: v,
+            ...buildScopeValuePayload(draft, item.value_type),
           }),
         ).unwrap();
       }
@@ -299,7 +316,7 @@ export function NewScopeInline({
 
         {submitActions}
 
-        {/* Existing context items — stacked, always textarea */}
+        {/* Existing context items — one ContextValueInput per item */}
         {items.length > 0 && (
           <div className="space-y-4 pt-2 border-t border-border">
             <Label className="text-xs">Context items</Label>
@@ -315,17 +332,25 @@ export function NewScopeInline({
                   {item.display_name}
                   <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
-                <ProTextarea
-                  id={`new-scope-val-${item.id}`}
-                  value={existingValues[item.id] ?? ""}
-                  onChange={(e) => setExistingValue(item.id, e.target.value)}
-                  placeholder="Leave blank to fill later"
-                  disabled={busy}
-                  minHeight={80}
-                  maxHeight={600}
-                  autoGrow
-                  enableTextStats={false}
-                />
+                {item.value_type === "reference" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Reference fields are set from the {labelSingular}
+                    &apos;s own page once it's created.
+                  </p>
+                ) : (
+                  <ContextValueInput
+                    id={`new-scope-val-${item.id}`}
+                    valueType={item.value_type}
+                    customComponent={item.custom_component}
+                    value={existingValues[item.id] ?? ""}
+                    onChange={(v) => setExistingValue(item.id, v)}
+                    displayName={item.display_name}
+                    placeholder="Leave blank to fill later"
+                    disabled={busy}
+                    minHeight={80}
+                    maxHeight={600}
+                  />
+                )}
                 {item.description && (
                   <p className="text-xs text-muted-foreground">
                     {item.description}
@@ -373,17 +398,16 @@ export function NewScopeInline({
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                <ProTextarea
-                  placeholder="Value for this one (optional)"
+                <ContextValueInput
+                  valueType="string"
                   value={row.value}
-                  onChange={(e) =>
-                    updateNewItemRow(row.rowId, { value: e.target.value })
+                  onChange={(v) =>
+                    updateNewItemRow(row.rowId, { value: String(v ?? "") })
                   }
+                  placeholder="Value for this one (optional)"
                   disabled={busy}
                   minHeight={80}
                   maxHeight={600}
-                  autoGrow
-                  enableTextStats={false}
                 />
               </div>
             ))}

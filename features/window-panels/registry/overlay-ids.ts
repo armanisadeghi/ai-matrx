@@ -70,6 +70,7 @@ export const OVERLAY_IDS = [
   "contentEditorWindow",
   "contentEditorWorkspaceWindow",
   "contextAssignment",
+  "contextItemsWindow",
   "contextSwitcherWindow",
   "createProjectWindow",
   "creatorHub",

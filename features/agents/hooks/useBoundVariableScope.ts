@@ -36,6 +36,10 @@ import type {
   VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
 import type { ResolvedValue } from "@/features/scopes/types";
+import {
+  referenceConfigFromItem,
+  type ReferenceItemConfig,
+} from "@/features/scopes/utils/referenceCell";
 
 export interface BoundVarInfo {
   name: string;
@@ -51,6 +55,8 @@ export interface BoundVarInfo {
   customComponent: VariableCustomComponent | undefined;
   /** The item's storage value_type — drives write-back column routing. */
   valueType: string | undefined;
+  /** Reference-cell config (`valueType === "reference"` only), for `ContextValueInput`. */
+  referenceConfig: ReferenceItemConfig | null;
   /** The active scope of the binding's type (write-back target when nothing resolved yet). */
   activeScopeIdOfType: string | null;
   /** The binding's scope type (for the "Select {ScopeType}" affordance). */
@@ -137,6 +143,7 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
         sourceScopeId: source?.kind === "scope" ? source.id : null,
         customComponent: item?.custom_component ?? undefined,
         valueType: item?.value_type,
+        referenceConfig: item ? referenceConfigFromItem(item) : null,
         activeScopeIdOfType,
         scopeTypeId: binding.scopeTypeId,
         scopeTypeAccessible: !!labelMap[binding.scopeTypeId],

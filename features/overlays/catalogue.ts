@@ -290,6 +290,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  contextItemsWindow: {
+    label: "Context Items",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   contextSwitcherWindow: {
     label: "Context Switcher Window",
     instanceMode: "singleton",

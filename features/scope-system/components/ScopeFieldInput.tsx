@@ -13,7 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
-import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
+import {
+  ContextValueInput,
+  placeholderForType,
+} from "@/features/scopes/components/reference/ContextValueInput";
 import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { EditScopeValueSheet } from "./EditScopeValueSheet";
@@ -223,7 +226,10 @@ export function ScopeFieldInput({
           }
           scopeId={scopeId}
           displayName={row.display_name}
-          placeholder={placeholderForType(row.value_type)}
+          placeholder={placeholderForType(
+            row.value_type,
+            "Type a value, leave to save",
+          )}
           minHeight={80}
           maxHeight={600}
         />
@@ -245,22 +251,6 @@ export function ScopeFieldInput({
       />
     </>
   );
-}
-
-function placeholderForType(t: ScopeContextRow["value_type"]): string {
-  switch (t) {
-    case "number":
-      return "Enter a number";
-    case "boolean":
-      return "true / false";
-    case "document":
-      return "https://...";
-    case "object":
-    case "array":
-      return "{ }";
-    default:
-      return "Type a value, leave to save";
-  }
 }
 
 function FieldStatus({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   Select,
   SelectContent,
@@ -20,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   createContextItem,
   type ContextItem,
@@ -29,7 +28,19 @@ import {
   type ContextSensitivity,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
+import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
 import { slugifyKey, toSlug } from "@/features/scope-system/utils/slugify";
+import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
+import {
+  EntryModeToggle,
+  type EntryMode,
+} from "@/features/scopes/components/reference/EntryModeToggle";
+import { ReferenceConfigFields } from "@/features/scopes/components/reference/ReferenceConfigFields";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  makeSelectScopeType,
+  makeSelectScopeTypesForOrg,
+} from "@/features/scopes/redux/selectors/tree";
 import {
   VALUE_TYPE_CONFIG,
   DEFAULT_CATEGORIES,
@@ -38,6 +49,11 @@ import {
 } from "@/features/agent-context/constants";
 
 const NO_CATEGORY = "__none__";
+
+/** Direct-entry primitive types — "Reference" is a separate first-class mode, never mixed into this list. */
+const PRIMITIVE_VALUE_TYPES = (
+  Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]
+).filter((k) => k !== "reference");
 
 interface ContextItemAddFormProps {
   scopeTypeId: string;
@@ -70,13 +86,26 @@ export function ContextItemAddForm({
   const nameRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
-  const [valueType, setValueType] =
-    useState<ContextValueType>(defaultValueType);
+  const [entryMode, setEntryMode] = useState<EntryMode>(
+    defaultValueType === "reference" ? "reference" : "direct",
+  );
+  const [primitiveType, setPrimitiveType] = useState<ContextValueType>(
+    defaultValueType === "reference" ? "string" : defaultValueType,
+  );
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState<unknown>("");
+
+  // Reference config — only meaningful in "reference" mode.
+  const [allowedReferenceTypes, setAllowedReferenceTypes] = useState<
+    string[]
+  >([]);
+  const [maxItems, setMaxItems] = useState("1");
+  const [allowedScopeTypeIds, setAllowedScopeTypeIds] = useState<string[]>(
+    [],
+  );
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
@@ -85,6 +114,35 @@ export function ContextItemAddForm({
   const [sortOrder, setSortOrder] = useState("");
 
   const [busy, setBusy] = useState(false);
+
+  const isReference = entryMode === "reference";
+  const valueType: ContextValueType = isReference ? "reference" : primitiveType;
+
+  function toggleReferenceType(t: string) {
+    setAllowedReferenceTypes((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+    );
+  }
+  function toggleAllowedScopeType(id: string) {
+    setAllowedScopeTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  // Org scope types, for the "scope" reference type's allowed-scope-type filter.
+  useEffect(() => {
+    void dispatch(ensureScopeTree());
+  }, [dispatch]);
+  const selectScopeType = useMemo(() => makeSelectScopeType(), []);
+  const scopeTypeNode = useAppSelector((s) =>
+    selectScopeType(s, scopeTypeId),
+  );
+  const orgId = scopeTypeNode?.organization_id ?? null;
+  const selectScopeTypesForOrg = useMemo(
+    () => makeSelectScopeTypesForOrg(),
+    [],
+  );
+  const orgScopeTypes = useAppSelector((s) => selectScopeTypesForOrg(s, orgId));
 
   function addTag() {
     const next = tagInput.trim().toLowerCase().replace(/\s+/g, "_");
@@ -97,12 +155,16 @@ export function ContextItemAddForm({
 
   function resetFields() {
     setName("");
-    setValueType(defaultValueType);
+    setEntryMode(defaultValueType === "reference" ? "reference" : "direct");
+    setPrimitiveType(defaultValueType === "reference" ? "string" : defaultValueType);
     setDescription("");
     setCategory("");
     setTags([]);
     setTagInput("");
     setValue("");
+    setAllowedReferenceTypes([]);
+    setMaxItems("1");
+    setAllowedScopeTypeIds([]);
     setFetchHint("on_demand");
     setSensitivity("internal");
     setSortOrder("");
@@ -111,8 +173,13 @@ export function ContextItemAddForm({
   async function submit(keepOpen: boolean) {
     const trimmed = name.trim();
     if (!trimmed || busy) return;
+    if (isReference && allowedReferenceTypes.length === 0) {
+      toast.error("Select at least one reference type");
+      return;
+    }
     setBusy(true);
     try {
+      const maxItemsNum = Math.max(1, Number(maxItems) || 1);
       const item = await dispatch(
         createContextItem({
           scope_type_id: scopeTypeId,
@@ -126,17 +193,29 @@ export function ContextItemAddForm({
           fetch_hint: fetchHint,
           sensitivity,
           sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
+          allowed_reference_types: isReference
+            ? allowedReferenceTypes
+            : undefined,
+          max_items: isReference ? maxItemsNum : undefined,
+          allowed_scope_type_ids:
+            isReference && allowedReferenceTypes.includes("scope")
+              ? allowedScopeTypeIds
+              : undefined,
         }),
       ).unwrap();
 
       onAdded?.(item);
 
-      if (scopeId && value.trim()) {
+      const hasValue =
+        valueType !== "reference" &&
+        value != null &&
+        (typeof value !== "string" || value.trim() !== "");
+      if (scopeId && hasValue) {
         await dispatch(
           setScopeContextValue({
             scope_id: scopeId,
             context_item_id: item.id,
-            value_text: value.trim(),
+            ...buildScopeValuePayload(value, valueType),
           }),
         ).unwrap();
       }
@@ -166,49 +245,69 @@ export function ContextItemAddForm({
         fill values per {labelPlural.replace(/s$/, "").toLowerCase()}.
       </p>
 
-      {/* Name + Type */}
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_9rem] gap-2">
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Name</Label>
-          <Input
-            ref={nameRef}
-            autoFocus
-            placeholder="e.g. Website URL"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{ fontSize: "16px" }}
+      {/* Name */}
+      <div>
+        <Label className="text-[10px] text-muted-foreground">Name</Label>
+        <Input
+          ref={nameRef}
+          autoFocus
+          placeholder="e.g. Website URL"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{ fontSize: "16px" }}
+          disabled={busy}
+          className="mt-0.5"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submit(true);
+            }
+            if (e.key === "Escape") onClose();
+          }}
+        />
+      </div>
+
+      {/* Value type — Direct Entry vs. Reference, the first decision */}
+      <div className="space-y-2">
+        <Label className="text-[10px] text-muted-foreground">
+          Value type
+        </Label>
+        <EntryModeToggle
+          value={entryMode}
+          onChange={setEntryMode}
+          disabled={busy}
+        />
+
+        {isReference ? (
+          <ReferenceConfigFields
+            allowedReferenceTypes={allowedReferenceTypes}
+            onToggleReferenceType={toggleReferenceType}
+            maxItems={maxItems}
+            onMaxItemsChange={setMaxItems}
+            allowedScopeTypeIds={allowedScopeTypeIds}
+            onToggleAllowedScopeType={toggleAllowedScopeType}
+            orgScopeTypes={orgScopeTypes}
             disabled={busy}
-            className="mt-0.5"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                submit(true);
-              }
-              if (e.key === "Escape") onClose();
-            }}
+            className="space-y-2 rounded-md border border-border bg-background/60 p-2.5"
           />
-        </div>
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Type</Label>
+        ) : (
           <Select
-            value={valueType}
-            onValueChange={(v) => setValueType(v as ContextValueType)}
+            value={primitiveType}
+            onValueChange={(v) => setPrimitiveType(v as ContextValueType)}
             disabled={busy}
           >
-            <SelectTrigger className="mt-0.5">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]).map(
-                (k) => (
-                  <SelectItem key={k} value={k}>
-                    {VALUE_TYPE_CONFIG[k].label}
-                  </SelectItem>
-                ),
-              )}
+              {PRIMITIVE_VALUE_TYPES.map((k) => (
+                <SelectItem key={k} value={k}>
+                  {VALUE_TYPE_CONFIG[k].label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-        </div>
+        )}
       </div>
 
       {/* Description */}
@@ -286,21 +385,26 @@ export function ContextItemAddForm({
         </div>
       </div>
 
-      {scopeId && (
+      {scopeId && valueType === "reference" && (
+        <p className="text-[11px] text-muted-foreground">
+          Reference fields are configured and set from the item's own page once
+          it's created.
+        </p>
+      )}
+      {scopeId && valueType !== "reference" && (
         <div>
           <Label className="text-[10px] text-muted-foreground">
             Value for this one (optional)
           </Label>
-          <ProTextarea
-            placeholder="Leave blank to fill later"
+          <ContextValueInput
+            valueType={valueType}
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={setValue}
+            placeholder="Leave blank to fill later"
             disabled={busy}
             minHeight={56}
             maxHeight={600}
-            autoGrow
             className="mt-0.5"
-            enableTextStats={false}
           />
         </div>
       )}

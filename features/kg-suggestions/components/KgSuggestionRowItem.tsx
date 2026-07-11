@@ -77,10 +77,7 @@ import {
 } from "@/features/kg-suggestions/types";
 import { HeavyHitterAcceptDialog } from "./HeavyHitterAcceptDialog";
 import { extractErrorMessage } from "@/utils/errors";
-import {
-  parseReferenceCellValue,
-  referenceCellSummary,
-} from "@/features/scopes/utils/referenceCell";
+import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 
 const MATCH_LABEL: Partial<Record<KgMatchKind, string>> = {
   exact: "Exact match",
@@ -1132,21 +1129,7 @@ function capitalize(s: string): string {
 
 function formatCurrentValue(v: ResolvedSuggestionValue | null): string | null {
   if (!v) return null;
-  // A reference cell's `value_text` is a ```matrx fence — summarize it (e.g.
-  // "QME Report.pdf" / "3 Files") instead of dumping the raw fence JSON.
-  const referenceCell = parseReferenceCellValue(v.value_text);
-  if (referenceCell) return referenceCellSummary(referenceCell);
-  if (v.value_text != null && v.value_text !== "") return v.value_text;
-  if (v.value_number != null) return String(v.value_number);
-  if (v.value_boolean != null) return v.value_boolean ? "Yes" : "No";
-  if (v.value_json != null) {
-    try {
-      return JSON.stringify(v.value_json);
-    } catch {
-      return String(v.value_json);
-    }
-  }
-  return null;
+  return summarizeContextCell(v);
 }
 
 function formatRelative(iso: string): string {

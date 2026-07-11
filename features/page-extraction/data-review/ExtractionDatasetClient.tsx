@@ -478,7 +478,6 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
           <div className="ml-auto shrink-0 flex items-center">
             {job && (
               <ContextStatusButton
-                size="sm"
                 subject={{
                   entityType: EXTRACTION_ENTITY_TYPE,
                   entityId: job.id,

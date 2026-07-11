@@ -384,12 +384,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
             </button>
             {/* Context shortcut — amber = no context yet (nudge), green = set.
                 Same picker + same save behavior as the note-footer panel.
-                Sized/shaped to match the other action buttons; colored icon,
-                no border. */}
-            <NoteContextStatusIcon
-              noteId={noteId}
-              className="h-6 w-6 border-0 p-0"
-            />
+                Already sized/shaped to match the other action buttons. */}
+            <NoteContextStatusIcon noteId={noteId} />
             <MicrophoneIconButton
               onTranscriptionComplete={handleTranscription}
               variant="icon-only"

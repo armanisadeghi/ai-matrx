@@ -43,13 +43,18 @@ export interface ContextStatusButtonProps extends Omit<
    * - `solid` — filled amber (unset) / green (set) when status should pop
    */
   variant?: "glass" | "solid";
-  /** @deprecated Tap geometry is fixed — kept so existing callers type-check. */
-  size?: "xs" | "sm";
-  /** Extra class on the glass icon color path (ignored for solid). */
-  buttonClassName?: string;
   /** Render scope-count text inside the tap pill (`None` / `N scopes`). */
   showScopeLabel?: boolean;
 }
+
+// NOTE: this component's tap geometry is FIXED (TapTargetButton's pill size
+// is not configurable by design — see components/icons/TapTargetButton.tsx).
+// It only fits shell-header / toolbar chrome. A spot that needs a different
+// footprint (a compact metadata-list row, a 24px tab-strip icon, …) should
+// NOT force it in here via a size/className override — build a small local
+// trigger against `ContextAssignmentPopover` directly instead (see
+// PdfStudioPagesMeta.tsx's `PdfFileContextRow` and NoteContextStatusIcon for
+// the pattern). Two prior callers did exactly that and it rendered broken.
 
 const SOLID_SET = {
   bgColor: "bg-emerald-500",
@@ -68,8 +73,6 @@ export function ContextStatusButton({
   knownScopeCount,
   hasOtherContext = false,
   variant = "glass",
-  size: _size,
-  buttonClassName,
   showScopeLabel = false,
   ...popoverProps
 }: ContextStatusButtonProps) {
@@ -101,9 +104,7 @@ export function ContextStatusButton({
     ariaLabel,
     tooltip: ariaLabel,
     label,
-    ...(variant === "solid"
-      ? solidProps
-      : { className: buttonClassName ?? glassClassName }),
+    ...(variant === "solid" ? solidProps : { className: glassClassName }),
   } as const;
 
   const trigger = hasContext ? (

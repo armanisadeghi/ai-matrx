@@ -340,7 +340,6 @@ export function ExtractionCatalogClient() {
                         onClick={(ev) => ev.stopPropagation()}
                       >
                         <ContextStatusButton
-                          size="xs"
                           knownScopeCount={tags.length}
                           subject={{
                             entityType: EXTRACTION_ENTITY_TYPE,

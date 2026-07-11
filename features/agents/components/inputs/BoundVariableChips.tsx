@@ -50,7 +50,7 @@ import {
 } from "@/features/agents/hooks/useBoundVariableScope";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { VariableInputComponent } from "./input-components/VariableInputComponent";
+import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
 import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
@@ -62,7 +62,9 @@ interface BoundVariableChipsProps {
   conversationId: string;
 }
 
-export function BoundVariableChips({ conversationId }: BoundVariableChipsProps) {
+export function BoundVariableChips({
+  conversationId,
+}: BoundVariableChipsProps) {
   // Always runs the hook (loads catalog + inherited components + prefills scope values),
   // even when nothing renders.
   const infos = useBoundVariableScope(conversationId);
@@ -101,7 +103,11 @@ export function BoundVariableChips({ conversationId }: BoundVariableChipsProps) 
         />
       ))}
       {resolved.map((info) => (
-        <BoundChip key={info.name} conversationId={conversationId} info={info} />
+        <BoundChip
+          key={info.name}
+          conversationId={conversationId}
+          info={info}
+        />
       ))}
     </div>
   );
@@ -185,7 +191,9 @@ function BoundChip({
     !!writeScopeId && !!info.binding.contextItemId && hasUserOverride;
 
   const handleChange = (v: unknown) => {
-    dispatch(setUserVariableValue({ conversationId, name: info.name, value: v }));
+    dispatch(
+      setUserVariableValue({ conversationId, name: info.name, value: v }),
+    );
   };
 
   const handleWriteBack = async () => {
@@ -213,7 +221,9 @@ function BoundChip({
       dispatch(ensureContextValues(writeScopeId, { refresh: true }));
       toast.success(`Saved to ${info.scopeTypeLabel}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save to scope");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save to scope",
+      );
     } finally {
       setSaving(false);
     }
@@ -255,13 +265,16 @@ function BoundChip({
             </span>
           </div>
 
-          <VariableInputComponent
+          <ContextValueInput
+            valueType={(info.valueType ?? "string") as ContextValueType}
+            customComponent={info.customComponent}
             value={effectiveValue}
             onChange={handleChange}
-            variableName={info.name}
-            customComponent={info.customComponent}
-            hideLabel
-            compact
+            referenceConfig={info.referenceConfig}
+            scopeId={writeScopeId ?? undefined}
+            displayName={info.name}
+            minHeight={56}
+            maxHeight={300}
           />
 
           {canWriteBack && (
