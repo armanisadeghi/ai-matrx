@@ -9,8 +9,11 @@
  *               supplies each model's serving TIERS (`served_via` — the
  *               endpoint's public Matrx brand: "Matrx Fast", "Matrx Lightning",
  *               "Matrx Standard", ... — never the real vendor).
- *   - "admin" → `ai.model_admin`   (super-admin; raw $ pricing + service internals;
- *               full catalog incl. deprecated).
+ *   - "admin" → `public.admin_model_catalog()` RPC (SECURITY DEFINER, gated by
+ *               `is_super_admin()`) returning `ai.model_admin` rows (raw $
+ *               pricing + real serving vendors; full catalog incl. deprecated).
+ *               The view itself has postgres-only grants — never read it
+ *               directly from the client.
  *
  * The row is reshaped for display: pretty name only, the stored MAKER (the DB
  * resolves it — serving vendors like Groq/Cerebras are never exposed on
@@ -254,11 +257,10 @@ async function loadCatalog(
   try {
     const supabase = createClient();
     if (variant === "admin") {
-      const { data, error } = await supabase
-        .schema("ai")
-        .from("model_admin")
-        .select("*")
-        .order("common_name", { ascending: true, nullsFirst: false });
+      // ai.model_admin has NO grants to authenticated (vendor names are
+      // secret). The ONE read path is the SECURITY DEFINER RPC gated by
+      // is_super_admin() — non-admins get a loud 42501, never data.
+      const { data, error } = await supabase.rpc("admin_model_catalog");
       if (error) throw error;
       const models = (data ?? [])
         .map(normalizeAdmin)

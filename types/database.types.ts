@@ -2323,6 +2323,16 @@ export type Database = {
         Args: { p_doc: Json; p_where: string }
         Returns: undefined
       }
+      audit_ui_enum_drift: {
+        Args: never
+        Returns: {
+          category: string
+          control_key: string
+          legacy_enum: Json
+          model_name: string
+          resolved_enum: Json
+        }[]
+      }
       jsonb_num: { Args: { n: number }; Returns: Json }
       resolve_model_config: { Args: { p_model_id: string }; Returns: Json }
     }
@@ -25270,6 +25280,16 @@ export type Database = {
           table_schema: string
         }[]
       }
+      admin_model_catalog: {
+        Args: never
+        Returns: Database["ai"]["Views"]["model_admin"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "model_admin"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_promote: {
         Args: {
           target_level?: Database["public"]["Enums"]["admin_level"]
@@ -32968,6 +32988,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      fn_data_store_members_rich: {
+        Args: { p_store_id: string }
+        Returns: Json
+      }
+      fn_get_user_data_store: {
+        Args: { p_member_limit?: number; p_store_id: string }
+        Returns: Json
+      }
+      fn_list_user_data_stores: {
+        Args: { p_include_inactive?: boolean }
+        Returns: {
+          access: string
+          description: string
+          id: string
+          is_active: boolean
+          kind: string
+          member_count: number
+          name: string
+          read_only: boolean
+          short_code: string
+        }[]
+      }
       library_grant_publish: {
         Args: {
           p_actor?: string

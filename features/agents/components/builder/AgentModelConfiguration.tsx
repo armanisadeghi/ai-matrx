@@ -15,6 +15,7 @@ import {
   selectAgentModelMissing,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { AgentVariablesModal } from "@/features/agents/components/variables-management/AgentVariablesModal";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
@@ -42,6 +43,12 @@ export function AgentModelConfiguration({
   const [labVariant, setLabVariant] = useState<ModelCatalogVariant | null>(
     null,
   );
+  // Canonical client admin gate (state.userAuth.adminLevel, hydrated at session
+  // boot). The admin catalog variant is super-admin-only: the option is hidden
+  // for everyone else, and the DB RPC enforces the same gate server-side.
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const effectiveLabVariant =
+    labVariant === "admin" && !isSuperAdmin ? "user" : labVariant;
 
   const handleModelChange = useCallback(
     (newModelId: string) => {
@@ -74,11 +81,11 @@ export function AgentModelConfiguration({
           >
             Model
           </Label>
-          {labVariant ? (
+          {effectiveLabVariant ? (
             <ModelListDropdown
               value={modelId}
               onValueChange={handleModelChange}
-              variant={labVariant}
+              variant={effectiveLabVariant}
               inputModalities={[]}
               outputModalities={["text"]}
             />
@@ -99,7 +106,10 @@ export function AgentModelConfiguration({
       {/* TEMP: model-picker Lab switcher */}
       <div className="flex items-center gap-1 pl-1.5 text-[10px] text-muted-foreground">
         <span className="uppercase tracking-wide opacity-70">Picker lab:</span>
-        {(["off", "user", "admin"] as const).map((opt) => {
+        {(isSuperAdmin
+          ? (["off", "user", "admin"] as const)
+          : (["off", "user"] as const)
+        ).map((opt) => {
           const active =
             opt === "off" ? labVariant === null : labVariant === opt;
           return (
