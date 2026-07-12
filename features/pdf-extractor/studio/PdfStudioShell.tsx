@@ -46,6 +46,7 @@ import { PdfStudioReader, type PdfPaneEditMode } from "./PdfStudioReader";
 import { PdfStudioInspector, type SectionKey } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
+import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugTrigger";
 import { CopyPagesOverlay } from "../components/CopyPagesOverlay";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { KnowledgeAssetPanel } from "@/features/rag/components/library/KnowledgeAssetPanel";
@@ -896,18 +897,23 @@ function LiveStatusStrip({
 /** Shown while a document is being fetched. */
 function DocLoadingSkeleton() {
   return (
-    <div className="flex-1 flex min-h-0">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 border-border p-3 gap-3"
-        >
-          <div className="h-4 w-28 rounded bg-muted/50 animate-pulse" />
-          <div className="h-40 w-full rounded bg-muted/40 animate-pulse" />
-          <div className="h-24 w-full rounded bg-muted/30 animate-pulse" />
-          <div className="h-24 w-full rounded bg-muted/20 animate-pulse" />
-        </div>
-      ))}
+    <div className="flex-1 flex min-h-0 flex-col">
+      <div className="flex items-center justify-end px-4 py-2 border-b border-border">
+        <PdfBatchExtractDebugTrigger autoOpenOnStream={false} />
+      </div>
+      <div className="flex flex-1 min-h-0">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="flex-1 min-w-0 flex flex-col border-r last:border-r-0 border-border p-3 gap-3"
+          >
+            <div className="h-4 w-28 rounded bg-muted/50 animate-pulse" />
+            <div className="h-40 w-full rounded bg-muted/40 animate-pulse" />
+            <div className="h-24 w-full rounded bg-muted/30 animate-pulse" />
+            <div className="h-24 w-full rounded bg-muted/20 animate-pulse" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

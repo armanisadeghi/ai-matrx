@@ -112,6 +112,7 @@ export const OVERLAY_IDS = [
   "notesWindow",
   "observationalMemoryWindow",
   "pdfExtractorWindow",
+  "pdfBatchExtractDebugWindow",
   "picklistManagerV1Window",
   "picklistManagerV2Window",
   "projectsWindow",

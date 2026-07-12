@@ -1067,6 +1067,17 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "card",
   },
 
+  // ── PDF Batch Extract Debug ─────────────────────────────────────────────
+  {
+    slug: "pdf-batch-extract-debug",
+    overlayId: "pdfBatchExtractDebugWindow",
+    kind: "window",
+    label: "PDF Batch Extract Debug",
+    defaultData: { selectedSessionId: null },
+    ephemeral: true,
+    mobilePresentation: "card",
+  },
+
   // ── State Analyzer ────────────────────────────────────────────────────────
   {
     slug: "state-analyzer-window",

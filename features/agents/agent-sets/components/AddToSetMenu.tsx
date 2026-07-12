@@ -20,13 +20,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast-service";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { fetchAgentSets, addAgentToSet } from "@/features/agents/redux/agent-sets/thunks";
+import {
+  fetchAgentSets,
+  addAgentToSet,
+} from "@/features/agents/redux/agent-sets/thunks";
 import { useAgentSetsList } from "../hooks/useAgentSetsList";
 import { CreateSetDialog } from "./CreateSetDialog";
 import { accentClasses } from "./accents";
 import { cn } from "@/lib/utils";
 
-export function AddToSetMenu({ agentId, disabled }: { agentId: string; disabled?: boolean }) {
+export function AddToSetMenu({
+  agentId,
+  disabled,
+}: {
+  agentId: string;
+  disabled?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { sets } = useAgentSetsList({ auto: false });
@@ -56,9 +65,16 @@ export function AddToSetMenu({ agentId, disabled }: { agentId: string; disabled?
             disabled={disabled}
           />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuContent
+          align="end"
+          className="w-56"
+          onClick={(e) => e.stopPropagation()}
+        >
           <DropdownMenuLabel>Add to set</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={() => setCreateOpen(true)} className="gap-2">
+          <DropdownMenuItem
+            onSelect={() => setCreateOpen(true)}
+            className="gap-2"
+          >
             <Plus className="h-4 w-4" />
             New set with this agent…
           </DropdownMenuItem>
@@ -71,21 +87,37 @@ export function AddToSetMenu({ agentId, disabled }: { agentId: string; disabled?
                 onSelect={() => addTo(s.orchestratorId, s.label || s.name)}
                 className="gap-2"
               >
-                <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", a.dot)} />
+                <span
+                  className={cn("h-2.5 w-2.5 shrink-0 rounded-full", a.dot)}
+                />
                 <span className="truncate">{s.label || s.name}</span>
-                <span className="ml-auto text-[11px] text-muted-foreground">{s.memberCount}</span>
+                <span className="ml-auto text-[11px] text-muted-foreground">
+                  {s.memberCount}
+                </span>
               </DropdownMenuItem>
             );
           })}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => router.push("/agents/sets")} className="gap-2">
+          <DropdownMenuItem
+            onSelect={() => router.push("/agents/sets")}
+            className="gap-2"
+          >
             <ListTree className="h-4 w-4" />
             Browse all sets
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <CreateSetDialog open={createOpen} onOpenChange={setCreateOpen} seedMemberId={agentId} />
+      {/* Mount only when open — CreateSetDialog calls useEnsureAgentsLoaded on
+          mount, and AgentCard puts this menu on every row. Eager mount was
+          stampeding agx_get_list_full (N cards → N parallel full-list RPCs). */}
+      {createOpen ? (
+        <CreateSetDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          seedMemberId={agentId}
+        />
+      ) : null}
     </>
   );
 }

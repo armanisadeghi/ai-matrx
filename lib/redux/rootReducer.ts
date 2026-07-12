@@ -50,6 +50,7 @@ import schedulingTasksReducer from "@/features/scheduling/redux/tasks/slice";
 import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
 import pageExtractionReducer from "@/features/page-extraction/redux/pageExtractionSlice";
 import { pdfStudioReducer } from "@/features/pdf-extractor/state/pdfStudioSlice";
+import { pdfBatchExtractDebugReducer } from "@/features/pdf-extractor/state/pdfBatchExtractDebugSlice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
 import fastFireReducer from "@/features/flashcards/fast-fire/redux/fastFireSlice";
 import warRoomReducer from "@/features/war-room/redux/slice";
@@ -174,12 +175,8 @@ import diffCompareReducer from "@/lib/redux/slices/diffCompareSlice";
 const moduleReducers = Object.keys(moduleSchemas).reduce<
   Record<string, Reducer>
 >((acc, moduleName) => {
-  const moduleSchema =
-    moduleSchemas[moduleName as keyof typeof moduleSchemas];
-  const moduleSlice = createModuleSlice(
-    moduleName as ModuleName,
-    moduleSchema,
-  );
+  const moduleSchema = moduleSchemas[moduleName as keyof typeof moduleSchemas];
+  const moduleSlice = createModuleSlice(moduleName as ModuleName, moduleSchema);
   acc[moduleName] = moduleSlice.reducer;
   return acc;
 }, {});
@@ -374,6 +371,7 @@ export const slimReducerMap = {
 
   pageExtraction: pageExtractionReducer,
   pdfStudio: pdfStudioReducer,
+  pdfBatchExtractDebug: pdfBatchExtractDebugReducer,
 
   kgSuggestions: kgSuggestionsReducer,
 

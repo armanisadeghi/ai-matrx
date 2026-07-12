@@ -515,6 +515,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  pdfBatchExtractDebugWindow: {
+    label: "PDF Batch Extract Debug Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   projectsWindow: {
     label: "Projects Window",
     instanceMode: "singleton",

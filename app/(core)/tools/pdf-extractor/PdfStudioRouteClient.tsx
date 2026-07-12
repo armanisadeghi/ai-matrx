@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PdfBatchExtractDebugTrigger } from "@/features/pdf-extractor/components/PdfBatchExtractDebugTrigger";
 
 /**
  * Client wrapper for the PDF Studio route. Picks desktop vs mobile shell
@@ -31,10 +32,15 @@ export default function PdfStudioRouteClient({
   initialDocumentId?: string;
 }) {
   const isMobile = useIsMobile();
-  return isMobile ? (
-    <Mobile initialDocumentId={initialDocumentId} />
-  ) : (
-    <Desktop initialDocumentId={initialDocumentId} />
+  return (
+    <>
+      <PdfBatchExtractDebugTrigger className="fixed bottom-4 right-4 z-40 hidden md:block" />
+      {isMobile ? (
+        <Mobile initialDocumentId={initialDocumentId} />
+      ) : (
+        <Desktop initialDocumentId={initialDocumentId} />
+      )}
+    </>
   );
 }
 

@@ -3,7 +3,8 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ENDPOINTS } from "@/lib/api/endpoints";
@@ -14,8 +15,14 @@ import {
 } from "@/features/pdf/utils/inactivity";
 import { supabase } from "@/utils/supabase/client";
 import { PROCESSED_DOCUMENTS_COLUMNS } from "@/utils/supabase/docprocDb";
-import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { parseHttpError } from "@/lib/api/errors";
+import { consumeBatchExtractNdjsonStream } from "../service/batchExtractDebugStream";
+import {
+  appendBatchExtractDebugLine,
+  finishBatchExtractDebugSession,
+  markBatchExtractDebugStreaming,
+  startBatchExtractDebugSession,
+} from "../state/pdfBatchExtractDebugSlice";
 import {
   streamPdfClean,
   streamPdfFullPipeline,
@@ -267,9 +274,11 @@ export interface UsePdfExtractorOptions {
 
 export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   const { loadHistory: shouldLoadHistory = true } = options;
+  const dispatch = useAppDispatch();
   const { getHeaders, waitForAuth } = useApiAuth();
   const backendUrl = useAppSelector(selectResolvedBaseUrl);
   const userId = useAppSelector(selectUserId);
+  const isAdmin = useAppSelector(selectIsAdmin);
 
   // Tabs & navigation
   const [tabs, setTabs] = useState<ExtractionTab[]>([]);
@@ -421,24 +430,67 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       // Switch to first extracting tab
       setActiveTabId(placeholderTabs[0].id);
 
+      let debugSessionId: string | null = null;
+
       try {
         const headers = await getAuthHeaders();
         const formData = new FormData();
         selectedFiles.forEach((file) => formData.append("files", file));
 
-        const response = await fetch(
-          `${backendUrl}${ENDPOINTS.pdf.batchExtract}?max_concurrent=3`,
-          {
-            method: "POST",
-            headers,
-            body: formData,
-          },
-        );
+        const requestUrl = `${backendUrl}${ENDPOINTS.pdf.batchExtract}?max_concurrent=3`;
+        debugSessionId = isAdmin
+          ? `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+          : null;
+
+        if (debugSessionId) {
+          dispatch(
+            startBatchExtractDebugSession({
+              id: debugSessionId,
+              startedAt: new Date().toISOString(),
+              request: {
+                method: "POST",
+                url: requestUrl,
+                queryParams: { max_concurrent: "3" },
+                fileNames: selectedFiles.map((f) => f.name),
+                fileSizes: selectedFiles.map((f) => f.size),
+                authorizationPreview: headers.Authorization
+                  ? `${headers.Authorization.slice(0, 16)}…`
+                  : null,
+              },
+            }),
+          );
+        }
+
+        const response = await fetch(requestUrl, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+
+        if (debugSessionId) {
+          dispatch(
+            markBatchExtractDebugStreaming({ sessionId: debugSessionId }),
+          );
+        }
 
         if (!response.ok) {
-          // Canonical error parsing — extracts the backend envelope's
-          // user_message instead of dumping the raw body into the tab.
           const apiError = await parseHttpError(response);
+          if (debugSessionId) {
+            dispatch(
+              finishBatchExtractDebugSession({
+                sessionId: debugSessionId,
+                finishedAt: new Date().toISOString(),
+                status: "error",
+                response: {
+                  httpStatus: response.status,
+                  statusText: response.statusText,
+                  contentType: response.headers.get("content-type"),
+                  requestId: response.headers.get("X-Request-ID"),
+                },
+                error: apiError.userMessage,
+              }),
+            );
+          }
           setTabs((prev) =>
             prev.map((tab) =>
               placeholderTabs.some((p) => p.id === tab.id)
@@ -457,8 +509,29 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         // Track which placeholder index we're on (results arrive in completion order)
         let resultIndex = 0;
 
-        const { events } = parseNdjsonStream(response);
-        for await (const event of events) {
+        const stream = consumeBatchExtractNdjsonStream(
+          response,
+          debugSessionId
+            ? {
+                onRawLine: (line, index) => {
+                  dispatch(
+                    appendBatchExtractDebugLine({
+                      sessionId: debugSessionId,
+                      line: {
+                        index,
+                        receivedAt: new Date().toISOString(),
+                        raw: line,
+                      },
+                    }),
+                  );
+                },
+              }
+            : {
+                onRawLine: () => {},
+              },
+        );
+
+        for await (const event of stream) {
           if (event.event === "info") {
             if (event.data.code === "pdf_page_progress") {
               // Update progress on the currently extracting tab
@@ -561,8 +634,36 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
             break;
           }
         }
+
+        if (debugSessionId) {
+          dispatch(
+            finishBatchExtractDebugSession({
+              sessionId: debugSessionId,
+              finishedAt: new Date().toISOString(),
+              status: "complete",
+              response: {
+                httpStatus: response.status,
+                statusText: response.statusText,
+                contentType: response.headers.get("content-type"),
+                requestId: response.headers.get("X-Request-ID"),
+              },
+              error: null,
+            }),
+          );
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Extraction failed";
+        if (debugSessionId) {
+          dispatch(
+            finishBatchExtractDebugSession({
+              sessionId: debugSessionId,
+              finishedAt: new Date().toISOString(),
+              status: "error",
+              response: null,
+              error: msg,
+            }),
+          );
+        }
         // Mark remaining extracting placeholders as error
         setTabs((prev) =>
           prev.map((tab) =>
@@ -612,6 +713,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       fetchDocument,
       clearFiles,
       loadHistory,
+      dispatch,
+      isAdmin,
     ],
   );
 

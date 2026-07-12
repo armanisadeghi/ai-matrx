@@ -34,7 +34,10 @@ import {
   selectTotalSharedAgentsCount,
 } from "@/features/agents/redux/agent-consumers/selectors";
 import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
-import { createAgentSet, addAgentToSet } from "@/features/agents/redux/agent-sets/thunks";
+import {
+  createAgentSet,
+  addAgentToSet,
+} from "@/features/agents/redux/agent-sets/thunks";
 import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { accentClasses } from "./accents";
@@ -43,7 +46,11 @@ import { DEFAULT_SET_ACCENT, SET_ACCENTS, type SetAccent } from "../constants";
 const PICKER_CONSUMER = "agent-sets-orchestrator-picker";
 
 /** Bridge DesktopFilterPanel's whole-array setter onto the consumer's per-item toggle. */
-function applyArrayViaToggle(current: string[], next: string[], toggle: (v: string) => void) {
+function applyArrayViaToggle(
+  current: string[],
+  next: string[],
+  toggle: (v: string) => void,
+) {
   const cur = new Set(current);
   const nxt = new Set(next);
   current.forEach((v) => !nxt.has(v) && toggle(v));
@@ -67,11 +74,18 @@ export function CreateSetDialog({
 }: CreateSetDialogProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  useEnsureAgentsLoaded();
+  // Only fetch when the dialog is open — closed instances must be free.
+  useEnsureAgentsLoaded(open);
 
   const consumer = useAgentConsumer(PICKER_CONSUMER, { initialTab: "mine" });
-  const selOwned = useMemo(() => makeSelectFilteredOwnedAgents(PICKER_CONSUMER), []);
-  const selShared = useMemo(() => makeSelectFilteredSharedAgents(PICKER_CONSUMER), []);
+  const selOwned = useMemo(
+    () => makeSelectFilteredOwnedAgents(PICKER_CONSUMER),
+    [],
+  );
+  const selShared = useMemo(
+    () => makeSelectFilteredSharedAgents(PICKER_CONSUMER),
+    [],
+  );
   const owned = useAppSelector(selOwned);
   const shared = useAppSelector(selShared);
   const allCategories = useAppSelector(selectAllAgentCategories);
@@ -86,7 +100,11 @@ export function CreateSetDialog({
 
   const candidates = useMemo(() => {
     const base =
-      consumer.tab === "shared" ? shared : consumer.tab === "mine" ? owned : [...owned, ...shared];
+      consumer.tab === "shared"
+        ? shared
+        : consumer.tab === "mine"
+          ? owned
+          : [...owned, ...shared];
     return base.filter((a) => a.id !== seedMemberId);
   }, [consumer.tab, owned, shared, seedMemberId]);
 
@@ -126,7 +144,8 @@ export function CreateSetDialog({
       toast.error(res.error ?? "Could not create the set.");
       return;
     }
-    if (seedMemberId) await dispatch(addAgentToSet({ orchestratorId, agentId: seedMemberId }));
+    if (seedMemberId)
+      await dispatch(addAgentToSet({ orchestratorId, agentId: seedMemberId }));
     toast.success("Set created.");
     handleOpenChange(false);
     router.push(`/agents/sets/${orchestratorId}`);
@@ -141,8 +160,8 @@ export function CreateSetDialog({
             New agent set
           </DialogTitle>
           <DialogDescription>
-            Pick the agent that presides over this set as its orchestrator, then add
-            members on the builder canvas.
+            Pick the agent that presides over this set as its orchestrator, then
+            add members on the builder canvas.
             {onGenerateInstead && (
               <>
                 {" "}
@@ -163,7 +182,9 @@ export function CreateSetDialog({
         <div className="space-y-4">
           {/* orchestrator picker — canonical filter */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Orchestrator agent</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Orchestrator agent
+            </label>
             <div className="flex items-center gap-1.5">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -182,11 +203,19 @@ export function CreateSetDialog({
                 setActiveTab={consumer.setTab}
                 includedCats={consumer.includedCats}
                 setIncludedCats={(next) =>
-                  applyArrayViaToggle(consumer.includedCats, next, consumer.toggleCategory)
+                  applyArrayViaToggle(
+                    consumer.includedCats,
+                    next,
+                    consumer.toggleCategory,
+                  )
                 }
                 includedTags={consumer.includedTags}
                 setIncludedTags={(next) =>
-                  applyArrayViaToggle(consumer.includedTags, next, consumer.toggleTag)
+                  applyArrayViaToggle(
+                    consumer.includedTags,
+                    next,
+                    consumer.toggleTag,
+                  )
                 }
                 favFilter={consumer.favFilter}
                 setFavFilter={consumer.setFavFilter}
@@ -194,7 +223,8 @@ export function CreateSetDialog({
                 setArchFilter={consumer.setArchFilter}
                 favoritesFirst={consumer.favoritesFirst}
                 setFavoritesFirst={(v) => {
-                  if (v !== consumer.favoritesFirst) consumer.toggleFavoritesFirst();
+                  if (v !== consumer.favoritesFirst)
+                    consumer.toggleFavoritesFirst();
                 }}
                 allCategories={allCategories}
                 allTags={allTags}
@@ -235,7 +265,9 @@ export function CreateSetDialog({
                             </div>
                           )}
                         </div>
-                        {isSel && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                        {isSel && (
+                          <Check className="h-4 w-4 shrink-0 text-primary" />
+                        )}
                       </button>
                       <span className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
                         <AgentPeekButton agentId={a.id} />
@@ -251,17 +283,23 @@ export function CreateSetDialog({
           <div className="grid grid-cols-1 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                Set name <span className="text-muted-foreground/60">(optional)</span>
+                Set name{" "}
+                <span className="text-muted-foreground/60">(optional)</span>
               </label>
               <Input
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder={selected?.name ? `Defaults to "${selected.name}"` : "Name this set…"}
+                placeholder={
+                  selected?.name
+                    ? `Defaults to "${selected.name}"`
+                    : "Name this set…"
+                }
               />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                Tagline <span className="text-muted-foreground/60">(optional)</span>
+                Tagline{" "}
+                <span className="text-muted-foreground/60">(optional)</span>
               </label>
               <Input
                 value={tagline}
@@ -270,7 +308,9 @@ export function CreateSetDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Accent</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Accent
+              </label>
               <div className="flex flex-wrap gap-1.5">
                 {SET_ACCENTS.map((acc) => {
                   const ac = accentClasses(acc);
@@ -283,7 +323,9 @@ export function CreateSetDialog({
                       className={cn(
                         "h-6 w-6 rounded-full ring-2 ring-offset-2 ring-offset-background transition-transform hover:scale-110",
                         ac.dot,
-                        accent === acc ? "ring-foreground/40" : "ring-transparent",
+                        accent === acc
+                          ? "ring-foreground/40"
+                          : "ring-transparent",
                       )}
                     />
                   );
@@ -294,7 +336,11 @@ export function CreateSetDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={busy}>
+          <Button
+            variant="ghost"
+            onClick={() => handleOpenChange(false)}
+            disabled={busy}
+          >
             Cancel
           </Button>
           <Button onClick={handleCreate} disabled={!orchestratorId || busy}>

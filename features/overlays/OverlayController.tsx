@@ -615,6 +615,11 @@ const PdfExtractorWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/PdfExtractorWindow"),
   { ssr: false },
 );
+const PdfBatchExtractDebugWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/admin/PdfBatchExtractDebugWindow"),
+  { ssr: false },
+);
 const ProjectsWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/ProjectsWindow"),
@@ -1053,6 +1058,9 @@ export default function OverlayController() {
     pdfExtractorWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "pdfExtractorWindow"),
     ),
+    pdfBatchExtractDebugWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "pdfBatchExtractDebugWindow"),
+    ),
     picklistManagerV1Window: useAppSelector((s) =>
       selectIsOverlayOpen(s, "picklistManagerV1Window"),
     ),
@@ -1339,6 +1347,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     pdfExtractorWindow: useAppSelector((s) =>
       selectOverlayData(s, "pdfExtractorWindow"),
+    ) as Record<string, unknown> | null,
+    pdfBatchExtractDebugWindow: useAppSelector((s) =>
+      selectOverlayData(s, "pdfBatchExtractDebugWindow"),
     ) as Record<string, unknown> | null,
     picklistManagerV1Window: useAppSelector((s) =>
       selectOverlayData(s, "picklistManagerV1Window"),
@@ -3980,6 +3991,29 @@ export default function OverlayController() {
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "pdfExtractorWindow" }))
+            }
+          />
+        );
+      })()}
+
+      {/* pdfBatchExtractDebugWindow */}
+      {(() => {
+        const isOpen = isOpenById.pdfBatchExtractDebugWindow;
+        const data = dataById.pdfBatchExtractDebugWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <PdfBatchExtractDebugWindow
+            isOpen
+            onClose={() =>
+              dispatch(
+                closeOverlay({ overlayId: "pdfBatchExtractDebugWindow" }),
+              )
+            }
+            initialSessionId={
+              typeof data?.initialSessionId === "string"
+                ? data.initialSessionId
+                : null
             }
           />
         );

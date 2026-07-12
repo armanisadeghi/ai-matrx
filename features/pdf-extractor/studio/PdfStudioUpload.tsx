@@ -35,6 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { usePdfExtractor } from "../hooks/usePdfExtractor";
+import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugTrigger";
 
 type Extractor = ReturnType<typeof usePdfExtractor>;
 
@@ -296,8 +297,11 @@ export function PdfStudioUpload({
       {/* Per-file progress (shown only during/after a session) */}
       {progressRows.length > 0 && (
         <div className="mt-3 space-y-1">
-          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
-            Extracting
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Extracting
+            </div>
+            <PdfBatchExtractDebugTrigger autoOpenOnStream={false} />
           </div>
           {progressRows.map((t) => (
             <div

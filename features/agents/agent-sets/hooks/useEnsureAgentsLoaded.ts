@@ -10,10 +10,14 @@ import { initializeChatAgents } from "@/features/agents/redux/agent-definition/t
  * canonical `initializeChatAgents` thunk, which is TTL-fresh + loading-guarded, so
  * mounting this on many components (builder, rail, dialogs) never refetches data we
  * already have. Never call `fetchAgentsList()` directly from this feature.
+ *
+ * Pass `enabled: false` while a dialog is closed so closed overlays don't
+ * contribute to a mount-time fetch stampede (see AddToSetMenu / AgentCard).
  */
-export function useEnsureAgentsLoaded() {
+export function useEnsureAgentsLoaded(enabled = true) {
   const dispatch = useAppDispatch();
   useEffect(() => {
+    if (!enabled) return;
     dispatch(initializeChatAgents());
-  }, [dispatch]);
+  }, [dispatch, enabled]);
 }
