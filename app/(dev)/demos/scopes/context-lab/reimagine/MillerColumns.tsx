@@ -4,15 +4,28 @@
 //
 // Four synced columns — Org | Scope Type | Scope | Context Items — plus a
 // Projects/Tasks rail across the bottom, exactly the shape the model demands.
-// Highlighting a row navigates (fills the next column); the check target on
-// the same row selects. The whole universe stays browsable in constant
-// height no matter how big the tree gets — the current field's "one expanded
-// type fills a page" failure cannot happen here. Every column has its own
-// add-at-this-level footer.
+//
+// INTERACTION LAW (Arman, 2026-07-11):
+//   • ANY click on a row toggles its check (like Drill Deck) — one gesture
+//     does both jobs: the click checks the node AND feeds the next column.
+//   • Multi-select within a column OR-MERGES: with two orgs checked, the
+//     type column shows the union of both orgs' scope types; with three
+//     scopes checked, the items column shows every checked scope's items.
+//     Nothing checked in a column → it follows the last-clicked (browsed)
+//     row, so you can walk the tree without selecting anything.
+//
+// Constant height no matter how big the tree gets — the current field's
+// "one expanded type fills a page" failure cannot happen here. Every column
+// has add-at-this-level.
 
 import React, { useMemo, useState } from "react";
-import { ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type {
+  OrgNode,
+  ScopeTypeNode,
+  ScopeNode,
+} from "@/features/scopes/types";
 import {
   createDraft,
   itemNodeOf,
@@ -22,7 +35,7 @@ import {
   scopeNodeOf,
   taskNodeOf,
   typeNodeOf,
-  useTypeItems,
+  useItemsForTypes,
   useUniverse,
   type PickerMode,
   type PickNode,
@@ -101,51 +114,55 @@ function Column({
   );
 }
 
+/** Dim group label used when a column is showing an OR-merged union. */
+function GroupLabel({ text }: { text: string }) {
+  return (
+    <div className="px-1.5 pb-0.5 pt-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+      {text}
+    </div>
+  );
+}
+
+/** One row = ONE gesture: click toggles the check AND drives the next
+ *  column (navActive marks the rows currently feeding it). */
 function ColRow({
   node,
   on,
   navActive,
-  hasChildren,
-  onNavigate,
-  onToggle,
+  onActivate,
 }: {
   node: PickNode;
   on: boolean;
   navActive?: boolean;
-  hasChildren?: boolean;
-  onNavigate?: () => void;
-  onToggle: () => void;
+  onActivate: () => void;
 }) {
   return (
-    <div
+    <button
+      type="button"
+      onClick={onActivate}
+      aria-pressed={on}
       className={cn(
-        "flex items-center rounded-md",
+        "flex h-7 w-full items-center gap-1.5 rounded-md pr-1 text-left",
         navActive ? "bg-accent" : "hover:bg-muted",
       )}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={`${on ? "Deselect" : "Select"} ${node.label}`}
-        className="flex h-7 w-7 shrink-0 items-center justify-center"
-      >
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center">
         <CheckGlyph on={on} />
-      </button>
-      <button
-        type="button"
-        onClick={onNavigate ?? onToggle}
-        className="flex h-7 min-w-0 flex-1 items-center gap-1.5 pr-1 text-left"
-      >
-        <KindGlyph node={node} />
-        <span className="min-w-0 flex-1 truncate text-xs text-foreground">
-          {node.label}
-        </span>
-        {hasChildren && (
-          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-        )}
-      </button>
-    </div>
+      </span>
+      <KindGlyph node={node} />
+      <span className="min-w-0 flex-1 truncate text-xs text-foreground">
+        {node.label}
+      </span>
+    </button>
   );
+}
+
+interface TypeEntry {
+  org: OrgNode;
+  type: ScopeTypeNode;
+}
+interface ScopeEntry extends TypeEntry {
+  scope: ScopeNode;
 }
 
 export function MillerColumns({
@@ -159,22 +176,63 @@ export function MillerColumns({
 }) {
   const u = useUniverse();
   const orgName = useMemo(() => orgNameLookup(u), [u]);
-  const [navOrgId, setNavOrgId] = useState<string | null>(null);
-  const [navTypeId, setNavTypeId] = useState<string | null>(null);
-  const [navScopeId, setNavScopeId] = useState<string | null>(null);
+  // Browse focus — only consulted when NOTHING is checked in that column.
+  const [focusOrgId, setFocusOrgId] = useState<string | null>(null);
+  const [focusTypeId, setFocusTypeId] = useState<string | null>(null);
+  const [focusScopeId, setFocusScopeId] = useState<string | null>(null);
 
-  const navOrg = u.orgs.find((o) => o.id === navOrgId) ?? u.orgs[0];
-  const navType =
-    navOrg?.scope_types.find((t) => t.id === navTypeId) ??
-    navOrg?.scope_types[0];
-  const navScope =
-    navType?.scopes.find((s) => s.id === navScopeId) ?? navType?.scopes[0];
+  /* ── OR-merge chain: the checked set drives the next column; fall back to
+        the browsed row, then the first row, so columns are never empty. ── */
 
-  const itemsQ = useTypeItems(navType?.id ?? null);
-  const navScopeNode =
-    navOrg && navType && navScope
-      ? scopeNodeOf(navOrg, navType, navScope)
-      : null;
+  const checkedOrgs = u.orgs.filter((o) => engine.isOn("org", o.id));
+  const focusOrg = u.orgs.find((o) => o.id === focusOrgId);
+  const activeOrgs: OrgNode[] =
+    checkedOrgs.length > 0
+      ? checkedOrgs
+      : focusOrg
+        ? [focusOrg]
+        : u.orgs.slice(0, 1);
+
+  const typeEntries: TypeEntry[] = activeOrgs.flatMap((org) =>
+    org.scope_types.map((type) => ({ org, type })),
+  );
+  const checkedTypeEntries = typeEntries.filter((e) =>
+    engine.isOn("type", e.type.id),
+  );
+  const focusTypeEntry = typeEntries.find((e) => e.type.id === focusTypeId);
+  const activeTypeEntries: TypeEntry[] =
+    checkedTypeEntries.length > 0
+      ? checkedTypeEntries
+      : focusTypeEntry
+        ? [focusTypeEntry]
+        : typeEntries.slice(0, 1);
+
+  const scopeEntries: ScopeEntry[] = activeTypeEntries.flatMap(
+    ({ org, type }) => type.scopes.map((scope) => ({ org, type, scope })),
+  );
+  const checkedScopeEntries = scopeEntries.filter((e) =>
+    engine.isOn("scope", e.scope.id),
+  );
+  const focusScopeEntry = scopeEntries.find(
+    (e) => e.scope.id === focusScopeId,
+  );
+  const activeScopeEntries: ScopeEntry[] =
+    checkedScopeEntries.length > 0
+      ? checkedScopeEntries
+      : focusScopeEntry
+        ? [focusScopeEntry]
+        : scopeEntries.slice(0, 1);
+
+  const itemsQ = useItemsForTypes(activeScopeEntries.map((e) => e.type.id));
+  const totalItems = activeScopeEntries.reduce(
+    (n, e) => n + (itemsQ.itemsByType[e.type.id]?.length ?? 0),
+    0,
+  );
+
+  /* create targets = first active parent */
+  const createOrg = activeOrgs[0];
+  const createType = activeTypeEntries[0];
+  const createItemType = activeScopeEntries[0]?.type ?? createType?.type;
 
   if (u.treeStatus === "loading") {
     return (
@@ -198,6 +256,10 @@ export function MillerColumns({
     );
   }
 
+  const orgGroups = activeOrgs.length > 1;
+  const typeGroups = activeTypeEntries.length > 1;
+  const scopeGroups = activeScopeEntries.length > 1;
+
   return (
     <div
       className={cn(
@@ -216,144 +278,193 @@ export function MillerColumns({
                   key={o.id}
                   node={n}
                   on={engine.isOn("org", o.id)}
-                  navActive={o.id === navOrg?.id}
-                  hasChildren={o.scope_types.length > 0}
-                  onNavigate={() => {
-                    setNavOrgId(o.id);
-                    setNavTypeId(null);
-                    setNavScopeId(null);
+                  navActive={activeOrgs.some((a) => a.id === o.id)}
+                  onActivate={() => {
+                    engine.toggle(n);
+                    setFocusOrgId(o.id);
+                    setFocusTypeId(null);
+                    setFocusScopeId(null);
                   }}
-                  onToggle={() => engine.toggle(n)}
                 />
               );
             })}
           </Column>
 
           <Column
-            title="Scope types"
-            count={navOrg?.scope_types.length}
-            createLabel={navOrg ? `New scope type in ${navOrg.name}` : undefined}
+            title={
+              orgGroups
+                ? `Scope types · ${activeOrgs.length} orgs`
+                : "Scope types"
+            }
+            count={typeEntries.length}
+            createLabel={
+              createOrg ? `New scope type in ${createOrg.name}` : undefined
+            }
             onCreate={
-              navOrg
+              createOrg
                 ? (name) =>
                     void createDraft({
                       kind: "type",
-                      orgId: navOrg.id,
-                      orgName: navOrg.name,
+                      orgId: createOrg.id,
+                      orgName: createOrg.name,
                       name,
                     })
                 : undefined
             }
           >
-            {!navOrg && <EmptyPane text="Pick an organization." />}
-            {navOrg?.scope_types.length === 0 && (
-              <EmptyPane text="No scope types in this org yet." />
+            {typeEntries.length === 0 && (
+              <EmptyPane text="No scope types here yet." />
             )}
-            {navOrg?.scope_types.map((t) => {
-              const n = typeNodeOf(navOrg, t);
-              return (
-                <ColRow
-                  key={t.id}
-                  node={n}
-                  on={engine.isOn("type", t.id)}
-                  navActive={t.id === navType?.id}
-                  hasChildren={t.scopes.length > 0}
-                  onNavigate={() => {
-                    setNavTypeId(t.id);
-                    setNavScopeId(null);
-                  }}
-                  onToggle={() => engine.toggle(n)}
-                />
-              );
-            })}
+            {activeOrgs.map((org) => (
+              <React.Fragment key={org.id}>
+                {orgGroups && org.scope_types.length > 0 && (
+                  <GroupLabel text={org.name} />
+                )}
+                {org.scope_types.map((t) => {
+                  const n = typeNodeOf(org, t);
+                  return (
+                    <ColRow
+                      key={t.id}
+                      node={n}
+                      on={engine.isOn("type", t.id)}
+                      navActive={activeTypeEntries.some(
+                        (e) => e.type.id === t.id,
+                      )}
+                      onActivate={() => {
+                        engine.toggle(n);
+                        setFocusTypeId(t.id);
+                        setFocusScopeId(null);
+                      }}
+                    />
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </Column>
 
           <Column
-            title={navType?.label_plural ?? "Scopes"}
-            count={navType?.scopes.length}
+            title={
+              typeGroups
+                ? `Scopes · ${activeTypeEntries.length} types`
+                : (activeTypeEntries[0]?.type.label_plural ?? "Scopes")
+            }
+            count={scopeEntries.length}
             createLabel={
-              navType && navOrg
-                ? `New ${navType.label_singular.toLowerCase()}`
+              createType
+                ? `New ${createType.type.label_singular.toLowerCase()}`
                 : undefined
             }
             onCreate={
-              navType && navOrg
+              createType
                 ? (name) =>
                     void createDraft({
                       kind: "scope",
-                      orgId: navOrg.id,
-                      typeId: navType.id,
-                      typeName: navType.label_singular,
+                      orgId: createType.org.id,
+                      typeId: createType.type.id,
+                      typeName: createType.type.label_singular,
                       name,
                     })
                 : undefined
             }
           >
-            {!navType && <EmptyPane text="Pick a scope type." />}
-            {navType && navType.scopes.length === 0 && (
-              <EmptyPane
-                text={`No ${navType.label_plural.toLowerCase()} yet.`}
-              />
+            {scopeEntries.length === 0 && (
+              <EmptyPane text="No scopes under the checked types yet." />
             )}
-            {navOrg &&
-              navType?.scopes.map((s) => {
-                const n = scopeNodeOf(navOrg, navType, s);
-                return (
-                  <ColRow
-                    key={s.id}
-                    node={n}
-                    on={engine.isOn("scope", s.id)}
-                    navActive={s.id === navScope?.id}
-                    hasChildren
-                    onNavigate={() => setNavScopeId(s.id)}
-                    onToggle={() => engine.toggle(n)}
+            {activeTypeEntries.map(({ org, type }) => (
+              <React.Fragment key={type.id}>
+                {typeGroups && type.scopes.length > 0 && (
+                  <GroupLabel
+                    text={
+                      orgGroups
+                        ? `${org.name} › ${type.label_plural}`
+                        : type.label_plural
+                    }
                   />
-                );
-              })}
+                )}
+                {type.scopes.map((s) => {
+                  const n = scopeNodeOf(org, type, s);
+                  return (
+                    <ColRow
+                      key={s.id}
+                      node={n}
+                      on={engine.isOn("scope", s.id)}
+                      navActive={activeScopeEntries.some(
+                        (e) => e.scope.id === s.id,
+                      )}
+                      onActivate={() => {
+                        engine.toggle(n);
+                        setFocusScopeId(s.id);
+                      }}
+                    />
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </Column>
 
           <Column
-            title={navScope ? `${navScope.name} · items` : "Context items"}
-            count={itemsQ.status === "ready" ? itemsQ.items.length : undefined}
-            createLabel={navType ? "New context item" : undefined}
+            title={
+              scopeGroups
+                ? `Items · ${activeScopeEntries.length} scopes`
+                : activeScopeEntries[0]
+                  ? `${activeScopeEntries[0].scope.name} · items`
+                  : "Context items"
+            }
+            count={itemsQ.status === "ready" ? totalItems : undefined}
+            createLabel={createItemType ? "New context item" : undefined}
             onCreate={
-              navType
+              createItemType
                 ? (name) =>
                     void createDraft({
                       kind: "item",
-                      typeId: navType.id,
-                      typeName: navType.label_singular,
+                      typeId: createItemType.id,
+                      typeName: createItemType.label_singular,
                       name,
                     })
                 : undefined
             }
           >
-            {!navScopeNode && <EmptyPane text="Pick a scope." />}
-            {navScopeNode && itemsQ.status === "loading" && (
+            {activeScopeEntries.length === 0 && (
+              <EmptyPane text="Check a scope to see its items." />
+            )}
+            {activeScopeEntries.length > 0 && itemsQ.status === "loading" && (
               <SkeletonRows count={4} />
             )}
-            {navScopeNode && itemsQ.status === "error" && (
+            {itemsQ.status === "error" && (
               <ErrorPane message={itemsQ.error} onRetry={itemsQ.retry} />
             )}
-            {navScopeNode &&
-              itemsQ.status === "ready" &&
-              itemsQ.items.length === 0 && (
-                <EmptyPane text="No items defined on this type yet." />
+            {itemsQ.status === "ready" &&
+              activeScopeEntries.length > 0 &&
+              totalItems === 0 && (
+                <EmptyPane text="No items defined on these types yet." />
               )}
-            {navScopeNode &&
-              itemsQ.status === "ready" &&
-              itemsQ.items.map((it) => {
-                const n = itemNodeOf(navScopeNode, {
-                  id: it.id,
-                  label: it.label,
-                });
+            {itemsQ.status === "ready" &&
+              activeScopeEntries.map((entry) => {
+                const scopeNode = scopeNodeOf(
+                  entry.org,
+                  entry.type,
+                  entry.scope,
+                );
+                const items = itemsQ.itemsByType[entry.type.id] ?? [];
+                if (items.length === 0) return null;
                 return (
-                  <ColRow
-                    key={it.id}
-                    node={n}
-                    on={engine.isOn("item", n.id)}
-                    onToggle={() => engine.toggle(n)}
-                  />
+                  <React.Fragment key={entry.scope.id}>
+                    {scopeGroups && <GroupLabel text={entry.scope.name} />}
+                    {items.map((it) => {
+                      const n = itemNodeOf(scopeNode, {
+                        id: it.id,
+                        label: it.label,
+                      });
+                      return (
+                        <ColRow
+                          key={n.id}
+                          node={n}
+                          on={engine.isOn("item", n.id)}
+                          onActivate={() => engine.toggle(n)}
+                        />
+                      );
+                    })}
+                  </React.Fragment>
                 );
               })}
           </Column>
@@ -370,7 +481,7 @@ export function MillerColumns({
             onCreate={(name) =>
               void createDraft({
                 kind: "project",
-                orgId: navOrg?.id ?? null,
+                orgId: createOrg?.id ?? null,
                 name,
               })
             }
@@ -393,7 +504,7 @@ export function MillerColumns({
                     key={p.id}
                     node={n}
                     on={engine.isOn("project", p.id)}
-                    onToggle={() => engine.toggle(n)}
+                    onActivate={() => engine.toggle(n)}
                   />
                 );
               })}
@@ -416,7 +527,7 @@ export function MillerColumns({
                     key={t.id}
                     node={n}
                     on={engine.isOn("task", t.id)}
-                    onToggle={() => engine.toggle(n)}
+                    onActivate={() => engine.toggle(n)}
                   />
                 );
               })}

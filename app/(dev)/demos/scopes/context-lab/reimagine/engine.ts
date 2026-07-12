@@ -535,6 +535,95 @@ export function useTypeItems(typeId: string | null): {
   };
 }
 
+/** Items for SEVERAL scope types at once — Miller's OR-merged items column
+ *  (multiple selected scopes can span multiple types). Cached + deduped by
+ *  the same data.ts layer underneath. */
+export function useItemsForTypes(typeIds: string[]): {
+  status: "idle" | "loading" | "ready" | "error";
+  itemsByType: Record<string, ItemLite[]>;
+  error: string | null;
+  retry: () => void;
+} {
+  const d = useDrafts();
+  const key = [...new Set(typeIds)].sort().join(",");
+  const [state, setState] = useState<{
+    forKey: string;
+    status: "idle" | "loading" | "ready" | "error";
+    itemsByType: Record<string, ItemLite[]>;
+    error: string | null;
+  }>({ forKey: "", status: "idle", itemsByType: {}, error: null });
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!key) {
+      setState({ forKey: "", status: "idle", itemsByType: {}, error: null });
+      return undefined;
+    }
+    let alive = true;
+    setState((p) => ({ ...p, forKey: key, status: "loading", error: null }));
+    const ids = key.split(",");
+    const real = ids.filter((t) => !t.startsWith("draft:"));
+    Promise.all(
+      real.map((t) =>
+        fetchTypeItems(t).then(
+          (rows) =>
+            [
+              t,
+              rows.map((r) => ({
+                id: r.id,
+                key: r.key,
+                label: r.display_name || r.key,
+              })),
+            ] as const,
+        ),
+      ),
+    )
+      .then((pairs) => {
+        if (!alive) return;
+        const byType: Record<string, ItemLite[]> = Object.fromEntries(pairs);
+        for (const t of ids) byType[t] ??= [];
+        setState({
+          forKey: key,
+          status: "ready",
+          itemsByType: byType,
+          error: null,
+        });
+      })
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setState({
+          forKey: key,
+          status: "error",
+          itemsByType: {},
+          error:
+            e instanceof Error ? e.message : "Couldn't load context items",
+        });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [key, tick]);
+
+  const itemsByType = useMemo(() => {
+    const out: Record<string, ItemLite[]> = {};
+    for (const t of key ? key.split(",") : []) {
+      const real = state.itemsByType[t] ?? [];
+      const draftsFor = d.items
+        .filter((i) => i.typeId === t)
+        .map((i) => ({ id: i.id, key: i.name, label: i.name }));
+      out[t] = [...real, ...draftsFor];
+    }
+    return out;
+  }, [state.itemsByType, d.items, key]);
+
+  return {
+    status: state.status,
+    itemsByType,
+    error: state.error,
+    retry: () => setTick((t) => t + 1),
+  };
+}
+
 /* ── selection engine (multi by default, optional single-select) ─────────── */
 
 export type PickerMode = "assignment" | "active" | "filter";

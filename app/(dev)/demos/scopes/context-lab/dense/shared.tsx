@@ -3,10 +3,14 @@
 // /demos/scopes/context-lab/dense/shared.tsx
 //
 // Shared data hook + micro-atoms for every dense-lab variation.
-// Data discipline (context-assignment skill):
+// Data discipline (context-assignment skill + Arman's defect report):
 //   • tree — Redux only (useScopeTree / ensureScopeTree), never refetched here
-//   • projects / tasks / per-type items — through the official cached layer
-//     (context-assignment/data.ts): TTL + in-flight dedup, shared app-wide
+//   • projects / tasks — STRICTLY LAZY. Nothing is fetched on mount; the
+//     first expand/interaction of a Projects/Tasks section calls
+//     loadProjects()/loadTasks(). The chance a user needs them is low, so
+//     they must never cost anything until asked for. (The fetch itself goes
+//     through the official cached layer: TTL + in-flight dedup, app-wide.)
+//   • per-type context items — lazy on scope/type expand, same cached layer
 //   • demo SAVES + inline CREATES are faked (console/toast + optimistic local
 //     rows) — a real structural write is illegal from a demo route. The real
 //     paths are named in each log line so this maps 1:1 onto production.
@@ -29,17 +33,23 @@ import type { ContextItemRow, OrgNode } from "@/features/scopes/types";
 
 /* ── data hook ────────────────────────────────────────────────────────── */
 
+export type LazyStatus = "idle" | "loading" | "ready" | "error";
+
 export interface DenseData {
   organizations: OrgNode[];
   treeStatus: ReturnType<typeof useScopeTree>["status"];
   treeError: string | null;
+  /** Empty until loadProjects() has completed. */
   projects: AssignableProject[];
+  projectsStatus: LazyStatus;
+  /** Idempotent; call on the FIRST interaction with a Projects section. */
+  loadProjects: () => void;
+  /** Empty until loadTasks() has completed. */
   tasks: AssignableTask[];
-  engagementError: string | null;
-  engagementLoading: boolean;
+  tasksStatus: LazyStatus;
+  loadTasks: () => void;
   /** Per-scope-type context items, filled lazily via loadItems(). */
   itemsByType: Record<string, ContextItemRow[]>;
-  /** Type ids with an items request currently in flight. */
   itemsLoading: Set<string>;
   loadItems: (typeId: string) => void;
 }
@@ -48,22 +58,21 @@ export function useDenseData(): DenseData {
   const dispatch = useAppDispatch();
   const { organizations, status, error } = useScopeTree();
   const [projects, setProjects] = useState<AssignableProject[]>([]);
+  const [projectsStatus, setProjectsStatus] = useState<LazyStatus>("idle");
   const [tasks, setTasks] = useState<AssignableTask[]>([]);
-  const [engagementError, setEngagementError] = useState<string | null>(null);
-  const [engagementLoading, setEngagementLoading] = useState(true);
+  const [tasksStatus, setTasksStatus] = useState<LazyStatus>("idle");
   const [itemsByType, setItemsByType] = useState<
     Record<string, ContextItemRow[]>
   >({});
   const [itemsLoading, setItemsLoading] = useState<Set<string>>(new Set());
-  const requested = useRef(false);
 
   useEffect(() => {
     dispatch(ensureScopeTree({}));
   }, [dispatch]);
 
   // Auth-hydration recovery: on a first visit right after login the Supabase
-  // client session can lag the first render, so the initial fetches reject
-  // with "Not authenticated". Retry a bounded number of times, loudly.
+  // client session can lag the first render, so the initial tree fetch can
+  // reject with "Not authenticated". Retry a bounded number of times, loudly.
   const treeRetries = useRef(0);
   useEffect(() => {
     if (status !== "error" || treeRetries.current >= 3) return;
@@ -77,52 +86,47 @@ export function useDenseData(): DenseData {
     return () => clearTimeout(t);
   }, [status, error, dispatch]);
 
-  const engagementRetries = useRef(0);
-  const loadEngagement = useCallback(() => {
-    setEngagementLoading(true);
-    setEngagementError(null);
-    Promise.all([fetchAssignableProjects(), fetchAssignableTasks()])
-      .then(([p, t]) => {
-        setProjects(p);
-        setTasks(t);
-      })
-      .catch((e) =>
-        setEngagementError(
-          e instanceof Error ? e.message : "Could not load projects/tasks",
-        ),
-      )
-      .finally(() => setEngagementLoading(false));
+  const loadProjects = useCallback(() => {
+    setProjectsStatus((s) => {
+      if (s === "loading" || s === "ready") return s;
+      fetchAssignableProjects()
+        .then((p) => {
+          setProjects(p);
+          setProjectsStatus("ready");
+        })
+        .catch((e) => {
+          console.error("[dense-lab] projects fetch failed", e);
+          toast.error("Couldn't load projects");
+          setProjectsStatus("error");
+        });
+      return "loading";
+    });
   }, []);
 
-  useEffect(() => {
-    if (requested.current) return;
-    requested.current = true;
-    loadEngagement();
-  }, [loadEngagement]);
-
-  useEffect(() => {
-    if (!engagementError || engagementRetries.current >= 3) return;
-    const t = setTimeout(() => {
-      engagementRetries.current += 1;
-      console.warn(
-        `[dense-lab] projects/tasks errored ("${engagementError}") — retry ${engagementRetries.current}/3`,
-      );
-      loadEngagement();
-    }, 1200 * engagementRetries.current + 800);
-    return () => clearTimeout(t);
-  }, [engagementError, loadEngagement]);
+  const loadTasks = useCallback(() => {
+    setTasksStatus((s) => {
+      if (s === "loading" || s === "ready") return s;
+      fetchAssignableTasks()
+        .then((t) => {
+          setTasks(t);
+          setTasksStatus("ready");
+        })
+        .catch((e) => {
+          console.error("[dense-lab] tasks fetch failed", e);
+          toast.error("Couldn't load tasks");
+          setTasksStatus("error");
+        });
+      return "loading";
+    });
+  }, []);
 
   const loadItems = useCallback(
     (typeId: string) => {
       if (itemsByType[typeId] || itemsLoading.has(typeId)) return;
       setItemsLoading((p) => new Set(p).add(typeId));
       fetchTypeItems(typeId)
-        .then((items) =>
-          setItemsByType((p) => ({ ...p, [typeId]: items })),
-        )
+        .then((items) => setItemsByType((p) => ({ ...p, [typeId]: items })))
         .catch(() => {
-          // Loud, never silent: the row shows "couldn't load" via empty +
-          // toast so a real failure is visible.
           toast.error("Couldn't load context items for this type");
           setItemsByType((p) => ({ ...p, [typeId]: [] }));
         })
@@ -142,9 +146,11 @@ export function useDenseData(): DenseData {
     treeStatus: status,
     treeError: error,
     projects,
+    projectsStatus,
+    loadProjects,
     tasks,
-    engagementError,
-    engagementLoading,
+    tasksStatus,
+    loadTasks,
     itemsByType,
     itemsLoading,
     loadItems,
@@ -165,17 +171,14 @@ export function fakeCreate(
     project: "features/projects/service createProject",
     task: "taskService quickCreateTask",
   };
-  console.log(`[dense-lab] CREATE ${level} (demo — real path: ${realPath[level]}) →`, {
-    name,
-    ...detail,
-  });
+  console.log(
+    `[dense-lab] CREATE ${level} (demo — real path: ${realPath[level]}) →`,
+    { name, ...detail },
+  );
   toast.success(`Would create ${level} "${name}" (logged — no DB write)`);
 }
 
-export function fakeApply(
-  useCase: string,
-  payload: unknown,
-): void {
+export function fakeApply(useCase: string, payload: unknown): void {
   console.log(`[dense-lab] APPLY ${useCase} (demo — no DB write) →`, payload);
   toast.success(`${useCase} — selection logged (no DB write)`);
 }
@@ -205,20 +208,11 @@ export function CheckGlyph({
   );
 }
 
-/** Tiny uppercase kind tag with a fixed width so rows align. */
-export function KindTag({ kind }: { kind: string }) {
-  return (
-    <span className="w-[42px] shrink-0 text-right font-mono text-[9px] uppercase tracking-wider text-muted-foreground/60">
-      {kind}
-    </span>
-  );
-}
-
 export function InlineSpinner() {
   return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />;
 }
 
-/** Compact inline "＋ add" row → input → commit. Zero layout jank (fixed h-6). */
+/** Compact inline "+ add" row → input → commit. Zero layout jank (fixed h-6). */
 export function InlineAddRow({
   placeholder,
   onCommit,
@@ -266,7 +260,7 @@ export function InlineAddRow({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="flex h-5 items-center gap-1 rounded-sm px-1.5 text-[11px] text-muted-foreground/60 hover:bg-muted hover:text-foreground"
+          className="flex h-5 items-center gap-1 rounded-sm px-1 text-[11px] text-muted-foreground/60 hover:bg-muted hover:text-foreground"
         >
           <Plus className="h-3 w-3" />
           {placeholder}

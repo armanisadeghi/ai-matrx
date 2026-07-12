@@ -283,7 +283,7 @@ export default function ContextReimaginePage() {
             <VariantCard
               no="I1"
               title="Command Quick-Pick"
-              blurb="The VS Code one. Type to search the whole universe flat (paths shown dim); Arrow-Right drills Org → Type → Scope → Items; Backspace walks up; Enter toggles; 'Create …' rides your query at every level. One input tall until opened — for hosts with no room."
+              blurb="The VS Code one. Type to search the whole universe flat (paths shown dim). Click anywhere on a row to go FORWARD (drill Org → Type → Scope → Items); only the checkbox selects — leaves toggle on click. Enter = forward, Cmd/Ctrl+Enter = select, Backspace walks up; 'Create …' rides your query at every level. One input tall until opened."
             >
               {(engine, mode) => (
                 <QuickPick
@@ -329,7 +329,7 @@ export default function ContextReimaginePage() {
               wide
               no="I4"
               title="Miller Columns"
-              blurb="The Finder. Four synced columns — Org | Scope Type | Scope | Context Items — with Projects/Tasks as a bottom rail. Constant height no matter how big the tree gets; highlight navigates, check selects, every column can create."
+              blurb="The Finder. Four synced columns — Org | Scope Type | Scope | Context Items — with Projects/Tasks as a bottom rail. Any click on a row checks it AND feeds the next column; check several in one column and the next shows the OR-merged union of everything under them. Constant height at any tree size; every column can create."
             >
               {(engine, mode) => (
                 <MillerColumns
@@ -344,7 +344,7 @@ export default function ContextReimaginePage() {
               wide
               no="I5"
               title="Context Matrix"
-              blurb="The map. Every org a swimlane, every type a row, every scope a small toggle cell — the entire 3-org universe in one screen. Search dims instead of reflowing; a cell's chevron opens its item strip inline; org and type labels are toggles too."
+              blurb="The map — kept as a VISUALIZATION, not a picker: the future landing-page view of everything you have (all orgs → one org → one type → one scope) and what's missing. Every org a swimlane, every type a row, every scope a cell; search dims instead of reflowing; a cell's chevron opens its item strip inline."
             >
               {(engine, mode) => (
                 <ContextMatrix

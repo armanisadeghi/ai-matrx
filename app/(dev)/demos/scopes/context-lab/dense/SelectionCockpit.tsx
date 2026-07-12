@@ -1,14 +1,12 @@
 "use client";
 
-// INSIDE 5 — "Selection cockpit" (split picker + live ledger).
+// INSIDE — "Selection cockpit" (pick-left / show-right; revised).
 //
-// Left: the QuickPick (search + keyboard tree). Right: a permanent LEDGER of
-// the current selection, grouped by level with one-click removal — the
-// "full selection state at a glance" requirement made structural instead of
-// squeezed into a footer. The ledger is also where contradictions would
-// surface (org selected + scope from another org is legal but flagged).
-//
-// For roomy hosts: dialogs, window panels, full-page assign flows.
+// The pick-one-side / show-the-other idea, with the blocker fixed: the left
+// side is now the real ContextTree (structure; row click drills, checkbox
+// selects) instead of the rejected flat full-path menu. Right: a permanent
+// LEDGER of the selection, grouped by level, one-click removal.
+// For roomy hosts: dialogs, window panels, assign flows.
 
 import React, { useMemo } from "react";
 import { X } from "lucide-react";
@@ -22,7 +20,7 @@ import {
   type DenseSelection,
   type SelectMode,
 } from "./model";
-import { QuickPick } from "./QuickPick";
+import { ContextTree } from "./ContextTree";
 import type { DenseData } from "./shared";
 
 function LedgerGroup({
@@ -101,12 +99,12 @@ export function SelectionCockpit({
 
   return (
     <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <QuickPick
+      <ContextTree
         data={data}
         selection={selection}
         onChange={onChange}
         mode={mode}
-        height={height - 64}
+        height={height - 62}
         autoFocus={false}
       />
       <div

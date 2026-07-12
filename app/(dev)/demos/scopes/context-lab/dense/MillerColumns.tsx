@@ -123,7 +123,10 @@ export function MillerColumns({
   const [orgId, setOrgId] = useState<string | null>(null);
   const [typeId, setTypeId] = useState<string | null>(null);
   const [scopeId, setScopeId] = useState<string | null>(null);
-  const [bottomTab, setBottomTab] = useState<"projects" | "tasks">("projects");
+  // Projects/tasks are STRICTLY lazy: nothing fetches until a tab is clicked.
+  const [bottomTab, setBottomTab] = useState<"projects" | "tasks" | null>(
+    null,
+  );
 
   const org = data.organizations.find((o) => o.id === orgId) ?? null;
   const type = org?.scope_types.find((t) => t.id === typeId) ?? null;
@@ -148,13 +151,23 @@ export function MillerColumns({
           "unassigned",
       }));
     }
-    return data.tasks.map((t) => ({
-      id: t.id,
-      kind: "task" as const,
-      label: t.title,
-      meta: t.status ?? "",
-    }));
+    if (bottomTab === "tasks") {
+      return data.tasks.map((t) => ({
+        id: t.id,
+        kind: "task" as const,
+        label: t.title,
+        meta: t.status ?? "",
+      }));
+    }
+    return [];
   }, [bottomTab, data]);
+
+  const bottomStatus =
+    bottomTab === "projects"
+      ? data.projectsStatus
+      : bottomTab === "tasks"
+        ? data.tasksStatus
+        : "idle";
 
   if (loading) {
     return (
@@ -348,35 +361,57 @@ export function MillerColumns({
       {/* bottom band — projects & tasks, always last */}
       <div className="flex h-[92px] shrink-0 flex-col border-t-2 border-border">
         <div className="flex h-6 shrink-0 items-center gap-0.5 border-b border-border bg-muted/40 px-1">
-          {(["projects", "tasks"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setBottomTab(tab)}
-              className={cn(
-                "h-5 rounded-sm px-2 text-[10px] font-semibold uppercase tracking-wider",
-                bottomTab === tab
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {tab} ·{" "}
-              {tab === "projects" ? data.projects.length : data.tasks.length}
-            </button>
-          ))}
+          {(["projects", "tasks"] as const).map((tab) => {
+            const status =
+              tab === "projects" ? data.projectsStatus : data.tasksStatus;
+            const count =
+              tab === "projects" ? data.projects.length : data.tasks.length;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setBottomTab(tab);
+                  if (tab === "projects") data.loadProjects();
+                  else data.loadTasks();
+                }}
+                className={cn(
+                  "h-5 rounded-sm px-2 text-[10px] font-semibold uppercase tracking-wider",
+                  bottomTab === tab
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {tab}
+                {status === "ready" ? ` · ${count}` : ""}
+              </button>
+            );
+          })}
           <span className="ml-auto pr-1 text-[10px] text-muted-foreground">
             {summarizeSelection(selection)}
           </span>
         </div>
         <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto py-0.5">
-          {data.engagementLoading ? (
+          {bottomTab === null ? (
+            <div className="px-2 py-1 text-[11px] text-muted-foreground/60">
+              Pick a tab to load — nothing fetches until you ask.
+            </div>
+          ) : bottomStatus === "loading" ? (
             <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground">
-              <InlineSpinner /> Loading…
+              <InlineSpinner /> Loading {bottomTab}…
             </div>
-          ) : data.engagementError ? (
-            <div className="px-2 py-1 text-[11px] text-destructive">
-              {data.engagementError}
-            </div>
+          ) : bottomStatus === "error" ? (
+            <button
+              type="button"
+              onClick={() =>
+                bottomTab === "projects"
+                  ? data.loadProjects()
+                  : data.loadTasks()
+              }
+              className="px-2 py-1 text-[11px] text-destructive underline"
+            >
+              Couldn&apos;t load {bottomTab} — retry
+            </button>
           ) : bottomRows.length === 0 ? (
             <div className="px-2 py-1 text-[11px] text-muted-foreground/60">
               No {bottomTab} yet

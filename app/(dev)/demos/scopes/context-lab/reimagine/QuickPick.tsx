@@ -3,12 +3,16 @@
 // INSIDE №1 — Command Quick-Pick (the VS Code one).
 //
 // One search box, one keyboard-driven list. Type to search the whole universe
-// flat (scopes rank first, breadcrumb paths shown dim); drill into any node
-// with → to walk Org → Scope Type → Scope → Context Items; Projects and Tasks
-// are drillable rails at the bottom of the root. Enter toggles, Backspace
-// walks up, create-at-any-level rides the current query ("Create …").
-// Built for hosts with almost no space — the whole thing is one input tall
-// until opened.
+// flat (scopes rank first, breadcrumb paths shown dim); Projects and Tasks
+// are drillable rails at the bottom of the root.
+//
+// INTERACTION LAW (Arman, 2026-07-11): clicking anywhere on a row goes
+// FORWARD — it drills into the node. Only a direct click on the checkbox
+// selects. Leaf rows (items, projects, tasks) have nothing to drill into,
+// so a row click toggles them. Keyboard mirrors it: Enter = forward (toggle
+// on a leaf), Cmd/Ctrl+Enter = toggle anywhere, →/Tab = drill, Backspace
+// walks up. Create-at-any-level rides the current query ("Create …").
+// Built for hosts with almost no space — one input tall until opened.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -262,7 +266,10 @@ export function QuickPick({
     inputRef.current?.focus();
   };
 
-  const activateRow = (row: Row, forceDrill = false) => {
+  // FORWARD is the default: a row activation drills when the node is
+  // drillable and only toggles when it's a leaf. `intent: "select"` is the
+  // explicit selection path (checkbox click / Cmd+Ctrl+Enter).
+  const activateRow = (row: Row, intent: "forward" | "select" = "forward") => {
     if (row.create) {
       const name = query.trim();
       if (name) {
@@ -274,15 +281,15 @@ export function QuickPick({
       }
       return;
     }
-    if (forceDrill && row.drill) {
+    if (intent === "select") {
+      if (row.node) engine.toggle(row.node);
+      return;
+    }
+    if (row.drill) {
       drillInto(row.drill);
       return;
     }
-    if (row.node) {
-      engine.toggle(row.node);
-      return;
-    }
-    if (row.drill) drillInto(row.drill);
+    if (row.node) engine.toggle(row.node);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -295,7 +302,7 @@ export function QuickPick({
     } else if (e.key === "Enter") {
       e.preventDefault();
       const row = rows[active];
-      if (row) activateRow(row);
+      if (row) activateRow(row, e.metaKey || e.ctrlKey ? "select" : "forward");
     } else if (e.key === "ArrowRight" || e.key === "Tab") {
       const row = rows[active];
       if (row?.drill) {
@@ -441,7 +448,19 @@ export function QuickPick({
                   </>
                 ) : row.node ? (
                   <>
-                    <CheckGlyph on={on} />
+                    {/* the ONE selection target — everything else on the row
+                        goes forward */}
+                    <button
+                      type="button"
+                      aria-label={`${on ? "Deselect" : "Select"} ${row.node.label}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        activateRow(row, "select");
+                      }}
+                      className="-m-1 flex h-6 w-6 shrink-0 items-center justify-center rounded p-1 hover:bg-background"
+                    >
+                      <CheckGlyph on={on} />
+                    </button>
                     <KindGlyph node={row.node} />
                     <span className="min-w-0 flex-1 truncate text-foreground">
                       {row.node.label}
@@ -452,20 +471,12 @@ export function QuickPick({
                       )}
                     </span>
                     {row.drill && (
-                      <button
-                        type="button"
-                        aria-label={`Open ${row.node.label}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          activateRow(row, true);
-                        }}
+                      <ChevronRight
                         className={cn(
-                          "flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-background hover:text-foreground",
+                          "h-3.5 w-3.5 shrink-0 text-muted-foreground",
                           !isActive && "opacity-40",
                         )}
-                      >
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
+                      />
                     )}
                   </>
                 ) : (
