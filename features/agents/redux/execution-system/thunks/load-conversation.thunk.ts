@@ -218,27 +218,42 @@ export const loadConversation = createAsyncThunk<
           typeof conv.metadata === "object" && conv.metadata !== null
             ? (conv.metadata as Record<string, unknown>)
             : undefined,
-        // Per-conversation sandbox override. rowId lives on the FK column;
-        // proxyUrl is mirrored into metadata by the write thunk so the
-        // binding resolves with no extra fetch on reload. Both required —
-        // a missing proxyUrl falls through to the user-active sandbox.
-        sandboxOverride: (() => {
+        // THE sandbox binding — the same shape a locally-created conversation
+        // carries, so nothing downstream can tell a fetched conversation from a
+        // fresh one. rowId lives on the FK column the server also reads;
+        // proxyUrl / tier / kind / name mirror into metadata so the binding
+        // resolves with no extra fetch. A local-PC target has no proxyUrl (its
+        // URL is resolved server-side at send time) but MUST keep its `kind`.
+        sandboxBinding: (() => {
           const rowId = conv.sandbox_instance_id;
           if (!rowId) return null;
           const meta =
             typeof conv.metadata === "object" && conv.metadata !== null
               ? (conv.metadata as Record<string, unknown>)
               : {};
-          const proxyUrl = meta["sandbox_override_proxy_url"];
-          const tier = meta["sandbox_override_tier"];
-          return typeof proxyUrl === "string" && proxyUrl
-            ? {
-                rowId,
-                proxyUrl,
-                tier: tier === "ec2" || tier === "hosted" ? tier : undefined,
-              }
-            : null;
+          const str = (key: string): string | undefined => {
+            const value = meta[key];
+            return typeof value === "string" && value ? value : undefined;
+          };
+          const proxyUrl = str("sandbox_override_proxy_url") ?? "";
+          const tier = str("sandbox_override_tier");
+          const kind = str("sandbox_override_kind");
+          // Unroutable without one of these — treat as unbound rather than
+          // handing the resolver a ref it can't build a base_url from.
+          if (!proxyUrl && kind !== "local-pc") return null;
+          return {
+            rowId,
+            proxyUrl,
+            tier: tier === "ec2" || tier === "hosted" ? tier : undefined,
+            kind:
+              kind === "ec2" || kind === "hosted" || kind === "local-pc"
+                ? kind
+                : undefined,
+            name: str("sandbox_override_name"),
+          };
         })(),
+        // It came FROM the DB, so it is by definition already written to it.
+        sandboxBindingPersisted: !!conv.sandbox_instance_id,
       }),
     );
 

@@ -13,14 +13,19 @@ execute **inside that container** instead of on the AI-Dream host.
 The data path on every chat turn:
 
 ```
-SandboxPanel (attach)                          ← writes which box to Redux
-  → userPreferences.coding.activeAgentSandbox   (shared default)  OR
-    cx_conversation.sandbox_instance_id         (per-conversation override)
+SandboxPanel (attach)                          ← binds the box
+  → cx_conversation.sandbox_instance_id         THE BINDING (source of truth,
+      ↕ mirrored to Redux `sandboxBinding`      the same column the server reads)
+  → activeAgentSandboxBySurface preference      a SEED for NEW conversations only,
+                                                promoted onto the record on first use
+
+smartExecute → ensureSandboxOrDecide()         ← the pre-send gate (§4c)
+  → gates ONLY on the conversation's own binding; persists any change BEFORE sending
 
 execute thunk → buildToolInjection()           ← runs CLIENT-side, every turn
   → getRegisteredCapabilities()                 (the provider registry)
   → sandbox-fs provider → getActiveSandboxBinding(state, conversationId)
-      → resolveAgentSandboxRef()                (override ?? user-active ?? editor)
+      → resolveAgentSandboxRef()                (conversation binding ?? surface seed)
       → POST /api/sandbox/{id}/access-tokens     (mint a scoped bearer)
   → emits client.capabilities:["sandbox-fs"] + client.state["sandbox-fs"]
   → execute thunk promotes it to the top-level `sandbox` request field
@@ -125,6 +130,48 @@ CORS). Two layers now prevent this:
    `unavailable` shows a re-attach hint. `RunControlsMenu` (the indicator dot)
    and `SandboxPanel` (the binding chip) both consume it, so a stale box never
    appears attached and the user can simply pick a live one.
+
+## 4c. The gate fired on a conversation that never had a sandbox (2026-07-12)
+
+**Symptom:** on `/chat/new`, the very first message was blocked by the pre-send
+gate — *"This conversation is bound to a sandbox, but it can't be reached right
+now"* — for a brand-new conversation that had never had one. It looked random.
+
+**Cause — a preference was being read as a binding.** The gate asked "is this
+conversation bound?" via a resolver that returned the first of *(conversation
+override, surface preference, editor)*. A conversation on `/chat/new` has no
+override, so the answer came from `activeAgentSandboxBySurface["chat-route"]` —
+a **persisted user preference** written once, months earlier, by attaching a box
+in surface mode, and which **nothing ever clears when the box dies**. The token
+mint 404s on the corpse, the gate concludes "bound but unresolvable", and blocks
+the send. The class of error: *a default for future conversations was allowed to
+answer a question about this conversation's history.*
+
+**Fix — one source of truth, and it's the row the server also reads.**
+- A conversation is bound **iff its own record says so** — `sandboxBinding`,
+  backed by `cx_conversation.sandbox_instance_id`. `getConversationSandboxBinding()`
+  is the only thing the gate reads. Redux is now hydrated identically for a
+  locally-created and a fetched conversation (`load-conversation.thunk.ts`), so
+  "new" and "cached" conversations can't behave differently.
+- The surface preference is demoted to an explicit **seed** (`getSurfaceSeedRef`):
+  it arms an *unbound* conversation, and the first turn that actually resolves it
+  live **promotes** it onto the record + writes the DB
+  (`promoteSurfaceSeedToConversation`). A seed **never gates**: a dead seed just
+  warns loudly and the turn goes out unbound — nothing was bound, nothing is at
+  risk. It is NOT auto-deleted (a stopped box can be restarted; the panel already
+  shows it as `unavailable`).
+- **The DB is written BEFORE the request goes out.** The server runs the same
+  `sandbox_instance_id` check, so "send without sandbox" now persists
+  `sandbox_instance_id = null` *and* clears the surface seed (which would
+  otherwise re-arm the box on the very next turn) before proceeding. A binding
+  set while the conversation had no DB row yet (`cacheOnly` — the row is created
+  server-side by the first turn) is flagged `sandboxBindingPersisted: false` and
+  the write is retried at the next send.
+- The metadata mirror now also carries `kind` and `name`. It didn't before, so a
+  **local-PC binding silently lost its `kind` on reload** and became unroutable.
+
+Guarded by `lib/sandbox/__tests__/sandbox-gate.test.ts` — the two load-bearing
+cases are "dead seed → no gate, send proceeds" and "real binding → gate opens".
 
 ## 5. Still open (separate, tracked)
 

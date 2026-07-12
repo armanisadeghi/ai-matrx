@@ -402,15 +402,22 @@ export interface ExecutionInstance {
   metadata?: Record<string, unknown>;
 
   /**
-   * Per-conversation sandbox override (the power-user "use a different box
-   * just for this conversation" path). When set, the agent's fs/shell tools
-   * route into THIS box instead of the per-surface binding. `null`/absent →
-   * fall back to the surface-active sandbox for this conversation's surface.
-   * Persisted on `cx_conversation.sandbox_instance_id` (+ proxyUrl mirrored
-   * into `cx_conversation.metadata`); rehydrated by the conversation bundle.
-   * Ephemeral conversations keep this in-memory only.
+   * THE sandbox this conversation is bound to — the single source of truth,
+   * identical in shape whether the conversation was just created locally or
+   * fetched from the DB. The agent's fs/shell/git tools route into this box.
+   *
+   * Persisted on `cx_conversation.sandbox_instance_id` (+ proxyUrl / tier /
+   * kind / name mirrored into `cx_conversation.metadata`) and rehydrated by the
+   * conversation bundle — so the SERVER, which checks the same column, can
+   * never disagree with us about which box is bound. Ephemeral conversations
+   * (no cx_* row) keep it in memory only, by design.
+   *
+   * `null`/absent means genuinely NOT BOUND — and the pre-send hard-gate reads
+   * exactly this. The per-surface `activeAgentSandboxBySurface` preference is a
+   * SEED for new conversations, not a binding: it arms an unbound conversation
+   * at turn time and is then promoted here (see `active-binding.ts`).
    */
-  sandboxOverride?: {
+  sandboxBinding?: {
     rowId: string;
     proxyUrl: string;
     tier?: "ec2" | "hosted";
@@ -424,6 +431,16 @@ export interface ExecutionInstance {
     /** Display label latched at selection — rendered without re-fetching. */
     name?: string;
   } | null;
+
+  /**
+   * True once `sandboxBinding` has been written to `cx_conversation`. A binding
+   * set on a conversation that has no DB row yet (`cacheOnly` — the row is
+   * created server-side by the first turn) can't be persisted at that moment;
+   * this flag is what makes the write get retried on the next send, so the
+   * column the SERVER reads never silently drifts from what the client thinks
+   * is bound. Always true for a binding rehydrated from the DB.
+   */
+  sandboxBindingPersisted?: boolean;
 }
 
 // =============================================================================

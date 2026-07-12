@@ -30,10 +30,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
-  selectConversationSandboxOverride,
+  selectConversationSandboxBinding,
   selectConversationIsEphemeral,
 } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { setConversationSandboxOverride } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { setConversationSandbox } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
@@ -101,8 +101,8 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const surfaceBound = sourceFeature
     ? (bySurface[sourceFeature] ?? null)
     : null;
-  const override = useAppSelector(
-    selectConversationSandboxOverride(conversationId ?? ""),
+  const binding = useAppSelector(
+    selectConversationSandboxBinding(conversationId ?? ""),
   );
   const isEphemeral = useAppSelector(
     selectConversationIsEphemeral(conversationId ?? ""),
@@ -111,10 +111,12 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const sandboxBlocked =
     isEphemeral || (chatIncognito && sourceFeature === "chat-route");
 
-  // Resolution mirrors active-binding.ts: conversation override wins over the
-  // per-surface binding.
-  const resolved = override ?? surfaceBound ?? null;
-  const resolvedSource: "override" | "surface" | null = override
+  // What this conversation will actually use: its OWN binding (the source of
+  // truth, `cx_conversation.sandbox_instance_id`) or — if it has never been
+  // bound — the surface seed, which the next turn promotes onto the record.
+  // Mirrors active-binding.ts#getEffectiveSandboxRef.
+  const resolved = binding ?? surfaceBound ?? null;
+  const resolvedSource: "override" | "surface" | null = binding
     ? "override"
     : surfaceBound
       ? "surface"
@@ -127,6 +129,14 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   const bindingConfirmed = verified.status === "verified";
   const bindingVerifying = verified.status === "verifying";
   const bindingUnavailable = verified.status === "unavailable";
+
+  // Sandbox defaults the user configured in Settings → Sandbox. The "New
+  // sandbox" button passes these to the orchestrator so every box the user
+  // creates from chat matches their configured template / tier / env / etc.
+  // Must sit ABOVE the `sandboxBlocked` early return — it used to live below it,
+  // which made this a conditional hook (React would misalign the hook order the
+  // first time incognito flipped mid-session).
+  const sandboxPrefs = useAppSelector(selectSandboxPreferences);
 
   const { instances, loading, fetchInstances, createInstance } =
     useSandboxInstances();
@@ -182,11 +192,12 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     // complements the automatic TTL self-heal.
     if (ref?.rowId) clearSandboxBindingCache(ref.rowId);
     if (effectiveOverrideMode && conversationId) {
-      void dispatch(setConversationSandboxOverride({ conversationId, ref }));
+      // Binds THIS conversation only (and writes cx_conversation.sandbox_instance_id).
+      void dispatch(setConversationSandbox({ conversationId, ref }));
       toast.success(
         ref
           ? "Sandbox attached to this conversation"
-          : "Conversation override cleared",
+          : "Sandbox detached from this conversation",
       );
     } else {
       if (!sourceFeature) {
@@ -196,6 +207,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
         return;
       }
       // Read-modify-write the per-surface map so we only touch THIS surface.
+      // This is the SEED for future conversations on the surface…
       const next = { ...bySurface };
       if (ref) next[sourceFeature] = ref;
       else delete next[sourceFeature];
@@ -206,6 +218,13 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
           value: next,
         }),
       );
+      // …and the conversation you're standing in gets bound right now, on the
+      // record (and in the DB the server reads). A seed alone would leave this
+      // conversation "unbound" until its next turn promoted it — which is
+      // exactly the client/server disagreement this system exists to prevent.
+      if (conversationId) {
+        void dispatch(setConversationSandbox({ conversationId, ref }));
+      }
       toast.success(
         ref
           ? "Sandbox bound for this surface (every chat here)"
@@ -213,11 +232,6 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
       );
     }
   };
-
-  // Sandbox defaults the user configured in Settings → Sandbox. The "New
-  // sandbox" button passes these to the orchestrator so every box the user
-  // creates from chat matches their configured template / tier / env / etc.
-  const sandboxPrefs = useAppSelector(selectSandboxPreferences);
 
   const handleClaimNew = async () => {
     setCreating(true);

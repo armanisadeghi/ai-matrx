@@ -112,12 +112,14 @@ export const selectConversationSurfaceKey =
     state.conversations.byConversationId[conversationId]?.surfaceKey ?? null;
 
 /**
- * Per-conversation sandbox override — `{ rowId, proxyUrl }` when this
- * conversation is pinned to a specific box (power-user path), else `null`.
- * The agent-sandbox resolver reads this first, falling back to the user's
- * per-surface `activeAgentSandboxBySurface` preference.
+ * THE sandbox this conversation is bound to (`{ rowId, proxyUrl, … }`), or
+ * `null` when it is genuinely unbound. Backed by
+ * `cx_conversation.sandbox_instance_id`, so it reads the same for a locally-
+ * created conversation and a fetched one. This — and nothing else — is what
+ * "this conversation has a sandbox" means; the per-surface preference is a seed
+ * for new conversations, never a binding. See `lib/sandbox/active-binding.ts`.
  */
-export const selectConversationSandboxOverride =
+export const selectConversationSandboxBinding =
   (conversationId: string) =>
   (
     state: RootState,
@@ -128,8 +130,18 @@ export const selectConversationSandboxOverride =
     kind?: "ec2" | "hosted" | "local-pc";
     name?: string;
   } | null =>
-    state.conversations.byConversationId[conversationId]?.sandboxOverride ??
-    null;
+    state.conversations.byConversationId[conversationId]?.sandboxBinding ?? null;
+
+/**
+ * False when the conversation's binding exists only in memory (set before the
+ * cx_conversation row existed). The pre-send gate retries the DB write so the
+ * server's own binding check can't disagree with ours.
+ */
+export const selectConversationSandboxPersisted =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.conversations.byConversationId[conversationId]
+      ?.sandboxBindingPersisted ?? false;
 
 export const selectConversationScopeIds = (conversationId: string) =>
   createSelector(

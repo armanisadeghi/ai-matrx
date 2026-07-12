@@ -40,6 +40,7 @@ import type {
 } from "@/types/python-generated/stream-events";
 import type { components } from "@/types/python-generated/api-types";
 import type { BackendChannel } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
+import type { ResolvedSandboxRef } from "@/lib/sandbox/active-binding";
 
 // =============================================================================
 // Client-Side Metrics
@@ -364,13 +365,15 @@ export interface RequestRouting {
   activeServer: string;
   /**
    * The sandbox the conversation resolved to (sync, pre-mint), or null if none
-   * was selected. `source` tells you whether it came from the per-conversation
-   * override, the shared user-active preference, or the editor.
+   * was selected. `source` tells you whether it came from the conversation's own
+   * binding (the source of truth) or from a surface/editor seed that this turn
+   * promotes onto the record. The union is NOT re-declared here — a stale copy
+   * is how the old "surface preference == binding" confusion spread.
    */
   sandboxRef: {
     rowId: string;
     tier?: "ec2" | "hosted";
-    source: "conversation-override" | "surface-active" | "editor-active";
+    source: ResolvedSandboxRef["source"];
   } | null;
   /**
    * Whether the `sandbox` binding actually attached to the payload. When a

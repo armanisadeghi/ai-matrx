@@ -24,11 +24,7 @@
  */
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectConversationSandboxOverride,
-  selectConversationIsEphemeral,
-} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
+import { getEffectiveSandboxRef } from "@/lib/sandbox/active-binding";
 import {
   useComputeTargets,
   type ComputeTarget,
@@ -81,43 +77,49 @@ function isTargetAccessible(target: ComputeTarget): boolean {
 export function useVerifiedSandboxBinding(
   conversationId: string | null,
 ): VerifiedSandboxBinding {
-  const override = useAppSelector(
-    selectConversationSandboxOverride(conversationId ?? ""),
+  // ONE resolution path, shared with the turn-time resolver — the conversation's
+  // own binding, else the surface seed it would be armed with. Incognito /
+  // ephemeral gating lives in there too, so the UI can never disagree with what
+  // the send actually does.
+  //
+  // Selected field-by-field on purpose: getEffectiveSandboxRef builds a fresh
+  // object every call, so selecting it whole would re-render this hook's
+  // consumers on every unrelated store change. Scalars compare by value.
+  const rowId = useAppSelector(
+    (s) => getEffectiveSandboxRef(s, conversationId)?.rowId ?? null,
   );
-  const isEphemeral = useAppSelector(
-    selectConversationIsEphemeral(conversationId ?? ""),
+  const proxyUrl = useAppSelector(
+    (s) => getEffectiveSandboxRef(s, conversationId)?.proxyUrl ?? null,
   );
-  const chatIncognito = useAppSelector(selectChatIncognitoActive);
-  const sourceFeature = useAppSelector((s) =>
-    conversationId
-      ? (s.conversations.byConversationId[conversationId]?.sourceFeature ??
-        null)
-      : null,
+  const tier = useAppSelector(
+    (s) => getEffectiveSandboxRef(s, conversationId)?.tier ?? null,
   );
-  const surfaceBound = useAppSelector((s) =>
-    sourceFeature
-      ? (s.userPreferences.coding.activeAgentSandboxBySurface[sourceFeature] ??
-        null)
-      : null,
+  const kind = useAppSelector(
+    (s) => getEffectiveSandboxRef(s, conversationId)?.kind ?? null,
+  );
+  const name = useAppSelector(
+    (s) => getEffectiveSandboxRef(s, conversationId)?.name ?? null,
+  );
+  const refSource = useAppSelector(
+    (s) => getEffectiveSandboxRef(s, conversationId)?.source ?? null,
   );
 
   const { data, loading, refetch } = useComputeTargets();
 
-  // Same gating as the turn-time resolver: no binding in incognito chat or for
-  // ephemeral conversations.
-  const blocked =
-    isEphemeral || (chatIncognito && sourceFeature === "chat-route");
-
-  const ref: VerifiedSandboxRef | null = blocked
+  const ref: VerifiedSandboxRef | null = rowId
+    ? {
+        rowId,
+        proxyUrl: proxyUrl ?? "",
+        tier: tier ?? undefined,
+        kind: kind ?? undefined,
+        name: name ?? undefined,
+      }
+    : null;
+  const source: "override" | "surface" | null = !refSource
     ? null
-    : (override ?? surfaceBound ?? null);
-  const source: "override" | "surface" | null = blocked
-    ? null
-    : override
+    : refSource === "conversation"
       ? "override"
-      : surfaceBound
-        ? "surface"
-        : null;
+      : "surface";
 
   let status: SandboxVerificationStatus = "none";
   let target: ComputeTarget | null = null;

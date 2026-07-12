@@ -389,42 +389,67 @@ export const duplicateConversation = createAsyncThunk<
   },
 );
 
-// ── sandbox override (power-user "use a different box just here") ──────────────
+// ── the conversation's sandbox binding (THE source of truth) ──────────────────
 
-interface SetConversationSandboxOverrideArgs {
+export interface ConversationSandboxRef {
+  rowId: string;
+  /** Empty for a local-PC target — its URL is resolved server-side at send time. */
+  proxyUrl: string;
+  tier?: "ec2" | "hosted";
+  kind?: "ec2" | "hosted" | "local-pc";
+  name?: string;
+}
+
+interface SetConversationSandboxArgs {
   conversationId: string;
-  /** The box to pin to this conversation, or `null` to clear the override. */
-  ref: { rowId: string; proxyUrl: string; tier?: "ec2" | "hosted" } | null;
+  /** The box this conversation is bound to, or `null` to unbind it. */
+  ref: ConversationSandboxRef | null;
 }
 
 /**
- * Pin (or clear) a per-conversation sandbox override. The rowId persists on
- * `cx_conversation.sandbox_instance_id`; the proxyUrl mirrors into
- * `cx_conversation.metadata.sandbox_override_proxy_url` so the binding
- * resolves on reload with no extra fetch. Ephemeral conversations (no cx_*
- * row) keep the override in-memory only — lost on reload, by design.
+ * Bind (or unbind) a conversation's sandbox — the ONE write path for the ONE
+ * source of truth. The rowId persists on `cx_conversation.sandbox_instance_id`
+ * — the same column the SERVER checks before arming fs/shell/git tools — and
+ * proxyUrl / tier / kind / name mirror into `cx_conversation.metadata` so the
+ * binding rehydrates on reload with no extra fetch and no lost fields (a
+ * local-PC binding needs `kind` to resolve at all).
  *
- * The shared user-active sandbox is unaffected; this only changes which box
- * THIS conversation routes its agent's fs/shell/git tools into.
+ * Writing the DB is not optional and not "later": every downstream gate, ours
+ * and the server's, reads that column. Unbinding before a send is what lets
+ * "send without sandbox" actually send without a sandbox instead of hitting a
+ * server that still thinks a box is attached.
+ *
+ * Returns `persisted: false` when the conversation has no DB row yet
+ * (`cacheOnly` — the row is created server-side by the first turn) or is
+ * ephemeral. The binding still applies in memory; `ensureSandboxOrDecide`
+ * retries the write on the next send, when the row exists.
  */
-export const setConversationSandboxOverride = createAsyncThunk<
-  { conversationId: string },
-  SetConversationSandboxOverrideArgs,
+export const setConversationSandbox = createAsyncThunk<
+  { conversationId: string; persisted: boolean },
+  SetConversationSandboxArgs,
   ThunkApi
 >(
-  "conversationRow/setSandboxOverride",
+  "conversationRow/setSandbox",
   async ({ conversationId, ref }, { dispatch, getState, rejectWithValue }) => {
     const state = getState();
-    const previous =
-      state.conversations.byConversationId[conversationId]?.sandboxOverride ??
-      null;
+    const record = state.conversations.byConversationId[conversationId];
+    const previous = record?.sandboxBinding ?? null;
+    const previousPersisted = record?.sandboxBindingPersisted ?? false;
 
-    // Optimistic — the resolver reads this off the conversation record.
-    dispatch(patchInstanceConversation({ conversationId, sandboxOverride: ref }));
+    // Optimistic — every resolver reads this off the conversation record.
+    dispatch(
+      patchInstanceConversation({
+        conversationId,
+        sandboxBinding: ref,
+        sandboxBindingPersisted: false,
+      }),
+    );
 
-    // Ephemeral conversations have no DB row; in-memory only.
-    if (selectConversationIsEphemeral(conversationId)(state)) {
-      return { conversationId };
+    // No DB row to write to: ephemeral (never gets one) or cacheOnly (the first
+    // turn creates it server-side). Keep it in memory; the pre-send gate retries.
+    const isEphemeral = selectConversationIsEphemeral(conversationId)(state);
+    if (isEphemeral || (record?.cacheOnly ?? true)) {
+      return { conversationId, persisted: false };
     }
 
     // Read-modify-write metadata so we never clobber the server-managed
@@ -439,7 +464,8 @@ export const setConversationSandboxOverride = createAsyncThunk<
       dispatch(
         patchInstanceConversation({
           conversationId,
-          sandboxOverride: previous,
+          sandboxBinding: previous,
+          sandboxBindingPersisted: previousPersisted,
         }),
       );
       return rejectWithValue({ message: readError.message });
@@ -449,14 +475,16 @@ export const setConversationSandboxOverride = createAsyncThunk<
       typeof row?.metadata === "object" && row.metadata !== null
         ? { ...(row.metadata as Record<string, unknown>) }
         : {};
-    if (ref) {
-      metadata["sandbox_override_proxy_url"] = ref.proxyUrl;
-      if (ref.tier) metadata["sandbox_override_tier"] = ref.tier;
-      else delete metadata["sandbox_override_tier"];
-    } else {
-      delete metadata["sandbox_override_proxy_url"];
-      delete metadata["sandbox_override_tier"];
-    }
+    // Legacy key names kept — a binding written before the rename must still
+    // rehydrate. (load-conversation.thunk.ts reads the same keys.)
+    const setOrDelete = (key: string, value: string | undefined) => {
+      if (value) metadata[key] = value;
+      else delete metadata[key];
+    };
+    setOrDelete("sandbox_override_proxy_url", ref?.proxyUrl || undefined);
+    setOrDelete("sandbox_override_tier", ref?.tier);
+    setOrDelete("sandbox_override_kind", ref?.kind);
+    setOrDelete("sandbox_override_name", ref?.name);
 
     const { error } = await supabase
       .schema("chat").from("conversation")
@@ -471,12 +499,19 @@ export const setConversationSandboxOverride = createAsyncThunk<
       dispatch(
         patchInstanceConversation({
           conversationId,
-          sandboxOverride: previous,
+          sandboxBinding: previous,
+          sandboxBindingPersisted: previousPersisted,
         }),
       );
       return rejectWithValue({ message: error.message });
     }
 
-    return { conversationId };
+    dispatch(
+      patchInstanceConversation({
+        conversationId,
+        sandboxBindingPersisted: true,
+      }),
+    );
+    return { conversationId, persisted: true };
   },
 );

@@ -7,7 +7,10 @@ import {
   selectAccessToken,
   selectFingerprintId,
 } from "@/lib/redux/slices/userSlice";
-import { resolveAgentSandboxRef, getConfiguredSandboxRef } from "@/lib/sandbox/active-binding";
+import {
+  resolveAgentSandboxRef,
+  getEffectiveSandboxRef,
+} from "@/lib/sandbox/active-binding";
 import {
   discoverLocalEngine,
   getCachedLocalEngine,
@@ -109,7 +112,7 @@ export async function warmLocalEngineForConversation(
   state: RootState,
   conversationId: string,
 ): Promise<void> {
-  const ref = getConfiguredSandboxRef(state, conversationId);
+  const ref = getEffectiveSandboxRef(state, conversationId);
   if (ref?.kind !== "local-pc") return;
   const engine = await discoverLocalEngine();
   if (!engine) {

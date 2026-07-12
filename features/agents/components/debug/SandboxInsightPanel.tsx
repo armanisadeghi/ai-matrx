@@ -55,10 +55,10 @@ export function SandboxInsightPanel({
   }
 
   const sourceLabel =
-    source === "conversation-override"
+    source === "conversation"
       ? "this conversation"
-      : source === "surface-active"
-        ? "this surface"
+      : source === "surface-seed"
+        ? "this surface (seed — bound on the next turn)"
         : "editor";
 
   return (

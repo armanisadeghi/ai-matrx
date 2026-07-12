@@ -9,21 +9,41 @@
  *   2. base_url     — orchestrator URL up to /sandboxes/<id>
  *   3. access_token — short-lived, sandbox-scoped HMAC bearer
  *
- * ── Which box is bound? (resolution order) ───────────────────────────────
- * The binding is SURFACE-scoped, never global. A box bound from one surface's
- * input (e.g. chat) applies to every conversation ON THAT SURFACE and NOTHING
- * else — it must never silently bind a conversation on a surface with no
- * visible/unbindable control (transcription cleanup, other AI integrations).
- * We resolve, highest priority first:
+ * ── THE SOURCE OF TRUTH: the conversation record ─────────────────────────
+ * A conversation's sandbox binding lives in exactly ONE place — on the
+ * conversation record (`sandboxBinding`), persisted to
+ * `cx_conversation.sandbox_instance_id` (+ a metadata mirror for proxyUrl /
+ * tier / kind / name) and rehydrated by the conversation bundle. Redux therefore
+ * looks IDENTICAL for a freshly-created conversation and a fetched one, and the
+ * client and the server (which reads the same column) can never disagree about
+ * which box a conversation is bound to.
  *
- *   1. Conversation override — `cx_conversation.sandbox_instance_id`, surfaced
- *      on the conversation record as `sandboxOverride`. The "use a different box
- *      just here" path, valid on any surface. `null` for almost everyone.
- *   2. Surface-active sandbox — `userPreferences.coding.activeAgentSandboxBySurface`
- *      keyed by the conversation's OWN `sourceFeature` ("chat-route", …). Not
- *      route-derived (a background turn can run while you're on another route).
- *   3. Editor-active sandbox — `codeWorkspaceSlice` (session-only), applied ONLY
- *      when `sourceFeature === "code-editor"`.
+ * The per-surface preference (`userPreferences.coding.activeAgentSandboxBySurface`)
+ * is NOT a binding. It is a SEED: "which box should a NEW conversation on this
+ * surface start out attached to". The moment a turn actually goes out with that
+ * box — or the user attaches one from the panel — it is PROMOTED onto the
+ * conversation record and written to the DB (`promoteSurfaceSeedToConversation`
+ * in sandbox-gate.thunk.ts). From then on the record is the only thing anyone
+ * reads.
+ *
+ * Why this matters (the bug this shape kills): treating the surface preference
+ * as a binding meant a brand-new conversation on /chat/new "was bound to a
+ * sandbox" because of a stale preference pointing at a long-dead box — so the
+ * pre-send gate fired and claimed the conversation had a sandbox it had never
+ * had. A conversation that has never gone out with a box has nothing to protect.
+ *
+ * Resolution, highest priority first:
+ *
+ *   1. Conversation binding — the record. The ONLY thing that counts as "this
+ *      conversation is bound" (and the only thing the pre-send gate reads).
+ *   2. Surface seed — the per-surface preference, keyed by the conversation's
+ *      OWN `sourceFeature` ("chat-route", …), NOT the route (a background turn
+ *      can run while you're on another route). Surface-scoped, never global: a
+ *      box bound from chat must never silently bind a conversation on a surface
+ *      with no visible control (transcription cleanup, other integrations).
+ *      Arms an unbound conversation at turn time, then gets promoted.
+ *   3. Editor seed — `codeWorkspaceSlice` (session-only), ONLY when
+ *      `sourceFeature === "code-editor"`.
  *   4. None → returns `null` → the capability is omitted → multi-tenant aidream.
  *
  * Liveness suppression (self-healing): a bound box can go momentarily
@@ -58,7 +78,7 @@ import {
 } from "@/features/code/redux/codeWorkspaceSlice";
 import {
   selectConversationIsEphemeral,
-  selectConversationSandboxOverride,
+  selectConversationSandboxBinding,
 } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
 
@@ -92,7 +112,12 @@ export interface ResolvedSandboxRef {
   kind?: "ec2" | "hosted" | "local-pc";
   /** Display label latched at selection (rendered by SandboxPanel chip). */
   name?: string;
-  source: "conversation-override" | "surface-active" | "editor-active";
+  /**
+   * Where the ref came from. `"conversation"` is the only one that means "this
+   * conversation IS bound" — the other two are seeds for an as-yet-unbound
+   * conversation, promoted onto the record on first use.
+   */
+  source: "conversation" | "surface-seed" | "editor-seed";
 }
 
 interface CachedToken {
@@ -193,41 +218,75 @@ function isStillValid(cached: CachedToken | undefined): cached is CachedToken {
   return !!cached && cached.exp - REFRESH_LEEWAY_SECONDS > nowSec();
 }
 
+/** The stored shape of a ref on the conversation record / in the surface preference. */
+type StoredSandboxRef = Omit<ResolvedSandboxRef, "source">;
+
 /**
- * The conversation's CONFIGURED sandbox binding INTENT — the stored ref at the
- * highest-priority level, WITHOUT the liveness/suppression filter. Answers "is
- * this conversation bound to a box?" (what the pre-send hard-gate needs), as
- * distinct from `resolveAgentSandboxRef` which answers "is a live box resolvable
- * right now?". A bound-but-currently-unresolvable box returns a ref HERE but
- * `null` from `resolveAgentSandboxRef` — that gap is exactly the gate condition.
- * Pure + synchronous; no network I/O.
+ * A ref is usable only if it can actually be routed to: an orchestrator box
+ * needs its proxyUrl, a local PC has none (its URL is resolved server-side at
+ * send time) and is identified by `kind`. Anything else is unroutable and must
+ * be treated as "not bound" rather than handed to the resolver.
  */
-export function getConfiguredSandboxRef(
+function isUsableRef(
+  ref: Partial<StoredSandboxRef> | null | undefined,
+): ref is StoredSandboxRef {
+  return !!ref?.rowId && (!!ref.proxyUrl || ref.kind === "local-pc");
+}
+
+/**
+ * True when a sandbox must not be attached to this conversation at all —
+ * incognito chat and ephemeral conversations never bind a box.
+ */
+function isSandboxBlocked(
   state: RootState,
   conversationId: string | null | undefined,
-): ResolvedSandboxRef | null {
+): boolean {
   if (conversationId && selectConversationIsEphemeral(conversationId)(state)) {
-    return null;
+    return true;
   }
-
   const sourceFeature = conversationId
     ? state.conversations?.byConversationId?.[conversationId]?.sourceFeature
     : undefined;
+  return sourceFeature === "chat-route" && selectChatIncognitoActive(state);
+}
 
-  // Chat incognito: never attach org/user sandboxes on the chat route, even
-  // when a surface-default box is configured in preferences.
-  if (sourceFeature === "chat-route" && selectChatIncognitoActive(state)) {
-    return null;
-  }
+/**
+ * THE binding — the box this conversation is actually bound to, read off the
+ * conversation record (persisted at `cx_conversation.sandbox_instance_id`).
+ *
+ * This is the ONLY function that answers "is this conversation bound to a
+ * sandbox?", and it is what the pre-send hard-gate reads. A surface preference
+ * is NOT a binding: a conversation that has never gone out with a box has
+ * nothing to protect, so gating it would be a lie (that was the /chat/new
+ * "bound to a sandbox that doesn't exist" bug).
+ *
+ * No liveness filter — this is stored INTENT. `resolveAgentSandboxRef` answers
+ * the different question "is a live box resolvable right now?". A bound-but-
+ * unresolvable box returns a ref HERE and `null` there; that gap is exactly the
+ * gate condition. Pure + synchronous; no network I/O.
+ */
+export function getConversationSandboxBinding(
+  state: RootState,
+  conversationId: string | null | undefined,
+): ResolvedSandboxRef | null {
+  if (!conversationId || isSandboxBlocked(state, conversationId)) return null;
 
-  // Level 1: explicit per-conversation override (applies on ANY surface — the
-  // user pinned this specific conversation to a box).
-  const override = conversationId
-    ? selectConversationSandboxOverride(conversationId)(state)
-    : null;
-  if (override?.rowId && (override.proxyUrl || override.kind === "local-pc")) {
-    return { ...override, source: "conversation-override" };
-  }
+  const binding = selectConversationSandboxBinding(conversationId)(state);
+  return isUsableRef(binding) ? { ...binding, source: "conversation" } : null;
+}
+
+/**
+ * The SEED for an as-yet-unbound conversation: which box a new conversation on
+ * this surface should start out attached to. NOT a binding — nothing gates on
+ * it. `promoteSurfaceSeedToConversation` (sandbox-gate.thunk.ts) turns a seed
+ * into a real binding the first time a turn actually goes out with it, after
+ * which the conversation record is the only thing anyone reads.
+ */
+export function getSurfaceSeedRef(
+  state: RootState,
+  conversationId: string | null | undefined,
+): ResolvedSandboxRef | null {
+  if (!conversationId || isSandboxBlocked(state, conversationId)) return null;
 
   // The surface this conversation belongs to ("chat-route", "transcript-studio",
   // "agent-runner", …). This is the load-bearing scope: a box bound from one
@@ -235,18 +294,16 @@ export function getConfiguredSandboxRef(
   // there's no visible/unbindable control). Route-based detection is unsafe
   // (a background transcription runs while the user sits on /chat), so we read
   // the conversation's OWN persisted sourceFeature.
+  const sourceFeature =
+    state.conversations?.byConversationId?.[conversationId]?.sourceFeature;
   if (!sourceFeature) return null;
 
-  // Level 2: the box bound for THIS surface, if any.
-  const surfaceBound =
+  const surfaceSeed =
     state.userPreferences?.coding?.activeAgentSandboxBySurface?.[
       sourceFeature
     ] ?? null;
-  if (
-    surfaceBound?.rowId &&
-    (surfaceBound.proxyUrl || surfaceBound.kind === "local-pc")
-  ) {
-    return { ...surfaceBound, source: "surface-active" };
+  if (isUsableRef(surfaceSeed)) {
+    return { ...surfaceSeed, source: "surface-seed" };
   }
 
   // The /code editor's connected box — scoped to the code-editor surface ONLY,
@@ -258,7 +315,7 @@ export function getConfiguredSandboxRef(
       return {
         rowId: editorRowId,
         proxyUrl: editorProxyUrl,
-        source: "editor-active",
+        source: "editor-seed",
       };
     }
   }
@@ -267,16 +324,36 @@ export function getConfiguredSandboxRef(
 }
 
 /**
- * Resolve which LIVE sandbox a conversation is bound to, highest priority first.
- * Returns `null` when no box is bound OR the bound box is inside its dead-box
- * suppression window. Pure + synchronous — safe to call on every turn; does no
- * network I/O (token mint happens in `getActiveSandboxBinding`).
+ * The binding if there is one, else the seed that WOULD be promoted on the next
+ * turn. Display-only ("which box will this conversation use?") — the SandboxPanel
+ * chip and `useVerifiedSandboxBinding` render from this so the UI and the turn-
+ * time resolver never disagree. Never use it to decide whether to gate a send:
+ * that is `getConversationSandboxBinding` alone.
+ */
+export function getEffectiveSandboxRef(
+  state: RootState,
+  conversationId: string | null | undefined,
+): ResolvedSandboxRef | null {
+  return (
+    getConversationSandboxBinding(state, conversationId) ??
+    getSurfaceSeedRef(state, conversationId)
+  );
+}
+
+/**
+ * Resolve which LIVE sandbox this turn should route into: the conversation's
+ * binding, or — for a conversation that has never been bound — the surface seed
+ * (which `ensureSandboxOrDecide` promotes onto the record in the same turn, so
+ * the two converge immediately). Returns `null` when nothing is bound/seeded OR
+ * the box is inside its dead-box suppression window. Pure + synchronous — safe
+ * to call on every turn; does no network I/O (token mint happens in
+ * `getActiveSandboxBinding`).
  */
 export function resolveAgentSandboxRef(
   state: RootState,
   conversationId: string | null | undefined,
 ): ResolvedSandboxRef | null {
-  const ref = getConfiguredSandboxRef(state, conversationId);
+  const ref = getEffectiveSandboxRef(state, conversationId);
   if (!ref) return null;
   // A box we've learned is dead (token mint reported it not-running) must NOT
   // resolve while suppressed — otherwise a turn routes to a dead host. The
