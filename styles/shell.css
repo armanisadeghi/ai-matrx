@@ -1202,8 +1202,18 @@ button.shell-nav-flyout-item {
     display: none;
   }
 
-  /* Reset grid to single column */
-  .shell-root {
+  /* Reset grid to single column.
+     Must ALSO target the sidebar-expanded selector: the desktop rule
+     `.shell-root:has(#shell-sidebar-toggle:checked) { grid-template-columns:
+     208px 1fr }` carries an id inside :has(), so it out-specifies a plain
+     `.shell-root` here and a media query adds no specificity. Without this,
+     a persisted expanded-sidebar state (cookie/storage) on a mobile-width
+     viewport keeps a 208px first column while grid-template-areas is already
+     single-column ("header"/"main") — so `main` gets pinned into that 208px
+     track with the rest of the row empty. Listing the same :has() selector
+     here (equal specificity, later in source) collapses both to one column. */
+  .shell-root,
+  .shell-root:has(#shell-sidebar-toggle:checked) {
     grid-template-columns: 1fr;
     grid-template-rows: var(--shell-header-h) 1fr;
     grid-template-areas:
