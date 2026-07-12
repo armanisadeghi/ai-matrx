@@ -39,6 +39,8 @@ import type {
   Visibility,
 } from "@/features/files/types";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { apiMultipart } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 
 // ---------------------------------------------------------------------------
 // Upload
@@ -272,55 +274,26 @@ export async function getAssetPresets(
  * Field names are snake_case to match the Python multipart body schema
  * verbatim — `position` / `background_color` reach Python as-is inside
  * the `variants_json` array.
+ *
+ * These are DERIVED from the OpenAPI-generated schema, never hand-mirrored.
+ * A backend rename (e.g. `key` → `preset_id`) changes the generated type,
+ * which turns every drifted callsite into a compile error in the same PR
+ * that runs `pnpm sync-types`. Do NOT redeclare these as standalone
+ * interfaces — that severs the link and lets the wire contract drift
+ * silently (which is exactly how the `invalid_variant_spec` 400 shipped).
  */
-export type PreviewVariantPosition =
-  | "center"
-  | "top"
-  | "bottom"
-  | "left"
-  | "right"
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right"
-  | "entropy"
-  | "attention"
-  | { x: number; y: number };
+export type PreviewVariantSpec = components["schemas"]["PreviewVariantSpec"];
 
-export interface PreviewVariantSpec {
-  /** Stable id echoed back on the matching result as `preset_id`. */
-  preset_id: string;
-  width?: number;
-  height?: number;
-  format?: "jpeg" | "png" | "webp" | "avif";
-  quality?: number;
-  fit?: "cover" | "contain" | "inside";
-  position?: PreviewVariantPosition;
-  background_color?: string;
-}
+/** Named anchor / smart-crop mode / focal point for `fit: "cover"`. */
+export type PreviewVariantPosition = NonNullable<
+  PreviewVariantSpec["position"]
+>;
 
-export interface PreviewVariantResult {
-  /** Echoed from the request spec's `preset_id`. */
-  preset_id: string;
-  width: number | null;
-  height: number | null;
-  /** Format the server actually encoded (may differ from the request). */
-  format: "jpeg" | "png" | "webp" | "avif";
-  /** Encoded byte length of the rendered variant. */
-  size: number;
-  /** base64 data URL for small variants (≤256 KB). */
-  data_url: string | null;
-  /** 5-min ephemeral signed URL for larger variants. */
-  signed_url: string | null;
-  /** Seconds until `signed_url` expires (signed_url mode only). */
-  expires_in?: number | null;
-  /** Per-variant render failure; the variant is otherwise empty. */
-  error?: string | null;
-}
+/** One rendered variant in the `/assets/preview*` response. */
+export type PreviewVariantResult = components["schemas"]["AssetPreviewVariant"];
 
-export interface AssetPreviewResult {
-  variants: PreviewVariantResult[];
-}
+/** Response envelope for `POST /assets/preview` and `.../multipart`. */
+export type AssetPreviewResult = components["schemas"]["AssetPreviewResponse"];
 
 export interface PdfCompressResult {
   original_size: number;
@@ -364,11 +337,10 @@ export async function previewAssetMultipart(
   if (typeof options.maxInlineBytes === "number") {
     form.append("max_inline_bytes", String(options.maxInlineBytes));
   }
-  return postMultipart<AssetPreviewResult>(
-    ENDPOINTS.assets.previewMultipart,
-    form,
-    opts,
-  );
+  // Contract-bound: the response type is DERIVED from the OpenAPI operation
+  // for this exact path, not asserted. A backend response-shape change turns
+  // every reader of the result into a compile error after `pnpm sync-types`.
+  return apiMultipart(ENDPOINTS.assets.previewMultipart, form, opts);
 }
 
 /**
