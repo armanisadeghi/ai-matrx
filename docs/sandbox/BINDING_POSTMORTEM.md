@@ -173,6 +173,48 @@ answer a question about this conversation's history.*
 Guarded by `lib/sandbox/__tests__/sandbox-gate.test.ts` — the two load-bearing
 cases are "dead seed → no gate, send proceeds" and "real binding → gate opens".
 
+## 4d. The binding had a permanent home all along — we weren't using it (2026-07-12)
+
+Follow-up to §4c: "why is a compute binding living in a JSONB blob?" The facts:
+
+**`cx_conversation` already has two dedicated columns, and the server reads both.**
+
+| target | table | column | how the FE used to write it |
+|---|---|---|---|
+| orchestrator box | `sandbox_instances` | `sandbox_instance_id` | ✅ correct |
+| user's local PC | `app_instances` | `app_instance_id` | ❌ **written into `sandbox_instance_id`** |
+
+aidream's `resolve_and_arm_run` (`services/sandboxes/sandbox_autobind.py`)
+dispatches on **which column is set** — a CHECK constraint forbids both. The
+frontend never wrote `app_instance_id` at all: it put every binding, local PCs
+included, in `sandbox_instance_id`. The server then looked that PC's uuid up in
+`sandbox_instances`, found nothing, and declined to arm anything. Local-PC
+conversations worked *only* because the client separately shipped the binding in
+the request body — the server's own view of them was wrong.
+
+**So `kind` never needed storing: the column IS the discriminator.** It is now
+derived from which column holds the id, and `sandbox_override_kind` is retired
+(a stored copy can contradict the column — and did).
+
+**What legitimately stays in metadata: a cache, and nothing may require it.**
+`proxy_url` is *deliberately never persisted anywhere* — the platform recomputes
+it from `sandbox_id` + tier (`lib/sandbox/decorate-sandbox-row.ts`). `tier` and
+`name` live on the referenced row. So the metadata keys are a re-derivable cache
+that saves a fetch on reload, nothing more.
+
+Treating that cache as *identity* was its own silent-fallback bug: `isUsableRef`
+required a `proxyUrl`, so a binding written by aidream's own
+`PUT /ai/conversations/{id}/sandbox` (column set, no metadata) — and every
+local-PC binding — read as **UNBOUND**. The turn went out to the global server
+with no sandbox and *no gate*. Now a binding is `rowId` and nothing else;
+`resolveSandboxRefDetails()` re-derives `proxy_url`/`tier`/`name` from the row at
+send time, and the gate writes them back so the cache self-heals **before** the
+request is assembled (tier is read synchronously by `resolveBackendForConversation`
+to pick the dedicated EC2 server — healing it late would silently route the first
+turn to the global server).
+
+No migration was needed. The schema was right; the client was ignoring half of it.
+
 ## 5. Still open (separate, tracked)
 
 - **Deploy the aidream `sandbox-fs` `enabled_tools` change** (uncommitted in the

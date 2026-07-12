@@ -76,7 +76,6 @@
     "**/*.tsx",
     "**/*.js",
     "**/*.jsx",
-    ".next/types/**/*.ts",
     "tests/**/*",
     "scripts/**/*",
     "node_modules/flowbite-react/lib/esm/index.d.ts",
@@ -87,19 +86,16 @@
     "app/**/*",
     "packages/**/*.ts",
     "packages/**/*.tsx",
-    ".next/dev/types/**/*.ts",
-    ".next-preview/types/**/*.ts",
-    ".next-preview/dev/types/**/*.ts",
-    ".next-preview-cutoverqa/types/**/*.ts",
-    ".next-preview-cutoverqa/dev/types/**/*.ts",
-    ".next-preview-qa2/types/**/*.ts",
-    ".next-preview-qa2/dev/types/**/*.ts"
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
+    ".next*/**",
+    ".next*",
+    ".next",
     "node_modules",
     "_armani",
     "_dev",
-    ".next",
     ".claude",
     "out",
     "utils/schema/schemaUtils.ts"

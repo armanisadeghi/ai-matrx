@@ -102,7 +102,10 @@
     "sync-types:fast": "node scripts/sync-types.mjs --fast",
     "build:analyze": "ts-node scripts/generate-manifest.ts && next experimental-analyze",
     "build:analyze:save": "ts-node scripts/generate-manifest.ts && next experimental-analyze --output",
-    "build:profile": "NEXT_TELEMETRY_DEBUG=1 next build 2>&1 | tee build-profile.log"
+    "build:profile": "NEXT_TELEMETRY_DEBUG=1 next build 2>&1 | tee build-profile.log",
+    "check:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts",
+    "check:tsconfig:strict": "tsx scripts/check-tsconfig-hygiene.ts --strict",
+    "clean:next": "rm -rf .next-preview* .next-qa* && echo 'removed alternate NEXT_DISTDIR build dirs (.next left intact)'"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",

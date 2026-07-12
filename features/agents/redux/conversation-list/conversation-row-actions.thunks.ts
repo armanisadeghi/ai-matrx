@@ -407,15 +407,36 @@ interface SetConversationSandboxArgs {
 }
 
 /**
- * Bind (or unbind) a conversation's sandbox — the ONE write path for the ONE
- * source of truth. The rowId persists on `cx_conversation.sandbox_instance_id`
- * — the same column the SERVER checks before arming fs/shell/git tools — and
- * proxyUrl / tier / kind / name mirror into `cx_conversation.metadata` so the
- * binding rehydrates on reload with no extra fetch and no lost fields (a
- * local-PC binding needs `kind` to resolve at all).
+ * Bind (or unbind) a conversation's compute target — the ONE write path for the
+ * ONE source of truth.
+ *
+ * ── The two columns (and the bug of ignoring the second) ─────────────────────
+ * A compute target is one of two DIFFERENT tables, and `cx_conversation` has a
+ * dedicated column for each (a CHECK constraint forbids both being set):
+ *
+ *   sandbox_instances  → `cx_conversation.sandbox_instance_id`   (orchestrator box)
+ *   app_instances      → `cx_conversation.app_instance_id`       (user's local PC)
+ *
+ * aidream's `resolve_and_arm_run` reads BOTH and dispatches on which one is set —
+ * that is the discriminator; `kind` is *derived from the column*, not stored.
+ *
+ * The frontend used to write EVERY binding — local PCs included — into
+ * `sandbox_instance_id`, and never touched `app_instance_id`. The server then
+ * looked that PC's uuid up in `sandbox_instances`, found nothing, and silently
+ * declined to arm anything. Local-PC conversations only worked at all because
+ * the client separately shipped the binding in the request body. Routing each
+ * kind to its own column is what makes the server's own view of the binding
+ * agree with ours.
+ *
+ * `proxyUrl` / `tier` / `name` mirror into `cx_conversation.metadata` as a pure
+ * CACHE (it saves a fetch on reload). They are all re-derivable from the
+ * referenced row — `proxy_url` is deliberately not persisted anywhere (see
+ * `lib/sandbox/decorate-sandbox-row.ts`) — so nothing may *require* them: a
+ * binding written by aidream's own `PUT /ai/conversations/{id}/sandbox` sets the
+ * column and no metadata at all, and must still resolve here.
  *
  * Writing the DB is not optional and not "later": every downstream gate, ours
- * and the server's, reads that column. Unbinding before a send is what lets
+ * and the server's, reads these columns. Unbinding before a send is what lets
  * "send without sandbox" actually send without a sandbox instead of hitting a
  * server that still thinks a box is attached.
  *
@@ -475,21 +496,31 @@ export const setConversationSandbox = createAsyncThunk<
       typeof row?.metadata === "object" && row.metadata !== null
         ? { ...(row.metadata as Record<string, unknown>) }
         : {};
-    // Legacy key names kept — a binding written before the rename must still
-    // rehydrate. (load-conversation.thunk.ts reads the same keys.)
+    // Cache only — never the source of truth. Legacy key names kept so bindings
+    // written before this rework still rehydrate. `kind` is NOT written: it is
+    // derived from WHICH column holds the id (a stored copy could contradict the
+    // column, and did).
     const setOrDelete = (key: string, value: string | undefined) => {
       if (value) metadata[key] = value;
       else delete metadata[key];
     };
     setOrDelete("sandbox_override_proxy_url", ref?.proxyUrl || undefined);
     setOrDelete("sandbox_override_tier", ref?.tier);
-    setOrDelete("sandbox_override_kind", ref?.kind);
     setOrDelete("sandbox_override_name", ref?.name);
+    delete metadata["sandbox_override_kind"]; // retired — the column IS the kind
+
+    // Route the id to the column that matches its table. The CHECK constraint on
+    // cx_conversation forbids both being set, so the other is always nulled.
+    const isLocalPc = ref?.kind === "local-pc";
+    const columnPatch = {
+      sandbox_instance_id: ref && !isLocalPc ? ref.rowId : null,
+      app_instance_id: ref && isLocalPc ? ref.rowId : null,
+    };
 
     const { error } = await supabase
       .schema("chat").from("conversation")
       .update({
-        sandbox_instance_id: ref?.rowId ?? null,
+        ...columnPatch,
         metadata,
         updated_at: new Date().toISOString(),
       })

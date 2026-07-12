@@ -10,9 +10,11 @@
  *
  * ── What "bound" means (and the bug that came from getting it wrong) ─────────
  * A conversation is bound iff ITS OWN RECORD says so — `sandboxBinding`, backed
- * by `cx_conversation.sandbox_instance_id`, the same column the server checks.
- * The per-surface preference is a SEED ("which box a NEW conversation on this
- * surface starts out with"), never a binding.
+ * by `cx_conversation.sandbox_instance_id` (orchestrator box) or
+ * `.app_instance_id` (local PC) — the same two columns aidream's
+ * `resolve_and_arm_run` dispatches on. The per-surface preference is a SEED
+ * ("which box a NEW conversation on this surface starts out with"), never a
+ * binding.
  *
  * Gating on the seed is what produced the reported defect: a stale surface
  * preference — pointing at a box killed off weeks earlier, and never cleared
@@ -28,7 +30,7 @@
  * doesn't arm anything (loudly): nothing was bound, so nothing is at risk.
  *
  * ── Ordering: the DB is written BEFORE the request goes out ──────────────────
- * The server runs its own binding check off `sandbox_instance_id`. So every
+ * The server runs its own binding check off those same columns. So every
  * decision the user makes here — detach, attach a different box — is persisted
  * BEFORE the send proceeds. Sending first and writing after would hand the
  * server a conversation it still believes is sandbox-bound: errors, or worse,
@@ -45,6 +47,7 @@ import {
   getConversationSandboxBinding,
   getSurfaceSeedRef,
   getActiveSandboxBinding,
+  resolveSandboxRefDetails,
   clearSandboxBindingCache,
   type ResolvedSandboxRef,
 } from "@/lib/sandbox/active-binding";
@@ -191,6 +194,26 @@ export const ensureSandboxOrDecide = createAsyncThunk<
     }
 
     // ── Bound ────────────────────────────────────────────────────────────────
+    // Heal the routing cache FIRST. A binding written by aidream's bind endpoint
+    // (or by an older client) names the box but carries no proxyUrl/tier. Tier is
+    // read synchronously downstream by `resolveBackendForConversation` to pick
+    // the dedicated EC2 server, so re-deriving it here — before the request is
+    // assembled — is what makes the FIRST turn after such a bind route correctly
+    // instead of quietly falling back to the global server.
+    let healed = binding;
+    if (!binding.proxyUrl && binding.kind !== "local-pc") {
+      const details = await resolveSandboxRefDetails(binding.rowId);
+      if (details) {
+        healed = { ...binding, ...details };
+        await dispatch(
+          setConversationSandbox({
+            conversationId,
+            ref: toStoredRef(healed),
+          }),
+        ).unwrap();
+      }
+    }
+
     // A binding set before the cx_conversation row existed never made it to the
     // DB. Write it now (the row exists by this turn) so the server's own check
     // reads what we think is bound. Loud on failure — never send on a binding
@@ -198,11 +221,11 @@ export const ensureSandboxOrDecide = createAsyncThunk<
     if (!selectConversationSandboxPersisted(conversationId)(getState())) {
       try {
         await dispatch(
-          setConversationSandbox({ conversationId, ref: toStoredRef(binding) }),
+          setConversationSandbox({ conversationId, ref: toStoredRef(healed) }),
         ).unwrap();
       } catch (err) {
         console.error(
-          `${LOG} ❌ failed to persist the sandbox binding for conversation ${conversationId} to cx_conversation.sandbox_instance_id. The server may not see this box as bound.`,
+          `${LOG} ❌ failed to persist the compute-target binding for conversation ${conversationId} to cx_conversation (sandbox_instance_id / app_instance_id). The server may not see this box as bound.`,
           err,
         );
       }

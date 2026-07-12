@@ -101,6 +101,21 @@ describe("sandbox binding resolution — the record is the source of truth", () 
     const state = makeState({ binding: LIVE_BOX, isEphemeral: true });
     expect(getEffectiveSandboxRef(state, "conv-1")).toBeNull();
   });
+
+  it("a binding with NO proxyUrl is still a binding (server-written / local-pc)", () => {
+    // aidream's own bind endpoint writes cx_conversation.sandbox_instance_id and
+    // no metadata at all. Requiring a cached proxyUrl made that look UNBOUND, so
+    // the turn went out to the global server with no sandbox and no gate — the
+    // silent fallback this whole module exists to prevent. The URL is a routing
+    // detail (re-derived at send time), never identity.
+    const urlless = { rowId: "box-from-server", proxyUrl: "" };
+    expect(getConversationSandboxBinding(makeState({ binding: urlless }), "conv-1"))
+      .toMatchObject({ rowId: "box-from-server", source: "conversation" });
+
+    const localPc = { rowId: "pc-1", proxyUrl: "", kind: "local-pc" };
+    expect(getConversationSandboxBinding(makeState({ binding: localPc }), "conv-1"))
+      .toMatchObject({ rowId: "pc-1", kind: "local-pc", source: "conversation" });
+  });
 });
 
 describe("ensureSandboxOrDecide — who gets gated", () => {

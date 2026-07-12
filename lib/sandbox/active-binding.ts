@@ -222,15 +222,21 @@ function isStillValid(cached: CachedToken | undefined): cached is CachedToken {
 type StoredSandboxRef = Omit<ResolvedSandboxRef, "source">;
 
 /**
- * A ref is usable only if it can actually be routed to: an orchestrator box
- * needs its proxyUrl, a local PC has none (its URL is resolved server-side at
- * send time) and is identified by `kind`. Anything else is unroutable and must
- * be treated as "not bound" rather than handed to the resolver.
+ * A ref is a BINDING as soon as it names a box — `rowId` and nothing else.
+ *
+ * It used to also demand a `proxyUrl`, which silently equated "we don't have the
+ * URL cached" with "not bound". Two ways that lied: a binding written by
+ * aidream's own `PUT /ai/conversations/{id}/sandbox` sets the column and no
+ * metadata at all, and a local-PC binding never has a proxyUrl to begin with.
+ * Both looked UNBOUND to this resolver, so the turn went out to the global
+ * server with no sandbox and no gate — the exact silent fallback this module
+ * exists to make impossible. The URL is not identity; it is a routing detail,
+ * re-derivable from the row (`resolveProxyUrl` below) and cached in metadata.
  */
 function isUsableRef(
   ref: Partial<StoredSandboxRef> | null | undefined,
 ): ref is StoredSandboxRef {
-  return !!ref?.rowId && (!!ref.proxyUrl || ref.kind === "local-pc");
+  return !!ref?.rowId;
 }
 
 /**
@@ -368,6 +374,91 @@ export function resolveAgentSandboxRef(
 }
 
 /**
+ * `proxy_url` for a box, re-derived from its row when the binding doesn't carry
+ * one. Deliberately not a stored column anywhere in the platform — the server
+ * recomputes it from `sandbox_id` + tier (`decorate-sandbox-row.ts`), and
+ * `GET /api/sandbox/{id}` returns the decorated row — so this is a re-derivation,
+ * not a lookup of some second source of truth.
+ *
+ * Cached per rowId for the session: the URL is a pure function of the row, and
+ * the token mint already fails loudly if the box has since died. Returns null
+ * (loudly) if the box can't be read — that lands as "bound but unresolvable",
+ * which the pre-send gate turns into a user decision rather than a silent
+ * unbound send.
+ */
+const PROXY_URL_CACHE = new Map<string, ResolvedRefDetails>();
+
+export interface ResolvedRefDetails {
+  proxyUrl: string;
+  tier?: "ec2" | "hosted";
+  name?: string;
+}
+
+/**
+ * Re-derive a box's routing details from its row. `tier` matters as much as the
+ * URL: `resolve-base-url` reads it SYNCHRONOUSLY to decide whether the turn runs
+ * on the nearby dedicated EC2 server, so a binding with no cached tier would
+ * quietly route the loop to the global server. The pre-send gate calls this and
+ * writes the result back onto the conversation, healing the cache before the
+ * request is assembled — so the first turn after a server-written bind is
+ * already correct, not just the second.
+ */
+export async function resolveSandboxRefDetails(
+  sandboxRowId: string,
+): Promise<ResolvedRefDetails | null> {
+  const cached = PROXY_URL_CACHE.get(sandboxRowId);
+  if (cached) return cached;
+
+  try {
+    const resp = await fetch(`/api/sandbox/${sandboxRowId}`);
+    if (!resp.ok) {
+      console.error(
+        `${LOG} ❌ could not re-derive routing details for bound box ${sandboxRowId}: GET /api/sandbox/${sandboxRowId} → HTTP ${resp.status}. The conversation IS bound to this box, so the turn will NOT silently run unbound — the pre-send gate asks the user what to do.`,
+      );
+      return null;
+    }
+    const json = (await resp.json()) as {
+      instance?: {
+        proxy_url?: string | null;
+        tier?: string | null;
+        config?: { template?: string | null } | null;
+        sandbox_id?: string | null;
+      };
+    };
+    const inst = json.instance;
+    const proxyUrl = inst?.proxy_url ?? null;
+    if (!proxyUrl) {
+      console.error(
+        `${LOG} ❌ box ${sandboxRowId} came back with no proxy_url — it has no sandbox_id/tier to recompute one from, so the row is unroutable.`,
+      );
+      return null;
+    }
+    const details: ResolvedRefDetails = {
+      proxyUrl,
+      tier:
+        inst?.tier === "ec2" || inst?.tier === "hosted" ? inst.tier : undefined,
+      name: inst?.config?.template ?? inst?.sandbox_id ?? undefined,
+    };
+    PROXY_URL_CACHE.set(sandboxRowId, details);
+    console.warn(
+      `${LOG} re-derived routing details for bound box ${sandboxRowId} (the binding carried none — written by the server's bind endpoint, or a pre-cache row). proxy_url is never persisted by design; this is a recompute, not a second source of truth.`,
+    );
+    return details;
+  } catch (err) {
+    console.error(
+      `${LOG} ❌ routing-detail re-derivation THREW for box ${sandboxRowId}.`,
+      err,
+    );
+    return null;
+  }
+}
+
+async function resolveProxyUrl(sandboxRowId: string): Promise<string | null> {
+  const details = await resolveSandboxRefDetails(sandboxRowId);
+  return details?.proxyUrl ?? null;
+}
+
+/**
  * Fetch (or reuse) a sandbox access token. Network call only on first use
  * or when the cached token is within `REFRESH_LEEWAY_SECONDS` of expiring.
  * Returns `null` (and the binding is omitted) when the box isn't running —
@@ -501,10 +592,18 @@ export async function getActiveSandboxBinding(
     }
   }
 
+  // A binding names a box; it does not necessarily carry its URL (aidream's bind
+  // endpoint writes only the column; the metadata cache may be absent or from a
+  // pre-rework row). `proxy_url` is deliberately never persisted anywhere — it is
+  // recomputed from `sandbox_id` + tier server-side (see decorate-sandbox-row.ts)
+  // — so re-derive it from the row instead of treating the binding as dead.
+  const proxyUrl = ref.proxyUrl || (await resolveProxyUrl(ref.rowId));
+  if (!proxyUrl) return null; // resolveProxyUrl already logged why.
+
   // The proxy_url shape is `<orchestrator>/sandboxes/sbx-XXX/proxy`.
   // The orchestrator's structured fs/exec endpoints live one level up at
   // `<orchestrator>/sandboxes/sbx-XXX/...`, so strip the trailing `/proxy`.
-  const baseUrl = ref.proxyUrl.replace(/\/proxy\/?$/, "").replace(/\/$/, "");
+  const baseUrl = proxyUrl.replace(/\/proxy\/?$/, "").replace(/\/$/, "");
 
   // Pull the orchestrator-side sandbox_id out of the URL — the segment
   // right after `/sandboxes/`. This is the id matrx-ai needs to log /
@@ -529,9 +628,11 @@ export async function getActiveSandboxBinding(
 export function clearSandboxBindingCache(sandboxRowId?: string) {
   if (sandboxRowId) {
     TOKEN_CACHE.delete(sandboxRowId);
+    PROXY_URL_CACHE.delete(sandboxRowId);
     DEAD_SANDBOXES.delete(sandboxRowId); // re-attach gets a clean slate
   } else {
     TOKEN_CACHE.clear();
+    PROXY_URL_CACHE.clear();
     DEAD_SANDBOXES.clear();
   }
 }

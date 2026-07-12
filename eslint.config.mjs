@@ -717,6 +717,14 @@ const reactFlowStaticImportBan = [
 ];
 
 export default [
+    // Generated Next build output — NEVER lint it. `.next`, plus every
+    // `NEXT_DISTDIR` variant a parallel dev server invents (`.next-preview`,
+    // `.next-preview-cutoverqa`, …). These dirs hold machine-written type
+    // validators that are routinely half-written by a killed dev server, and a
+    // parse error in one of them derails the whole run. Flat config does NOT
+    // read .gitignore, so this glob is the only thing keeping them out.
+    // The twin of the `.next*` excludes in tsconfig.json / tsconfig.typecheck.json.
+    { ignores: ['.next*/**'] },
     ...nextCoreWebVitals,
     {
         plugins: {

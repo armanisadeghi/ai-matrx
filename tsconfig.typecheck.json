@@ -22,10 +22,12 @@
     "packages/**/*.tsx"
   ],
   "exclude": [
+    ".next*/**",
+    ".next*",
+    ".next",
     "node_modules",
     "_armani",
     "_dev",
-    ".next",
     ".claude",
     "out",
     "utils/schema/schemaUtils.ts",
