@@ -80,7 +80,7 @@ export function reportMediaDurabilityViolation(
       "break when the signature expires. The media should have been saved PUBLIC\n" +
       "at generation (durable CDN/public-bucket URL), or rendered via the file\n" +
       "handler (<InlineMediaRef> + file_id, which re-mints). See the frontend\n" +
-      "KNOWN_DEFECTS.md → 'Media durability'.\n" +
+      "FOUND_DEFECTS.md → 'Media durability'.\n" +
       `URL: ${String(url).slice(0, 180)}\n` +
       "===========================================================\n",
   );

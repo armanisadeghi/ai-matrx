@@ -1,4 +1,4 @@
--- studio_recording_chunks — eager per-chunk upload journal (KNOWN_DEFECTS D7,
+-- studio_recording_chunks — eager per-chunk upload journal (FOUND_DEFECTS D7,
 -- cross-device audio recovery).
 --
 -- While a recording is live, every ~10s MediaRecorder chunk is uploaded to

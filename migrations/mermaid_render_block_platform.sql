@@ -376,7 +376,7 @@ ON CONFLICT (block_id) DO UPDATE SET
 -- (atomic via row lock on the root); source_message_id/artifact_index NULL so
 -- the (source_message_id, artifact_index) partial unique never collides.
 -- Owner-checked SECURITY DEFINER, same auth model as the sibling cx_canvas_*
--- RPCs (per the deferred security overhaul, D2 in KNOWN_DEFECTS.md).
+-- RPCs (per the deferred security overhaul, D2 in FOUND_DEFECTS.md).
 
 CREATE OR REPLACE FUNCTION public.cx_canvas_save_user_version(
   p_user_id uuid,

@@ -39,7 +39,7 @@ export function safeRelativePath(
 /**
  * Validates an `x-forwarded-host` header value against a host allowlist and
  * returns the host if trusted, otherwise `null` (caller falls back to the
- * request's own origin). This is the durable fix for KNOWN_DEFECTS.md D22's
+ * request's own origin). This is the durable fix for FOUND_DEFECTS.md D22's
  * residual: never build a redirect base URL from a spoofable header without
  * checking it. On Vercel the edge overwrites the header (infra-mitigated),
  * but self-hosted / misconfigured proxies would happily forward an
@@ -115,7 +115,7 @@ export function safeForwardedHost(
     `[safe-redirect] REJECTED x-forwarded-host ${JSON.stringify(host)} — not in the host ` +
       `allowlist (${[...allowed].join(", ") || "empty"} + *.vercel.app). Falling back to the ` +
       "request origin. Either this is a spoofed header (attack) or a legitimate new domain " +
-      "that needs NEXT_PUBLIC_SITE_URL updated. See KNOWN_DEFECTS.md D22.",
+      "that needs NEXT_PUBLIC_SITE_URL updated. See FOUND_DEFECTS.md D22.",
   );
   return null;
 }

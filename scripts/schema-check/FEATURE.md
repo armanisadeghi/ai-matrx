@@ -147,4 +147,4 @@ again.
   onto the orchestrator's offline subset. First run fixed real registry drift
   (`dead-relations.json` + `platform.deprecated_relations`: `reg.*`→`rag.*`,
   `note_shares`→`iam.permissions`) and surfaced a live graveyard-read bug
-  (KNOWN_DEFECTS D25, `system-prompts-service.ts`).
+  (FOUND_DEFECTS D25, `system-prompts-service.ts`).

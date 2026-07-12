@@ -206,7 +206,7 @@ export const associationsService = {
    * `iam.has_access(target, 'viewer')` — which honors `visibility='public'`/
    * `'link'`, share grants, container memberships, and reachability. A strict
    * SUPERSET of `listForTargets` access; a stranger with no grant on a private
-   * target still gets nothing (see `assoc_members_visible` RPC + KNOWN_DEFECTS
+   * target still gets nothing (see `assoc_members_visible` RPC + FOUND_DEFECTS
    * D37). Use this for reading the members of a SHAREABLE container (e.g. a
    * public/shared flashcard deck's cards) that a cross-account caller may view;
    * keep plain `listForTargets` for org-scoped tagging reads.

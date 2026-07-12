@@ -61,7 +61,7 @@ export function checkUuidArray(
 }
 
 /**
- * Canonical replacements for legacy/phantom entity-type tokens (KNOWN_DEFECTS
+ * Canonical replacements for legacy/phantom entity-type tokens (FOUND_DEFECTS
  * D27). These aliases were never registered in `platform.entity_types` —
  * writes with them always FK-failed — but they leaked into association
  * callsites and persisted UI state. `normalizeEntityToken` maps them to the
@@ -93,7 +93,7 @@ export function normalizeEntityToken(value: string): string {
     console.error(
       `[associations] phantom entity token ${JSON.stringify(value)} mapped to ` +
         `canonical ${JSON.stringify(canonical)} — fix the callsite to emit the ` +
-        `canonical token (KNOWN_DEFECTS D27)`,
+        `canonical token (FOUND_DEFECTS D27)`,
     );
     return canonical;
   }

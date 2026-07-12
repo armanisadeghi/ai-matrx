@@ -2229,7 +2229,7 @@ export async function processStream({
       // the FIRST of them. Folding the whole run onto it would overwrite that
       // row with tool_calls belonging to LATER server-persisted rows,
       // duplicating tool_use ids in the persisted graph (Anthropic 400 on
-      // replay; KNOWN_DEFECTS "assistant message persisted with more
+      // replay; FOUND_DEFECTS "assistant message persisted with more
       // tool_uses than its adjacent tool message answers"). Commit ONLY the
       // first iteration's blocks to the reservation; later iterations stay
       // visible in-session on client-temp records and hydrate from the

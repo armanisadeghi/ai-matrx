@@ -128,7 +128,7 @@ export function useStudioSession({
       onChunkComplete: (info) => {
         // Persist the crash-safe IndexedDB id the FIRST time we learn it, so a
         // recording stranded before finalize (reload / crash / bad network)
-        // still points at its audio for recovery (KNOWN_DEFECTS D7).
+        // still points at its audio for recovery (FOUND_DEFECTS D7).
         if (
           info.safetyId &&
           info.safetyId !== safetyIdRef.current &&

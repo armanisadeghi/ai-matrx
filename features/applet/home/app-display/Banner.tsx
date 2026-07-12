@@ -17,7 +17,7 @@ const BannerAppDisplay: React.FC<AppDisplayProps> = ({
 }) => {
   // Color-only background when there is no image; the image itself renders as
   // an absolutely-positioned <InlineMediaRef> layer (not a CSS background) so
-  // the URL stays durable and self-heals (KNOWN_DEFECTS.md D1).
+  // the URL stays durable and self-heals (FOUND_DEFECTS.md D1).
   const bgClass = appImageUrl
     ? ''
     : (primaryColor ? `bg-[${primaryColor}]` : 'bg-gray-100 dark:bg-gray-800');

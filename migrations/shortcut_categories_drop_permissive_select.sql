@@ -1,6 +1,6 @@
 -- shortcut_categories_drop_permissive_select.sql
 --
--- KNOWN_DEFECTS D5 (frontend): retire the legacy permissive SELECT policy
+-- FOUND_DEFECTS D5 (frontend): retire the legacy permissive SELECT policy
 -- `shortcut_categories_select_any` (cmd SELECT, role `public`, USING (true)).
 -- Because RLS policies OR together, this policy made EVERY category row readable
 -- by everyone — including other users' personal category LABELS (e.g. "School",

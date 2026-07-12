@@ -1,7 +1,7 @@
 # Context Record Spec — durable, per-turn "what context did the model actually receive"
 
 **Status:** ✅ **IMPLEMENTED 2026-06-20 — but NOT as specced below.** The durable record was built as **typed columns on `cx_message`** (`tools_on_call`, `model_context`, `error`, `voice`), NOT the `cx_message_context_snapshot` table this doc proposed (which predated the discovery that `cx_request_snapshot` already captures the full wire payload — a second blob table was redundant). The context chips now read **`cx_message.model_context.items`** (mapped to `InstanceContextEntry` in `AgentUserMessage.tsx`), no longer `metadata.context_snapshot` (kept only as the optimistic in-session fallback). Authoritative impl, column shapes, and the post-deploy data migration: **aidream `docs/cx_chat/CX_MESSAGE_CALL_RECORD.md`**. The sections below are retained for design rationale only — do not build from them.
-**Origin:** [`KNOWN_DEFECTS.md` D11](../../../KNOWN_DEFECTS.md). The frontend froze a client-side `context_snapshot` at submit; the server now owns the durable record via `model_context`.
+**Origin:** [`FOUND_DEFECTS.md` D11](../../../FOUND_DEFECTS.md). The frontend froze a client-side `context_snapshot` at submit; the server now owns the durable record via `model_context`.
 
 ---
 

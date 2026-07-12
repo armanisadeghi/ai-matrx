@@ -311,7 +311,7 @@ export default function TaskAttachmentsPanel({
               onRemove: () => handleRemove("agent_conversation", a.id),
             }))}
           />
-          {/* DEAD PATH REMOVED (KNOWN_DEFECTS D27): the "Chat Blocks" section
+          {/* DEAD PATH REMOVED (FOUND_DEFECTS D27): the "Chat Blocks" section
               read `bundle.blocks`, which the `get_task_associations` RPC fills
               from `source_type='chat_block'` — a token that was NEVER
               registered in `platform.entity_types`, so no such edge can exist

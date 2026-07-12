@@ -12,7 +12,7 @@
  * player. During streaming Python sends only a `file_id` (no minted URL) so it
  * didn't play; when a URL was present it was a raw signed S3 link that leaked
  * through "Copy link". Routing through the handler fixes both. See
- * `AudioOutputBlockRenderer.tsx` and KNOWN_DEFECTS.md → "Media durability".
+ * `AudioOutputBlockRenderer.tsx` and FOUND_DEFECTS.md → "Media durability".
  */
 
 import type { FileSource } from "@/features/files/handler/types";

@@ -479,7 +479,7 @@ find features/ai-models 'app/(admin)/administration/ai-models' app/api/ai-models
 
 ### Cross-feature docs referencing catalog columns (14)
 - `docs/db_changes/AI_CATALOG_FE_RECOVERY_PROMPT.md` (this file)
-- `KNOWN_DEFECTS.md`
+- `FOUND_DEFECTS.md`
 - `docs/MODEL_PICKER_CAPABILITIES.md` ← still documents dropped `provider` in `fetchModelOptions`
 - `docs/other/agent-schema-reference.md` ← documents `ai.service.wire_format` routing
 - `docs/upgrades/research/supabase.md`

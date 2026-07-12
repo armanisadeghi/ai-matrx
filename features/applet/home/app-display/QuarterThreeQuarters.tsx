@@ -61,7 +61,7 @@ const QuarterThreeQuarters: React.FC<AppDisplayProps> = ({
         {appImageUrl && (
           <div className="w-3/4">
             <div className="w-full rounded-xl overflow-hidden shadow-md aspect-[16/9] relative">
-              {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+              {/* Durable, self-healing render — re-mints owned file URLs (FOUND_DEFECTS.md D1). */}
               <InlineMediaRef
                 ref={appImageUrl}
                 size="fill"

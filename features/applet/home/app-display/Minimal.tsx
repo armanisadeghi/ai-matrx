@@ -57,7 +57,7 @@ const MinimalAppDisplay: React.FC<AppDisplayProps> = ({
         {appImageUrl && (
           <div className="w-full sm:w-2/3">
             <div className="w-full h-36 rounded-md overflow-hidden shadow-sm relative">
-              {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+              {/* Durable, self-healing render — re-mints owned file URLs (FOUND_DEFECTS.md D1). */}
               <InlineMediaRef
                 ref={appImageUrl}
                 size="fill"

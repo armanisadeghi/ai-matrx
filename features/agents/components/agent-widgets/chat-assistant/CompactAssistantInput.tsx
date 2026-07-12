@@ -67,10 +67,6 @@ export function CompactAssistantInput({
   );
   const hasVariables = variableDefs.length > 0;
 
-  // Agents can execute on variables alone — text is NOT required.
-  // Only block when already executing (matches SmartAgentInput behavior).
-  const isSendDisabled = isExecuting;
-
   // ── Voice input ─────────────────────────────────────────────────────────────
   const {
     isRecording,
@@ -93,6 +89,12 @@ export function CompactAssistantInput({
     },
     autoTranscribe: true,
   });
+
+  // Agents can execute on variables alone — text is NOT required.
+  // Block while executing OR while the mic is recording/transcribing so send
+  // can't fire before the trailing audio lands (and leave the recorder on).
+  const voiceBusy = isRecording || isTranscribing;
+  const isSendDisabled = isExecuting || voiceBusy;
 
   // Auto-submit after voice transcription
   useEffect(() => {
@@ -234,6 +236,13 @@ export function CompactAssistantInput({
             className="w-6 h-6 rounded-full bg-primary text-primary-foreground shrink-0 disabled:opacity-40 ml-0.5"
             disabled={isSendDisabled}
             onClick={handleSend}
+            title={
+              isExecuting
+                ? "Sending…"
+                : voiceBusy
+                  ? "Finish recording to send"
+                  : "Send"
+            }
           >
             {isExecuting ? (
               <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />

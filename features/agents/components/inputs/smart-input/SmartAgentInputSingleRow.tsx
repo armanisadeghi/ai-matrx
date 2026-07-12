@@ -12,7 +12,7 @@
  * Required prop: conversationId (may be null/undefined while initializing).
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
@@ -51,6 +51,11 @@ export function SmartAgentInputSingleRow({
   extraRightControls,
 }: SmartAgentInputSingleRowProps) {
   const dispatch = useAppDispatch();
+  // Gate send (button + Enter) while the mic is recording or finishing a
+  // transcript — submitting mid-voice drops the trailing audio and leaves the
+  // recorder running.
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const sendBlocked = disableSend || voiceBusy;
 
   const sendBtnClass =
     sendButtonVariant === "blue"
@@ -62,7 +67,7 @@ export function SmartAgentInputSingleRow({
   }
 
   const handleSubmit = () => {
-    if (!disableSend) dispatch(smartExecute({ conversationId, surfaceKey }));
+    if (!sendBlocked) dispatch(smartExecute({ conversationId, surfaceKey }));
   };
 
   return (
@@ -92,7 +97,7 @@ export function SmartAgentInputSingleRow({
             uploadPath={uploadPath}
             enablePasteImages={enablePasteImages}
             surfaceKey={surfaceKey}
-            disableSend={disableSend}
+            disableSend={sendBlocked}
             singleRow
           />
         </div>
@@ -106,7 +111,8 @@ export function SmartAgentInputSingleRow({
           showVariableIcon={showVariableIcon}
           sendButtonVariant={sendButtonVariant}
           surfaceKey={surfaceKey}
-          disableSend={disableSend}
+          disableSend={sendBlocked}
+          onVoiceBusyChange={setVoiceBusy}
           extraRightControls={extraRightControls}
         />
       </div>

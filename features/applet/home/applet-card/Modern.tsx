@@ -66,7 +66,7 @@ const ModernAppletCard: React.FC<AppletCardProps> = ({
       {/* Preview image section */}
       <div className="h-32 w-full relative overflow-hidden bg-gray-100 dark:bg-gray-700">
         {applet.imageUrl ? (
-          /* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */
+          /* Durable, self-healing render — re-mints owned file URLs (FOUND_DEFECTS.md D1). */
           <InlineMediaRef
             ref={applet.imageUrl}
             size="fill"

@@ -73,7 +73,7 @@ const AppDisplay: React.FC<AppDisplayProps> = ({
         <div 
           className="mt-8 w-full rounded-xl overflow-hidden shadow-lg aspect-[21/9] relative border-2 border-teal-500"
         >
-          {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+          {/* Durable, self-healing render — re-mints owned file URLs (FOUND_DEFECTS.md D1). */}
           <InlineMediaRef
             ref={appImageUrl}
             size="fill"

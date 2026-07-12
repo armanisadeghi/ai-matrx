@@ -7,12 +7,12 @@
  * Only requires conversationId — everything else comes from Redux or config props.
  *
  * Voice recording is delegated to <AgentMicrophoneButton>, which owns the
- * recorder lifecycle, permissions UI, and recovery toasts internally. This
- * component has no idea whether recording is happening — it just renders
- * the button in its mic slot.
+ * recorder lifecycle, permissions UI, and recovery toasts internally. When
+ * recording/transcribing is active this component disables send and notifies
+ * the parent via `onVoiceBusyChange` so Enter-to-send is gated too.
  */
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ArrowUp,
   CornerDownLeft,
@@ -99,6 +99,8 @@ interface InputActionButtonsProps {
   sendButtonVariant?: "default" | "blue";
   surfaceKey?: string;
   disableSend?: boolean;
+  /** Fired when mic recording or final transcription is in flight. */
+  onVoiceBusyChange?: (busy: boolean) => void;
   extraRightControls?: React.ReactNode;
 }
 
@@ -112,9 +114,11 @@ export function InputActionButtons({
   sendButtonVariant = "default",
   surfaceKey,
   disableSend = false,
+  onVoiceBusyChange,
   extraRightControls,
 }: InputActionButtonsProps) {
   const dispatch = useAppDispatch();
+  const [voiceBusy, setVoiceBusy] = useState(false);
 
   // Selectors. Executing state is surface-aware: under the autoclear split the
   // run lives on the surface's display conversation while this toolbar is bound
@@ -138,17 +142,29 @@ export function InputActionButtons({
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
 
-  const isSendDisabled = disableSend;
+  // Stop must stay available during a run; only block the *send* path while
+  // the mic is active so trailing audio isn't dropped mid-transcript.
+  const isSendDisabled = !isExecuting && (disableSend || voiceBusy);
+
+  const handleVoiceBusyChange = useCallback(
+    (state: { isRecording: boolean; isTranscribing: boolean }) => {
+      const busy = state.isRecording || state.isTranscribing;
+      setVoiceBusy(busy);
+      onVoiceBusyChange?.(busy);
+    },
+    [onVoiceBusyChange],
+  );
 
   const handleSend = useCallback(() => {
-    if (isSendDisabled) return;
     if (isExecuting) {
       dispatch(cancelExecution(executingConversationId ?? conversationId));
-    } else {
-      dispatch(smartExecute({ conversationId, surfaceKey }));
+      return;
     }
+    if (disableSend || voiceBusy) return;
+    dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [
-    isSendDisabled,
+    disableSend,
+    voiceBusy,
     isExecuting,
     executingConversationId,
     conversationId,
@@ -241,6 +257,7 @@ export function InputActionButtons({
             label="Record audio"
             className={INPUT_BUTTON_IDLE_TINT}
             iconClassName=""
+            onRecordingStateChange={handleVoiceBusyChange}
           />
         )}
 
@@ -250,7 +267,13 @@ export function InputActionButtons({
             disabled={isSendDisabled}
             className={sendBtnClass}
             tabIndex={-1}
-            title={isExecuting ? "Stop" : "Send Message"}
+            title={
+              isExecuting
+                ? "Stop"
+                : voiceBusy
+                  ? "Finish recording to send"
+                  : "Send Message"
+            }
           >
             {isExecuting ? (
               <CircleStop className="w-4 h-4" />

@@ -48,7 +48,7 @@ Otherwise, we share the space. Therefore, you do not subtract anything!"
 
 - Workbooks + documents editors, snapshots, share/permissions, realtime — `features/data-tables/`.
 - Univer-native theming + single-boot lifecycle (2026-06-18) — `WorkbookEditor.tsx` / `DocumentEditor.tsx`.
-- Live multi-peer collab verified — `KNOWN_DEFECTS.md` D26.
+- Live multi-peer collab verified — `FOUND_DEFECTS.md` D26.
 - `udt_*` tables rehomed to the `workbench` schema.
 
 ## Decisions needed

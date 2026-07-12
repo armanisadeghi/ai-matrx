@@ -1,5 +1,5 @@
 -- ============================================================================
--- Automated media-durability healer dispatch (KNOWN_DEFECTS D1, second half).
+-- Automated media-durability healer dispatch (FOUND_DEFECTS D1, second half).
 --
 -- The DB-edge guard (migrations/mtx_public_media_url_guard.sql) queues every
 -- expiring signed URL that lands in a registered public column into

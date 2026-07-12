@@ -8,12 +8,12 @@
  * the textarea. Omits submit-on-enter toggle and auto-clear toggle (not
  * applicable in single-row mode).
  *
- * Voice recording is delegated to <AgentMicrophoneButton>. This component
- * does not know whether recording is active — the mic button manages its
- * own lifecycle and error UI.
+ * Voice recording is delegated to <AgentMicrophoneButton>. When recording or
+ * transcription is active, send is disabled and the parent is notified via
+ * `onVoiceBusyChange` so Enter-to-send is gated too.
  */
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { ArrowUp, Braces, CircleStop, AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
@@ -42,6 +42,8 @@ interface SingleRowActionButtonsProps {
   sendButtonVariant?: "default" | "blue";
   surfaceKey?: string;
   disableSend?: boolean;
+  /** Fired when mic recording or final transcription is in flight. */
+  onVoiceBusyChange?: (busy: boolean) => void;
   extraRightControls?: React.ReactNode;
 }
 
@@ -52,9 +54,11 @@ export function SingleRowActionButtons({
   sendButtonVariant = "default",
   surfaceKey,
   disableSend = false,
+  onVoiceBusyChange,
   extraRightControls,
 }: SingleRowActionButtonsProps) {
   const dispatch = useAppDispatch();
+  const [voiceBusy, setVoiceBusy] = useState(false);
 
   // Surface-aware executing state — see useSurfaceExecution. Keeps the stop
   // affordance working under the autoclear split (build route).
@@ -71,15 +75,27 @@ export function SingleRowActionButtons({
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
 
+  const isSendDisabled = !isExecuting && (disableSend || voiceBusy);
+
+  const handleVoiceBusyChange = useCallback(
+    (state: { isRecording: boolean; isTranscribing: boolean }) => {
+      const busy = state.isRecording || state.isTranscribing;
+      setVoiceBusy(busy);
+      onVoiceBusyChange?.(busy);
+    },
+    [onVoiceBusyChange],
+  );
+
   const handleSend = useCallback(() => {
-    if (disableSend) return;
     if (isExecuting) {
       dispatch(cancelExecution(executingConversationId ?? conversationId));
-    } else {
-      dispatch(smartExecute({ conversationId, surfaceKey }));
+      return;
     }
+    if (disableSend || voiceBusy) return;
+    dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [
     disableSend,
+    voiceBusy,
     isExecuting,
     executingConversationId,
     conversationId,
@@ -116,16 +132,23 @@ export function SingleRowActionButtons({
           conversationId={conversationId}
           size="xs"
           label="Record audio"
+          onRecordingStateChange={handleVoiceBusyChange}
         />
       )}
 
       {showSendButton && (
         <Button
           onClick={handleSend}
-          disabled={disableSend}
+          disabled={isSendDisabled}
           className={sendBtnClass}
           tabIndex={-1}
-          title={isExecuting ? "Stop" : "Send Message"}
+          title={
+            isExecuting
+              ? "Stop"
+              : voiceBusy
+                ? "Finish recording to send"
+                : "Send Message"
+          }
         >
           {isExecuting ? (
             <CircleStop className="w-3 h-3" />

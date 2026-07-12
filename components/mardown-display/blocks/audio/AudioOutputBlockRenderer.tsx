@@ -9,7 +9,7 @@
  * before mounting the presentational `<AudioOutputBlock>` player.
  *
  * URL resolution is shared with the video renderer via `buildMediaSource`.
- * See that file (and KNOWN_DEFECTS.md → "Media durability") for the rationale:
+ * See that file (and FOUND_DEFECTS.md → "Media durability") for the rationale:
  * the old path echoed the raw `data.url`, which (a) didn't play during
  * streaming — Python sends only a `file_id`, no minted URL — and (b) leaked a
  * raw signed S3 URL through "Copy link".
@@ -38,7 +38,7 @@ const AudioOutputBlockRenderer: React.FC<AudioOutputBlockRendererProps> = ({
   // Log the raw inbound shape + what we resolved, once per resolved URL. This is
   // a plain `console.log` (NOT `console.error`) on purpose: a still-expiring S3
   // URL here means the AUDIO was persisted private server-side — a known defect
-  // (KNOWN_DEFECTS.md → "Media durability"). The proper fix is backend (serve a
+  // (FOUND_DEFECTS.md → "Media durability"). The proper fix is backend (serve a
   // durable public / our-domain URL); an error overlay on every generation for
   // a tracked backend gap is just noise.
   useEffect(() => {

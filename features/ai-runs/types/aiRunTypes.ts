@@ -2,7 +2,7 @@
 // AI TASKS - TypeScript Type Definitions
 // ============================================================================
 // The ai_runs half of this feature was removed (dead code reading the
-// graveyarded ai_runs table — see KNOWN_DEFECTS D21). Only the ai_tasks types
+// graveyarded ai_runs table — see FOUND_DEFECTS D21). Only the ai_tasks types
 // remain, consumed by useAiTasks / ai-tasks-service for the admin AI-Tasks page.
 // ============================================================================
 

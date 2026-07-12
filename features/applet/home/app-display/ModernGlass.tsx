@@ -95,7 +95,7 @@ const ModernGlassAppDisplay: React.FC<AppDisplayProps> = ({
                   
                   {/* App preview image with glass frame */}
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] rounded-xl overflow-hidden border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-sm">
-                    {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+                    {/* Durable, self-healing render — re-mints owned file URLs (FOUND_DEFECTS.md D1). */}
                     <InlineMediaRef
                       ref={appImageUrl}
                       size="fill"

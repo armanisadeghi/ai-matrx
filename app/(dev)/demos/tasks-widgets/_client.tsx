@@ -328,7 +328,7 @@ export default function TasksWidgetsDemo() {
             source={{
               // A "chat block" is a slice of a chat message — the canonical
               // edge is `message` + metadata.block_index. `chat_block` was a
-              // phantom (unregistered) token — KNOWN_DEFECTS D27.
+              // phantom (unregistered) token — FOUND_DEFECTS D27.
               entity_type: "message",
               entity_id: DEMO_IDS.message,
               metadata: { block_index: 0, demo: true },

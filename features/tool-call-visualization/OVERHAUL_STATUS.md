@@ -1,7 +1,7 @@
 # Tool Call Visualization — Overhaul Status & Roadmap
 
 **Living tracker for the tool-viz overhaul. Delete when it lands.**
-Last updated: 2026-06-20. Companion to `FEATURE.md` (architecture) + `KNOWN_DEFECTS.md`.
+Last updated: 2026-06-20. Companion to `FEATURE.md` (architecture) + `FOUND_DEFECTS.md`.
 
 ---
 

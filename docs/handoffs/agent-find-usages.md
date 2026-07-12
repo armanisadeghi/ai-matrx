@@ -30,6 +30,6 @@ browser-verification tail — nothing needs new design.
 
 - Full feature built + data/RPC-layer verified live — see `features/agents/FEATURE.md` "Find Usages & Drift".
 - Prod activation verified over real HTTP: `/agent-usage/report|registry|scan` (registry 48/48 in-code↔DB, 0 import failures); weekly cron live in `scheduler.sch_run` (real success runs; 28 real DMs landed 2026-06-15).
-- KNOWN_DEFECTS D3 closed: DM sender = "Matrx System" bot (aidream `b12d8c186` + `419dc9942`); operator-recipient split so ownerless alerts still reach a human.
+- FOUND_DEFECTS D3 closed: DM sender = "Matrx System" bot (aidream `b12d8c186` + `419dc9942`); operator-recipient split so ownerless alerts still reach a human.
 - DM send path repaired AND verified live: `communication.dm_*` NOT NULL `organization_id` broke every server-side send post-reorg — explicit org stamping shipped (aidream `095310b92`); a prod scan then sent a real bot-authored drift DM end-to-end (`dm_messages` `5c7383b6-3644-4570-9d8b-16d3ace5bf30`, sender resolves as "Matrx System", `action_data.kind=agent_drift`, recipient admin@admin.com — reusable as the chip-click fixture).
 - Stale `deprecated: "Stub"` flags removed from both Find Usages window registry entries (`features/window-panels/registry/windowRegistryMetadata.ts`).

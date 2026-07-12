@@ -77,7 +77,7 @@ const SideBySideAppDisplay: React.FC<AppDisplayProps> = ({
         <div className="w-3/4 px-4">
           {appImageUrl ? (
             <div className="rounded-xl overflow-hidden shadow-md aspect-video relative">
-              {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+              {/* Durable, self-healing render — re-mints owned file URLs (FOUND_DEFECTS.md D1). */}
               <InlineMediaRef
                 ref={appImageUrl}
                 size="fill"

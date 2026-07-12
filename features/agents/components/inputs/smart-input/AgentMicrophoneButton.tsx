@@ -46,6 +46,15 @@ interface AgentMicrophoneButtonProps {
    * resulting text. Lets an audio-first surface auto-send on speech end.
    */
   onTranscribed?: (fullText: string) => void;
+  /**
+   * Fires whenever recording/transcription activity changes. Hosts MUST disable
+   * send (button + Enter) while `isRecording || isTranscribing` — submitting
+   * mid-recording drops the trailing audio and leaves the recorder running.
+   */
+  onRecordingStateChange?: (state: {
+    isRecording: boolean;
+    isTranscribing: boolean;
+  }) => void;
 }
 
 export function AgentMicrophoneButton({
@@ -56,6 +65,7 @@ export function AgentMicrophoneButton({
   iconClassName,
   label,
   onTranscribed,
+  onRecordingStateChange,
 }: AgentMicrophoneButtonProps) {
   const dispatch = useAppDispatch();
 
@@ -149,6 +159,7 @@ export function AgentMicrophoneButton({
       label={label}
       onLiveTranscript={handleLiveTranscript}
       onTranscriptionComplete={handleTranscriptionComplete}
+      onRecordingStateChange={onRecordingStateChange}
     />
   );
 }

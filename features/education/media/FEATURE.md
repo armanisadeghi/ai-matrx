@@ -84,7 +84,7 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
   `<podcast_dialogue>` with named hosts), but the audio stage now streams ~4449 chunks over ~6 min then
   aborts `tts_stall_timeout` (Google `gemini-3.1-flash-tts-preview` stops mid-stream, no retry).
   Reproduced 2×. `0` rows of `media_kind='audio'` at `status='ready'`. The FE path is verified correct
-  up to the backend handoff. See `KNOWN_DEFECTS.md` D40. Re-verify once the TTS stage is resilient.
+  up to the backend handoff. See `FOUND_DEFECTS.md` D40. Re-verify once the TTS stage is resilient.
 - **Live mind-map GENERATION is PROVEN (2026-07-10).** A *fresh* deck→diagram_spec run (agent
   `d13184d4…`) produced 10 nodes / 11 edges, `linkDiagramToCards` linked **all 10 nodes → real cards**
   (every `metadata.cardId` resolves to an `fc_card` row), grounded `TrustEnvelope`, persisted to

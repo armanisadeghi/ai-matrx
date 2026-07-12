@@ -1,6 +1,6 @@
 -- webhook_depth_remainder.sql
 --
--- Closes KNOWN_DEFECTS D19 (event-spine webhook depth remainder):
+-- Closes FOUND_DEFECTS D19 (event-spine webhook depth remainder):
 --   #1 org-wide fan-out  — files.webhooks.organization_id: an org-scoped
 --                          webhook fires for events whose organization_id
 --                          matches OR whose actor is any member of that org.

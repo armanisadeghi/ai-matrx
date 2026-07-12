@@ -212,7 +212,7 @@ const BANNED_LUCIDE_ICON_RE = /^(Wand2?|Sparkles?|Bot)$/;
 // durability") is: render our media through <InlineMediaRef> (it re-mints from a
 // file_id / serves the CDN URL). We can't lint dynamic `src={var}` (the runtime
 // value is unknown — that's the DB-edge guard's job), but a hardcoded storage
-// URL in a raw tag is an unambiguous, catchable regression. See KNOWN_DEFECTS D1.
+// URL in a raw tag is an unambiguous, catchable regression. See FOUND_DEFECTS D1.
 const OUR_STORAGE_HOST_RE =
     /matrx-user-files\.s3|cdn\.matrxserver|\.supabase\.co\/storage|\/podcast-assets\//i;
 
@@ -227,7 +227,7 @@ const matrxLintPlugin = {
                 },
                 schema: [],
                 messages: {
-                    raw: "Raw <{{tag}}> with a hardcoded AI-Matrx storage URL. Our media must render through <InlineMediaRef> (@/features/files) so it re-mints / serves a durable URL — a raw tag can't self-heal and a signed S3 link rots. See CLAUDE.md 'Media durability' / KNOWN_DEFECTS D1.",
+                    raw: "Raw <{{tag}}> with a hardcoded AI-Matrx storage URL. Our media must render through <InlineMediaRef> (@/features/files) so it re-mints / serves a durable URL — a raw tag can't self-heal and a signed S3 link rots. See CLAUDE.md 'Media durability' / FOUND_DEFECTS D1.",
                 },
             },
             create(context) {
@@ -902,7 +902,7 @@ export default [
     },
     {
         // Media durability fence (see CLAUDE.md "Media durability" +
-        // KNOWN_DEFECTS.md D1). Podcast surfaces render OUR OWN media (covers,
+        // FOUND_DEFECTS.md D1). Podcast surfaces render OUR OWN media (covers,
         // clip video, audio) which is persisted from a stream and can arrive as
         // an expiring signed S3 URL. A raw <img>/<video> can't re-mint and
         // silently rots when the signature expires — and an anonymous public
@@ -926,19 +926,19 @@ export default [
                 {
                     selector: "JSXOpeningElement[name.name='img']",
                     message:
-                        "Raw <img> is banned in features/podcasts — render via <InlineMediaRef> from @/features/files so the media URL stays durable and self-heals. A raw <img> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / KNOWN_DEFECTS.md D1.",
+                        "Raw <img> is banned in features/podcasts — render via <InlineMediaRef> from @/features/files so the media URL stays durable and self-heals. A raw <img> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / FOUND_DEFECTS.md D1.",
                 },
                 {
                     selector: "JSXOpeningElement[name.name='video']",
                     message:
-                        "Raw <video> is banned in features/podcasts — render via <InlineMediaRef as=\"video\"> from @/features/files (it supports ambient autoPlay/loop/muted/playsInline/preload). A raw <video> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / KNOWN_DEFECTS.md D1.",
+                        "Raw <video> is banned in features/podcasts — render via <InlineMediaRef as=\"video\"> from @/features/files (it supports ambient autoPlay/loop/muted/playsInline/preload). A raw <video> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / FOUND_DEFECTS.md D1.",
                 },
             ],
         },
     },
     {
         // Media durability fence #2 — agent-app / applet display surfaces
-        // (KNOWN_DEFECTS.md D1 residual, closed 2026-07-07). These render OUR
+        // (FOUND_DEFECTS.md D1 residual, closed 2026-07-07). These render OUR
         // OWN media columns (custom_app_configs.image_url / aga_apps
         // preview media) — all appImageUrl / applet.imageUrl renders were
         // migrated to <InlineMediaRef>, so a raw <img>/<video> here is a
@@ -962,12 +962,12 @@ export default [
                 {
                     selector: "JSXOpeningElement[name.name='img']",
                     message:
-                        "Raw <img> is banned in features/applet/home — render via <InlineMediaRef> from @/features/files so the media URL stays durable and self-heals. A raw <img> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / KNOWN_DEFECTS.md D1.",
+                        "Raw <img> is banned in features/applet/home — render via <InlineMediaRef> from @/features/files so the media URL stays durable and self-heals. A raw <img> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / FOUND_DEFECTS.md D1.",
                 },
                 {
                     selector: "JSXOpeningElement[name.name='video']",
                     message:
-                        "Raw <video> is banned in features/applet/home — render via <InlineMediaRef as=\"video\"> from @/features/files (it supports ambient autoPlay/loop/muted/playsInline/preload). A raw <video> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / KNOWN_DEFECTS.md D1.",
+                        "Raw <video> is banned in features/applet/home — render via <InlineMediaRef as=\"video\"> from @/features/files (it supports ambient autoPlay/loop/muted/playsInline/preload). A raw <video> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / FOUND_DEFECTS.md D1.",
                 },
             ],
         },

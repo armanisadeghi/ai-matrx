@@ -1,5 +1,5 @@
 -- scope_rpcs_org_membership_guard.sql
--- KNOWN_DEFECTS D2 (cheap slice, 2026-07-02): close the unauthenticated scope
+-- FOUND_DEFECTS D2 (cheap slice, 2026-07-02): close the unauthenticated scope
 -- DEFINER RPCs. Before this, create_scope / create_scope_type / update_scope /
 -- delete_scope / delete_scope_type were SECURITY DEFINER, granted to `anon`, and
 -- performed ZERO caller checks — any user (even anonymous) could create/rename/

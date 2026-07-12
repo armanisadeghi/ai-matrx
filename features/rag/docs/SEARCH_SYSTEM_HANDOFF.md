@@ -2,7 +2,7 @@
 
 State of the search-quality rescue + model upgrade that ran 2026-06-27 → 2026-07-02 across **matrx-frontend** and **aidream**. Read this before touching retrieval ranking, the `/rag/search` page, or the rag DB surface.
 
-> **2026-07-07 update (aidream deploy is LIVE + orphan-chunk fix).** The voyage-4-large / rerank-v4.0-pro stack is deployed and running in prod (confirmed via `rag.retrieval_audit`: the live pipeline flipped from `openai`/`rerank-v3.5` to `voyage:voyage-4-large`/`rerank-v4.0-pro` at 2026-07-02 21:13 UTC). This UNBLOCKS the whole PENDING list below. A post-deploy audit then found a **new** live bug: six ingest entry points still defaulted `embedding_model` to the retired oai literal, so every cld_file PDF (+ library docs) embedded to the DEAD table → **322 chunks invisible to search**. Root cause fixed in aidream (see PENDING #2). See the aidream KNOWN_DEFECTS "Fix landed" bullet dated 2026-07-07 for the full account.
+> **2026-07-07 update (aidream deploy is LIVE + orphan-chunk fix).** The voyage-4-large / rerank-v4.0-pro stack is deployed and running in prod (confirmed via `rag.retrieval_audit`: the live pipeline flipped from `openai`/`rerank-v3.5` to `voyage:voyage-4-large`/`rerank-v4.0-pro` at 2026-07-02 21:13 UTC). This UNBLOCKS the whole PENDING list below. A post-deploy audit then found a **new** live bug: six ingest entry points still defaulted `embedding_model` to the retired oai literal, so every cld_file PDF (+ library docs) embedded to the DEAD table → **322 chunks invisible to search**. Root cause fixed in aidream (see PENDING #2). See the aidream FOUND_DEFECTS "Fix landed" bullet dated 2026-07-07 for the full account.
 
 ---
 

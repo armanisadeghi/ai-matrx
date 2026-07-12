@@ -1,6 +1,6 @@
 -- migrations/p7_fix_learn_doc_registry_is_public_column.sql
 --
--- D38 fix (KNOWN_DEFECTS.md): the `learn_doc` row in
+-- D38 fix (FOUND_DEFECTS.md): the `learn_doc` row in
 -- platform.shareable_resource_registry declares `is_public_column='visibility'`,
 -- but education.learn_doc's `visibility` is the canonical platform.visibility
 -- ENUM, not a legacy boolean flag column. Same defect class as the shipped

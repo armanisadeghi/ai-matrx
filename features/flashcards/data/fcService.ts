@@ -380,7 +380,7 @@ export const fcService = {
       // read: a cross-account caller who can VIEW this set (public/link/share
       // grant) reads its card membership even without org access — the org-gated
       // `listForTargets` returned 0 edges for a stranger on a public deck, which
-      // loaded an empty deck into cross-account multiplayer games (KNOWN_DEFECTS
+      // loaded an empty deck into cross-account multiplayer games (FOUND_DEFECTS
       // D37). Strict superset — same-org reads are unchanged.
       const edgesRes = await associationsService.listForTargetsVisible(
         "fc_set",

@@ -792,7 +792,7 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
 
     // Audio recovery: any segment with NO audio_path but a safety_id had its
     // background upload lost (bad network, crash before finalize). Two layers,
-    // tried in order (KNOWN_DEFECTS D7):
+    // tried in order (FOUND_DEFECTS D7):
     //   1. Same-device — the full blob is still in this device's IndexedDB.
     //   2. Cross-device — the eager chunk journal (studio_recording_chunks +
     //      cld_files staging blobs) uploaded during the recording. Any device

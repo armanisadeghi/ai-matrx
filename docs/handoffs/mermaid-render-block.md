@@ -18,7 +18,7 @@ The web build is complete and user-confirmed live; the Diagram Editor agent is n
 - Surface manifest: `features/surfaces/manifests/mermaid-editor.manifest.ts`
 - Diagram Editor agent: `bdaf5ee0-b490-46a4-884c-3786121bb126` (builtin, skill attached, role default)
 - Skills: `create-render-block-skill` (the paved recipe), `shape-system`
-- Demo: `/demos/mermaid` · Defect record: `KNOWN_DEFECTS.md` D5
+- Demo: `/demos/mermaid` · Defect record: `FOUND_DEFECTS.md` D5
 
 ## Remaining work
 

@@ -6,7 +6,7 @@
 // OWNING its AudioContext so output-device (speaker) routing is explicit
 // instead of relying on a global `AudioContext` constructor monkeypatch.
 //
-// WHY THE FORK EXISTS (KNOWN_DEFECTS D13)
+// WHY THE FORK EXISTS (FOUND_DEFECTS D13)
 // ---------------------------------------
 // The SDK's WebPlayer builds a hard-private AudioContext per `play()` call
 // with no accessible handle, so the only way to route it to the user's chosen

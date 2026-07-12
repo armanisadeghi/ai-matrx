@@ -8,7 +8,7 @@
 -- personal account cannot read the member edges of a `visibility='public'`
 -- flashcard deck, so a cross-account multiplayer game loads an EMPTY deck even
 -- though fc_set/fc_card RLS (via iam.has_access → reachability → public parent)
--- already lets that guest read the set and its cards (KNOWN_DEFECTS D37).
+-- already lets that guest read the set and its cards (FOUND_DEFECTS D37).
 --
 -- WHAT: same output as assoc_for_targets, but an edge is returned when the caller
 -- EITHER shares org access to it (unchanged behavior) OR can VIEW its target via

@@ -35,7 +35,7 @@ const EnhancedAppletCard: React.FC<AppletCardProps> = ({
         {/* Card image/banner section - CRISP and CLEAR */}
         <div className="h-40 w-full bg-gray-200 dark:bg-gray-700 relative flex-shrink-0">
           {applet.imageUrl ? (
-            /* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */
+            /* Durable, self-healing render — re-mints owned file URLs (FOUND_DEFECTS.md D1). */
             <InlineMediaRef
               ref={applet.imageUrl}
               size="fill"

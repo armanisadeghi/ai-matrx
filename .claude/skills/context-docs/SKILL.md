@@ -1,6 +1,6 @@
 ---
 name: context-docs
-description: Use whenever you edit, extend, reorganize, or trim an instruction/context doc that agents read — `CLAUDE.md`, any `FEATURE.md`, `PRINCIPLES.md`, `KNOWN_DEFECTS.md`, a feature `README.md`, or a `SKILL.md`. Triggers on any change to these files: adding a rule, documenting a new section/feature, recording an invariant, leaving a pointer, or compressing. Enforces the house style — every edit is a full-document review, maximum punch per word, "before you do X, read Y" pointers, and important rules organized not lost. NOT for product code, UI copy, marketing, or user-facing prose.
+description: Use whenever you edit, extend, reorganize, or trim an instruction/context doc that agents read — `CLAUDE.md`, any `FEATURE.md`, `PRINCIPLES.md`, `FOUND_DEFECTS.md`, a feature `README.md`, or a `SKILL.md`. Triggers on any change to these files: adding a rule, documenting a new section/feature, recording an invariant, leaving a pointer, or compressing. Enforces the house style — every edit is a full-document review, maximum punch per word, "before you do X, read Y" pointers, and important rules organized not lost. NOT for product code, UI copy, marketing, or user-facing prose.
 ---
 
 # context-docs — edit instruction docs that pack a punch

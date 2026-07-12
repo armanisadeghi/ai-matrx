@@ -35,7 +35,7 @@ External systems (the Chrome extension, partner backends, user automations) regi
 - **Hardening (adversarial review, 2026-06-27):** **SSRF** — `files.is_safe_webhook_url` + `webhook_url_guard` trigger reject non-https / localhost / RFC1918 / link-local / metadata / internal targets at write time; the dispatcher skips unsafe URLs too (DNS-rebinding of a public name → private IP is the documented residual). **Retry** — `webhook_reconcile` re-sends eligible failures (backoff, max 6 attempts) and times out pg_net-GC'd pendings. **Watermark race** — dispatch lags 5s on `occurred_at` so slow-committing events aren't skipped. **Signature** — signed over the exact jsonb `pg_net` serializes (verified: recomputed HMAC over the received body matches). **Actor forgery** — `EXECUTE` on `platform.log_activity` revoked from `authenticated`/`anon` (only definer triggers write the ledger).
 - **FE:** owner-scoped CRUD is **direct against the `files` schema** (RLS `owner_id = auth.uid()`) via [service.ts](service.ts) + [filesDb()](../filesDb.ts) — no RPC, no Python. The signing **secret is returned ONLY at create/rotate** (never on list reads). UI at `/files/webhooks` ([WebhooksManager.tsx](components/WebhooksManager.tsx)), reachable from the **Files sidebar → Webhooks**: register endpoint, pick events, toggle/rotate-secret/delete, **Send test** (`files.webhook_send_test` RPC — one-click signed ping), delivery health.
 - **Visibility:** admin **Events** viewer at `/administration/events` ([page](../../../app/(admin)/administration/events/page.tsx)) reads `platform.activity_log` via the `admin_recent_activity` RPC (`is_super_admin` gated) — watch run.*/webhook.*/file.* events arrive while testing.
-- **Verified:** event → match → sign → `pg_net` POST → reconcile → HTTP 200, with postman-echo confirming the exact signature header arrived. (See KNOWN_DEFECTS D-webhooks for the browser-UI verification still pending.)
+- **Verified:** event → match → sign → `pg_net` POST → reconcile → HTTP 200, with postman-echo confirming the exact signature header arrived. (See FOUND_DEFECTS D-webhooks for the browser-UI verification still pending.)
 
 ## Invariants
 
@@ -60,7 +60,7 @@ Generic primitive: [`hooks/useRunListRealtime.ts`](../../../hooks/useRunListReal
 - **Live:** podcast runs (`useStudioRuns`) — 15s `setInterval` deleted, now Realtime on `agent_run` (added to the publication; owner RLS `user_id = auth.uid()`). Verified end-to-end: an authenticated owner subscription receives an `agent_run` change.
 - **Pending:** `useStudioRun` (detail-page poll — detached-disconnect fallback during streaming; lower priority), RAG safety-net (`useFileRagStatus`, already Realtime-primary), `useResolveCreatedProject`. **Blocked:** the AI-runs list (`useAiRunsList`) — `ai_runs` is graveyarded (`graveyard.ai_runs`) and mid-migration; convert once it resettles on its canonical table.
 
-## Roadmap (pending — see KNOWN_DEFECTS.md)
+## Roadmap (pending — see FOUND_DEFECTS.md)
 - Transport 1 remainder: `useStudioRun` detail-page poll, `useResolveCreatedProject`, AI-runs list (blocked on `ai_runs` resettling). The webhook-depth remainder (D19) is closed — org fan-out, redeliver, latency, Python actors, admin map all shipped 2026-07-08.
 
 ## Change log

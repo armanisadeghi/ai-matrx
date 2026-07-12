@@ -444,7 +444,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-teal-500/20",
     },
     // No single canonical "session" table (war-room / studio / window / quiz
-    // all qualify) — opens seed-only until one is chosen. See KNOWN_DEFECTS D8.
+    // all qualify) — opens seed-only until one is chosen. See FOUND_DEFECTS D8.
     open: { kind: "session" },
   },
   table: {
@@ -553,7 +553,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     },
     open: { kind: "message" },
     // 'message' = a chat/conversation message; chat.message is canonical
-    // (dm_messages/sms_messages are distinct comms entities). See KNOWN_DEFECTS D8.
+    // (dm_messages/sms_messages are distinct comms entities). See FOUND_DEFECTS D8.
     detailSource: { table: "message", schemaName: "chat", titleField: "role" },
   },
   email: {

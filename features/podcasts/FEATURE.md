@@ -61,7 +61,7 @@ files, with a live-streaming studio, resumable runs, and public share pages.
   `_persist_episode`), and an **ESLint fence** banning raw `<img>/<video>` in
   `features/podcasts/**`. Render media ONLY via `<InlineMediaRef>` (`@/features/files`).
   The one justified raw element is `PodcastAudioPlayer`'s headless `<audio>`.
-  See root `KNOWN_DEFECTS.md` D1.
+  See root `FOUND_DEFECTS.md` D1.
 - **Public pages are anonymous** — they cannot re-mint signed URLs, so durability
   is non-negotiable, not cosmetic.
 - **Direct Supabase** for `pc_*` CRUD (`service.ts`, `studio/runs/service.ts`); the

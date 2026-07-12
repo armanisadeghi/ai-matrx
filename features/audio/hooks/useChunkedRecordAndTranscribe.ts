@@ -453,7 +453,7 @@ export function useChunkedRecordAndTranscribe({
         } catch {}
       }
 
-      // Eager cross-device journal (KNOWN_DEFECTS D7): mirror the chunk to
+      // Eager cross-device journal (FOUND_DEFECTS D7): mirror the chunk to
       // cld_files in the background so the recording is recoverable even if
       // this device disappears before the full-audio upload lands. ADDITIONAL
       // to the IndexedDB save above, never a replacement — fire-and-forget

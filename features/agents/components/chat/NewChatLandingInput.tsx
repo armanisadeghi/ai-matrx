@@ -84,7 +84,10 @@ export function NewChatLandingInput({
   const hasResources = resources.length > 0;
   // Sendable with text OR with attachments/inclusions alone (an attached note
   // with no prose is a valid first turn) — mirrors the standard input.
-  const canSend = !isExecuting && (charCount > 0 || hasResources);
+  // Also gate while the mic is recording/transcribing so send doesn't drop the
+  // trailing audio or leave the recorder running.
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const canSend = !isExecuting && !voiceBusy && (charCount > 0 || hasResources);
 
   // Hide the message while a submit is in flight (it moves into the streaming
   // conversation); the text stays in Redux as the non-visual backup.
@@ -139,13 +142,14 @@ export function NewChatLandingInput({
       dispatch(cancelExecution(conversationId));
       return;
     }
-    if (charCount === 0 && !hasResources) return;
+    if (voiceBusy || (charCount === 0 && !hasResources)) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [
     dispatch,
     conversationId,
     surfaceKey,
     isExecuting,
+    voiceBusy,
     charCount,
     hasResources,
   ]);
@@ -162,6 +166,7 @@ export function NewChatLandingInput({
     // Enter submits; Shift+Enter inserts a newline (ChatGPT convention).
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
+      if (voiceBusy) return;
       submit();
     }
   };
@@ -297,7 +302,13 @@ export function NewChatLandingInput({
           className="[grid-area:trailing] flex items-center gap-1"
           onClick={(e) => e.stopPropagation()}
         >
-          <AgentMicrophoneButton conversationId={conversationId} size="md" />
+          <AgentMicrophoneButton
+            conversationId={conversationId}
+            size="md"
+            onRecordingStateChange={(state) =>
+              setVoiceBusy(state.isRecording || state.isTranscribing)
+            }
+          />
 
           <Button
             onClick={submit}
@@ -308,8 +319,20 @@ export function NewChatLandingInput({
               "shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]",
               "disabled:opacity-25 disabled:cursor-not-allowed disabled:shadow-none",
             )}
-            title={isExecuting ? "Stop" : "Send"}
-            aria-label={isExecuting ? "Stop" : "Send"}
+            title={
+              isExecuting
+                ? "Stop"
+                : voiceBusy
+                  ? "Finish recording to send"
+                  : "Send"
+            }
+            aria-label={
+              isExecuting
+                ? "Stop"
+                : voiceBusy
+                  ? "Finish recording to send"
+                  : "Send"
+            }
           >
             {isExecuting ? (
               <CircleStop className="w-4 h-4" />

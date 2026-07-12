@@ -11,7 +11,7 @@
  * Same rationale as audio (shared `buildMediaSource`): echoing the raw
  * `data.url` didn't play during streaming (Python sends only a `file_id`) and
  * leaked a raw signed S3 URL through "Copy link". The poster URL is resolved
- * the same way. See KNOWN_DEFECTS.md → "Media durability".
+ * the same way. See FOUND_DEFECTS.md → "Media durability".
  */
 
 import React, { useEffect } from "react";
@@ -44,7 +44,7 @@ const VideoOutputBlockRenderer: React.FC<VideoOutputBlockRendererProps> = ({
   const resolvedPoster = useFileSrc(posterSource);
 
   // Plain `console.log` (not error) — a still-expiring S3 URL means the video
-  // was persisted private server-side (tracked: KNOWN_DEFECTS.md → "Media
+  // was persisted private server-side (tracked: FOUND_DEFECTS.md → "Media
   // durability"). Backend fix; no error overlay on a known gap.
   useEffect(() => {
     if (!resolvedUrl) return;

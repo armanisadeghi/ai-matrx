@@ -5,7 +5,7 @@
 -- One row per (episode, kind); regenerating replaces content in place.
 --
 -- RLS mirrors the existing pc_* posture (permissive; tightening is part of the
--- platform-wide security overhaul — see KNOWN_DEFECTS.md D2).
+-- platform-wide security overhaul — see FOUND_DEFECTS.md D2).
 
 create table if not exists public.pc_articles (
   id uuid primary key default gen_random_uuid(),

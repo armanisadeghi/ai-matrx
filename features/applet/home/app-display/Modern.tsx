@@ -77,7 +77,7 @@ const ModernAppDisplay: React.FC<AppDisplayProps> = ({
           {appImageUrl && (
             <div className="md:w-2/5 relative">
               <div className="h-full">
-                {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+                {/* Durable, self-healing render — re-mints owned file URLs (FOUND_DEFECTS.md D1). */}
                 <InlineMediaRef
                   ref={appImageUrl}
                   size="fill"

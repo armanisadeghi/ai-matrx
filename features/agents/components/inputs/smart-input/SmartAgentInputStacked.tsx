@@ -11,7 +11,7 @@
  * Required prop: conversationId (may be null/undefined while initializing).
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { ArrowUp, CircleStop, Loader2 } from "lucide-react";
 import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
@@ -61,6 +61,11 @@ export function SmartAgentInputStacked({
   extraRightControls,
 }: SmartAgentInputStackedProps) {
   const dispatch = useAppDispatch();
+  // Gate send (button + Enter) while the mic is recording or finishing a
+  // transcript — submitting mid-voice drops the trailing audio and leaves the
+  // recorder running.
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const sendBlocked = disableSend || voiceBusy;
   // Hooks must run unconditionally — `conversationId` may be null on
   // first render, but the selectors short-circuit when it is and the
   // early-return below renders the uninitialized shell instead.
@@ -79,7 +84,7 @@ export function SmartAgentInputStacked({
   }
 
   const handleSubmit = () => {
-    if (!disableSend) dispatch(smartExecute({ conversationId, surfaceKey }));
+    if (!sendBlocked) dispatch(smartExecute({ conversationId, surfaceKey }));
   };
 
   // Outer shell — matches the `/chat/new` landing pill so the two surfaces
@@ -116,7 +121,7 @@ export function SmartAgentInputStacked({
           <Button
             size="sm"
             onClick={isExecuting ? handleStop : handleSubmit}
-            disabled={disableSend && !isExecuting}
+            disabled={sendBlocked && !isExecuting}
             className={cn(
               "gap-1.5 rounded-full",
               "shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]",
@@ -169,7 +174,7 @@ export function SmartAgentInputStacked({
         uploadPath={uploadPath}
         enablePasteImages={enablePasteImages}
         surfaceKey={surfaceKey}
-        disableSend={disableSend}
+        disableSend={sendBlocked}
       />
 
       {/* Toolbar — always pinned at the bottom */}
@@ -182,7 +187,8 @@ export function SmartAgentInputStacked({
         showVariableIcon={showVariableIcon}
         sendButtonVariant={sendButtonVariant}
         surfaceKey={surfaceKey}
-        disableSend={disableSend}
+        disableSend={sendBlocked}
+        onVoiceBusyChange={setVoiceBusy}
         extraRightControls={extraRightControls}
       />
     </div>
