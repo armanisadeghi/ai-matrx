@@ -368,7 +368,7 @@ export function useImageStudio(
             const preset = getPresetById(presetId);
             if (!preset) return null;
             return {
-              key: presetId,
+              preset_id: presetId,
               width: preset.width,
               height: preset.height,
               format: preset.defaultFormat ?? format,
@@ -402,22 +402,16 @@ export function useImageStudio(
               if (f.id !== sourceFile.id) return f;
               const variants: Record<string, ProcessedVariant> = {};
               for (const v of data.variants) {
-                const preset = getPresetById(v.key);
+                const preset = getPresetById(v.preset_id);
                 if (!preset) continue;
                 const url = v.data_url ?? v.signed_url;
                 if (!url) continue;
 
-                // Derive the variant's real format from the returned
-                // MIME so the UI's "Save as .webp" label matches what
-                // the server actually encoded. Falls back to the
-                // requested format if MIME is missing.
-                const variantFormat: OutputFormat = (() => {
-                  if (v.mime_type === "image/jpeg") return "jpeg";
-                  if (v.mime_type === "image/png") return "png";
-                  if (v.mime_type === "image/webp") return "webp";
-                  if (v.mime_type === "image/avif") return "avif";
-                  return preset.defaultFormat ?? format;
-                })();
+                // Use the format the server actually encoded so the
+                // UI's "Save as .webp" label matches the bytes. Falls
+                // back to the preset/requested format if absent.
+                const variantFormat: OutputFormat =
+                  v.format ?? preset.defaultFormat ?? format;
 
                 const ext = variantFormat === "jpeg" ? "jpg" : variantFormat;
                 const filenameBase = slugifyFilename(
@@ -427,19 +421,17 @@ export function useImageStudio(
 
                 const compressionRatio =
                   sourceFile.file.size > 0
-                    ? Math.round(
-                        (1 - v.file_size / sourceFile.file.size) * 100,
-                      )
+                    ? Math.round((1 - v.size / sourceFile.file.size) * 100)
                     : null;
 
-                variants[v.key] = {
-                  presetId: v.key,
+                variants[v.preset_id] = {
+                  presetId: v.preset_id,
                   filename,
                   width: v.width ?? preset.width,
                   height: v.height ?? preset.height,
                   format: variantFormat,
                   quality: variantFormat === "png" ? null : quality,
-                  size: v.file_size,
+                  size: v.size,
                   dataUrl: url,
                   compressionRatio,
                   fit,

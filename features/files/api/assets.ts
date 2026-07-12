@@ -288,26 +288,34 @@ export type PreviewVariantPosition =
   | { x: number; y: number };
 
 export interface PreviewVariantSpec {
-  key: string;
+  /** Stable id echoed back on the matching result as `preset_id`. */
+  preset_id: string;
   width?: number;
   height?: number;
   format?: "jpeg" | "png" | "webp" | "avif";
   quality?: number;
-  fit?: "cover" | "contain" | "fill";
+  fit?: "cover" | "contain" | "inside";
   position?: PreviewVariantPosition;
   background_color?: string;
 }
 
 export interface PreviewVariantResult {
-  key: string;
+  /** Echoed from the request spec's `preset_id`. */
+  preset_id: string;
   width: number | null;
   height: number | null;
-  mime_type: string;
-  file_size: number;
+  /** Format the server actually encoded (may differ from the request). */
+  format: "jpeg" | "png" | "webp" | "avif";
+  /** Encoded byte length of the rendered variant. */
+  size: number;
   /** base64 data URL for small variants (≤256 KB). */
   data_url: string | null;
   /** 5-min ephemeral signed URL for larger variants. */
   signed_url: string | null;
+  /** Seconds until `signed_url` expires (signed_url mode only). */
+  expires_in?: number | null;
+  /** Per-variant render failure; the variant is otherwise empty. */
+  error?: string | null;
 }
 
 export interface AssetPreviewResult {
