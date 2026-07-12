@@ -20,18 +20,23 @@ export default function ExtensionPrivacyPolicyPage() {
           <h1 className="text-4xl font-bold tracking-tight">
             Matrx Extend — Chrome Extension Privacy Policy
           </h1>
-          <p className="text-muted-foreground">Last updated: April 30, 2026</p>
+          <p className="text-muted-foreground">Last updated: July 12, 2026</p>
         </div>
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8">
           <section className="space-y-3">
             <h2 className="text-2xl font-semibold">Overview</h2>
             <p>
-              Matrx Extend (the &ldquo;extension&rdquo;) is an opt-in browser
-              workspace published by AI Matrx. It lets a signed-in user capture,
-              structure, and analyze content from web pages they themselves
-              choose to inspect — and connects those workflows to the user&rsquo;s
-              own Matrx account.
+              Matrx Extend (the &ldquo;extension&rdquo;) is an opt-in AI
+              assistant published by AI Matrx. It runs in your browser&rsquo;s
+              side panel and helps you understand and act on the web page you
+              are currently viewing — reading only the pages you explicitly
+              choose to use it on.
+            </p>
+            <p>
+              You can use the extension either with a Matrx account or{" "}
+              <strong>as a guest, without creating an account</strong>. Guest use
+              is described in its own section below.
             </p>
             <p>
               This policy describes only the extension&rsquo;s data practices.
@@ -46,11 +51,20 @@ export default function ExtensionPrivacyPolicyPage() {
           <section className="space-y-3">
             <h2 className="text-2xl font-semibold">Single purpose</h2>
             <p>
-              The single purpose of Matrx Extend is to give a signed-in Matrx
-              user a side-panel workspace to chat with their agents, run tasks,
-              capture page content on demand, define reusable structured-data
-              extraction patterns, and audit pages for SEO — using only pages
-              the user explicitly opens and explicitly acts on.
+              The single purpose of Matrx Extend is to be an{" "}
+              <strong>
+                AI assistant that helps you understand and act on the web page
+                you are currently viewing
+              </strong>
+              , from the browser side panel.
+            </p>
+            <p>
+              Everything the extension does serves that one purpose: answering
+              questions about the current page, pulling information out of it,
+              and — only when you ask — performing actions on it such as filling
+              a form or navigating. It reads a page only when you engage it on
+              that page, and actions that change a page ask for your
+              confirmation first.
             </p>
           </section>
 
@@ -138,9 +152,6 @@ export default function ExtensionPrivacyPolicyPage() {
 
           <section className="space-y-3">
             <h2 className="text-2xl font-semibold">Where your data goes</h2>
-            <p>
-              Two destinations, both controlled by AI Matrx:
-            </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>
                 <strong>Supabase</strong> (operated by AI Matrx) — for
@@ -150,15 +161,24 @@ export default function ExtensionPrivacyPolicyPage() {
               <li>
                 <strong>Matrx backend</strong> at{" "}
                 <code>server.app.matrxserver.com</code> — for agent execution,
-                streaming responses, and server-side processing of scrape and
-                SEO workflows.
+                streaming responses, and server-side processing.
+              </li>
+              <li>
+                <strong>AI model providers.</strong> To generate a response, the
+                Matrx backend forwards your message and any page context you
+                included to the AI model provider that the agent you are using is
+                configured to run on (for example Anthropic, OpenAI, or Google).
+                This means the content of a page you engage the assistant on can
+                be sent to that provider. Providers are used to generate your
+                response; we do not authorize them to use your content to train
+                their models.
               </li>
             </ul>
             <p>
-              No other third-party services receive your captured content. If
-              you have paired the optional Matrx desktop companion app, the
-              extension may communicate with it locally on your machine; that
-              traffic does not leave your device.
+              No other third parties receive your content. If you have paired the
+              optional Matrx desktop companion app, the extension may communicate
+              with it locally on your machine; that traffic does not leave your
+              device.
             </p>
           </section>
 
@@ -231,8 +251,57 @@ export default function ExtensionPrivacyPolicyPage() {
           </section>
 
           <section className="space-y-3">
+            <h2 className="text-2xl font-semibold">
+              Guest access (using the extension without an account)
+            </h2>
+            <p>
+              You can open the side panel and use the assistant immediately, as a
+              guest, without signing up. Guest use works the same way as
+              signed-in use, and this policy applies to it in full.
+            </p>
+            <p>To make that work, when you use the extension as a guest:</p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>
+                <strong>We create an anonymous account for you.</strong> Your
+                installation generates a random identifier (it is not derived
+                from your name, email, IP address, device hardware, or any other
+                personal information). We send that identifier with your requests
+                and use it to create and recognize an anonymous account on our
+                servers, so your conversation can be processed and so we can
+                apply fair-use limits.
+              </li>
+              <li>
+                <strong>Your guest activity is stored under that anonymous
+                account</strong> — the same conversations and content described
+                elsewhere in this policy, handled the same way. It is not linked
+                to a real-world identity, because we do not have one for you.
+              </li>
+              <li>
+                <strong>If you later create an account or sign in,</strong> your
+                guest activity is carried over and becomes part of that account.
+              </li>
+              <li>
+                <strong>You can clear it.</strong> Uninstalling the extension, or
+                clearing its local storage, discards the identifier on your
+                device. To delete the anonymous account data held on our servers,
+                email{" "}
+                <a href="mailto:support@aimatrx.com" className="underline">
+                  support@aimatrx.com
+                </a>
+                . Because guest accounts are anonymous, please send the request
+                from the extension while the identifier is still installed, or
+                include it, so we can find the right records.
+              </li>
+            </ul>
+          </section>
+
+          <section className="space-y-3">
             <h2 className="text-2xl font-semibold">Your controls</h2>
             <ul className="list-disc pl-6 space-y-2">
+              <li>
+                <strong>Use it as a guest</strong> — you are not required to
+                create an account to use the assistant.
+              </li>
               <li>
                 <strong>Sign out</strong> from the Settings tab clears local
                 tokens immediately.
@@ -247,7 +316,8 @@ export default function ExtensionPrivacyPolicyPage() {
                 account, or by emailing us.
               </li>
               <li>
-                <strong>Account deletion</strong> requests can be sent to{" "}
+                <strong>Account deletion</strong> requests — for a full account
+                or for an anonymous guest account — can be sent to{" "}
                 <a
                   href="mailto:support@aimatrx.com"
                   className="underline"
