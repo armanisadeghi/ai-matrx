@@ -33,32 +33,13 @@ import {
 } from "@/components/ui/table";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { getJson, postJson } from "@/lib/python-client";
+import { postJson } from "@/lib/python-client";
+import { apiGet } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 
-interface ApiRepo {
-  repository_id: string | null;
-  name: string;
-  git_url: string | null;
-  git_branch: string | null;
-  sync_status: string | null;
-  file_count: number;
-  indexed_file_count: number;
-  last_synced_at: string | null;
-}
-
-interface ApiReposResponse {
-  repositories: ApiRepo[];
-  unattached_files: number;
-}
-
-interface ApiIndexResponse {
-  repository_id: string | null;
-  files_processed: number;
-  files_skipped_unchanged: number;
-  chunks_written: number;
-  embeddings_written: number;
-  errors: string[];
-}
+// Repository shapes — DERIVED from the generated contract (never hand-mirrored).
+type ApiRepo = components["schemas"]["RepositorySummary"];
+type ApiIndexResponse = components["schemas"]["IndexRepositoryResponse"];
 
 export function RepositoriesPage() {
   const userId = useAppSelector(selectUserId);
@@ -74,7 +55,7 @@ export function RepositoriesPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    getJson<ApiReposResponse>("/rag/repositories")
+    apiGet("/rag/repositories")
       .then(({ data }) => {
         if (cancelled || !data) return;
         setRepos(Array.isArray(data.repositories) ? data.repositories : []);
@@ -96,6 +77,11 @@ export function RepositoriesPage() {
   const indexRepo = async (id: string, force = false) => {
     setIndexingId(id);
     try {
+      // Left on the raw client: the endpoint declares NO request body
+      // (`requestBody: never`) yet the call sends an empty `{}` body, and carries
+      // a `force` query param — apiPost takes no query option and would send no
+      // body. Routing it would change the exact wire. Response type is DERIVED
+      // from the contract (`IndexRepositoryResponse`) so a rename still fails here.
       const params = force ? "?force=true" : "";
       const { data } = await postJson<ApiIndexResponse, Record<string, never>>(
         `/rag/repositories/${id}/index${params}`,

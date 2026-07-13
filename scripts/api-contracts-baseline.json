@@ -1,6 +1,5 @@
 [
   "app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx",
-  "features/agents/services/agentService.ts",
   "features/file-analysis/api/file-analysis.ts",
   "features/files/api/assets.ts",
   "features/files/api/files.ts",
@@ -13,7 +12,6 @@
   "features/files/upload/cloudUpload.ts",
   "features/image-studio/api/python.ts",
   "features/page-extraction/api/stream.ts",
-  "features/pdf-extractor/state/thunks.ts",
   "features/pdf/api/streamDrain.tsx",
   "features/pdf/scanner/api.ts",
   "features/podcasts/studio/runs/runsApi.ts",
@@ -24,12 +22,6 @@
   "features/rag/api/search.ts",
   "features/rag/api/stages.ts",
   "features/rag/components/RepositoriesPage.tsx",
-  "features/rag/components/library/ChunkList.tsx",
-  "features/rag/components/library/LibraryDocDetailSheet.tsx",
-  "features/rag/components/library/LibraryPage.tsx",
-  "features/rag/components/library/LibraryPreviewPage.tsx",
-  "features/rag/components/library/QuickSearchDialog.tsx",
   "features/rag/hooks/useLibraryCatalog.ts",
-  "features/transcripts/service/autoLabelTranscript.ts",
-  "features/voice-agent/services/realtimeToolService.ts"
+  "features/transcripts/service/autoLabelTranscript.ts"
 ]

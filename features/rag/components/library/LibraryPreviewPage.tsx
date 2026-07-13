@@ -42,7 +42,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getJson } from "@/lib/python-client";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { computeMatches } from "@/features/notes/utils/findMatches";
 import { HighlightedText } from "@/components/text/HighlightedText";
@@ -64,20 +65,8 @@ import { ChunksOnPage } from "./ChunkList";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
 
-interface ApiFullPage {
-  page_index: number;
-  page_number: number;
-  raw_text: string;
-  raw_char_count: number;
-  cleaned_text: string;
-  cleaned_char_count: number;
-  extraction_method: string | null;
-  used_ocr: boolean;
-  section_kind: string | null;
-  section_title: string | null;
-  is_continuation: boolean;
-  has_image: boolean;
-}
+// Full-page payload — DERIVED from the generated contract (never hand-mirrored).
+type ApiFullPage = components["schemas"]["LibraryFullPage"];
 
 export interface LibraryPreviewPageProps {
   documentId: string;
@@ -449,7 +438,12 @@ function PageContent({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    getJson<ApiFullPage>(`/rag/library/${documentId}/page/${pageIndex}`)
+    apiGet(
+      buildPath("/rag/library/{processed_document_id}/page/{page_index}", {
+        processed_document_id: documentId,
+        page_index: pageIndex,
+      }),
+    )
       .then(({ data }) => {
         if (!cancelled && data) setPage(data);
       })

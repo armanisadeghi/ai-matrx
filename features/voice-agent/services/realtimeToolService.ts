@@ -11,15 +11,13 @@
 // identical `cx_tool_call` record. Nothing about the tool changes; only the
 // transport that triggered it.
 //
-// Auth + base URL come from the existing authed Python client (`postJson` in
-// `lib/python-client.ts`): Supabase JWT bearer + `apiConfigSlice` base URL. We
-// do NOT hand-roll fetch or auth. The RESPONSE type is now DERIVED from the
-// generated contract (`ToolExecuteResponse`), so a server rename lights up here.
-// The call itself stays on the raw `postJson` (not the typed client): the
-// generated `ToolExecuteRequest` schema marks `store` as required, but this
-// surface intentionally omits it to inherit the server default — routing through
-// `apiPost` would force adding a body field (a runtime change), so the wire body
-// stays a hand-authored mirror of the flattened `ScopedRequest`.
+// Auth + base URL come from the existing authed Python client, now via the
+// contract-bound typed client (`apiPost` in `lib/api/typed-client.ts`): Supabase
+// JWT bearer + `apiConfigSlice` base URL. We do NOT hand-roll fetch or auth.
+// BOTH the request body AND the response are DERIVED from the generated contract
+// (`ToolExecuteRequest` / `ToolExecuteResponse`), so a server rename lights up
+// here as a compile error. `store` is optional on the schema (defaults to true
+// server-side), so omitting it binds cleanly without changing the wire.
 //
 // HTTP contract: the endpoint returns 200 even on TOOL failure (so the model
 // recovers gracefully) — `ok=false` carries the failure string in `output`. A
@@ -27,7 +25,7 @@
 // converts that into an explanatory `output` string so the voice turn never
 // crashes.
 
-import { postJson } from "@/lib/python-client";
+import { apiPost } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 
 /** Optional org/project/task/scope envelope (contract §4 `ToolContextEnvelope`). */
@@ -63,24 +61,12 @@ export interface RealtimeToolExecuteRequest {
   context?: RealtimeToolContextEnvelope | null;
 }
 
-/** Wire body — the Python endpoint extends `ScopedRequest`, so scope fields are
- *  TOP-LEVEL, not nested. A nested `context` object would be silently dropped. */
-interface RealtimeToolExecuteWireBody {
-  agent_id: string;
-  conversation_id: string | null;
-  tool_name: string;
-  arguments: Record<string, unknown>;
-  call_id: string | null;
-  surface: string;
-  // Mirror the resolve request so the server's re-resolution of the allowed
-  // set matches the set the session declared — top-level, like the scope fields.
-  added_tool_ids: string[];
-  is_version: boolean;
-  organization_id?: string;
-  project_id?: string;
-  task_id?: string;
-  scope_ids?: string[];
-}
+/** Wire body — DERIVED from the generated contract. The Python endpoint extends
+ *  `ScopedRequest`, so scope fields are TOP-LEVEL, not nested; a nested `context`
+ *  object would be silently dropped. Deriving it from the schema (rather than
+ *  hand-mirroring the flattened shape) means a server field rename fails to
+ *  compile here. */
+type RealtimeToolExecuteWireBody = components["schemas"]["ToolExecuteRequest"];
 
 /**
  * Response from `POST /ai/tools/execute` — DERIVED from the generated OpenAPI
@@ -121,10 +107,7 @@ export function createRealtimeToolService(): RealtimeToolService {
           ...(context?.task_id ? { task_id: context.task_id } : {}),
           ...(context?.scope_ids ? { scope_ids: context.scope_ids } : {}),
         };
-        const { data } = await postJson<
-          RealtimeToolExecuteResponse,
-          RealtimeToolExecuteWireBody
-        >(EXECUTE_PATH, body);
+        const { data } = await apiPost(EXECUTE_PATH, body);
         return { ok: data.ok, output: data.output };
       } catch (err) {
         // Infra / auth / 403 (tool not in the agent's resolved set). Convert to

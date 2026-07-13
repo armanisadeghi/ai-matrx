@@ -10,7 +10,6 @@
 // model + reference lookups. Running an agent uses the existing streaming path,
 // not this client.
 
-import { getJson } from "@/lib/python-client";
 import { apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
 
 import type {
@@ -27,25 +26,19 @@ import type {
   ValidateSchemaRequest,
 } from "@/features/agents/services/agentService.types";
 
-const BASE = "/agent-service";
-
-function qs(params: Record<string, string | number | string[] | undefined>): string {
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined) continue;
-    if (Array.isArray(v)) v.forEach((item) => sp.append(k, item));
-    else sp.append(k, String(v));
-  }
-  const s = sp.toString();
-  return s ? `?${s}` : "";
-}
-
 // --- discovery -------------------------------------------------------------
 
 export async function listAgents(query: CatalogQuery = {}): Promise<CatalogTree> {
-  const { data } = await getJson<CatalogTree>(
-    `${BASE}/agents${qs({ category: query.category, tags: query.tags, query: query.query, limit: query.limit })}`,
-  );
+  // `tags` is a string[] the server reads as repeated query params
+  // (`?tags=a&tags=b`); the typed client's serializer emits arrays that way.
+  const { data } = await apiGet("/agent-service/agents", {
+    query: {
+      category: query.category,
+      tags: query.tags,
+      query: query.query,
+      limit: query.limit,
+    },
+  });
   return data;
 }
 
@@ -77,23 +70,36 @@ export async function getVersion(versionId: string): Promise<AgentDetail> {
 // --- reference lookups -----------------------------------------------------
 
 export async function listModels(includeDeprecated = false): Promise<ModelInfo[]> {
-  const { data } = await getJson<ModelInfo[]>(
-    `${BASE}/models${qs({ include_deprecated: includeDeprecated ? "true" : undefined })}`,
-  );
+  // Preserve exact wire: `false` currently sends NO `include_deprecated` param
+  // (the old `qs` mapped it to `undefined`); withQuery keeps `false`, so route
+  // `false → undefined` to stay drop-on-false.
+  const { data } = await apiGet("/agent-service/models", {
+    query: { include_deprecated: includeDeprecated ? true : undefined },
+  });
   return data;
 }
 
 export async function listTools(query: CatalogQuery = {}): Promise<ToolInfo[]> {
-  const { data } = await getJson<ToolInfo[]>(
-    `${BASE}/tools${qs({ category: query.category, tags: query.tags, query: query.query })}`,
-  );
+  // `tags` is a string[] the server reads as repeated query params
+  // (`?tags=a&tags=b`); the typed client's serializer emits arrays that way.
+  const { data } = await apiGet("/agent-service/tools", {
+    query: {
+      category: query.category,
+      tags: query.tags,
+      query: query.query,
+    },
+  });
   return data;
 }
 
 export async function listSkills(query: CatalogQuery = {}): Promise<SkillInfo[]> {
-  const { data } = await getJson<SkillInfo[]>(
-    `${BASE}/skills${qs({ category: query.category, query: query.query, limit: query.limit })}`,
-  );
+  const { data } = await apiGet("/agent-service/skills", {
+    query: {
+      category: query.category,
+      query: query.query,
+      limit: query.limit,
+    },
+  });
   return data;
 }
 

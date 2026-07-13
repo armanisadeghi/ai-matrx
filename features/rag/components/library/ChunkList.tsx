@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { getJson } from "@/lib/python-client";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import {
   fetchDerivativeChunks,
@@ -136,11 +136,6 @@ export function ChunkCard({
 // Loader: chunks for one page of a document
 // ---------------------------------------------------------------------------
 
-interface ApiChunksResponse {
-  chunks: ChunkLike[];
-  total: number;
-}
-
 export function ChunksOnPage({
   documentId,
   pageNumber,
@@ -160,11 +155,11 @@ export function ChunksOnPage({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams();
-    params.set("limit", "50");
-    params.set("page_number", String(pageNumber));
-    getJson<ApiChunksResponse>(
-      `/rag/library/${documentId}/chunks?${params.toString()}`,
+    apiGet(
+      buildPath("/rag/library/{processed_document_id}/chunks", {
+        processed_document_id: documentId,
+      }),
+      { query: { limit: 50, page_number: pageNumber } },
     )
       .then(({ data }) => {
         if (cancelled || !data) return;

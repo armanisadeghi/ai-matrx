@@ -77,7 +77,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { del, postJson } from "@/lib/python-client";
+import { apiDelete, apiPost, buildPath } from "@/lib/api/typed-client";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
@@ -183,14 +183,7 @@ export function LibraryPage() {
   const handleBulkDelete = async (status: DocStatus) => {
     setBulkRunning(true);
     try {
-      const { data } = await postJson<
-        {
-          deleted_documents: number;
-          deleted_pages: number;
-          deleted_chunks: number;
-        },
-        { status: string }
-      >("/rag/library/bulk-delete", { status });
+      const { data } = await apiPost("/rag/library/bulk-delete", { status });
       toast.success(
         `Deleted ${data?.deleted_documents ?? 0} ${status} documents (${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()})`,
       );
@@ -307,10 +300,18 @@ export function LibraryPage() {
     if (!proceed) return;
     try {
       if (mode === "file") {
-        await del<{ deleted_documents: number }>(`/rag/library/${doc.id}/full`);
+        await apiDelete(
+          buildPath("/rag/library/{processed_document_id}/full", {
+            processed_document_id: doc.id,
+          }),
+        );
         toast.success(`Deleted file "${doc.name}"`);
       } else {
-        await del<{ deleted_documents: number }>(`/rag/library/${doc.id}`);
+        await apiDelete(
+          buildPath("/rag/library/{processed_document_id}", {
+            processed_document_id: doc.id,
+          }),
+        );
         toast.success(`Deleted processing for "${doc.name}"`);
       }
       setRefreshKey((n) => n + 1);

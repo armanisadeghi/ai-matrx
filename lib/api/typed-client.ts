@@ -137,7 +137,9 @@ export function buildPath<P extends keyof paths>(
 // ---------------------------------------------------------------------------
 
 /** A query-string value; `null`/`undefined` entries are dropped. */
-export type QueryValue = string | number | boolean | null | undefined;
+export type QueryScalar = string | number | boolean | null | undefined;
+/** A query value: a scalar, or an array emitted as REPEATED params (`?k=a&k=b`). */
+export type QueryValue = QueryScalar | readonly QueryScalar[];
 
 /** Append a query object to a path literal, dropping empty values. */
 export function withQuery<P extends string>(
@@ -146,11 +148,20 @@ export function withQuery<P extends string>(
 ): P {
   if (!query) return path;
   const qs = new URLSearchParams();
-  for (const [k, v] of Object.entries(query)) {
+  const appendScalar = (k: string, v: QueryScalar) => {
     // Drop null / undefined / empty-string so absent params stay absent
     // (an empty value must not become `?k=` — that can change server behavior).
-    if (v === null || v === undefined || v === "") continue;
+    if (v === null || v === undefined || v === "") return;
     qs.append(k, String(v));
+  };
+  for (const [k, v] of Object.entries(query)) {
+    if (Array.isArray(v)) {
+      // Arrays → repeated params (`?k=a&k=b`), matching FastAPI's List[str]
+      // query parsing. An empty array emits nothing.
+      for (const item of v) appendScalar(k, item);
+    } else {
+      appendScalar(k, v as QueryScalar);
+    }
   }
   const s = qs.toString();
   return (s ? `${path}${path.includes("?") ? "&" : "?"}${s}` : path) as P;

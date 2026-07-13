@@ -48,7 +48,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import { del, getJson, patchJson, postJson } from "@/lib/python-client";
+import { apiDelete, apiGet, apiPatch, buildPath } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 import { StatusBadge } from "./StatusBadge";
 import { StageStatusPills } from "./StageStatusPills";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
@@ -121,7 +122,12 @@ export function LibraryDocDetailSheet({
     }
     setRenaming(true);
     try {
-      await patchJson(`/rag/library/${doc.id}`, { name: renameValue.trim() });
+      await apiPatch(
+        buildPath("/rag/library/{processed_document_id}", {
+          processed_document_id: doc.id,
+        }),
+        { name: renameValue.trim() },
+      );
       toast.success("Document renamed");
       setRenameOpen(false);
       reload();
@@ -139,12 +145,11 @@ export function LibraryDocDetailSheet({
     try {
       if (confirmDeleteMode === "file") {
         // Full delete — processing + source cld_files row.
-        const { data } = await del<{
-          deleted_documents: number;
-          deleted_pages: number;
-          deleted_chunks: number;
-          deleted_cld_file: boolean;
-        }>(`/rag/library/${doc.id}/full`);
+        const { data } = await apiDelete(
+          buildPath("/rag/library/{processed_document_id}/full", {
+            processed_document_id: doc.id,
+          }),
+        );
         toast.success(
           data?.deleted_cld_file
             ? `File deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}, source file moved to trash.`
@@ -152,11 +157,11 @@ export function LibraryDocDetailSheet({
         );
       } else {
         // Processing-only delete — keeps the source binary.
-        const { data } = await del<{
-          deleted_documents: number;
-          deleted_pages: number;
-          deleted_chunks: number;
-        }>(`/rag/library/${doc.id}`);
+        const { data } = await apiDelete(
+          buildPath("/rag/library/{processed_document_id}", {
+            processed_document_id: doc.id,
+          }),
+        );
         toast.success(
           `Processing deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. Source file intact — re-process to rebuild.`,
         );
@@ -924,28 +929,9 @@ function KV({ k, v }: { k: string; v: React.ReactNode }) {
   );
 }
 
-interface ApiFullPage {
-  cleaned_text: string;
-  raw_text: string;
-}
-
-interface ApiChunkRow {
-  id: string;
-  chunk_index: number | null;
-  chunk_kind: string | null;
-  token_count: number | null;
-  page_numbers: number[] | null;
-  content_text: string;
-  has_oai_embedding: boolean;
-  has_voyage_embedding: boolean;
-}
-
-interface ApiChunksResponse {
-  chunks: ApiChunkRow[];
-  total: number;
-  limit: number;
-  offset: number;
-}
+// Page + chunk payloads — DERIVED from the generated contract (never hand-mirrored).
+type ApiFullPage = components["schemas"]["LibraryFullPage"];
+type ApiChunkRow = components["schemas"]["LibraryChunkRow"];
 
 /** Loads full page bodies (detail list payload is preview-only). */
 function SheetFullPagePreviews({
@@ -971,7 +957,12 @@ function SheetFullPagePreviews({
     setError(null);
     setCleaned("");
     setRaw("");
-    getJson<ApiFullPage>(`/rag/library/${documentId}/page/${pageIndex}`)
+    apiGet(
+      buildPath("/rag/library/{processed_document_id}/page/{page_index}", {
+        processed_document_id: documentId,
+        page_index: pageIndex,
+      }),
+    )
       .then(({ data }) => {
         if (cancelled || !data) return;
         setCleaned(data.cleaned_text);
@@ -1069,12 +1060,12 @@ function SheetChunksPanel({
     setFetchError(null);
     setRows([]);
     const limit = Math.min(Math.max(fallbackSamples.length, 1), 500);
-    const params = new URLSearchParams();
-    params.set("limit", String(limit));
-    params.set("offset", "0");
 
-    getJson<ApiChunksResponse>(
-      `/rag/library/${documentId}/chunks?${params.toString()}`,
+    apiGet(
+      buildPath("/rag/library/{processed_document_id}/chunks", {
+        processed_document_id: documentId,
+      }),
+      { query: { limit, offset: 0 } },
     )
       .then(({ data }) => {
         if (cancelled || !data) return;

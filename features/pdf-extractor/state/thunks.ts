@@ -1,12 +1,11 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { getJson } from "@/lib/python-client";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
 import {
   chunksFetchError,
   chunksFetchStart,
   chunksFetchSuccess,
 } from "./pdfStudioSlice";
-import type { ApiChunksResponse } from "./types";
 
 const FRESH_MS = 5 * 60 * 1000;
 const DEBOUNCE_MS = 200;
@@ -45,11 +44,11 @@ export function fetchChunksForPage(
 
       dispatch(chunksFetchStart({ docId, pageNumber }));
       try {
-        const params = new URLSearchParams();
-        params.set("limit", "50");
-        params.set("page_number", String(pageNumber));
-        const { data } = await getJson<ApiChunksResponse>(
-          `/rag/library/${docId}/chunks?${params.toString()}`,
+        const { data } = await apiGet(
+          buildPath("/rag/library/{processed_document_id}/chunks", {
+            processed_document_id: docId,
+          }),
+          { query: { limit: 50, page_number: pageNumber } },
         );
         dispatch(
           chunksFetchSuccess({
