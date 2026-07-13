@@ -1,9 +1,8 @@
 # TASK: route file traffic to the matrx-files microservice
 
 **Status:** service is LIVE at `https://files.matrxserver.com` (us-east-1, identical wire contract).
-**Blocking:** the server must first add `/files/{id}/share-links` to the service (aidream task —
-see `aidream/docs/handoffs/matrx-files-cutover.md`). Everything else `server-client.ts` calls is
-already served. Do the FE change now (safe, env-gated); flip the env once share-links lands.
+**Not blocked — the service serves EVERY route `server-client.ts` calls** (share-links landed in
+v0.1.3, live + verified). Do the FE change below and set the env; you're cut over.
 
 ## The change (surgical, no rewrite)
 
@@ -25,7 +24,7 @@ already served. Do the FE change now (safe, env-gated); flip the env once share-
 
 ## Cut over + verify
 
-- Set `NEXT_PUBLIC_FILES_URL=https://files.matrxserver.com` in Vercel (after aidream ships share-links).
+- Set `NEXT_PUBLIC_FILES_URL=https://files.matrxserver.com` in Vercel.
 - Verify on the aidream dashboard `/logs` → feature `file-cutover-shadow`: your origin's **`ready`
   tier must go silent**. That's the proof the FE is fully cut over. `needs_parity` routes (image
   studio, pdf, media) stay on the backend until the service grows those routers — they're expected
