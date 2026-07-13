@@ -31,6 +31,8 @@ function rowToString(row: ScopeContextRow): string {
   if (row.value_number != null) return String(row.value_number);
   if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
   if (row.value_date != null) return row.value_date;
+  if (row.value_timestamp != null) return row.value_timestamp;
+  if (row.value_time != null) return row.value_time;
   if (row.value_document_url != null) return row.value_document_url;
   if (row.value_json != null) {
     try {
@@ -49,6 +51,8 @@ function rowToComponentValue(row: ScopeContextRow): unknown {
   if (row.value_text != null) return row.value_text;
   if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
   if (row.value_date != null) return row.value_date;
+  if (row.value_timestamp != null) return row.value_timestamp;
+  if (row.value_time != null) return row.value_time;
   if (row.value_document_url != null) return row.value_document_url;
   return "";
 }
@@ -124,39 +128,28 @@ export function EditScopeValueSheet({
 
     const trimmed = typeof value === "string" ? value.trim() : "";
 
-    if (row.value_type === "number") {
-      if (trimmed === "") {
-        payload.value_text = null;
-      } else {
-        const n = Number(trimmed);
-        if (Number.isNaN(n)) {
-          toast.error("Not a valid number");
-          return;
-        }
-        payload.value_number = n;
-      }
-    } else if (row.value_type === "boolean") {
-      if (trimmed === "true") payload.value_boolean = true;
-      else if (trimmed === "false") payload.value_boolean = false;
-      else payload.value_text = null;
-    } else if (row.value_type === "date") {
-      payload.value_date = trimmed || null;
-    } else if (row.value_type === "document") {
-      payload.value_document_url = trimmed || null;
-    } else if (row.value_type === "object" || row.value_type === "array") {
-      if (trimmed === "") {
-        payload.value_json = null;
-      } else {
-        try {
-          payload.value_json = JSON.parse(trimmed);
-        } catch (err) {
-          setJsonError(err instanceof Error ? err.message : "Invalid JSON");
-          return;
-        }
-      }
-    } else {
-      payload.value_text = trimmed || null;
+    // Validation UX this sheet owns (surfaced inline); the column routing itself
+    // is delegated to the ONE shared mapper so the two never drift on a new type.
+    if (
+      row.value_type === "number" &&
+      trimmed !== "" &&
+      Number.isNaN(Number(trimmed))
+    ) {
+      toast.error("Not a valid number");
+      return;
     }
+    if (
+      (row.value_type === "object" || row.value_type === "array") &&
+      trimmed !== ""
+    ) {
+      try {
+        JSON.parse(trimmed);
+      } catch (err) {
+        setJsonError(err instanceof Error ? err.message : "Invalid JSON");
+        return;
+      }
+    }
+    Object.assign(payload, buildScopeValuePayload(value, row.value_type));
 
     setBusy(true);
     try {

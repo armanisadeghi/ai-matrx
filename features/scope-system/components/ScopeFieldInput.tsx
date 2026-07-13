@@ -58,6 +58,8 @@ function rowToString(row: ScopeContextRow): string {
   if (row.value_number != null) return String(row.value_number);
   if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
   if (row.value_date != null) return row.value_date;
+  if (row.value_timestamp != null) return row.value_timestamp;
+  if (row.value_time != null) return row.value_time;
   if (row.value_document_url != null) return row.value_document_url;
   if (row.value_json != null) {
     try {
@@ -79,6 +81,8 @@ function rowToComponentValue(row: ScopeContextRow): unknown {
   if (row.value_text != null) return row.value_text;
   if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
   if (row.value_date != null) return row.value_date;
+  if (row.value_timestamp != null) return row.value_timestamp;
+  if (row.value_time != null) return row.value_time;
   if (row.value_document_url != null) return row.value_document_url;
   return "";
 }

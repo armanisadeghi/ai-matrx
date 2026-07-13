@@ -23,6 +23,7 @@ import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@/features/scopes/hooks/useContextValues";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import type { ContextValueType } from "@/features/agent-context/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { ContextValueRow } from "@/features/scopes/components/reference/ContextValueRow";
 import type {
@@ -62,6 +63,9 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
   // instead of the items' display names.
   const typeId = found.type?.id ?? null;
   const [itemNames, setItemNames] = useState<Record<string, string>>({});
+  const [itemTypes, setItemTypes] = useState<
+    Record<string, ContextValueType>
+  >({});
   useEffect(() => {
     if (!typeId) return undefined;
     let cancelled = false;
@@ -70,6 +74,11 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
       setItemNames(
         Object.fromEntries(
           res.data.items.map((it) => [it.id, it.display_name]),
+        ),
+      );
+      setItemTypes(
+        Object.fromEntries(
+          res.data.items.map((it) => [it.id, it.value_type]),
         ),
       );
     });
@@ -202,6 +211,7 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
                   key={v.context_item_id}
                   value={v}
                   label={itemNames[v.context_item_id]}
+                  valueType={itemTypes[v.context_item_id]}
                   showVersion
                   className="px-4 py-2.5"
                 />

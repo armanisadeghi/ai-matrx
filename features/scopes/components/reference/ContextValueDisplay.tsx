@@ -14,7 +14,8 @@
  * in the same folder).
  */
 
-import { Ban, FileText } from "lucide-react";
+import type { ReactNode } from "react";
+import { Ban, FileText, Mail, Phone, ExternalLink } from "lucide-react";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import {
   MATRX_VERSION,
@@ -22,6 +23,8 @@ import {
 } from "@/features/matrx-envelope/envelope";
 import { cn } from "@/utils/cn";
 import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
+import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import type { ContextValueType } from "@/features/agent-context/types";
 import type { Json } from "@/types/database.types";
 
 export interface ContextValueDisplayCell {
@@ -29,6 +32,8 @@ export interface ContextValueDisplayCell {
   value_number?: number | null;
   value_boolean?: boolean | null;
   value_date?: string | null;
+  value_timestamp?: string | null;
+  value_time?: string | null;
   value_json?: Json | null;
   value_document_url?: string | null;
   /** Legacy pre-fence column — read-only, zero current rows use it anymore. */
@@ -37,6 +42,13 @@ export interface ContextValueDisplayCell {
 
 export interface ContextValueDisplayProps {
   value: ContextValueDisplayCell;
+  /**
+   * The item's declared type. Several types share `value_text` as storage
+   * (email/url/phone/color/markdown), so the column alone can't tell them
+   * apart — pass this to render them richly (mailto/link/swatch/rendered MD).
+   * Optional: without it, display falls back to column-based rendering.
+   */
+  valueType?: ContextValueType | null;
   emptyLabel?: string;
   className?: string;
 }
@@ -61,9 +73,114 @@ function EmptyState({
   );
 }
 
+/**
+ * Rich rendering keyed on the declared value_type. Returns `undefined` when the
+ * type has no special render (or the backing column is empty) so the caller
+ * falls back to plain column-based rendering.
+ */
+function renderTyped(
+  valueType: ContextValueType | null | undefined,
+  value: ContextValueDisplayCell,
+  className?: string,
+): ReactNode | undefined {
+  if (!valueType) return undefined;
+  const text = value.value_text?.trim() || "";
+
+  switch (valueType) {
+    case "email":
+      if (!text) return undefined;
+      return (
+        <a
+          href={`mailto:${text}`}
+          className={cn("inline-flex items-center gap-1 text-primary hover:underline", className)}
+        >
+          <Mail className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{text}</span>
+        </a>
+      );
+    case "url":
+      if (!text) return undefined;
+      return (
+        <a
+          href={text}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn("inline-flex items-center gap-1 text-primary hover:underline", className)}
+        >
+          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{text}</span>
+        </a>
+      );
+    case "phone":
+      if (!text) return undefined;
+      return (
+        <a
+          href={`tel:${text.replace(/[^\d+]/g, "")}`}
+          className={cn("inline-flex items-center gap-1 text-primary hover:underline", className)}
+        >
+          <Phone className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{text}</span>
+        </a>
+      );
+    case "color": {
+      if (!text) return undefined;
+      const isHex = /^#[0-9a-fA-F]{6}$/.test(text);
+      return (
+        <span className={cn("inline-flex items-center gap-1.5", className)}>
+          <span
+            className="h-4 w-4 shrink-0 rounded border border-border"
+            style={isHex ? { backgroundColor: text } : undefined}
+          />
+          <code className="font-mono text-xs">{text}</code>
+        </span>
+      );
+    }
+    case "markdown":
+      if (!text) return undefined;
+      return (
+        <div className={cn("prose-sm max-w-none", className)}>
+          <BasicMarkdownContent content={text} />
+        </div>
+      );
+    case "percent":
+      if (value.value_number == null) return undefined;
+      return <span className={className}>{value.value_number}%</span>;
+    case "datetime": {
+      if (!value.value_timestamp) return undefined;
+      const d = new Date(value.value_timestamp);
+      return (
+        <span className={className}>
+          {Number.isNaN(d.getTime()) ? value.value_timestamp : d.toLocaleString()}
+        </span>
+      );
+    }
+    case "time":
+      if (!value.value_time) return undefined;
+      return <span className={className}>{value.value_time}</span>;
+    case "currency": {
+      const j = value.value_json as { amount?: number; currency?: string } | null;
+      if (!j || typeof j !== "object" || j.amount == null) return undefined;
+      const currency = j.currency || "USD";
+      let formatted: string;
+      try {
+        formatted = new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency,
+        }).format(j.amount);
+      } catch {
+        formatted = `${j.amount} ${currency}`;
+      }
+      return <span className={className}>{formatted}</span>;
+    }
+    default:
+      return undefined;
+  }
+}
+
 /** Renders one context item cell — reference cells as live chips, everything else type-appropriately. */
 export function ContextValueDisplay({
   value,
+  valueType,
   emptyLabel = "No value set",
   className,
 }: ContextValueDisplayProps) {
@@ -84,6 +201,11 @@ export function ContextValueDisplay({
       </div>
     );
   }
+
+  // Type-driven rendering — several of these share value_text as storage, so the
+  // declared valueType is what distinguishes them.
+  const rendered = renderTyped(valueType, value, className);
+  if (rendered !== undefined) return rendered;
 
   if (value.value_text != null) {
     return (

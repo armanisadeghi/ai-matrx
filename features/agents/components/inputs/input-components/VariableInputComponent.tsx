@@ -16,6 +16,11 @@ import { DocumentVariableInput } from "./DocumentVariableInput";
 import { YoutubeVariableInput } from "./YoutubeVariableInput";
 import { PicklistVariableInput } from "./PicklistVariableInput";
 import {
+  ScalarVariableInput,
+  type ScalarInputKind,
+} from "./ScalarVariableInput";
+import { CurrencyVariableInput } from "./CurrencyVariableInput";
+import {
   isMediaVariableType,
   type VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
@@ -303,6 +308,36 @@ export function VariableInputComponent({
             step={customComponent?.step}
             variableName={formattedName}
             {...sharedProps}
+          />
+        );
+        break;
+
+      case "datetime":
+      case "time":
+      case "email":
+      case "url":
+      case "phone":
+      case "percent":
+      case "color":
+      case "markdown":
+        inputComponent = (
+          <ScalarVariableInput
+            kind={type as ScalarInputKind}
+            value={stringValue}
+            onChange={stringOnChange}
+            variableName={formattedName}
+            compact={compact}
+          />
+        );
+        break;
+
+      case "currency":
+        inputComponent = (
+          <CurrencyVariableInput
+            value={value}
+            onChange={onChange}
+            variableName={formattedName}
+            compact={compact}
           />
         );
         break;

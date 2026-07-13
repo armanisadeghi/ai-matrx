@@ -14,10 +14,16 @@
 import { cn } from "@/utils/cn";
 import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
 import type { ContextItemValue } from "@/features/scopes/types";
+import type { ContextValueType } from "@/features/agent-context/types";
 
 export interface ContextValueRowProps {
   value: ContextItemValue;
   label?: string;
+  /**
+   * The item's declared type — lets the display render email/url/phone/color/
+   * markdown/datetime/etc. richly (they can't be told apart from the cell alone).
+   */
+  valueType?: ContextValueType | null;
   /** Show the cell's version number at the row's trailing edge. */
   showVersion?: boolean;
   className?: string;
@@ -26,6 +32,7 @@ export interface ContextValueRowProps {
 export function ContextValueRow({
   value,
   label,
+  valueType,
   showVersion = false,
   className,
 }: ContextValueRowProps) {
@@ -40,7 +47,7 @@ export function ContextValueRow({
         {label ?? value.context_item_id.slice(0, 8)}
       </div>
       <div className="flex-1 break-words text-foreground">
-        <ContextValueDisplay value={value} />
+        <ContextValueDisplay value={value} valueType={valueType} />
       </div>
       {showVersion && (
         <div className="text-muted-foreground/60 shrink-0">

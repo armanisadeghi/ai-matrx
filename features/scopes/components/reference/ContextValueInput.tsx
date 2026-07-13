@@ -78,10 +78,19 @@ export function placeholderForType(
   switch (t) {
     case "number":
       return "Enter a number";
+    case "percent":
+      return "0–100";
     case "boolean":
       return "true / false";
     case "document":
+    case "url":
       return "https://...";
+    case "email":
+      return "name@example.com";
+    case "phone":
+      return "+1 555 123 4567";
+    case "color":
+      return "#000000";
     case "object":
     case "array":
       return "{ }";
@@ -89,6 +98,15 @@ export function placeholderForType(
       return fallback;
   }
 }
+
+/** value_types that render as a single native <input type=…> (like `date`). */
+const NATIVE_INPUT_TYPE: Partial<Record<ContextValueType, string>> = {
+  datetime: "datetime-local",
+  time: "time",
+  email: "email",
+  url: "url",
+  phone: "tel",
+};
 
 export function ContextValueInput({
   id,
@@ -185,6 +203,81 @@ export function ContextValueInput({
         style={{ fontSize: "16px" }}
         className={className}
       />
+    );
+  }
+
+  // datetime / time / email / url / phone — a single native input, like `date`.
+  // datetime-local wants "YYYY-MM-DDTHH:mm"; a stored ISO timestamp is sliced to fit.
+  if (NATIVE_INPUT_TYPE[valueType]) {
+    const raw = typeof value === "string" ? value : "";
+    const current =
+      valueType === "datetime" && raw.length > 16 ? raw.slice(0, 16) : raw;
+    return (
+      <Input
+        id={id}
+        type={NATIVE_INPUT_TYPE[valueType]}
+        value={current}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={(e) => onCommit?.(e.target.value)}
+        disabled={disabled}
+        placeholder={placeholder ?? placeholderForType(valueType)}
+        style={{ fontSize: "16px" }}
+        className={className}
+      />
+    );
+  }
+
+  if (valueType === "percent") {
+    const current =
+      typeof value === "number" ? String(value) : typeof value === "string" ? value : "";
+    return (
+      <div className={cn("relative", className)}>
+        <Input
+          id={id}
+          type="number"
+          min={0}
+          max={100}
+          value={current}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => onCommit?.(e.target.value)}
+          disabled={disabled}
+          placeholder={placeholder ?? "0–100"}
+          style={{ fontSize: "16px" }}
+          className="pr-7"
+        />
+        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+          %
+        </span>
+      </div>
+    );
+  }
+
+  if (valueType === "color") {
+    const current = typeof value === "string" ? value : "";
+    return (
+      <div className={cn("flex items-center gap-2", className)}>
+        <input
+          type="color"
+          value={/^#[0-9a-fA-F]{6}$/.test(current) ? current : "#000000"}
+          onChange={(e) => {
+            onChange(e.target.value);
+            onCommit?.(e.target.value);
+          }}
+          disabled={disabled}
+          aria-label={displayName ?? "Color"}
+          className="h-9 w-12 shrink-0 cursor-pointer rounded border border-border bg-transparent p-1"
+        />
+        <Input
+          id={id}
+          value={current}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => onCommit?.(e.target.value)}
+          placeholder="#000000"
+          disabled={disabled}
+          style={{ fontSize: "16px" }}
+          className="flex-1 font-mono"
+        />
+      </div>
     );
   }
 
