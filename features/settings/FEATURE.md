@@ -132,6 +132,7 @@ Path:
 - **Any in-shell component that pushes a route MUST go through `useSettingsNavigate()` (or `useSettingsTabNavigate()` for tab switches).** Calling `router.push("/somewhere")` directly inside a tab silently dismisses the settings window and yanks the user out of the surface — the shell isn't aware the route changed, the overlay just blinks out and the new page renders bare. Cmd/Ctrl/middle-click "open in new tab" must keep working; the hook handles it. `SettingsLink`, `OrganizationCard`, and `UserContentTemplateManager` are the reference consumers. The Boy-scout rule applies: if you encounter a stray `router.push` inside a settings-mounted component while working in a file, route it through the hook in the same change.
 - **Writing through `useSetting` for `windowManager` requires an action-only key.** `toggleHidden`, `restoreAll` — no `read` roundtrip. For the full `minimizeAll(payload)` write you need viewport dims, so call `useAppDispatch()` directly with `minimizeAll(...)` (see `WindowsTab`).
 - **`persistence: "local-only"` and `persistence: "session"` are flags, not final states.** They document which slices still need a sync policy.
+- **A `userPreferences` SHAPE CHANGE ships a paired backfill — no exceptions.** Retiring/renaming/re-typing a persisted field means old blobs (IDB, the localStorage mirror, and the `users.user_preferences` DB rows) still carry the old value. Stripping it only in Redux at load makes the console warn on *every* load and never heals dormant users. The rule: (1) add the normalization rule to **both** the TS `sanitizeLoadedPreferences` (`userPreferencesSlice.ts`) **and** the DB `users.normalize_preferences_jsonb` (`migrations/user_preferences_legacy_drift_backfill.sql`) in the SAME change; (2) the migration reruns `heal_user_preferences_drift()` so live rows are backfilled at deploy; (3) the weekly `heal-user-preferences-drift` pg_cron job + the `user-preferences-legacy-drift` data-integrity check (`lib/integrity/checks.ts`, visible at `/administration/data-integrity`) keep it at zero and scream if it ever isn't. All load boundaries route through `sanitizeLoadedPreferences` — never a subset of the individual strips, or a boundary silently re-persists what it missed.
 - **The legacy `userPreferences` modal overlay id still resolves to the new shell.** Kept so nothing downstream has to change. Remove the modal registry entry once every caller has migrated to `userPreferencesWindow`.
 - **Do NOT regress on `components/user-preferences/AiModelsPreferences.tsx`.** It's kept on purpose — it's the only remaining legacy `*Preferences.tsx` still referenced (by `AiModelsTab`). Deleting it breaks the shell.
 - **Category tabs (e.g. `id: "general"`, `id: "ai"`) have `component: Placeholder`.** The tree's folder nodes only expand/collapse, they don't activate. The placeholder is never rendered for them; it's still required to satisfy the type.
@@ -171,6 +172,15 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-07-13` — **Shape-drift backfill system (no more console-flooding "self-heals on next save").**
+  25/26 `users.user_preferences` rows carried retired shape values (legacy `defaultModel` seed
+  constants; superseded `videoConference` audio fields). The FE stripped them on every load with a
+  loud warn but never wrote back. Fix: one canonical `sanitizeLoadedPreferences` (TS) mirrored by
+  `users.normalize_preferences_jsonb` (SQL); `heal_user_preferences_drift()` backfilled all rows
+  (0 drifted remain) + a weekly pg_cron job; the `user-preferences-legacy-drift` data-integrity
+  check reports drift for all users at `/administration/data-integrity`. New invariant above codifies
+  the paired-backfill rule. `DeferredShellData` now self-heals a stale row on load (was: only on the
+  user's next manual save).
 - `2026-07-12` — **Default-model prefs: null = "Platform default" (D41 item 3).**
   `prompts/textGeneration/imageGeneration/aiModels.defaultModel` are `string | null`; the seeds are
   null and the legacy seeded constants ("GPT-4o", "standard", the GPT-4.1-Mini uuid) are folded to
