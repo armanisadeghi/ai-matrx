@@ -46,7 +46,11 @@ export function useActiveOrganizationPicker() {
     activeOrgName,
     promptForOrg,
     organizations,
-    loading: status === "idle" || status === "loading",
+    // Only "loading" once we've actually fired (i.e. authenticated). An
+    // anonymous visitor never dispatches ensureScopeTree, so treeStatus stays
+    // 'idle' forever — reporting that as loading would spin the picker
+    // indefinitely. Not authenticated = not loading, nothing to pick.
+    loading: isAuthenticated && (status === "idle" || status === "loading"),
     loadFailed: status === "error",
     isDefault,
     selectOrganization,

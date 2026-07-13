@@ -923,8 +923,11 @@ export const initializeUserPreferencesState = (
     assistant: { ...defaultPreferences.assistant, ...preferences.assistant },
     email: { ...defaultPreferences.email, ...preferences.email },
     videoConference: {
+      // `preferences` already went through sanitizeLoadedPreferences above —
+      // the superseded audio fields are gone. No second strip here (mirrors
+      // the REHYDRATE reducer; a per-boundary strip is the drift smell).
       ...defaultPreferences.videoConference,
-      ...stripSupersededVideoConferenceAudio(preferences.videoConference),
+      ...preferences.videoConference,
     },
     photoEditing: {
       ...defaultPreferences.photoEditing,
