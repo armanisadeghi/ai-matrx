@@ -72,6 +72,37 @@ async function fetchSurfaceExecutionMode(
 }
 
 /**
+ * Launch gate: refuse the (agent, model) combination when the model's
+ * interaction mode has no conversational-launch behavior. Sync — reads only
+ * Redux state, so it works on EVERY launch path regardless of whether a
+ * surface name is known (the pickRuntime check alone was unreachable from
+ * /chat, the runner, cx-chat bootstrap, and all shortcut launches, which
+ * carry no surfaceName). Cold state (agent/model not hydrated yet) passes —
+ * see the cold-registry note in TASK-003's report.
+ */
+export function assertModelInteractionLaunchable(
+  getState: () => RootState,
+  agentId: string,
+): { ok: true } | { error: string } {
+  const state = getState();
+  const agent = state.agentDefinition.agents?.[agentId];
+  const modelId = agent?.modelId;
+  if (!modelId) return { ok: true };
+  const model = selectModelById(state, modelId);
+  if (!model) return { ok: true };
+  const caps = parseCapabilities(model.capabilities, {
+    modelId,
+    modelName: model.name ?? undefined,
+  });
+  if (caps.interaction === "extraction") {
+    return {
+      error: `"${model.name ?? modelId}" is an extraction model (NER/classification) and can't run as a chat agent.`,
+    };
+  }
+  return { ok: true };
+}
+
+/**
  * Resolves the runtime for `(agentId, surfaceName)`. Pure-async — does
  * its own DB call for the surface row if needed. Never throws — failures
  * collapse into a `{ runtime: "python-stream" }` fallback so an unrelated
@@ -96,6 +127,15 @@ export async function resolveAgentRuntime(
     // Model not in the registry cache — assume turn-based. The launcher
     // already fetches the model later; we're being defensive here.
     caps = { input: ["text"], output: ["text"], features: [], interaction: "turn", multilingual: false };
+  }
+
+  // Extraction models are refused BEFORE the no-surfaceName early return —
+  // most launch paths (/chat, runner, cx-chat, shortcuts) have no surface
+  // name, and the pickRuntime check below is unreachable for them.
+  if (caps.interaction === "extraction") {
+    return {
+      error: `"${model?.name ?? modelId}" is an extraction model (NER/classification) and can't run as a chat agent.`,
+    };
   }
 
   // Without a surface name we can't pick a non-default runtime. Behave as today.

@@ -30,7 +30,7 @@ import {
 } from "@/features/agents/utils/scope-mapping";
 import { toast } from "sonner";
 import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
-import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/agent-surface-bindings.service";
+import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import {
   mergeValueMappingLayers,
   type MappingLayer,
@@ -60,7 +60,10 @@ import { selectRequest } from "../active-requests/active-requests.selectors";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
-import { resolveAgentRuntime } from "@/features/agents/runtime/runtime-resolver";
+import {
+  assertModelInteractionLaunchable,
+  resolveAgentRuntime,
+} from "@/features/agents/runtime/runtime-resolver";
 import { launchRealtimeSession } from "@/features/agents/runtime/realtime/launchRealtimeSession.thunk";
 import { isRealtimeRuntime } from "@/features/agents/runtime/pickRuntime";
 import {
@@ -521,6 +524,20 @@ export const launchAgentExecution = createAsyncThunk<
 
     if (!shortcut) {
       throw new Error(`Shortcut ${shortcutId} not found in Redux`);
+    }
+
+    // Extraction-model refusal for the SHORTCUT path (TASK-003). Shortcut
+    // launches never carry an agentId, so the Step 0.6 resolveAgentRuntime
+    // gate above (`if (agentId)`) does not cover them — refuse here, before
+    // any conversation is minted.
+    if (shortcut.agentId) {
+      const launchable = assertModelInteractionLaunchable(
+        () => getState() as RootState,
+        shortcut.agentId,
+      );
+      if ("error" in launchable) {
+        throw new Error(launchable.error);
+      }
     }
 
     resolvedDisplayMode =

@@ -49,6 +49,7 @@ import {
   logProjectCreateAiStage,
   warnProjectCreateAi,
 } from "@/features/projects/debug/projectCreateAiDebug";
+import { toast } from "sonner";
 
 // =============================================================================
 // ConversationInvocation type guard
@@ -383,6 +384,14 @@ export function useAgentLauncher(
         } else {
           console.error("Failed to create agent conversation:", err);
         }
+        // A launch refusal (e.g. an extraction model that can't run as a
+        // chat agent) previously died in the console, leaving a dead runner
+        // UI — surface the reason to the user.
+        toast.error(
+          err instanceof Error && err.message
+            ? err.message
+            : "Failed to start the agent conversation.",
+        );
       });
 
     return () => {

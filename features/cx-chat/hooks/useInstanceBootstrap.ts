@@ -52,6 +52,7 @@ import {
 } from "@/features/agents/redux/agent-definition/thunks";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { toast } from "sonner";
 import { DEFAULT_AGENT_ID } from "@/features/cx-chat/components/agent/local-agents";
 import type { RootState } from "@/lib/redux/store";
 
@@ -178,6 +179,13 @@ export function useInstanceBootstrap() {
         if (launchAgentExecution.fulfilled.match(result)) {
           resolvedId = result.payload.conversationId;
           instanceByAgentId.current.set(agentId, resolvedId);
+        } else if (launchAgentExecution.rejected.match(result)) {
+          // A refused launch (e.g. an extraction model that can't run as a
+          // chat agent) was silently swallowed here — say why the chat
+          // never appeared.
+          toast.error(
+            result.error.message ?? "Failed to start the agent conversation.",
+          );
         }
       }
 
