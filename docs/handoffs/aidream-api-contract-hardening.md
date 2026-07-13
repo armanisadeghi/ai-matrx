@@ -64,18 +64,21 @@ to prevent.
      ones are the ones worth a typed terminal payload (see item 3); the rest are
      noise. Do NOT blanket-fix; target the FE-consumed streamed responses.
 
-6. **`*Record` response schemas are under-specified vs the real DB rows.**
-   `FolderRecord` / `PermissionRecord` / `ShareLinkRecord` / `FileVersionRecord`
-   (and `TrashListResponse` / `StorageUsageResponse`) publish all-optional fields
-   plus an `additionalProperties`/index signature, and omit real columns
-   (`created_by`, `organization_id`, `is_system`, …). The frontend consequently
-   types these responses as concrete Supabase DB-Rows and cannot bind them to the
-   contract without WEAKENING the types and breaking redux-thunk consumers — so
-   the files-API `list*`/`create*`/`patch*`/`get*` calls are stuck on the raw
-   client. Tighten these Pydantic response models to the actual DB columns
-   (required where the DB is NOT NULL, drop the index signature). Then the FE
-   files-API response bindings unblock. Verified: `POST /folders` returns
-   `FolderRecord` but the FE relies on `CloudFolderRow` shape.
+6. **Some `*Record` response schemas are under-specified vs the real DB rows.**
+   Verified shapes (2026-07-12): `FolderRecord` is actually CLEAN (required
+   `id`/`owner_id`/`folder_path`/`folder_name`, no `additionalProperties`) — the
+   FE just types folder responses as the Supabase `CloudFolderRow` via
+   `dbRowToCloudFolder`; bindable FE-side with a small mapper tweak. The genuinely
+   loose ones are **`PermissionRecord` and `ShareLinkRecord`**: `required: null`
+   (ALL fields optional) + `additionalProperties: true` (index signature) — almost
+   certainly `model_config = ConfigDict(extra='allow')` or an untyped dict build.
+   `TrashListResponse` / `StorageUsageResponse` also mark real fields optional.
+   The FE therefore types these as concrete DB-Rows and can't bind without
+   WEAKENING the types + breaking redux-thunk consumers, so `permissions.ts` /
+   `share-links.ts` / `versions.ts` list/create responses stay raw. Tighten those
+   Pydantic response models (required where the DB is NOT NULL, drop `extra`/the
+   index signature) and the FE bindings unblock. Decide per model which columns
+   are guaranteed; watch extension/mobile consumers (they read these too).
 
 7. **`PATCH /folders` ignores `folder_name`/`parent_id` (already worked around FE-side).**
    The FE was sending those (rename/move) and the model silently dropped them
