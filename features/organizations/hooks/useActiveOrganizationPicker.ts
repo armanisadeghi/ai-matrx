@@ -12,6 +12,7 @@ import {
   selectOrganizationName,
   selectShouldPromptForOrganization,
 } from "@/lib/redux/slices/appContextSlice";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
@@ -24,10 +25,17 @@ export function useActiveOrganizationPicker() {
   const promptForOrg = useAppSelector(selectShouldPromptForOrganization);
   const { organizations, status } = useScopeTree();
   const { isDefault } = useDefaultOrganization();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   useEffect(() => {
+    // Gate on auth: ensureScopeTree no-ops (and stays 'idle') until a user id
+    // exists, so we only fire once authenticated. Depending on isAuthenticated
+    // means this re-fires when auth hydrates async on (public) routes
+    // (usePublicAuthSync lands ~100ms after mount) — without it, the org
+    // picker on a public route would stay empty for a logged-in user.
+    if (!isAuthenticated) return;
     void dispatch(ensureScopeTree({}));
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated]);
 
   const selectOrganization = (id: string, name: string) => {
     dispatch(chooseActiveOrganization({ id, name }));

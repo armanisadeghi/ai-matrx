@@ -16,6 +16,7 @@ import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import { getUserId } from "@/utils/auth/getUserId";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -28,6 +29,15 @@ export function ensureScopeTree(
   return async (dispatch, getState) => {
     const { refresh = false } = opts;
     const state = getState().scopesTree;
+
+    // No user yet = expected state, NOT an error. Every product surface fires
+    // this on mount (the org picker, context pickers, notes, …); firing before
+    // auth hydrates — a genuine race on (public) routes where auth lands async,
+    // or a real anonymous visitor — must NOT throw "Not authenticated" and
+    // stamp treeStatus:'error'. No-op and stay 'idle'; the caller's auth-gated
+    // effect re-fires this once a user id lands. Mirrors the canonical
+    // getUserId()-null guard (activeOrgBootstrap.ts, audioChunkJournal.ts).
+    if (!getUserId()) return;
 
     if (!refresh && state.treeStatus === "ready") return;
     if (state.treeStatus === "loading" && inFlight) return inFlight;
