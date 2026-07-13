@@ -287,15 +287,29 @@ export function NoteSidebar({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchFocusedRef = useRef(false);
 
-  // ── Auto-expand folder of active note ──────────────────────────────
-  // Skipped in "default" mode — recents at the top surface the active note,
-  // and the user explicitly wants folders to start collapsed there.
+  // ── Reveal + center the active note ────────────────────────────────
+  // ONE effect keyed on the active tab (and the grouping mode, which changes
+  // where the row lives): expand the folder that holds it, open the "Shared
+  // with me" section if it lives there, then smooth-scroll it to the vertical
+  // center of the list. Deliberately does NOT depend on `allNotes` — note-list
+  // churn (autosave, realtime) must never re-scroll the sidebar; only a real
+  // active-tab change does. `allNotes`/`sharedNotes` are read through refs so
+  // the lookup stays current without widening the dependency set.
+  const allNotesRef = useRef(allNotes);
+  allNotesRef.current = allNotes;
+  const sharedNotesRef = useRef(sharedNotes);
+  sharedNotesRef.current = sharedNotes;
+
   useEffect(() => {
-    if (!activeTabId) return;
-    if (groupBy === "default") return;
-    const note = allNotes.find((n) => n.id === activeTabId);
-    const folderName = note?.folder_name;
-    if (folderName) {
+    if (!activeTabId) return undefined;
+
+    const isShared = sharedNotesRef.current.some((n) => n.id === activeTabId);
+    if (isShared) {
+      // Ensure the shared section is open so the active row can be seen.
+      setSharedOpen(true);
+    } else if (groupBy === "folder" || groupBy === "default") {
+      const note = allNotesRef.current.find((n) => n.id === activeTabId);
+      const folderName = note?.folder_name || "Uncategorized";
       setExpandedFolders((prev) => {
         if (prev.has(folderName)) return prev;
         const next = new Set(prev);
@@ -303,16 +317,40 @@ export function NoteSidebar({
         return next;
       });
     }
-  }, [activeTabId, allNotes, groupBy]);
 
-  // ── Auto-scroll active note into view ──────────────────────────────
-  useEffect(() => {
-    if (!activeTabId || !folderTreeRef.current) return undefined;
-    const el = folderTreeRef.current.querySelector(
-      `[data-note-id="${activeTabId}"]`,
-    );
-    el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [activeTabId]);
+    // Scroll after the DOM settles. A just-triggered folder expansion paints
+    // on a later frame, so poll a few frames until the row exists, then center
+    // it within the list container only (never scrolls ancestors/the page).
+    let raf = 0;
+    let tries = 0;
+    const tryScroll = () => {
+      const container = folderTreeRef.current;
+      if (!container) return;
+      const el = container.querySelector<HTMLElement>(
+        `[data-note-id="${activeTabId}"]`,
+      );
+      if (el) {
+        const cRect = container.getBoundingClientRect();
+        const eRect = el.getBoundingClientRect();
+        const rowCenter =
+          eRect.top - cRect.top + container.scrollTop + eRect.height / 2;
+        // Clamp to [0, max]: a row too near the top can't be centered and so
+        // stays ABOVE center (never below it), exactly as required.
+        const target = Math.max(
+          0,
+          Math.min(
+            rowCenter - container.clientHeight / 2,
+            container.scrollHeight - container.clientHeight,
+          ),
+        );
+        container.scrollTo({ top: target, behavior: "smooth" });
+      } else if (tries++ < 12) {
+        raf = requestAnimationFrame(tryScroll);
+      }
+    };
+    raf = requestAnimationFrame(tryScroll);
+    return () => cancelAnimationFrame(raf);
+  }, [activeTabId, groupBy]);
 
   // ── Auto-scroll first search result into view ─────────────────────
   useEffect(() => {
