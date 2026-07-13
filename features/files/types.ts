@@ -876,25 +876,21 @@ export interface DeactivateShareLinkArg {
  * Path-style is preferred because the backend creates intermediate folders
  * atomically and idempotently, matching upload's auto-create semantics.
  */
-export interface CreateFolderRequest {
-  /** Path style: "Images/Chat/2026". Backend creates any missing segments. */
-  folder_path?: string;
-  /** Explicit name (used when `parent_id` is set). */
-  folder_name?: string;
-  /** Required when using `folder_name`; null = root. */
-  parent_id?: string | null;
-  visibility?: Visibility;
-  metadata?: Record<string, unknown> | null;
-}
+/**
+ * Body for `POST /folders`. Path-style ONLY — the backend creates any missing
+ * segments and REJECTS `{folder_name, parent_id}` (`validation_error`).
+ * DERIVED from the contract so the phantom name/parent fields can't be sent.
+ */
+export type CreateFolderRequest = components["schemas"]["CreateFolderRequest"];
 
-/** Body for `PATCH /folders/{id}`. */
-export interface FolderPatchRequest {
-  folder_name?: string;
-  /** Move: new parent folder id, or null to move to root. */
-  parent_id?: string | null;
-  visibility?: Visibility;
-  metadata?: Record<string, unknown> | null;
-}
+/**
+ * Body for `PATCH /folders/{id}`. Rename AND move are expressed as the target
+ * `folder_path` — the server renames, reparents, and cascades descendants from
+ * it. The backend SILENTLY IGNORES `folder_name`/`parent_id` (they are not on
+ * the model), so sending them made rename/move no-op server-side. DERIVED from
+ * the contract to make that mistake a compile error.
+ */
+export type FolderPatchRequest = components["schemas"]["PatchFolderRequest"];
 
 // ---------------------------------------------------------------------------
 // 10c. Bulk operations (Python P-7 contract)

@@ -669,12 +669,35 @@ export const updateFolder = createAsyncThunk<
     );
   }
 
+  // The backend PATCH /folders honors folder_path / visibility / metadata ONLY;
+  // it silently ignores folder_name / parent_id (same as POST /folders, which
+  // rejects them). Rename AND move must therefore be expressed as the TARGET
+  // folder_path — the server renames, reparents, and cascades descendants from
+  // it. Sending folder_name/parent_id no-op'd server-side (rename/move reverted
+  // on refresh). Compute the target path from the new name + new parent's path.
+  let targetFolderPath: string | undefined;
+  if (patch.folderName !== undefined || patch.parentId !== undefined) {
+    const newName = patch.folderName ?? folder.folderName;
+    const newParentId =
+      patch.parentId !== undefined ? patch.parentId : folder.parentId;
+    if (newParentId) {
+      const newParent = state.cloudFiles.foldersById[newParentId];
+      if (!newParent) {
+        throw new Error(
+          `Cannot move folder: new parent ${newParentId} not found in local state.`,
+        );
+      }
+      targetFolderPath = `${newParent.folderPath}/${newName}`;
+    } else {
+      targetFolderPath = newName;
+    }
+  }
+
   try {
     const { data: row } = await Folders.patchFolder(
       arg.folderId,
       {
-        folder_name: patch.folderName,
-        parent_id: patch.parentId,
+        folder_path: targetFolderPath,
         visibility: patch.visibility,
         metadata: patch.metadata ?? null,
       },
