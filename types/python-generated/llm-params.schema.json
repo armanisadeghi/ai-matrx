@@ -786,6 +786,18 @@
       "default": null,
       "title": "Model"
     },
+    "offering_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Offering Id"
+    },
     "max_output_tokens": {
       "anyOf": [
         {

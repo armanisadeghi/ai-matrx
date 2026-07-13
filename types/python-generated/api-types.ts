@@ -2589,6 +2589,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/broker/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mint Token */
+        post: operations["mint_token_broker_tokens_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/broker/gateway/anthropic/v1/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Anthropic Messages */
+        post: operations["anthropic_messages_broker_gateway_anthropic_v1_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/user-secrets/": {
         parameters: {
             query?: never;
@@ -4611,30 +4645,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16550,6 +16560,60 @@ export interface components {
             /** Files Count */
             files_count: number;
         };
+        /**
+         * BrokeredCredential
+         * @description The one envelope for every brokered credential, regardless of mode.
+         *
+         *     ``credential_mode`` tells the client what it's holding:
+         *     - ``native_ephemeral`` — a real provider token (the provider minted it);
+         *       send it straight to ``endpoint`` on the provider's own wire protocol.
+         *     - ``proxied`` — a first-party scoped JWT; send provider-shaped requests
+         *       to ``endpoint`` (our gateway), which injects the real key server-side.
+         *
+         *     ``endpoint`` is always data, never hardcoded client-side — that is what
+         *     lets the proxied data plane move (aidream today, an edge worker later)
+         *     without a client migration.
+         */
+        BrokeredCredential: {
+            /**
+             * Credential Mode
+             * @enum {string}
+             */
+            credential_mode: "native_ephemeral" | "proxied";
+            /** Audience */
+            audience: string;
+            /** Token */
+            token: string;
+            /** Expires At */
+            expires_at: number;
+            /** Endpoint */
+            endpoint: string;
+            /** Protocol */
+            protocol: string;
+            /** Model */
+            model?: string | null;
+            grant: components["schemas"]["BrokeredGrant"];
+        };
+        /**
+         * BrokeredGrant
+         * @description What was granted — embedded in every credential for client display
+         *     and debugging; the authoritative copy lives in the signed token.
+         */
+        BrokeredGrant: {
+            /** User Id */
+            user_id: string;
+            /** Audience */
+            audience: string;
+            /**
+             * Tier Policy
+             * @enum {string}
+             */
+            tier_policy: "none" | "guest" | "mid";
+            /** Scopes */
+            scopes?: string[];
+            /** Expires At */
+            expires_at: number;
+        };
         /** BuildOnceResponse */
         BuildOnceResponse: {
             /** Name */
@@ -17099,6 +17163,8 @@ export interface components {
         ChatRequest: {
             /** Model */
             model?: string | null;
+            /** Offering Id */
+            offering_id?: string | null;
             /** Max Output Tokens */
             max_output_tokens?: number | null;
             /** Temperature */
@@ -19382,33 +19448,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -23202,6 +23241,8 @@ export interface components {
         LLMParams: {
             /** Model */
             model?: string | null;
+            /** Offering Id */
+            offering_id?: string | null;
             /** Max Output Tokens */
             max_output_tokens?: number | null;
             /** Temperature */
@@ -24386,6 +24427,29 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * MintTokenRequest
+         * @description Body of ``POST /broker/tokens``.
+         *
+         *     ``tier_policy`` is REQUIRED with no default, by design: every mint must
+         *     state explicitly whether model-tier fallback applies ("guest" | "mid")
+         *     or explicitly does not ("none"). An unstated policy is a bug.
+         */
+        MintTokenRequest: {
+            /** Audience */
+            audience: string;
+            /**
+             * Tier Policy
+             * @enum {string}
+             */
+            tier_policy: "none" | "guest" | "mid";
+            /** Ttl Seconds */
+            ttl_seconds?: number | null;
+            /** Model */
+            model?: string | null;
+            /** Scopes */
+            scopes?: string[];
         };
         /** MissingBinding */
         MissingBinding: {
@@ -36842,6 +36906,59 @@ export interface operations {
             };
         };
     };
+    mint_token_broker_tokens_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MintTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokeredCredential"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    anthropic_messages_broker_gateway_anthropic_v1_messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_secrets_user_secrets__get: {
         parameters: {
             query?: {
@@ -40544,41 +40661,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -6381,6 +6381,68 @@
         }
       }
     },
+    "/broker/tokens": {
+      "post": {
+        "tags": [
+          "Token Broker",
+          "Token Broker"
+        ],
+        "summary": "Mint Token",
+        "operationId": "mint_token_broker_tokens_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MintTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrokeredCredential"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/broker/gateway/anthropic/v1/messages": {
+      "post": {
+        "tags": [
+          "Token Broker",
+          "Token Broker"
+        ],
+        "summary": "Anthropic Messages",
+        "operationId": "anthropic_messages_broker_gateway_anthropic_v1_messages_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/user-secrets/": {
       "get": {
         "tags": [
@@ -12123,66 +12185,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -45524,6 +45526,105 @@
         ],
         "title": "BridgeQuotaResponse"
       },
+      "BrokeredCredential": {
+        "properties": {
+          "credential_mode": {
+            "type": "string",
+            "enum": [
+              "native_ephemeral",
+              "proxied"
+            ],
+            "title": "Credential Mode"
+          },
+          "audience": {
+            "type": "string",
+            "title": "Audience"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "protocol": {
+            "type": "string",
+            "title": "Protocol"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "grant": {
+            "$ref": "#/components/schemas/BrokeredGrant"
+          }
+        },
+        "type": "object",
+        "required": [
+          "credential_mode",
+          "audience",
+          "token",
+          "expires_at",
+          "endpoint",
+          "protocol",
+          "grant"
+        ],
+        "title": "BrokeredCredential",
+        "description": "The one envelope for every brokered credential, regardless of mode.\n\n``credential_mode`` tells the client what it's holding:\n- ``native_ephemeral`` — a real provider token (the provider minted it);\n  send it straight to ``endpoint`` on the provider's own wire protocol.\n- ``proxied`` — a first-party scoped JWT; send provider-shaped requests\n  to ``endpoint`` (our gateway), which injects the real key server-side.\n\n``endpoint`` is always data, never hardcoded client-side — that is what\nlets the proxied data plane move (aidream today, an edge worker later)\nwithout a client migration."
+      },
+      "BrokeredGrant": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "audience": {
+            "type": "string",
+            "title": "Audience"
+          },
+          "tier_policy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "guest",
+              "mid"
+            ],
+            "title": "Tier Policy"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "audience",
+          "tier_policy",
+          "expires_at"
+        ],
+        "title": "BrokeredGrant",
+        "description": "What was granted — embedded in every credential for client display\nand debugging; the authoritative copy lives in the signed token."
+      },
       "BuildOnceResponse": {
         "properties": {
           "name": {
@@ -47004,6 +47105,17 @@
               }
             ],
             "title": "Model"
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
           },
           "max_output_tokens": {
             "anyOf": [
@@ -53883,61 +53995,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -64096,6 +64153,17 @@
             ],
             "title": "Model"
           },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
+          },
           "max_output_tokens": {
             "anyOf": [
               {
@@ -68009,6 +68077,59 @@
         "type": "object",
         "title": "MessageUpdate",
         "description": "Fields the client can edit on an existing ``cx_message`` row.\n\nEvery field is optional — only fields the caller actually sets are\nwritten to the DB. ``content`` accepts the same structured JSON the\nserver would have written (list of parts) — callers that want to\nedit a simple text message should still send the list form."
+      },
+      "MintTokenRequest": {
+        "properties": {
+          "audience": {
+            "type": "string",
+            "title": "Audience"
+          },
+          "tier_policy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "guest",
+              "mid"
+            ],
+            "title": "Tier Policy"
+          },
+          "ttl_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Seconds"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "audience",
+          "tier_policy"
+        ],
+        "title": "MintTokenRequest",
+        "description": "Body of ``POST /broker/tokens``.\n\n``tier_policy`` is REQUIRED with no default, by design: every mint must\nstate explicitly whether model-tier fallback applies (\"guest\" | \"mid\")\nor explicitly does not (\"none\"). An unstated policy is a bug."
       },
       "MissingBinding": {
         "properties": {

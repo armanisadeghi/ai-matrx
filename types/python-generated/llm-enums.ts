@@ -57,6 +57,7 @@ export const TTS_QUALITY_OPTIONS = ['high_quality', 'fast'] as const satisfies r
 
 export const LLM_PARAMS_KEYS = [
     'model',
+    'offering_id',
     'max_output_tokens',
     'temperature',
     'top_p',

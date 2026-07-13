@@ -348,7 +348,7 @@ Hard rules: no JSX prop spread in `features/overlays/OverlayController.tsx`; no 
 
 ## Cross-Repo — Token Broker (scoped short-lived credentials)
 
-**A client needing temporary privileged reach (provider realtime sessions, direct provider calls) mints a brokered credential from aidream `POST /api/broker/tokens` — NEVER holds a long-lived provider key.** This repo must build the client credential primitive (typed envelope, one broker client, in-memory refresh-ahead cache, mode dispatch) + a `token-broker-client` repo skill. Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/token-broker/FEATURE.md` — read it before touching this feature in ANY repo.
+**A client needing temporary privileged reach (provider realtime sessions, direct provider calls) mints a brokered credential from aidream `POST /api/broker/tokens` — NEVER holds a long-lived provider key.** The client primitive lives at `lib/api/broker/` (typed envelope, mint client, refresh-ahead cache, mode dispatch, hooks) — **invoke the `token-broker-client` skill** before wiring any provider connection from client code. Contract: [`lib/api/broker/FEATURE.md`](./lib/api/broker/FEATURE.md); cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/token-broker/FEATURE.md`. Test harness: `/demos/token-broker`.
 
 ---
 
