@@ -97,6 +97,9 @@ const initialState: ModelRegistryState = {
 // Sourced from the ai.model_public view, which resolves the maker name from the
 // provider_id FK (the dropped free-text `provider` column is never read).
 // The view's columns are all nullable; the thunk normalizes id/name before use.
+// `is_primary` + `capabilities` ride along so the platform-default resolver
+// (features/ai-models/redux/platformDefaultModel.ts) works on options-level
+// records — the SSR shell hydrate path already carries them via `md.*`.
 type ModelOptionRow = {
   id: string;
   name: string;
@@ -104,6 +107,8 @@ type ModelOptionRow = {
   maker: string | null;
   cost_rating: number | null;
   speed_rating: number | null;
+  is_primary: boolean | null;
+  capabilities: Json | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -152,7 +157,9 @@ export const fetchModelOptions = createAsyncThunk(
       const { data, error } = await supabase
         .schema("ai")
         .from("model_public")
-        .select("id, name, common_name, maker, cost_rating, speed_rating")
+        .select(
+          "id, name, common_name, maker, cost_rating, speed_rating, is_primary, capabilities",
+        )
         .in("id", routableIds)
         .order("common_name", { ascending: true, nullsFirst: false });
       if (error) throw error;
@@ -169,6 +176,8 @@ export const fetchModelOptions = createAsyncThunk(
             maker: r.maker,
             cost_rating: r.cost_rating,
             speed_rating: r.speed_rating,
+            is_primary: r.is_primary,
+            capabilities: r.capabilities,
           }),
         );
     } catch (err: unknown) {
