@@ -3,7 +3,6 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
-import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { metadata } from "./config/metadata";
 import { viewport } from "./config/viewport";
@@ -78,17 +77,22 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         data-lpignore="true"
         data-form-type="other"
       >
-        <Suspense>
-          {children}
-          <Toaster />
-          <Sonner />
-          {/* Consent-based new-version prompt + post-boot stale-chunk guard.
+        {/* NO Suspense around {children} here. A root boundary puts EVERY page
+            in a streamed hole: the shell flushes with status 200 before any
+            page-level notFound()/redirect can run, turning every missing
+            record into a soft-404 (D36). The boundary that used to sit here
+            was a leftover from the removed PostHogProvider (useSearchParams).
+            Routes that want streaming declare their own loading.tsx/Suspense
+            BELOW their existence checks. */}
+        {children}
+        <Toaster />
+        <Sonner />
+        {/* Consent-based new-version prompt + post-boot stale-chunk guard.
                         Bakes THIS deployment's id in server-side so the client can
                         compare against /api/version. Never auto-refreshes. */}
-          <NewVersionWatcher
-            deploymentId={process.env.VERCEL_DEPLOYMENT_ID ?? null}
-          />
-        </Suspense>
+        <NewVersionWatcher
+          deploymentId={process.env.VERCEL_DEPLOYMENT_ID ?? null}
+        />
         {/* Glass portal layer — lives outside all content stacking contexts.
                     NO position, NO z-index, NO transform, NO overflow, NO filter here — ever.
                     Children (dock, panels) are position:fixed themselves.
