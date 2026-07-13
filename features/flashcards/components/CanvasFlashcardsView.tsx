@@ -9,6 +9,13 @@ import {
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useFlashcardStudy } from "../data/useFlashcardStudy";
+import { MatchingCardPlayer } from "./study/MatchingCardPlayer";
+import {
+  asCardKind,
+  CARD_KIND,
+  matchingPairs,
+  studyFaces,
+} from "../utils/cardVariants";
 import type { ReviewResult } from "../types";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
@@ -261,22 +268,35 @@ export function CanvasFlashcardsView({
         </div>
       )}
 
-      {/* Single-card study surface — flip + self-grade (FlashcardItem owns
-          flip + grade buttons; grading funnels through the study spine). */}
+      {/* Single-card study surface — matching branches to the tap-to-pair
+          player (self-grades on completion); cloze/basic flip via FlashcardItem
+          with occluded/revealed faces (studyFaces — never raw `{{c1::…}}`
+          markup). Both funnel grading through the study spine. */}
       <div className="p-3">
-        <FlashcardItem
-          key={`fc-card-${current.id}`}
-          front={current.front}
-          back={current.back}
-          index={currentIndex}
-          layoutMode="list"
-          flipped={isFlipped}
-          onFlipToggle={flip}
-          onReview={
-            grading ? undefined : (_cardIndex, result) => handleGrade(result)
-          }
-          lastResult={resultsByCard[current.id] ?? null}
-        />
+        {asCardKind(current.card_kind) === CARD_KIND.matching ? (
+          <MatchingCardPlayer
+            key={`fc-match-${current.id}`}
+            cardId={current.id}
+            prompt={current.front}
+            pairs={matchingPairs(current)}
+            disabled={grading}
+            onComplete={(result) => handleGrade(result)}
+          />
+        ) : (
+          <FlashcardItem
+            key={`fc-card-${current.id}`}
+            front={studyFaces(current).front}
+            back={studyFaces(current).back}
+            index={currentIndex}
+            layoutMode="list"
+            flipped={isFlipped}
+            onFlipToggle={flip}
+            onReview={
+              grading ? undefined : (_cardIndex, result) => handleGrade(result)
+            }
+            lastResult={resultsByCard[current.id] ?? null}
+          />
+        )}
       </div>
 
       {/* Navigation */}

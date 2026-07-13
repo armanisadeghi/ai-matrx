@@ -6,13 +6,29 @@ import { useCallback, useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import type { ReviewResult } from "@/features/flashcards/types";
+import {
+  asCardKind,
+  CARD_KIND,
+  matchingPairs,
+  studyFaces,
+  type CardKind,
+  type MatchingPair,
+} from "@/features/flashcards/utils/cardVariants";
 import type { NormalizedFlashcard } from "./flashcards-set-derive";
 import type { FlashcardSubcard } from "./flashcard-subcards";
 
 export interface FlashcardMobileCard {
+  /** The face to show — for cloze cards this is the OCCLUDED text (studyFaces),
+   *  never raw `{{c1::…}}` markup; for matching it's the prompt. */
   front: string;
+  /** The reveal face — for cloze, the answers revealed (studyFaces). */
   back: string | null;
   id?: string;
+  /** Rich card variant. Absent/`basic` → the classic front/back flip. */
+  kind?: CardKind;
+  /** Matching-card pairs (present only when `kind === 'matching'`). The mobile
+   *  view branches to <MatchingCardPlayer> instead of a flip for these. */
+  pairs?: MatchingPair[];
 }
 
 export function toFlashcardMobileCards(
@@ -32,11 +48,30 @@ export function toFlashcardMobileCards(
 export function toFlashcardMobileCardsFromStudy(
   cards: CardWithDetails[],
 ): FlashcardMobileCard[] {
-  return cards.map((card) => ({
-    front: card.front,
-    back: card.back,
-    id: card.id,
-  }));
+  return cards.map((card) => {
+    const kind = asCardKind(card.card_kind);
+    if (kind === CARD_KIND.matching) {
+      // Matching cards carry their prompt (front) + pairs; the mobile view
+      // renders the shared tap-to-pair player instead of a flip.
+      return {
+        id: card.id,
+        kind,
+        front: card.front,
+        back: card.back,
+        pairs: matchingPairs(card),
+      };
+    }
+    // basic / cloze — flip cards. Cloze faces are occluded/revealed via the
+    // SHARED studyFaces (the same source the desktop deck uses), so the front
+    // shows blanks instead of raw `{{c1::…}}` markup.
+    const faces = studyFaces(card);
+    return {
+      id: card.id,
+      kind,
+      front: faces.front,
+      back: faces.back,
+    };
+  });
 }
 
 export function studyResultsByIndex(

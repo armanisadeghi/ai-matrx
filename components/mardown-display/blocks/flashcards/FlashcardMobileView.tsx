@@ -27,6 +27,8 @@ import type {
   MarkdownStyleConfig,
 } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
 import { FlashcardGradeButtonRow } from "@/features/flashcards/components/study/FlashcardGradeButton";
+import { MatchingCardPlayer } from "@/features/flashcards/components/study/MatchingCardPlayer";
+import { CARD_KIND } from "@/features/flashcards/utils/cardVariants";
 import type { ReviewResult } from "@/features/flashcards/types";
 import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
 
@@ -745,6 +747,16 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
     [onGrade, grading],
   );
 
+  // Matching cards self-grade when every pair is connected; funnel the result
+  // through the SAME grade path as a flip (study spine auto-advances).
+  const handleMatchingComplete = useCallback(
+    (result: ReviewResult) => {
+      if (!onGrade) return;
+      onGrade(result);
+    },
+    [onGrade],
+  );
+
   const handleScrubSelect = useCallback(
     (i: number) => {
       setScrubOpen(false);
@@ -872,6 +884,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
   };
 
   const anyPanelOpen = menuOpen || scrubOpen;
+  const isMatching = card?.kind === CARD_KIND.matching;
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-black overflow-hidden">
@@ -927,47 +940,66 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
         </div>
       </div>
 
-      {/* Card area */}
-      <div
-        {...cardHandlers}
-        className="flex-1 relative overflow-visible select-none"
-        style={cardAreaStyle}
-        onClick={(e) => {
-          if (anyPanelOpen) {
-            setMenuOpen(false);
-            setScrubOpen(false);
-            return;
-          }
-          if (isAnimating) return;
-          const { clientX, currentTarget } = e;
-          const { left, width } = currentTarget.getBoundingClientRect();
-          const relX = (clientX - left) / width;
-          if (relX < 0.2) goPrev();
-          else if (relX > 0.8) goNext();
-          else toggleFlip();
-        }}
-      >
-        {transition && (
+      {/* Card area — matching cards render the tap-to-pair player (no flip, no
+          tap-zone nav so pair taps land); flip cards keep the swipe/tap deck. */}
+      {isMatching ? (
+        <div
+          className="flex-1 relative overflow-y-auto select-none px-3 py-4 flex items-start justify-center"
+          style={cardAreaStyle}
+        >
+          <div className="w-full max-w-md rounded-2xl bg-background p-3 shadow-xl">
+            <MatchingCardPlayer
+              key={`m-${card.id ?? index}`}
+              cardId={card.id ?? String(index)}
+              prompt={card.front}
+              pairs={card.pairs ?? []}
+              disabled={grading}
+              onComplete={handleMatchingComplete}
+            />
+          </div>
+        </div>
+      ) : (
+        <div
+          {...cardHandlers}
+          className="flex-1 relative overflow-visible select-none"
+          style={cardAreaStyle}
+          onClick={(e) => {
+            if (anyPanelOpen) {
+              setMenuOpen(false);
+              setScrubOpen(false);
+              return;
+            }
+            if (isAnimating) return;
+            const { clientX, currentTarget } = e;
+            const { left, width } = currentTarget.getBoundingClientRect();
+            const relX = (clientX - left) / width;
+            if (relX < 0.2) goPrev();
+            else if (relX > 0.8) goNext();
+            else toggleFlip();
+          }}
+        >
+          {transition && (
+            <CardSlide
+              card={cards[transition.outgoingIndex]}
+              isFlipped={false}
+              style={outgoingExit}
+              canGoPrev={transition.outgoingIndex > 0}
+              canGoNext={transition.outgoingIndex < total - 1}
+              menuOpen={anyPanelOpen}
+            />
+          )}
           <CardSlide
-            card={cards[transition.outgoingIndex]}
-            isFlipped={false}
-            style={outgoingExit}
-            canGoPrev={transition.outgoingIndex > 0}
-            canGoNext={transition.outgoingIndex < total - 1}
+            card={card}
+            isFlipped={isFlipped}
+            style={transition ? incomingEnter : undefined}
+            showHints
+            canGoPrev={index > 0}
+            canGoNext={index < total - 1}
+            textVisible={textVisible}
             menuOpen={anyPanelOpen}
           />
-        )}
-        <CardSlide
-          card={card}
-          isFlipped={isFlipped}
-          style={transition ? incomingEnter : undefined}
-          showHints
-          canGoPrev={index > 0}
-          canGoNext={index < total - 1}
-          textVisible={textVisible}
-          menuOpen={anyPanelOpen}
-        />
-      </div>
+        </div>
+      )}
 
       {/* ── Filmstrip scrubber (swipe down) — slides in from top ── */}
       <div
