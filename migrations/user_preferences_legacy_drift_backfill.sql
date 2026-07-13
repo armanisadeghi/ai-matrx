@@ -63,12 +63,18 @@ begin
     out := jsonb_set(out, '{imageGeneration,defaultModel}', 'null'::jsonb, false);
   end if;
 
-  -- superseded videoConference audio fields (canonical home is audioDevices)
-  if (out #> '{videoConference}') ? 'defaultMicrophone' then
-    out := out #- '{videoConference,defaultMicrophone}';
-  end if;
-  if (out #> '{videoConference}') ? 'defaultSpeaker' then
-    out := out #- '{videoConference,defaultSpeaker}';
+  -- superseded videoConference audio fields (canonical home is audioDevices).
+  -- The jsonb_typeof(...)='object' guard keeps this TOTAL: `?` is array-
+  -- membership too, so an array videoConference containing the sentinel string
+  -- would pass `?` and then `#-` would throw on the array (non-integer path
+  -- element), aborting the whole set-based heal for one poisoned row.
+  if jsonb_typeof(out #> '{videoConference}') = 'object' then
+    if (out #> '{videoConference}') ? 'defaultMicrophone' then
+      out := out #- '{videoConference,defaultMicrophone}';
+    end if;
+    if (out #> '{videoConference}') ? 'defaultSpeaker' then
+      out := out #- '{videoConference,defaultSpeaker}';
+    end if;
   end if;
 
   return out;
