@@ -44,17 +44,27 @@ to prevent.
    responses, or document the NDJSON event envelope as a schema so the FE can
    bind to it. Until then these calls stay on the raw client by necessity.
 
-4. **Defaulted fields are emitted as REQUIRED, blocking typed request bodies.**
-   `openapi-typescript` renders a Pydantic field with a default (e.g.
-   `multi_query: int = 5`) as a REQUIRED property, not optional. That makes
-   routing POSTs through the typed client hostile — callers would have to pass
-   every defaulted field. Fix on the FE-tooling side (a `sync-types`
-   post-process that marks `default`-bearing fields optional) OR on the backend
-   (mark them `Optional` where the FE legitimately omits them). Tracked so the
-   POST surfaces can be bound next. This is why the RAG POSTs were left on the
-   raw client in wave 1.
+4. **✅ DONE (2026-07-12) — Defaulted fields were emitted as REQUIRED.**
+   `openapi-typescript` promoted any `default`-bearing Pydantic field to
+   REQUIRED, blocking typed POST bodies. Fixed at the generator: aidream
+   `scripts/sync-types.mjs` now passes `--default-non-nullable false`
+   (commit `ee58b0d1a`), making the TS faithful to the OpenAPI `required`
+   arrays. Verified **0 new type errors** across matrx-frontend on adoption.
+   RAG/service POSTs are now bindable.
 
-5. **(Roadmap, out of scope here)** Runtime response validation on the FE seam
+5. **Untyped / missing endpoints the FE calls (audit 2026-07-12).**
+   - **MISSING from OpenAPI entirely:** `/images/generate`, `/images/face-detect`
+     (the FE calls both; not in `paths`). `/images/edit-by-prompt` +
+     `/images/suggest-edits` are also missing but are intentional FE stubs for
+     unbuilt Wave-2 features — ignore those two. Confirm whether generate /
+     face-detect are live routes excluded from the schema (`include_in_schema`?)
+     and register them, or delete the dead FE callers.
+   - **229 endpoints publish an empty/`unknown` 200 schema** — mostly streaming
+     (`/ai/agent/*`, `/rag/search`), health, and warm calls. The streaming AI/RAG
+     ones are the ones worth a typed terminal payload (see item 3); the rest are
+     noise. Do NOT blanket-fix; target the FE-consumed streamed responses.
+
+6. **(Roadmap, out of scope here)** Runtime response validation on the FE seam
    (openapi-zod-client or similar) — the only thing that catches the server
    returning a payload that diverges from its own published OpenAPI.
 
