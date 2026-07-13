@@ -39,6 +39,15 @@ export interface CapabilitiesParseContext {
   modelName?: string;
 }
 
+/** The five canonical top-level keys of `ai.model_definition.capabilities`. */
+const CANONICAL_CAPABILITY_KEYS: ReadonlySet<string> = new Set([
+  "input",
+  "output",
+  "features",
+  "interaction",
+  "multilingual",
+]);
+
 // One scream per (model, field, value) per session — the parser runs on hot
 // paths (launcher, pickers) against cached rows; repeating the same report
 // thousands of times helps nobody.
@@ -115,6 +124,15 @@ export function parseCapabilities(
   }
 
   const obj = raw as Record<string, unknown>;
+
+  // Unknown TOP-LEVEL keys scream too — a flat legacy/audit-shaped object in
+  // the column (e.g. `{ text_input: true, ... }`) would otherwise parse to
+  // the defaults with zero noise, hiding the corruption.
+  for (const key of Object.keys(obj)) {
+    if (!CANONICAL_CAPABILITY_KEYS.has(key)) {
+      reportUnknownCapabilityValue(key, obj[key], context);
+    }
+  }
 
   const input: ContentType[] = collect("input", obj.input, isContentType, context);
   const output: ContentType[] = collect("output", obj.output, isContentType, context);
@@ -205,6 +223,89 @@ export function toAuditRecord(caps: ModelCapabilities): AuditCapabilitiesRecord 
     fine_tuning: caps.features.includes("fine_tuning"),
     batch_api: caps.features.includes("batch_api"),
   };
+}
+
+// ─── Audit-system write bridge: merge the flat view BACK canonically ───────
+
+/** Where each flat audit flag lives in the canonical shape. */
+const AUDIT_FLAG_LOCATION: Record<
+  keyof AuditCapabilitiesRecord,
+  { array: "input" | "output" | "features"; value: string }
+> = {
+  text_input: { array: "input", value: "text" },
+  image_input: { array: "input", value: "image" },
+  audio_input: { array: "input", value: "audio" },
+  video_input: { array: "input", value: "video" },
+  document_input: { array: "input", value: "document" },
+  text_output: { array: "output", value: "text" },
+  image_output: { array: "output", value: "image" },
+  audio_output: { array: "output", value: "audio" },
+  // NOTE: `vision` maps to the `vision` FEATURE only. The read projection
+  // (`toAuditRecord`) also implies vision from image input, so toggling
+  // vision OFF while image input stays on will still project true — that
+  // asymmetry is inherent to the flat view, not a data loss.
+  vision: { array: "features", value: "vision" },
+  code_execution: { array: "features", value: "code_execution" },
+  function_calling: { array: "features", value: "function_calling" },
+  streaming: { array: "features", value: "streaming" },
+  web_search: { array: "features", value: "web_search" },
+  json_mode: { array: "features", value: "json_mode" },
+  structured_output: { array: "features", value: "structured_output" },
+  system_prompt: { array: "features", value: "system_prompt" },
+  multi_turn: { array: "features", value: "multi_turn" },
+  embeddings: { array: "features", value: "embeddings" },
+  fine_tuning: { array: "features", value: "fine_tuning" },
+  batch_api: { array: "features", value: "batch_api" },
+};
+
+/**
+ * Merge an edited flat audit record back INTO the canonical capabilities
+ * object — the write-side inverse of `toAuditRecord`. This exists because
+ * writing the flat 20-boolean projection over the column destroys
+ * `interaction` / `multilingual` / non-text output / the extended feature
+ * vocabulary (the exact silent-drop class TASK-003 killed on the read side).
+ *
+ * Rules:
+ * - Starts from the RAW stored object (arrays cloned) — every key and every
+ *   array member the editor doesn't model is preserved VERBATIM, including
+ *   values outside the FE vocabulary.
+ * - Only flags whose edited value DIFFERS from the current projection are
+ *   applied (as an add/remove on the owning array), so an untouched Save is
+ *   a byte-for-byte no-op: `merge(raw, toAuditRecord(parse(raw))) === raw`.
+ * - A flag with no canonical mapping is never written.
+ */
+export function mergeAuditRecordIntoCapabilities(
+  raw: unknown,
+  edited: AuditCapabilitiesRecord,
+  context?: CapabilitiesParseContext,
+): Record<string, unknown> {
+  const base: Record<string, unknown> =
+    typeof raw === "object" && raw !== null && !Array.isArray(raw)
+      ? { ...(raw as Record<string, unknown>) }
+      : { input: ["text"], output: ["text"], features: [], interaction: "turn" };
+  // Clone the three membership arrays so we never mutate the caller's row.
+  for (const key of ["input", "output", "features"] as const) {
+    base[key] = Array.isArray(base[key]) ? [...(base[key] as unknown[])] : [];
+  }
+
+  const baseline = toAuditRecord(parseCapabilities(raw, context));
+
+  for (const flag of Object.keys(AUDIT_FLAG_LOCATION) as Array<
+    keyof AuditCapabilitiesRecord
+  >) {
+    const desired = edited[flag];
+    if (desired === undefined || desired === baseline[flag]) continue;
+    const { array, value } = AUDIT_FLAG_LOCATION[flag];
+    const members = base[array] as unknown[];
+    if (desired) {
+      if (!members.includes(value)) members.push(value);
+    } else {
+      const idx = members.indexOf(value);
+      if (idx !== -1) members.splice(idx, 1);
+    }
+  }
+
+  return base;
 }
 
 // Re-exports for the few callers that historically imported from one

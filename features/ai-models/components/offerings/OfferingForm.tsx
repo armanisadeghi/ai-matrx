@@ -227,6 +227,8 @@ export default function OfferingForm({
               ? {
                   capabilities: selectedModel.capabilities,
                   tokenBilled: data.token_billed,
+                  id: selectedModel.id,
+                  name: selectedModel.name,
                 }
               : null
           }

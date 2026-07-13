@@ -188,6 +188,9 @@ interface TierLike {
 export interface PricedModel {
   capabilities: unknown;
   tokenBilled: boolean;
+  /** Model identity — makes the parser's unknown-value screams attributable. */
+  id?: string;
+  name?: string | null;
 }
 
 export function validatePricingTiers(
@@ -195,7 +198,14 @@ export function validatePricingTiers(
   tiers: readonly TierLike[] | null | undefined,
 ): PricingIssue[] {
   const issues: PricingIssue[] = [];
-  const isMedia = model ? isMediaModel(parseCapabilities(model.capabilities)) : false;
+  const isMedia = model
+    ? isMediaModel(
+        parseCapabilities(model.capabilities, {
+          modelId: model.id,
+          modelName: model.name ?? undefined,
+        }),
+      )
+    : false;
   const tokenBilled = model?.tokenBilled ?? false;
   if (!Array.isArray(tiers)) return issues;
 

@@ -24,6 +24,7 @@ import {
   CAPABILITY_LABELS,
   CAPABILITY_GROUPS,
 } from "./auditTypes";
+import { mergeAuditRecordIntoCapabilities } from "../capabilities/parse";
 import {
   AuditTableShell,
   Th,
@@ -86,11 +87,14 @@ function InlineCapabilitiesEditor({
     setSaving(true);
     setError(null);
     try {
-      await aiModelService.patchField(
-        model.id,
-        "capabilities",
-        caps as unknown as AiModel["capabilities"],
-      );
+      // NEVER write the flat 20-boolean projection over the column — that
+      // wipes interaction/output/multilingual/extended features (the TASK-003
+      // silent-drop class). Merge each toggled flag back into the canonical
+      // shape, preserving everything the editor doesn't model verbatim.
+      const merged = mergeAuditRecordIntoCapabilities(model.capabilities, caps, {
+        modelId: model.id,
+      });
+      await aiModelService.patchField(model.id, "capabilities", merged);
       onSaved(caps);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
