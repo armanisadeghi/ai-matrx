@@ -110,3 +110,6 @@ public/pdfjs/
 # macOS Finder metadata
 .DS_Store
 **/.DS_Store
+
+# Claude Code per-session agent dev servers (transient state)
+.matrx/dev-sessions/

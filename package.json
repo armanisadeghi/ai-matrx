@@ -105,7 +105,11 @@
     "build:profile": "NEXT_TELEMETRY_DEBUG=1 next build 2>&1 | tee build-profile.log",
     "check:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts",
     "check:tsconfig:strict": "tsx scripts/check-tsconfig-hygiene.ts --strict",
-    "clean:next": "rm -rf .next-preview* .next-qa* && echo 'removed alternate NEXT_DISTDIR build dirs (.next left intact)'"
+    "clean:next": "rm -rf .next-preview* .next-qa* && echo 'removed alternate NEXT_DISTDIR build dirs (.next left intact)'",
+    "clean:next:all": "bash scripts/dev-cleanup.sh next",
+    "dev:status": "bash scripts/dev-cleanup.sh status",
+    "dev:stop": "bash scripts/dev-cleanup.sh ports",
+    "dev:nuke": "bash scripts/dev-cleanup.sh all"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
