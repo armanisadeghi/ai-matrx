@@ -26,7 +26,6 @@ export interface FlashcardParseResult {
  *   - bullet two
  */
 export const parseFlashcards = (content: string): FlashcardParseResult => {
-    const lines = content.split('\n');
     const flashcards: Flashcard[] = [];
     let currentCard: Partial<Flashcard> = {};
     let partialCard: Partial<Flashcard> | null = null;
@@ -35,6 +34,17 @@ export const parseFlashcards = (content: string): FlashcardParseResult => {
     let backLines: string[] = [];
 
     isComplete = content.includes('</flashcards>');
+
+    // `</flashcards>` is the COMPLETION SENTINEL (read above), never content.
+    // The host region text carries the literal tags (and the fence surface
+    // re-appends the closing tag as its sentinel), so without stripping them
+    // the tag line falls through to `backLines.push(line)` while collecting a
+    // back — gluing "</flashcards>" onto the LAST card's answer text. Strip the
+    // framing tags before parsing so they can never leak into a card.
+    const lines = content
+        .replace(/<flashcards(?:\s[^>]*)?>/gi, '')
+        .replace(/<\/flashcards>/gi, '')
+        .split('\n');
 
     const finalizeCard = () => {
         if (collectingBack && backLines.length > 0) {

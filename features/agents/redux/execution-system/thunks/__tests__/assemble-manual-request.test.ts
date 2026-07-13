@@ -23,6 +23,9 @@ jest.mock("uuid", () => ({
 }));
 
 import { assembleManualRequest } from "../execute-manual-instance.thunk";
+import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
+import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import type { RootState } from "@/lib/redux/store";
 
 // ---------------------------------------------------------------------------
@@ -141,6 +144,17 @@ function makeState(
     instanceContext: { byConversationId: {} },
     instanceVariableValues: { byConversationId: {} },
     instanceClientTools: { byConversationId: {} },
+    // `buildToolInjection` reads `selectCreatorSettings` (the
+    // `disableToolInjection` emergency brake). Derived from the slice's own
+    // reducer rather than a hand-copied literal, so the fixture can never
+    // drift from the real defaults.
+    creatorDebug: creatorDebugReducer(undefined, { type: "@@INIT" }),
+    // Read by the `editor-state` client-capability provider that
+    // `buildToolInjection` walks. Same reducer-derived rule as above.
+    editorState: editorStateReducer(undefined, { type: "@@INIT" }),
+    // `selectEffectiveOrganizationId` (active-org resolution) is read while
+    // assembling the request envelope.
+    appContext: appContextReducer(undefined, { type: "@@INIT" }),
     // Deliberately omit instanceModelOverrides: this path MUST NOT read it.
     // If a future refactor reaches into the slice, accessing it will throw
     // and these tests will fail.
@@ -234,11 +248,27 @@ describe("assembleManualRequest — live read contract", () => {
         tool_id: "tool-uuid-2",
         delegate: false,
       },
+      // agent.customTools are ALSO seeded into the active set as InlineToolSpec
+      // entries (see the assembler header: "agent.customTools → InlineToolSpec
+      // seeds"). tools_replace is the whole active tool set, so the inline tool
+      // belongs here as well as in `custom_tools` below.
+      {
+        kind: "inline",
+        name: "ct1",
+        description: "",
+        input_schema: {},
+      },
     ]);
     // `tools` is deliberately NOT set — see assembler for the reason.
     expect(payload.tools).toBeUndefined();
-    expect(payload.custom_tools).toEqual([{ name: "ct1", input_schema: {} }]);
-    expect(payload.mcp_servers).toEqual(["mcp-uuid-1"]);
+    // `custom_tools` is NOT a wire field the assembler sets — custom tools
+    // travel exclusively as `kind:"inline"` entries inside tools_replace
+    // (asserted above). Pinned so a reintroduced parallel path is caught.
+    expect(payload.custom_tools).toBeUndefined();
+    // MCP servers ride on `client.mcp` (TOOL_ROUTING_RULES.md §10) — the server
+    // merges them into config.mcp_servers. There is no top-level `mcp_servers`
+    // wire field on the request.
+    expect(payload.client?.mcp).toEqual(["mcp-uuid-1"]);
   });
 
   test("UI-only capability flags do NOT leak into tools_replace", async () => {

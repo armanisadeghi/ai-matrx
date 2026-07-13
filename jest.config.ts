@@ -33,7 +33,16 @@ const config: Config = {
         ],
     },
     setupFiles: ["<rootDir>/jest.setup.ts"],
+    // CSS / static assets have no Jest loader. Without these, a side-effect
+    // import like `@xyflow/react/dist/style.css` reaches ts-jest, gets parsed
+    // as TypeScript, and dies with `SyntaxError: Unexpected token '.'` —
+    // failing every suite that transitively imports the module (it killed the
+    // whole `features/files` barrel chain, and with it process-stream's suites).
+    // Listed BEFORE the `@/` alias so asset requests never fall through to it.
     moduleNameMapper: {
+        "\\.(css|less|sass|scss)$": "<rootDir>/test-utils/style-mock.ts",
+        "\\.(gif|ttf|eot|otf|woff|woff2|png|jpe?g|webp|avif|mp4|webm|wav|mp3|m4a|aac|oga)$":
+            "<rootDir>/test-utils/style-mock.ts",
         "^@/(.*)$": "<rootDir>/$1",
     },
     // Transform ESM-only `uuid` instead of ignoring it. The lookahead must

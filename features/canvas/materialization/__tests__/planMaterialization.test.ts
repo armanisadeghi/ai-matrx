@@ -95,7 +95,11 @@ describe("planMaterialization — structured kind detection", () => {
     expect(plan.artifacts).toHaveLength(0);
   });
 
-  it("keeps the legacy string path for markdown flashcards fences", () => {
+  it("converges a markdown flashcards fence to the canonical flashcard_set kind", () => {
+    // The FENCE finalize hook makes a completed ```flashcards fence resolve
+    // through the surface registry to flashcard_set — the fence twin of the
+    // <flashcards> XML surface. planMaterialization then persists the converged
+    // value as `structured` (content.data) instead of re-parsing on read.
     const plan = planMaterialization([
       textBlock("```flashcards\nFront: Q1\nBack: A1\n```"),
     ]);
@@ -103,7 +107,12 @@ describe("planMaterialization — structured kind detection", () => {
     const [a] = plan.artifacts;
     if (!a) throw new Error("expected one planned artifact");
     expect(a.canvasType).toBe("flashcards");
-    expect(a.structured).toBeUndefined();
-    expect(a.content).toContain("Front: Q1");
+    expect(a.structured).toMatchObject({
+      __kind: "flashcard_set",
+      cards: [{ __kind: "flashcard", front: "Q1", back: "A1" }],
+    });
+    // Regression pin: `</flashcards>` is the parser's completion sentinel, not
+    // content — it must NEVER be glued onto the last card's answer.
+    expect(JSON.stringify(a.structured)).not.toContain("</flashcards>");
   });
 });
