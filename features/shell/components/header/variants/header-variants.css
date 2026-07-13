@@ -16,7 +16,8 @@
    1. Glass Button — Atomic tap-target unit
    --------------------------------------------------------------------------- */
 
-/* hdr-glass-btn / hdr-glass-btn-inner replaced by IconButton — see shell.css .icon-btn */
+/* hdr-glass-btn / hdr-glass-btn-inner replaced by IconButton — styling now lives
+   in features/shell/components/IconButton.tsx (Tailwind). */
 
 /* ---------------------------------------------------------------------------
    2. Shared Variant Layouts

@@ -306,21 +306,6 @@
     width: 0.75rem;
     height: 0.75rem;
   }
-  .icon-btn {
-    width: 1.875rem;
-    height: 1.875rem;
-    min-width: 1.875rem;
-  }
-  .icon-btn-glass {
-    width: 1.375rem;
-    height: 1.375rem;
-    min-width: 1.375rem;
-    max-width: 1.375rem;
-  }
-  .icon-btn-icon {
-    width: 0.75rem;
-    height: 0.75rem;
-  }
   .notes-toolbar-search {
     width: 1.375rem;
     height: 1.375rem;

@@ -144,63 +144,10 @@
    Variations (dock, sheet) only override what genuinely differs (shadow, border-side).
    --------------------------------------------------------------------------- */
 
-/* ── IconButton — 3-layer reusable icon button used everywhere ──────────────
-   Outer  (.icon-btn)        44×44 transparent tap target — no bg, no border
-   Middle (.icon-btn-glass)  30×30 glass pill — backdrop-filter clipped here
-   Inner  (.icon-btn-icon)   icon — sized and colored via CSS vars
-   ----------------------------------------------------------------------- */
-
-.icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;   /* 44px tap target */
-  height: 2.75rem;
-  min-width: 2.75rem;
-  flex-shrink: 0;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.icon-btn-glass {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.875rem;  /* 30px visible pill */
-  height: 1.875rem;
-  min-width: 1.875rem;
-  max-width: 1.875rem;
-  border-radius: 9999px;
-  overflow: hidden;    /* clips backdrop-filter to pill boundary */
-  flex-shrink: 0;
-  /* glass applied via .shell-glass in markup */
-}
-
-.icon-btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1rem;      /* 16px icon */
-  height: 1rem;
-  flex-shrink: 0;
-  pointer-events: none;
-  color: var(--shell-nav-icon-hover);
-}
-
-.icon-btn-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-/* Active state */
-.icon-btn-glass.active,
-.icon-btn-glass[data-active="true"] {
-  background: var(--matrx-glass-bg-active) !important;
-}
+/* ── IconButton — the 3-layer icon button's static geometry (.icon-btn /
+   .icon-btn-glass / .icon-btn-icon) was ported to Tailwind and now lives in the
+   component: features/shell/components/IconButton.tsx. The glass SURFACE still
+   comes from .matrx-glass-thin-border + .shell-tactile below. ───────────────── */
 
 /* NOTE: .shell-glass / .shell-glass-dock / .shell-glass-sheet / .shell-glass-card
    are now defined in app/globals.css so the utilities work in every layout, not

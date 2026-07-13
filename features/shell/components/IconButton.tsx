@@ -3,9 +3,14 @@
 // IconButton — Universal 3-layer icon button for the shell.
 //
 // Structure:
-//   Outer  (.icon-btn)        44×44 transparent tap target — handles clicks
-//   Middle (.icon-btn-glass)  30×30 glass pill — visual element
-//   Inner  (.icon-btn-icon)   16×16 icon area
+//   Outer   44×44 transparent tap target — handles clicks
+//   Middle  30×30 glass pill — visual element
+//   Inner   16×16 icon area
+//
+// Styling is Tailwind, ported from the former .icon-btn* classes in
+// styles/shell.css (pure static geometry, no shell state). The glass SURFACE
+// itself still comes from the shared `matrx-glass-thin-border` utility and the
+// `shell-tactile` press physics — separate shell primitives, left as-is.
 //
 // Usage:
 //   <IconButton icon={<Menu />} onClick={handler} label="Open menu" />
@@ -14,6 +19,22 @@
 
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+
+// Outer tap target. The important flags defeat UA <button> chrome
+// (background / border / shadow) exactly as the former .icon-btn rule did.
+const OUTER =
+  "flex items-center justify-center w-11 h-11 min-w-11 shrink-0 p-0 cursor-pointer " +
+  "bg-transparent! border-none! shadow-none! [-webkit-tap-highlight-color:transparent]";
+
+// 30×30 glass pill. overflow-hidden clips the backdrop-filter to the pill edge.
+const GLASS =
+  "flex items-center justify-center w-[1.875rem] h-[1.875rem] min-w-[1.875rem] max-w-[1.875rem] " +
+  "rounded-full overflow-hidden shrink-0";
+
+// 16×16 icon area; the svg fills it.
+const ICON =
+  "flex items-center justify-center w-4 h-4 shrink-0 pointer-events-none " +
+  "text-[var(--shell-nav-icon-hover)] [&_svg]:w-full [&_svg]:h-full";
 
 interface IconButtonProps {
   /** Icon element to render (e.g. <Menu />, <Search />) */
@@ -47,19 +68,20 @@ export default function IconButton({
   disabled,
 }: IconButtonProps) {
   const glassClass = cn(
-    "icon-btn-glass matrx-glass-thin-border shell-tactile",
-    active && "active",
+    GLASS,
+    "matrx-glass-thin-border shell-tactile",
+    active && "bg-[var(--matrx-glass-bg-active)]!",
     glassClassName,
   );
 
-  const iconEl = <span className="icon-btn-icon">{icon}</span>;
+  const iconEl = <span className={ICON}>{icon}</span>;
   const inner = <span className={glassClass}>{iconEl}</span>;
 
   if (asLabel) {
     return (
       <label
         htmlFor={htmlFor}
-        className={cn("icon-btn", className)}
+        className={cn(OUTER, className)}
         aria-label={label}
       >
         {inner}
@@ -71,7 +93,7 @@ export default function IconButton({
     <button
       type="button"
       onClick={onClick}
-      className={cn("icon-btn", className)}
+      className={cn(OUTER, className)}
       aria-label={label}
       disabled={disabled}
     >
