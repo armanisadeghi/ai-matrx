@@ -8,7 +8,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { setUser, setShellDataLoaded } from "@/lib/redux/slices/userSlice";
 import {
   setModulePreferences,
-  stripLegacyDefaultModelSentinels,
+  sanitizeLoadedPreferences,
   type UserPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
@@ -69,11 +69,16 @@ export default function DeferredShellData() {
         void dispatch(bootstrapActiveOrganization());
 
         if (shellData.preferences_exists && shellData.preferences) {
-          // Load boundary: fold the legacy hardcoded defaultModel seed
-          // constants back to null (= platform default) before the module
-          // merges — setModulePreferences is a user-write reducer and must
-          // never sanitize, so it happens here.
-          const sanitized = stripLegacyDefaultModelSentinels(
+          // Load boundary: normalize every known legacy shape drift
+          // (defaultModel seed constants → null; superseded videoConference
+          // audio fields dropped) before the module merges. setModulePreferences
+          // is a user-write reducer and must never sanitize, and dispatching a
+          // module here IS a real mutation → the sync engine writes the cleaned
+          // blob back to IDB + remote, so a stale row self-heals on load instead
+          // of waiting for the user's next manual save. Missing a strip here
+          // would re-persist the field it dropped — hence the single canonical
+          // sanitizer, never a subset.
+          const sanitized = sanitizeLoadedPreferences(
             shellData.preferences as Partial<UserPreferences>,
           );
           for (const [key, value] of Object.entries(sanitized)) {

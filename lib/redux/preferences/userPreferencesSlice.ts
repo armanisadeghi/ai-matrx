@@ -649,14 +649,39 @@ export function stripLegacyDefaultModelSentinels(
   return out;
 }
 
+/**
+ * THE canonical load-boundary sanitizer. Applies EVERY known preferences shape
+ * migration to a persisted / remote payload before it enters Redux. This is the
+ * TS mirror of the DB normalizer `users.normalize_preferences_jsonb`
+ * (migrations/user_preferences_legacy_drift_backfill.sql) — when a shape
+ * migration adds a rule to one, add the matching rule to the OTHER in the SAME
+ * change. That single discipline is what stops shape drift.
+ *
+ * Every load boundary (store bootstrap, sync-engine REHYDRATE, DeferredShellData)
+ * MUST route through this — never a subset of the individual strips. A boundary
+ * that sanitizes only some fields silently re-persists the ones it missed
+ * (exactly the videoConference-audio regression this consolidation fixed).
+ */
+export function sanitizeLoadedPreferences(
+  loaded: Partial<UserPreferences>,
+): Partial<UserPreferences> {
+  const out = stripLegacyDefaultModelSentinels(loaded);
+  if (out.videoConference) {
+    out.videoConference = stripSupersededVideoConferenceAudio(
+      out.videoConference,
+    ) as VideoConferencePreferences;
+  }
+  return out;
+}
+
 // Helper function to ensure preferences have the proper structure
 export const initializeUserPreferencesState = (
   rawPreferences: Partial<UserPreferences> = {},
   setAsLoaded: boolean = false,
 ): UserPreferencesState => {
   // Callers pass PERSISTED data here (store bootstrap / SSR-loaded rows) —
-  // a load boundary, so the legacy defaultModel seed constants are stripped.
-  const preferences = stripLegacyDefaultModelSentinels(rawPreferences);
+  // a load boundary, so every known legacy shape drift is normalized.
+  const preferences = sanitizeLoadedPreferences(rawPreferences);
   const defaultMeta = {
     isLoading: false,
     error: null,
@@ -1140,9 +1165,10 @@ const userPreferencesSlice = createSlice({
       const rawLoaded = action.payload.state as
         Partial<UserPreferences> | undefined;
       if (!rawLoaded) return;
-      // Load boundary: fold the legacy hardcoded defaultModel seed constants
-      // back to null so a stale seed can't masquerade as a user choice.
-      const loaded = stripLegacyDefaultModelSentinels(rawLoaded);
+      // Load boundary: normalize every known legacy shape drift (defaultModel
+      // seed constants → null, superseded videoConference audio fields dropped)
+      // so a stale value can't masquerade as a user choice or shadow-revive.
+      const loaded = sanitizeLoadedPreferences(rawLoaded);
 
       if (loaded.favorites)
         state.favorites = { ...state.favorites, ...loaded.favorites };
@@ -1159,7 +1185,7 @@ const userPreferencesSlice = createSlice({
       if (loaded.videoConference)
         state.videoConference = {
           ...state.videoConference,
-          ...stripSupersededVideoConferenceAudio(loaded.videoConference),
+          ...loaded.videoConference,
         };
       if (loaded.photoEditing)
         state.photoEditing = { ...state.photoEditing, ...loaded.photoEditing };
