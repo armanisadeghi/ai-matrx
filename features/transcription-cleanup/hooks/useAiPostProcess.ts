@@ -8,7 +8,7 @@
  * "Any agent" resolution — how the input text + context reach an arbitrary
  * agent, in priority order:
  *
- *   1. SURFACE BINDING — if an `agx_agent_surface` row exists for
+ *   1. SURFACE BINDING — if an agent↔surface binding edges row exists for
  *      (agent, "matrx-user/transcripts-cleanup"), its value_mappings are
  *      resolved against the page's surface scope via `resolveValueMappings`
  *      (auto-name-match included: scope keys like `content` /
@@ -50,7 +50,7 @@ import {
   selectAccumulatedText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/agent-surface-bindings.service";
+import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import { mergeValueMappingLayers } from "@/features/surfaces/utils/merge-value-mappings";
 import type { ValueMappingMap } from "@/features/surfaces/types";
 import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";

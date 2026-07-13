@@ -27,7 +27,7 @@ import {
   selectAccumulatedText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/agent-surface-bindings.service";
+import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import { mergeValueMappingLayers } from "@/features/surfaces/utils/merge-value-mappings";
 import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";

@@ -142,12 +142,12 @@ async function pollForCompletion(
 // Surface value_mappings — layered launch resolution
 //
 // Layers, weakest → strongest (later wins PER KEY):
-//   1. agx_agent_surface global binding
-//   2. agx_agent_surface org bindings — by MEMBERSHIP: RLS only returns
+//   1. agent↔surface binding edges global binding
+//   2. agent↔surface binding edges org bindings — by MEMBERSHIP: RLS only returns
 //      member-org rows, so every visible org row applies. There is no
 //      "active org" filter (the old read targeted a field the organizations
 //      slice never defined, so the org tier could never fire).
-//   3. agx_agent_surface user binding
+//   3. agent↔surface binding edges user binding
 //   4. the shortcut's own mappings (value_mappings layered over the promoted
 //      legacy scope_mappings / context_mappings) — the most specific intent.
 //
@@ -553,7 +553,7 @@ export const launchAgentExecution = createAsyncThunk<
       jsonExtraction ?? shortcut.jsonExtraction ?? undefined;
 
     // ── Surface mapping resolution for shortcuts ────────────────────────
-    // Layered per-key merge: agx_agent_surface bindings (global → org-by-
+    // Layered per-key merge: agent↔surface binding edges bindings (global → org-by-
     // membership → user) under the shortcut's own mappings (value_mappings
     // over promoted legacy scopeMappings/contextMappings). The merged map
     // is applied via `mapScopeToInstanceWithSurface` inside
@@ -696,7 +696,7 @@ export const launchAgentExecution = createAsyncThunk<
       const agent = agState.agentDefinition.agents?.[agentId];
       if (agent) {
         // When the caller passed `surfaceName`, resolve the layered
-        // `agx_agent_surface` bindings (global → org-by-membership → user)
+        // agent↔surface binding edges bindings (global → org-by-membership → user)
         // and apply the merged map. The legacy auto-name-match still runs
         // as a fallback for keys the bindings didn't address.
         let surfaceValueMappings: ValueMappingMap | null = null;

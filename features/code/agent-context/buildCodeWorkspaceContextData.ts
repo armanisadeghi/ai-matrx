@@ -83,7 +83,7 @@ export interface BuildCodeWorkspaceContextDataArgs {
  *     editor state.
  *  2. The surface's declared SurfaceValue names (`current_file_*`,
  *     `current_line_number`, `selection_range`, `open_file_paths`, …) — these
- *     are what `agx_agent_surface.value_mappings` bind against. Built through
+ *     are what agent↔surface binding value_mappings (platform.associations edge metadata) bind against. Built through
  *     `createCodeEditorScope` so a typo or missing required key is a TS error.
  *  3. The cross-editor `vsc_*` contract (kept byte-for-byte) so legacy
  *     Shortcuts whose `scopeMappings` reference `vsc_active_file_content` etc.

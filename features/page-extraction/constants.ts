@@ -17,7 +17,7 @@ import type {
  *
  * Used by the variable-mapping editor to pull the canonical list of values
  * an agent can be wired to. Also handed to `launchAgentExecution` as
- * `runtime.surfaceName` so `agx_agent_surface` bindings can apply.
+ * `runtime.surfaceName` so agent↔surface binding edges bindings can apply.
  */
 export const EXTRACTOR_CHUNKER_SURFACE_NAME = "matrx-user/extractor-chunker";
 

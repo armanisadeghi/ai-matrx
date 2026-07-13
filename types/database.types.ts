@@ -215,82 +215,6 @@ export type Database = {
   }
   agent: {
     Tables: {
-      agent_surface: {
-        Row: {
-          agent_id: string
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          organization_id: string
-          project_id: string | null
-          surface_name: string
-          task_id: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string | null
-          value_mappings: Json
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          agent_id: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          organization_id: string
-          project_id?: string | null
-          surface_name: string
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          value_mappings?: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          agent_id?: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          organization_id?: string
-          project_id?: string | null
-          surface_name?: string
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          value_mappings?: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agx_agent_surface_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "card"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agx_agent_surface_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agx_agent_surface_surface_name_fkey"
-            columns: ["surface_name"]
-            isOneToOne: false
-            referencedRelation: "menu_surface"
-            referencedColumns: ["surface_name"]
-          },
-        ]
-      }
       cmp_comparison_entries: {
         Row: {
           agent_id: string
@@ -1237,6 +1161,7 @@ export type Database = {
           organization_id: string | null
           organizations: Json | null
           project_id: string | null
+          role: string | null
           surface_name: string | null
           task_id: string | null
           updated_at: string | null
@@ -12750,6 +12675,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agent_surface: {
+        Row: {
+          agent_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          organization_id: string
+          project_id: string | null
+          surface_name: string
+          task_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          value_mappings: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          organization_id: string
+          project_id?: string | null
+          surface_name: string
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          value_mappings?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          organization_id?: string
+          project_id?: string | null
+          surface_name?: string
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          value_mappings?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       agx_version_corruption_backup_20260606: {
         Row: {

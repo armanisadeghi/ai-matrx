@@ -171,7 +171,7 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
                 features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts
               </Code>{" "}
               (applies <Code>runtime.surfaceName</Code> +{" "}
-              <Code>agx_agent_surface.value_mappings</Code> when both present)
+              <Code>binding value_mappings</Code> when both present)
             </li>
             <li>
               Surface manifests:{" "}

@@ -1,5 +1,5 @@
 /**
- * agentSurfaceBindings — store for `agx_agent_surface` rows.
+ * agentSurfaceBindings — store for agent↔surface binding edges rows.
  *
  * Indexed two ways:
  *   - `byId` — primary, single row by binding uuid
@@ -15,7 +15,7 @@
 "use client";
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { AgentSurfaceBinding } from "@/features/surfaces/services/agent-surface-bindings.service";
+import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
 
 export interface AgentSurfaceBindingsSliceState {
   byId: Record<string, AgentSurfaceBinding>;

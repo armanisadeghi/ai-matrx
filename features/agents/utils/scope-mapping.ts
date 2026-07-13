@@ -227,7 +227,7 @@ function previewValue(v: unknown): string {
 /**
  * Combine the **legacy** scope mapping pass (shortcut bundle's
  * `scopeMappings`) with the new **SurfaceValue** mapping pass
- * (`agx_agent_surface.value_mappings`) into a single result.
+ * (agent↔surface binding value_mappings (platform.associations edge metadata)) into a single result.
  *
  * Order of resolution:
  *   1. Legacy `mapScopeToInstance` runs first — it produces the baseline

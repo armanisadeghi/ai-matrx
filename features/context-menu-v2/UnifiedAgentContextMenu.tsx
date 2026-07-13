@@ -151,7 +151,7 @@ export interface UnifiedAgentContextMenuProps {
    *
    * When provided, every shortcut launched from this menu carries
    * `runtime.surfaceName` end-to-end. The launch thunk uses it to look up
-   * the most-specific `agx_agent_surface.value_mappings` for
+   * the most-specific agent↔surface binding value_mappings (platform.associations edge metadata) for
    * `(shortcut.agentId, surfaceName, caller scope)` and to apply those
    * explicit mappings instead of (or in addition to) the legacy
    * auto-name-match. When omitted, the launch thunk falls back to the
@@ -830,7 +830,7 @@ export function UniversalContextMenuV2({
         //
         // `runtime.surfaceName` is what triggers the surface-mapping
         // resolution in launchAgentExecution. When set, the thunk looks up
-        // `agx_agent_surface.value_mappings` for (shortcut.agentId,
+        // agent↔surface binding value_mappings (platform.associations edge metadata) for (shortcut.agentId,
         // surfaceName, caller scope) and applies them via
         // mapScopeToInstanceWithSurface — falling back to the shortcut's
         // own scopeMappings when no surface binding exists.

@@ -299,7 +299,7 @@ interface CreateShortcutInstanceArgs {
    * non-empty, scope→variable resolution runs through
    * `mapScopeToInstanceWithSurface` instead of the legacy
    * `mapScopeToInstance`, applying explicit `ValueMapping` rules from
-   * `agx_agent_surface.value_mappings`. `null` (the common case) skips the
+   * agent↔surface binding value_mappings (platform.associations edge metadata). `null` (the common case) skips the
    * surface path and uses the shortcut's own scopeMappings.
    */
   surfaceValueMappings?: ValueMappingMap | null;
@@ -565,7 +565,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
   // Two paths:
   //
   //   A. SURFACE PATH — caller passed `surfaceValueMappings`: the launch
-  //      thunk's per-key MERGE of agx_agent_surface bindings (global →
+  //      thunk's per-key MERGE of agent↔surface binding edges bindings (global →
   //      org-by-membership → user) and the shortcut's own mappings
   //      (value_mappings layered over the promoted legacy
   //      scopeMappings/contextMappings), with prompt_user entries already

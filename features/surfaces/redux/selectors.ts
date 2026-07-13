@@ -2,7 +2,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { AgentSurfaceBinding } from "@/features/surfaces/services/agent-surface-bindings.service";
+import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import type { SurfaceValue } from "@/features/surfaces/types";
 
 // ─────────────────────────────────────────────────────────────────────────────

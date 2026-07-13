@@ -16,7 +16,7 @@ import {
   type ScopeInput,
   type BulkUpsertBindingInput,
   type BulkUpsertResult,
-} from "@/features/surfaces/services/agent-surface-bindings.service";
+} from "@/features/surfaces/services/bind-agent-to-surface.service";
 import type { SurfaceValue, ValueMappingMap } from "@/features/surfaces/types";
 import {
   setListStatus,
@@ -96,7 +96,7 @@ export const loadSurfaceValues = createAsyncThunk<
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Agent ↔ surface bindings (agx_agent_surface)
+// Agent ↔ surface bindings (agent↔surface binding edges)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const loadBindingsForAgent = createAsyncThunk<

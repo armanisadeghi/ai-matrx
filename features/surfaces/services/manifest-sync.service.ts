@@ -7,7 +7,7 @@
  * - Flags config namespaces (manifest `configNamespaces` declarations and
  *   `ui.ui_surface_config` rows) with no handler in the namespace
  *   registry.
- * - Scans `agx_agent_surface.value_mappings` for `surface_value` mappings
+ * - Scans binding edges' `value_mappings` (via `agent.menu_surface`) for `surface_value` mappings
  *   whose target no longer exists in any manifest. These are the "broken
  *   mappings" surfaced to admins.
  * - Applies the diff (upsert / delete) to bring DB in line with code.
@@ -232,9 +232,8 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
       .is("deleted_at", null),
     sb
       .schema("agent")
-      .from("agent_surface")
+      .from("menu_surface")
       .select("id, surface_name, value_mappings")
-      .is("deleted_at", null)
       .neq("value_mappings", "{}"),
   ]);
 
@@ -396,11 +395,17 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 8. brokenAgentMappings: every `surface_value` mapping whose target
   //    doesn't exist in the (effective) manifest for that surface.
   const brokenAgentMappings = collectBrokenMappings(
-    (agentBindingsRes.data ?? []).map((b) => ({
-      id: b.id,
-      surfaceName: b.surface_name,
-      mappings: b.value_mappings,
-    })),
+    (agentBindingsRes.data ?? [])
+      // View columns are typed nullable; a binding edge always has both.
+      .filter(
+        (b): b is typeof b & { id: string; surface_name: string } =>
+          !!b.id && !!b.surface_name,
+      )
+      .map((b) => ({
+        id: b.id,
+        surfaceName: b.surface_name,
+        mappings: b.value_mappings,
+      })),
     manifestValuesBySurface,
     manifestSurfaceNames,
   );
@@ -522,6 +527,11 @@ export interface ApplyManifestSyncResult {
   skippedMissingSurface: string[];
   /** `ui_surface.url_pattern` rows updated from manifests / route defaults. */
   urlPatternsUpdated: { surfaceName: string; urlPattern: string }[];
+  /** `ui_surface.parent_surface_name` rows updated from manifest `inheritsFrom`. */
+  parentsUpdated: {
+    surfaceName: string;
+    parentSurfaceName: string | null;
+  }[];
   /** Post-sync drift report (should be empty unless something raced). */
   driftAfter: SurfaceDriftReport;
 }
@@ -537,7 +547,7 @@ export type BrokenMappingAction =
 
 export interface RemediateMappingArgs {
   bindingKind: "agent";
-  /** `agx_agent_surface.id`. */
+  /** `platform.associations` edge id. */
   bindingId: string;
   /** The JSONB key to remediate. */
   mappingKey: string;
@@ -561,15 +571,20 @@ export async function remediateBrokenMapping(
 ): Promise<RemediateMappingResult> {
   const { bindingId, mappingKey, remediation } = args;
 
+  // Bindings live on `platform.associations` edges (value_mappings inside
+  // metadata). This runs server-side with the admin client (super-admin
+  // gated route) — the browser has no direct grant on platform.associations.
   const { data: row, error: readErr } = await sb
-    .schema("agent")
-    .from("agent_surface")
-    .select("id, value_mappings")
-    .is("deleted_at", null)
+    .schema("platform")
+    .from("associations")
+    .select("id, metadata")
     .eq("id", bindingId)
+    .eq("source_type", "agent")
+    .eq("target_type", "surface")
     .single();
   if (readErr) throw readErr;
-  const current = (row?.value_mappings ?? {}) as Record<string, unknown>;
+  const metadata = (row?.metadata ?? {}) as Record<string, unknown>;
+  const current = (metadata.value_mappings ?? {}) as Record<string, unknown>;
   const next = { ...current };
 
   if (remediation.action === "notify_only") {
@@ -584,9 +599,11 @@ export async function remediateBrokenMapping(
     );
   }
   const { error: writeErr } = await sb
-    .schema("agent")
-    .from("agent_surface")
-    .update({ value_mappings: next as unknown as Json })
+    .schema("platform")
+    .from("associations")
+    .update({
+      metadata: { ...metadata, value_mappings: next } as unknown as Json,
+    })
     .eq("id", bindingId);
   if (writeErr) throw writeErr;
   return { ok: true, applied: true, newMappings: next };
@@ -706,6 +723,46 @@ export async function applyManifestSync(
     }
   }
 
+  // 3c-2. Mirror `inheritsFrom` → ui_surface.parent_surface_name for
+  //        registered manifests, so the DB tree (admin map, related-surfaces
+  //        chrome, RLS ancestor reads) matches the code-first hierarchy.
+  //        Only rows that differ are written; a manifest WITHOUT inheritsFrom
+  //        does NOT clear a DB-authored parent (code-first ownership applies
+  //        only to what the manifest actually declares).
+  const parentsUpdated: ApplyManifestSyncResult["parentsUpdated"] = [];
+  {
+    const parentRowsRes = await sb
+      .schema("ui")
+      .from("ui_surface")
+      .select("name, parent_surface_name")
+      .in(
+        "name",
+        targetManifests.map((m) => m.surfaceName),
+      );
+    if (parentRowsRes.error) throw parentRowsRes.error;
+    const dbParentByName = new Map(
+      (parentRowsRes.data ?? []).map((r) => [r.name, r.parent_surface_name]),
+    );
+    for (const manifest of targetManifests) {
+      const declared = manifest.inheritsFrom ?? null;
+      if (!declared) continue;
+      if (dbParentByName.get(manifest.surfaceName) === declared) continue;
+      const upd = await sb
+        .schema("ui")
+        .from("ui_surface")
+        .update({ parent_surface_name: declared })
+        .eq("name", manifest.surfaceName)
+        .select("name");
+      if (upd.error) throw upd.error;
+      if ((upd.data ?? []).length > 0) {
+        parentsUpdated.push({
+          surfaceName: manifest.surfaceName,
+          parentSurfaceName: declared,
+        });
+      }
+    }
+  }
+
   // 3d. Backfill url_pattern for any other ui_surface row still empty when a
   //     route-map entry or client/local heuristic exists.
   const allSurfacesRes = await sb
@@ -821,6 +878,7 @@ export async function applyManifestSync(
     sweptPrefCount,
     skippedMissingSurface,
     urlPatternsUpdated,
+    parentsUpdated,
     driftAfter,
   };
 }

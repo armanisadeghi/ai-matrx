@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // agx_agent_surface is RLS-protected; super-admin gated above, use admin client.
+    // agent↔surface binding edges is RLS-protected; super-admin gated above, use admin client.
     const supabase = createAdminClient();
     const result = await remediateBrokenMapping(supabase, args);
     return NextResponse.json({ result });

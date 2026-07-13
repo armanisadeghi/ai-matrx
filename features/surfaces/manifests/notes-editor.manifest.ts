@@ -28,7 +28,7 @@
  * keys working without touching the resolver.
  *
  * The agent author binds a variable to one of these values via
- * `agx_agent_surface.value_mappings`. The Notes runtime emits this scope at
+ * agent↔surface binding value_mappings (platform.associations edge metadata). The Notes runtime emits this scope at
  * trigger time (see `features/notes/hooks/useNotesSurfaceScope.ts`); whichever
  * keys aren't relevant for a given run are simply absent from the payload, and
  * unmapped keys are dropped harmlessly by the launcher.

@@ -97,6 +97,96 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   htmlPageManifest,
 ];
 
+// ---------------------------------------------------------------------------
+// Surface inheritance (v1) — `inheritsFrom` resolution.
+//
+// A child manifest inherits its parent's values, agent roles, and config
+// namespaces, overriding per key (value `name` / role `name` / `namespace`).
+// Parent entries come FIRST so child declarations win, mirroring the
+// launch-time binding-layer merge (parent layers weakest, child strongest —
+// resolved in bind-agent-to-surface.service.ts `fetchSurfaceBindingLayers`).
+//
+// Guards are LOUD by design: an unknown parent, a cycle, or a chain deeper
+// than MAX_INHERITANCE_DEPTH throws at module init — the build/dev server
+// fails instead of silently dropping inherited values.
+// ---------------------------------------------------------------------------
+
+const MAX_INHERITANCE_DEPTH = 3;
+
+const RAW_INDEX: ReadonlyMap<string, SurfaceManifest> = new Map(
+  RAW_MANIFESTS.map((m) => [m.surfaceName, m] as const),
+);
+
+/**
+ * Parent chain for a surface, ROOT FIRST (e.g. child of a child returns
+ * `[grandparent, parent]`). Unknown surfaces return `[]`. Throws on cycles
+ * and on chains deeper than MAX_INHERITANCE_DEPTH.
+ */
+export function getSurfaceAncestry(surfaceName: string): string[] {
+  const chain: string[] = [];
+  const seen = new Set<string>([surfaceName]);
+  let cur = RAW_INDEX.get(surfaceName)?.inheritsFrom;
+  while (cur) {
+    if (seen.has(cur)) {
+      throw new Error(
+        `[surfaces] inheritsFrom CYCLE detected at "${cur}" (from "${surfaceName}"). ` +
+          `Fix the manifest chain: ${[...seen].join(" → ")} → ${cur}`,
+      );
+    }
+    const parent = RAW_INDEX.get(cur);
+    if (!parent) {
+      throw new Error(
+        `[surfaces] "${surfaceName}" inheritsFrom unknown surface "${cur}" — ` +
+          `the parent must be a registered manifest in registry.ts`,
+      );
+    }
+    seen.add(cur);
+    chain.unshift(cur);
+    if (chain.length > MAX_INHERITANCE_DEPTH) {
+      throw new Error(
+        `[surfaces] inheritance chain for "${surfaceName}" exceeds depth ${MAX_INHERITANCE_DEPTH}: ` +
+          chain.join(" → "),
+      );
+    }
+    cur = parent.inheritsFrom;
+  }
+  return chain;
+}
+
+/** Merge parent → child (child wins) for values / roles / config namespaces. */
+function withInheritance(m: SurfaceManifest): SurfaceManifest {
+  const ancestry = getSurfaceAncestry(m.surfaceName);
+  if (ancestry.length === 0) return m;
+
+  const lineage = [...ancestry.map((name) => RAW_INDEX.get(name)!), m];
+
+  const valuesByName = new Map<string, SurfaceManifest["values"][number]>();
+  const rolesByName = new Map<
+    string,
+    NonNullable<SurfaceManifest["agentRoles"]>[number]
+  >();
+  const nsByName = new Map<
+    string,
+    NonNullable<SurfaceManifest["configNamespaces"]>[number]
+  >();
+  for (const layer of lineage) {
+    for (const v of layer.values) valuesByName.set(v.name, v);
+    for (const r of layer.agentRoles ?? []) rolesByName.set(r.name, r);
+    for (const n of layer.configNamespaces ?? []) nsByName.set(n.namespace, n);
+  }
+
+  return {
+    ...m,
+    values: Array.from(valuesByName.values()),
+    ...(rolesByName.size > 0
+      ? { agentRoles: Array.from(rolesByName.values()) }
+      : {}),
+    ...(nsByName.size > 0
+      ? { configNamespaces: Array.from(nsByName.values()) }
+      : {}),
+  };
+}
+
 /**
  * Guarantee EVERY surface declares the full generic baseline set (`selection`,
  * `text_before`, `text_after`, `content`, `context`). This is the platform
@@ -119,9 +209,13 @@ function withInjectedBaselines(m: SurfaceManifest): SurfaceManifest {
   };
 }
 
-/** All registered surface manifests, with generic baselines guaranteed. */
+/**
+ * All registered surface manifests, with inheritance resolved (parent values /
+ * roles / config namespaces merged in, child wins per key) and generic
+ * baselines guaranteed.
+ */
 export const ALL_MANIFESTS: readonly SurfaceManifest[] = RAW_MANIFESTS.map(
-  withInjectedBaselines,
+  (m) => withInjectedBaselines(withInheritance(m)),
 );
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */

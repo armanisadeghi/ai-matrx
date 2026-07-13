@@ -13,7 +13,7 @@
  *
  * The two are stackable: an agent launched from a surface goes through
  *   1. legacy `mapScopeToInstance` (for the shortcut bundle), then
- *   2. `resolveValueMappings` (for the `agx_agent_surface.value_mappings` blob).
+ *   2. `resolveValueMappings` (for the agent↔surface binding value_mappings (platform.associations edge metadata) blob).
  *
  * Phase 1 keeps both layers independent. A future pass can collapse them
  * once every shortcut migrates to the new shape.

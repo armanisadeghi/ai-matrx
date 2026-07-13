@@ -40,7 +40,7 @@ import {
 } from "@/features/surfaces/redux/selectors";
 import {
   bindAgentToSurface,
-  listAgentSurfaceBindingsFromAssociations,
+  listAgentSurfaceBindings,
 } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
@@ -167,7 +167,7 @@ export function SurfaceAgentBindPanel({
     if (!agentId) return;
     void dispatch(fetchAgentExecutionMinimal(agentId));
     let cancelled = false;
-    void listAgentSurfaceBindingsFromAssociations(agentId)
+    void listAgentSurfaceBindings(agentId)
       .then((rows) => {
         if (cancelled) return;
         setAssocBindings(rows);

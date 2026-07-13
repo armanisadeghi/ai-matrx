@@ -167,7 +167,7 @@ export interface AgentExecutionRuntime {
   variables?: Record<string, unknown>;
   /**
    * The `ui_surface.name` of the surface that initiated the launch. Used by
-   * the launch thunk to look up an `agx_agent_surface` binding row and
+   * the launch thunk to look up an agent↔surface binding edges binding row and
    * apply its `value_mappings` JSONB via `resolveValueMappings` before
    * delegating to the legacy scope-mapping pass. Optional — when absent,
    * the launcher behaves exactly as before (legacy auto-name-match only).

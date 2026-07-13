@@ -2,7 +2,7 @@
  * surface-bound-agents.service — agents available in a surface's context menu.
  *
  * Two layers, merged & deduped:
- *  1. Surface-specific bindings — `agx_agent_surface` rows for the surface,
+ *  1. Surface-specific bindings — agent↔surface binding edges rows for the surface,
  *     bucketed by ownership (Public / Mine / Shared / org).
  *  2. The platform DEFAULT contracts — agents bound to `matrx-default/*` that
  *     qualify for this surface. These honor a user's (or the system's) default
@@ -43,7 +43,7 @@ export interface SurfaceBoundAgentSection {
 
 /**
  * The three platform DEFAULT surface contracts. Agents bound to these (via
- * `agx_agent_surface`) are honored on EVERY qualifying surface.
+ * agent↔surface binding edges) are honored on EVERY qualifying surface.
  *
  *  - `default`               — universal 5-value contract; qualifies everywhere.
  *  - `basic-content-display` — 2-value display contract; qualifies everywhere
@@ -256,7 +256,7 @@ async function fetchMenuAgentsFromDb(
   // the safe agent card, so it only returns surfaces whose agent is visible to
   // the current user — agents you can't access simply won't appear.
   //
-  // Source of truth: platform.associations (NOT the condemned agent.agent_surface
+  // Source of truth: platform.associations (NOT the retired junction
   // table). A bind that only lands in agent_surface will never appear here.
   const { data, error } = await supabase
     .schema("agent")
@@ -340,7 +340,7 @@ async function fetchMenuAgentsFromDb(
 }
 
 /**
- * Bucket `agx_agent_surface` rows for ONE logical surface into menu sections
+ * Bucket agent↔surface binding edges rows for ONE logical surface into menu sections
  * by ownership. An agent may appear in more than one section when it has
  * bindings at different scope tiers (e.g. owned + org-scoped).
  */

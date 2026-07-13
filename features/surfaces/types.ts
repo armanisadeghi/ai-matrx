@@ -8,7 +8,7 @@
  * the same list the runtime actually emits.
  *
  * The `ValueMapping` discriminated union is the JSONB shape stored in
- * `agx_agent_surface.value_mappings`. A single resolver consumes it for
+ * agent↔surface binding value_mappings (platform.associations edge metadata). A single resolver consumes it for
  * agent variables and agent context slots.
  *
  * See:
@@ -123,6 +123,15 @@ export interface SurfaceManifest {
    * map or a simple client/local heuristic.
    */
   urlPattern?: string;
+  /**
+   * Parent surface this one inherits from (surface inheritance v1). The child
+   * inherits the parent's values, agent roles, config namespaces, AND agent
+   * bindings (parent binding layers apply weakest — child wins per key in the
+   * launch-time merge). Must name a registered manifest; cycles and chains
+   * deeper than the registry's depth cap throw loudly at registry init.
+   * Mirrored to `ui_surface.parent_surface_name` by manifest sync.
+   */
+  inheritsFrom?: string;
   /** Flat list of SurfaceValues this surface declares. */
   values: readonly SurfaceValue[];
   /** Agent positions this surface uses. Mirrored to ui_surface_agent_role. */
@@ -231,7 +240,7 @@ export interface UnknownNamespace {
 export interface BrokenMapping {
   /** The kind of binding whose mapping is broken. */
   bindingKind: "agent";
-  /** Row id of the binding (`agx_agent_surface.id`). */
+  /** Row id of the binding (binding association id). */
   bindingId: string;
   /** Surface this binding is for. */
   surfaceName: string;
@@ -268,7 +277,7 @@ export interface SurfaceDriftReport {
   roleDiffs: SurfaceAgentRoleDrift[];
   /** Config namespaces referenced (manifest or `ui_surface_config`) without a registered handler. */
   unknownNamespaces: UnknownNamespace[];
-  /** Broken `surface_value` mappings in `agx_agent_surface.value_mappings`. */
+  /** Broken `surface_value` mappings in agent↔surface binding value_mappings (platform.associations edge metadata). */
   brokenAgentMappings: BrokenMapping[];
   /** Surfaces whose `ui_surface.url_pattern` differs from code defaults. */
   urlPatternDrifts: SurfaceUrlPatternDrift[];

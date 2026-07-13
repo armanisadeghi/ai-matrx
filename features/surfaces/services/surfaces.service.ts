@@ -29,7 +29,7 @@ export interface SurfaceWithStats extends UiSurfaceRow {
    * surface has no opinions and inherits everything from its parent chain.
    */
   toolCount: number;
-  /** Number of `agx_agent_surface` rows for this surface (agents visible here). */
+  /** Number of agent↔surface binding edges for this surface (via `agent.menu_surface`). */
   agentCount: number;
   /** Number of `ui_surface_value` rows synced into DB for this surface. */
   surfaceValueCount: number;
@@ -57,11 +57,7 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
       .from("surface_defaults")
       .select("surface_name, always_include_tools, always_include_bundles"),
     c.schema("tool").from("bundle").select("id, name").is("deleted_at", null),
-    c
-      .schema("agent")
-      .from("agent_surface")
-      .select("surface_name")
-      .is("deleted_at", null),
+    c.schema("agent").from("menu_surface").select("surface_name"),
     c.schema("ui").from("ui_surface_value").select("surface_name"),
   ]);
   if (surfacesRes.error) throw surfacesRes.error;
@@ -101,6 +97,8 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
   }
   const agentByName = new Map<string, number>();
   for (const row of agentCountsRes.data ?? []) {
+    // View columns are typed nullable; a binding edge always has a surface.
+    if (!row.surface_name) continue;
     agentByName.set(
       row.surface_name,
       (agentByName.get(row.surface_name) ?? 0) + 1,
@@ -282,7 +280,7 @@ export async function bulkDeleteSurfaces(names: string[]): Promise<void> {
 
 /**
  * Renames a surface in place. Backed by ON UPDATE CASCADE on the FK
- * targets (agx_agent_surface, tool_ui, ui_surface_value, tool_surface_defaults,
+ * targets (tool_ui, ui_surface_value, tool_surface_defaults,
  * and self-FK parent_surface_name), so any references follow automatically.
  * Single UPDATE statement.
  */
@@ -313,7 +311,7 @@ export interface SurfaceUsage {
     via: "always_include_tools" | "always_include_bundles";
     bundle_name?: string;
   }[];
-  /** Agents whose agx_agent_surface row points at this surface. */
+  /** Agents with a binding edge to this surface (via `agent.menu_surface`). */
   agents: { id: string; name: string }[];
   /** tool_ui rows scoped to this surface (per-tool UI customizations). */
   uiComponents: {
@@ -337,9 +335,8 @@ export async function getSurfaceUsage(
       .maybeSingle(),
     c
       .schema("agent")
-      .from("agent_surface")
-      .select("agent:definition(id, name)")
-      .is("deleted_at", null)
+      .from("menu_surface")
+      .select("agent_id, agent_name")
       .eq("surface_name", surfaceName),
     c
       .schema("tool")
@@ -410,14 +407,21 @@ export async function getSurfaceUsage(
   }
   includedTools.sort((a, b) => a.name.localeCompare(b.name));
 
-  type AgentJoin = { agent: { id: string; name: string } | null };
+  const agentsById = new Map<string, { id: string; name: string }>();
+  for (const r of agentsRes.data ?? []) {
+    if (r.agent_id) {
+      agentsById.set(r.agent_id, {
+        id: r.agent_id,
+        name: r.agent_name ?? "Unnamed agent",
+      });
+    }
+  }
 
   return {
     tools: includedTools,
-    agents: ((agentsRes.data ?? []) as AgentJoin[])
-      .map((r) => r.agent)
-      .filter((a): a is NonNullable<AgentJoin["agent"]> => a !== null)
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    agents: Array.from(agentsById.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    ),
     uiComponents: uiRes.data ?? [],
   };
 }
@@ -510,11 +514,10 @@ export async function listSurfaceValues(
 export async function listAgentBindings(surfaceName: string) {
   const { data, error } = await sb()
     .schema("agent")
-    .from("agent_surface")
+    .from("menu_surface")
     .select(
       "id, agent_id, user_id, organization_id, project_id, task_id, value_mappings",
     )
-    .is("deleted_at", null)
     .eq("surface_name", surfaceName)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -671,7 +674,7 @@ export type BrokenMappingRemediation =
  */
 export async function remediateBrokenMapping(args: {
   bindingKind: "agent";
-  /** `agx_agent_surface.id`. */
+  /** `platform.associations` edge id. */
   bindingId: string;
   mappingKey: string;
   remediation: BrokenMappingRemediation;

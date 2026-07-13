@@ -74,7 +74,7 @@ import {
   type MappingTarget,
 } from "@/features/surfaces/components/ValueMappingEditor";
 import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
-import type { AgentSurfaceBinding } from "@/features/surfaces/services/agent-surface-bindings.service";
+import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import type {
   SurfaceValue,
   ValueMappingMap,
@@ -104,7 +104,7 @@ import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes"
 import type { EntityType } from "@/features/scopes/types";
 
 /**
- * Canonical entity_type for `agx_agent_surface` rows in the scope-assignments
+ * Canonical entity_type for agent↔surface binding edges rows in the scope-assignments
  * many-to-many system. Mirrors the per-component constant used by
  * `agent-apps` and `notes`.
  */

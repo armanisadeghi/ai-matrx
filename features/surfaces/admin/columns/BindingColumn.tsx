@@ -183,7 +183,7 @@ interface BindingFormProps {
   agent: AgentDefinition;
   surfaceName: string;
   existing:
-    | import("@/features/surfaces/services/agent-surface-bindings.service").AgentSurfaceBinding
+    | import("@/features/surfaces/services/bind-agent-to-surface.service").AgentSurfaceBinding
     | null;
   /**
    * Mappings to seed the form with when creating a new binding. Sourced
@@ -430,7 +430,7 @@ function BindingFormLayout({
 }: {
   surfaceName: string;
   existing:
-    | import("@/features/surfaces/services/agent-surface-bindings.service").AgentSurfaceBinding
+    | import("@/features/surfaces/services/bind-agent-to-surface.service").AgentSurfaceBinding
     | null;
   busy: boolean;
   onSave: () => void;

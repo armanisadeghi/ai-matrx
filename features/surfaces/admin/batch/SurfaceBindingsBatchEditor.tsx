@@ -46,7 +46,7 @@ import {
   selectActiveSurfaces,
   selectSurfacesStatus,
 } from "@/features/surfaces/redux/selectors";
-import type { AgentSurfaceBinding } from "@/features/surfaces/services/agent-surface-bindings.service";
+import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
 import type { SurfaceValue, ValueMappingMap } from "@/features/surfaces/types";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 

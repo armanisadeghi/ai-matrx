@@ -1,5 +1,5 @@
 {
-  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table — BEFORE repointing — so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
+  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table \u2014 BEFORE repointing \u2014 so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
   "relations": [
     {
       "relation": "pc_shows",
@@ -175,7 +175,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "M2M junction collapsed into platform.associations (research_source → research_tag, worklog §4.1) and archived to graveyard.rs_source_tag. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_source_tag')."
+      "reason": "M2M junction collapsed into platform.associations (research_source \u2192 research_tag, worklog \u00a74.1) and archived to graveyard.rs_source_tag. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_source_tag')."
     },
     {
       "relation": "rs_keyword_source",
@@ -183,7 +183,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "M2M junction collapsed into platform.associations (research_source → research_keyword, worklog §4.2) and archived to graveyard.rs_keyword_source. Per-keyword rank now lives in the association metadata. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_keyword_source')."
+      "reason": "M2M junction collapsed into platform.associations (research_source \u2192 research_keyword, worklog \u00a74.2) and archived to graveyard.rs_keyword_source. Per-keyword rank now lives in the association metadata. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_keyword_source')."
     },
     {
       "relation": "rs_source_keywords",
@@ -215,7 +215,7 @@
       "newSchema": "history",
       "new": "history.row_versions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
+      "reason": "retired (graveyard) \u2014 note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
     },
     {
       "relation": "note_shares",
@@ -223,7 +223,7 @@
       "newSchema": "iam",
       "new": "iam.permissions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — note sharing is canonical iam.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
+      "reason": "retired (graveyard) \u2014 note sharing is canonical iam.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
     },
     {
       "relation": "org_module_settings",
@@ -231,7 +231,7 @@
       "newSchema": "platform",
       "new": "platform.org_module_config",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
+      "reason": "retired (graveyard) \u2014 org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
     },
     {
       "relation": "user_achievements",
@@ -807,7 +807,7 @@
       "newSchema": "agent",
       "new": "agent.context_menu_view",
       "since": "2026-06-28",
-      "reason": "context-menu shim dropped — read agent.context_menu_view via .schema('agent').from('context_menu_view')."
+      "reason": "context-menu shim dropped \u2014 read agent.context_menu_view via .schema('agent').from('context_menu_view')."
     },
     {
       "relation": "ui_surface",
@@ -999,7 +999,7 @@
       "newSchema": "platform",
       "new": "platform.associations",
       "since": "2026-07-02",
-      "reason": "collapsed into platform.associations (tool → tool_bundle, role='member'; position=sort_order; metadata.local_alias) and moved to graveyard.bundle_member. Reads/writes go through associationsService (assoc_* RPCs), server-side admin routes write platform.associations directly. Never .from('bundle_member')."
+      "reason": "collapsed into platform.associations (tool \u2192 tool_bundle, role='member'; position=sort_order; metadata.local_alias) and moved to graveyard.bundle_member. Reads/writes go through associationsService (assoc_* RPCs), server-side admin routes write platform.associations directly. Never .from('bundle_member')."
     },
     {
       "relation": "render_component",
@@ -1007,7 +1007,7 @@
       "newSchema": "content_ir",
       "new": "content_ir.kind_component",
       "since": "2026-07-07",
-      "reason": "retired to graveyard.render_component (Shape System Stage 3, SHAPE_SYSTEM.md R1) — the dormant render registry lost to content_ir.kind_component, the canonical (kind, platform, role) → component_key resolver. Its only reader was the never-dispatched fetchRenderComponents thunk, now deleted. skill.render_definition SURVIVES as the markdown-atom palette; only its render_component satellite died. Never .from('render_component')."
+      "reason": "retired to graveyard.render_component (Shape System Stage 3, SHAPE_SYSTEM.md R1) \u2014 the dormant render registry lost to content_ir.kind_component, the canonical (kind, platform, role) \u2192 component_key resolver. Its only reader was the never-dispatched fetchRenderComponents thunk, now deleted. skill.render_definition SURVIVES as the markdown-atom palette; only its render_component satellite died. Never .from('render_component')."
     },
     {
       "relation": "service",
@@ -1015,7 +1015,15 @@
       "newSchema": "ai",
       "new": "ai.endpoint",
       "since": "2026-07-10",
-      "reason": "retired (ai-schema reshape) — ai.service split into ai.endpoint (one row per serving vendor: base_url/auth_ref/byok/priority) + ai.api (one row per wire contract: translator_key = old wire_format, transport, enveloped rules, request_defaults). ai.offering.service_id → endpoint_id + api_id; controls_override → override (enveloped). Never .schema('ai').from('service')."
+      "reason": "retired (ai-schema reshape) \u2014 ai.service split into ai.endpoint (one row per serving vendor: base_url/auth_ref/byok/priority) + ai.api (one row per wire contract: translator_key = old wire_format, transport, enveloped rules, request_defaults). ai.offering.service_id \u2192 endpoint_id + api_id; controls_override \u2192 override (enveloped). Never .schema('ai').from('service')."
+    },
+    {
+      "relation": "agent_surface",
+      "old": "agent.agent_surface",
+      "newSchema": "platform",
+      "new": "platform.associations",
+      "since": "2026-07-12",
+      "reason": "condemned agent\u2194surface junction retired to graveyard; bindings are platform.associations edges (agent\u2192surface, tier-encoded role) read via agent.menu_surface. Use bind-agent-to-surface.service.ts."
     }
   ]
 }
