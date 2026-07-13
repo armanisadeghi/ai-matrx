@@ -96,6 +96,15 @@ This is also why **Builder-specific settings** (`maxIterations`, `maxRetriesPerI
 2. When any consumer surface loads this agent, the agent-load response includes variable + slot definitions — **but never system prompt or instructions**. Those are server-owned secrets.
 3. Consumer surface renders the declared UI components; the user fills them in; values come back to the server via `invocation.inputs.variables`.
 
+### Flow 3b — Agent access on a context slot ("can the agent edit this?")
+
+Every context slot declares whether the agent may CHANGE its value or only READ it. The wire shape is `mutable` + `persist` on `ContextSlot`, but **the word "mutable" never reaches the UI** — users see `Read-only` (lock) vs `Agent can edit` (pencil), and, for an editable slot, "Where the agent's edits go": *This conversation only* (`persist:"never"`) / *Save to the source* (`"auto"`) / *The app saves it* (`"client"`).
+
+- **One primitive owns this everywhere:** `components/context-slots-management/AgentEditAccessControl.tsx` — `AgentEditAccessControl` (slot editor), `AgentEditAccessToggle` (dense table rows), `AgentEditAccessBadge` (read-only surfaces), plus `decodeAgentEditAccess` / `applyAgentEditAccess` / `agentEditAccessChanged`. Never re-derive `mutable`/`persist` by hand; never reintroduce the word.
+- **Read-only stores NO flags.** `applyAgentEditAccess` deletes `mutable`/`persist` rather than writing `mutable:false` — absent is the server's own default.
+- **`persist:"auto"` only works where aidream has a writeback handler** registered for the slot's `source.kind` (`context_writeback.py`: `note`, `studio_document`, `working_document`, `canvas_item`, `cx_ai_data_records`). **There is NO `ctx_item` handler**, so a *scope-bound* slot can never save the agent's edits back to the scope item — the server silently skips it. Both surfaces therefore take "Save to the source" away for scope-bound slots and say why (`SCOPE_ITEM_NO_WRITEBACK_REASON`); an editable scope slot is conversation-only. Adding that handler is an aidream change, not a FE one.
+- **The batch importer edits access on slots that already exist.** Rows already bound to a context item stay checked+disabled in the *Context slot* column (a re-run can't double-add) but their **Agent access stays live** and submitting patches the stored slot in place. Disabling it was a real bug: it made an already-added slot's access unreachable from batch.
+
 ### Flow 4 — Variable help and option picklists
 
 1. The Edit Variable modal writes each field directly to `agentDefinition` Redux.

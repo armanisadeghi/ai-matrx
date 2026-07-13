@@ -26,6 +26,11 @@ import {
   FALLBACK_CONTEXT_ICON,
   CONTEXT_TYPE_CHIP_CLASS,
 } from "./contextSlotIcons";
+import { AgentEditAccessBadge } from "@/features/agents/components/context-slots-management/AgentEditAccessControl";
+import {
+  AGENT_EDIT_SAVE_SUMMARY,
+  decodeAgentEditAccess,
+} from "@/features/agents/utils/agent-edit-access";
 import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import { resolveContextEntryValue } from "./knownContextValues";
 import { ContextValueBody } from "./ContextValueBody";
@@ -167,13 +172,15 @@ export function ContextSlotDetailSheet({
             </DetailSection>
           )}
 
-          {slot?.mutable && (
-            <DetailSection title="Mutation">
-              <p className="text-xs text-muted-foreground">
-                Mutable · persist{" "}
-                <span className="font-mono">{slot.persist ?? "never"}</span>
-              </p>
-              {slot.persist === "auto" && slot.source && (
+          {slot && (
+            <DetailSection title="Agent access">
+              <AgentEditAccessBadge access={decodeAgentEditAccess(slot).access} />
+              {slot.mutable && (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {AGENT_EDIT_SAVE_SUMMARY[slot.persist ?? "never"]}
+                </p>
+              )}
+              {slot.mutable && slot.persist === "auto" && slot.source && (
                 <pre className="mt-1.5 overflow-x-auto rounded border border-border bg-muted/40 p-2 font-mono text-[11px]">
                   {JSON.stringify(slot.source, null, 2)}
                 </pre>

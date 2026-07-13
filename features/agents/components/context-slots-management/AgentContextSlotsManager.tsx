@@ -63,6 +63,8 @@ import {
   encodeInlinePolicy,
   type InlineMode,
 } from "@/features/agents/components/context-slots-management/InlinePolicyControl";
+import { AgentEditAccessControl } from "@/features/agents/components/context-slots-management/AgentEditAccessControl";
+import { SCOPE_ITEM_NO_WRITEBACK_REASON } from "@/features/agents/utils/agent-edit-access";
 import { cn } from "@/lib/utils";
 
 const CONTEXT_TYPES: ContextObjectType[] = [
@@ -197,6 +199,16 @@ function slotToForm(slot: ContextSlot): SlotFormState {
   };
 }
 
+/**
+ * The save mode a slot can actually honour. A scope-bound slot has no writeback
+ * handler on the server, so "auto" would silently discard the agent's edits —
+ * it reads (and saves) as conversation-only instead.
+ */
+function effectivePersist(form: SlotFormState): ContextSlotPersist {
+  if (form.ctxBound && form.persist === "auto") return "never";
+  return form.persist;
+}
+
 function formToContextSlot(form: SlotFormState): {
   slot: ContextSlot | null;
   error: string | null;
@@ -226,11 +238,12 @@ function formToContextSlot(form: SlotFormState): {
 
   if (form.mutable) {
     slot.mutable = true;
-    slot.persist = form.persist;
+    slot.persist = effectivePersist(form);
   }
 
-  // Scope-context binding (independent of mutable): fills the slot from the active scope,
-  // and — when also mutable+auto — is the same source used for write-back.
+  // Scope-context binding (independent of agent access): fills the slot from the active
+  // scope, and — when also agent-editable + save-to-source — is the same source used for
+  // write-back.
   if (form.ctxBound) {
     if (!form.ctxItemId.trim()) {
       return {
@@ -249,7 +262,8 @@ function formToContextSlot(form: SlotFormState): {
     if (!form.sourceKind.trim()) {
       return {
         slot: null,
-        error: "Source 'kind' is required when persistence is 'auto'.",
+        error:
+          "Source 'kind' is required when the agent's edits save to the source.",
       };
     }
     const source: ContextSlotSource = { kind: form.sourceKind.trim() };
@@ -522,41 +536,35 @@ function SlotEditorFields({
         </Field>
       </Section>
 
-      {/* ──────────────────── Mutation ──────────────────── */}
+      {/* ──────────────────── Agent access ──────────────────── */}
       <Section
-        title="Mutation"
-        subtitle="Allow the model to rewrite this slot via ctx_patch."
+        title="Agent access"
+        subtitle="Whether the agent may change this value, or only read it."
       >
-        <label className="flex items-start gap-2 cursor-pointer">
-          <Checkbox
-            checked={form.mutable}
-            onCheckedChange={(v) => onChange({ mutable: Boolean(v) })}
-            className="mt-0.5"
-          />
-          <div className="space-y-0.5">
-            <div className="text-sm font-medium">Mutable</div>
-            <p className="text-xs text-muted-foreground">
-              Enables ctx_patch on this slot. Default is read-only.
-            </p>
-          </div>
-        </label>
-
-        {form.mutable && (
-          <Field className="pl-6 pt-2">
-            <Label className="text-xs">Persistence</Label>
-            <PersistSegment
-              value={form.persist}
-              onChange={(p) => onChange({ persist: p })}
-            />
-          </Field>
-        )}
+        <AgentEditAccessControl
+          value={{
+            access: form.mutable ? "editable" : "read_only",
+            // A legacy scope-bound slot can carry persist="auto" — writeback the
+            // server never performs. Show (and, on save, store) the truth.
+            saveMode: effectivePersist(form),
+          }}
+          onChange={(next) =>
+            onChange({
+              mutable: next.access === "editable",
+              persist: next.saveMode,
+            })
+          }
+          saveToSourceDisabledReason={
+            form.ctxBound ? SCOPE_ITEM_NO_WRITEBACK_REASON : undefined
+          }
+        />
       </Section>
 
-      {/* ──────────────────── Source (auto-persist only) ──────────────────── */}
-      {form.mutable && form.persist === "auto" && (
+      {/* ──────────────────── Source (save-to-source only) ──────────────────── */}
+      {form.mutable && form.persist === "auto" && !form.ctxBound && (
         <Section
-          title="Source"
-          subtitle="Tells the server-side writeback dispatcher where the row lives. Required when persistence is 'auto'."
+          title="Source record"
+          subtitle="Where the agent's edits are written back. Required when edits save to the source."
         >
           <Field>
             <Label htmlFor="src-kind" className="text-xs">
@@ -671,61 +679,6 @@ function Field({
   return <div className={cn("space-y-1.5", className)}>{children}</div>;
 }
 
-function PersistSegment({
-  value,
-  onChange,
-}: {
-  value: ContextSlotPersist;
-  onChange: (next: ContextSlotPersist) => void;
-}) {
-  const options: { id: ContextSlotPersist; label: string; hint: string }[] = [
-    {
-      id: "never",
-      label: "In-memory",
-      hint: "Never persisted — model can edit, but it's lost after the turn.",
-    },
-    {
-      id: "auto",
-      label: "Auto",
-      hint: "Server writes back via the source dispatcher.",
-    },
-    {
-      id: "client",
-      label: "Client",
-      hint: "Client owns persistence; server emits context_changed only.",
-    },
-  ];
-  const active = options.find((o) => o.id === value) ?? options[0];
-
-  return (
-    <div className="space-y-1.5">
-      <div
-        role="radiogroup"
-        className="inline-flex rounded-md border border-border bg-card/40 p-0.5"
-      >
-        {options.map((o) => (
-          <button
-            type="button"
-            key={o.id}
-            role="radio"
-            aria-checked={o.id === value}
-            onClick={() => onChange(o.id)}
-            className={cn(
-              "px-2.5 py-1 text-xs rounded transition-colors",
-              o.id === value
-                ? "bg-primary/15 text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-      <p className="text-[11px] text-muted-foreground/80">{active.hint}</p>
-    </div>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -822,7 +775,7 @@ export function AgentContextSlotsManager({
   const description =
     editIndex === null
       ? "Define a context key clients can pass in the request `context` object. Keys listed here get typed handling, labels, inline behaviour, and optional mutation."
-      : "Update this slot's metadata, inline policy, summary agent, or mutation behaviour.";
+      : "Update this slot's metadata, inline policy, summary agent, or whether the agent can edit it.";
 
   const editorBody = (
     <>

@@ -63,6 +63,12 @@ import {
   suggestKeyFromContextItem,
   uniquifyKey,
 } from "@/features/agents/utils/context-item-slot-mapping";
+import { AgentEditAccessToggle } from "@/features/agents/components/context-slots-management/AgentEditAccessControl";
+import {
+  applyAgentEditAccess,
+  decodeAgentEditAccess,
+  type AgentEditAccess,
+} from "@/features/agents/utils/agent-edit-access";
 
 interface ScopeBatchImportBodyProps {
   agentId: string;
@@ -73,15 +79,20 @@ interface ScopeBatchImportBodyProps {
 interface RowSelection {
   variable: boolean;
   contextSlot: boolean;
-  /** Only meaningful while `contextSlot` is checked — defaults false, same as a manually-added slot. */
-  mutable: boolean;
 }
 
 const EMPTY_SELECTION: RowSelection = {
   variable: false,
   contextSlot: false,
-  mutable: false,
 };
+
+/**
+ * Scope-bound slots have no writeback handler on the server (aidream registers
+ * `note` / `studio_document` / `working_document` / `canvas_item` — never
+ * `ctx_item`), so an agent-editable scope slot is conversation-only: the agent
+ * can rewrite it while it works, and the edit is dropped at the end of the turn.
+ */
+const AGENT_EDITABLE_SAVE_MODE = "never" as const;
 
 export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyProps) {
   const dispatch = useAppDispatch();
@@ -121,18 +132,23 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
     () => new Set(variables.map((v) => v.binding?.contextItemId).filter(Boolean) as string[]),
     [variables],
   );
-  const boundSlotItemIds = useMemo(
-    () =>
-      new Set(
-        slots
-          .filter((s) => s.source?.kind === "ctx_item")
-          .map((s) => s.source?.id)
-          .filter(Boolean) as string[],
-      ),
-    [slots],
-  );
+  // Context item → the index of the slot already bound to it. Those rows stay
+  // checked + disabled in the "Context slot" column (a re-run can never
+  // double-add) but their agent access REMAINS EDITABLE here — that's the whole
+  // point of reopening the tool, and disabling it was the bug this replaced.
+  const boundSlotIndexByItemId = useMemo(() => {
+    const map = new Map<string, number>();
+    slots.forEach((slot, index) => {
+      const id = slot.source?.kind === "ctx_item" ? slot.source.id : undefined;
+      if (id && !map.has(id)) map.set(id, index);
+    });
+    return map;
+  }, [slots]);
 
   const [selection, setSelection] = useState<Record<string, RowSelection>>({});
+  // Access picks live apart from the add/skip picks: a row can be already-added
+  // (no selection) and still have its access changed.
+  const [accessEdits, setAccessEdits] = useState<Record<string, AgentEditAccess>>({});
   // A different scope type means a different item set — start the picks over.
   // Render-time reset (not an effect) per the React "adjusting state when a
   // prop changes" pattern — avoids the extra cascading-render commit.
@@ -140,17 +156,36 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
   if (scopeTypeId !== selectionScopeTypeId) {
     setSelectionScopeTypeId(scopeTypeId);
     setSelection({});
+    setAccessEdits({});
   }
 
-  const toggle = (itemId: string, column: "variable" | "contextSlot" | "mutable") => {
+  /** The access a row shows: the user's pick, else the stored slot's, else read-only. */
+  const accessForItem = (itemId: string): AgentEditAccess => {
+    const edited = accessEdits[itemId];
+    if (edited) return edited;
+    const boundIndex = boundSlotIndexByItemId.get(itemId);
+    if (boundIndex === undefined) return "read_only";
+    return decodeAgentEditAccess(slots[boundIndex]).access;
+  };
+
+  /** A row can set access once it HAS a slot — either already added, or being added now. */
+  const rowHasSlot = (itemId: string): boolean =>
+    boundSlotIndexByItemId.has(itemId) || Boolean(selection[itemId]?.contextSlot);
+
+  const toggle = (itemId: string, column: "variable" | "contextSlot") => {
     setSelection((prev) => {
       const current = prev[itemId] ?? EMPTY_SELECTION;
-      const next: RowSelection = { ...current, [column]: !current[column] };
-      // Mutable only means something alongside a selected context slot — clearing
-      // the slot checkbox clears the (now meaningless) mutable pick with it.
-      if (column === "contextSlot" && !next.contextSlot) next.mutable = false;
-      return { ...prev, [itemId]: next };
+      return { ...prev, [itemId]: { ...current, [column]: !current[column] } };
     });
+    // Deselecting a not-yet-added slot drops the (now meaningless) access pick.
+    if (column === "contextSlot" && !boundSlotIndexByItemId.has(itemId)) {
+      setAccessEdits((prev) => {
+        if (selection[itemId]?.contextSlot !== true) return prev;
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+    }
   };
 
   const addAll = (column: "variable" | "contextSlot") => {
@@ -160,7 +195,7 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
         const alreadyBound =
           column === "variable"
             ? boundVariableItemIds.has(item.id)
-            : boundSlotItemIds.has(item.id);
+            : boundSlotIndexByItemId.has(item.id);
         if (alreadyBound) continue;
         next[item.id] = { ...(next[item.id] ?? EMPTY_SELECTION), [column]: true };
       }
@@ -173,40 +208,56 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
       const next = { ...prev };
       for (const item of items) {
         if (!next[item.id]) continue;
-        const patched: RowSelection = { ...next[item.id], [column]: false };
-        if (column === "contextSlot") patched.mutable = false;
-        next[item.id] = patched;
+        next[item.id] = { ...next[item.id], [column]: false };
       }
       return next;
     });
+    if (column === "contextSlot") {
+      setAccessEdits((prev) => {
+        const next = { ...prev };
+        for (const item of items) {
+          if (!boundSlotIndexByItemId.has(item.id)) delete next[item.id];
+        }
+        return next;
+      });
+    }
   };
 
-  const setAllMutable = (value: boolean) => {
-    setSelection((prev) => {
+  const setAccess = (itemId: string, access: AgentEditAccess) =>
+    setAccessEdits((prev) => ({ ...prev, [itemId]: access }));
+
+  const setAllAccess = (access: AgentEditAccess) =>
+    setAccessEdits((prev) => {
       const next = { ...prev };
       for (const item of items) {
-        if (!next[item.id]?.contextSlot || boundSlotItemIds.has(item.id)) continue;
-        next[item.id] = { ...next[item.id], mutable: value };
+        if (rowHasSlot(item.id)) next[item.id] = access;
       }
       return next;
     });
-  };
 
   const selectedVariableCount = items.filter(
     (i) => selection[i.id]?.variable && !boundVariableItemIds.has(i.id),
   ).length;
   const selectedSlotCount = items.filter(
-    (i) => selection[i.id]?.contextSlot && !boundSlotItemIds.has(i.id),
+    (i) => selection[i.id]?.contextSlot && !boundSlotIndexByItemId.has(i.id),
   ).length;
-  // Every currently-selected (unbound) context slot is eligible for "mutable".
-  const mutableEligibleCount = selectedSlotCount;
-  const selectedMutableCount = items.filter(
-    (i) =>
-      selection[i.id]?.contextSlot &&
-      selection[i.id]?.mutable &&
-      !boundSlotItemIds.has(i.id),
+
+  // Every row that has (or is getting) a slot can set access.
+  const accessEligibleItems = items.filter((i) => rowHasSlot(i.id));
+  const editableCount = accessEligibleItems.filter(
+    (i) => accessForItem(i.id) === "editable",
   ).length;
-  const canSubmit = selectedVariableCount + selectedSlotCount > 0;
+
+  // Already-added slots whose access the user changed — these get PATCHED in place.
+  const updatedSlots = items.filter((i) => {
+    const boundIndex = boundSlotIndexByItemId.get(i.id);
+    if (boundIndex === undefined) return false;
+    const stored = decodeAgentEditAccess(slots[boundIndex]).access;
+    return accessEdits[i.id] !== undefined && accessEdits[i.id] !== stored;
+  });
+
+  const canSubmit =
+    selectedVariableCount + selectedSlotCount + updatedSlots.length > 0;
 
   const handleSubmit = () => {
     const existingVarNames = new Set(variables.map((v) => v.name));
@@ -222,14 +273,33 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
         existingVarNames.add(name);
         newVariables.push(buildVariableFromItem(item, { name }));
       }
-      if (row?.contextSlot && !boundSlotItemIds.has(item.id)) {
+      if (row?.contextSlot && !boundSlotIndexByItemId.has(item.id)) {
         const key = uniquifyKey(suggestKeyFromContextItem(item), existingSlotKeys);
         existingSlotKeys.add(key);
-        newSlots.push(buildContextSlotFromItem(item, { key, mutable: row.mutable }));
+        newSlots.push(
+          buildContextSlotFromItem(item, {
+            key,
+            access: accessForItem(item.id),
+            saveMode: AGENT_EDITABLE_SAVE_MODE,
+          }),
+        );
       }
     }
 
-    if (newVariables.length === 0 && newSlots.length === 0) return;
+    // Patch access on slots that already exist, then append the new ones.
+    const patchedSlots = slots.map((slot, index) => {
+      const item = updatedSlots.find(
+        (i) => boundSlotIndexByItemId.get(i.id) === index,
+      );
+      if (!item) return slot;
+      return applyAgentEditAccess(slot, {
+        access: accessForItem(item.id),
+        saveMode: AGENT_EDITABLE_SAVE_MODE,
+      });
+    });
+
+    if (newVariables.length === 0 && newSlots.length === 0 && updatedSlots.length === 0)
+      return;
 
     if (newVariables.length > 0) {
       dispatch(
@@ -239,26 +309,30 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
         }),
       );
     }
-    if (newSlots.length > 0) {
+    if (newSlots.length > 0 || updatedSlots.length > 0) {
       dispatch(
         setAgentContextSlots({
           id: agentId,
-          contextSlots: [...slots, ...newSlots],
+          contextSlots: [...patchedSlots, ...newSlots],
         }),
       );
     }
 
     const parts = [
       newVariables.length > 0
-        ? `${newVariables.length} variable${newVariables.length === 1 ? "" : "s"}`
+        ? `Added ${newVariables.length} variable${newVariables.length === 1 ? "" : "s"}`
         : null,
       newSlots.length > 0
-        ? `${newSlots.length} context slot${newSlots.length === 1 ? "" : "s"}`
+        ? `${newVariables.length > 0 ? "" : "Added "}${newSlots.length} context slot${newSlots.length === 1 ? "" : "s"}`
+        : null,
+      updatedSlots.length > 0
+        ? `updated agent access on ${updatedSlots.length} slot${updatedSlots.length === 1 ? "" : "s"}`
         : null,
     ].filter(Boolean);
-    toast.success(`Added ${parts.join(" and ")}.`);
+    toast.success(`${parts.join(", ")}.`);
 
     setSelection({});
+    setAccessEdits({});
     onDone?.();
   };
 
@@ -343,28 +417,34 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
                     <ColumnAllToggle
                       total={items.length}
                       selectedCount={selectedSlotCount}
-                      boundCount={boundSlotItemIds.size}
+                      boundCount={boundSlotIndexByItemId.size}
                       onAddAll={() => addAll("contextSlot")}
                       onClearAll={() => clearAll("contextSlot")}
                     />
                   </div>
                 </TableHead>
-                <TableHead className="w-[110px]">
+                <TableHead className="w-[190px]">
                   <div className="flex items-center justify-between gap-2">
-                    <span title="Allow the model to rewrite this slot via ctx_patch. Defaults off, same as adding a slot by hand.">
-                      Mutable
+                    <span title="Whether the agent may change this value while it works, or only read it.">
+                      Agent access
                     </span>
-                    {mutableEligibleCount > 0 && (
+                    {accessEligibleItems.length > 0 && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         className="h-6 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground"
                         onClick={() =>
-                          setAllMutable(selectedMutableCount !== mutableEligibleCount)
+                          setAllAccess(
+                            editableCount === accessEligibleItems.length
+                              ? "read_only"
+                              : "editable",
+                          )
                         }
                       >
-                        {selectedMutableCount === mutableEligibleCount ? "Clear" : "Add all"}
+                        {editableCount === accessEligibleItems.length
+                          ? "All read-only"
+                          : "All can edit"}
                       </Button>
                     )}
                   </div>
@@ -375,7 +455,8 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
               {items.map((item) => {
                 const row = selection[item.id] ?? EMPTY_SELECTION;
                 const variableBound = boundVariableItemIds.has(item.id);
-                const slotBound = boundSlotItemIds.has(item.id);
+                const slotBound = boundSlotIndexByItemId.has(item.id);
+                const hasSlot = rowHasSlot(item.id);
                 return (
                   <TableRow key={item.id}>
                     <TableCell>
@@ -405,15 +486,11 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
                       />
                     </TableCell>
                     <TableCell>
-                      <Checkbox
-                        checked={row.mutable}
-                        disabled={slotBound || !row.contextSlot}
-                        onCheckedChange={() => toggle(item.id, "mutable")}
-                        title={
-                          !row.contextSlot
-                            ? "Select Context slot first"
-                            : "Allow the model to rewrite this slot via ctx_patch"
-                        }
+                      <AgentEditAccessToggle
+                        value={accessForItem(item.id)}
+                        onChange={(access) => setAccess(item.id, access)}
+                        disabled={!hasSlot}
+                        disabledReason="Add this as a context slot first, then choose whether the agent can edit it."
                       />
                     </TableCell>
                   </TableRow>
@@ -427,13 +504,22 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
       <div className="flex items-center justify-between gap-3 p-3 border-t border-border shrink-0 bg-background/95">
         <p className="text-xs text-muted-foreground">
           {canSubmit
-            ? `${selectedVariableCount} variable${selectedVariableCount === 1 ? "" : "s"}, ${selectedSlotCount} context slot${selectedSlotCount === 1 ? "" : "s"}${
-                selectedMutableCount > 0 ? ` (${selectedMutableCount} mutable)` : ""
-              } selected`
-            : "Select at least one item to add."}
+            ? [
+                `${selectedVariableCount} variable${selectedVariableCount === 1 ? "" : "s"}`,
+                `${selectedSlotCount} context slot${selectedSlotCount === 1 ? "" : "s"} to add`,
+                updatedSlots.length > 0
+                  ? `${updatedSlots.length} existing slot${updatedSlots.length === 1 ? "" : "s"} to update`
+                  : null,
+                editableCount > 0 ? `${editableCount} agent-editable` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")
+            : "Select at least one item to add, or change a slot's agent access."}
         </p>
         <Button onClick={handleSubmit} disabled={!canSubmit}>
-          Add selected
+          {selectedVariableCount + selectedSlotCount === 0 && updatedSlots.length > 0
+            ? "Save changes"
+            : "Add selected"}
         </Button>
       </div>
     </div>

@@ -6,10 +6,15 @@
  */
 
 import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
+import {
+  applyAgentEditAccess,
+  type AgentEditAccess,
+} from "@/features/agents/utils/agent-edit-access";
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 import type {
   ContextObjectType,
   ContextSlot,
+  ContextSlotPersist,
 } from "@/features/agents/types/agent-api-types";
 import type {
   VariableDefinition,
@@ -54,7 +59,14 @@ export function uniquifyKey(base: string, taken: Set<string>): string {
 /** Builds a `ContextSlot` bound to `item` via `source.kind = "ctx_item"`. */
 export function buildContextSlotFromItem(
   item: ContextItem,
-  opts?: { key?: string; onMissing?: string; mutable?: boolean },
+  opts?: {
+    key?: string;
+    onMissing?: string;
+    /** Whether the agent may change the value, or only read it. Defaults read-only. */
+    access?: AgentEditAccess;
+    /** Where an editable slot's edits go. Defaults conversation-only. */
+    saveMode?: ContextSlotPersist;
+  },
 ): ContextSlot {
   const slot: ContextSlot = {
     key: opts?.key ?? suggestKeyFromContextItem(item),
@@ -69,13 +81,10 @@ export function buildContextSlotFromItem(
       on_missing: opts?.onMissing ?? "empty",
     },
   };
-  // Mirrors the single-item editor's default: checking "Mutable" alone leaves
-  // persistence at "never" (in-memory) until the user opts into "auto"/"client".
-  if (opts?.mutable) {
-    slot.mutable = true;
-    slot.persist = "never";
-  }
-  return slot;
+  return applyAgentEditAccess(slot, {
+    access: opts?.access ?? "read_only",
+    saveMode: opts?.saveMode ?? "never",
+  });
 }
 
 /** Builds a `VariableDefinition` bound to `item` via `binding`. */
