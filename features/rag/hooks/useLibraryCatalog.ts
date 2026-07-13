@@ -10,7 +10,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { del, getJson, postJson } from "@/lib/python-client";
+import { postJson } from "@/lib/python-client";
+import { apiDelete, apiGet, buildPath } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 
 export interface LibraryCatalogItem {
   id: string;
@@ -22,22 +24,16 @@ export interface LibraryCatalogItem {
   subscribed: boolean;
 }
 
-interface ApiCatalogItem {
-  id: string;
-  name: string;
-  short_code: string | null;
-  description: string | null;
-  kind: string;
-  member_count: number;
-  subscribed: boolean;
-}
+// Wire shape DERIVED from the generated OpenAPI contract, never hand-mirrored.
+type ApiCatalogItem = components["schemas"]["LibraryCatalogItemOut"];
 
 function toItem(c: ApiCatalogItem): LibraryCatalogItem {
   return {
     id: c.id,
     name: c.name,
-    shortCode: c.short_code,
-    description: c.description,
+    // Contract marks these optional (`?: string | null`); coalesce absent → null.
+    shortCode: c.short_code ?? null,
+    description: c.description ?? null,
     kind: c.kind,
     memberCount: c.member_count,
     subscribed: c.subscribed,
@@ -59,7 +55,7 @@ export function useLibraryCatalog() {
     setError(null);
     (async () => {
       try {
-        const { data } = await getJson<ApiCatalogItem[]>("/rag/library-catalog");
+        const { data } = await apiGet("/rag/library-catalog");
         if (!cancelled) setItems((data ?? []).map(toItem));
       } catch (e) {
         if (!cancelled)
@@ -76,6 +72,9 @@ export function useLibraryCatalog() {
   const subscribe = useCallback(
     async (storeId: string): Promise<boolean> => {
       try {
+        // Raw client: the contract declares NO requestBody for subscribe, so
+        // `apiPost` derives an empty body and would drop the historical `{}`
+        // payload this call sends. Response is unused (success = resolved).
         await postJson(`/rag/library-catalog/${encodeURIComponent(storeId)}/subscribe`, {});
         refresh();
         return true;
@@ -90,7 +89,11 @@ export function useLibraryCatalog() {
   const unsubscribe = useCallback(
     async (storeId: string): Promise<boolean> => {
       try {
-        await del(`/rag/library-catalog/${encodeURIComponent(storeId)}/subscribe`);
+        await apiDelete(
+          buildPath("/rag/library-catalog/{store_id}/subscribe", {
+            store_id: storeId,
+          }),
+        );
         refresh();
         return true;
       } catch (e) {

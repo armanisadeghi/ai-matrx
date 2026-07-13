@@ -40,7 +40,9 @@ export function CleanedMarkdownPane({
                 {page.section_kind}
               </span>
             )}
-            <span>{page.cleaned_text.length.toLocaleString()} chars</span>
+            <span>
+              {(page.cleaned_text ?? "").length.toLocaleString()} chars
+            </span>
           </span>
         )}
       </header>

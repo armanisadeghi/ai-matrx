@@ -14,14 +14,11 @@
 // The endpoint has no search param — filter client-side (store counts are
 // small; the list endpoint is already the app-wide pattern).
 
-import { getJson } from "@/lib/python-client";
-import type { components } from "@/types/python-generated/api-types";
+import { apiGet } from "@/lib/api/typed-client";
 
-// DERIVED from the generated OpenAPI contract (`GET /rag/data-stores` returns
-// `UserDataStoreOut[]`) — never hand-mirrored. This module reads only a few
-// fields; a backend rename still surfaces as a compile error after
-// `pnpm sync-types` rather than a silent runtime drift.
-type ApiDataStoreSummary = components["schemas"]["UserDataStoreOut"];
+// Response shape (`UserDataStoreOut[]`) is DERIVED from the generated OpenAPI
+// contract by `apiGet` — never hand-mirrored. This module reads only a few
+// fields; a backend rename surfaces as a compile error after `pnpm sync-types`.
 
 export async function listDataStoreCandidates(args: {
   search?: string;
@@ -32,9 +29,9 @@ export async function listDataStoreCandidates(args: {
 > {
   const { search, limit = 100 } = args;
   try {
-    const { data } = await getJson<ApiDataStoreSummary[]>(
-      "/rag/data-stores?include_inactive=false",
-    );
+    const { data } = await apiGet("/rag/data-stores", {
+      query: { include_inactive: false },
+    });
     const needle = search?.trim().toLowerCase();
     const rows = (Array.isArray(data) ? data : [])
       .filter((s) => !needle || s.name.toLowerCase().includes(needle))

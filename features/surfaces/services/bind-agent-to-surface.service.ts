@@ -68,6 +68,10 @@ interface MenuSurfaceBindingRow {
   task_id: string | null;
   value_mappings: unknown;
   created_at: string;
+  /** Tier-encoded edge role — the ONLY reliable tier signal (assoc_add stamps
+   * an access org on EVERY edge, so `organization_id` alone cannot identify
+   * the org tier). */
+  role: string | null;
 }
 
 type BindingTier = "global" | "user" | "org" | "project" | "task";
@@ -89,26 +93,77 @@ export function bindingRoleForScope(scope: ScopeInput): string {
   return "binding:global";
 }
 
-function scopeFromRow(row: MenuSurfaceBindingRow): ScopeInput {
+/**
+ * Derive the mutually-exclusive tier columns from the tier-encoded edge role.
+ * `organization_id` is stamped on EVERY edge by `assoc_add` (it is the assoc
+ * access org), so null-ness of the hoisted columns is NOT a tier signal —
+ * a global edge classified by columns alone would masquerade as an org
+ * binding (wrong layer precedence, undeletable via a recomputed role).
+ */
+function tierScopeFromRole(
+  role: string | null,
+  row: MenuSurfaceBindingRow,
+): ScopeInput {
+  if (role === "binding:global") {
+    return { userId: null, organizationId: null, projectId: null, taskId: null };
+  }
+  if (role?.startsWith("binding:u:")) {
+    return {
+      userId: role.slice("binding:u:".length),
+      organizationId: null,
+      projectId: null,
+      taskId: null,
+    };
+  }
+  if (role?.startsWith("binding:o:")) {
+    return {
+      userId: null,
+      organizationId: role.slice("binding:o:".length),
+      projectId: null,
+      taskId: null,
+    };
+  }
+  if (role?.startsWith("binding:p:")) {
+    return {
+      userId: null,
+      organizationId: null,
+      projectId: role.slice("binding:p:".length),
+      taskId: null,
+    };
+  }
+  if (role?.startsWith("binding:t:")) {
+    return {
+      userId: null,
+      organizationId: null,
+      projectId: null,
+      taskId: role.slice("binding:t:".length),
+    };
+  }
+  // Loud recovery: a binding edge without a tier role should not exist (the
+  // cutover migration normalized all of them). Fall back to the legacy
+  // column heuristic so the binding still renders, but scream.
+  console.error(
+    "[bind-agent-to-surface] binding edge has no tier-encoded role — falling back to column heuristic; this edge predates the cutover normalization and must be fixed",
+    { id: row.id, agentId: row.agent_id, surfaceName: row.surface_name, role },
+  );
   return {
     userId: row.user_id,
-    organizationId: row.organization_id && !row.user_id ? row.organization_id : null,
+    organizationId: row.user_id ? null : row.organization_id,
     projectId: row.project_id,
     taskId: row.task_id,
   };
 }
 
 function fromRow(row: MenuSurfaceBindingRow): AgentSurfaceBinding {
+  const tier = tierScopeFromRole(row.role, row);
   return {
     id: row.id,
     agentId: row.agent_id,
     surfaceName: row.surface_name,
-    userId: row.user_id,
-    // A user-tier edge still carries an access org; the tier columns must be
-    // mutually exclusive for consumers that derive the tier from them.
-    organizationId: row.user_id ? null : row.organization_id,
-    projectId: row.project_id,
-    taskId: row.task_id,
+    userId: tier.userId ?? null,
+    organizationId: tier.organizationId ?? null,
+    projectId: tier.projectId ?? null,
+    taskId: tier.taskId ?? null,
     valueMappings: isValueMappingMap(row.value_mappings)
       ? (row.value_mappings as ValueMappingMap)
       : {},
@@ -117,7 +172,7 @@ function fromRow(row: MenuSurfaceBindingRow): AgentSurfaceBinding {
 }
 
 const MENU_SURFACE_COLUMNS =
-  "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at";
+  "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at, role";
 
 // ---------------------------------------------------------------------------
 // Writes
@@ -307,7 +362,9 @@ export async function deleteAgentSurfaceBinding(id: string): Promise<void> {
     sourceId: row.agent_id,
     targetType: "surface",
     targetId: surface.id,
-    role: bindingRoleForScope(scopeFromRow(row)),
+    // The stored role IS the edge identity — never recompute it from the
+    // hoisted columns (every edge carries an access org).
+    role: row.role ?? bindingRoleForScope(tierScopeFromRole(row.role, row)),
   });
   if (!result.ok) {
     throw new Error(result.error.message || "Failed to delete binding");

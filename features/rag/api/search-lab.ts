@@ -9,17 +9,16 @@
  * `features/rag/components/search/`.
  */
 import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
+import { apiPost } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 
 // ---------------------------------------------------------------------------
 // /expand — multi-query + HyDE preview
 // ---------------------------------------------------------------------------
 
-export interface ExpandRequest {
-  query: string;
-  multi_query?: number;
-  use_hyde?: boolean;
-}
+// Request body DERIVED from the generated OpenAPI contract, never hand-mirrored
+// — defaulted fields are optional on the wire, so callers omit them.
+export type ExpandRequest = components["schemas"]["ExpandRequest"];
 
 // Derived from the generated OpenAPI contract, never hand-mirrored. NOTE:
 // `query_vector_preview` is OPTIONAL in the contract — consumers must guard
@@ -31,11 +30,9 @@ export async function ragExpand(
   body: ExpandRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<ExpandResponse> {
-  const { data } = await postJson<ExpandResponse, ExpandRequest>(
-    `/rag/search-lab/expand`,
-    body,
-    { signal: opts.signal },
-  );
+  const { data } = await apiPost("/rag/search-lab/expand", body, {
+    signal: opts.signal,
+  });
   return data;
 }
 
@@ -58,6 +55,10 @@ export type InventoryResponse = components["schemas"]["InventoryResponse"];
 export async function ragInventory(
   opts: { adminBypassAcl?: boolean; signal?: AbortSignal } = {},
 ): Promise<InventoryResponse> {
+  // Raw client: the contract declares NO requestBody for this endpoint
+  // (`admin_bypass_acl` is a query param), so `apiPost` derives an empty body
+  // and would drop the historical `{}` payload this call has always sent.
+  // Response type is still contract-derived (InventoryResponse alias above).
   const qs = opts.adminBypassAcl ? "?admin_bypass_acl=true" : "";
   const { data } = await postJson<InventoryResponse, Record<string, never>>(
     `/rag/search-lab/inventory${qs}`,
@@ -71,24 +72,9 @@ export async function ragInventory(
 // /diagnose — full pipeline trace for one query
 // ---------------------------------------------------------------------------
 
-export interface DiagnoseRequest {
-  query: string;
-  limit?: number;
-  multi_query?: number;
-  use_hyde?: boolean;
-  rerank?: boolean;
-  use_mmr?: boolean;
-  only_children?: boolean;
-  source_kinds?: string[];
-  embedding_models?: string[];
-  data_store_id?: string | null;
-  admin_bypass_acl?: boolean;
-  include_sources?: { source_kind: string; source_id: string }[];
-  /** Admin-only org override — mirrors /rag/search filters.organization_id. */
-  organization_id?: string | null;
-  /** Structural scope filter (ctx_scope ids), same as /rag/search. */
-  scope_ids?: string[] | null;
-}
+// Request body DERIVED from the generated OpenAPI contract, never hand-mirrored
+// — defaulted fields are optional on the wire, so callers omit them.
+export type DiagnoseRequest = components["schemas"]["DiagnoseRequest"];
 
 // Derived from the contract, never hand-mirrored. NOTE: unlike the search
 // lane's `RagSearchHit`, DiagnoseHit carries NO entity-lane provenance —
@@ -103,11 +89,9 @@ export async function ragDiagnose(
   body: DiagnoseRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<DiagnoseResponse> {
-  const { data } = await postJson<DiagnoseResponse, DiagnoseRequest>(
-    `/rag/search-lab/diagnose`,
-    body,
-    { signal: opts.signal },
-  );
+  const { data } = await apiPost("/rag/search-lab/diagnose", body, {
+    signal: opts.signal,
+  });
   return data;
 }
 
@@ -208,20 +192,10 @@ export async function* ragDiagnoseStream(
 // and N queries. The UI then "plays out" rag_get_chunk on any hit.
 // ---------------------------------------------------------------------------
 
-export interface AgentToolSearchRequest {
-  queries: string[];
-  limit?: number;
-  source_kinds?: string[] | null;
-  data_store_id?: string | null;
-  multi_query?: number;
-  use_hyde?: boolean;
-  rerank?: boolean;
-  use_mmr?: boolean;
-  scope_ids?: string[] | null;
-  /** Admin-only org override (mirrors /rag/search). */
-  organization_id?: string | null;
-  include_sources?: { source_kind: string; source_id: string }[];
-}
+// Request body DERIVED from the generated OpenAPI contract, never hand-mirrored
+// — defaulted fields are optional on the wire, so callers omit them.
+export type AgentToolSearchRequest =
+  components["schemas"]["AgentToolSearchRequest"];
 
 // Response shapes DERIVED from the generated OpenAPI contract, never
 // hand-mirrored — a backend rename/shape change becomes a compile error after
@@ -243,10 +217,9 @@ export async function ragAgentToolSearch(
   body: AgentToolSearchRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<AgentToolSearchResponse> {
-  const { data } = await postJson<
-    AgentToolSearchResponse,
-    AgentToolSearchRequest
-  >(`/rag/search-lab/tool/search`, body, { signal: opts.signal });
+  const { data } = await apiPost("/rag/search-lab/tool/search", body, {
+    signal: opts.signal,
+  });
   return data;
 }
 
@@ -254,12 +227,9 @@ export async function ragAgentToolSearch(
 // /tool/get-chunk — "play out" the agent's next move (rag_get_chunk)
 // ---------------------------------------------------------------------------
 
-export interface AgentToolGetChunkRequest {
-  chunk_id: string;
-  include_parent?: boolean;
-  /** Admin-only org override — should match the org used for the search. */
-  organization_id?: string | null;
-}
+// Request body DERIVED from the generated OpenAPI contract, never hand-mirrored.
+export type AgentToolGetChunkRequest =
+  components["schemas"]["AgentToolGetChunkRequest"];
 
 export type AgentToolGetChunkResponse =
   components["schemas"]["AgentToolGetChunkResponse"];
@@ -268,9 +238,8 @@ export async function ragAgentToolGetChunk(
   body: AgentToolGetChunkRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<AgentToolGetChunkResponse> {
-  const { data } = await postJson<
-    AgentToolGetChunkResponse,
-    AgentToolGetChunkRequest
-  >(`/rag/search-lab/tool/get-chunk`, body, { signal: opts.signal });
+  const { data } = await apiPost("/rag/search-lab/tool/get-chunk", body, {
+    signal: opts.signal,
+  });
   return data;
 }

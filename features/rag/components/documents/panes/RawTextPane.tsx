@@ -19,9 +19,10 @@ export interface RawTextPaneProps {
 export function RawTextPane({ page, loading, error }: RawTextPaneProps) {
   const stats = useMemo(() => {
     if (!page) return null;
+    const rawText = page.raw_text ?? "";
     return {
-      chars: page.raw_text.length,
-      lines: page.raw_text.split("\n").length,
+      chars: rawText.length,
+      lines: rawText.split("\n").length,
       ocr: page.used_ocr,
       method: page.extraction_method ?? "unknown",
     };

@@ -16,23 +16,31 @@
 import type { RootState } from "@/lib/redux/store";
 import type { AssistantConversationRef } from "../types";
 import { AUDIO_ASSISTANT_AGENT_ID } from "../constants";
+import { selectSurfaceConfigEntry } from "@/features/surfaces/redux/surfaceConfigSlice";
+import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
 
 /**
  * The agent the assistant should use when nothing more specific applies.
  * Precedence: an explicit `overrideAgentId` (a surface that brings its own
  * default agent — e.g. a War Room tile defaulting to the Thread persona) → the
- * user-wide Scribe preference → the seeded audio-assistant agent. (Per-session
- * choices live on the roster and take precedence over all of these.)
+ * `assistant` role on the `matrx-user/transcript-scribe` surface (resolved
+ * global → org → user via surface-config; hydrated by `ScribeScreen`'s
+ * `useSurfaceConfig` mount) → the seeded audio-assistant agent (which is also
+ * the role's platform default, so the fallback only differs pre-hydration).
+ * (Per-session choices live on the roster and take precedence over all.)
+ *
+ * This REPLACED `userPreferences.transcription.scribeAssistantAgentId`
+ * (deleted 2026-07-12) — user overrides now live in `ui_surface_agent_pref`.
  */
 export function resolveDefaultAssistantAgentId(
   state: RootState,
   overrideAgentId?: string,
 ): string {
-  return (
-    overrideAgentId ||
-    state.userPreferences?.transcription?.scribeAssistantAgentId ||
-    AUDIO_ASSISTANT_AGENT_ID
-  );
+  if (overrideAgentId) return overrideAgentId;
+  const entry = selectSurfaceConfigEntry(state, TRANSCRIPT_SCRIBE_SURFACE);
+  const roleAgent =
+    entry?.resolved?.roles["assistant"]?.effective[0]?.agentId ?? null;
+  return roleAgent || AUDIO_ASSISTANT_AGENT_ID;
 }
 
 /** Find the roster entry for a conversation id. */

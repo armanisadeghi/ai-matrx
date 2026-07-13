@@ -30,4 +30,3 @@ patch_file() {
 }
 
 patch_file "types/database.types.ts"
-patch_file "types/matrixDb.types.ts"

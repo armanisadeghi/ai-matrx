@@ -77,11 +77,11 @@ export function LineageBreadcrumbs({
       {lineage && (
         <span className="text-muted-foreground">
           · <GitBranch className="inline h-3 w-3 mr-0.5" />
-          {lineage.binary_ancestors.length +
-            lineage.processing_ancestors.length}{" "}
+          {(lineage.binary_ancestors?.length ?? 0) +
+            (lineage.processing_ancestors?.length ?? 0)}{" "}
           ancestors,{" "}
-          {lineage.binary_descendants.length +
-            lineage.processing_descendants.length}{" "}
+          {(lineage.binary_descendants?.length ?? 0) +
+            (lineage.processing_descendants?.length ?? 0)}{" "}
           descendants
         </span>
       )}

@@ -15,6 +15,9 @@ import {
 } from "@/lib/python-client";
 import type { CloudFileVersionRow, FileRecordApi } from "@/features/files/types";
 
+// list/get stay on the raw client: the contract response is `FileVersionRecord`
+// (all-optional + index-signature), whereas consumers read the concrete DB-row
+// `CloudFileVersionRow`. Binding would erase the row's concrete fields.
 export async function listVersions(
   fileId: string,
   opts: RequestOptions = {},
@@ -36,6 +39,8 @@ export async function getVersion(
   );
 }
 
+// Binary download (blob bytes, not JSON) — stays on the raw `downloadBlob` helper;
+// the typed client only covers JSON responses.
 export async function downloadVersion(
   fileId: string,
   versionNumber: number,
@@ -52,7 +57,11 @@ export async function restoreVersion(
   versionNumber: number,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
-  // Empty-body POST, so we pass `{}` to satisfy the typed `postJson` signature.
+  // Stays on the raw client: the contract declares NO request body for this
+  // operation, but the server accepts (and this call sends) an empty `{}` — routing
+  // through `apiPost` would type the body as `undefined` and could change the wire.
+  // The response type is already contract-bound: `FileRecordApi` is an alias of
+  // `components["schemas"]["FileRecord"]`, exactly what the operation returns.
   return postJson<FileRecordApi, Record<string, never>>(
     `/files/${fileId}/versions/${versionNumber}/restore`,
     {},

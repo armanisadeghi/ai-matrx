@@ -5341,6 +5341,7 @@ export type Database = {
           resolution_source: string | null
           resolved_at: string | null
           retry_count: number | null
+          runtime_execution_id: string | null
           started_at: string
           status: string
           success: boolean
@@ -5390,6 +5391,7 @@ export type Database = {
           resolution_source?: string | null
           resolved_at?: string | null
           retry_count?: number | null
+          runtime_execution_id?: string | null
           started_at?: string
           status?: string
           success?: boolean
@@ -5439,6 +5441,7 @@ export type Database = {
           resolution_source?: string | null
           resolved_at?: string | null
           retry_count?: number | null
+          runtime_execution_id?: string | null
           started_at?: string
           status?: string
           success?: boolean

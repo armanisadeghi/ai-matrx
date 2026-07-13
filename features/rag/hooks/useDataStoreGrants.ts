@@ -10,7 +10,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { del, getJson, postJson } from "@/lib/python-client";
+import { apiDelete, apiGet, apiPost, buildPath } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 
 export type GrantAudience = "global" | "industry" | "organization";
 
@@ -24,25 +25,20 @@ export interface DataStoreGrant {
   organizationName: string | null;
 }
 
-interface ApiGrant {
-  id: string;
-  audience: string;
-  industry_id: string | null;
-  industry_name: string | null;
-  industry_slug: string | null;
-  organization_id: string | null;
-  organization_name: string | null;
-}
+// Wire shapes DERIVED from the generated OpenAPI contract, never hand-mirrored.
+type ApiGrant = components["schemas"]["DataStoreGrantOut"];
 
 function toGrant(g: ApiGrant): DataStoreGrant {
   return {
     id: g.id,
     audience: (g.audience as GrantAudience) ?? "organization",
-    industryId: g.industry_id,
-    industryName: g.industry_name,
-    industrySlug: g.industry_slug,
-    organizationId: g.organization_id,
-    organizationName: g.organization_name,
+    // Contract marks these optional (`?: string | null`); coalesce the absent
+    // case to null to match the DataStoreGrant shape the UI renders.
+    industryId: g.industry_id ?? null,
+    industryName: g.industry_name ?? null,
+    industrySlug: g.industry_slug ?? null,
+    organizationId: g.organization_id ?? null,
+    organizationName: g.organization_name ?? null,
   };
 }
 
@@ -63,8 +59,10 @@ export function useDataStoreGrants(storeId: string | null) {
     setError(null);
     (async () => {
       try {
-        const { data } = await getJson<ApiGrant[]>(
-          `/rag/data-stores/${encodeURIComponent(storeId)}/grants`,
+        const { data } = await apiGet(
+          buildPath("/rag/data-stores/{store_id}/grants", {
+            store_id: storeId,
+          }),
         );
         if (!cancelled) setGrants((data ?? []).map(toGrant));
       } catch (e) {
@@ -87,8 +85,10 @@ export function useDataStoreGrants(storeId: string | null) {
     }): Promise<boolean> => {
       if (!storeId) return false;
       try {
-        await postJson<ApiGrant>(
-          `/rag/data-stores/${encodeURIComponent(storeId)}/grants`,
+        await apiPost(
+          buildPath("/rag/data-stores/{store_id}/grants", {
+            store_id: storeId,
+          }),
           {
             audience: input.audience,
             industry_id: input.industryId ?? undefined,
@@ -109,8 +109,11 @@ export function useDataStoreGrants(storeId: string | null) {
     async (grantId: string): Promise<boolean> => {
       if (!storeId) return false;
       try {
-        await del(
-          `/rag/data-stores/${encodeURIComponent(storeId)}/grants/${encodeURIComponent(grantId)}`,
+        await apiDelete(
+          buildPath("/rag/data-stores/{store_id}/grants/{grant_id}", {
+            store_id: storeId,
+            grant_id: grantId,
+          }),
         );
         refresh();
         return true;

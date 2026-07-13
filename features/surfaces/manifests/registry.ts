@@ -27,6 +27,7 @@ import { analysisStudioManifest } from "./analysis-studio.manifest";
 import { scannerManifest } from "./scanner.manifest";
 import { transcriptsManifest } from "./transcripts.manifest";
 import { transcriptsCleanupManifest } from "./transcripts-cleanup.manifest";
+import { transcriptScribeManifest } from "./transcript-scribe.manifest";
 import { agentBuilderManifest } from "./agent-builder.manifest";
 import { chatManifest } from "./chat.manifest";
 import { assistantMessageManifest } from "./assistant-message.manifest";
@@ -68,6 +69,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   scannerManifest,
   transcriptsManifest,
   transcriptsCleanupManifest,
+  transcriptScribeManifest,
   agentBuilderManifest,
   chatManifest,
   assistantMessageManifest,

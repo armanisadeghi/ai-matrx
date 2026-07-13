@@ -10,13 +10,14 @@
  */
 
 import {
-  del,
   getJson,
   patchJson,
   postJson,
   type RequestOptions,
   type ResponseMeta,
 } from "@/lib/python-client";
+import { apiDelete, buildPath, withQuery } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 import type {
   BulkMoveFoldersRequest,
   BulkResponse,
@@ -29,6 +30,10 @@ import type {
 // Read
 // ---------------------------------------------------------------------------
 
+// Left on the raw client: the contract types this response as an untyped
+// `{ [key: string]: unknown }[]` (operation `list_folders_files_folders_get`),
+// while consumers deref concrete `CloudFolderRow` (DB-row) fields. Binding to
+// the contract would replace the row shape with `unknown` and break them.
 export async function listFolders(
   params: { parentPath?: string } = {},
   opts: RequestOptions = {},
@@ -48,6 +53,12 @@ export async function listFolders(
  * backend will create any missing intermediate folders atomically and
  * idempotently, matching upload semantics.
  */
+// Left on the raw client: two contract disagreements make binding unsafe here.
+// (1) The contract's `CreateFolderRequest` schema has ONLY `folder_path` (required),
+//     `visibility`, `metadata` — it does NOT declare `folder_name` / `parent_id`,
+//     which this FE type sends. (2) The contract response is `FolderRecord`
+//     (owner_id / all-optional), not the DB-row `CloudFolderRow` (created_by /
+//     organization_id / is_system) that consumers read. See report — latent bug.
 export async function createFolder(
   body: CreateFolderRequest,
   opts: RequestOptions = {},
@@ -64,6 +75,10 @@ export async function createFolder(
  * The backend cascades `folder_path` updates to descendants on the server
  * side; we don't replay that on the client.
  */
+// Left on the raw client: same disagreements as `createFolder`. The contract's
+// `PatchFolderRequest` has `folder_path` / `visibility` / `metadata`, while this
+// FE type sends `folder_name` / `parent_id`; and the contract response is
+// `FolderRecord`, not the DB-row `CloudFolderRow` consumers read.
 export async function patchFolder(
   folderId: string,
   body: FolderPatchRequest,
@@ -84,9 +99,17 @@ export async function deleteFolder(
   folderId: string,
   params: { hardDelete?: boolean } = {},
   opts: RequestOptions = {},
-): Promise<{ data: null; meta: ResponseMeta }> {
-  const q = params.hardDelete ? "?hard_delete=true" : "";
-  return del<null>(`/folders/${folderId}${q}`, opts);
+): Promise<{ data: components["schemas"]["DeleteResponse"]; meta: ResponseMeta }> {
+  // Contract-bound: response derived from `delete_folder_folders__folder_id__delete`.
+  // `hard_delete` is only sent when true (withQuery drops the absent key), matching
+  // the prior `?hard_delete=true`-only-when-true behavior.
+  return apiDelete(
+    withQuery(
+      buildPath("/folders/{folder_id}", { folder_id: folderId }),
+      params.hardDelete ? { hard_delete: "true" } : undefined,
+    ),
+    opts,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -98,6 +121,10 @@ export async function deleteFolder(
  * succeeded/failed envelope so the caller can show per-row error chips
  * without aborting the whole batch.
  */
+// Left on the raw client: the request is contract-compatible, but the contract's
+// `BulkResponse.results[].error` is OPTIONAL while this FE `BulkResponse` (and its
+// thunk consumer) treats `error` as REQUIRED (`string | null`). Routing would force
+// the looser optional type onto the consumer and break it. See report — latent bug.
 export async function bulkMoveFolders(
   body: BulkMoveFoldersRequest,
   opts: RequestOptions = {},

@@ -100,7 +100,7 @@ export function DocumentViewer({
     }
   }, []);
 
-  const totalPages = doc.data?.total_pages ?? doc.data?.pages.length ?? 0;
+  const totalPages = doc.data?.total_pages ?? doc.data?.pages?.length ?? 0;
 
   const openDiff = useOpenDiffViewerWindow();
   const canCompare = Boolean(page.data?.raw_text && page.data?.cleaned_text);

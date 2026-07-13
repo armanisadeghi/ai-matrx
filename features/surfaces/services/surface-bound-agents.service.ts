@@ -105,6 +105,10 @@ type MenuSurfaceRow = {
   /** Full safe-card object; `created_by` is the agent's owner. */
   agent: { created_by: string | null } | null;
   organizations: { id: string; name: string } | null;
+  /** Tier-encoded edge role (binding:global / binding:u|o|p|t:<id>). The ONLY
+   * reliable tier signal — assoc_add stamps an access org on EVERY edge, so
+   * `organization_id` alone would bucket user/global binds as org binds. */
+  role: string | null;
 };
 
 /** Map a `menu_surface` view row into the internal binding shape the bucketing
@@ -115,7 +119,11 @@ function toBindingRow(row: MenuSurfaceRow): BindingRow {
     id: row.id,
     agent_id: row.agent_id,
     surface_name: row.surface_name,
-    organization_id: row.organization_id,
+    // Org tier only when the edge role says so — the raw column is the assoc
+    // access org and is present on every tier.
+    organization_id: row.role?.startsWith("binding:o:")
+      ? row.organization_id
+      : null,
     user_id: row.user_id,
     agent: {
       id: row.agent_id,

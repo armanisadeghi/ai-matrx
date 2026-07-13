@@ -397,14 +397,6 @@ export interface PromptsPreferences {
   autoClearResponsesInEditMode: boolean;
 }
 
-export interface TranscriptionPreferences {
-  /**
-   * User-wide default agent for the Scribe audio assistant. Null → fall back to
-   * the seeded AUDIO_ASSISTANT_AGENT_ID. Per-session choices override this.
-   */
-  scribeAssistantAgentId: string | null;
-}
-
 /** Captured keyboard shortcut — mirrors the `KeybindingValue` shape used by
  *  `SettingsKeybinding` so the preference can be passed straight through. */
 export interface AgentConnectionsShortcut {
@@ -547,7 +539,6 @@ export interface UserPreferences {
   system: SystemPreferences;
   messaging: MessagingPreferences;
   agentContext: AgentContextPreferences;
-  transcription: TranscriptionPreferences;
   agentConnections: AgentConnectionsPreferences;
   mermaid: MermaidPreferences;
   conversationFilters: ConversationFilterPreferences;
@@ -848,9 +839,6 @@ export const initializeUserPreferencesState = (
       projectId: null,
       taskId: null,
     },
-    transcription: {
-      scribeAssistantAgentId: null,
-    },
     agentConnections: {
       notifyOnConnect: true,
       autoReconnect: false,
@@ -936,10 +924,6 @@ export const initializeUserPreferencesState = (
     agentContext: {
       ...defaultPreferences.agentContext,
       ...preferences.agentContext,
-    },
-    transcription: {
-      ...defaultPreferences.transcription,
-      ...preferences.transcription,
     },
     agentConnections: {
       ...defaultPreferences.agentConnections,
@@ -1066,9 +1050,6 @@ const userPreferencesSlice = createSlice({
         state.system = { ...state._meta.loadedPreferences.system };
         state.messaging = { ...state._meta.loadedPreferences.messaging };
         state.agentContext = { ...state._meta.loadedPreferences.agentContext };
-        state.transcription = {
-          ...state._meta.loadedPreferences.transcription,
-        };
         state.agentConnections = {
           ...state._meta.loadedPreferences.agentConnections,
         };
@@ -1207,11 +1188,6 @@ const userPreferencesSlice = createSlice({
         state.messaging = { ...state.messaging, ...loaded.messaging };
       if (loaded.agentContext)
         state.agentContext = { ...state.agentContext, ...loaded.agentContext };
-      if (loaded.transcription)
-        state.transcription = {
-          ...state.transcription,
-          ...loaded.transcription,
-        };
       if (loaded.agentConnections)
         state.agentConnections = {
           ...state.agentConnections,
@@ -1312,7 +1288,6 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "system",
   "messaging",
   "agentContext",
-  "transcription",
   "agentConnections",
   "mermaid",
   "conversationFilters",

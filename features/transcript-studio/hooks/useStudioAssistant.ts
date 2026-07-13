@@ -44,6 +44,8 @@ import {
   type AssistantContextEntry,
 } from "../service/assistantContextBuilder";
 import { buildSessionResourceContextEntries } from "../service/sessionResourceContext";
+import { ensureSurfaceConfig } from "@/features/surfaces/redux/surfaceConfigSlice";
+import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
 import {
   fetchProject,
   selectProjectById,
@@ -129,6 +131,21 @@ export function useStudioAssistant(
     if (conversationId) return undefined;
     let cancelled = false;
     void (async () => {
+      // Hydrate the Scribe surface config FIRST so the default-agent
+      // resolution inside ensureAssistantConversationThunk (the `assistant`
+      // role on matrx-user/transcript-scribe) sees any user/org override
+      // instead of falling back to the seeded agent. Single-flight + cached
+      // per session, so this is a no-op after the first mount.
+      try {
+        await dispatch(
+          ensureSurfaceConfig({ surfaceName: TRANSCRIPT_SCRIBE_SURFACE }),
+        );
+      } catch (err) {
+        console.error(
+          "[transcript-studio] failed to hydrate scribe surface config — falling back to the seeded assistant agent",
+          err,
+        );
+      }
       try {
         const doc = await dispatch(
           ensureWorkingDocumentThunk({ sessionId }),

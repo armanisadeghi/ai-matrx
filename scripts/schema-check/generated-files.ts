@@ -25,15 +25,13 @@ const exact =
   (...paths: string[]) =>
   (rel: string) =>
     paths.includes(rel);
-const underDir =
-  (dir: string) =>
-  (rel: string) =>
-    rel === dir || rel.startsWith(dir.endsWith("/") ? dir : dir + "/");
+const underDir = (dir: string) => (rel: string) =>
+  rel === dir || rel.startsWith(dir.endsWith("/") ? dir : dir + "/");
 
 const RULES: Rule[] = [
   {
     // Supabase-generated Database types — the FE's entire schema assumption.
-    test: exact("types/database.types.ts", "types/matrixDb.types.ts"),
+    test: exact("types/database.types.ts"),
     info: {
       label: "Supabase database types",
       source: "the live Supabase database (project txzxabzwovsujtloxrus)",
@@ -46,7 +44,8 @@ const RULES: Rule[] = [
     test: underDir("types/python-generated"),
     info: {
       label: "Python backend API types",
-      source: "the aidream Python backend's OpenAPI schema + stream-event/LLM-param models",
+      source:
+        "the aidream Python backend's OpenAPI schema + stream-event/LLM-param models",
       regen: "pnpm sync-types",
       why: "these are generated from the Python backend's live OpenAPI — to change them you change the backend (aidream) and re-sync, never this file",
     },
@@ -57,7 +56,8 @@ const RULES: Rule[] = [
     info: {
       label: "dead-relations registry",
       source: "the platform.deprecated_relations table in the live DB",
-      regen: "re-sync from platform.deprecated_relations (see the db-change skill)",
+      regen:
+        "re-sync from platform.deprecated_relations (see the db-change skill)",
       why: "this JSON mirrors a DB table — the move is recorded in the database; this file just reflects it",
     },
   },

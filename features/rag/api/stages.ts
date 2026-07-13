@@ -100,6 +100,12 @@ export async function fetchStagesStatus(
   processedDocumentId: string,
   signal?: AbortSignal,
 ): Promise<StagesStatusResponse> {
+  // Raw client, narrow local types on purpose: the generated
+  // `StagesStatusResponse`/`StageStatus` widen `stage` and `state` to bare
+  // `string`, but consumers (StageStatusPills) key a `Map<StagePillName,…>` and
+  // switch on the `"done" | "partial" | "missing"` union. Binding apiGet here
+  // would force those consumers to widen — a breaking change, so we keep the
+  // narrow shapes and read via the raw client. (Contract-drift REPORTED.)
   const { data } = await getJson<StagesStatusResponse>(
     `/rag/library/${encodeURIComponent(processedDocumentId)}/stages`,
     { signal },

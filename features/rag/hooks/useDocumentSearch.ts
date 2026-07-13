@@ -22,23 +22,11 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { postJson } from "@/lib/python-client";
+import { apiPost, buildPath } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 
-export interface DocSearchHit {
-  chunk_id: string;
-  chunk_index: number | null;
-  score: number;
-  page_numbers: number[] | null;
-  section_kind: string | null;
-  content_text: string;
-}
-
-interface ApiTestSearchResponse {
-  document_id: string;
-  query: string;
-  hits: DocSearchHit[];
-  total_chunks_in_doc: number;
-}
+// Wire shapes DERIVED from the generated OpenAPI contract, never hand-mirrored.
+export type DocSearchHit = components["schemas"]["LibraryTestSearchHit"];
 
 export interface DocSearchSummary {
   /** Sorted, unique 1-based page numbers that contain at least one hit. */
@@ -96,13 +84,12 @@ export function useDocumentSearch(documentId: string): UseDocumentSearch {
       setError(null);
       setHits(null);
       try {
-        const { data } = await postJson<
-          ApiTestSearchResponse,
-          { query: string; limit: number }
-        >(`/rag/library/${documentId}/test-search`, {
-          query: q,
-          limit: RESULT_LIMIT,
-        });
+        const { data } = await apiPost(
+          buildPath("/rag/library/{processed_document_id}/test-search", {
+            processed_document_id: documentId,
+          }),
+          { query: q, limit: RESULT_LIMIT },
+        );
         if (seq !== seqRef.current) return [];
         const newHits = Array.isArray(data?.hits) ? data.hits : [];
         setHits(newHits);

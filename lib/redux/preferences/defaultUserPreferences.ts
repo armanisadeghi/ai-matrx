@@ -171,9 +171,6 @@ export const defaultUserPreferences: UserPreferences = {
     projectId: null,
     taskId: null,
   },
-  transcription: {
-    scribeAssistantAgentId: null,
-  },
   agentConnections: {
     notifyOnConnect: true,
     autoReconnect: true,

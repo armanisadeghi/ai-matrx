@@ -12,8 +12,10 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { useSetting } from "@/features/settings/hooks/useSetting";
+import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
 import { AUDIO_ASSISTANT_AGENT_ID } from "../../constants";
+import { toast } from "sonner";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
   CLEANING_INTERVAL_DEFAULT_MS,
@@ -177,14 +179,31 @@ interface SettingsGroupProps {
 /**
  * User-wide default agent for the Scribe audio assistant. New sessions start
  * with this agent; each session can then switch on its own (the per-session
- * choice lives on the session, not here). Null → the seeded default agent.
+ * choice lives on the session, not here). Persisted as the caller's user-tier
+ * selection on the `assistant` role of `matrx-user/transcript-scribe`
+ * (surface-config) — replaced the deleted
+ * `userPreferences.transcription.scribeAssistantAgentId` preference.
  */
 function DefaultAssistantAgentPicker() {
-  const [agentId, setAgentId] = useSetting<string | null>(
-    "userPreferences.transcription.scribeAssistantAgentId",
-  );
-  const effectiveId = agentId ?? AUDIO_ASSISTANT_AGENT_ID;
+  const { roles } = useSurfaceAgentRoles(TRANSCRIPT_SCRIBE_SURFACE);
+  const assistant = roles["assistant"];
+  const effectiveId =
+    assistant?.effectiveAgentId ?? AUDIO_ASSISTANT_AGENT_ID;
+  const hasUserOverride = Boolean(assistant?.userSelection);
   const name = useAppSelector((s) => selectAgentById(s, effectiveId)?.name);
+
+  const setAgent = (id: string) => {
+    assistant?.setForMe(id).catch((err: unknown) => {
+      console.error("[scribe] failed to save default assistant agent", err);
+      toast.error("Failed to save default assistant agent");
+    });
+  };
+  const clearAgent = () => {
+    assistant?.clearForMe().catch((err: unknown) => {
+      console.error("[scribe] failed to reset default assistant agent", err);
+      toast.error("Failed to reset default assistant agent");
+    });
+  };
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -193,7 +212,7 @@ function DefaultAssistantAgentPicker() {
       </label>
       <div className="flex items-center gap-2">
         <AgentListDropdown
-          onSelect={(id) => setAgentId(id)}
+          onSelect={(id) => setAgent(id)}
           compact
           triggerSlot={
             <button
@@ -207,10 +226,10 @@ function DefaultAssistantAgentPicker() {
             </button>
           }
         />
-        {agentId && (
+        {hasUserOverride && (
           <button
             type="button"
-            onClick={() => setAgentId(null)}
+            onClick={clearAgent}
             className="shrink-0 text-[11px] text-muted-foreground underline-offset-2 hover:underline"
           >
             Reset

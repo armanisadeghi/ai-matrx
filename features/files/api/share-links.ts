@@ -8,7 +8,6 @@
  */
 
 import {
-  del,
   getJson,
   postJson,
   publicDownloadBlob,
@@ -16,6 +15,8 @@ import {
   type RequestOptions,
   type ResponseMeta,
 } from "@/lib/python-client";
+import { apiDelete, buildPath } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 import type {
   CloudShareLinkRow,
   CreateShareLinkRequest,
@@ -26,6 +27,10 @@ import type {
 // Authed — file share links
 // ---------------------------------------------------------------------------
 
+// list/create stay on the raw client: the request body (`CreateShareLinkRequest`)
+// is already the generated schema, but the contract response is `ShareLinkRecord`
+// (all-optional + index-signature), whereas consumers read the concrete DB-row
+// `CloudShareLinkRow`. Binding would erase the row's concrete fields.
 export async function listFileShareLinks(
   fileId: string,
   opts: RequestOptions = {},
@@ -75,9 +80,11 @@ export async function createFolderShareLink(
 export async function deactivateShareLink(
   shareToken: string,
   opts: RequestOptions = {},
-): Promise<{ data: null; meta: ResponseMeta }> {
-  return del<null>(
-    `/files/share-links/${encodeURIComponent(shareToken)}`,
+): Promise<{ data: components["schemas"]["DeleteResponse"]; meta: ResponseMeta }> {
+  // Contract-bound (`deactivate_share_link_...`). `buildPath` URL-encodes the
+  // token exactly as the prior `encodeURIComponent` did.
+  return apiDelete(
+    buildPath("/files/share-links/{share_token}", { share_token: shareToken }),
     opts,
   );
 }

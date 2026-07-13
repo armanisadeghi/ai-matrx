@@ -22,8 +22,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { getJson } from "@/lib/python-client";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { supabase } from "@/utils/supabase/client";
+import type { components } from "@/types/python-generated/api-types";
 import type {
   DocStatus,
   LibraryDocDetail,
@@ -76,59 +77,25 @@ interface ApiSummaryTotals {
   data_stores: number;
 }
 
-interface ApiPagePreview {
-  page_index: number;
-  page_number: number;
-  raw_char_count: number;
-  cleaned_char_count: number;
-  extraction_method: string | null;
-  used_ocr: boolean;
-  section_kind: string | null;
-  section_title: string | null;
-  is_continuation: boolean;
-  cleaned_preview: string;
-  raw_preview: string;
-  has_image: boolean;
-}
+// The doc-detail read hits the HTTP endpoint (`GET /rag/library/{id}`); its
+// wire shape is DERIVED from the generated OpenAPI contract, never hand-mirrored.
+// (`ApiSummaryDoc` / `ApiListResponse` / `ApiSummaryTotals` above stay local —
+// they type the SECURITY DEFINER RPC results, which have no OpenAPI schema.)
+type ApiDocDetail = components["schemas"]["LibraryDocDetail"];
 
-interface ApiChunkPreview {
-  id: string;
-  chunk_index: number | null;
-  chunk_kind: string | null;
-  token_count: number | null;
-  page_numbers: number[] | null;
-  has_oai_embedding: boolean;
-  has_voyage_embedding: boolean;
-  content_preview: string;
-}
-
-interface ApiDataStoreBinding {
-  data_store_id: string;
-  name: string;
-  kind: string;
-  short_code: string | null;
-}
-
-interface ApiDocDetail {
-  id: string;
-  name: string;
-  source_kind: string;
-  source_id: string;
-  mime_type: string | null;
-  total_pages: number | null;
-  pages_persisted: number;
-  chunks: number;
-  embeddings_oai: number;
-  embeddings_voyage: number;
-  has_structured_json: boolean;
-  derivation_kind: string;
-  parent_processed_id: string | null;
-  status: DocStatus;
-  created_at: string;
-  updated_at: string;
-  pages: ApiPagePreview[];
-  sample_chunks: ApiChunkPreview[];
-  data_stores: ApiDataStoreBinding[];
+// The contract widens `status` to bare `string`; narrow it back to DocStatus
+// (with the existing "unknown" fallback) without a cast so mapDetail stays typed.
+function toDocStatus(s: string): DocStatus {
+  switch (s) {
+    case "ready":
+    case "embedding":
+    case "chunking":
+    case "extracted":
+    case "pending":
+      return s;
+    default:
+      return "unknown";
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -180,7 +147,7 @@ function mapDetail(d: ApiDocDetail): LibraryDocDetail {
     hasStructuredJson: d.has_structured_json,
     derivationKind: d.derivation_kind,
     parentProcessedId: d.parent_processed_id,
-    status: d.status,
+    status: toDocStatus(d.status),
     createdAt: d.created_at,
     updatedAt: d.updated_at,
     pages: pages.map((p) => ({
@@ -449,9 +416,12 @@ export function useLibraryDoc(processedDocumentId: string | null) {
     setError(null);
     if (switchingDoc) setDoc(null);
 
-    getJson<ApiDocDetail>(`/rag/library/${processedDocumentId}`, {
-      signal: ctrl.signal,
-    })
+    apiGet(
+      buildPath("/rag/library/{processed_document_id}", {
+        processed_document_id: processedDocumentId,
+      }),
+      { signal: ctrl.signal },
+    )
       .then(({ data }) => {
         if (cancelled || requestSeq !== requestSeqRef.current) return;
         if (!data) {

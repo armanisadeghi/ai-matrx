@@ -8,20 +8,27 @@
  */
 
 import {
-  del,
   delJson,
   downloadBlob,
   downloadBlobWithProgress,
   getJson,
   patchJson,
   postJson,
-  postMultipart,
   uploadWithProgress,
   type DownloadProgressEvent,
   type RequestOptions,
   type ResponseMeta,
   type UploadProgressEvent,
 } from "@/lib/python-client";
+import {
+  apiDelete,
+  apiGet,
+  apiMultipart,
+  apiPost,
+  buildPath,
+  withQuery,
+} from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 import type {
   BulkDeleteFilesRequest,
   BulkMoveFilesRequest,
@@ -35,8 +42,6 @@ import type {
   SearchFilesParams,
   SearchFilesResponse,
   SignedUrlResponse,
-  StorageUsageResponse,
-  TrashListResponse,
   Visibility,
 } from "@/features/files/types";
 
@@ -86,7 +91,9 @@ export async function uploadFile(
   if (params.options)
     form.append("options_json", JSON.stringify(params.options));
 
-  return postMultipart<FileUploadResponse>("/files/upload", form, opts);
+  // Non-progress multipart POST with a JSON response → typed client. Response
+  // (FileUploadResponse) is DERIVED from the contract, not asserted.
+  return apiMultipart("/files/upload", form, opts);
 }
 
 export async function uploadFileWithProgress(
@@ -107,6 +114,8 @@ export async function uploadFileWithProgress(
   if (params.options)
     form.append("options_json", JSON.stringify(params.options));
 
+  // Raw client: XHR progress upload — the typed client is JSON-only and has
+  // no progress-capable multipart verb.
   return uploadWithProgress<FileUploadResponse>(
     "/files/upload",
     form,
@@ -129,28 +138,29 @@ export async function listFiles(
   params: { folderPath?: string; limit?: number; offset?: number } = {},
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi[]; meta: ResponseMeta }> {
-  const qs: string[] = [];
-  if (params.folderPath)
-    qs.push(`folder_path=${encodeURIComponent(params.folderPath)}`);
-  if (params.limit !== undefined) qs.push(`limit=${params.limit}`);
-  if (params.offset !== undefined) qs.push(`offset=${params.offset}`);
-  const q = qs.length ? `?${qs.join("&")}` : "";
-  return getJson<FileRecordApi[]>(`/files${q}`, opts);
+  return apiGet("/files", {
+    ...opts,
+    query: {
+      folder_path: params.folderPath,
+      limit: params.limit,
+      offset: params.offset,
+    },
+  });
 }
 
 export async function getFile(
   fileId: string,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
-  return getJson<FileRecordApi>(`/files/${fileId}`, opts);
+  return apiGet(buildPath("/files/{file_id}", { file_id: fileId }), opts);
 }
 
 export async function getFileByPath(
   filePath: string,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
-  return getJson<FileRecordApi>(
-    `/files/by-path/${encodeURIComponent(filePath)}`,
+  return apiGet(
+    buildPath("/files/by-path/{file_path}", { file_path: filePath }),
     opts,
   );
 }
@@ -163,7 +173,7 @@ export async function getFileByPath(
 export async function getFileTree(
   opts: RequestOptions = {},
 ): Promise<{ data: unknown[]; meta: ResponseMeta }> {
-  return getJson<unknown[]>("/files/tree", opts);
+  return apiGet("/files/tree", opts);
 }
 
 // ---------------------------------------------------------------------------
@@ -200,6 +210,10 @@ export async function patchFile(
     restore_from_trash: false,
     ...body,
   };
+  // Raw client: the contract types this 200 as `FileRecord | AssetCombinedOpResponse`
+  // (union-body sub-ops / X-Idempotency-Key path). Consumers here deref plain
+  // `FileRecord`, so routing through the typed client would surface the union
+  // and break them. Kept raw pending a consumer that handles both arms.
   return patchJson<FileRecordApi, FilePatchRequest>(
     `/files/${fileId}`,
     fullBody,
@@ -222,6 +236,7 @@ export async function patchFileReplaceMetadata(
     restore_from_trash: false,
     ...body,
   };
+  // Raw client: same union-response reason as `patchFile`.
   return patchJson<FileRecordApi, FilePatchRequest>(
     `/files/${fileId}?metadata_merge=false`,
     fullBody,
@@ -233,15 +248,24 @@ export async function deleteFile(
   fileId: string,
   params: { hardDelete?: boolean } = {},
   opts: RequestOptions = {},
-): Promise<{ data: null; meta: ResponseMeta }> {
-  const q = params.hardDelete ? "?hard_delete=true" : "";
-  return del<null>(`/files/${fileId}${q}`, opts);
+): Promise<{
+  data: components["schemas"]["DeleteResponse"];
+  meta: ResponseMeta;
+}> {
+  return apiDelete(
+    withQuery(buildPath("/files/{file_id}", { file_id: fileId }), {
+      hard_delete: params.hardDelete ? true : undefined,
+    }),
+    opts,
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Bytes + signed URL
 // ---------------------------------------------------------------------------
 
+// Raw client: `downloadFile` / `downloadFileWithProgress` stream file BYTES
+// (Blob), not JSON — the typed client only wraps JSON verbs.
 export async function downloadFile(
   fileId: string,
   params: { version?: number; inline?: boolean } = {},
@@ -290,10 +314,10 @@ export async function getSignedUrl(
   // expiry math from reality — or rejected outright.
   const requested = params.expiresIn ?? 3600;
   const expiresIn = Math.min(604800, Math.max(60, Math.floor(requested)));
-  return getJson<SignedUrlResponse>(
-    `/files/${fileId}/url?expires_in=${expiresIn}`,
-    opts,
-  );
+  return apiGet(buildPath("/files/{file_id}/url", { file_id: fileId }), {
+    ...opts,
+    query: { expires_in: expiresIn },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -313,6 +337,8 @@ export async function bulkDeleteFiles(
   body: BulkDeleteFilesRequest,
   opts: RequestOptions = {},
 ): Promise<{ data: BulkResponse | null; meta: ResponseMeta }> {
+  // Raw client: DELETE-with-body. The typed client's `apiDelete` takes no
+  // request body, so a bulk delete can't route through it.
   return delJson<BulkResponse, BulkDeleteFilesRequest>(
     "/files/bulk",
     body,
@@ -331,6 +357,11 @@ export async function bulkMoveFiles(
   body: BulkMoveFilesRequest,
   opts: RequestOptions = {},
 ): Promise<{ data: BulkResponse; meta: ResponseMeta }> {
+  // Raw client: the contract's `BulkResultItem.error` is optional, but this
+  // wrapper + its thunk consumers treat `BulkResponse.results[].error` as
+  // required (`string | null`). Binding to the contract type would ripple that
+  // optionality into the thunk payload + `toastBulkPartialFailure` outside
+  // this file, so it's left raw pending a coordinated BulkResponse alignment.
   return postJson<BulkResponse, BulkMoveFilesRequest>(
     "/files/bulk/move",
     body,
@@ -348,8 +379,11 @@ export async function bulkMoveFiles(
  */
 export async function getStorageUsage(
   opts: RequestOptions = {},
-): Promise<{ data: StorageUsageResponse; meta: ResponseMeta }> {
-  return getJson<StorageUsageResponse>("/files/usage", opts);
+): Promise<{
+  data: components["schemas"]["StorageUsageResponse"];
+  meta: ResponseMeta;
+}> {
+  return apiGet("/files/usage", opts);
 }
 
 // ---------------------------------------------------------------------------
@@ -362,8 +396,11 @@ export async function getStorageUsage(
  */
 export async function listTrash(
   opts: RequestOptions = {},
-): Promise<{ data: TrashListResponse; meta: ResponseMeta }> {
-  return getJson<TrashListResponse>("/files/trash", opts);
+): Promise<{
+  data: components["schemas"]["TrashListResponse"];
+  meta: ResponseMeta;
+}> {
+  return apiGet("/files/trash", opts);
 }
 
 /**
@@ -374,6 +411,10 @@ export async function restoreFile(
   fileId: string,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
+  // Raw client: this operation declares NO request body in the contract
+  // (`apiPost` would demand `body: never`), and its 200 is `DeleteResponse`,
+  // not `FileRecord` — see the drift note in the module report. Left raw so the
+  // existing FileRecordApi assertion + empty-body POST are preserved verbatim.
   return postJson<FileRecordApi, Record<string, never>>(
     `/files/${fileId}/restore`,
     {},
@@ -394,6 +435,10 @@ export async function searchFiles(
   params: SearchFilesParams,
   opts: RequestOptions = {},
 ): Promise<{ data: SearchFilesResponse; meta: ResponseMeta }> {
+  // Raw client: this call sends `q=` unconditionally (empty string included),
+  // but the typed client's query serializer DROPS empty-string values — which
+  // would change the wire request for an empty query. Left raw to preserve the
+  // exact `?q=` behavior.
   const qs: string[] = [`q=${encodeURIComponent(params.q)}`];
   if (params.mimePrefix)
     qs.push(`mime_prefix=${encodeURIComponent(params.mimePrefix)}`);
@@ -423,8 +468,8 @@ export async function renameFile(
   body: RenameFileRequest,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
-  return postJson<FileRecordApi, RenameFileRequest>(
-    `/files/${fileId}/rename`,
+  return apiPost(
+    buildPath("/files/{file_id}/rename", { file_id: fileId }),
     body,
     opts,
   );
@@ -442,9 +487,12 @@ export async function copyFile(
   fileId: string,
   body: CopyFileRequest,
   opts: RequestOptions = {},
-): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
-  return postJson<FileRecordApi, CopyFileRequest>(
-    `/files/${fileId}/copy`,
+): Promise<{ data: FileUploadResponse; meta: ResponseMeta }> {
+  // Contract-bound: the copy 200 is `FileUploadResponse` (NOT `FileRecord` —
+  // the pre-conversion assertion was wrong; see the module report). Deriving it
+  // through the typed client fixes that lie and locks the shape to the contract.
+  return apiPost(
+    buildPath("/files/{file_id}/copy", { file_id: fileId }),
     body,
     opts,
   );

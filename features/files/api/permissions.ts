@@ -7,18 +7,23 @@
  */
 
 import {
-  del,
   getJson,
   postJson,
   type RequestOptions,
   type ResponseMeta,
 } from "@/lib/python-client";
+import { apiDelete, buildPath, withQuery } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 import type { CloudFilePermissionRow, GrantPermissionRequest } from "@/features/files/types";
 
 // ---------------------------------------------------------------------------
 // File permissions
 // ---------------------------------------------------------------------------
 
+// list/grant stay on the raw client: their request body (`GrantPermissionRequest`)
+// is already the generated schema, but the contract response is `PermissionRecord`
+// (all-optional + index-signature), whereas consumers read the concrete DB-row
+// `CloudFilePermissionRow`. Binding would erase the row's concrete fields.
 export async function listFilePermissions(
   fileId: string,
   opts: RequestOptions = {},
@@ -46,10 +51,18 @@ export async function revokeFilePermission(
   granteeId: string,
   params: { granteeType?: "user" | "group" } = {},
   opts: RequestOptions = {},
-): Promise<{ data: null; meta: ResponseMeta }> {
+): Promise<{ data: components["schemas"]["DeleteResponse"]; meta: ResponseMeta }> {
   const granteeType = params.granteeType ?? "user";
-  return del<null>(
-    `/files/${fileId}/permissions/${granteeId}?grantee_type=${granteeType}`,
+  // Contract-bound (`revoke_file_permission_...`). `grantee_type` is always sent
+  // (default "user"), preserving the prior always-present query param.
+  return apiDelete(
+    withQuery(
+      buildPath("/files/{file_id}/permissions/{grantee_id}", {
+        file_id: fileId,
+        grantee_id: granteeId,
+      }),
+      { grantee_type: granteeType },
+    ),
     opts,
   );
 }
@@ -58,6 +71,8 @@ export async function revokeFilePermission(
 // Folder permissions (cascade to contents)
 // ---------------------------------------------------------------------------
 
+// Same as the file variants: response deliberately typed as the DB-row
+// `CloudFilePermissionRow`, which disagrees with the contract's `PermissionRecord`.
 export async function listFolderPermissions(
   folderId: string,
   opts: RequestOptions = {},
@@ -85,10 +100,17 @@ export async function revokeFolderPermission(
   granteeId: string,
   params: { granteeType?: "user" | "group" } = {},
   opts: RequestOptions = {},
-): Promise<{ data: null; meta: ResponseMeta }> {
+): Promise<{ data: components["schemas"]["DeleteResponse"]; meta: ResponseMeta }> {
   const granteeType = params.granteeType ?? "user";
-  return del<null>(
-    `/folders/${folderId}/permissions/${granteeId}?grantee_type=${granteeType}`,
+  // Contract-bound (`revoke_folder_permission_...`).
+  return apiDelete(
+    withQuery(
+      buildPath("/folders/{folder_id}/permissions/{grantee_id}", {
+        folder_id: folderId,
+        grantee_id: granteeId,
+      }),
+      { grantee_type: granteeType },
+    ),
     opts,
   );
 }

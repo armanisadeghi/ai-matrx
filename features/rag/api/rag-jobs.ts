@@ -57,6 +57,9 @@ export async function triggerFileIngestNow(
   fileId: string,
   opts: { force?: boolean; signal?: AbortSignal } = {},
 ): Promise<FileIngestResult> {
+  // Raw client: `/files/{id}/ingest` is a streaming endpoint (stream-everything
+  // mandate) whose contract 200 is `unknown` — the typed client can't derive a
+  // usable FileIngestResult from it; the terminal event carries the payload.
   const { data } = await postJson<FileIngestResult>(
     `/files/${encodeURIComponent(fileId)}/ingest`,
     { force: opts.force ?? false },
@@ -71,6 +74,8 @@ export async function refreshFileRag(
   fileId: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<void> {
+  // Raw client: `/files/{id}/refresh` is a streaming endpoint (contract 200 is
+  // `unknown`); progress arrives in-band, so there is no JSON shape to derive.
   await postJson<unknown>(
     `/files/${encodeURIComponent(fileId)}/refresh`,
     {},
