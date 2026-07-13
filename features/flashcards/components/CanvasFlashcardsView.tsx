@@ -118,9 +118,12 @@ export function CanvasFlashcardsView({
     [cards, resultsByCard],
   );
 
-  const handleGrade = (result: ReviewResult): void => {
-    if (grading) return;
-    void grade(result);
+  /** Resolves `true` when the grade write went through; `false` on a failed
+   *  write (useFlashcardStudy resolves null + toasts) so MatchingCardPlayer
+   *  can offer a retry. Flip callers fire-and-forget (`void`). */
+  const handleGrade = (result: ReviewResult): Promise<boolean> => {
+    if (grading) return Promise.resolve(false);
+    return grade(result).then((mastery) => mastery !== null);
   };
 
   const debugStrip = (
@@ -274,14 +277,16 @@ export function CanvasFlashcardsView({
           markup). Both funnel grading through the study spine. */}
       <div className="p-3">
         {asCardKind(current.card_kind) === CARD_KIND.matching ? (
-          <MatchingCardPlayer
-            key={`fc-match-${current.id}`}
-            cardId={current.id}
-            prompt={current.front}
-            pairs={matchingPairs(current)}
-            disabled={grading}
-            onComplete={(result) => handleGrade(result)}
-          />
+          <div className="mx-auto max-w-2xl">
+            <MatchingCardPlayer
+              key={`fc-match-${current.id}`}
+              cardId={current.id}
+              prompt={current.front}
+              pairs={matchingPairs(current)}
+              disabled={grading}
+              onComplete={(result) => handleGrade(result)}
+            />
+          </div>
         ) : (
           <FlashcardItem
             key={`fc-card-${current.id}`}
