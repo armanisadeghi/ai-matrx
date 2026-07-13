@@ -440,7 +440,7 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
                     onMetadataPatch={(patch) =>
                       studio.updateImageMetadata(f.id, patch)
                     }
-                    onMetadataClear={() => studio.clearImageMetadata(f.id)}
+                    onMetadataRevert={() => studio.revertImageMetadata(f.id)}
                   />
                 ))}
               </div>

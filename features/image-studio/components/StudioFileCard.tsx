@@ -44,8 +44,8 @@ interface StudioFileCardProps {
     onDescribe?: () => void;
     /** Edit the file's image metadata in place. */
     onMetadataPatch?: (patch: Partial<ImageMetadata>) => void;
-    /** Drop the AI-authored metadata for this file. */
-    onMetadataClear?: () => void;
+    /** Revert the auto-applied AI metadata to the pre-AI name + metadata. */
+    onMetadataRevert?: () => void;
     /**
      * Highlight the rename pencil — used by the auto-name banner to draw
      * the eye toward files that still carry an auto-derived filename.
@@ -73,7 +73,7 @@ export function StudioFileCard({
     isDescribing = false,
     onDescribe,
     onMetadataPatch,
-    onMetadataClear,
+    onMetadataRevert,
     needsRename = false,
     registerRenameAction,
 }: StudioFileCardProps) {
@@ -223,6 +223,7 @@ export function StudioFileCard({
                         <span className="font-mono whitespace-nowrap">
                             {formatBytes(file.size)}
                         </span>
+                        <SourceSaveIndicator file={file} />
                     </div>
                 </div>
 
@@ -348,13 +349,13 @@ export function StudioFileCard({
                         </VariantTileGrid>
                     )}
 
-                    {onDescribe && onMetadataPatch && onMetadataClear && (
+                    {onDescribe && onMetadataPatch && onMetadataRevert && (
                         <div className="mt-3">
                             <MetadataPanel
                                 file={file}
                                 isDescribing={isDescribing}
                                 onDescribe={onDescribe}
-                                onClear={onMetadataClear}
+                                onRevert={onMetadataRevert}
                                 onPatch={onMetadataPatch}
                             />
                         </div>
@@ -362,5 +363,47 @@ export function StudioFileCard({
                 </div>
             )}
         </section>
+    );
+}
+
+/**
+ * Tiny status pip for the background auto-save of the ORIGINAL upload into
+ * the user's library. Silent while idle; shows a spinner, a "Saved"
+ * confirmation (so the user knows their upload landed in "my files" /
+ * Recents), or a quiet failure.
+ */
+function SourceSaveIndicator({ file }: { file: StudioSourceFile }) {
+    const status = file.sourceUploadStatus;
+    if (!status || status === "idle") return null;
+    if (status === "uploading") {
+        return (
+            <span className="inline-flex items-center gap-1 whitespace-nowrap text-muted-foreground">
+                <span>·</span>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Saving
+            </span>
+        );
+    }
+    if (status === "saved") {
+        return (
+            <span
+                className="inline-flex items-center gap-1 whitespace-nowrap text-success"
+                title="Saved to your library — appears in your files and recents"
+            >
+                <span className="text-muted-foreground">·</span>
+                <Check className="h-3 w-3" />
+                Saved
+            </span>
+        );
+    }
+    return (
+        <span
+            className="inline-flex items-center gap-1 whitespace-nowrap text-destructive"
+            title={file.sourceUploadError ?? "Could not save to your library"}
+        >
+            <span className="text-muted-foreground">·</span>
+            <AlertCircle className="h-3 w-3" />
+            Not saved
+        </span>
     );
 }

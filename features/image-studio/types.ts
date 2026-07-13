@@ -95,6 +95,23 @@ export type StudioMetadataStatus =
     | "ready"
     | "error";
 
+/**
+ * Lifecycle for auto-saving the ORIGINAL uploaded image into the user's
+ * cloud library the instant it's added to the studio. This is what makes a
+ * genuine user upload show up in "my files" / Recents — distinct from the
+ * generated variants, which land in the hidden `Images/Generated` tree.
+ *
+ *   - idle       Not started (default before the save kicks off).
+ *   - uploading  Persisting the source to `Images/Edited/Sources`.
+ *   - saved      Persisted; `sourceFileId` holds its cloud-files id.
+ *   - error      The background save failed (see `sourceUploadError`).
+ */
+export type StudioSourceUploadStatus =
+    | "idle"
+    | "uploading"
+    | "saved"
+    | "error";
+
 export interface StudioSourceFile {
     /** Client-side id, not tied to storage. */
     id: string;
@@ -130,6 +147,31 @@ export interface StudioSourceFile {
      * agent. Cached so re-describe doesn't re-upload.
      */
     describePreviewFileId?: string | null;
+    /**
+     * Snapshot of `filenameBase` captured the instant before the AI
+     * describe result was auto-applied. Lets the user Revert the applied
+     * metadata and restore the name they had before. Null when no
+     * AI-applied change is outstanding.
+     */
+    previousFilenameBase?: string | null;
+    /**
+     * Snapshot of `imageMetadata` captured the instant before the AI
+     * describe result was auto-applied (usually null on a first describe;
+     * on a re-describe it holds the prior AI result). Paired with
+     * `previousFilenameBase` for Revert.
+     */
+    previousImageMetadata?: ImageMetadata | null;
+    /**
+     * Cloud-files id of the ORIGINAL uploaded image, auto-saved to the
+     * user's library under `Images/Edited/Sources` on add. This is the
+     * record that surfaces in "my files" / Recents. Null until the
+     * background save resolves.
+     */
+    sourceFileId?: string | null;
+    /** Lifecycle for the auto-save of the original upload. */
+    sourceUploadStatus?: StudioSourceUploadStatus;
+    /** Human-readable error if the source auto-save failed. */
+    sourceUploadError?: string | null;
 }
 
 export interface ProcessedVariant {

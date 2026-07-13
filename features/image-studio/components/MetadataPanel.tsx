@@ -15,6 +15,7 @@ import {
   Check,
   Loader2,
   Palette,
+  Undo2,
   Zap,
   X
 } from "lucide-react";
@@ -25,7 +26,8 @@ interface MetadataPanelProps {
   file: StudioSourceFile;
   isDescribing: boolean;
   onDescribe: () => void;
-  onClear: () => void;
+  /** Revert the auto-applied AI result to the name + metadata from before. */
+  onRevert: () => void;
   onPatch: (patch: Partial<ImageMetadata>) => void;
 }
 
@@ -33,7 +35,7 @@ export function MetadataPanel({
   file,
   isDescribing,
   onDescribe,
-  onClear,
+  onRevert,
   onPatch,
 }: MetadataPanelProps) {
   const status = file.metadataStatus;
@@ -101,11 +103,21 @@ export function MetadataPanel({
 
   // Ready state — render editable fields.
   if (!meta) return null;
+  const renamedFrom =
+    file.previousFilenameBase &&
+    file.previousFilenameBase !== meta.filename_base
+      ? file.previousFilenameBase
+      : null;
   return (
     <MetadataReady
       meta={meta}
+      renamedFrom={renamedFrom}
+      canRevert={
+        file.previousFilenameBase != null ||
+        file.previousImageMetadata != null
+      }
       onPatch={onPatch}
-      onClear={onClear}
+      onRevert={onRevert}
       onRedescribe={onDescribe}
       isDescribing={isDescribing}
     />
@@ -116,23 +128,29 @@ export function MetadataPanel({
 
 function MetadataReady({
   meta,
+  renamedFrom,
+  canRevert,
   onPatch,
-  onClear,
+  onRevert,
   onRedescribe,
   isDescribing,
 }: {
   meta: ImageMetadata;
+  /** Pre-AI filename base, when the AI changed it — shown as an undo hint. */
+  renamedFrom: string | null;
+  /** Whether there's a prior state to revert to. */
+  canRevert: boolean;
   onPatch: (patch: Partial<ImageMetadata>) => void;
-  onClear: () => void;
+  onRevert: () => void;
   onRedescribe: () => void;
   isDescribing: boolean;
 }) {
   return (
     <div className="rounded-lg border border-success/40 bg-success/5 p-3 space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold flex items-center gap-1.5 text-success">
           <Check className="h-3 w-3" />
-          AI metadata ready
+          AI metadata applied
         </p>
         <div className="flex items-center gap-1">
           <button
@@ -144,21 +162,36 @@ function MetadataReady({
           >
             {isDescribing ? "Working…" : "Regenerate"}
           </button>
-          <span className="text-muted-foreground/40">·</span>
-          <button
-            type="button"
-            onClick={onClear}
-            className="text-[11px] text-muted-foreground hover:text-destructive underline"
-            title="Clear metadata for this file"
-          >
-            Clear
-          </button>
+          {canRevert && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <button
+                type="button"
+                onClick={onRevert}
+                disabled={isDescribing}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline disabled:opacity-40 inline-flex items-center gap-0.5"
+                title="Undo the AI metadata and restore the previous name"
+              >
+                <Undo2 className="h-2.5 w-2.5" />
+                Revert
+              </button>
+            </>
+          )}
         </div>
       </div>
 
+      <p className="text-[11px] text-muted-foreground leading-snug -mt-1">
+        Applied automatically — edit any field, or Revert to restore what you
+        had before.
+      </p>
+
       <Field
         label="Filename base"
-        hint="Used as the slug stem in every generated variant."
+        hint={
+          renamedFrom
+            ? `Renamed from "${renamedFrom}". Used as the slug stem in every generated variant.`
+            : "Used as the slug stem in every generated variant."
+        }
         value={meta.filename_base}
         onChange={(v) => onPatch({ filename_base: v })}
         mono

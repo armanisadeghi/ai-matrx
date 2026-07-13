@@ -131,7 +131,7 @@ export interface UseImageStudioResult {
   isDescribing: boolean;
   describingFileIds: ReadonlySet<string>;
   updateImageMetadata: (fileId: string, patch: Partial<ImageMetadata>) => void;
-  clearImageMetadata: (fileId: string) => void;
+  revertImageMetadata: (fileId: string) => void;
 
   // Derived
   totalVariantCount: number;
@@ -239,39 +239,139 @@ export function useImageStudio(
     };
   }, []);
 
-  const addFiles = useCallback(async (incoming: File[]) => {
-    const imageFiles = incoming.filter((f) => f.type.startsWith("image/"));
-    if (imageFiles.length === 0) return;
+  /**
+   * Auto-save the ORIGINAL uploaded image into the user's cloud library
+   * the instant it's added. Lands under `Images/Edited/Sources` — a real
+   * user-namespace folder that is NOT excluded from Recents (unlike the
+   * `Images/Generated` tree the variants save to), so a genuine upload
+   * shows up in "my files" / Recents immediately. Tagged
+   * `source: "image-studio-source"` for provenance. Best-effort and
+   * non-blocking: a failure is surfaced on the file card, never thrown.
+   */
+  const persistSourceFile = useCallback(
+    async (studioFileId: string, file: File) => {
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === studioFileId
+            ? { ...f, sourceUploadStatus: "uploading", sourceUploadError: null }
+            : f,
+        ),
+      );
+      try {
+        const parentFolderId = await dispatch(
+          ensureFolderPath({
+            folderPath: CloudFolders.IMAGES_EDITED_SOURCES,
+            visibility: "private",
+          }),
+        ).unwrap();
 
-    const added: StudioSourceFile[] = await Promise.all(
-      imageFiles.map(async (file) => {
-        const objectUrl = URL.createObjectURL(file);
-        urlsRef.current.add(objectUrl);
-        const dim = await decodeDimensions(file);
-        const filenameBase = slugifyFilename(file.name);
-        return {
-          id: nextFileId(),
-          originalName: file.name,
-          mimeType: file.type,
-          size: file.size,
-          width: dim?.width ?? null,
-          height: dim?.height ?? null,
-          objectUrl,
-          filenameBase,
-          status: "idle" as const,
-          error: null,
-          variants: {},
-          file,
-          imageMetadata: null,
-          metadataStatus: "idle" as const,
-          metadataError: null,
-          describePreviewFileId: null,
-        };
-      }),
-    );
+        const sourcePrefix = `${CloudFolders.IMAGES_EDITED_SOURCES}/`;
+        const knownIds = new Set(
+          Object.keys(store.getState().cloudFiles.filesById),
+        );
+        const result = await dispatch(
+          uploadFiles({
+            files: [file],
+            parentFolderId,
+            visibility: "private",
+            metadata: {
+              source: "image-studio-source",
+              studio_file_id: studioFileId,
+            },
+          }),
+        ).unwrap();
 
-    setFiles((prev) => [...prev, ...added]);
-  }, []);
+        // uploadFiles collects per-file failures into `result.failed`
+        // instead of throwing — a resolved unwrap does NOT mean the byte
+        // upload landed. Surface the real failure loudly rather than
+        // falsely reporting "Saved".
+        if (result.uploaded.length === 0) {
+          const reason = result.failed[0]?.error ?? "Upload did not complete";
+          throw new Error(reason);
+        }
+
+        // Recover the new file id. Match by name first; fall back to the
+        // single fresh row under the sources folder (uploadFiles may have
+        // collision-renamed the file, in which case the name won't match).
+        const fresh = Object.values(store.getState().cloudFiles.filesById).filter(
+          (f) => !knownIds.has(f.id) && f.filePath?.startsWith(sourcePrefix),
+        );
+        const match =
+          fresh.find((f) => f.fileName === file.name) ?? fresh[0] ?? null;
+
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === studioFileId
+              ? {
+                  ...f,
+                  sourceUploadStatus: "saved",
+                  sourceFileId: match?.id ?? null,
+                }
+              : f,
+          ),
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Save failed";
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === studioFileId
+              ? { ...f, sourceUploadStatus: "error", sourceUploadError: msg }
+              : f,
+          ),
+        );
+      }
+    },
+    [dispatch, store],
+  );
+
+  const addFiles = useCallback(
+    async (incoming: File[]) => {
+      const imageFiles = incoming.filter((f) => f.type.startsWith("image/"));
+      if (imageFiles.length === 0) return;
+
+      const added: StudioSourceFile[] = await Promise.all(
+        imageFiles.map(async (file) => {
+          const objectUrl = URL.createObjectURL(file);
+          urlsRef.current.add(objectUrl);
+          const dim = await decodeDimensions(file);
+          const filenameBase = slugifyFilename(file.name);
+          return {
+            id: nextFileId(),
+            originalName: file.name,
+            mimeType: file.type,
+            size: file.size,
+            width: dim?.width ?? null,
+            height: dim?.height ?? null,
+            objectUrl,
+            filenameBase,
+            status: "idle" as const,
+            error: null,
+            variants: {},
+            file,
+            imageMetadata: null,
+            metadataStatus: "idle" as const,
+            metadataError: null,
+            describePreviewFileId: null,
+            previousFilenameBase: null,
+            previousImageMetadata: null,
+            sourceFileId: null,
+            sourceUploadStatus: "idle" as const,
+            sourceUploadError: null,
+          };
+        }),
+      );
+
+      setFiles((prev) => [...prev, ...added]);
+
+      // Fire the source auto-save for each added file without blocking —
+      // the studio is usable immediately; the "Saved" indicator flips on
+      // per file as each upload resolves.
+      for (const entry of added) {
+        void persistSourceFile(entry.id, entry.file);
+      }
+    },
+    [persistSourceFile],
+  );
 
   const removeFile = useCallback((fileId: string) => {
     setFiles((prev) => {
@@ -681,6 +781,8 @@ export function useImageStudio(
         imageMetadata?: ImageMetadata | null;
         describePreviewFileId?: string | null;
         filenameBase?: string;
+        previousFilenameBase?: string | null;
+        previousImageMetadata?: ImageMetadata | null;
       },
     ) => {
       setFiles((prev) =>
@@ -886,6 +988,12 @@ export function useImageStudio(
           // Adopt the agent-suggested filename automatically. The user can
           // still edit it from the file card header.
           filenameBase: slugged,
+          // Snapshot the pre-AI name + metadata so the user can Revert this
+          // auto-applied result back to exactly what they had before. On a
+          // first describe `snapshot.imageMetadata` is null; on a
+          // re-describe it captures the prior AI result.
+          previousFilenameBase: snapshot.filenameBase,
+          previousImageMetadata: snapshot.imageMetadata ?? null,
         });
       } catch (err) {
         const msg =
@@ -965,18 +1073,30 @@ export function useImageStudio(
     [],
   );
 
-  const clearImageMetadata = useCallback((fileId: string) => {
+  /**
+   * Revert an auto-applied AI describe result. Restores the filename base
+   * and metadata the file had the instant before the AI result was
+   * applied — the "cancel and reset to whatever it was before" action.
+   * If there was no prior metadata (the common first-describe case) this
+   * clears the metadata and restores the original filename.
+   */
+  const revertImageMetadata = useCallback((fileId: string) => {
     setFiles((prev) =>
-      prev.map((f) =>
-        f.id === fileId
-          ? {
-              ...f,
-              imageMetadata: null,
-              metadataStatus: "idle" as const,
-              metadataError: null,
-            }
-          : f,
-      ),
+      prev.map((f) => {
+        if (f.id !== fileId) return f;
+        const restoredMeta = f.previousImageMetadata ?? null;
+        return {
+          ...f,
+          filenameBase: f.previousFilenameBase ?? f.filenameBase,
+          imageMetadata: restoredMeta,
+          metadataStatus: (restoredMeta
+            ? "ready"
+            : "idle") as StudioMetadataStatus,
+          metadataError: null,
+          previousFilenameBase: null,
+          previousImageMetadata: null,
+        };
+      }),
     );
   }, []);
 
@@ -1039,7 +1159,7 @@ export function useImageStudio(
     isDescribing,
     describingFileIds,
     updateImageMetadata,
-    clearImageMetadata,
+    revertImageMetadata,
 
     totalVariantCount,
     generatedVariantCount,
