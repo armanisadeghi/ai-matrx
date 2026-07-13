@@ -21,11 +21,13 @@
 // `/v2/ai/*`. `toV2Path` below is the ONLY place this transform is spelled out,
 // so it can never drift again.
 //
-// ─── Scope: ONLY four surfaces have a v2 form ───────────────────────────────
+// ─── Scope: ONLY five surfaces have a v2 form ───────────────────────────────
 // v2 covers `chat`, `manual`, `agents/{id}`, `conversations/{id}` (+ the
-// singular `agent`/`conversation` aliases). EVERYTHING ELSE — cancel, warm,
-// resume, fork-and-run, invalidate-cache, prompts, agents-blocks, ai-models,
-// health, files … — has NO v2 route. The server does NOT auto-downgrade: a
+// singular `agent`/`conversation` aliases), and — since 2026-07-13 —
+// `prompts/{id}`. EVERYTHING ELSE — cancel, warm, resume, fork-and-run,
+// invalidate-cache, agents-blocks, ai-models, health, files … — has NO v2
+// route. (Resume/tool_results need none: the v1 resume route itself already
+// runs on the spine server-side.) The server does NOT auto-downgrade: a
 // `/v2` request to an uncovered surface is a plain 404. So we must prefix
 // ONLY the covered surfaces and leave every other path untouched. That is why
 // this is a scoped allowlist, never a blanket "prefix every path" switch.
@@ -64,6 +66,7 @@ export const V2_COVERED_AI_PATH_TEMPLATES = [
   "/ai/agent/{agent_id}", // singular alias — behaves identically
   "/ai/conversations/{conversation_id}",
   "/ai/conversation/{conversation_id}", // singular alias
+  "/ai/prompts/{prompt_id}", // saved-prompt execution (server mirror 2026-07-13)
 ] as const;
 
 /**
@@ -114,11 +117,32 @@ const COVERED_INTERPOLATED_PATH = [
   /^(?:\/api)?\/ai\/agent\/[^/]+$/,
   /^(?:\/api)?\/ai\/conversations\/[^/]+$/,
   /^(?:\/api)?\/ai\/conversation\/[^/]+$/,
+  /^(?:\/api)?\/ai\/prompts\/[^/]+$/, // `/warm` etc. deliberately don't match
 ];
 
-/** Whether `path` (already interpolated) is one of the four covered surfaces. */
+/** Whether `path` (already interpolated) is one of the covered surfaces. */
 export function isCoveredAiPath(path: string): boolean {
   return COVERED_INTERPOLATED_PATH.some((re) => re.test(path));
+}
+
+/**
+ * Whether an in-app path (or a full URL whose path was built by `toV2Path`)
+ * targets the v2 namespace — the guard the downgrade fallback keys off.
+ */
+export function isV2Path(pathOrUrl: string): boolean {
+  return /\/v2\/ai\//.test(pathOrUrl);
+}
+
+/**
+ * The inverse of `toV2Path` — strip the `/v2` version segment so a transport
+ * failure of the v2 endpoint (network error, 404/405, 5xx BEFORE any stream
+ * content) can retry the identical request on the v1 route. Works on a bare
+ * path, an `/api`-prefixed path, or a full URL (the `/v2/ai/` shape is unique
+ * to the version namespace, so the replace can't touch anything else).
+ * Idempotent on non-v2 input.
+ */
+export function toV1FallbackUrl(url: string): string {
+  return url.replace(/\/v2\/ai\//, "/ai/");
 }
 
 /**

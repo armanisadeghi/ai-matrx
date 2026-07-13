@@ -117,3 +117,12 @@ query GETs (unblocked by `apiGet`'s `query` support), and
   responses derived; the two unguarded contract-optional dereferences in
   `RagSearchExperience.tsx` (`query_vector_preview`, `by_visibility_route`)
   now guarded with calm empty states.
+- 2026-07-13 — v2 rollout completed per aidream's V2_FRONTEND_MIGRATION.md:
+  `ai-api-version.ts` allowlist gained `/ai/prompts/{prompt_id}` (server mirror
+  shipped same day) + the inverse transform (`isV2Path` / `toV1FallbackUrl`);
+  both fetch funnels (`call-api.ts::fetchWithV2Fallback`, `run-ai-stream.ts`)
+  now retry a failed `/v2/ai/...` request ONCE on the v1 route — transport
+  failures only (network throw, 404/405, 5xx, always pre-stream; never an
+  in-stream app error, never an abort) — logging a loud `ai_v2_downgrade`
+  record to the Error Inspector. Resume/tool_results/cancel deliberately stay
+  v1 (the v1 resume route itself runs on the runtime spine server-side).

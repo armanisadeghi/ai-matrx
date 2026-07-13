@@ -86,6 +86,8 @@ import { resilientFetch } from "@/lib/net/resilient-fetch";
 import { isNetError } from "@/lib/net/errors";
 import { extractErrorMessage } from "@/utils/errors";
 import { captureApiError } from "@/lib/diagnostics/captureApiError";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
 
 // ─── Auto-generated types (source of truth for all request/response shapes) ──
 
@@ -698,6 +700,50 @@ function normalizeError(err: unknown): ApiCallError {
 // SECTION 13 — EXECUTION: JSON (non-streaming)
 // ============================================================================
 
+/**
+ * `resilientFetch` with the v2 → v1 transport fallback
+ * (aidream docs/runtime/V2_FRONTEND_MIGRATION.md §5b). Fires ONLY when a
+ * `/v2/ai/...` ENDPOINT itself fails — a network-layer throw (non-abort), a
+ * 404/405 (surface not on v2), or a 5xx — always BEFORE any stream content is
+ * consumed. Never on an application error (those fail identically on v1). The
+ * downgrade is loud: console.warn + an `ai_v2_downgrade` record in the Error
+ * Inspector; a sustained stream of these means a v2 surface is unhealthy.
+ */
+async function fetchWithV2Fallback(
+  url: string,
+  init: RequestInit,
+  opts: Parameters<typeof resilientFetch>[2],
+): Promise<{ response: Response }> {
+  const logDowngrade = (reason: string, status?: number) => {
+    console.warn(
+      `[callApi] ai_v2_downgrade → retrying on v1. v2=${url} reason=${reason}`,
+    );
+    captureError({
+      source: "api-http",
+      code: "ai_v2_downgrade",
+      message: `v2 endpoint failed (${reason}); request served by v1 fallback`,
+      details: url,
+      status,
+    });
+  };
+  if (!isV2Path(url)) return resilientFetch(url, init, opts);
+  let result: { response: Response };
+  try {
+    result = await resilientFetch(url, init, opts);
+  } catch (err) {
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    if (isAbort) throw err;
+    logDowngrade(String(err));
+    return resilientFetch(toV1FallbackUrl(url), init, opts);
+  }
+  const status = result.response.status;
+  if (status === 404 || status === 405 || status >= 500) {
+    logDowngrade(`HTTP ${status}`, status);
+    return resilientFetch(toV1FallbackUrl(url), init, opts);
+  }
+  return result;
+}
+
 async function executeJsonRequest<T>(
   url: string,
   method: string,
@@ -707,7 +753,7 @@ async function executeJsonRequest<T>(
 ): Promise<ApiCallResult<T>> {
   const hasBody = method !== "GET" && method !== "HEAD";
 
-  const { response } = await resilientFetch(
+  const { response } = await fetchWithV2Fallback(
     url,
     {
       method,
@@ -764,7 +810,7 @@ async function executeStreamingRequest(
     | "onStreamError"
   >,
 ): Promise<ApiCallResult> {
-  const { response } = await resilientFetch(
+  const { response } = await fetchWithV2Fallback(
     url,
     {
       method,

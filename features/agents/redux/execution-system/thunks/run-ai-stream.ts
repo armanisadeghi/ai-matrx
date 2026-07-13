@@ -46,6 +46,8 @@ export type StreamDispatch = (action: unknown) => unknown;
 
 import { processStream } from "./process-stream";
 import { captureStreamClientError } from "@/lib/diagnostics/captureStreamError";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
 import type { JsonExtractionConfig } from "./process-stream";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import {
@@ -228,12 +230,57 @@ export async function runAiStream(
   });
 
   try {
-    const response = await fetch(url, {
+    const serializedBody = JSON.stringify(body);
+    const fetchInit: RequestInit = {
       method: "POST",
       headers,
-      body: JSON.stringify(body),
+      body: serializedBody,
       signal: abortController.signal,
-    });
+    };
+
+    // ── v2 → v1 transport fallback (V2_FRONTEND_MIGRATION.md §5b) ────────────
+    // Fires ONLY when the v2 ENDPOINT itself fails — a network-layer throw, a
+    // 404/405 (surface not on v2), or a 5xx — and always BEFORE any stream
+    // content. Never on an in-stream error event (an application error fails
+    // identically on v1; retrying double-charges), never on an abort. The
+    // downgrade is loud: console.warn + an `ai_v2_downgrade` record in the
+    // Error Inspector — a sustained stream of these means a v2 surface is
+    // unhealthy; flip AI_API_VERSION_DEFAULT / the sidebar toggle to revert.
+    let response: Response;
+    const attemptV1Fallback = isV2Path(url);
+    const logDowngrade = (reason: string, status?: number) => {
+      console.warn(
+        `[runAiStream] ai_v2_downgrade → retrying on v1. v2=${url} reason=${reason}`,
+        { conversationId, requestId },
+      );
+      captureError({
+        source: "api-http",
+        code: "ai_v2_downgrade",
+        message: `v2 endpoint failed (${reason}); request served by v1 fallback`,
+        details: url,
+        status,
+        requestId,
+        conversationId,
+      });
+    };
+    try {
+      response = await fetch(url, fetchInit);
+    } catch (fetchError) {
+      const isAbort =
+        fetchError instanceof Error && fetchError.name === "AbortError";
+      if (!attemptV1Fallback || isAbort) throw fetchError;
+      logDowngrade(String(fetchError));
+      response = await fetch(toV1FallbackUrl(url), fetchInit);
+    }
+    if (
+      attemptV1Fallback &&
+      (response.status === 404 ||
+        response.status === 405 ||
+        response.status >= 500)
+    ) {
+      logDowngrade(`HTTP ${response.status}`, response.status);
+      response = await fetch(toV1FallbackUrl(url), fetchInit);
+    }
 
     if (!response.ok) {
       let serverMessage = `${response.status} ${response.statusText}`;
