@@ -85,6 +85,7 @@ export function ItemRow({
   size = "md",
   indent,
   kebabAriaLabel,
+  disableContextMenu = false,
   className,
 }: ItemRowProps) {
   const isMobile = useIsMobile();
@@ -269,7 +270,7 @@ export function ItemRow({
     </div>
   );
 
-  if (!mappedMenu) return row;
+  if (!mappedMenu || disableContextMenu) return row;
 
   return (
     <ItemContextMenu

@@ -26,7 +26,6 @@ import React, {
   useRef,
   useEffect,
 } from "react";
-import { createPortal } from "react-dom";
 import {
   FileText,
   FolderOpen,
@@ -112,6 +111,11 @@ import { RenameFolderDialog } from "./RenameFolderDialog";
 import { NoteSidebarRow } from "./NoteSidebarRow";
 import { NoteSidebarBulkBar } from "./NoteSidebarBulkBar";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { cn } from "@/lib/utils";
 import type { NoteRecord } from "../redux/notes.types";
@@ -141,19 +145,9 @@ const RECENT_PAGE_SIZE = 10;
 
 interface NoteSidebarProps {
   instanceId: string;
-  /**
-   * When provided, context menus are rendered via createPortal into this element
-   * instead of as fixed-positioned children inside the sidebar DOM tree.
-   * Pass `document.body` when the sidebar is inside a floating window to ensure
-   * context menus appear above the window's stacking context.
-   */
-  contextMenuPortalTarget?: Element | null;
 }
 
-export function NoteSidebar({
-  instanceId,
-  contextMenuPortalTarget,
-}: NoteSidebarProps) {
+export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const dispatch = useAppDispatch();
   const { id: userId } = useAppSelector(selectUser);
   const openKnowledge = useOpenNoteKnowledgePanel();
@@ -265,14 +259,6 @@ export function NoteSidebar({
     }
   }, [dispatch, groupBy, scopesLoaded]);
 
-  // Context menu state (folder header right-click only — note rows get
-  // their kebab + right-click menu from ItemRow/ItemMenu via NoteSidebarRow)
-  const [folderCtx, setFolderCtx] = useState<{
-    folder: string;
-    x: number;
-    y: number;
-  } | null>(null);
-
   // Bulk-selection mode — checkboxes replace the leading icon on every row
   // and a NoteSidebarBulkBar (move / knowledge / export / share / delete)
   // replaces the "New Note / New Folder" bar once something is selected.
@@ -291,7 +277,6 @@ export function NoteSidebar({
 
   // Refs
   const folderTreeRef = useRef<HTMLDivElement>(null);
-  const ctxMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchFocusedRef = useRef(false);
 
@@ -372,21 +357,6 @@ export function NoteSidebar({
     }, 50);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  // ── Close folder context menu on outside click ─────────────────────
-  useEffect(() => {
-    if (!folderCtx) return undefined;
-    const handler = (e: MouseEvent) => {
-      if (
-        ctxMenuRef.current &&
-        !ctxMenuRef.current.contains(e.target as Node)
-      ) {
-        setFolderCtx(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [folderCtx]);
 
   // ── Derived data ───────────────────────────────────────────────────
   // Folder list MUST come from the same note set as the counts
@@ -721,14 +691,19 @@ export function NoteSidebar({
   // ── Folder context menu actions ────────────────────────────────────
   const handleFolderRename = useCallback((folder: string) => {
     setRenameFolderTarget(folder);
-    setFolderCtx(null);
   }, []);
 
   const handleFolderDeleteAll = useCallback(
     async (folder: string) => {
-      setFolderCtx(null);
       const count = (groupedNotes.get(folder) ?? []).length;
       if (count === 0) return;
+      const ok = await confirm({
+        title: "Delete all notes in folder?",
+        description: `${count} note${count === 1 ? "" : "s"} in "${folder}" will be moved to trash. You can restore them later.`,
+        confirmLabel: "Delete all",
+        variant: "destructive",
+      });
+      if (!ok) return;
       try {
         await deleteFolderNotes(folder);
         // Re-fetch notes list to reflect deletions
@@ -738,6 +713,43 @@ export function NoteSidebar({
       }
     },
     [dispatch, groupedNotes],
+  );
+
+  // Surface sections for the v3 right-click menu on a folder header.
+  const buildFolderSections = useCallback(
+    (folder: string): ContextMenuExtraSection[] => {
+      const items: ContextMenuExtraItem[] = [
+        {
+          kind: "item",
+          id: "new-note",
+          label: `New Note in ${folder}`,
+          icon: Plus,
+          onSelect: () => handleNewNote(folder),
+        },
+      ];
+      if (!isDefaultFolder(folder)) {
+        items.push(
+          { kind: "separator", id: "folder-sep" },
+          {
+            kind: "item",
+            id: "rename-folder",
+            label: "Rename Folder",
+            icon: Pencil,
+            onSelect: () => handleFolderRename(folder),
+          },
+          {
+            kind: "item",
+            id: "delete-all",
+            label: "Delete All Notes",
+            icon: Trash2,
+            destructive: true,
+            onSelect: () => void handleFolderDeleteAll(folder),
+          },
+        );
+      }
+      return [{ id: "folder-actions", label: folder, items }];
+    },
+    [handleNewNote, handleFolderRename, handleFolderDeleteAll],
   );
 
   const handleRenameConfirm = useCallback(
@@ -1184,6 +1196,42 @@ export function NoteSidebar({
 
               if (searchQuery && count === 0) return null;
 
+              const folderHeaderButton = (
+                <button
+                  className={cn(
+                    "group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
+                    isFolderMode &&
+                      dropTargetFolder === groupKey &&
+                      "bg-primary/10 border-l-2 border-primary",
+                  )}
+                  onClick={() => toggleFolder(groupKey)}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="opacity-60" />
+                  ) : (
+                    <ChevronRight className="opacity-60" />
+                  )}
+                  {isExpanded ? (
+                    <FolderOpen className={cn("opacity-70", iconColor)} />
+                  ) : (
+                    <FolderIcon className={cn("opacity-70", iconColor)} />
+                  )}
+                  <span className="flex-1 text-left truncate">{label}</span>
+                  <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+                    {count}
+                  </span>
+                  {isFolderMode && (
+                    <Plus
+                      className="w-3 h-3 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNewNote(groupKey);
+                      }}
+                    />
+                  )}
+                </button>
+              );
+
               return (
                 <div
                   key={groupKey}
@@ -1199,51 +1247,18 @@ export function NoteSidebar({
                       : undefined
                   }
                 >
-                  <button
-                    className={cn(
-                      "group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3",
-                      isFolderMode &&
-                        dropTargetFolder === groupKey &&
-                        "bg-primary/10 border-l-2 border-primary",
-                    )}
-                    onClick={() => toggleFolder(groupKey)}
-                    onContextMenu={
-                      isFolderMode
-                        ? (e) => {
-                            e.preventDefault();
-                            setFolderCtx({
-                              folder: groupKey,
-                              x: e.clientX,
-                              y: e.clientY,
-                            });
-                          }
-                        : undefined
-                    }
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="opacity-60" />
-                    ) : (
-                      <ChevronRight className="opacity-60" />
-                    )}
-                    {isExpanded ? (
-                      <FolderOpen className={cn("opacity-70", iconColor)} />
-                    ) : (
-                      <FolderIcon className={cn("opacity-70", iconColor)} />
-                    )}
-                    <span className="flex-1 text-left truncate">{label}</span>
-                    <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
-                      {count}
-                    </span>
-                    {isFolderMode && (
-                      <Plus
-                        className="w-3 h-3 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleNewNote(groupKey);
-                        }}
-                      />
-                    )}
-                  </button>
+                  {/* Folder actions ride the universal v3 menu (folder mode only) */}
+                  {isFolderMode ? (
+                    <NonEditableContextMenu
+                      sourceFeature="notes"
+                      contextData={{ content: groupKey }}
+                      extraSections={buildFolderSections(groupKey)}
+                    >
+                      {folderHeaderButton}
+                    </NonEditableContextMenu>
+                  ) : (
+                    folderHeaderButton
+                  )}
 
                   {isExpanded && (
                     <div className="ml-2">
@@ -1444,56 +1459,6 @@ export function NoteSidebar({
           </button>
         </div>
       )}
-
-      {/* ── Folder context menu ────────────────────────────────────────── */}
-      {folderCtx &&
-        (() => {
-          const zBackdrop = contextMenuPortalTarget ? "z-[9980]" : "z-[110]";
-          const zMenu = contextMenuPortalTarget ? "z-[9990]" : "z-[120]";
-          const content = (
-            <>
-              <div
-                className={`fixed inset-0 ${zBackdrop}`}
-                onClick={() => setFolderCtx(null)}
-              />
-              <div
-                ref={ctxMenuRef}
-                className={`fixed ${zMenu} min-w-[160px] py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg`}
-                style={{ left: folderCtx.x, top: folderCtx.y }}
-              >
-                <button
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-foreground hover:bg-accent cursor-pointer transition-colors"
-                  onClick={() => {
-                    handleNewNote(folderCtx.folder);
-                    setFolderCtx(null);
-                  }}
-                >
-                  <Plus className="w-3 h-3" /> New Note in {folderCtx.folder}
-                </button>
-                {!isDefaultFolder(folderCtx.folder) && (
-                  <>
-                    <div className="h-px bg-border/50 my-1" />
-                    <button
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-foreground hover:bg-accent cursor-pointer transition-colors"
-                      onClick={() => handleFolderRename(folderCtx.folder)}
-                    >
-                      <FileText className="w-3 h-3" /> Rename Folder
-                    </button>
-                    <button
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 cursor-pointer transition-colors"
-                      onClick={() => handleFolderDeleteAll(folderCtx.folder)}
-                    >
-                      <Trash2 className="w-3 h-3" /> Delete All Notes
-                    </button>
-                  </>
-                )}
-              </div>
-            </>
-          );
-          return contextMenuPortalTarget
-            ? createPortal(content, contextMenuPortalTarget)
-            : content;
-        })()}
 
       {/* ── Dialogs ────────────────────────────────────────────────────── */}
       <CreateFolderDialog

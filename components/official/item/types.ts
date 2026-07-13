@@ -263,6 +263,12 @@ export interface ItemRowProps {
   indent?: number;
   /** Accessible label for the kebab. Default `Options for ${label}`. */
   kebabAriaLabel?: string;
+  /**
+   * Suppress ItemRow's own right-click menu (the kebab keeps the config).
+   * Set when the host wraps the row in the universal v3 context menu
+   * (`features/context-menu-v3`) so right-click belongs to ONE system.
+   */
+  disableContextMenu?: boolean;
   className?: string;
 }
 

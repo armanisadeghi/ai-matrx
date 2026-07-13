@@ -17,6 +17,7 @@
  */
 
 import {
+  FileText,
   Pencil,
   Copy,
   Share2,
@@ -27,6 +28,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ItemMenuConfig } from "@/components/official/item/types";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { removeInstanceTab } from "../../redux/slice";
 import {
@@ -83,6 +88,125 @@ export async function openNoteShareModal(
   );
 }
 
+/** Duplicate a note with success/failure toasts. Shared by both menus. */
+async function duplicateNoteAction(ctx: NoteMenuContext): Promise<void> {
+  const result = await ctx.dispatch(copyNote(ctx.noteId));
+  if (copyNote.rejected.match(result)) {
+    toast.error("Duplicate failed");
+  } else {
+    toast.success("Note duplicated");
+  }
+}
+
+/**
+ * Soft-delete a note (confirm unless empty) + undo toast. Shared by both
+ * menus. Mirrors useNoteDelete's UX.
+ */
+async function deleteNoteAction(ctx: NoteMenuContext): Promise<void> {
+  if (!isNoteContentEmpty(ctx.content)) {
+    const ok = await confirm({
+      title: "Delete note?",
+      description: (
+        <>
+          &ldquo;{displayLabel(ctx.label)}&rdquo; will be moved to trash. You
+          can restore it later.
+        </>
+      ),
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!ok) return;
+  }
+
+  ctx.dispatch(
+    removeInstanceTab({ instanceId: ctx.instanceId, noteId: ctx.noteId }),
+  );
+  const result = await ctx.dispatch(deleteNote(ctx.noteId));
+  if (deleteNote.rejected.match(result)) {
+    toast.error("Failed to delete note");
+    return;
+  }
+
+  toast.success("Note deleted", {
+    description: `"${displayLabel(ctx.label)}" moved to trash`,
+    action: {
+      label: "Undo",
+      onClick: () => {
+        ctx.dispatch(restoreNote(ctx.noteId));
+        toast.success("Note restored");
+      },
+    },
+  });
+}
+
+/**
+ * Surface-specific sections for the v3 right-click menu on a sidebar note
+ * row (`NonEditableContextMenu extraSections`). Only the actions v3 does NOT
+ * already provide: Export-as-Markdown comes from `contentSource`, Share from
+ * `entity`, and Rename stays on the kebab (inline edit is an ItemRow
+ * behavior). Same handlers as `buildNoteMenu` — one implementation.
+ */
+export function buildNoteContextSections(
+  ctx: NoteMenuContext & { onOpen: () => void },
+): ContextMenuExtraSection[] {
+  const moveTargets = ctx.allFolders.filter((f) => f !== ctx.folder);
+
+  const items: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "open",
+      label: "Open",
+      icon: FileText,
+      onSelect: ctx.onOpen,
+    },
+    {
+      kind: "item",
+      id: "duplicate",
+      label: "Duplicate",
+      icon: Copy,
+      onSelect: () => void duplicateNoteAction(ctx),
+    },
+    {
+      kind: "item",
+      id: "knowledge",
+      label: "Add to knowledge base",
+      icon: Database,
+      onSelect: () => ctx.openKnowledge({ noteId: ctx.noteId, title: ctx.label }),
+    },
+  ];
+
+  if (moveTargets.length > 0) {
+    items.push({
+      kind: "submenu",
+      id: "move",
+      label: "Move to Folder",
+      icon: FolderInput,
+      children: moveTargets.map((folder) => ({
+        kind: "item" as const,
+        id: `move-${folder}`,
+        label: folder,
+        onSelect: () => {
+          ctx.dispatch(moveNoteToFolder({ noteId: ctx.noteId, folder }));
+        },
+      })),
+    });
+  }
+
+  items.push(
+    { kind: "separator", id: "danger-sep" },
+    {
+      kind: "item",
+      id: "delete",
+      label: "Delete",
+      icon: Trash2,
+      destructive: true,
+      onSelect: () => void deleteNoteAction(ctx),
+    },
+  );
+
+  return [{ id: "note-actions", label: displayLabel(ctx.label), items }];
+}
+
 export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
   const moveTargets = ctx.allFolders.filter((f) => f !== ctx.folder);
 
@@ -107,14 +231,7 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
             label: "Duplicate",
             icon: Copy,
             shortcutKey: "d",
-            onSelect: async () => {
-              const result = await ctx.dispatch(copyNote(ctx.noteId));
-              if (copyNote.rejected.match(result)) {
-                toast.error("Duplicate failed");
-              } else {
-                toast.success("Note duplicated");
-              }
-            },
+            onSelect: () => void duplicateNoteAction(ctx),
           },
         ],
       },
@@ -181,45 +298,7 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
             label: "Delete",
             icon: Trash2,
             tone: "destructive",
-            onSelect: async () => {
-              if (!isNoteContentEmpty(ctx.content)) {
-                const ok = await confirm({
-                  title: "Delete note?",
-                  description: (
-                    <>
-                      &ldquo;{displayLabel(ctx.label)}&rdquo; will be moved to
-                      trash. You can restore it later.
-                    </>
-                  ),
-                  confirmLabel: "Delete",
-                  variant: "destructive",
-                });
-                if (!ok) return;
-              }
-
-              ctx.dispatch(
-                removeInstanceTab({
-                  instanceId: ctx.instanceId,
-                  noteId: ctx.noteId,
-                }),
-              );
-              const result = await ctx.dispatch(deleteNote(ctx.noteId));
-              if (deleteNote.rejected.match(result)) {
-                toast.error("Failed to delete note");
-                return;
-              }
-
-              toast.success("Note deleted", {
-                description: `"${displayLabel(ctx.label)}" moved to trash`,
-                action: {
-                  label: "Undo",
-                  onClick: () => {
-                    ctx.dispatch(restoreNote(ctx.noteId));
-                    toast.success("Note restored");
-                  },
-                },
-              });
-            },
+            onSelect: () => void deleteNoteAction(ctx),
           },
         ],
       },

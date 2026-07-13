@@ -14,7 +14,7 @@
 // stacked inside the WindowPanel footer (that caused the thick double-chrome).
 // Editor body never pins ProTextarea stats — metrics are footer-only.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   WindowPanel,
   type WindowPanelProps,
@@ -72,12 +72,6 @@ export function NotesWindow({
   const windowId = id ?? `notes-window-${stableKey}`;
   const notesInstanceId = `notes-${stableKey}`;
 
-  // Context menus must escape the window stacking context → portal to body.
-  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
-  useEffect(() => {
-    setPortalTarget(document.body);
-  }, []);
-
   // Own the instance lifecycle here (the composition root), not in the body —
   // so the sidebar / header / footer slots can all read it immediately.
   useEffect(() => {
@@ -132,10 +126,7 @@ export function NotesWindow({
         urlSyncKey={`notes-${stableKey}`}
         urlSyncId={stableKey}
         sidebar={
-          <NoteSidebar
-            instanceId={notesInstanceId}
-            contextMenuPortalTarget={portalTarget}
-          />
+          <NoteSidebar instanceId={notesInstanceId} />
         }
         sidebarDefaultSize={220}
         sidebarMinSize={150}

@@ -12,9 +12,15 @@ import { FileText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { ItemRow } from "@/components/official/item/ItemRow";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { cn } from "@/lib/utils";
+import type { ContentSource } from "@/features/rich-document/types";
 import { saveNoteField } from "../redux/thunks";
-import { buildNoteMenu } from "./note-actions/noteMenuRegistry";
+import {
+  buildNoteMenu,
+  buildNoteContextSections,
+  displayLabel,
+} from "./note-actions/noteMenuRegistry";
 import type { NoteRecord } from "../redux/notes.types";
 
 interface NoteSidebarRowProps {
@@ -57,7 +63,18 @@ export function NoteSidebarRow({
 }: NoteSidebarRowProps) {
   const dispatch = useAppDispatch();
 
-  return (
+  const menuCtx = {
+    instanceId,
+    noteId: note.id,
+    label: note.label,
+    content: note.content,
+    folder: note.folder_name || "Uncategorized",
+    allFolders,
+    openKnowledge,
+    dispatch,
+  };
+
+  const row = (
     <div
       data-note-id={note.id}
       draggable={draggable && !selectionMode}
@@ -125,23 +142,41 @@ export function NoteSidebarRow({
                     ),
                 }
           }
-          menu={
-            selectionMode
-              ? undefined
-              : () =>
-                  buildNoteMenu({
-                    instanceId,
-                    noteId: note.id,
-                    label: note.label,
-                    content: note.content,
-                    folder: note.folder_name || "Uncategorized",
-                    allFolders,
-                    openKnowledge,
-                    dispatch,
-                  })
-          }
+          // Right-click belongs to the universal v3 menu wrapping this row;
+          // the kebab keeps the full ItemMenu config (incl. inline Rename).
+          disableContextMenu
+          menu={selectionMode ? undefined : () => buildNoteMenu(menuCtx)}
         />
       </div>
     </div>
+  );
+
+  if (selectionMode) return row;
+
+  // Universal v3 right-click menu, scoped to THIS note: contentSource lights
+  // up Copy-as / Export / Download-as-Markdown / Convert through the
+  // rich-document registry; entity lights up Attach To + Share. The note's
+  // own actions ride along as extraSections (same handlers as the kebab).
+  return (
+    <NonEditableContextMenu
+      sourceFeature="notes"
+      contextData={{ content: note.content ?? "" }}
+      contentSource={
+        { type: "note", noteId: note.id } satisfies ContentSource
+      }
+      entity={{
+        type: "note",
+        id: note.id,
+        title: displayLabel(note.label),
+        resourceType: "note",
+        isOwner: true,
+      }}
+      extraSections={buildNoteContextSections({
+        ...menuCtx,
+        onOpen: () => onSelectNote(note.id),
+      })}
+    >
+      {row}
+    </NonEditableContextMenu>
   );
 }

@@ -18,6 +18,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { Note } from "@/features/notes/types";
@@ -301,20 +302,38 @@ export default function MobileNoteEditor({
       )}
       {/* ── Scrollable content area ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32">
-        {/* Plain text */}
+        {/* Plain text — wrapped in the universal v3 menu: on mobile it mounts
+            the long-press / selection-icon bottom-sheet drill-down, giving the
+            phone editor the same Copy-as / Export / AI / agent actions as
+            desktop. */}
         {effectiveMode === "plain" && (
-          <textarea
-            ref={textareaRef}
-            value={localContent}
-            readOnly={readOnly}
-            onChange={(e) => {
-              setLocalContent(e.target.value);
+          <EditableContextMenu
+            sourceFeature="notes"
+            contextData={{ content: localContent }}
+            contentSource={
+              readOnly
+                ? undefined
+                : ({ type: "note", noteId: note.id } satisfies ContentSource)
+            }
+            getTextarea={() => textareaRef.current}
+            onTextReplace={(next) => {
+              setLocalContent(next);
               growTextarea();
             }}
-            placeholder="Start writing..."
-            className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none border-none resize-none leading-relaxed"
-            style={{ fontSize: "16px", minHeight: "calc(100dvh - 200px)" }}
-          />
+          >
+            <textarea
+              ref={textareaRef}
+              value={localContent}
+              readOnly={readOnly}
+              onChange={(e) => {
+                setLocalContent(e.target.value);
+                growTextarea();
+              }}
+              placeholder="Start writing..."
+              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none border-none resize-none leading-relaxed"
+              style={{ fontSize: "16px", minHeight: "calc(100dvh - 200px)" }}
+            />
+          </EditableContextMenu>
         )}
 
         {/* Rich (WYSIWYG) */}
