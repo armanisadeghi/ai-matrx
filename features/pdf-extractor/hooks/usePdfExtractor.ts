@@ -509,14 +509,18 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         // Track which placeholder index we're on (results arrive in completion order)
         let resultIndex = 0;
 
+        // `debugSessionId` is a `let`, so its narrowing is lost inside the closure
+        // below — capture it as a const the callback can close over.
+        const debugSid = debugSessionId;
+
         const stream = consumeBatchExtractNdjsonStream(
           response,
-          debugSessionId
+          debugSid
             ? {
                 onRawLine: (line, index) => {
                   dispatch(
                     appendBatchExtractDebugLine({
-                      sessionId: debugSessionId,
+                      sessionId: debugSid,
                       line: {
                         index,
                         receivedAt: new Date().toISOString(),
