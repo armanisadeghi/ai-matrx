@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
+import { warRoomIcons } from "../warRoomFavicon";
 
 export async function generateMetadata({
   params,
@@ -29,11 +30,14 @@ export async function generateMetadata({
     // Fall back to generic session metadata.
   }
 
-  return createDynamicRouteMetadata("/war-room", {
-    title,
-    description,
-    letter: "W",
-  });
+  return {
+    ...createDynamicRouteMetadata("/war-room", {
+      title,
+      description,
+      letter: "WR",
+    }),
+    icons: warRoomIcons,
+  };
 }
 
 export default function WarRoomSessionLayout({
