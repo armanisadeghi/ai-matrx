@@ -64,7 +64,27 @@ to prevent.
      ones are the ones worth a typed terminal payload (see item 3); the rest are
      noise. Do NOT blanket-fix; target the FE-consumed streamed responses.
 
-6. **(Roadmap, out of scope here)** Runtime response validation on the FE seam
+6. **`*Record` response schemas are under-specified vs the real DB rows.**
+   `FolderRecord` / `PermissionRecord` / `ShareLinkRecord` / `FileVersionRecord`
+   (and `TrashListResponse` / `StorageUsageResponse`) publish all-optional fields
+   plus an `additionalProperties`/index signature, and omit real columns
+   (`created_by`, `organization_id`, `is_system`, …). The frontend consequently
+   types these responses as concrete Supabase DB-Rows and cannot bind them to the
+   contract without WEAKENING the types and breaking redux-thunk consumers — so
+   the files-API `list*`/`create*`/`patch*`/`get*` calls are stuck on the raw
+   client. Tighten these Pydantic response models to the actual DB columns
+   (required where the DB is NOT NULL, drop the index signature). Then the FE
+   files-API response bindings unblock. Verified: `POST /folders` returns
+   `FolderRecord` but the FE relies on `CloudFolderRow` shape.
+
+7. **`PATCH /folders` ignores `folder_name`/`parent_id` (already worked around FE-side).**
+   The FE was sending those (rename/move) and the model silently dropped them
+   (fixed FE-side in `74942304f` by sending `folder_path`). CONSIDER whether the
+   backend SHOULD accept `folder_name`/`parent_id` as an ergonomic rename/move
+   API instead of path-only — product call. Until then the path-only contract is
+   the source of truth and the FE matches it.
+
+8. **(Roadmap, out of scope here)** Runtime response validation on the FE seam
    (openapi-zod-client or similar) — the only thing that catches the server
    returning a payload that diverges from its own published OpenAPI.
 

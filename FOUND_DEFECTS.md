@@ -142,6 +142,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D45** — folder rename/move were silent server-side no-ops: FE sent `PATCH /folders {folder_name, parent_id}` but the backend model has neither (renames via `folder_path` only), so Pydantic dropped them and the change reverted on refresh. Fixed `updateFolder` thunk to send the target `folder_path`; `CreateFolderRequest`/`FolderPatchRequest` now derived from the contract (phantom fields = compile error). 2026-07-12, `74942304f`. **Live rename/move UI test still pending** (type-safe + reasoned across rename/move-to-root/reparent/visibility-only cases; not yet exercised in-browser).
+
 - **D45** — mobile flashcard cloze/matching rendering gap → promoted to TASK-004 (2026-07-12).
 
 - **D34** — `api_class` tear-out gaps all closed: (1) llama-4-scout capabilities data corrected live; (3) `ai.offering.token_billed` landed, name-pattern stopgap deleted (both verified 2026-07-11); (2) the two silently-dropped capability fields (`interaction:"extraction"`, `multilingual`) promoted to TASK-003 with a full silent-drop sweep. (2026-07-12)
