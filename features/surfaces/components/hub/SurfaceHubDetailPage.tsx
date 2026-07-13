@@ -81,7 +81,15 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
     if (orgs.length === 0) void dispatch(fetchFullContext());
   }, [dispatch, orgs.length]);
 
-  const realOrgs = orgs.filter((o) => !o.is_personal);
+  // Org-tier writes require org admin (RLS: `is_org_admin` = role owner|admin
+  // on ui_surface_agent_pref / ui_surface_config). Only offer write scopes the
+  // user can actually write — a member-org pill would 42501 on every save.
+  const realOrgs = orgs.filter(
+    (o) => !o.is_personal && (o.role === "owner" || o.role === "admin"),
+  );
+  const memberOnlyOrgCount = orgs.filter(
+    (o) => !o.is_personal && o.role !== "owner" && o.role !== "admin",
+  ).length;
   const prefScope: PrefScopeInput =
     scope.kind === "me"
       ? { userId }
@@ -158,6 +166,8 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
                 {scope.kind === "me"
                   ? "Changes apply to you everywhere."
                   : `Changes apply to everyone in ${scope.label}.`}
+                {memberOnlyOrgCount > 0 &&
+                  " Org-wide settings require an org admin role."}
               </span>
             </div>
 
@@ -167,6 +177,19 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
                 Loading surface configuration…
               </div>
             )}
+
+            {/* LOUD drift: manifest declares roles but the DB mirror has none —
+                an unsynced ui_surface_agent_role, not "no roles". */}
+            {status === "ready" &&
+              (manifest?.agentRoles?.length ?? 0) > 0 &&
+              Object.keys(roles).length === 0 && (
+                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  This surface declares{" "}
+                  {manifest?.agentRoles?.length ?? 0} agent role(s) in code but
+                  none exist in the database — the manifest has not been
+                  synced. Selections cannot be made until it is.
+                </p>
+              )}
 
             {/* Roles */}
             {Object.keys(roles).length > 0 && (

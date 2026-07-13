@@ -462,7 +462,15 @@ export async function setNamespaceConfig(args: {
 }): Promise<void> {
   const { surfaceName, namespace, config, scope } = args;
   const handler = getNamespaceHandler(namespace);
-  if (handler && !handler.validate(config)) {
+  if (!handler) {
+    // An unregistered namespace has no validator or merge semantics — a row
+    // written here would be skipped by resolution with a warning. Refuse
+    // loudly instead of persisting config nothing can consume.
+    throw new Error(
+      `[surfaces] no registered handler for config namespace "${namespace}" (known: ${listRegisteredNamespaces().join(", ")}) — register one in config/namespace-registry.ts before persisting`,
+    );
+  }
+  if (!handler.validate(config)) {
     throw new Error(
       `[surfaces] config for namespace "${namespace}" failed validation — refusing to persist`,
     );

@@ -58,6 +58,16 @@ export function SurfacesHubPage() {
         );
         const active = await listSurfaceOptions();
         const activeByName = new Map(active.map((s) => [s.name, s]));
+        // LOUD drift signal: a configurable manifest with no active ui_surface
+        // row is registered in code but invisible here — that's an unsynced or
+        // deactivated surface, never a silent skip.
+        for (const m of configurable) {
+          if (!activeByName.has(m.surfaceName)) {
+            console.warn(
+              `[surfaces] hub: manifest "${m.surfaceName}" declares roles/config but has no ACTIVE ui_surface row — sync the manifest to the DB (or re-activate the row) or it stays hidden from /surfaces`,
+            );
+          }
+        }
         if (cancelled) return;
         setRows(
           configurable
