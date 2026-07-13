@@ -1,4 +1,5 @@
 -- ============================================================================
+-- migrate: skip: unrunnable against the live schema — ui_surface moved to ui.*, skl_* tables replaced by skill.definition/skill.render_definition, shortcut_categories graveyarded; effects were applied historically (mermaid block is live) and later edits were docs-only
 -- Mermaid render block — platform registration.
 --
 -- One migration, five registrations (idempotent on business keys):

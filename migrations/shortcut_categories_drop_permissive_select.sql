@@ -1,4 +1,5 @@
 -- shortcut_categories_drop_permissive_select.sql
+-- migrate: skip: public.shortcut_categories was graveyarded (now graveyard.shortcut_categories_legacy) — the policy is gone with the table; file kept as the D5 record
 --
 -- FOUND_DEFECTS D5 (frontend): retire the legacy permissive SELECT policy
 -- `shortcut_categories_select_any` (cmd SELECT, role `public`, USING (true)).

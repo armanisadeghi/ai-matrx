@@ -11,8 +11,8 @@
 -- so a crash-before-finalize still leaves a recovery pointer.
 --
 -- Applied live to txzxabzwovsujtloxrus via MCP apply_migration 2026-06-14.
-ALTER TABLE public.studio_recording_segments
+ALTER TABLE transcripts.studio_recording_segments
   ADD COLUMN IF NOT EXISTS safety_id text;
 
-COMMENT ON COLUMN public.studio_recording_segments.safety_id IS
+COMMENT ON COLUMN transcripts.studio_recording_segments.safety_id IS
   'Crash-safe IndexedDB entry id (audioSafetyStore) for this cycle''s audio; used by reconcileStuckRecordingsThunk to recover orphaned audio. See FOUND_DEFECTS D7.';
