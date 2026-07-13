@@ -47,6 +47,8 @@ import {
   isContextStateEvent,
   isContextTrimmedEvent,
   isInjectionConsumedEvent,
+  isValueStoredEvent,
+  isContextGroomedEvent,
   type ConversationIdData,
   type ConversationLabeledData,
   type ContextChangedData,
@@ -68,6 +70,7 @@ import {
   appendRawEvent,
   markTextStreamStart,
   closeTextRun,
+  rewindContentForFailedHandoff,
   markReasoningStreamStart,
   closeReasoningRun,
   finalizeAccumulatedReasoning,
@@ -334,6 +337,19 @@ export async function processStream({
   // remember the association so that when the live-stream tool_event fires
   // later (keyed by call_id) we can patch the right observability row.
   const toolCallIdByProviderCallId = new Map<string, string>();
+
+  // Content snapshot taken at the most recent tool boundary (tool_started).
+  // An agent HANDOFF streams the specialist's tokens right after its tool
+  // call with no INIT (lifecycle suppressed on the seamless path) — so the
+  // last tool boundary IS the pre-handoff content mark. When the specialist
+  // dies, the never-suppressed `completion {operation:"sub_agent",
+  // status:"failed"}` rewinds the live bubble to this snapshot (see
+  // rewindContentForFailedHandoff). Null until a tool call streams.
+  let lastToolBoundarySnapshot: {
+    blockCount: number;
+    reasoningChunkCount: number;
+    timelineLength: number;
+  } | null = null;
 
   let clientFirstChunkAt: number | null = null;
   let totalEvents = 0;
@@ -677,6 +693,34 @@ export async function processStream({
           }),
         );
 
+        if (d.operation === "sub_agent" && d.status === "failed") {
+          // Agent handoff failed mid-stream (this completion is NEVER
+          // suppressed — it is the client's only rewind signal). Truncate
+          // the live bubble back to the pre-handoff snapshot; the caller
+          // continues streaming its correction/retry after this event.
+          if (lastToolBoundarySnapshot) {
+            // Close the accumulator's open block FIRST so post-failure
+            // caller text opens a FRESH render block instead of appending
+            // to (and thereby resurrecting) the specialist's removed one.
+            blockAccumulator.breakTextBlock(dispatch);
+            dispatch(
+              rewindContentForFailedHandoff({
+                requestId,
+                ...lastToolBoundarySnapshot,
+              }),
+            );
+          } else {
+            // No tool boundary observed before the failure — nothing safe
+            // to rewind to. Keeping extra text beats destroying real
+            // content, but this is a contract violation worth screaming
+            // about (a handoff always begins with a tool call).
+            console.error(
+              `[stream:${requestId.slice(0, 8)}] sub_agent FAILED completion arrived with no prior tool boundary — cannot rewind the handoff text. The partial specialist answer stays visible.`,
+              d,
+            );
+          }
+        }
+
         if (d.operation === "user_request") {
           dispatch(setCompletion({ requestId, data: d }));
 
@@ -755,6 +799,55 @@ export async function processStream({
           }
           // directive_apply.blocked is silent here (a model tried to apply an
           // off-policy directive; the receipt is already on the timeline).
+        } else if (isValueStoredEvent(d)) {
+          // Conversation value store (Pattern 2): a sub-agent result landed
+          // in the store; the orchestrator only saw the descriptor. Render a
+          // compact "result ready" card at this chronological spot. The
+          // descriptor's ```matrx fence renders via the envelope chip
+          // renderer inside the card — NEVER as prose/code. The card is
+          // stream-time only (never persisted into cx_message.content);
+          // after reload the descriptor lives on the tool_call row.
+          const blockId = `value_store_stored_${totalEvents}`;
+          dataRenderBlockId = blockId;
+          dispatch(
+            upsertRenderBlock({
+              requestId,
+              block: {
+                blockId,
+                blockIndex: renderBlockEvents,
+                type: "value_store_stored",
+                status: "complete",
+                // Non-empty content keeps the slot renderer's empty-content
+                // guard from dropping the card; the component reads `data`.
+                content: d.descriptor.key,
+                // MATRX-EXCEPTION: ValueStoredEvent has no index signature to
+                // overlap with RenderBlockPayload.data's generated open bag
+                // (Record<string, unknown> | null) — two-step cast required.
+                data: d as unknown as Record<string, unknown>,
+              },
+            }),
+          );
+        } else if (isContextGroomedEvent(d)) {
+          // Context groom receipt: the MODEL's view of the listed tool
+          // results is now a compact stub. The user-facing view is unchanged
+          // (tool output still reads from cx_tool_call.output) — render only
+          // a subtle "context compacted" line at this spot.
+          const blockId = `context_groomed_${totalEvents}`;
+          dataRenderBlockId = blockId;
+          dispatch(
+            upsertRenderBlock({
+              requestId,
+              block: {
+                blockId,
+                blockIndex: renderBlockEvents,
+                type: "context_groomed",
+                status: "complete",
+                content: "context compacted",
+                // MATRX-EXCEPTION: same open-bag cast as ValueStoredEvent above.
+                data: d as unknown as Record<string, unknown>,
+              },
+            }),
+          );
         } else if (d.type === "conversation_id") {
           const convData = d as ConversationIdData;
           // Manual mode mints a fresh wire conv_id per call; the assertion
@@ -1258,6 +1351,25 @@ export async function processStream({
             },
           }),
         );
+
+        // Handoff rewind mark. Captured AFTER the boundary dispatches so the
+        // snapshot includes the just-closed pre-tool text run and the tool
+        // entry itself — a failed-handoff rewind keeps the caller's text and
+        // the (failed) handoff tool card, and drops only what the specialist
+        // streamed after this point. A handoff is exactly ONE tool call,
+        // never batched (server batch policy), so the LAST tool_started
+        // before a failed `sub_agent` completion is always the handoff call.
+        if (toolData.event === "tool_started") {
+          const reqAtBoundary =
+            getState().activeRequests.byRequestId[requestId];
+          if (reqAtBoundary) {
+            lastToolBoundarySnapshot = {
+              blockCount: reqAtBoundary.renderBlockOrder.length,
+              reasoningChunkCount: reqAtBoundary.reasoningChunks.length,
+              timelineLength: reqAtBoundary.timeline.length,
+            };
+          }
+        }
       } else if (isRenderBlockEvent(event)) {
         renderBlockEvents++;
         // content-ir Phase 5: server render_blocks may arrive with a
@@ -1401,7 +1513,36 @@ export async function processStream({
               d.parent_refs.conversation_id,
             );
 
-            if (role === "user" && userMessageClientTempId) {
+            // ── Agent handoff rebind ────────────────────────────────────
+            // A handoff turn streams the specialist's answer under the
+            // LOOP-START assistant reservation, but the durable row is the
+            // SYNTHETIC assistant message the server announces at finalize
+            // with `metadata.handoff: true` at a LATER position (see
+            // aidream services/agent_handoff/FEATURE.md — "FE rebind").
+            // Re-key the live bubble to the durable id so a refetch finds
+            // the text at the id it actually persisted under, instead of
+            // leaving a ghost bubble at the placeholder id.
+            const isHandoffRebind =
+              role === "assistant" &&
+              d.metadata.handoff === true &&
+              reservedAssistantTurns.length > 0;
+
+            if (isHandoffRebind) {
+              const prior =
+                reservedAssistantTurns[reservedAssistantTurns.length - 1];
+              dispatch(
+                promoteMessageId({
+                  conversationId: owningConversationId,
+                  oldId: prior.messageId,
+                  newId: d.record_id,
+                  position,
+                }),
+              );
+              // The end-of-stream commit must write the turn's content to
+              // the DURABLE id/position — update the tracked turn in place.
+              prior.messageId = d.record_id;
+              prior.position = position;
+            } else if (role === "user" && userMessageClientTempId) {
               // Promote the optimistic user record to the server id. The record
               // already carries the user's content, so no further patch needed
               // here — the stream just swaps the key.
@@ -1431,7 +1572,9 @@ export async function processStream({
               );
             }
 
-            if (role === "assistant") {
+            // A handoff rebind re-keyed an EXISTING tracked turn above —
+            // pushing it again would double-commit the turn's content.
+            if (role === "assistant" && !isHandoffRebind) {
               reservedAssistantTurns.push({
                 messageId: d.record_id,
                 position,

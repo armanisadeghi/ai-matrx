@@ -915,6 +915,19 @@ export const selectUnifiedSlots = (requestId: string) =>
           // renderBlockOrder (latest, since partials and finals share the
           // same blockId) and emit it as its own slot. Audio + video are
           // forward-compat — today only images fire data events.
+          // Value-store events (kind-discriminated, no `type` field): the
+          // "result ready" card / "context compacted" line block that
+          // process-stream created for this event — emit it at this exact
+          // chronological slot (same exact-pairing rule as media below).
+          const dataKind = (entry.data as { kind?: unknown }).kind;
+          if (
+            entry.blockId !== undefined &&
+            (dataKind === "value_store.stored" ||
+              dataKind === "value_store.groomed")
+          ) {
+            pendingStatus = null;
+            pushBlock(entry.blockId);
+          }
           const dataType = entry.data.type;
           if (dataType && MEDIA_DATA_TYPES.has(dataType)) {
             pendingStatus = null;

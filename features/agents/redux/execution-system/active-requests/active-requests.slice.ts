@@ -947,6 +947,76 @@ const activeRequestsSlice = createSlice({
       closeOpenTextRun(request, action.payload.timestamp);
     },
 
+    /**
+     * Agent-handoff rewind: a `completion` event `operation:"sub_agent",
+     * status:"failed"` (the NEVER-suppressed failure signal — see
+     * aidream services/agent_handoff/FEATURE.md) means the specialist died
+     * mid-stream. Everything it streamed after the handoff tool call must
+     * vanish from the live bubble — the caller continues streaming its
+     * correction/retry AFTER, and the DB never persists the partial text.
+     *
+     * The payload is a snapshot process-stream captured at the handoff
+     * boundary (the tool_started that preceded the specialist's tokens):
+     * render blocks, reasoning chunks, and CONTENT-bearing timeline entries
+     * past the snapshot are dropped. Bookkeeping timeline entries
+     * (record_reserved/record_update/heartbeat/…) are kept — they describe
+     * real server state, not content.
+     */
+    rewindContentForFailedHandoff(
+      state,
+      action: PayloadAction<{
+        requestId: string;
+        /** renderBlockOrder.length at the handoff boundary. */
+        blockCount: number;
+        /** reasoningChunks.length at the handoff boundary. */
+        reasoningChunkCount: number;
+        /** timeline.length at the handoff boundary. */
+        timelineLength: number;
+      }>,
+    ) {
+      const { requestId, blockCount, reasoningChunkCount, timelineLength } =
+        action.payload;
+      const request = state.byRequestId[requestId];
+      if (!request) return;
+
+      // Drop the specialist's render blocks (a strict suffix of the order).
+      for (let i = blockCount; i < request.renderBlockOrder.length; i++) {
+        delete request.renderBlocks[request.renderBlockOrder[i]];
+      }
+      request.renderBlockOrder = request.renderBlockOrder.slice(0, blockCount);
+
+      // Drop its reasoning tokens + rebuild the accumulated string.
+      if (request.reasoningChunks.length > reasoningChunkCount) {
+        request.reasoningChunks = request.reasoningChunks.slice(
+          0,
+          reasoningChunkCount,
+        );
+        request.accumulatedReasoning = request.reasoningChunks.join("");
+      }
+
+      // Drop CONTENT-bearing timeline entries added after the boundary —
+      // a stale text_end would resurrect the truncated text at commit time
+      // via its rawText. Non-content bookkeeping entries stay.
+      const contentKinds = new Set<TimelineEntry["kind"]>([
+        "text_start",
+        "text_end",
+        "reasoning_start",
+        "reasoning_end",
+        "render_block",
+        "data",
+      ]);
+      request.timeline = request.timeline.filter(
+        (entry, i) => i < timelineLength || !contentKinds.has(entry.kind),
+      );
+
+      // Any run open at failure time belongs to the specialist (its handoff
+      // tool_use closed the caller's run) — force-close WITHOUT emitting a
+      // text_end, discarding the partial raw text.
+      request.isTextStreaming = false;
+      request.currentTextRunRaw = "";
+      request.isReasoningStreaming = false;
+    },
+
     // ── Client Metrics ─────────────────────────────────────────
 
     finalizeClientMetrics(
@@ -1139,6 +1209,7 @@ export const {
   appendRawEvent,
   markTextStreamStart,
   closeTextRun,
+  rewindContentForFailedHandoff,
   finalizeClientMetrics,
   updateExtractedJson,
   removeRequest,
