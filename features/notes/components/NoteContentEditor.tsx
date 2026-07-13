@@ -83,6 +83,7 @@ import { createNotesEditorExtraSections } from "@/features/notes/agent-context/n
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import type { ContentSource } from "@/features/rich-document/types";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -613,6 +614,15 @@ export function NoteContentEditor({
         extraSections={notesExtras}
         getTextarea={() => textareaRef.current}
         getApplicationScope={getApplicationScope}
+        // Note-typed content source so the rich-document Export / Convert
+        // actions (HTML preview save-back, Convert→Task linking) resolve the
+        // note adapter instead of the save-less `raw` default (D33). Held to
+        // raw when read-only — a Save that RLS would reject must not render.
+        contentSource={
+          readOnly
+            ? undefined
+            : ({ type: "note", noteId } satisfies ContentSource)
+        }
         contextData={buildSurfaceScope() as Record<string, unknown>}
         onTextReplace={handleChangeFlush}
         onTextInsertBefore={(t) => insertAtCursor(t, "before")}

@@ -240,6 +240,15 @@ export function NoteEditor({
     ),
   });
 
+  // Note-typed content source for the editable context menus, so the shared
+  // rich-document Export / Convert actions (HTML preview save-back, Convert→
+  // Task linking) resolve the note adapter instead of the save-less `raw`
+  // default (D33). Phantom (unsaved) notes stay raw — there is no row to save.
+  const menuContentSource: ContentSource | undefined =
+    note?.id && note.id !== "__phantom__"
+      ? { type: "note", noteId: note.id }
+      : undefined;
+
   const getApplicationScope = useCallback(() => {
     const el = textareaRef.current;
     const start = el?.selectionStart ?? selectionStart;
@@ -711,6 +720,7 @@ export function NoteEditor({
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getTextarea={() => textareaRef.current}
             getApplicationScope={getApplicationScope}
+            contentSource={menuContentSource}
             contextData={contextData}
             onTextReplace={(newText) => {
               const textarea = textareaRef.current;
@@ -795,6 +805,7 @@ export function NoteEditor({
           <EditableContextMenu
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
+            contentSource={menuContentSource}
             contextData={contextData}
             onTextReplace={(newText) => {
               if (tuiEditorRef.current?.getInstance) {
@@ -838,6 +849,7 @@ export function NoteEditor({
           <EditableContextMenu
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
+            contentSource={menuContentSource}
             contextData={contextData}
             onTextReplace={(newText) => {
               if (tuiEditorRef.current?.getInstance) {
