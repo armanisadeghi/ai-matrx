@@ -92,6 +92,12 @@ export interface MermaidWorkbenchProps {
     sourceMessageId?: string;
     conversationId?: string;
     mermaid?: Record<string, unknown>;
+    /** Open the "Edit with AI" rail on mount (chat right-click → agent edit). */
+    openAiRail?: boolean;
+    /** Preselect this agent in the AI rail (pairs with `openAiRail`). */
+    aiAgentId?: string;
+    /** Display name for `aiAgentId` (the opener already resolved it). */
+    aiAgentName?: string;
   };
 }
 
@@ -201,7 +207,7 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
   }, []);
 
   // ── AI edit rail ─────────────────────────────────────────────────────────
-  const [aiOpen, setAiOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(Boolean(metadata?.openAiRail));
   const buildScope = useCallback(() => {
     const s = stateRef.current;
     const diagnostics =
@@ -530,6 +536,8 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
             <AgentEditRail
               source={state.source}
               buildScope={buildScope}
+              initialAgentId={metadata?.aiAgentId}
+              initialAgentLabel={metadata?.aiAgentName}
               onApply={(next) => dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: next })}
               onClose={() => setAiOpen(false)}
             />

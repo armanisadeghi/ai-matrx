@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-07
+updated: 2026-07-12
 repos: [matrx-frontend]
 vision: []
 ---
@@ -29,12 +29,8 @@ The web build is complete and user-confirmed live; the Diagram Editor agent is n
    diagrams (incidental ` ```mermaid ` fences still render).
 3. **`agent.agent_surface` association edge** — deliberately skipped (mechanism condemned
    2026-07-02); add the agent↔surface edge on `platform.associations` when the replacement in
-   `docs/handoffs/surfaces-bindings.md` item 1 lands.
-4. **Chat right-click scoping — APPROVED onto context-menu-v3** (Arman 2026-07-07: "context menu
-   v3 probably sounds like the right call"): right-clicking a mermaid block in chat should offer
-   diagram-scoped agents (the Diagram Editor first). Build with the `context-menu-v3` skill — NOT
-   a v2 extension. Natural to pair with `docs/handoffs/notes-sidebar-menu.md` (same skill, same
-   sweep).
+   `docs/handoffs/surfaces-bindings.md` item 1 lands. Until it lands, the chat block's
+   diagram-agent menu resolves through the surface ROLE (`useDiagramAgents`), not bindings.
 
 ## Done
 
@@ -45,9 +41,7 @@ The web build is complete and user-confirmed live; the Diagram Editor agent is n
   (Gemini 3.5 Flash, `skill_config.included` = mermaid-diagrams, `diagram_source` variable),
   `ui_surface_agent_role.default_agent_id` set, manifest `defaultAgentId` set; live-verified in
   `agent.card`.
-
-## Decisions needed
-
-- Right-clicking a mermaid diagram in chat shows generic assistant agents, not diagram-scoped
-  ones. A June triage called this not-a-defect since the workbench Edit rail covers editing.
-  Decide: close it as won't-do, or schedule it onto the new context-menu-v3 system.
+- Chat right-click → diagram-scoped agents SHIPPED on context-menu-v3 (2026-07-12) —
+  `MermaidBlock` wraps `NonEditableContextMenu` (mermaid-editor surface scope); "Edit with
+  Diagram Editor" opens the workbench with the AI rail preloaded
+  (`components/mermaid/hooks/useDiagramAgents.ts`). Closes the old "Decisions needed" item.

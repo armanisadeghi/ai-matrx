@@ -30,11 +30,26 @@ interface AgentEditRailProps {
   /** Apply a proposed diagram (replaces editor source → saved as new version). */
   onApply: (source: string) => void;
   onClose: () => void;
+  /** Preselect an agent (e.g. chat right-click → "Edit with Diagram Editor"). */
+  initialAgentId?: string | null;
+  /** Display name for `initialAgentId` (the opener already resolved it). */
+  initialAgentLabel?: string;
 }
 
-export function AgentEditRail({ source, buildScope, onApply, onClose }: AgentEditRailProps) {
-  const [agentId, setAgentId] = useState<string | null>(null);
-  const [agentLabel, setAgentLabel] = useState<string>("Choose an agent…");
+export function AgentEditRail({
+  source,
+  buildScope,
+  onApply,
+  onClose,
+  initialAgentId,
+  initialAgentLabel,
+}: AgentEditRailProps) {
+  const [agentId, setAgentId] = useState<string | null>(initialAgentId ?? null);
+  const [agentLabel, setAgentLabel] = useState<string>(
+    initialAgentId
+      ? (initialAgentLabel ?? "Agent selected")
+      : "Choose an agent…",
+  );
   const [instruction, setInstruction] = useState("");
   const { phase, isBusy, proposedSource, error, run, reset } = useMermaidAgentEdit();
 

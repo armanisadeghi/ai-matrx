@@ -14,10 +14,6 @@
 
 import React, { Suspense, lazy, useEffect, useState } from "react";
 
-console.log(
-  "%c[MERMAID IMPORT TEST] components/mardown-display/blocks/mermaid/MermaidBlock.tsx",
-  "color: #fff; background: #7c3aed; font-weight: bold; padding: 2px 6px; border-radius: 3px;",
-);
 import {
   Check,
   Copy,
@@ -27,6 +23,7 @@ import {
   FolderUp,
   Maximize2,
   Palette,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,7 +45,17 @@ import { selectMermaidPreferences } from "@/lib/redux/preferences/userPreference
 import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
 
-import { getCatalogEntry } from "@/components/mermaid/catalog";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import {
+  createMermaidEditorScope,
+  mermaidEditorManifest,
+} from "@/features/surfaces/manifests/mermaid-editor.manifest";
+import { useDiagramAgents } from "@/components/mermaid/hooks/useDiagramAgents";
+import {
+  getCatalogEntry,
+  getFeaturedCatalogEntries,
+} from "@/components/mermaid/catalog";
 import {
   detectDiagramType,
   extractMermaidTitle,
@@ -109,6 +116,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
   serverData,
   metadata,
   isStreamActive = false,
+  conversationId,
   messageId,
   taskId,
   className,
@@ -197,7 +205,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
     }
   };
 
-  const handleOpenCanvas = () => {
+  const handleOpenCanvas = (aiAgent?: { agentId: string; name: string }) => {
     open({
       type: "mermaid",
       data: source,
@@ -207,6 +215,18 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
         sourceTaskId:
           taskId || (messageId ? `mermaid:${messageId}` : undefined),
         canvasItemId: artifactId,
+        conversationId,
+        // Chat right-click → "Edit with <agent>": land in the workbench with
+        // the AI rail open + the diagram-scoped agent preselected, so the
+        // agent's result flows through the workbench's normal apply/version
+        // pipeline (APPLY_EXTERNAL_SOURCE → saved as a new version).
+        ...(aiAgent
+          ? {
+              openAiRail: true,
+              aiAgentId: aiAgent.agentId,
+              aiAgentName: aiAgent.name,
+            }
+          : {}),
         mermaid: {
           diagramType,
           title: title ?? undefined,
@@ -223,7 +243,51 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
     value: MermaidOptionPreferences[K],
   ) => setLocalOptions((prev) => ({ ...prev, [key]: value }));
 
+  // ── v3 right-click menu: diagram-scoped values + agents ────────────────
+  // The block IS the mermaid-editor surface's read view — declare the surface
+  // so agent launches from the menu inherit its value_mappings, and emit
+  // every alwaysAvailable value the manifest declares.
+  const diagramAgents = useDiagramAgents();
+  const getApplicationScope = () =>
+    createMermaidEditorScope({
+      content: source,
+      diagram_source: source,
+      diagram_type: diagramType,
+      diagram_title: title ?? undefined,
+      editor_mode: "chat-block",
+      validation_state: "unknown",
+      available_diagram_types: getFeaturedCatalogEntries().map((e) => e.type),
+      canvas_item_id: artifactId,
+      version: artifactVersion,
+      conversation_id: conversationId,
+    });
+  const diagramSections: ContextMenuExtraSection[] =
+    !isStreamActive && isCanvasAvailable && diagramAgents.length > 0
+      ? [
+          {
+            id: "diagram-agents",
+            label: "Diagram",
+            items: diagramAgents.map((agent) => ({
+              kind: "item" as const,
+              id: `diagram-agent-${agent.agentId}`,
+              label: `Edit with ${agent.name}`,
+              icon: Wand2,
+              onSelect: () => handleOpenCanvas(agent),
+            })),
+          },
+        ]
+      : [];
+
   return (
+    <NonEditableContextMenu
+      sourceFeature="assistant-message"
+      surfaceName={mermaidEditorManifest.surfaceName}
+      getApplicationScope={getApplicationScope}
+      contentSource={
+        artifactId ? { type: "artifact", artifactId } : undefined
+      }
+      extraSections={diagramSections}
+    >
     <div
       className={cn(
         "my-3 overflow-hidden rounded-lg border border-border bg-card",
@@ -424,7 +488,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
                 <button
                   type="button"
                   aria-label="Open in canvas to edit"
-                  onClick={handleOpenCanvas}
+                  onClick={() => handleOpenCanvas()}
                   className="flex items-center gap-1 rounded px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
                 >
                   <Maximize2 className="h-3.5 w-3.5" />
@@ -461,6 +525,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
         />
       )}
     </div>
+    </NonEditableContextMenu>
   );
 };
 
