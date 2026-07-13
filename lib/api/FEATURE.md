@@ -42,6 +42,8 @@ import { apiPost, apiGet, apiMultipart, buildPath } from "@/lib/api/typed-client
 
 const { data } = await apiPost("/assets/preview", body); // body + data typed from contract
 const { data } = await apiGet(buildPath("/assets/{file_id}", { file_id }));
+// query params keep the path literal contract-checked:
+const { data } = await apiGet("/kg-cost/orgs", { query: { limit, offset } });
 ```
 
 What this catches at compile time: wrong path (not a key of `paths`), wrong
@@ -68,21 +70,43 @@ type-checked (never executed) file of `@ts-expect-error` assertions. If
 regressed — the client stopped catching a wrong shape. Do not delete assertions
 to make it pass.
 
-## Migration backlog
+## What the typed client does NOT cover yet (why some calls stay on raw helpers)
 
-~30 service files still hand-mirror API request/response types and call the raw
-helpers directly (scheduling, rag, secrets, scraper, kg-cost, research, …).
-Each is a latent copy of this 400. Convert them to derive-from-generated +
-route through the typed client. Audit query:
+Wave 1 conversions surfaced hard edges — left on the raw client ON PURPOSE,
+documented, never casted around:
+- **Streaming endpoints** — the typed client is JSON-only; NDJSON/SSE calls
+  (`consume*Stream`, `postNdjson`) keep their helper. Their contract 200 is
+  often `unknown` anyway (see the backend handoff).
+- **`openapi-typescript` marks defaulted fields as REQUIRED** — a body with a
+  server default (`multi_query: int = 5`) becomes a required property, so
+  routing that POST through `apiPost` would force callers to send every field.
+  Blocked until `sync-types` post-processes defaults to optional.
+- **No-body POSTs** — the contract's `requestBody?: never` makes `apiPost`'s
+  body type `never`; needs an overload.
+- **Endpoints absent from `paths`** (`/api/content-label`, `/images/generate`,
+  stubs) — nothing to bind to.
+
+## Migration backlog — the ratchet IS the counter
+
+`scripts/api-contracts-baseline.json` holds the exact set of files still on the
+raw client (38 after wave 1). It can only SHRINK. Live count + audit:
 
 ```bash
-# raw client callsites (should shrink to lib/api/** only)
-grep -rln "postJson\|postMultipart\|getJson\|patchJson\|putJson" \
-  --include="*.ts" --include="*.tsx" features app | grep -v node_modules
+pnpm check:api-contracts        # loud report; converted files are listed
+pnpm check:api-contracts:accept # ratchet the baseline down after converting
 ```
+
+Next waves: the RAG POSTs (once defaults-optional lands), the RAG query GETs
+(now unblocked by `apiGet`'s `query` support), `features/files/api/*`, and the
+D44 divergences. Streaming stays blocked on the backend handoff.
 
 ## Change Log
 
 - 2026-07-12 — Created. Built `typed-client.ts` (path-keyed, contract-derived
   wrappers) + contract-test proof. Converted `features/files/api/assets.ts`
   preview types + call as the reference. Fixes the Image Studio Convert 400.
+- 2026-07-12 — Ratchet gate (`check:api-contracts`) wired into release CI;
+  baseline frozen at 41. Added `apiGet` query-param support (`withQuery`,
+  proven byte-identical to the helpers it replaced). Wave 1: kg cluster fully
+  converted (baseline → 38); rag + services type-bound. Backend hardening +
+  tooling gaps → `docs/handoffs/aidream-api-contract-hardening.md`.
