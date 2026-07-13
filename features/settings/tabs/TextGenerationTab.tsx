@@ -5,10 +5,20 @@ import { SettingsSwitch } from "@/components/official/settings/primitives/Settin
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
+import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
+import { selectPlatformDefaultTextModelName } from "@/features/ai-models/redux/platformDefaultModel";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useSetting } from "../hooks/useSetting";
 
+// Radix Select items cannot carry an empty value — this internal sentinel
+// maps to `null` ("platform default") at the preference boundary.
+const PLATFORM_DEFAULT_VALUE = "__platform_default__";
+
 export default function TextGenerationTab() {
-  const [model, setModel] = useSetting<string>(
+  // null = platform default (catalog-resolved via is_primary). The legacy
+  // seeded value "GPT-4o" is folded to null at the load boundaries
+  // (stripLegacyDefaultModelSentinels).
+  const [model, setModel] = useSetting<string | null>(
     "userPreferences.textGeneration.defaultModel",
   );
   const [tone, setTone] = useSetting<string>(
@@ -24,6 +34,29 @@ export default function TextGenerationTab() {
     "userPreferences.textGeneration.plagiarismCheckEnabled",
   );
 
+  // Catalog-driven: text-model options are the live catalog rows whose
+  // capabilities declare text output — never a hardcoded model-name list.
+  const { models, isLoading } = useModelCatalog("user");
+  const platformDefaultName = useAppSelector(
+    selectPlatformDefaultTextModelName,
+  );
+  const textModels = models.filter((m) => m.output.includes("text"));
+  const modelOptions = [
+    {
+      value: PLATFORM_DEFAULT_VALUE,
+      label: platformDefaultName
+        ? `Platform default (${platformDefaultName})`
+        : "Platform default",
+    },
+    ...textModels.map((m) => ({ value: m.id, label: m.name })),
+  ];
+  // A previously-stored value that is no longer a routable text model (e.g.
+  // a legacy display-name string like "Claude-3") still renders — visibly
+  // marked — so the user's stored preference is never silently blanked.
+  if (model && !isLoading && !textModels.some((m) => m.id === model)) {
+    modelOptions.push({ value: model, label: `${model} (unavailable)` });
+  }
+
   return (
     <>
       <SettingsSubHeader
@@ -34,16 +67,12 @@ export default function TextGenerationTab() {
       <SettingsSection title="Model & style">
         <SettingsSelect
           label="Model"
-          value={model}
-          onValueChange={setModel}
-          options={[
-            { value: "GPT-4o", label: "GPT-4o" },
-            { value: "GPT-4", label: "GPT-4" },
-            { value: "Claude-3", label: "Claude 3" },
-            { value: "Claude-3.5", label: "Claude 3.5" },
-            { value: "Gemini-Pro", label: "Gemini Pro" },
-            { value: "Llama-3", label: "Llama 3" },
-          ]}
+          value={model ?? PLATFORM_DEFAULT_VALUE}
+          onValueChange={(next) =>
+            setModel(next === PLATFORM_DEFAULT_VALUE ? null : next)
+          }
+          options={modelOptions}
+          placeholder={isLoading ? "Loading models..." : "Select a model"}
         />
         <SettingsSelect
           label="Tone"

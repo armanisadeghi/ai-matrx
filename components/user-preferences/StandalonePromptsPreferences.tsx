@@ -32,7 +32,8 @@ const StandalonePromptsPreferences: React.FC<
 > = ({ onSaveSuccess, onCancel, showFooter = true }) => {
   const [showSettingsOnMainPage, setShowSettingsOnMainPage] =
     useSetting<boolean>("userPreferences.prompts.showSettingsOnMainPage");
-  const [defaultModel, setDefaultModel] = useSetting<string>(
+  // null = platform default (catalog-resolved via is_primary).
+  const [defaultModel, setDefaultModel] = useSetting<string | null>(
     "userPreferences.prompts.defaultModel",
   );
   const [defaultTemperature, setDefaultTemperature] = useSetting<number>(
@@ -73,6 +74,8 @@ const StandalonePromptsPreferences: React.FC<
             value={defaultModel}
             onValueChange={setDefaultModel}
             scope="active"
+            allowPlatformDefault
+            defaultModality="text"
           />
           <SettingsSlider
             label="Default temperature"

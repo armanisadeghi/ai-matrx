@@ -6,10 +6,19 @@ import { SettingsSelect } from "@/components/official/settings/primitives/Settin
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
+import { selectPlatformDefaultImageModelName } from "@/features/ai-models/redux/platformDefaultModel";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useSetting } from "../hooks/useSetting";
 
+// Radix Select items cannot carry an empty value — this internal sentinel
+// maps to `null` ("platform default") at the preference boundary.
+const PLATFORM_DEFAULT_VALUE = "__platform_default__";
+
 export default function ImageGenerationTab() {
-  const [model, setModel] = useSetting<string>(
+  // null = platform default (catalog-resolved via is_primary). The legacy
+  // seeded value "standard" is folded to null at the load boundaries
+  // (stripLegacyDefaultModelSentinels).
+  const [model, setModel] = useSetting<string | null>(
     "userPreferences.imageGeneration.defaultModel",
   );
   const [resolution, setResolution] = useSetting<string>(
@@ -28,11 +37,22 @@ export default function ImageGenerationTab() {
   // Catalog-driven: the image-model options are the live catalog rows whose
   // capabilities declare image output — never a hardcoded model-name list.
   const { models, isLoading } = useModelCatalog("user");
+  const platformDefaultName = useAppSelector(
+    selectPlatformDefaultImageModelName,
+  );
   const imageModels = models.filter((m) => m.output.includes("image"));
-  const modelOptions = imageModels.map((m) => ({ value: m.id, label: m.name }));
-  // A previously-stored value that is no longer a routable image model (or a
-  // legacy preset string like "standard") still renders — visibly marked — so
-  // the user's stored preference is never silently blanked or rewritten.
+  const modelOptions = [
+    {
+      value: PLATFORM_DEFAULT_VALUE,
+      label: platformDefaultName
+        ? `Platform default (${platformDefaultName})`
+        : "Platform default",
+    },
+    ...imageModels.map((m) => ({ value: m.id, label: m.name })),
+  ];
+  // A previously-stored value that is no longer a routable image model still
+  // renders — visibly marked — so the user's stored preference is never
+  // silently blanked or rewritten.
   if (model && !isLoading && !imageModels.some((m) => m.id === model)) {
     modelOptions.push({ value: model, label: `${model} (unavailable)` });
   }
@@ -47,8 +67,10 @@ export default function ImageGenerationTab() {
       <SettingsSection title="Output">
         <SettingsSelect
           label="Model"
-          value={model}
-          onValueChange={setModel}
+          value={model ?? PLATFORM_DEFAULT_VALUE}
+          onValueChange={(next) =>
+            setModel(next === PLATFORM_DEFAULT_VALUE ? null : next)
+          }
           options={modelOptions}
           placeholder={isLoading ? "Loading models..." : "Select a model"}
         />
