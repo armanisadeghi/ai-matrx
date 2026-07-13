@@ -29,23 +29,15 @@ Both are in the `check:api-contracts` baseline (still on the raw client). Decide
 ### D36 — `notFound()` on dynamic routes returns HTTP 200 in dev (2026-07-10)
 `/education/learn/<bogus>`, `/education/exam-prep/<bogus>`, `/education/subjects/<bogus>`, `/p/e/fc_set/<bogus-uuid>` all render the not-found UI but respond **200 OK**; a genuinely unmatched route (`/education/totally-bogus-route-xyz`) 404s correctly. Reproduces across route families that don't share code, so it's a Next.js 16 dev-server/ISR interaction with `dynamicParams=true` + `notFound()`, not a feature bug. Matters for SEO (soft-404s) if it reproduces in prod. **Fix path:** verify on a prod build (`pnpm build && pnpm start`); if prod is affected, audit the `generateStaticParams`/`dynamicParams` + `notFound()` combination per Next 16 docs and file upstream if needed. Found by the P6 adversarial review 2026-07-10.
 
-### D35 — `platform.association_types` 2-col PK forbids label+generic rule coexistence (2026-07-09)
-**Decides: Arman (cross-repo, DB shape).** The reachability doc (`docs/db_changes/REACHABILITY-ROLLOUT.md` §1.1, §3.1) designs for a generic rule (`label IS NULL` = any label) AND label-specific rules coexisting for the same `(source_type, target_type)` pair, with the label rule taking precedence. But the live table has **PRIMARY KEY `(source_type, target_type)`** (added by aidream `db/migrations/platform_association_types_pk.sql` because matrx-orm crashes importing a PK-less model). That PK allows **only one rule per pair**, so the coexistence + precedence design is unreachable, and `admin_upsert_relationship_rule`'s `ON CONFLICT (source_type, target_type, COALESCE(label,''))` throws an **uncaught `unique_violation`** the moment anyone adds a label-specific rule beside a generic one for the same pair. Reachable now: the Relationship Manager's "New rule" form (`features/admin/relationships/`) exposes a label field. Currently latent — 0 of 29 rows use a label — and the failure is loud (a toast, not data loss).
-**Options:** (1) accept "one rule per pair," drop the label field from the create UI + amend the doc; (2) surrogate `id uuid` PK + keep the 3-col unique index `association_types_pair_label_uq` (satisfies matrx-orm's PK requirement AND restores coexistence — **recommended**, but requires regenerating aidream ORM models + a cross-repo commit); (3) `label NOT NULL DEFAULT ''` + 3-col PK (breaks the `label IS NULL = generic` semantics used across both repos — avoid).
+### D35 — `platform.association_types` carries TWO conflicting uniqueness rules; the PK forbids what the other index exists to allow (2026-07-09; live-verified 2026-07-12)
+**Decides: Arman (product — do we want per-label reachability rules at all?). Latent: 41 rows live, 0 with a label.**
+Live indexes (queried 2026-07-12):
+- `association_types_pkey` — UNIQUE `(source_type, target_type)`
+- `association_types_pair_label_uq` — UNIQUE `(source_type, target_type, COALESCE(label,''))`
 
-### D34 — `api_class` tear-out left three truth-vs-code gaps (2026-07-07)
-Filed during the `api_class` removal (`b8a0cbb94`, `9fcffb97d`, `ecc66217d`). The feedback MCP rejected the placeholder agent id (FK wall), so they live here. All verified against live Supabase `txzxabzwovsujtloxrus`.
-
-1. ~~Bad capabilities data (llama-4-scout `output=["image","text"]`)~~ **RESOLVED** — verified live 2026-07-11: the row now reads `output=["text"]`.
-
-2. **Two canonical capability fields are silently dropped on read** (`features/ai-models/capabilities/types.ts`):
-   - `interaction: "extraction"` exists on 5 live rows (fastino/GLiNER2). `INTERACTION_MODES` is `["turn","realtime"]`, so `isInteractionMode()` rejects it and `parseCapabilities` coerces those models to `"turn"` — `features/agents/runtime/runtime-resolver.ts` then treats extraction models as ordinary chat models. Live: `turn:198, extraction:5, realtime:2`.
-   - `capabilities.multilingual` is populated on 47 rows but absent from `ModelCapabilities`, so it is discarded.
-
-   **Fix:** add `"extraction"` to `INTERACTION_MODES` and `multilingual` to `ModelCapabilities`; check every `switch` on `interaction` for exhaustiveness.
-
-3. ~~`TOKEN_BILLED_MEDIA_MODEL_PATTERNS` stopgap~~ **RESOLVED** — `ai.offering.token_billed` landed (in `database.types.ts` + the views) and the name-pattern list no longer exists in `features/ai-models/usageBasis.ts` (verified 2026-07-11).
-
+The 3-col index exists so a generic rule (`label IS NULL` = any label) and a label-specific override can coexist for the same pair, with the label rule taking precedence (`docs/db_changes/REACHABILITY-ROLLOUT.md` §1.1, §3.1). The 2-col PK is stricter and forbids that second row — so the 3-col index can never do its job. Origin: the table shipped PK-less, matrx-orm refuses to import a PK-less model (broke every `db.models` import), so aidream added the pair as the PK (`aidream/db/migrations/platform_association_types_pk.sql`, 2026-07-06) — assuming the pair is the natural key, which is exactly what the label feature contradicts.
+`admin_upsert_relationship_rule` (`migrations/relationship_manager_admin_rpcs.sql:48`) targets the 3-col index in `ON CONFLICT` — it PLANS FINE today (verified), so the RPC is not broken. It throws an uncaught `unique_violation` on `association_types_pkey` the first time anyone adds a label rule beside a generic one for the same pair. Reachable via the Relationship Manager's rule form (`features/admin/relationships/components/RelationshipManagerClient.tsx:445`). Loud (a toast), not data loss.
+**The two coherent end states — Arman picks:** (A) **Per-label rules are wanted** → surrogate `id uuid` PK (matrx-orm just needs *a* PK), 3-col index becomes the real key; requires aidream ORM regen + cross-repo commit. (B) **Per-label rules are NOT wanted** → drop `association_types_pair_label_uq`, drop the label field from the rule form, amend the reachability doc; the pair is genuinely the key. Do NOT do `label NOT NULL DEFAULT ''` — it breaks the `label IS NULL = generic` semantics both repos read.
 ### D41 — Residual hardcoded model/provider forks that should be catalog-driven (2026-07-11)
 Found by the platform-wide modality-fork audit (aidream + matrx-frontend). Each encodes a fact the AI catalog (`ai.model_definition.capabilities` / `ai.offering` / `ai.api`) should own. Converted this pass: `features/settings/tabs/ImageGenerationTab.tsx` (model dropdown now reads the catalog). Still open, each too entangled for a drive-by:
 1. **Research cost estimate guesses vendor rates from model-name substrings** — `features/research/hooks/usePipelineProgress.ts:845-879` (`MODEL_COST_PER_1K` + `m.includes("claude"|"gpt"|"gemini")`). Can't be fixed client-side with user-facing data (`ai.model_public` exposes POINTS, dollars are admin-only). **Fix:** aidream research pipeline streams a running `cost_usd` on each analyze/synthesize item event (it already sends the authoritative `cost_summary` at `pipeline_complete`); FE then deletes the whole table.
@@ -123,7 +115,7 @@ Everything else closed — see Resolved (content-block menus, dead preloads, dea
 ### D29 — Working-document sync: accepted post-re-read design, two deferred gaps
 **Severity: low — data-safe by design; accepted until aidream ships deltas (D9).** (1) Mid-typing invisibility: `useWorkingDocument`'s `editingRef` guard means an agent edit surfaces as a commit-time conflict, not a live merge — proper fix is a 3-way merge. (2) A non-primary attached doc only syncs via realtime while a mount subscribes its scope; agent edits reach it on next open (currently unreachable — agents only patch the current conversation's doc). `PatchDiffInline` applies patches for DISPLAY only — making it a slice writer would race the re-read and the version-guarded commit. Related design note: the `instanceWorkingDocument` slice holds ONE primary doc per `(conversation, kind)`; additional attached docs surface via `DocumentsWorkspace`, not the slice — multi-attach in the primary slot needs a `byKey[...]`→array redesign. Not a bug; don't assume it works.
 
-### D44 — PDF reversible-redaction keys: client-only custody until KMS escrow lands *(formerly the second "D3", then the second "D31" — renumbered 2026-07-12)*
+### D46 — PDF reversible-redaction keys: client-only custody until KMS escrow lands *(formerly the second "D3", then the second "D31" — renumbered 2026-07-12)*
 **Severity: medium — clearing browser data / switching devices makes redacted spans cryptographically unrecoverable.** Keys live only in IndexedDB (`features/file-analysis/redact/session-keys.ts`); `redaction_mapping` holds ciphertext+nonce. `pdf_redaction_key_escrow` exists but its write path is deliberately unwired: keys must be KMS-wrapped (security team's interface) — storing raw keys server-side would weaken the custody model. Mitigation: MaskDialog KeyHandoff acknowledgment + destructive-mode ConfirmDialog. Close by wiring wrap/unwrap once the KMS interface exists.
 
 ### D32 — PDF 500-page scale items *(formerly the second "D4")*
@@ -132,18 +124,11 @@ Everything else closed — see Resolved (content-block menus, dead preloads, dea
 ### D33 — html-preview save-back + content-actions `onSave` latent gaps *(the open tail of R1)*
 **Severity: low, latent.** `rich-document/export.ts` html-preview save-back works for chat messages only — the `htmlPreview` overlay isn't callback-aware (only `fullScreenEditor` is), so note/non-chat sources can't save back. And `ContentActionBar`/`contentActionRegistry`'s editable `onSave` path is wired to raw-Redux-data — no live consumer passes `onSave` today (read-only-safe), but it will silently fail the day one does.
 
-### D45 — Mobile flashcard fallback can't render rich card variants (cloze/matching) *(formerly the second "D41" — was misfiled under RESOLVED; renumbered + reopened 2026-07-12)*
-**Severity: medium — mobile users see raw `{{c1::…}}` markup and lose matching interaction.** F1 rich card variants render correctly on the DESKTOP study deck (`StudyDeck` computes cloze faces via `studyFaces` + branches to `MatchingCardPlayer`), but the MOBILE fallback (`FlashcardMobileView` via `toFlashcardMobileCardsFromStudy`) shows a cloze card's raw `{{c1::…}}` markup and has no matching interaction — it degrades to a plain flip of the prompt. Fix: teach the mobile bridge/renderer the same `cardVariants` faces + a mobile matching player. Canvas inline `CanvasFlashcardsView` shares the gap. (Found 2026-07-10; `features/flashcards/utils/cardVariants.ts` is the shared source of faces.) Status: open. Unverified — from docs/logs only (filed by the F1 build session).
-
 ---
 
 ## Pending Arman review
 
-_Promotion proposals prepared by the 2026-07-12 task-hygiene pass. Approve → move to `.matrx/AGENT_TASKS.md` (delete the defect); reject → one line in Rejected._
-
-1. **Promote D34.2 — restore the two silently-dropped model capability fields** · P2 · Small, surgical, verified-in-code when filed: add `"extraction"` to `INTERACTION_MODES` and `multilingual` to `ModelCapabilities` (`features/ai-models/capabilities/types.ts`), then check every `switch` on `interaction` for exhaustiveness. 5 live extraction models are currently mis-treated as chat models. Replaces the remaining open item of D34.
-2. **Promote D45 — mobile flashcard cloze/matching rendering** · P2 · User-visible broken rendering on mobile study (raw `{{c1::…}}` markup). Scope is contained to the mobile bridge + a mobile matching player. Analysis stamp: code analysis pending.
-3. **Promote D31(d) — `pnpm check:definer-grants` recurrence guard** · P1 · The "kill the class" step for the anon-grant SECURITY DEFINER vulnerability family: CI scan for definer fns granted to `anon` taking an id param with no auth check, across ALL PostgREST-exposed schemas (not just `public`). Everything else in D31 is remediation; this prevents regression. Analysis stamp: pattern verified during the 2026-07-07/11 sweeps; script itself is new work.
+_(none — cleared 2026-07-12)_
 
 ---
 
@@ -156,6 +141,10 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ## RESOLVED
 
 One line per fix — title, date, pointer. History lives in git.
+
+- **D45** — mobile flashcard cloze/matching rendering gap → promoted to TASK-004 (2026-07-12).
+
+- **D34** — `api_class` tear-out gaps all closed: (1) llama-4-scout capabilities data corrected live; (3) `ai.offering.token_billed` landed, name-pattern stopgap deleted (both verified 2026-07-11); (2) the two silently-dropped capability fields (`interaction:"extraction"`, `multilingual`) promoted to TASK-003 with a full silent-drop sweep. (2026-07-12)
 
 - **D42** — aidream prod persistence-barrier outage (`Model name 'Users' is ambiguous`): fix `61d5c60b2` deployed (prod rebooted ~2026-07-12 00:43 UTC); verified via live server_status — last ambiguous-Users failure 2026-07-11 18:28 UTC, all subsequent conversation runs completed with tokens + persisted conversations. (2026-07-12)
 
