@@ -44,6 +44,11 @@ import {
   groupFeatures,
   type GroupedFeatures,
 } from "@/features/ai-models/capabilities/feature-map";
+import type {
+  ContentType,
+  InteractionMode,
+} from "@/features/ai-models/capabilities/types";
+import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
 import type { Database, Json } from "@/types/database.types";
 
 type ModelPublicRow = Database["ai"]["Views"]["model_public"]["Row"];
@@ -51,7 +56,10 @@ type ModelAdminRow = Database["ai"]["Views"]["model_admin"]["Row"];
 
 export type ModelCatalogVariant = "user" | "admin";
 
-export type Modality = "text" | "image" | "audio" | "video" | "entities";
+/** Alias of the canonical capabilities vocabulary — never a parallel union. */
+export type Modality = ContentType;
+// Deliberate UI subsets of the vocabulary (the filter columns the picker
+// shows) — "document" input exists in the vocabulary but no live row uses it.
 export const INPUT_MODALITIES: Modality[] = ["text", "image", "audio", "video"];
 export const OUTPUT_MODALITIES: Modality[] = [
   "text",
@@ -61,7 +69,8 @@ export const OUTPUT_MODALITIES: Modality[] = [
   "entities",
 ];
 
-export type Interaction = "turn" | "single" | "extraction" | "realtime";
+/** Alias of the canonical interaction vocabulary — never a parallel union. */
+export type Interaction = InteractionMode;
 
 /**
  * One serving tier for a model — a row of `ai.model_offering`, identified to
@@ -200,20 +209,23 @@ function asModalities(raw: unknown, allowed: Modality[]): Modality[] {
   return out;
 }
 
-function asInteraction(raw: unknown): Interaction {
-  return raw === "single" || raw === "extraction" || raw === "realtime"
-    ? raw
-    : "turn";
-}
-
-/** Parse the raw `capabilities` JSON, preserving everything (no data loss). */
-function parseCaps(raw: unknown): {
+/**
+ * Parse the raw `capabilities` JSON, preserving everything (no data loss).
+ * Validation + unknown-value screaming is delegated to the canonical
+ * `parseCapabilities`; the catalog additionally keeps the RAW feature strings
+ * (grouped) for the detail card so nothing is ever hidden.
+ */
+function parseCaps(
+  raw: unknown,
+  context: { modelId?: string; modelName?: string },
+): {
   input: Modality[];
   output: Modality[];
   features: GroupedFeatures;
   interaction: Interaction;
   multilingual: boolean;
 } {
+  const canonical = parseCapabilities(raw, context);
   const obj =
     typeof raw === "object" && raw !== null && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)
@@ -222,11 +234,13 @@ function parseCaps(raw: unknown): {
     ? obj.features.filter((f): f is string => typeof f === "string")
     : [];
   return {
-    input: asModalities(obj.input, INPUT_MODALITIES),
-    output: asModalities(obj.output, OUTPUT_MODALITIES),
+    // The picker filters on its deliberate UI subsets; membership is checked
+    // against the canonical, already-validated modality lists.
+    input: asModalities(canonical.input, INPUT_MODALITIES),
+    output: asModalities(canonical.output, OUTPUT_MODALITIES),
     features: groupFeatures(rawFeatures),
-    interaction: asInteraction(obj.interaction),
-    multilingual: obj.multilingual === true,
+    interaction: canonical.interaction,
+    multilingual: canonical.multilingual,
   };
 }
 
@@ -242,7 +256,7 @@ function normalizePublic(
     maker: row.maker,
     costRating: row.cost_rating,
     speedRating: row.speed_rating,
-    ...parseCaps(row.capabilities),
+    ...parseCaps(row.capabilities, { modelId: row.id, modelName: row.name ?? undefined }),
     contextWindow: row.context_window,
     maxTokens: row.max_tokens,
     isPrimary: row.is_primary ?? false,
@@ -324,7 +338,7 @@ function normalizeAdmin(
     maker: row.maker,
     costRating: row.cost_rating,
     speedRating: row.speed_rating,
-    ...parseCaps(row.capabilities),
+    ...parseCaps(row.capabilities, { modelId: row.id, modelName: row.name ?? undefined }),
     contextWindow: row.context_window,
     maxTokens: row.max_tokens,
     isPrimary: row.is_primary ?? false,

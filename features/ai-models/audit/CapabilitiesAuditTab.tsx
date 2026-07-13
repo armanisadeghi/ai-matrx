@@ -75,7 +75,7 @@ function InlineCapabilitiesEditor({
   onSaved: (caps: CapabilitiesRecord) => void;
 }) {
   const [caps, setCaps] = useState<CapabilitiesRecord>(
-    parseCapabilities(model.capabilities),
+    parseCapabilities(model.capabilities, { modelId: model.id }),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -304,7 +304,8 @@ export default function CapabilitiesAuditTab({
             const isExpanded = expandedId === model.id;
             const wasSaved = savedIds.has(model.id);
             const caps =
-              savedCaps[model.id] ?? parseCapabilities(model.capabilities);
+              savedCaps[model.id] ??
+              parseCapabilities(model.capabilities, { modelId: model.id });
             const trueCount = Object.values(caps).filter(Boolean).length;
 
             return (

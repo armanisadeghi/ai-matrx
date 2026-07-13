@@ -170,8 +170,11 @@ export type CapabilitiesRecord = Partial<Record<CapabilityKey, boolean>>;
  * (`CapabilitiesAuditTab`, rule evaluation below) keep working
  * unchanged.
  */
-export function parseCapabilities(raw: unknown): CapabilitiesRecord {
-  return toAuditRecord(parseCapabilitiesCanonical(raw));
+export function parseCapabilities(
+  raw: unknown,
+  context?: { modelId?: string; modelName?: string },
+): CapabilitiesRecord {
+  return toAuditRecord(parseCapabilitiesCanonical(raw, context));
 }
 
 // ── Audit runner ──────────────────────────────────────────────────────────
@@ -222,7 +225,10 @@ export function auditModel(
     });
   }
   // ── Capabilities ───────────────────────────────────────────────────────
-  const caps = parseCapabilities(model.capabilities);
+  const caps = parseCapabilities(model.capabilities, {
+    modelId: model.id,
+    modelName: model.name ?? undefined,
+  });
   if (rules.capabilities_object_required && !model.capabilities) {
     issues.push({
       category: "capabilities",

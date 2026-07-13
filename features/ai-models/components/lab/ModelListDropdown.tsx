@@ -49,6 +49,7 @@ import {
   AudioLines,
   Video,
   Boxes,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -132,6 +133,7 @@ const MODALITY_ICON: Record<Modality, typeof Type> = {
   image: ImageIcon,
   audio: AudioLines,
   video: Video,
+  document: FileText,
   entities: Boxes,
 };
 
