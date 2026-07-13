@@ -320,6 +320,60 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       limit ${SAMPLE_LIMIT}
     `,
   },
+  // ── User preferences: legacy shape drift ──────────────────────────────────
+  {
+    id: "user-preferences-legacy-drift",
+    kind: "sql",
+    title: "User preferences carrying legacy (pre-backfill) shape",
+    category: "Preferences",
+    severity: "warning",
+    description:
+      "Live users.user_preferences rows whose JSONB blob still holds a legacy " +
+      "value that a shape migration retired — the hardcoded defaultModel seed " +
+      "constants (now null = platform default) or the superseded " +
+      "videoConference.defaultMicrophone/defaultSpeaker fields (now canonical " +
+      "in audioDevices). The FE strips these on load with a loud console.warn, " +
+      "so a non-zero count is what floods affected users' consoles. The WHERE " +
+      "clause is the SAME normalizer the healer uses, so this can never " +
+      "disagree with the fix. Should sit at zero: the weekly " +
+      "heal-user-preferences-drift pg_cron job and the load-boundary write-back " +
+      "both normalize these — a handful of rows written since the last heal is " +
+      "the only expected non-zero state.",
+    remediation:
+      "Self-healing: the weekly `heal-user-preferences-drift` pg_cron job and " +
+      "the client load-boundary write-back normalize these automatically. To " +
+      "heal immediately, run `select users.heal_user_preferences_drift();`. If " +
+      "the count keeps climbing, a preferences shape migration shipped WITHOUT " +
+      "a matching rule in users.normalize_preferences_jsonb — add it there.",
+    sql: `
+      select
+        up.user_id,
+        up.organization_id,
+        up.updated_at,
+        array_to_string(array_remove(array[
+          case when up.preferences #>> '{prompts,defaultModel}'
+                    = '548126f2-714a-4562-9001-0c31cbeea375'
+               then 'prompts.defaultModel' end,
+          case when up.preferences #>> '{aiModels,defaultModel}'
+                    = '548126f2-714a-4562-9001-0c31cbeea375'
+               then 'aiModels.defaultModel' end,
+          case when up.preferences #>> '{textGeneration,defaultModel}' = 'GPT-4o'
+               then 'textGeneration.defaultModel' end,
+          case when up.preferences #>> '{imageGeneration,defaultModel}' = 'standard'
+               then 'imageGeneration.defaultModel' end,
+          case when (up.preferences #> '{videoConference}') ? 'defaultMicrophone'
+               then 'videoConference.defaultMicrophone' end,
+          case when (up.preferences #> '{videoConference}') ? 'defaultSpeaker'
+               then 'videoConference.defaultSpeaker' end
+        ], null), ', ') as drifted_fields,
+        count(*) over() as _total
+      from users.user_preferences up
+      where up.deleted_at is null
+        and up.preferences is distinct from users.normalize_preferences_jsonb(up.preferences)
+      order by up.updated_at desc
+      limit ${SAMPLE_LIMIT}
+    `,
+  },
   // ── Security: definer-grant recurrence guard ──────────────────────────────
   {
     id: "definer-grant-anon-identity",
