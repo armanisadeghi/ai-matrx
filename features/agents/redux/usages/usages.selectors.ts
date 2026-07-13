@@ -146,6 +146,50 @@ export type ReportSortKey =
   | "warning"
   | "stalePins";
 
+/** The rollup shows one row per agent WITH drift (the RPCs return every
+ *  in-scope agent, drifted or not — see agx_usage_report). An agent counts as
+ *  drifted when any severity bucket / stale pin is non-zero or an open alert
+ *  row is attached. Without this filter the report both listed healthy agents
+ *  and mislabeled the header total ("N agents with drift" over ALL agents),
+ *  which is the report/AgentsListHeader-tint discrepancy from the handoff. */
+function userRowHasDrift(r: {
+  myBreaking: number;
+  mySilent: number;
+  myWarning: number;
+  myInfo: number;
+  myStalePins: number;
+  alertId: string | null;
+  othersRedflagCount: number | null;
+}): boolean {
+  return (
+    r.myBreaking > 0 ||
+    r.mySilent > 0 ||
+    r.myWarning > 0 ||
+    r.myInfo > 0 ||
+    r.myStalePins > 0 ||
+    r.alertId !== null ||
+    (r.othersRedflagCount ?? 0) > 0
+  );
+}
+
+function adminRowHasDrift(r: {
+  breaking: number;
+  silent: number;
+  warning: number;
+  info: number;
+  stalePins: number;
+  openAlerts: number;
+}): boolean {
+  return (
+    r.breaking > 0 ||
+    r.silent > 0 ||
+    r.warning > 0 ||
+    r.info > 0 ||
+    r.stalePins > 0 ||
+    r.openAlerts > 0
+  );
+}
+
 export const makeSelectReportSorted = (
   scope: UsageScope,
   sortKey: ReportSortKey,
@@ -153,11 +197,11 @@ export const makeSelectReportSorted = (
 ) =>
   createSelector(makeSelectReport(scope), (entry) => {
     if (scope === "admin") {
-      const rows = [...entry.adminRows];
+      const rows = entry.adminRows.filter(adminRowHasDrift);
       rows.sort((a, b) => cmpAdmin(a, b, sortKey) * (desc ? -1 : 1));
       return { adminRows: rows, rows: [] as never[] };
     }
-    const rows = [...entry.rows];
+    const rows = entry.rows.filter(userRowHasDrift);
     rows.sort((a, b) => cmpUser(a, b, sortKey) * (desc ? -1 : 1));
     return { rows, adminRows: [] as never[] };
   });
@@ -227,9 +271,12 @@ export const makeSelectReportTotals = (scope: UsageScope) =>
       warning: 0,
       info: 0,
     };
+    // "Agents with drift" — count only drifted rows (the RPC returns every
+    // in-scope agent; see the filter rationale on makeSelectReportSorted).
     let agents = 0;
     if (scope === "admin") {
       for (const r of entry.adminRows) {
+        if (!adminRowHasDrift(r)) continue;
         agents += 1;
         totals.breaking += r.breaking;
         totals.silent_breaking += r.silent;
@@ -238,6 +285,7 @@ export const makeSelectReportTotals = (scope: UsageScope) =>
       }
     } else {
       for (const r of entry.rows) {
+        if (!userRowHasDrift(r)) continue;
         agents += 1;
         totals.breaking += r.myBreaking;
         totals.silent_breaking += r.mySilent;

@@ -722,19 +722,31 @@ export function useChunkedRecordAndTranscribe({
       setLiveTranscript("");
       setFailedChunkCount(0);
 
-      // Resolve dictionary keyterm biasing for surfaces that opted in. Best-
-      // effort + non-blocking: fire it off; chunks fall back to "" until it
-      // lands (first chunk is ~3 s out, the RPC is faster). Never await here.
+      // Resolve dictionary keyterm biasing. Same policy as useAudioTranscription:
+      // an explicit `dictionarySurfaceKey` scopes to that surface's stored
+      // selection; otherwise ambient capture follows the ONE global active
+      // context (features/dictionary/activeContextBridge.ts). Best-effort +
+      // non-blocking: fire it off; chunks fall back to "" until it lands
+      // (first chunk is ~3 s out, the RPC is faster). Never await here.
       const dictSurfaceKey =
         transcriptionOptionsRef.current?.dictionarySurfaceKey;
       dictPromptRef.current = "";
-      if (dictSurfaceKey && !transcriptionOptionsRef.current?.prompt) {
-        void import("@/features/dictionary/sttBridge").then(
-          ({ resolveDictionarySttPrompt }) =>
-            resolveDictionarySttPrompt(dictSurfaceKey).then((p) => {
-              dictPromptRef.current = p;
-            }),
-        );
+      if (!transcriptionOptionsRef.current?.prompt) {
+        if (dictSurfaceKey) {
+          void import("@/features/dictionary/sttBridge").then(
+            ({ resolveDictionarySttPrompt }) =>
+              resolveDictionarySttPrompt(dictSurfaceKey).then((p) => {
+                dictPromptRef.current = p;
+              }),
+          );
+        } else {
+          void import("@/features/dictionary/activeContextBridge").then(
+            ({ resolveActiveContextSttPrompt }) =>
+              resolveActiveContextSttPrompt().then((p) => {
+                dictPromptRef.current = p;
+              }),
+          );
+        }
       }
 
       // Shared mic manager: reuses a warm grant so mobile doesn't re-prompt
