@@ -38,7 +38,38 @@ const ALLOWED = [
   "lib/python-client.ts", // the raw client module
 ];
 
-const RAW_IMPORT = /import\s+(?!type\b)[^;]*?from\s+["']@\/lib\/python-client["']/;
+// A value-import of `@/lib/python-client`. We only care about REQUEST VERBS
+// (getJson/postJson/… — they take a path + body/response shape that can drift).
+// Pure utilities carry no wire shape, so importing ONLY them is not an offense.
+// Fail-safe: anything NOT in this allowlist (incl. a newly-added verb) flags.
+const UTILITY_ONLY = new Set(["buildHeaders", "newRequestId", "resolveBaseUrl"]);
+// `[^;]*?` (not `[\s\S]`) so the clause can't cross the `;` into a PRIOR
+// import statement and capture its symbols. Multi-line imports have no
+// interior `;`, so this still spans a `{ … }` block correctly.
+const RAW_IMPORT_CLAUSE =
+  /import\s+(?!type\b)([^;]*?)\s+from\s+["']@\/lib\/python-client["']/g;
+
+function importsRawVerb(src: string): boolean {
+  RAW_IMPORT_CLAUSE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = RAW_IMPORT_CLAUSE.exec(src))) {
+    const clause = m[1];
+    // Namespace import (`* as pc`) could reach any verb — flag conservatively.
+    if (/\*\s+as\s+/.test(clause)) return true;
+    const braces = clause.match(/\{([\s\S]*?)\}/);
+    // A default / bare value import (python-client has no default export) —
+    // treat as a hit rather than silently pass.
+    if (!braces) return clause.trim().length > 0;
+    const symbols = braces[1]
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((s) => !s.startsWith("type ")) // type-only members carry no runtime
+      .map((s) => s.split(/\s+as\s+/)[0].trim()); // unalias
+    if (symbols.some((s) => !UTILITY_ONLY.has(s))) return true;
+  }
+  return false;
+}
 
 function walk(dir: string, out: string[]): void {
   let entries: string[];
@@ -65,7 +96,7 @@ function currentOffenders(): string[] {
     if (ALLOWED.some((a) => rel.startsWith(a) || rel === a.replace(/\/$/, "")))
       continue;
     const src = readFileSync(f, "utf8");
-    if (RAW_IMPORT.test(src)) hits.push(rel);
+    if (importsRawVerb(src)) hits.push(rel);
   }
   return hits.sort();
 }

@@ -1,5 +1,4 @@
 [
-  "app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx",
   "features/file-analysis/api/file-analysis.ts",
   "features/files/api/assets.ts",
   "features/files/api/files.ts",
@@ -7,9 +6,6 @@
   "features/files/api/permissions.ts",
   "features/files/api/share-links.ts",
   "features/files/api/versions.ts",
-  "features/files/handler/utils/python-base.ts",
-  "features/files/redux/thunks.ts",
-  "features/files/upload/cloudUpload.ts",
   "features/image-studio/api/python.ts",
   "features/page-extraction/api/stream.ts",
   "features/pdf/api/streamDrain.tsx",
