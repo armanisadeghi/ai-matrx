@@ -339,6 +339,21 @@ const messagesSlice = createSlice({
       if (!entry?.byId[oldId]) return;
       if (oldId === newId) return;
       const record = entry.byId[oldId];
+      if (entry.byId[newId]) {
+        // Target id already exists — a mid-stream loadConversation can seed
+        // byId[newId] from the DB before this promote lands (the row
+        // persists before the stream event). Renaming onto it would map
+        // BOTH orderedIds slots to newId (duplicate React keys). MERGE:
+        // keep the DB-hydrated record, carry over the live stream anchor so
+        // the renderer keeps reading the active request, drop the old id.
+        const existing = entry.byId[newId];
+        if (!existing._streamRequestId && record._streamRequestId) {
+          existing._streamRequestId = record._streamRequestId;
+        }
+        delete entry.byId[oldId];
+        entry.orderedIds = entry.orderedIds.filter((id) => id !== oldId);
+        return;
+      }
       delete entry.byId[oldId];
       entry.byId[newId] = {
         ...record,
