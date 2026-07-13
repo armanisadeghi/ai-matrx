@@ -7514,6 +7514,8 @@ export type Database = {
           value_reference_id: string | null
           value_reference_type: string | null
           value_text: string | null
+          value_time: string | null
+          value_timestamp: string | null
           version: number
         }
         Insert: {
@@ -7537,6 +7539,8 @@ export type Database = {
           value_reference_id?: string | null
           value_reference_type?: string | null
           value_text?: string | null
+          value_time?: string | null
+          value_timestamp?: string | null
           version?: number
         }
         Update: {
@@ -7560,6 +7564,8 @@ export type Database = {
           value_reference_id?: string | null
           value_reference_type?: string | null
           value_text?: string | null
+          value_time?: string | null
+          value_timestamp?: string | null
           version?: number
         }
         Relationships: [
@@ -8120,6 +8126,8 @@ export type Database = {
           p_value_json?: Json
           p_value_number?: number
           p_value_text?: string
+          p_value_time?: string
+          p_value_timestamp?: string
         }
         Returns: {
           authored_by: string | null
@@ -8142,6 +8150,8 @@ export type Database = {
           value_reference_id: string | null
           value_reference_type: string | null
           value_text: string | null
+          value_time: string | null
+          value_timestamp: string | null
           version: number
         }
         SetofOptions: {
@@ -30233,6 +30243,8 @@ export type Database = {
           p_value_json?: Json
           p_value_number?: number
           p_value_text?: string
+          p_value_time?: string
+          p_value_timestamp?: string
         }
         Returns: Json
       }
@@ -31011,6 +31023,15 @@ export type Database = {
         | "document"
         | "reference"
         | "date"
+        | "datetime"
+        | "time"
+        | "email"
+        | "url"
+        | "phone"
+        | "percent"
+        | "color"
+        | "markdown"
+        | "currency"
       cx_agent_task_creator: "agent" | "user"
       cx_agent_task_status:
         | "pending"
@@ -40557,7 +40578,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      heal_user_preferences_drift: { Args: never; Returns: number }
+      normalize_preferences_jsonb: { Args: { p: Json }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
@@ -42876,6 +42898,15 @@ export const Constants = {
         "document",
         "reference",
         "date",
+        "datetime",
+        "time",
+        "email",
+        "url",
+        "phone",
+        "percent",
+        "color",
+        "markdown",
+        "currency",
       ],
       cx_agent_task_creator: ["agent", "user"],
       cx_agent_task_status: [
