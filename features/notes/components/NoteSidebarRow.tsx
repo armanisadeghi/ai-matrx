@@ -122,7 +122,15 @@ export function NoteSidebarRow({
             </>
           }
           active={isActive}
-          className={cn(isOpenTab && !isActive && "bg-accent/30")}
+          // Active highlight: ItemRow's default `bg-accent` is nearly white in
+          // light mode (--accent is zinc-150), so the active note was invisible.
+          // Override with a primary tint (visible in BOTH themes) plus a 2px
+          // left accent bar drawn as an inset shadow (no layout shift).
+          className={cn(
+            isActive
+              ? "bg-primary/10 dark:bg-primary/20 font-medium shadow-[inset_2px_0_0_0_hsl(var(--primary))]"
+              : isOpenTab && "bg-accent/30",
+          )}
           onOpen={() =>
             selectionMode ? onToggleSelect(note.id) : onSelectNote(note.id)
           }

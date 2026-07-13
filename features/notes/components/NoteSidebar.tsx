@@ -537,6 +537,24 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     });
   }, []);
 
+  // Candidates for "select all" = the currently visible/filtered owner notes
+  // (shared notes aren't bulk-actionable). Drives the select-all toggle.
+  const selectableIds = useMemo(
+    () => filteredNotes.map((n) => n.id),
+    [filteredNotes],
+  );
+  const allVisibleSelected =
+    selectableIds.length > 0 &&
+    selectableIds.every((id) => selectedIds.has(id));
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const all =
+        selectableIds.length > 0 &&
+        selectableIds.every((id) => prev.has(id));
+      return all ? new Set<string>() : new Set(selectableIds);
+    });
+  }, [selectableIds]);
+
   // ── Handlers ───────────────────────────────────────────────────────
   const toggleFolder = useCallback((folder: string) => {
     setExpandedFolders((prev) => {
@@ -988,6 +1006,22 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         )}
       </div>
 
+      {/* Bulk-action bar — docked at the TOP the moment selection mode is on
+          (actions disabled until a note is checked), so the layout never
+          shifts when the first note is selected. */}
+      {selectionMode && (
+        <NoteSidebarBulkBar
+          instanceId={instanceId}
+          selectedNotes={selectedNoteRecords}
+          allFolders={allFolders}
+          openTabIds={openTabIds}
+          onClear={exitSelectionMode}
+          allVisibleSelected={allVisibleSelected}
+          onToggleSelectAll={toggleSelectAll}
+          selectableCount={selectableIds.length}
+        />
+      )}
+
       {/* Note list — grouped or flat */}
       <div
         className="flex-1 overflow-y-auto"
@@ -1111,7 +1145,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       className={cn(
                         "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors",
                         isActive
-                          ? "bg-accent text-foreground"
+                          ? "bg-primary/10 dark:bg-primary/20 font-medium text-foreground shadow-[inset_2px_0_0_0_hsl(var(--primary))]"
                           : isOpenTab
                             ? "bg-accent/30 text-foreground/80"
                             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
@@ -1433,17 +1467,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         </div>
       </div>
 
-      {/* Bottom: bulk actions (selection mode) or New Note + New Folder */}
-      {selectionMode && selectedIds.size > 0 ? (
-        <NoteSidebarBulkBar
-          instanceId={instanceId}
-          selectedNotes={selectedNoteRecords}
-          allFolders={allFolders}
-          openTabIds={openTabIds}
-          onClear={exitSelectionMode}
-        />
-      ) : (
-        <div className="shrink-0 px-2 py-1.5 border-t border-border/30 flex items-center gap-1">
+      {/* Bottom: New Note + New Folder. Stays put in selection mode — the
+          bulk-action bar lives at the top (below the toolbar) instead. */}
+      <div className="shrink-0 px-2 py-1.5 border-t border-border/30 flex items-center gap-1">
           <button
             className="flex items-center gap-1.5 flex-1 px-2 py-1 text-[0.6875rem] text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3 [&_svg]:h-3"
             onClick={() => handleNewNote("Draft")}
@@ -1458,7 +1484,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
             <FolderPlus />
           </button>
         </div>
-      )}
 
       {/* ── Dialogs ────────────────────────────────────────────────────── */}
       <CreateFolderDialog

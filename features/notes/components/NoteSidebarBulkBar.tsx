@@ -2,19 +2,23 @@
 
 /**
  * NoteSidebarBulkBar — compact bulk-action bar shown in the notes sidebar
- * once one or more notes are checkbox-selected (selection mode). Mirrors
- * features/files/components/surfaces/desktop/BulkActionsBar.tsx in shape
- * (bounded-concurrency fan-out + a single confirm for delete) but sized to
- * fit a narrow sidebar column instead of floating as a bottom pill.
+ * while selection mode is active. It renders the moment selection mode is
+ * entered (docked at the TOP, just below the toolbar) so the UI doesn't shift
+ * when the first note is checked; actions are disabled until ≥1 note is
+ * selected. Mirrors features/files/components/surfaces/desktop/BulkActionsBar
+ * in shape (bounded-concurrency fan-out + a single confirm for delete) but
+ * sized to fit a narrow sidebar column.
  */
 
 import { useState } from "react";
 import {
+  CheckSquare,
   Database,
   Download,
   FolderInput,
   Loader2,
   Share2,
+  Square,
   Trash2,
   X,
 } from "lucide-react";
@@ -27,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { removeInstanceTab } from "../redux/slice";
 import { deleteNote, moveNoteToFolder, restoreNote } from "../redux/thunks";
@@ -47,7 +52,14 @@ interface NoteSidebarBulkBarProps {
   selectedNotes: NoteRecord[];
   allFolders: string[];
   openTabIds: string[] | undefined;
+  /** Exit selection mode entirely (clears selection). */
   onClear: () => void;
+  /** True when every selectable (visible) note is already selected. */
+  allVisibleSelected: boolean;
+  /** Select all visible notes, or clear if all are already selected. */
+  onToggleSelectAll: () => void;
+  /** How many notes are selectable in the current view (for the select-all tooltip). */
+  selectableCount: number;
 }
 
 export function NoteSidebarBulkBar({
@@ -56,6 +68,9 @@ export function NoteSidebarBulkBar({
   allFolders,
   openTabIds,
   onClear,
+  allVisibleSelected,
+  onToggleSelectAll,
+  selectableCount,
 }: NoteSidebarBulkBarProps) {
   const dispatch = useAppDispatch();
   const [busyKind, setBusyKind] = useState<
@@ -181,34 +196,54 @@ export function NoteSidebarBulkBar({
     }
   };
 
-  if (!hasAny) return null;
+  // Disabled while a bulk op runs, or when nothing is selected yet.
+  const noneSelected = !hasAny;
+  const actionsDisabled = busyKind !== null || noneSelected;
+  const btn =
+    "flex items-center justify-center w-6 h-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed [&_svg]:w-3.5 [&_svg]:h-3.5";
 
   return (
     <div
-      className="shrink-0 flex items-center gap-1 px-2 py-1.5 border-t border-border/30 bg-accent/30"
+      className="shrink-0 flex items-center gap-0.5 px-2 py-1.5 border-b border-border/30 bg-accent/40"
       role="toolbar"
       aria-label="Bulk note actions"
     >
-      <span className="px-1 text-[0.6875rem] font-medium tabular-nums text-foreground">
-        {count} selected
+      {/* Select-all toggle */}
+      <SimpleTooltip
+        text={
+          allVisibleSelected
+            ? "Clear selection"
+            : `Select all ${selectableCount} visible`
+        }
+      >
+        <button
+          type="button"
+          onClick={onToggleSelectAll}
+          disabled={busyKind !== null || selectableCount === 0}
+          className={cn(btn, "text-foreground/70")}
+          aria-pressed={allVisibleSelected}
+        >
+          {allVisibleSelected ? <CheckSquare /> : <Square />}
+        </button>
+      </SimpleTooltip>
+
+      <span className="min-w-[4.5rem] px-1 text-[0.6875rem] font-medium tabular-nums text-foreground">
+        {hasAny ? `${count} selected` : "Select notes"}
       </span>
       <span className="h-4 w-px bg-border" />
 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            disabled={busyKind !== null}
-            title="Move to folder"
-            className="flex items-center justify-center w-6 h-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50 [&_svg]:w-3.5 [&_svg]:h-3.5"
-          >
-            {busyKind === "move" ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <FolderInput />
-            )}
-          </button>
-        </DropdownMenuTrigger>
+        <SimpleTooltip text="Move to folder">
+          <DropdownMenuTrigger asChild>
+            <button type="button" disabled={actionsDisabled} className={btn}>
+              {busyKind === "move" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <FolderInput />
+              )}
+            </button>
+          </DropdownMenuTrigger>
+        </SimpleTooltip>
         <DropdownMenuContent
           align="start"
           className="max-h-[220px] overflow-auto"
@@ -224,65 +259,79 @@ export function NoteSidebarBulkBar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <button
-        type="button"
-        onClick={() => void handleKnowledge()}
-        disabled={busyKind !== null}
-        title="Add to knowledge base"
-        className="flex items-center justify-center w-6 h-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50 [&_svg]:w-3.5 [&_svg]:h-3.5"
-      >
-        {busyKind === "knowledge" ? (
-          <Loader2 className="animate-spin" />
-        ) : (
-          <Database />
-        )}
-      </button>
+      <SimpleTooltip text="Add to knowledge base">
+        <button
+          type="button"
+          onClick={() => void handleKnowledge()}
+          disabled={actionsDisabled}
+          className={btn}
+        >
+          {busyKind === "knowledge" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Database />
+          )}
+        </button>
+      </SimpleTooltip>
 
-      <button
-        type="button"
-        onClick={() => void handleExport()}
-        disabled={busyKind !== null}
-        title="Export as Markdown"
-        className="flex items-center justify-center w-6 h-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50 [&_svg]:w-3.5 [&_svg]:h-3.5"
-      >
-        <Download />
-      </button>
+      <SimpleTooltip text="Export as Markdown">
+        <button
+          type="button"
+          onClick={() => void handleExport()}
+          disabled={actionsDisabled}
+          className={btn}
+        >
+          <Download />
+        </button>
+      </SimpleTooltip>
 
-      <button
-        type="button"
-        onClick={handleShare}
-        disabled={busyKind !== null || !singleNote}
-        title={singleNote ? "Share" : "Select exactly one note to share"}
-        className="flex items-center justify-center w-6 h-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 [&_svg]:w-3.5 [&_svg]:h-3.5"
+      <SimpleTooltip
+        text={
+          noneSelected
+            ? "Select a note to share"
+            : singleNote
+              ? "Share"
+              : "Select exactly one note to share"
+        }
       >
-        <Share2 />
-      </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          disabled={busyKind !== null || !singleNote}
+          className={btn}
+        >
+          <Share2 />
+        </button>
+      </SimpleTooltip>
 
-      <button
-        type="button"
-        onClick={() => void handleDelete()}
-        disabled={busyKind !== null}
-        title="Delete"
-        className={cn(
-          "flex items-center justify-center w-6 h-6 rounded text-destructive hover:bg-destructive/10 disabled:opacity-50 [&_svg]:w-3.5 [&_svg]:h-3.5",
-        )}
-      >
-        {busyKind === "delete" ? (
-          <Loader2 className="animate-spin" />
-        ) : (
-          <Trash2 />
-        )}
-      </button>
+      <SimpleTooltip text="Delete (move to trash)">
+        <button
+          type="button"
+          onClick={() => void handleDelete()}
+          disabled={actionsDisabled}
+          className={cn(
+            btn,
+            "text-destructive hover:bg-destructive/10 hover:text-destructive disabled:hover:bg-transparent",
+          )}
+        >
+          {busyKind === "delete" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Trash2 />
+          )}
+        </button>
+      </SimpleTooltip>
 
       <div className="flex-1" />
-      <button
-        type="button"
-        onClick={onClear}
-        title="Cancel selection"
-        className="flex items-center justify-center w-6 h-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
-      >
-        <X />
-      </button>
+      <SimpleTooltip text="Exit selection mode">
+        <button
+          type="button"
+          onClick={onClear}
+          className={cn(btn, "text-foreground/70")}
+        >
+          <X />
+        </button>
+      </SimpleTooltip>
     </div>
   );
 }
