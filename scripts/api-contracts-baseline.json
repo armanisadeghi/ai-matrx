@@ -29,11 +29,7 @@
   "features/rag/components/library/LibraryPage.tsx",
   "features/rag/components/library/LibraryPreviewPage.tsx",
   "features/rag/components/library/QuickSearchDialog.tsx",
-  "features/rag/hooks/useDataStoreGrants.ts",
-  "features/rag/hooks/useDocumentSearch.ts",
-  "features/rag/hooks/useLibrary.ts",
   "features/rag/hooks/useLibraryCatalog.ts",
-  "features/rag/service/dataStoreCandidates.ts",
   "features/transcripts/service/autoLabelTranscript.ts",
   "features/voice-agent/services/realtimeToolService.ts"
 ]
