@@ -90,21 +90,14 @@ export interface DiagnoseRequest {
   scope_ids?: string[] | null;
 }
 
-// Derived from the contract, EXTENDED (additive-optional only) with the
-// entity-lane provenance fields the /diagnose/stream events carry — the batch
-// OpenAPI schema does not declare them, so they cannot be derived. The shared
-// RichHitCard uses them to flag an "entity match only" hit.
-export type DiagnoseHit = components["schemas"]["DiagnoseHit"] & {
-  entity_rank?: number | null;
-  entities?: string[];
-};
+// Derived from the contract, never hand-mirrored. NOTE: unlike the search
+// lane's `RagSearchHit`, DiagnoseHit carries NO entity-lane provenance —
+// the server model is `extra="forbid"` and never maps entity_rank/entities
+// (batch or stream). If diagnose ever needs the "entity match only" flag,
+// that is an aidream API change, not an FE type extension.
+export type DiagnoseHit = components["schemas"]["DiagnoseHit"];
 
-export type DiagnoseResponse = Omit<
-  components["schemas"]["DiagnoseResponse"],
-  "hits"
-> & {
-  hits: DiagnoseHit[];
-};
+export type DiagnoseResponse = components["schemas"]["DiagnoseResponse"];
 
 export async function ragDiagnose(
   body: DiagnoseRequest,

@@ -36,10 +36,13 @@ export function hitViewFromSearchHit(
   const directPage =
     "page_number" in hit && hit.page_number != null ? hit.page_number : null;
   const page = directPage ?? pageFromMeta(meta);
-  const entityRank =
-    "entity_rank" in hit && hit.entity_rank != null ? hit.entity_rank : null;
-  const entities =
-    "entities" in hit && Array.isArray(hit.entities) ? hit.entities : [];
+  // Entity-lane provenance exists ONLY on the search lane (`RagSearchHit`).
+  // The diagnose contract's DiagnoseHit carries none (server model is
+  // extra="forbid"), so the `in` check narrows the union: search hits keep
+  // their provenance, diagnose hits explicitly pass none — the "entity match
+  // only" flag can never light up for a diagnose hit.
+  const entityRank = "entity_rank" in hit ? hit.entity_rank : null;
+  const entities = "entities" in hit ? hit.entities : [];
 
   return {
     sourceKind: hit.source_kind,
