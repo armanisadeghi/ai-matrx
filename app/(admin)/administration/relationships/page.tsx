@@ -1,38 +1,31 @@
-// /administration/relationships — Relationship Manager (Super Admin).
+// /administration/relationships — Relationships hub, Overview tab.
 //
 // Control plane for the reachability / containment system
-// (docs/db_changes/REACHABILITY-ROLLOUT.md): which association shapes exist,
-// which convey access and at what ceiling, unregistered strays, the closure
-// cache, and write-time enforcement.
+// (docs/db_changes/REACHABILITY-ROLLOUT.md): system status, the unified
+// drift report, cache rebuild, and write-time enforcement. Rule CRUD lives
+// on /rules; the registries on /entity-types and /sharing; the explorer,
+// reachability inspector, and action catalog on their own tabs.
 //
 // The (admin) layout already requires Super Admin; every RPC below re-checks
 // is_super_admin() server-side in the DB. Data is fetched here in the Server
 // Component; all mutations happen in the client island via the same RPCs.
 
-import { Network } from "lucide-react";
-
 import { createClient } from "@/utils/supabase/server";
-import RelationshipManagerClient from "@/features/admin/relationships/components/RelationshipManagerClient";
+import { RelationshipsOverviewClient } from "@/features/admin/relationships/components/RelationshipsOverviewClient";
 
 export const metadata = {
   title: "Relationship Manager | Matrx Admin",
 };
 
-export default async function RelationshipsAdminPage() {
+export default async function RelationshipsOverviewPage() {
   const supabase = await createClient();
 
-  const [statusRes, rulesRes, problemsRes, shareableRes] = await Promise.all([
+  const [statusRes, problemsRes] = await Promise.all([
     supabase.rpc("admin_relationship_system_status"),
-    supabase.rpc("admin_relationship_rules"),
     supabase.rpc("admin_relationship_problems"),
-    supabase.rpc("admin_shareable_registry_list"),
   ]);
 
-  const firstError =
-    statusRes.error ??
-    rulesRes.error ??
-    problemsRes.error ??
-    shareableRes.error;
+  const firstError = statusRes.error ?? problemsRes.error;
   if (firstError) {
     // Loud, not swallowed — a failed load here means the RPC family or the
     // admin guard is broken, which is a defect to surface immediately.
@@ -42,12 +35,10 @@ export default async function RelationshipsAdminPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-textured">
-      <RelationshipManagerClient
+    <div className="h-full overflow-y-auto">
+      <RelationshipsOverviewClient
         status={statusRes.data?.[0] ?? null}
-        rules={rulesRes.data ?? []}
         problems={problemsRes.data ?? []}
-        shareable={shareableRes.data ?? []}
       />
     </div>
   );

@@ -49,7 +49,9 @@ export default function EntityRelationshipOrbitWindow({
           className="h-7 w-7"
           title="Open full page"
           onClick={() => {
-            router.push(`/administration/relationships/${activeToken}`);
+            router.push(
+              `/administration/relationships/explorer/${activeToken}`,
+            );
             onClose();
           }}
         >

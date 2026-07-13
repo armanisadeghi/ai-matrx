@@ -43,3 +43,13 @@ export type ShareableRegistryRow =
 
 export type ShareableRegistryDefaults =
   Database["public"]["Functions"]["admin_shareable_registry_defaults"]["Returns"][number];
+
+/** Link-policy view over the same registry table — contributes supports_public
+ *  and the live physical column list the registry-list RPC doesn't return. */
+export type SharePolicyRow =
+  Database["public"]["Functions"]["admin_list_share_policies"]["Returns"][number];
+
+// -- Entity types registry (platform.entity_types admin) --
+
+export type EntityTypeRow =
+  Database["public"]["Functions"]["admin_entity_types_list"]["Returns"][number];

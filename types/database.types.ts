@@ -21834,6 +21834,92 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_run: {
+        Row: {
+          created_at: string
+          error: Json | null
+          id: string
+          input_fingerprint: string | null
+          kind: string
+          request: Json
+          result: Json | null
+          status: string
+          total_cost: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string | null
+          kind: string
+          request?: Json
+          result?: Json | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string | null
+          kind?: string
+          request?: Json
+          result?: Json | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      agent_run_stage: {
+        Row: {
+          cost: number | null
+          error: Json | null
+          finished_at: string | null
+          id: string
+          output: Json | null
+          run_id: string
+          stage_key: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          cost?: number | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          run_id: string
+          stage_key: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          cost?: number | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          run_id?: string
+          stage_key?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_stage_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_recipes: {
         Row: {
           created_at: string
@@ -25243,6 +25329,31 @@ export type Database = {
         Args: { p_label?: string; p_source_type: string; p_target_type: string }
         Returns: undefined
       }
+      admin_entity_types_list: {
+        Args: never
+        Returns: {
+          base_tier: number
+          category: string
+          default_auto_ingest: boolean
+          default_members_can_add: boolean
+          default_needs_approval: boolean
+          default_scopeable: boolean
+          default_visibility: string
+          has_soft_delete: boolean
+          is_active: boolean
+          is_component: boolean
+          is_listed: boolean
+          is_module: boolean
+          is_versioned: boolean
+          label: string
+          notes: string
+          rls_variant: string
+          schema_name: string
+          table_name: string
+          table_ref: string
+          token: string
+        }[]
+      }
       admin_find_user_by_email: {
         Args: { p_email: string }
         Returns: {
@@ -25463,6 +25574,10 @@ export type Database = {
         Args: { p_enabled: boolean }
         Returns: boolean
       }
+      admin_set_entity_type_active: {
+        Args: { p_is_active: boolean; p_token: string }
+        Returns: undefined
+      }
       admin_set_scope_type_system: {
         Args: { p_is_system: boolean; p_scope_type_id: string }
         Returns: Json
@@ -25534,6 +25649,30 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_upsert_entity_type: {
+        Args: {
+          p_base_tier?: number
+          p_category?: string
+          p_default_auto_ingest?: boolean
+          p_default_members_can_add?: boolean
+          p_default_needs_approval?: boolean
+          p_default_scopeable?: boolean
+          p_default_visibility?: string
+          p_has_soft_delete?: boolean
+          p_is_active?: boolean
+          p_is_component?: boolean
+          p_is_listed?: boolean
+          p_is_module?: boolean
+          p_is_versioned?: boolean
+          p_label: string
+          p_notes?: string
+          p_rls_variant?: string
+          p_schema_name: string
+          p_table_name: string
+          p_token: string
+        }
+        Returns: undefined
       }
       admin_upsert_relationship_rule: {
         Args: {

@@ -605,9 +605,9 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Action Catalog",
         description:
-          "Live Matrx Action Catalog — noun × verb grid, build/test panel, and output-directive execute/confirm round-trip against the Python brain.",
+          "Live Matrx Action Catalog — noun × verb grid, build/test panel, and output-directive execute/confirm round-trip against the Python brain. Lives on the Relationships hub.",
         iconName: "Zap",
-        link: "/administration/action-catalog",
+        link: "/administration/relationships/actions",
         isNew: true,
       },
       {
@@ -777,11 +777,11 @@ export const adminCategoriesData: AdminCategory[] = [
     iconColor: "text-sky-600",
     features: [
       {
-        title: "Sharing Policy",
+        title: "Sharing Registry & Link Policy",
         description:
-          "Control the no-login share-link policy for every shareable resource type: toggle whether a type offers an 'Anyone with the link' panel, and manage the default-deny allowlist of columns exposed to anonymous viewers.",
+          "The one home for platform.shareable_resource_registry: full row CRUD plus the no-login link-sharing switch and the default-deny public-columns allowlist per resource type. Lives on the Relationships hub.",
         iconName: "Link2",
-        link: "/administration/sharing",
+        link: "/administration/relationships/sharing",
         isNew: true,
       },
     ],
@@ -798,11 +798,43 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/database-admin",
       },
       {
-        title: "Relationship Manager",
+        title: "Relationships Hub",
         description:
-          "Reachability & containment registry — define/edit/delete which relationship shapes exist and which convey access (sharing cascade), a unified drift report, closure inspector, cache rebuild, and write-time enforcement.",
+          "Route-tabbed control plane for the entity/relationship system — Overview (status, drift report, cache rebuild, enforcement), Rules, Entity Types, Sharing, Explorer, Reachability, and Actions.",
         iconName: "Network",
         link: "/administration/relationships",
+        isNew: true,
+      },
+      {
+        title: "Association Rules",
+        description:
+          "platform.association_types registry — define/edit/delete which relationship shapes exist and which convey access (sharing cascade), with inline edit and side-panel editors.",
+        iconName: "ListChecks",
+        link: "/administration/relationships/rules",
+        isNew: true,
+      },
+      {
+        title: "Entity Types",
+        description:
+          "platform.entity_types registry admin — register, edit, and deactivate entity tokens (the canonical vocabulary for associations, sharing, and scopes). Flags generated-types drift.",
+        iconName: "Boxes",
+        link: "/administration/relationships/entity-types",
+        isNew: true,
+      },
+      {
+        title: "Entity Explorer",
+        description:
+          "Pick any entity type and see what targets it and what it targets — orbit view as a full page or WindowPanel.",
+        iconName: "Search",
+        link: "/administration/relationships/explorer",
+        isNew: true,
+      },
+      {
+        title: "Reachability Inspector",
+        description:
+          "The 'why can they see this?' debugger — what a container reaches, and which containers convey access to an item.",
+        iconName: "Waypoints",
+        link: "/administration/relationships/reachability",
         isNew: true,
       },
       {

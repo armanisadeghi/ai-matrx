@@ -8,20 +8,23 @@
 // resource" here) and the row exists the moment the RPC commits — the
 // reachability cascade goes live immediately.
 //
-// /administration/sharing keeps its link-policy specialty view (is_link_
-// shareable + public_columns for anonymous share links); this panel owns the
-// full row so those two levers are also editable here.
+// This panel is the ONE home for the registry, including link policy: the
+// per-row "Link policy" action opens the no-login link-sharing switch and the
+// public-columns allowlist editor (admin_set_share_policy), absorbing the
+// retired /administration/sharing page.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ShieldQuestion } from "lucide-react";
+import { Columns3, Link2, Loader2, ShieldQuestion } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -29,7 +32,11 @@ import {
   ShareableResourceForm,
   type ShareableEditorState,
 } from "./ShareableResourceForm";
-import type { ShareableRegistryRow } from "../types";
+import {
+  SharePolicyColumnEditor,
+  isSecretLookingColumn,
+} from "./SharePolicyColumnEditor";
+import type { SharePolicyRow, ShareableRegistryRow } from "../types";
 
 function label(token: string): string {
   return tryGetEntityInfo(token)?.label ?? token;
@@ -77,6 +84,9 @@ function rowToEditor(row: ShareableRegistryRow): ShareableEditorState {
 
 interface Props {
   registry: ShareableRegistryRow[];
+  /** Link-policy rows (admin_list_share_policies) joined by resource_type —
+   *  contributes supports_public + the live physical column list. */
+  policies: SharePolicyRow[];
   /** Set by the drift panel's "Register as shareable" action; consumed once. */
   pendingToken: string | null;
   onPendingTokenConsumed: () => void;
@@ -86,6 +96,7 @@ interface Props {
 
 export function ShareableRegistryPanel({
   registry,
+  policies,
   pendingToken,
   onPendingTokenConsumed,
   onMutated,
@@ -96,6 +107,15 @@ export function ShareableRegistryPanel({
   const [sidePanelId, setSidePanelId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [resolving, setResolving] = useState(false);
+  /** The link-policy side panel — one resource type's link switch + columns. */
+  const [policyRow, setPolicyRow] = useState<SharePolicyRow | null>(null);
+  const [policyDraft, setPolicyDraft] = useState<Set<string>>(new Set());
+  const [policyBusy, setPolicyBusy] = useState(false);
+
+  const policyByType = useMemo(
+    () => new Map(policies.map((p) => [p.resource_type, p])),
+    [policies],
+  );
 
   const registeredTokens = useMemo(
     () => new Set(registry.map((r) => r.resource_type)),
@@ -140,12 +160,19 @@ export function ShareableRegistryPanel({
     }
   }
 
+  // Consume the pending token once per value. The async prefill kicks off
+  // from a microtask so no setState runs synchronously inside the effect body.
+  const consumedPendingRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!pendingToken) return;
-    void openForToken(pendingToken);
+    if (!pendingToken || consumedPendingRef.current === pendingToken) return;
+    consumedPendingRef.current = pendingToken;
+    const token = pendingToken;
+    queueMicrotask(() => {
+      void openForToken(token);
+      onPendingTokenConsumed();
+    });
     sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    onPendingTokenConsumed();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [pendingToken]);
 
   function openCreate() {
@@ -215,6 +242,97 @@ export function ShareableRegistryPanel({
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  // -- link policy (absorbed from the retired /administration/sharing page) --
+
+  function openPolicy(row: ShareableRegistryRow) {
+    const policy = policyByType.get(row.resource_type);
+    if (!policy) {
+      toast.error(
+        `No link-policy data for ${label(row.resource_type)} — reload the page.`,
+      );
+      return;
+    }
+    setPolicyDraft(new Set(policy.public_columns ?? []));
+    setPolicyRow({
+      ...policy,
+      all_columns: policy.all_columns ?? [],
+    });
+  }
+
+  async function persistPolicy(
+    row: SharePolicyRow,
+    isLinkShareable: boolean,
+    columns: string[],
+  ): Promise<boolean> {
+    setPolicyBusy(true);
+    try {
+      const { error } = await supabase.rpc("admin_set_share_policy", {
+        p_resource_type: row.resource_type,
+        p_is_link_shareable: isLinkShareable,
+        p_public_columns: columns,
+      });
+      if (error) {
+        toast.error(`Update failed: ${error.message}`);
+        return false;
+      }
+      onMutated();
+      return true;
+    } finally {
+      setPolicyBusy(false);
+    }
+  }
+
+  async function toggleLinkShareable(row: SharePolicyRow, next: boolean) {
+    const columns = row.public_columns ?? [];
+    if (next) {
+      const ok = await confirm({
+        title: `Enable no-login link sharing for “${row.display_label}”?`,
+        description:
+          columns.length > 0
+            ? `Existing and new share links for this type will resolve for anyone — no login. ${columns.length} column(s) are currently in the public allowlist and will be visible to anonymous viewers.`
+            : "Existing and new share links for this type will resolve for anyone — no login. No columns are in the public allowlist yet, so links resolve but show no content until you expose columns below.",
+        confirmLabel: "Enable link sharing",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
+    const ok = await persistPolicy(row, next, columns);
+    if (ok) {
+      setPolicyRow({ ...row, is_link_shareable: next });
+      toast.success(
+        next
+          ? `Link sharing enabled for ${row.display_label}.`
+          : `Link sharing disabled for ${row.display_label}.`,
+      );
+    }
+  }
+
+  async function savePolicyColumns(row: SharePolicyRow) {
+    const selected = (row.all_columns ?? []).filter((c) => policyDraft.has(c));
+    const previous = new Set(row.public_columns ?? []);
+    const added = selected.filter((c) => !previous.has(c));
+    const newlyExposedSecrets = added.filter(isSecretLookingColumn);
+
+    if (added.length > 0) {
+      const ok = await confirm({
+        title: `Expose ${added.length} column(s) on “${row.display_label}”?`,
+        description:
+          newlyExposedSecrets.length > 0
+            ? `You are adding ${added.join(", ")}. ${newlyExposedSecrets.length} of these look sensitive (${newlyExposedSecrets.join(", ")}). Anyone with a share link will be able to read them. Continue?`
+            : `You are adding: ${added.join(", ")}. Anyone with a share link will be able to read these columns.`,
+        confirmLabel: "Expose columns",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
+
+    const ok = await persistPolicy(row, row.is_link_shareable, selected);
+    if (ok) {
+      toast.success(`Public columns updated for ${row.display_label}.`);
+      setPolicyRow(null);
     }
   }
 
@@ -458,16 +576,79 @@ export function ShareableRegistryPanel({
               ) : null,
           }}
           rowActions={(row) => (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => openEditInSidePanel(row)}
-            >
-              Edit
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => openEditInSidePanel(row)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                title="Link sharing + public columns"
+                onClick={() => openPolicy(row)}
+              >
+                <Columns3 className="mr-1 h-3.5 w-3.5" />
+                Link policy
+              </Button>
+            </>
           )}
         />
       </div>
+
+      {policyRow ? (
+        <SidePanelSurface
+          title={`Link policy: ${policyRow.display_label}`}
+          description={`${policyRow.schema_name}.${policyRow.table_name} — no-login link sharing and the anonymous-viewer column allowlist.`}
+          onClose={() => setPolicyRow(null)}
+          defaultWidth={560}
+        >
+          <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-3">
+            <div className="flex items-center justify-between rounded-md border border-border p-3">
+              <span className="flex flex-col">
+                <span className="flex items-center gap-1.5 text-xs font-medium">
+                  <Link2 className="h-3.5 w-3.5" />
+                  No-login link sharing
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  Whether &quot;Anyone with the link&quot; panels are offered
+                  and existing tokens resolve.
+                </span>
+              </span>
+              <div className="flex items-center gap-2">
+                {policyBusy && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                )}
+                <Switch
+                  checked={policyRow.is_link_shareable}
+                  disabled={policyBusy}
+                  onCheckedChange={(next) =>
+                    void toggleLinkShareable(policyRow, next)
+                  }
+                />
+              </div>
+            </div>
+            <SharePolicyColumnEditor
+              allColumns={policyRow.all_columns ?? []}
+              savedColumns={policyRow.public_columns ?? []}
+              draft={policyDraft}
+              busy={policyBusy}
+              onToggleColumn={(c) =>
+                setPolicyDraft((s) => {
+                  const next = new Set(s);
+                  if (next.has(c)) next.delete(c);
+                  else next.add(c);
+                  return next;
+                })
+              }
+              onSave={() => void savePolicyColumns(policyRow)}
+              onCancel={() => setPolicyRow(null)}
+            />
+          </div>
+        </SidePanelSurface>
+      ) : null}
 
       {editor?.mode === "create" ? (
         <SidePanelSurface

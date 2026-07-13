@@ -1,9 +1,10 @@
-// /administration/relationships/[token] — Entity relationship explorer.
+// /administration/relationships/explorer/[token] — Entity relationship explorer.
 //
 // One entity_types token: what targets it (sources, left) and what it
 // targets (targets, right), derived from the same admin_relationship_rules()
 // rows the Relationship Manager list page uses. Super Admin gate inherited
-// from app/(admin)/layout.tsx.
+// from app/(admin)/layout.tsx. Lives under explorer/ so the dynamic segment
+// can never shadow the hub's static tab routes.
 
 import { notFound } from "next/navigation";
 

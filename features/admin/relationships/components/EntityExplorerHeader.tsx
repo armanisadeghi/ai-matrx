@@ -2,9 +2,9 @@
 
 // features/admin/relationships/components/EntityExplorerHeader.tsx
 //
-// Chrome for /administration/relationships/[token]: back to the registry +
-// the same entity picker used on the list page, pre-filled with the current
-// token, so switching entities never requires going back first.
+// Chrome for /administration/relationships/explorer/[token]: back to the
+// explorer entry + the same entity picker used there, pre-filled with the
+// current token, so switching entities never requires going back first.
 
 import Link from "next/link";
 import { ArrowLeft, Compass } from "lucide-react";
@@ -27,8 +27,8 @@ export function EntityExplorerHeader({ token, rules }: Props) {
     <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-2.5">
       <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
         <Link
-          href="/administration/relationships"
-          title="Back to Relationship Manager"
+          href="/administration/relationships/explorer"
+          title="Back to the entity explorer"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
         </Link>

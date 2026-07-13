@@ -161,6 +161,11 @@ const nextConfig = {
     headers: getHeaders,
     async redirects() {
         return [
+            // 2026-07-13: Relationships hub consolidation. /administration/sharing
+            // (link policy) and /administration/action-catalog moved into the
+            // route-tabbed hub at /administration/relationships/*.
+            { source: '/administration/sharing', destination: '/administration/relationships/sharing', permanent: false },
+            { source: '/administration/action-catalog', destination: '/administration/relationships/actions', permanent: false },
             // 2026-06-08: Transcripts consolidation. Renamed `/transcription/*`
             // route group to `/transcripts/*` so the feature has ONE canonical
             // URL with slash-versioned sub-routes (studio, scribe, admin).

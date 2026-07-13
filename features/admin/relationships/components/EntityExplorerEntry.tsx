@@ -4,12 +4,12 @@
 //
 // Shared entry point for the entity relationship explorer: pick any entity
 // type token, then either navigate to its full page
-// (/administration/relationships/[token]) or peek at it in a non-blocking
+// (/administration/relationships/explorer/[token]) or peek at it in a non-blocking
 // WindowPanel without leaving the current view. Used on the Relationship
 // Manager list page and (pre-filled) as the header of the [token] page
 // itself, so switching entities never requires going back to the list.
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ArrowRight, AppWindow, Loader2 } from "lucide-react";
@@ -37,9 +37,13 @@ export function EntityExplorerEntry({ rules, value }: Props) {
   const [selected, setSelected] = useState(value ?? "");
   const [windowOpen, setWindowOpen] = useState(false);
 
-  useEffect(() => {
+  // Sync the picker when the route token changes — React's sanctioned
+  // adjust-state-during-render pattern (no effect, no cascading render).
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     if (value) setSelected(value);
-  }, [value]);
+  }
 
   const involvedCount = tokensInRules(rules).length;
 
@@ -60,7 +64,7 @@ export function EntityExplorerEntry({ rules, value }: Props) {
         disabled={!selected || isPending}
         onClick={() =>
           startTransition(() =>
-            router.push(`/administration/relationships/${selected}`),
+            router.push(`/administration/relationships/explorer/${selected}`),
           )
         }
       >

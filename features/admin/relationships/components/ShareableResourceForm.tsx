@@ -254,8 +254,8 @@ export function ShareableResourceForm({
           <span className="flex flex-col">
             <span className="text-xs font-medium">No-login link sharing</span>
             <span className="text-[10px] text-muted-foreground">
-              Offers &quot;Anyone with the link&quot;. Same lever as
-              /administration/sharing.
+              Offers &quot;Anyone with the link&quot;. Same lever as the
+              per-row Link policy editor.
             </span>
           </span>
           <Switch

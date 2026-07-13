@@ -1,55 +1,58 @@
-# FEATURE.md — `admin/relationships` (Relationship Manager)
+# FEATURE.md — `admin/relationships` (Relationships Hub)
 
 **Status:** `active`
-**Routes:** `/administration/relationships` · `/administration/relationships/[token]` (Super Admin — gated by the `(admin)` layout)
-**Owner surface for:** the reachability / containment registry admin control plane, **and** the full `platform.shareable_resource_registry` CRUD (fixes `conveying_container_not_shareable` in place — `/administration/sharing` keeps its link-policy specialty view).
+**Routes (route-tabbed hub, Super Admin — gated by the `(admin)` layout):**
+`/administration/relationships` (Overview) · `/rules` · `/entity-types` · `/sharing` · `/explorer` (+ `/explorer/[token]`) · `/reachability` · `/actions`
+**Owner surface for:** the reachability / containment registry control plane, the **`platform.entity_types` registry admin** (the only UI write path), and the **one** home for `platform.shareable_resource_registry` (full CRUD **plus** link policy — the old `/administration/sharing` page is deleted and redirects here).
 
 ---
 
 ## Purpose
 
 The no-SQL control plane for the platform's **reachability / sharing-cascade** system
-(`docs/db_changes/REACHABILITY-ROLLOUT.md`). Arman defines, here, **which
-association shapes exist, which of them convey access when a container is shared,
-and at what ceiling** — and the page reports **all drift** between the registry
-and the live association data.
+(`docs/db_changes/REACHABILITY-ROLLOUT.md`) and the **entity-token vocabulary**. Arman
+defines, here, **which entity types exist, which association shapes exist, which of
+them convey access when a container is shared, and at what ceiling** — and the
+Overview reports **all drift** between the registry and the live association data.
 
-The load-bearing model: `platform.association_types` (the rule/edge dictionary) +
-`platform.associations` (the tuples) are truth; `platform.reachability` is a
-disposable closure cache rebuilt by DB triggers. A rule change here triggers an
-automatic full closure rebuild in the DB — the UI just `router.refresh()`es.
+The load-bearing model: `platform.entity_types` (the token vocabulary) +
+`platform.association_types` (the rule/edge dictionary) + `platform.associations`
+(the tuples) are truth; `platform.reachability` is a disposable closure cache rebuilt
+by DB triggers. A rule change here triggers an automatic full closure rebuild in the
+DB — the UI just `router.refresh()`es.
 
-## Entry points
+## Structure — one layout, one route per tab
 
-- **Page (Server Component):** `app/(admin)/administration/relationships/page.tsx`
-  — fetches `admin_relationship_system_status`, `admin_relationship_rules`,
-  `admin_relationship_problems`, `admin_shareable_registry_list` in parallel,
-  throws loudly on any RPC error, passes to the client island.
-- **Client island:** `features/admin/relationships/components/RelationshipManagerClient.tsx`
-  — all interactivity + mutations. Registry grid is **`MatrxDataTable`**
-  (`components/official/matrx-data-table/`).
-- **Rule editor:** `RuleEditorForm.tsx` — side panel body for create/edit.
-- **Shareable registry:** `ShareableRegistryPanel.tsx` (table + CRUD) +
-  `ShareableResourceForm.tsx` (side-panel body). Drift row's "Register as
-  shareable" (kind `conveying_container_not_shareable`) sets a pending token
-  the panel consumes on mount — scrolls into view and opens pre-filled from
-  `admin_shareable_registry_defaults`.
-- **Entity explorer:**
-  - Core (route-agnostic): `EntityRelationshipOrbit.tsx` + pure helper
-    `buildOrbitGraph` (`features/admin/relationships/utils.ts`) — sources that
-    target the focus token (left), the focus (center), targets it points to
-    (right). Shape is React-Flow-ready (token + rule per neighbor) for a
-    future graph canvas — not wired in this PR.
-  - Route: `app/(admin)/administration/relationships/[token]/page.tsx` +
-    `EntityExplorerHeader.tsx` (back link + re-pick token).
-  - List-page + route-header entry point: `EntityExplorerEntry.tsx` — entity
-    picker with **Open page** (`router.push` + `useTransition`) and **Open in
-    window** (`EntityRelationshipOrbitWindow.tsx`, a `WindowPanel` composition
-    root reached only via `dynamic({ ssr: false })` — see `window-panels`
-    skill).
-- **Types:** `features/admin/relationships/types.ts` — every shape derived from the
-  generated `Database` types; never hand-mirrored.
-- **Admin catalog:** `features/admin/constants/admin-categories.ts` ("Relationship Manager").
+- **Layout:** `app/(admin)/administration/relationships/layout.tsx` →
+  `RelationshipsAdminLayoutClient.tsx` (scheduling-admin pattern: `NAV_ITEMS`,
+  `usePathname` active detection, `router.push` in `useTransition`, per-tab spinner).
+  The layout owns viewport height (`h-[calc(100dvh-2.5rem)]`); each tab page renders
+  inside `flex-1 overflow-hidden` — **never** re-subtract `100dvh` in a tab page.
+- **The dynamic orbit route lives at `explorer/[token]`**, never at the hub root — a
+  root-level `[token]` would shadow-race every static tab segment.
+- Shared presentational atoms: `components/shared.tsx` (`StatusTile`,
+  `DirectionGlyph`, `ConveyPill`). Pure helpers (`ruleKey`, `label`, `ruleSentence`,
+  `PROBLEM_TITLES`, `problemHuman`, `buildOrbitGraph`, `tokensInRules`): `utils.ts`.
+- **Types:** `types.ts` — every shape derived from the generated `Database` types;
+  never hand-mirrored.
+- **Admin catalog:** `features/admin/constants/admin-categories.ts` — the hub entry
+  plus one entry per tab route (check:admin-catalog requires each static route).
+
+| Tab | Page (server fetch) | Client |
+|---|---|---|
+| Overview | `page.tsx` (`admin_relationship_system_status` + `admin_relationship_problems`) | `RelationshipsOverviewClient` — status tiles, Rebuild cache, Enforcement switch, `ProblemsPanel`, direction legend |
+| Rules | `rules/page.tsx` (`admin_relationship_rules`; `?edit=<source:target:label>`) | `RelationshipRulesClient` — `MatrxDataTable` + `RuleEditorForm` (side panel / WindowPanel), delete confirm |
+| Entity Types | `entity-types/page.tsx` (`admin_entity_types_list`) | `EntityTypesClient` + `EntityTypeForm` — full CRUD, deactivate-only delete, generated-types drift banner |
+| Sharing | `sharing/page.tsx` (`admin_shareable_registry_list` + `admin_list_share_policies`; `?register=<token>`) | `RelationshipSharingClient` → `ShareableRegistryPanel` (+ `ShareableResourceForm`, `SharePolicyColumnEditor`) |
+| Explorer | `explorer/page.tsx` (`admin_relationship_rules`) | `RelationshipExplorerClient` → `EntityExplorerEntry` |
+| Explorer orbit | `explorer/[token]/page.tsx` (`admin_relationship_rules`) | `EntityExplorerHeader` + `EntityRelationshipOrbitPageBody` |
+| Reachability | `reachability/page.tsx` (none) | `ReachabilityInspectorClient` — self-fetching |
+| Actions | `actions/page.tsx` (none) | `ActionCatalogClient` (`features/action-catalog/` — see its FEATURE.md; moved from the deleted `/administration/action-catalog` route) |
+
+**Cross-tab deep links are consume-once query params:** the Overview drift panel's
+"Open rule" → `/rules?edit=<ruleKey>` and "Register as shareable" →
+`/sharing?register=<token>`; the target client applies the param once then strips it
+with `router.replace` so refresh/back never re-triggers.
 
 ## Data model (all via `public.` SECURITY DEFINER RPCs, each re-checks `is_super_admin()`)
 
@@ -76,13 +79,36 @@ can't compute — a conveying rule whose container isn't in
 `shareable_resource_registry`, so the cascade is dead), `conveying_rule_no_edges`,
 `inactive_rule_with_edges`.
 
+### Entity types registry RPCs
+
+Migration: `migrations/entity_types_admin_rpcs.sql` — the **first UI write path**
+for `platform.entity_types` (registration was migration-only before). Same
+`public.` wrapper / `is_super_admin()` pattern; grants to `authenticated` only.
+**`public.entity_types_list()` (anon, active-only, feeds `pnpm gen:entity-types`)
+is untouched — never widen or modify it.**
+
+| RPC | Role |
+|---|---|
+| `admin_entity_types_list()` | ALL rows incl. inactive; `default_visibility` projected as text; `table_ref` as text. |
+| `admin_upsert_entity_type(...)` | Create/update (ON CONFLICT on `token`). Validates token `^[a-z][a-z0-9_]*$` and that the physical table exists (loud RAISE otherwise); recomputes `table_ref` server-side. |
+| `admin_set_entity_type_active(token, active)` | **The only "delete"** — tokens are FK targets of `platform.associations`; hard deletes are never offered. Loud on a missing token. |
+
+**Generated-types drift:** after any registry write, `types/generated/entity-types.generated.ts`
+is stale until `pnpm gen:entity-types` runs. `EntityTypesClient` compares active
+registry tokens against `ENTITY_TYPE_TOKENS` and shows a persistent amber banner
+(with the +/− token diff and a copy-command button) until they match;
+`pnpm check:entity-types` is the CI gate.
+
 ### Shareable resource registry RPCs
 
 Migration: `migrations/relationship_manager_shareable_admin_rpcs.sql` (same
-`public.` wrapper / `is_super_admin()` re-check pattern). Full CRUD home for
-`platform.shareable_resource_registry`; absorbs the same `is_link_shareable` /
-`public_columns` levers `admin_set_share_policy` touches so this page owns the
-entire row — `/administration/sharing` keeps working unchanged on the same table.
+pattern). The Sharing tab is the **one** home for
+`platform.shareable_resource_registry` — full row CRUD **and** the link-policy
+levers. The old `/administration/sharing` page is **deleted**; a `next.config.js`
+redirect (2026-07-13) points it at `/administration/relationships/sharing`. Its
+RPCs live on: `admin_list_share_policies` (contributes `supports_public` + the live
+physical column list) and `admin_set_share_policy` (the narrow link-policy write
+used by the per-row **Link policy** side panel).
 
 | RPC | Role |
 |---|---|
@@ -90,31 +116,36 @@ entire row — `/administration/sharing` keeps working unchanged on the same tab
 | `admin_shareable_registry_defaults(token)` | Prefill schema/table/label from `platform.entity_types` when registering a token that isn't shareable yet. |
 | `admin_upsert_shareable_resource(...)` | Create/update a row (ON CONFLICT on `resource_type`). Same "typo can't become a phantom public-column allowlist entry" guard as `admin_set_share_policy`. |
 | `admin_set_shareable_active(resource_type, active)` | Soft on/off — keeps history; flipping off re-creates `conveying_container_not_shareable` drift on purpose. |
+| `admin_list_share_policies()` / `admin_set_share_policy(...)` | Link-policy read/write for the per-row **Link policy** editor (`SharePolicyColumnEditor` — secret-looking columns flagged, default-deny, destructive confirms on enable/expose). |
 
 ## Key flows
 
-- **Define a rule:** New rule → pick source (content) + target (container) via
-  the tabular `EntityTypeCombobox` (existing pairs for the current label are
-  disabled + listed as chips) → container side + conveyance ceiling → upsert
-  immediately (no confirm).
-- **Resolve drift:** the Drift panel lists every problem with a per-row action —
-  **Register as known** for strays, **Register as shareable** for
-  `conveying_container_not_shareable` (opens the Shareable registry panel
-  pre-filled with the missing container token), **Open rule** for the rest.
-- **Enforce:** enforcement can only be enabled when unregistered pairs = 0
-  (switch is disabled with a tooltip otherwise).
-- **Manage what can be shared:** the Shareable registry panel is full CRUD —
-  **Register resource** picks any entity token not yet registered (tabular
-  `EntityTypeCombobox`, already-registered tokens disabled) and prefills
-  schema/table/label from `platform.entity_types`; inline edit covers
-  active/RLS-grants/scopeable/link-shareable/notes; a toast reminds that
+- **Define a rule (Rules tab):** New rule → pick source (content) + target
+  (container) via the tabular `EntityTypeCombobox` (existing pairs for the current
+  label are disabled + listed as chips) → container side + conveyance ceiling →
+  upsert immediately (no confirm).
+- **Resolve drift (Overview):** the Drift panel lists every problem with a per-row
+  action — **Register as known** for strays (inline), **Register as shareable** for
+  `conveying_container_not_shareable` (navigates to `/sharing?register=<token>`,
+  form pre-filled from `admin_shareable_registry_defaults`), **Open rule** for the
+  rest (navigates to `/rules?edit=<key>`, side-panel editor open).
+- **Enforce (Overview):** enforcement can only be enabled when unregistered pairs =
+  0 (switch is disabled with a tooltip otherwise).
+- **Register an entity type (Entity Types tab):** New entity type → token +
+  schema/table (must physically exist) + label + tier/category/visibility + flag
+  switches → upsert. Deactivate via the row power action (ConfirmDialog states the
+  semantics); the drift banner then demands `pnpm gen:entity-types`.
+- **Manage what can be shared (Sharing tab):** full CRUD — **Register resource**
+  picks any entity token not yet registered and prefills from
+  `platform.entity_types`; inline edit covers active/RLS-grants/scopeable/
+  link-shareable/notes; the per-row **Link policy** action opens the no-login
+  switch + public-columns allowlist editor. A toast reminds that
   `utils/permissions/registry.ts` needs `pnpm tsx scripts/regen-shareable-registry-snapshot.ts`
   after any register/upsert (no browser write to that file).
-- **Explore an entity type:** pick any token in the Entity explorer (or from
-  a drift/registry row) → **Open page** for the full `[token]` route or
-  **Open in window** for a non-blocking peek; clicking a neighbor chip
-  re-centers the orbit on that token (in-place, no navigation) via
-  `onSelectToken`.
+- **Explore an entity type (Explorer tab):** pick any token → **Open page**
+  (`explorer/[token]`) or **Open in window** (non-blocking peek); clicking a
+  neighbor chip re-centers the orbit in place via `onSelectToken` (window) or
+  navigates (page).
 
 ## Invariants & gotchas
 
@@ -125,22 +156,22 @@ entire row — `/administration/sharing` keeps working unchanged on the same tab
   entity is the one that conveys.
 - **Cache is disposable.** Never write `platform.reachability` from the UI; the
   only affordance is Rebuild.
+- **Entity-type deletion is deactivate-only** — tokens are FK targets of
+  `platform.associations`. Never add a hard-delete affordance or RPC.
 - **Plain language is on-demand, never a table cell** — row tooltip + a live
-  sentence in the editor. Between drift and the registry sits a compact
-  HIGH-CONTRAST legend (`SMALL → LARGE | Conveys?`), not prose.
+  sentence in the editor. The Overview carries a compact HIGH-CONTRAST legend
+  (`SMALL → LARGE | Conveys?`), not prose.
 - Entity chips/pickers resolve through the **one** entity registry
   (`features/scopes/registry/entityRegistry`) → `components/entity-types/*`.
 - Drift panel + each problem row use `<CopyButtons>` (same Copy / Copy-for-AI
-  primitive as the registry table).
+  primitive as the registry tables).
 
 ## Related features
 
 - Reachability rollout doc: `docs/db_changes/REACHABILITY-ROLLOUT.md`.
 - Sharing / permissions: `features/sharing/FEATURE.md` (grants + memberships that
-  the cascade composes with in `iam.has_access`); `/administration/sharing`
-  keeps its link-policy specialty view (`admin_list_share_policies` /
-  `admin_set_share_policy`) on the same `shareable_resource_registry` table —
-  not merged or deleted.
+  the cascade composes with in `iam.has_access`).
+- Action Catalog (the Actions tab's client): `features/action-catalog/FEATURE.md`.
 - Canonical associations: `.claude/skills/canonical-associations`.
 - Window Panels (the `EntityRelationshipOrbitWindow` composition root):
   `.claude/skills/window-panels`.
@@ -151,26 +182,39 @@ entire row — `/administration/sharing` keeps working unchanged on the same tab
   `EntityTypeCombobox` (consumed here; available to every association surface).
 - **Table chrome:** `MatrxDataTable` — sticky headers, every-column filter/sort,
   toolbar facets, row → `SidePanelSurface` / `MatrxDynamicPanelHost`, panel icon →
-  `WindowPanel`. Blocking `Sheet` retired for the rule editor.
+  `WindowPanel`.
 - **One core component, two shells:** `EntityRelationshipOrbit` is
-  route-agnostic — the `[token]` page and `EntityRelationshipOrbitWindow`
+  route-agnostic — the `explorer/[token]` page and `EntityRelationshipOrbitWindow`
   (WindowPanel) both render it unchanged; no fork.
 - **Bundle discipline:** `WindowPanel` reached only through
   `dynamic(() => import(...), { ssr: false })` in `EntityExplorerEntry` — never
-  a static import from the list page or the `[token]` route.
+  a static import from any tab page.
 - Types derived from generated `Database` types; no `any`, no hand-mirroring.
-- Loud recovery: both pages throw on any RPC load error rather than rendering a
-  half-empty control plane.
+- Loud recovery: every tab page throws on any RPC load error rather than rendering
+  a half-empty control plane.
 
 ## Change log
 
+- **2026-07-13** — **Route-tabbed hub restructure.** The single endless-scroll page
+  split into 7 tab routes under one layout (`RelationshipsAdminLayoutClient`,
+  scheduling pattern); `RelationshipManagerClient.tsx` deleted, decomposed into
+  per-tab clients + `ProblemsPanel` / `shared.tsx` / helpers in `utils.ts`. Orbit
+  route moved `[token]` → `explorer/[token]` (kills static/dynamic shadowing).
+  **New Entity Types tab** — first-ever `platform.entity_types` admin UI
+  (`migrations/entity_types_admin_rpcs.sql`: `admin_entity_types_list` /
+  `admin_upsert_entity_type` / `admin_set_entity_type_active`; deactivate-only
+  delete; generated-types drift banner). **/administration/sharing absorbed and
+  deleted** (redirect; per-row Link policy side panel via `SharePolicyColumnEditor`
+  + `admin_set_share_policy`). **/administration/action-catalog moved** to the
+  Actions tab (redirect; `ActionCatalogClient` unchanged). Cross-tab drift actions
+  ride consume-once `?edit=` / `?register=` params.
 - **2026-07-11** — Shareable resource registry gets a full CRUD home here
   (`ShareableRegistryPanel` / `ShareableResourceForm`; new RPCs
   `admin_shareable_registry_list/_defaults`, `admin_upsert_shareable_resource`,
   `admin_set_shareable_active`) — the drift panel's "Register as shareable"
   fixes `conveying_container_not_shareable` in place. New entity-type explorer:
   `EntityRelationshipOrbit` (+ pure `buildOrbitGraph` helper) rendered at
-  `/administration/relationships/[token]` and inside a page-local `WindowPanel`
+  the token route and inside a page-local `WindowPanel`
   (`EntityRelationshipOrbitWindow`, lazy-loaded) — one core component, two
   shells, React-Flow-ready data shape for a future graph canvas.
 - **2026-07-11** — Drift panel: Copy / Copy-for-AI on the section + each row.
@@ -184,8 +228,6 @@ entire row — `/administration/sharing` keeps working unchanged on the same tab
 - **2026-07-11** — Registry cut over to canonical `MatrxDataTable`; rule editor
   moves to `SidePanelSurface` (create) / table detail panel (edit). Panel icon
   opens a WindowPanel with **View / Edit** tabs (Edit = same RuleEditorForm).
-  Follow-up: searchable filters, clear-all, any-of entity search (source OR
-  target), Copy/Copy-for-AI, deferred inline edit with Save/Cancel pill.
 - **2026-07-09** — Full-CRUD rewrite: structured columnar registry (chips + a
   direction glyph, not prose), New/Edit/Delete rules, unified
   `admin_relationship_problems()` drift panel (adds the shareable-registry gap
