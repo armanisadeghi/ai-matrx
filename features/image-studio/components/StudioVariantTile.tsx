@@ -10,10 +10,10 @@ import {
   Crop,
   Download,
   ExternalLink,
+  Globe,
   Loader2,
   Maximize2,
   Scaling,
-  Trash2,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ import type { ImageFit, ImagePosition, ProcessedVariant } from "../types";
 import { getPresetById } from "../presets";
 import { formatBytes, formatDimensions } from "../utils/format-bytes";
 import { downloadSingleVariant } from "../utils/download-bundle";
-import { fileHandler } from "@/features/files/handler/handler";
+import { InlineMediaRef, useFileActions } from "@/features/files";
 
 function fitIcon(fit: ImageFit): React.ReactNode {
   switch (fit) {
@@ -77,78 +77,66 @@ export function StudioVariantTile({
   onToggleSelect,
 }: StudioVariantTileProps) {
   const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
   const preset = getPresetById(variant.presetId);
   const usage = preset?.usage ?? "";
   const presetName = preset?.name ?? variant.presetId;
 
-  // A variant is "shareable" only once it has a server-side identity
-  // (publicUrl OR fileId). Until then it's just bytes in the browser —
-  // we deliberately refuse to copy the base64 data URL to the clipboard
-  // (pasting a multi-MB string into chat/HTML/Notes is a disaster and
-  // is never what the user actually wants).
-  const isShareable = Boolean(variant.publicUrl || variant.fileId);
+  // Canonical file-action bundle — only meaningful once the variant is
+  // SAVED (has a cloud-files `fileId`). Calling the hook with "" is inert;
+  // every invocation below is gated on `variant.fileId`.
+  const fileActions = useFileActions(variant.fileId ?? "");
 
-  /**
-   * Resolve the URL we want users to actually paste. Priority:
-   *   1. Permanent CDN URL — set on save when visibility=public.
-   *      This is a Cloudflare-fronted, checksum-versioned URL that never
-   *      expires. ALWAYS prefer this.
-   *   2. Signed URL — for private saved variants, lazy-fetch from the API
-   *      (good for ~1h). Better than nothing, never as good as #1.
-   * Callers must check `isShareable` first; this throws otherwise.
-   */
-  const resolveCopyableUrl = async (): Promise<string> => {
-    if (variant.publicUrl) return variant.publicUrl;
-    if (variant.fileId) {
-      const url = await fileHandler
-        .use({ kind: "file_id", fileId: variant.fileId })
-        .as({ kind: "html_src" });
-      if (!url) throw new Error("Couldn't resolve a shareable URL");
-      return url;
+  const isSaved = Boolean(variant.fileId);
+  const isPublic = Boolean(variant.publicUrl);
+
+  const handleDownload = async () => {
+    // Same-origin blob download. `variant.dataUrl` is a data: or blob: URL
+    // (never a raw S3 URL — useImageStudio.generate materializes signed
+    // URLs at the boundary), so `a.download` is honoured and nothing
+    // navigates the tab.
+    try {
+      await downloadSingleVariant(variant.dataUrl, variant.filename);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Download failed");
     }
-    throw new Error("Save to the library first to get a shareable URL");
   };
 
-  const handleCopyUrl = async () => {
+  // Make-public + copy-link, routed entirely through the canonical
+  // `useFileActions`. We NEVER hand-copy a signed URL — that's the exact
+  // durability anti-pattern these actions exist to replace. Private saved
+  // variants are flipped to public first so the link is a permanent CDN URL.
+  const handleShare = async () => {
     setCopyError(null);
-    // Pre-save: never silently copy the base64 data URL. Surface a
-    // toast that points the user at the Save action in the side panel,
-    // which is where the permanent CDN URL actually comes from.
-    if (!isShareable) {
+    if (!variant.fileId) {
       toast.warning("Save to the library first", {
         description:
-          "Use the Save to library button in the Export panel — public saves give every variant a permanent CDN URL.",
+          "Use Save to library in the Export panel — public saves give every variant a permanent CDN link.",
       });
       return;
     }
+    setSharing(true);
     try {
-      const url = await resolveCopyableUrl();
-      await navigator.clipboard.writeText(url);
+      if (!isPublic) {
+        await fileActions.setVisibility("public");
+      }
+      const url = await fileActions.copyShareUrl();
+      if (!url) throw new Error("Couldn't resolve a shareable link");
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => setCopied(false), 1600);
     } catch (err) {
-      setCopyError(err instanceof Error ? err.message : "Copy failed");
-      setTimeout(() => setCopyError(null), 2500);
+      setCopyError(err instanceof Error ? err.message : "Share failed");
+      setTimeout(() => setCopyError(null), 2600);
+    } finally {
+      setSharing(false);
     }
   };
 
-  const handleDownload = () => {
-    // Local download — always uses the in-memory bytes for instant save,
-    // since the user already has them and a network round-trip would be
-    // pointless here.
-    downloadSingleVariant(variant.dataUrl, variant.filename);
-  };
-
-  // The "open in new tab" link prefers the CDN URL. For private saved
-  // variants we fall back to opening the Cloud Files file page (which
-  // resolves to a signed URL inside). For unsaved variants the link is
-  // hidden entirely.
-  const externalHref = variant.publicUrl
-    ? variant.publicUrl
-    : variant.fileId
-      ? `/files/f/${variant.fileId}`
-      : null;
+  // "Open" always routes to our canonical file viewer (SingleFileShell at
+  // /files/f/{id}) in a NEW TAB — never the raw CDN/S3 URL, and never a
+  // same-tab navigation that would wipe the studio's in-memory state.
+  const viewerHref = variant.fileId ? `/files/f/${variant.fileId}` : null;
 
   return (
     <div
@@ -182,18 +170,30 @@ export function StudioVariantTile({
         </div>
       )}
 
-      {/* Preview */}
+      {/* Preview — canonical InlineMediaRef once saved (re-mints, CDN-aware,
+          self-heals expiring URLs); the same-origin in-memory bytes before
+          save. Never a raw S3 URL either way. */}
       <div
         className="relative bg-muted/40 flex items-center justify-center border-b border-border overflow-hidden"
         style={{ aspectRatio: `${variant.width} / ${variant.height}` }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={variant.dataUrl}
-          alt={presetName}
-          className="max-h-full max-w-full object-contain"
-          loading="lazy"
-        />
+        {variant.fileId ? (
+          <InlineMediaRef
+            ref={{ file_id: variant.fileId }}
+            size="fill"
+            fit="contain"
+            alt={presetName}
+            className="max-h-full max-w-full"
+          />
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={variant.dataUrl}
+            alt={presetName}
+            className="max-h-full max-w-full object-contain"
+            loading="lazy"
+          />
+        )}
       </div>
 
       {/* Meta */}
@@ -264,34 +264,42 @@ export function StudioVariantTile({
         <div className="w-px bg-border" />
         <button
           type="button"
-          onClick={handleCopyUrl}
+          onClick={handleShare}
+          disabled={sharing}
           className={cn(
-            "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs transition-colors",
-            isShareable
+            "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs transition-colors disabled:opacity-60",
+            isSaved
               ? "text-muted-foreground hover:bg-accent hover:text-foreground"
               : "text-amber-700 dark:text-amber-400 hover:bg-amber-500/10",
           )}
           title={
-            variant.publicUrl
-              ? "Copy permanent CDN URL"
-              : variant.fileId
-                ? "Copy a fresh signed URL (≈1h)"
-                : "Save to the library first to get a permanent shareable URL"
+            isSaved
+              ? "Make public (if needed) and copy a permanent link"
+              : "Save to the library first to get a shareable link"
           }
         >
           {copyError ? (
             <span className="text-destructive truncate max-w-[120px]">
               {copyError}
             </span>
+          ) : sharing ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Working…</span>
+            </>
           ) : copied ? (
             <>
               <Check className="h-3 w-3 text-success" />
-              <span className="text-success">Copied</span>
+              <span className="text-success">Link copied</span>
             </>
-          ) : isShareable ? (
+          ) : isSaved ? (
             <>
-              <Copy className="h-3 w-3" />
-              {variant.publicUrl ? "Copy CDN" : "Copy URL"}
+              {isPublic ? (
+                <Copy className="h-3 w-3" />
+              ) : (
+                <Globe className="h-3 w-3" />
+              )}
+              Copy link
             </>
           ) : (
             <>
@@ -300,19 +308,15 @@ export function StudioVariantTile({
             </>
           )}
         </button>
-        {externalHref && (
+        {viewerHref && (
           <>
             <div className="w-px bg-border" />
             <a
-              href={externalHref}
+              href={viewerHref}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              title={
-                variant.publicUrl
-                  ? "Open the CDN URL in a new tab"
-                  : "Open in Cloud Files"
-              }
+              title="Open in the file viewer (new tab)"
             >
               <ExternalLink className="h-3 w-3" />
             </a>

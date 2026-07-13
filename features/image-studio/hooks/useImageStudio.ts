@@ -497,6 +497,35 @@ export function useImageStudio(
             variantSpecs,
           );
 
+          // The preview API returns either an inline `data_url` (small) or an
+          // ephemeral `signed_url` (large — a 5-minute S3 URL). A raw signed
+          // S3 URL must NEVER enter studio state: it would leak into the tile
+          // `<img src>`, break after its TTL, and — worst — a download anchor
+          // to a cross-origin S3 URL navigates the tab away and wipes the
+          // studio. So we materialize every signed URL into a same-origin
+          // `blob:` URL here, at the boundary, before anything renders it.
+          // (`data:` URLs pass straight through.) See lib/media/durability.
+          const resolvedUrlByPreset = new Map<string, string>();
+          await Promise.all(
+            data.variants.map(async (v) => {
+              const raw = v.data_url ?? v.signed_url;
+              if (!raw) return;
+              if (raw.startsWith("data:") || raw.startsWith("blob:")) {
+                resolvedUrlByPreset.set(v.preset_id, raw);
+                return;
+              }
+              try {
+                const blob = await fetch(raw).then((r) => r.blob());
+                const objectUrl = URL.createObjectURL(blob);
+                urlsRef.current.add(objectUrl);
+                resolvedUrlByPreset.set(v.preset_id, objectUrl);
+              } catch {
+                // Couldn't materialize — leave unset; the variant is skipped
+                // below (no ghost tile pointing at an expiring S3 URL).
+              }
+            }),
+          );
+
           setFiles((prev) =>
             prev.map((f) => {
               if (f.id !== sourceFile.id) return f;
@@ -504,7 +533,7 @@ export function useImageStudio(
               for (const v of data.variants) {
                 const preset = getPresetById(v.preset_id);
                 if (!preset) continue;
-                const url = v.data_url ?? v.signed_url;
+                const url = resolvedUrlByPreset.get(v.preset_id);
                 if (!url) continue;
 
                 // Use the format the server actually encoded so the

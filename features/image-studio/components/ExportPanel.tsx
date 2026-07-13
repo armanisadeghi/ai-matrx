@@ -495,8 +495,10 @@ export function ExportPanel({
                     .split("/")
                     .map(encodeURIComponent)
                     .join("/")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-success/40 bg-success/10 hover:bg-success/20 px-2 py-1 text-[11px] font-medium text-success transition-colors"
-                  title="Open this folder in your Files browser"
+                  title="Open this folder in your Files browser (new tab)"
                 >
                   <FolderOpen className="h-3 w-3" />
                   Open folder
