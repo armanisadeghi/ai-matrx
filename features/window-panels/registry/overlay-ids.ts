@@ -149,6 +149,7 @@ export const OVERLAY_IDS = [
   "streamDebug",
   "streamDebugHistoryWindow",
   "tableViewerWindow",
+  "userTableWindow",
   "taskEditorWindow",
   "taskQuickCreateWindow",
   "toolCallWindow",

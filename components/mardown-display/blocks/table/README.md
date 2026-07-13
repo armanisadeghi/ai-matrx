@@ -20,6 +20,18 @@ Clean, efficient table renderer that properly uses the block structure from `con
 **Root Cause:** During migration to V2 parser, the conditional logic was removed but the prop declaration and dependency weren't cleaned up.  
 **Solution:** Removed `useV2Parser` from interface, function parameters, and dependency array in `EnhancedChatMarkdown.tsx`. Also removed all usages across 5 components that were passing `useV2Parser={true}`. V2 parser is now the only parser - cleaner, faster, and no confusion.
 
+## Critical Bug Fixes (Jul 13, 2026)
+
+### Bug 4: Table Toolbar (Convert/Save/Export) Missing After Stream, Reappears on Refresh
+**Problem:** When a table was the LAST thing an agent emitted (nothing after its final row), the entire action toolbar — Save/convert-to-dataset, Export, Send to workbook, Open in window, Edit — never appeared after the stream ended. A page refresh fixed it.
+**Root Cause:** `analyzeTableCompletion` (`content-splitter-v2.ts`) marks a table `isComplete: false` when there is no trailing line after the last row, because it can't tell "still streaming the last row" from "stream ended on the last row." The toolbar gates were `!isStreamActive && metadata?.isComplete`, so a stream-final table (isComplete:false) stayed toolbar-less until a refresh loaded DB content that DID have a trailing newline. Confirmed via the splitter: identical markdown yields `isComplete:true` with a trailing `\n`, `isComplete:false` without.
+**Solution:** In `StreamingTableRenderer.tsx`, derive `tableIsComplete = !isStreamActive || metadata?.isComplete === true` and gate the toolbar / edit affordances on it. `!isStreamActive` is the authoritative "done" signal; `metadata.isComplete` only matters WHILE actively streaming (progressive row reveal). One chokepoint, no per-path forks.
+
+### Bug 5: Converted Table Renders Blank in the Canvas Panel
+**Problem:** Opening a converted/materialized table in the canvas side panel showed an empty pane.
+**Root Cause:** `TableArtifact` bailed with `if (!content) return null` BEFORE the materialized branch. In canvas mode the canvas opens with `data: { artifactId }` (an object) and no `raw` string, so `content` was empty — but the materialized path loads its markdown from the canvas row itself (`useCanvasItem`), so it never needed a `content` prop. The early bail killed it.
+**Solution:** Only bail on empty content when NOT materialized; the materialized branch mounts and self-loads from the row. Also added "Window" (float in a `UserTableWindow`) and "New tab" (`/data/{id}`) actions to the converted live-table toolbar row.
+
 ## The Problem We Solved
 The previous table implementation had a **massive redundancy issue**:
 

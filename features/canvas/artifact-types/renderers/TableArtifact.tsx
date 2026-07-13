@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense, lazy, useCallback, useMemo, useState } from "react";
-import { Undo2 } from "lucide-react";
+import { Undo2, ExternalLink, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { canvasItemsService } from "@/features/canvas/services/canvasItemsServic
 import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 import { createDatasetFromTable } from "@/features/data-tables/create-dataset-from-table";
 import { deriveDatasetNameForChatTable } from "@/features/data-tables/derive-dataset-name";
+import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";
 
 const StreamingTableRenderer = lazy(() =>
   import("@/components/mardown-display/blocks/table/StreamingTableRenderer").then(
@@ -51,12 +52,18 @@ export default function TableArtifact({
   onContentChange,
 }: ArtifactRendererProps) {
   const content = typeof data === "string" ? data : raw;
-  if (!content) return null;
+  const materialized = isMaterializedArtifactId(artifactId);
 
   // Streaming / inline (not yet a persisted artifact): identical to the old
   // `case "table"` — full toolbar (gated on metadata.isComplete) + inline edits
   // persisted to the message. No Convert button until there's a row to link.
-  if (!isMaterializedArtifactId(artifactId)) {
+  // Only bail on empty content HERE — the materialized path below loads its
+  // markdown from the canvas row (via useCanvasItem), so it must not be gated
+  // on a `content`/`raw` prop the canvas never passes (canvas opens with
+  // `data: { artifactId }`, no raw string). Bailing early was why an opened
+  // canvas panel rendered blank for a converted/materialized table.
+  if (!materialized) {
+    if (!content) return null;
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
         <StreamingTableRenderer
@@ -72,7 +79,7 @@ export default function TableArtifact({
   return (
     <TableArtifactMaterialized
       canvasItemId={artifactId as string}
-      fallbackContent={content}
+      fallbackContent={content ?? ""}
       onContentChange={onContentChange}
     />
   );
@@ -90,6 +97,7 @@ function TableArtifactMaterialized({
   const { row, loading, refetch } = useCanvasItem(canvasItemId);
   const [converting, setConverting] = useState(false);
   const [reverting, setReverting] = useState(false);
+  const openTableWindow = useOpenUserTableWindow();
 
   const linkedTableId =
     row?.external_system === UDT_SYSTEM && row?.external_id
@@ -195,6 +203,8 @@ function TableArtifactMaterialized({
   // chat artifact provides the context, so suppress the table's own title header
   // (no double title). A quiet Revert action unlinks it back to the text table.
   if (linkedTableId) {
+    const tableTitle =
+      (typeof row?.title === "string" && row.title) || "Table";
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
         <UserTableViewer
@@ -202,16 +212,48 @@ function TableArtifactMaterialized({
           renderCellMarkdown
           hideHeader
           toolbarTrailing={
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
-              onClick={handleRevert}
-              disabled={reverting}
-            >
-              <Undo2 className="h-3.5 w-3.5" />
-              {reverting ? "Reverting…" : "Revert to text"}
-            </Button>
+            <>
+              {/* Pop the live table into a full-size floating window. */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
+                onClick={() =>
+                  openTableWindow({ tableId: linkedTableId, title: tableTitle })
+                }
+                title="Open in a floating window"
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Window</span>
+              </Button>
+              {/* Open the full table page in a new browser tab. */}
+              <Button
+                asChild
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
+                title="Open the full table in a new tab"
+              >
+                <a
+                  href={`/data/${linkedTableId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span className="hidden md:inline">New tab</span>
+                </a>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
+                onClick={handleRevert}
+                disabled={reverting}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                {reverting ? "Reverting…" : "Revert to text"}
+              </Button>
+            </>
           }
         />
       </Suspense>

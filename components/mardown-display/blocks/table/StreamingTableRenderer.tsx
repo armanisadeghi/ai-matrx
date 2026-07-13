@@ -736,9 +736,20 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
     "overflow-x-auto rounded-xl border-3 border-dashed border-red-500";
   const normalBorderStyle = `overflow-x-auto rounded-xl border-3 ${tableTheme.border}`;
 
+  // A table that is no longer streaming is complete — full stop. The splitter
+  // marks a STREAM-FINAL table (one with no trailing line after its last row)
+  // `isComplete: false` because it can't tell "still emitting the last row"
+  // from "stream ended on the last row" (see analyzeTableCompletion). That left
+  // the entire action toolbar + edit affordances hidden until a page refresh
+  // added trailing content — the exact bug where "the convert option isn't
+  // there after the stream, but a refresh fixes it". `!isStreamActive` is the
+  // authoritative "done" signal, so it alone gates the controls; `isComplete`
+  // only matters WHILE actively streaming (progressive row reveal).
+  const tableIsComplete = !isStreamActive || metadata?.isComplete === true;
+
   // Double-click anywhere on the table to enter edit mode (same gate as the
   // visible "Edit" button) and focus the exact cell that was clicked.
-  const canEnterEditMode = !isStreamActive && Boolean(metadata?.isComplete);
+  const canEnterEditMode = tableIsComplete;
   const { handleTableDoubleClick, bindCellTextareaRef } = useDoubleClickEdit({
     canEnterEditMode,
     editMode,
@@ -966,7 +977,7 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
           </div>
 
           {/* Structural editing toolbar — only when in edit mode (and stream complete) */}
-          {!isStreamActive && metadata?.isComplete && isEditingEnabled && (
+          {tableIsComplete && isEditingEnabled && (
             <div className="flex justify-start mt-2">
               <TableEditToolbar
                 onAddRow={handleAppendRow}
@@ -979,7 +990,7 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
           )}
 
           {/* Action Buttons - Only show when not streaming and table is complete */}
-          {!isStreamActive && metadata?.isComplete && (
+          {tableIsComplete && (
             <div
               className={cn(
                 "flex gap-2 mt-2",

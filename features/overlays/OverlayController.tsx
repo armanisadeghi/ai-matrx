@@ -313,6 +313,13 @@ const TableViewerWindow = lazyOverlay(
     })),
   { ssr: false },
 );
+const UserTableWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/UserTableWindow").then((m) => ({
+      default: m.UserTableWindow,
+    })),
+  { ssr: false },
+);
 const FlashcardsBlockWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/flashcards/FlashcardsBlockWindow").then(
@@ -955,6 +962,9 @@ export default function OverlayController() {
     tableViewerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "tableViewerWindow"),
     ),
+    userTableWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "userTableWindow"),
+    ),
     chatDebugWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "chatDebugWindow"),
     ),
@@ -1239,6 +1249,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     tableViewerWindow: useAppSelector((s) =>
       selectOverlayData(s, "tableViewerWindow"),
+    ) as Record<string, unknown> | null,
+    userTableWindow: useAppSelector((s) =>
+      selectOverlayData(s, "userTableWindow"),
     ) as Record<string, unknown> | null,
     chatDebugWindow: useAppSelector((s) =>
       selectOverlayData(s, "chatDebugWindow"),
@@ -2497,6 +2510,26 @@ export default function OverlayController() {
             title={typeof data?.title === "string" ? data.title : undefined}
             content={
               typeof data?.content === "string" ? data.content : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* userTableWindow */}
+      {(() => {
+        const isOpen = isOpenById.userTableWindow;
+        const data = dataById.userTableWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <UserTableWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "userTableWindow" }))
+            }
+            title={typeof data?.title === "string" ? data.title : undefined}
+            tableId={
+              typeof data?.tableId === "string" ? data.tableId : undefined
             }
           />
         );
