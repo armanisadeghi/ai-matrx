@@ -19,6 +19,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { Note } from "@/features/notes/types";
@@ -305,15 +306,31 @@ export default function MobileNoteEditor({
         {/* Plain text — wrapped in the universal v3 menu: on mobile it mounts
             the long-press / selection-icon bottom-sheet drill-down, giving the
             phone editor the same Copy-as / Export / AI / agent actions as
-            desktop. */}
-        {effectiveMode === "plain" && (
+            desktop. Read-only access gets the NON-editable wrapper: v3's
+            Cut/Paste mutate through getTextarea/onTextReplace regardless of
+            the textarea's readOnly attribute, which would dirty localContent
+            and arm a doomed autosave on a note this user can't write. */}
+        {effectiveMode === "plain" && readOnly && (
+          <NonEditableContextMenu
+            sourceFeature="notes"
+            contextData={{ content: localContent }}
+          >
+            <textarea
+              ref={textareaRef}
+              value={localContent}
+              readOnly
+              placeholder="Start writing..."
+              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none border-none resize-none leading-relaxed"
+              style={{ fontSize: "16px", minHeight: "calc(100dvh - 200px)" }}
+            />
+          </NonEditableContextMenu>
+        )}
+        {effectiveMode === "plain" && !readOnly && (
           <EditableContextMenu
             sourceFeature="notes"
             contextData={{ content: localContent }}
             contentSource={
-              readOnly
-                ? undefined
-                : ({ type: "note", noteId: note.id } satisfies ContentSource)
+              { type: "note", noteId: note.id } satisfies ContentSource
             }
             getTextarea={() => textareaRef.current}
             onTextReplace={(next) => {
@@ -324,7 +341,6 @@ export default function MobileNoteEditor({
             <textarea
               ref={textareaRef}
               value={localContent}
-              readOnly={readOnly}
               onChange={(e) => {
                 setLocalContent(e.target.value);
                 growTextarea();
