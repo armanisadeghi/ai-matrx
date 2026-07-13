@@ -58,6 +58,16 @@ const DEFINER_GRANT_ALLOWLIST: ReadonlyArray<{
     functionName: "accept_organization_invitation",
     reason: "Invite acceptance flow runs before the user has a session.",
   },
+  {
+    functionName: "can_read_processed_document",
+    reason:
+      "RLS predicate of the roles={public} policy derive_runs_owner_or_curator_all " +
+      "on docproc.derive_runs, where anon HAS table SELECT — revoking anon EXECUTE " +
+      "would turn anon reads into hard permission-denied errors instead of " +
+      "policy-filtered empties. Boolean oracle only (no data returned). Real fix " +
+      "tracked under D31: auth.uid()-derived policy wrapper, then revoke the " +
+      "param'd version (batch C notes, migrations/definer_rpc_audit_batchC_anon_revoke.sql).",
+  },
 ];
 
 const DEFINER_GRANT_ALLOWLIST_VALUES = DEFINER_GRANT_ALLOWLIST.map(
