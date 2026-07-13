@@ -1447,6 +1447,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
       visible_chunks_total: 0,
       candidates_vector: 0,
       candidates_lexical: 0,
+      candidates_entity: 0,
       candidates_after_fusion: 0,
       candidates_after_mmr: 0,
       hits: [],
@@ -1488,7 +1489,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
             partial.candidates_after_fusion = evt.candidates_after_fusion;
             partial.candidates_vector = evt.candidates_vector;
             partial.candidates_lexical = evt.candidates_lexical;
-            partial.candidates_entity = evt.candidates_entity;
+            partial.candidates_entity = evt.candidates_entity ?? 0;
             break;
           case "rag.diagnose.hits":
             partial.hits = evt.hits;
@@ -1686,20 +1687,23 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                     </div>
                   </div>
                 )}
-                {expand.query_vector_preview.length > 0 && (
-                  <div>
-                    <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
-                      Query embedding (first 8 of 1536 dims)
+                {/* Contract-optional — the server may omit the preview; skip
+                    the section rather than dereference it (D44). */}
+                {expand.query_vector_preview &&
+                  expand.query_vector_preview.length > 0 && (
+                    <div>
+                      <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
+                        Query embedding (first 8 of 1536 dims)
+                      </div>
+                      <code className="text-[10px] font-mono text-muted-foreground break-all">
+                        [
+                        {expand.query_vector_preview
+                          .map((v) => v.toFixed(4))
+                          .join(", ")}
+                        , …]
+                      </code>
                     </div>
-                    <code className="text-[10px] font-mono text-muted-foreground break-all">
-                      [
-                      {expand.query_vector_preview
-                        .map((v) => v.toFixed(4))
-                        .join(", ")}
-                      , …]
-                    </code>
-                  </div>
-                )}
+                  )}
               </div>
             </motion.div>
           )}
@@ -1996,6 +2000,10 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Contract-optional — the server may omit the route breakdown; render the
+  // existing "No breakdown available" empty state instead of throwing (D44).
+  const visibilityRoutes = Object.entries(inv?.by_visibility_route ?? {});
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -2131,12 +2139,12 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                     {RAG_VOCAB.segmentShort.toLowerCase()} visible?)
                   </div>
                   <div className="divide-y">
-                    {Object.entries(inv.by_visibility_route).length === 0 ? (
+                    {visibilityRoutes.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
                         No breakdown available.
                       </div>
                     ) : (
-                      Object.entries(inv.by_visibility_route).map(([k, v]) => (
+                      visibilityRoutes.map(([k, v]) => (
                         <div
                           key={k}
                           className="px-3 py-1.5 flex items-center gap-2 text-xs"

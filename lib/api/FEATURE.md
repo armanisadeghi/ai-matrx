@@ -89,16 +89,16 @@ documented, never casted around:
 ## Migration backlog — the ratchet IS the counter
 
 `scripts/api-contracts-baseline.json` holds the exact set of files still on the
-raw client (38 after wave 1). It can only SHRINK. Live count + audit:
+raw client (37 after the D44 fix). It can only SHRINK. Live count + audit:
 
 ```bash
 pnpm check:api-contracts        # loud report; converted files are listed
 pnpm check:api-contracts:accept # ratchet the baseline down after converting
 ```
 
-Next waves: the RAG POSTs (once defaults-optional lands), the RAG query GETs
-(now unblocked by `apiGet`'s `query` support), `features/files/api/*`, and the
-D44 divergences. Streaming stays blocked on the backend handoff.
+Next waves: the RAG POSTs (once defaults-optional lands), the remaining RAG
+query GETs (unblocked by `apiGet`'s `query` support), and
+`features/files/api/*`. Streaming stays blocked on the backend handoff.
 
 ## Change Log
 
@@ -110,3 +110,10 @@ D44 divergences. Streaming stays blocked on the backend handoff.
   proven byte-identical to the helpers it replaced). Wave 1: kg cluster fully
   converted (baseline → 38); rag + services type-bound. Backend hardening +
   tooling gaps → `docs/handoffs/aidream-api-contract-hardening.md`.
+- 2026-07-12 — D44 fixed. `features/rag/types/documents.ts` fully derived from
+  the contract (its hand-mirror had drifted: missing `section_subtype`,
+  invented required-ness); `features/rag/api/document.ts` converted to the
+  typed client (baseline → 37). `search-lab.ts` Expand/Inventory/Diagnose
+  responses derived; the two unguarded contract-optional dereferences in
+  `RagSearchExperience.tsx` (`query_vector_preview`, `by_visibility_route`)
+  now guarded with calm empty states.

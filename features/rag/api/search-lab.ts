@@ -21,14 +21,11 @@ export interface ExpandRequest {
   use_hyde?: boolean;
 }
 
-export interface ExpandResponse {
-  query: string;
-  variants: string[];
-  hyde_passage: string | null;
-  embedding_model: string;
-  query_vector_preview: number[];
-  elapsed_ms: number;
-}
+// Derived from the generated OpenAPI contract, never hand-mirrored. NOTE:
+// `query_vector_preview` is OPTIONAL in the contract — consumers must guard
+// (the previous hand-mirror marked it required and shipped an unguarded
+// dereference; see FOUND_DEFECTS.md D44).
+export type ExpandResponse = components["schemas"]["ExpandResponse"];
 
 export async function ragExpand(
   body: ExpandRequest,
@@ -54,14 +51,9 @@ export type InventoryBucket = components["schemas"]["InventoryBucket"];
 export type InventoryTopSource = components["schemas"]["TopSource"];
 export type InventoryScope = components["schemas"]["ScopeContext"];
 
-export interface InventoryResponse {
-  scope: InventoryScope;
-  total_visible_chunks: number;
-  total_visible_sources: number;
-  by_source_kind: InventoryBucket[];
-  by_visibility_route: Record<string, number>;
-  top_sources: InventoryTopSource[];
-}
+// NOTE: `by_visibility_route` is OPTIONAL in the contract — consumers must
+// guard (calm empty state), not iterate it unguarded (FOUND_DEFECTS.md D44).
+export type InventoryResponse = components["schemas"]["InventoryResponse"];
 
 export async function ragInventory(
   opts: { adminBypassAcl?: boolean; signal?: AbortSignal } = {},
@@ -98,44 +90,21 @@ export interface DiagnoseRequest {
   scope_ids?: string[] | null;
 }
 
-export interface DiagnoseHit {
-  chunk_id: string;
-  source_kind: string;
-  source_id: string;
-  chunk_kind: string;
-  score: number;
-  vector_rank: number | null;
-  lexical_rank: number | null;
-  rerank_score: number | null;
-  snippet: string;
-  metadata: Record<string, unknown>;
-  file_name: string | null;
-  page_number: number | null;
-  // Entity-lane provenance — present when the diagnose stream reports it, so the
-  // shared RichHitCard can flag an "entity match only" hit here too.
+// Derived from the contract, EXTENDED (additive-optional only) with the
+// entity-lane provenance fields the /diagnose/stream events carry — the batch
+// OpenAPI schema does not declare them, so they cannot be derived. The shared
+// RichHitCard uses them to flag an "entity match only" hit.
+export type DiagnoseHit = components["schemas"]["DiagnoseHit"] & {
   entity_rank?: number | null;
   entities?: string[];
-}
+};
 
-export interface DiagnoseResponse {
-  query: string;
-  scope: InventoryScope;
-  elapsed_ms: number;
-  query_variants: string[];
-  hyde_passage: string | null;
-  embedding_model: string;
-  query_vector_preview: number[];
-  visible_chunks_total: number;
-  candidates_vector: number;
-  candidates_lexical: number;
-  candidates_entity?: number;
-  candidates_after_fusion: number;
-  candidates_after_mmr: number;
+export type DiagnoseResponse = Omit<
+  components["schemas"]["DiagnoseResponse"],
+  "hits"
+> & {
   hits: DiagnoseHit[];
-  reranker_model: string | null;
-  effective_filters: Record<string, unknown>;
-  notes: string[];
-}
+};
 
 export async function ragDiagnose(
   body: DiagnoseRequest,
