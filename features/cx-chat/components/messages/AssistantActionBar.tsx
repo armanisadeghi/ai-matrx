@@ -26,11 +26,7 @@ import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { messageActionsActions } from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
-import {
-  openOverlay,
-  closeOverlay,
-} from "@/lib/redux/slices/overlaySlice";
-import { chatConversationsActions } from "../../_legacy-stubs";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 const ConversationMessageOptionsMenu = lazy(
   () => import("./MessageOptionsMenu"),
@@ -138,28 +134,17 @@ export function AssistantActionBar({
           mode: "free",
           conversationId: undefined,
           messageId,
-          onSave: (newContent: string) => {
-            if (sessionId && messageId) {
-              dispatch(
-                chatConversationsActions.updateMessage({
-                  sessionId,
-                  messageId,
-                  updates: { content: newContent },
-                }),
-              );
-            }
-            dispatch(
-              closeOverlay({
-                overlayId: "fullScreenEditor",
-                instanceId: editInstanceId,
-              }),
-            );
-          },
+          // No `onSave` in data — a function can't survive Redux (the
+          // overlaySlice guard strips it loudly), and the old handler only
+          // dispatched the no-op `chatConversationsActions` stub. With no
+          // conversationId there is no self-handle target either, so Save is
+          // hidden until the cx-chat refactor wires a real save (via the
+          // callback registry — see openers/fullScreenEditor).
           tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
           initialTab: "matrx_split",
           analysisData: undefined,
           title: undefined,
-          showSaveButton: true,
+          showSaveButton: false,
           showCopyButton: true,
         },
       }),

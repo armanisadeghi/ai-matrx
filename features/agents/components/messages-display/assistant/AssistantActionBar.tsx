@@ -320,7 +320,6 @@ export function AssistantActionBar({
           mode: "assistant-message",
           conversationId,
           messageId,
-          onSave: undefined,
           tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
           initialTab: "matrx_split",
           analysisData: metadata ?? undefined,

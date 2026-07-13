@@ -617,9 +617,10 @@ export function NoteContentEditor({
         // Note-typed content source so the rich-document Export / Convert
         // actions (HTML preview save-back, Convert→Task linking) resolve the
         // note adapter instead of the save-less `raw` default (D33). Held to
-        // raw when read-only — a Save that RLS would reject must not render.
+        // raw while access is loading or read-only — a Save that RLS would
+        // reject must not render, not even transiently.
         contentSource={
-          readOnly
+          access.loading || readOnly
             ? undefined
             : ({ type: "note", noteId } satisfies ContentSource)
         }
