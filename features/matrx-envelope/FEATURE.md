@@ -127,6 +127,17 @@ render through the SAME live chip renderer.
 
 ## Change Log
 
+- 2026-07-12 — **Conversation Value Store + groom fences (backend Pattern 2).**
+  `registry.tsx` gained `output_directive:context_groom` — the inline groom fence an
+  agent emits in its prose renders as a quiet "Context compacted · N results stubbed"
+  line (a receipt; position rule: never executed in content). The existing
+  `conversation_value` resolver in `referenceResolvers.ts` now live-fetches
+  `key — description` from `chat.conversation_value` (descriptor fences always carry
+  `conversation_id`; without it the key is the display). Consumed by the new
+  `value_store_stored` "result ready" card (`components/mardown-display/blocks/
+  data-events/ValueStoreStoredBlock.tsx`), which renders the descriptor's fence via
+  `MatrxEnvelopeBlock`. Stream wiring: `features/agents/docs/STREAMING_SYSTEM.md`
+  change log 2026-07-12.
 - 2026-07-11 — **`url` added to the reference taxonomy (8-type).** New `UrlRefItem { url, label? }`
   in `envelope.ts`; `urlReference.ts` (`buildUrlReferenceFence`/`buildMultiUrlReferenceFence`);
   `registry.tsx` `ReferenceChip` opens `url` directly via `window.open` (never routes through

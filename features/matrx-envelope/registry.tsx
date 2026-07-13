@@ -236,3 +236,28 @@ registerEnvelopeRenderer(
   CreateProjectWithTasksRenderer,
   "create_project_with_tasks",
 );
+
+/**
+ * `output_directive:context_groom` — the inline groom fence an agent emits in
+ * its own prose (`{"kind":"output_directive","type":"context_groom",
+ * "items":[{"key":"…"}]}`). Position decides capability: in content it is a
+ * RECEIPT, never executed (the server's turn_directive_handler already acted
+ * on it). Render a quiet one-line indicator, never prose/code — the model's
+ * view was compacted; the user-facing transcript is unchanged. Contract:
+ * aidream services/conversation_values/FEATURE.md (Grooming) +
+ * docs/cx_chat/FE_HANDOFF_AGENT_PATTERNS.md §4.
+ */
+const ContextGroomRenderer: EnvelopeRenderer = ({ envelope }) => {
+  const count = Array.isArray(envelope.items) ? envelope.items.length : 0;
+  return (
+    <span className="my-1 inline-flex items-center gap-1.5 align-middle text-xs text-muted-foreground">
+      <Layers className="h-3 w-3 shrink-0" />
+      <span>
+        Context compacted
+        {count > 0 ? ` · ${count} result${count === 1 ? "" : "s"} stubbed` : ""}
+      </span>
+    </span>
+  );
+};
+
+registerEnvelopeRenderer("output_directive", ContextGroomRenderer, "context_groom");

@@ -487,6 +487,52 @@ export interface UnknownDataEventRenderBlock {
 }
 
 /**
+ * Conversation Value Store "result ready" card — FE-synthesized from the
+ * kind-discriminated `value_store.stored` data event (ValueStoredEvent in
+ * stream-events.ts). `data` is the event payload; never persisted to
+ * cx_message.content (the descriptor lives on the tool_call row).
+ */
+export interface ValueStoreStoredRenderBlock {
+  type: "value_store_stored";
+  content: string;
+  data: {
+    kind?: "value_store.stored";
+    conversation_id?: string;
+    descriptor?: {
+      key?: string;
+      description?: string;
+      kind?: string;
+      chars?: number;
+      truncated?: boolean;
+      preview?: string;
+      json_keys?: string[] | null;
+      fence?: string;
+    };
+    [key: string]: unknown;
+  };
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Context-groom receipt line — FE-synthesized from the `value_store.groomed`
+ * data event (ContextGroomedEvent in stream-events.ts). Subtle indicator
+ * only; the user-facing transcript is unchanged. Never persisted.
+ */
+export interface ContextGroomedRenderBlock {
+  type: "context_groomed";
+  content: string;
+  data: {
+    kind?: "value_store.groomed";
+    conversation_id?: string;
+    stubbed_keys?: string[];
+    retained_keys?: string[];
+    source?: string;
+    [key: string]: unknown;
+  };
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Search-and-replace block for code editing.
  */
 export interface SearchReplaceRenderBlock {
@@ -519,6 +565,8 @@ export type ServerOnlyRenderBlock =
   | StructuredInputWarningRenderBlock
   | DisplayQuestionnaireRenderBlock
   | UnknownDataEventRenderBlock
+  | ValueStoreStoredRenderBlock
+  | ContextGroomedRenderBlock
   | SearchReplaceRenderBlock;
 
 export type ServerOnlyBlockType = ServerOnlyRenderBlock["type"];

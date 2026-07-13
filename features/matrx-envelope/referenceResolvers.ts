@@ -744,10 +744,33 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     titleFields: ["review_count"],
     bodyFields: ["correct_count"],
   }),
+  /**
+   * `conversation_value` → { key, conversation_id?, field? } — a stored
+   * pass-by-reference agent result (chat.conversation_value; aidream
+   * services/conversation_values/FEATURE.md). Live value = "key — description".
+   * Descriptor fences always carry conversation_id (FE handoff doc §5); when
+   * absent the fence resolves against its own conversation server-side, so
+   * the FE can't scope a lookup — the key alone is the display.
+   */
   conversation_value: {
     openItemType: "message",
     openId: () => undefined,
-    resolveValue: async (_supabase, ref) => stringify(ref.label ?? ref.key),
+    resolveValue: async (supabase, ref) => {
+      const key = stringify(ref.key);
+      if (!key) return stringify(ref.label);
+      if (!ref.conversation_id) return stringify(ref.label) ?? key;
+      const { data, error } = await supabase
+        .schema("chat")
+        .from("conversation_value")
+        .select("description")
+        .eq("conversation_id", ref.conversation_id)
+        .eq("key", key)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error || !data?.description) return stringify(ref.label) ?? key;
+      const label = `${key} — ${data.description}`;
+      return ref.field ? `${label} (.${ref.field})` : label;
+    },
   },
 
   /**

@@ -677,6 +677,35 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
     }
 
+    case "value_store_stored": {
+      // Conversation Value Store (Pattern 2): a sub-agent result landed in
+      // the store — compact "result ready" card; the descriptor's ```matrx
+      // fence renders via the envelope chip renderer inside the component.
+      const sd = block.serverData ?? {};
+      return (
+        <BlockComponents.ValueStoreStoredBlock
+          key={index}
+          descriptor={
+            (sd.descriptor as React.ComponentProps<
+              typeof BlockComponents.ValueStoreStoredBlock
+            >["descriptor"]) ?? {}
+          }
+        />
+      );
+    }
+
+    case "context_groomed": {
+      // Groom receipt — the MODEL's view was compacted; user view unchanged.
+      const sd = block.serverData ?? {};
+      return (
+        <BlockComponents.ContextGroomedBlock
+          key={index}
+          stubbedKeys={(sd.stubbed_keys as string[]) ?? []}
+          retainedKeys={(sd.retained_keys as string[]) ?? []}
+        />
+      );
+    }
+
     case "unknown_data_event": {
       // Fallback for unknown data event types.
       const sd = block.serverData ?? {};

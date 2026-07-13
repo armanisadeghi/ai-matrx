@@ -195,6 +195,12 @@ const DisplayQuestionnaireBlock = lazy(
 const UnknownDataEventBlock = lazy(
   () => import("../../blocks/data-events/UnknownDataEventBlock"),
 );
+const ValueStoreStoredBlock = lazy(
+  () => import("../../blocks/data-events/ValueStoreStoredBlock"),
+);
+const ContextGroomedBlock = lazy(
+  () => import("../../blocks/data-events/ContextGroomedBlock"),
+);
 
 // Lazy load loading visualizations (lightweight but rarely all needed at once)
 const QuizLoadingVisualization = lazy(
@@ -590,6 +596,16 @@ export const BlockComponents = {
   UnknownDataEventBlock: (props: React.ComponentProps<typeof UnknownDataEventBlock>) => (
     <LazyBlockWrapper>
       <UnknownDataEventBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  ValueStoreStoredBlock: (props: React.ComponentProps<typeof ValueStoreStoredBlock>) => (
+    <LazyBlockWrapper>
+      <ValueStoreStoredBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  ContextGroomedBlock: (props: React.ComponentProps<typeof ContextGroomedBlock>) => (
+    <LazyBlockWrapper>
+      <ContextGroomedBlock {...props} />
     </LazyBlockWrapper>
   ),
 };
