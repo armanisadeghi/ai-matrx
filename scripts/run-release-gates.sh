@@ -40,6 +40,7 @@ if $STRICT; then
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts --strict"
+        "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts --strict"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
     )
 else
@@ -49,6 +50,7 @@ else
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"
+        "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts"
         "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
     )
 fi
