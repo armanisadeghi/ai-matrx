@@ -257,6 +257,7 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-13` — **`/cms` hub conforms to the (core) shell-header doctrine** (reference fix for the `core-route-headers` skill): killed the in-body faux header + `h-[calc(100dvh-var(--shell-header-h))]`; title + Published Pages / New Site actions now inject via `<PageHeader>` + `HeaderStructured` (glass icons on desktop, bottom sheet on mobile); body is `h-full`, grid clears the glass via `pt-[calc(var(--shell-header-h)+0.75rem)]`.
 - `2026-07-10` — CMS Surfaces Rollout gap-closing: (1) `/cms/html-pages` LIST route now mounts the
   `matrx-user/html-page` v3 menu — outer chrome (`NonEditableContextMenu` in `page.tsx`) plus per-row
   (table) and per-card (grid) menus via the new reusable `HtmlPagesContextMenu`; both emit

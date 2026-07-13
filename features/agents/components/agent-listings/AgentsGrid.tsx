@@ -549,7 +549,7 @@ export function AgentsGrid() {
 
       {/* Mobile tabs */}
       {isMobile && hasShared && (
-        <div className="flex items-center gap-1 mb-3 pl-1">
+        <div className="flex items-center gap-1 mb-3 pl-1 pt-[calc(var(--shell-header-h)+0.5rem)]">
           {(["mine", "shared", "all"] as const).map((t) => (
             <button
               key={t}
@@ -575,7 +575,14 @@ export function AgentsGrid() {
       )}
 
       {/* Content */}
-      <div className={cn(isMobile && "pb-24 pt-10")}>
+      <div
+        className={cn(
+          isMobile &&
+            (hasShared
+              ? "pb-24"
+              : "pb-24 pt-[calc(var(--shell-header-h)+0.5rem)]"),
+        )}
+      >
         {isLoading ? (
           <AgentsSkeleton count={isMobile ? 4 : 8} />
         ) : activeTab === "mine" ? (

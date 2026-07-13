@@ -1,6 +1,6 @@
 # Header Variants — Usage Guide
 
-**Canonical reference for `(core)` AppShell routes.** Read this before adding page headers or full-height wrappers.
+**Canonical reference for `(core)` AppShell routes.** Read this before adding page headers or full-height wrappers. Fixing a non-conforming route? The fix workflow (failure classes, exemplars, mobile rules, browser verification) is the `core-route-headers` skill (`.claude/skills/core-route-headers/SKILL.md`).
 
 ## Shared header row
 

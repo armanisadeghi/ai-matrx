@@ -16,7 +16,7 @@ export function AgentBuilderMobile({ agentId }: AgentBuilderMobileProps) {
   const [activeTab, setActiveTab] = useState<MobileTab>("build");
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full pt-[var(--shell-header-h)]">
       {/* Tab switcher */}
       <div className="flex border-b border-border bg-background shrink-0">
         {(["build", "test"] as MobileTab[]).map((tab) => (
