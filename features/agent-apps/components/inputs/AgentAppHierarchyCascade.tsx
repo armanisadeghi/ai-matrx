@@ -86,25 +86,35 @@ export function AgentAppHierarchyCascade({
   //   - org / project / task → flat aga_apps FK columns
   //   - scopeSelections → set_entity_scopes RPC
   const handleChange = (next: HierarchySelection) => {
-    if (next.organizationId !== organizationId) {
+    const orgChanged = next.organizationId !== organizationId;
+    if (orgChanged) {
       onOrganizationChange(next.organizationId);
-    }
-    if (next.projectId !== projectId) {
-      onProjectChange(next.projectId);
-    }
-    if (next.taskId !== taskId) {
-      onTaskChange(next.taskId);
     }
 
     const nextScopes = next.scopeSelections ?? {};
     const nextScopeIds = Object.values(nextScopes).filter(
       (v): v is string => !!v,
     );
-    const sameSet =
+    const scopesChanged = !(
       nextScopeIds.length === assignedScopeIds.length &&
-      nextScopeIds.every((id) => assignedScopeIds.includes(id));
-    if (!sameSet) {
+      nextScopeIds.every((id) => assignedScopeIds.includes(id))
+    );
+    if (scopesChanged) {
       void setScopes(nextScopeIds);
+    }
+
+    // A scope toggle bundles `projectId/taskId: null` as a picker-side reset
+    // (the scope filter changes the project list). That reset must NOT trim
+    // the app's persisted project/task FK columns — same guard as
+    // useReduxBridge, which early-returns when the scope set changed. An org
+    // change still cascades the nulls (cross-org project/task are invalid).
+    if (scopesChanged && !orgChanged) return;
+
+    if (next.projectId !== projectId) {
+      onProjectChange(next.projectId);
+    }
+    if (next.taskId !== taskId) {
+      onTaskChange(next.taskId);
     }
   };
 
