@@ -19,6 +19,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { FcSetRow, CardWithDetails } from "./types";
@@ -322,7 +323,14 @@ export function useFlashcardStudy(
         ...(session ? { sessionId: session.id } : {}),
       });
       if (res.error || !res.data) {
+        // Loud recovery: a silently dropped grade leaves the card looking
+        // ungraded with zero user signal (worst on matching cards, which
+        // self-grade exactly once). Scream, and return null so callers can
+        // offer a retry.
         console.error("[useFlashcardStudy] recordAttempt:", res.error);
+        toast.error(
+          "Couldn't record your grade — check your connection and try again.",
+        );
         return null;
       }
       // Reflect the graded result.
@@ -357,6 +365,13 @@ export function useFlashcardStudy(
         goTo(currentIndex + 1);
       }
       return mastery;
+    } catch (e) {
+      // Same loud recovery for a thrown write (network drop mid-request).
+      console.error("[useFlashcardStudy] recordAttempt threw:", e);
+      toast.error(
+        "Couldn't record your grade — check your connection and try again.",
+      );
+      return null;
     } finally {
       setGrading(false);
     }

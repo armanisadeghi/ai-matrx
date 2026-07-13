@@ -51,7 +51,9 @@ interface FlashcardMobileViewProps {
   onIndexChange?: (index: number) => void;
   controlledFlipped?: boolean;
   onFlipToggle?: () => void;
-  onGrade?: (result: ReviewResult) => void;
+  /** May resolve `false` when the grade write failed (drives the matching
+   *  player's retry affordance); flip grading fires-and-forgets it. */
+  onGrade?: (result: ReviewResult) => void | Promise<boolean | void>;
   resultsByIndex?: Record<number, ReviewResult | undefined>;
   grading?: boolean;
 }
@@ -180,6 +182,15 @@ const makeMobileCardStyle = (centered: boolean): MarkdownStyleConfig => ({
 // Count meaningful lines (non-empty after trimming) in a back-card string.
 const countLines = (text: string): number =>
   text.split("\n").filter((l) => l.trim().length > 0).length;
+
+// Plain-text preview of a card face for the filmstrip thumbnails — strips the
+// inline markdown markers studyFaces emits (e.g. a cloze front's `**[ … ]**`)
+// so thumbnails never show literal asterisks. NOT a general markdown renderer.
+const stripInlineMarkdown = (text: string): string =>
+  text
+    .replace(/\*\*([^*]*)\*\*/g, "$1")
+    .replace(/\*([^*]*)\*/g, "$1")
+    .replace(/`([^`]*)`/g, "$1");
 
 // ─────────────────────────────────────────────
 // FitTextFace — renders markdown content and auto-sizes font to fill container
@@ -578,7 +589,12 @@ const FilmstripScrubber: React.FC<{
                 }}
               >
                 <span className="text-white text-[9px] font-medium text-center px-1.5 leading-tight line-clamp-5">
-                  {c.front.length > 60 ? c.front.slice(0, 58) + "…" : c.front}
+                  {(() => {
+                    const plain = stripInlineMarkdown(c.front);
+                    return plain.length > 60
+                      ? plain.slice(0, 58) + "…"
+                      : plain;
+                  })()}
                 </span>
               </div>
             );
@@ -748,11 +764,12 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
   );
 
   // Matching cards self-grade when every pair is connected; funnel the result
-  // through the SAME grade path as a flip (study spine auto-advances).
+  // through the SAME grade path as a flip (study spine auto-advances). Return
+  // the driver's outcome so the player can offer a retry on a failed write.
   const handleMatchingComplete = useCallback(
-    (result: ReviewResult) => {
+    (result: ReviewResult): void | Promise<boolean | void> => {
       if (!onGrade) return;
-      onGrade(result);
+      return onGrade(result);
     },
     [onGrade],
   );
@@ -944,18 +961,42 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
           tap-zone nav so pair taps land); flip cards keep the swipe/tap deck. */}
       {isMatching ? (
         <div
-          className="flex-1 relative overflow-y-auto select-none px-3 py-4 flex items-start justify-center"
+          className="flex-1 relative overflow-y-auto select-none px-3 py-4"
           style={cardAreaStyle}
+          onClick={() => {
+            // Tap outside the player closes any open panel (mirrors the flip
+            // branch); the player's own buttons handle their taps first.
+            if (anyPanelOpen) {
+              setMenuOpen(false);
+              setScrubOpen(false);
+            }
+          }}
         >
-          <div className="w-full max-w-md rounded-2xl bg-background p-3 shadow-xl">
-            <MatchingCardPlayer
-              key={`m-${card.id ?? index}`}
-              cardId={card.id ?? String(index)}
-              prompt={card.front}
-              pairs={card.pairs ?? []}
-              disabled={grading}
-              onComplete={handleMatchingComplete}
-            />
+          <div className="mx-auto flex w-full max-w-md flex-col gap-3">
+            <div className="rounded-2xl bg-background p-3 shadow-xl">
+              <MatchingCardPlayer
+                key={`m-${card.id ?? index}`}
+                cardId={card.id ?? String(index)}
+                prompt={card.front}
+                pairs={card.pairs ?? []}
+                disabled={grading}
+                onComplete={handleMatchingComplete}
+              />
+            </div>
+            {/* No tap-to-flip zones here, so the drawer (manual grade + exit)
+                needs an explicit opener — swipe-up would fight the pair grid. */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setScrubOpen(false);
+                setMenuOpen(true);
+              }}
+              className="mx-auto flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-xs text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+            >
+              <GripHorizontal className="h-4 w-4" />
+              Options
+            </button>
           </div>
         </div>
       ) : (

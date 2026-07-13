@@ -342,7 +342,7 @@ export function StudyDeck(props: StudyDeckProps) {
         e.preventDefault();
         const confidence = asConfidence(Number(e.key));
         if (confidence != null) {
-          handleGrade(confidenceToResult(confidence), confidence);
+          void handleGrade(confidenceToResult(confidence), confidence);
         }
       } else if (
         !grading &&
@@ -356,7 +356,7 @@ export function StudyDeck(props: StudyDeckProps) {
           "2": "partial",
           "3": "correct",
         };
-        handleGrade(map[e.key]);
+        void handleGrade(map[e.key]);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -382,21 +382,35 @@ export function StudyDeck(props: StudyDeckProps) {
     onRestart?.();
   };
 
-  const handleGrade = (result: ReviewResult, confidence?: Confidence): void => {
-    if (grading) return;
+  /**
+   * Resolves `true` when the grade write went through, `false` when it failed
+   * (a reporting driver like useFlashcardStudy resolves null on a failed write
+   * and toasts loudly). MatchingCardPlayer consumes the boolean to offer a
+   * retry instead of silently latching a lost grade; flip callers may
+   * fire-and-forget (`void handleGrade(...)`).
+   */
+  const handleGrade = (
+    result: ReviewResult,
+    confidence?: Confidence,
+  ): Promise<boolean> => {
+    if (grading) return Promise.resolve(false);
     const card = current;
-    void Promise.resolve(
+    return Promise.resolve(
       grade(result, confidence != null ? { confidence } : undefined),
-    ).then(() => {
+    ).then((outcome) => {
+      // Void-returning drivers resolve undefined and count as success.
+      const ok = outcome !== null;
       // Phase 4 stretch: cheap-model per-card micro-coaching. Fire-and-forget
       // (never blocks advancing to the next card) and cleanly no-ops until a
       // fc_micro_coach agent is authored (features/flashcards/data/agents.ts).
-      if (!card) return;
-      void dispatch(
-        microCoach({ front: card.front, back: card.back, result }),
-      ).then((tip) => {
-        if (tip) toast.info(tip, { duration: 8000 });
-      });
+      if (ok && card) {
+        void dispatch(
+          microCoach({ front: card.front, back: card.back, result }),
+        ).then((tip) => {
+          if (tip) toast.info(tip, { duration: 8000 });
+        });
+      }
+      return ok;
     });
   };
 
