@@ -2,11 +2,12 @@
  * features/rag/api/document.ts
  *
  * Read-only client for the unified document API at /api/document/*.
- * Reuses the cld_files client's typed helpers (auth header + base URL +
- * error normalisation are identical).
+ * All calls go through the contract-bound typed client
+ * (`@/lib/api/typed-client`) — path, params, and response shapes are
+ * derived from the generated OpenAPI contract, never asserted.
  */
 
-import { getJson } from "@/lib/python-client";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
 import type {
   ChunkRow,
   DocumentDetail,
@@ -20,8 +21,8 @@ import type {
 // ---------------------------------------------------------------------------
 
 export async function fetchDocument(docId: string): Promise<DocumentDetail> {
-  const { data } = await getJson<DocumentDetail>(
-    `/api/document/${encodeURIComponent(docId)}`,
+  const { data } = await apiGet(
+    buildPath("/api/document/{doc_id}", { doc_id: docId }),
   );
   return data;
 }
@@ -29,8 +30,8 @@ export async function fetchDocument(docId: string): Promise<DocumentDetail> {
 export async function fetchDocumentLineage(
   docId: string,
 ): Promise<LineageTree> {
-  const { data } = await getJson<LineageTree>(
-    `/api/document/${encodeURIComponent(docId)}/lineage`,
+  const { data } = await apiGet(
+    buildPath("/api/document/{doc_id}/lineage", { doc_id: docId }),
   );
   return data;
 }
@@ -39,12 +40,9 @@ export async function fetchDocumentPages(
   docId: string,
   range: { from?: number; to?: number } = {},
 ): Promise<PageSummary[]> {
-  const params = new URLSearchParams();
-  if (range.from !== undefined) params.set("from", String(range.from));
-  if (range.to !== undefined) params.set("to", String(range.to));
-  const qs = params.toString();
-  const { data } = await getJson<PageSummary[]>(
-    `/api/document/${encodeURIComponent(docId)}/pages${qs ? `?${qs}` : ""}`,
+  const { data } = await apiGet(
+    buildPath("/api/document/{doc_id}/pages", { doc_id: docId }),
+    { query: { from: range.from, to: range.to } },
   );
   return data;
 }
@@ -54,12 +52,18 @@ export async function fetchDocumentPage(
   pageIndex: number,
   opts: { includeBlocks?: boolean; includeWords?: boolean } = {},
 ): Promise<PageDetail> {
-  const params = new URLSearchParams();
-  if (opts.includeBlocks) params.set("include_blocks", "true");
-  if (opts.includeWords) params.set("include_words", "true");
-  const qs = params.toString();
-  const { data } = await getJson<PageDetail>(
-    `/api/document/${encodeURIComponent(docId)}/page/${pageIndex}${qs ? `?${qs}` : ""}`,
+  const { data } = await apiGet(
+    buildPath("/api/document/{doc_id}/page/{page_index}", {
+      doc_id: docId,
+      page_index: pageIndex,
+    }),
+    {
+      query: {
+        // Only send the flag when it's ON — matches the server default (off).
+        include_blocks: opts.includeBlocks || undefined,
+        include_words: opts.includeWords || undefined,
+      },
+    },
   );
   return data;
 }
@@ -73,14 +77,16 @@ export async function fetchDocumentChunks(
     limit?: number;
   } = {},
 ): Promise<ChunkRow[]> {
-  const params = new URLSearchParams();
-  if (filters.parentOnly) params.set("parent_only", "true");
-  if (filters.childrenOnly) params.set("children_only", "true");
-  if (filters.sectionKind) params.set("section_kind", filters.sectionKind);
-  if (filters.limit) params.set("limit", String(filters.limit));
-  const qs = params.toString();
-  const { data } = await getJson<ChunkRow[]>(
-    `/api/document/${encodeURIComponent(docId)}/chunks${qs ? `?${qs}` : ""}`,
+  const { data } = await apiGet(
+    buildPath("/api/document/{doc_id}/chunks", { doc_id: docId }),
+    {
+      query: {
+        parent_only: filters.parentOnly || undefined,
+        children_only: filters.childrenOnly || undefined,
+        section_kind: filters.sectionKind,
+        limit: filters.limit || undefined,
+      },
+    },
   );
   return data;
 }

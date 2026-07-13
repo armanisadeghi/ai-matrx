@@ -18,7 +18,6 @@
   "features/pdf/scanner/api.ts",
   "features/podcasts/studio/runs/runsApi.ts",
   "features/rag/api/derivations.ts",
-  "features/rag/api/document.ts",
   "features/rag/api/ingest.ts",
   "features/rag/api/rag-jobs.ts",
   "features/rag/api/search-lab.ts",
