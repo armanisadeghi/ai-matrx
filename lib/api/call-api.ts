@@ -731,7 +731,14 @@ async function fetchWithV2Fallback(
   try {
     result = await resilientFetch(url, init, opts);
   } catch (err) {
-    const isAbort = err instanceof Error && err.name === "AbortError";
+    // resilientFetch never throws a DOMException "AbortError" — it normalizes a
+    // caller-signal abort to NetError code "aborted" (AbortedError). Checking
+    // err.name === "AbortError" here never matched, so every USER CANCEL of a
+    // pending v2 call was logged as an ai_v2_downgrade + retried on v1 —
+    // poisoning the exact telemetry the rollout reads to judge v2 health.
+    const isAbort =
+      (isNetError(err) && err.code === "aborted") ||
+      (err instanceof Error && err.name === "AbortError");
     if (isAbort) throw err;
     logDowngrade(String(err));
     return resilientFetch(toV1FallbackUrl(url), init, opts);
