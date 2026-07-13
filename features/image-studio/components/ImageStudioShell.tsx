@@ -300,9 +300,14 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   }, [studio]);
 
   return (
-    <div className="flex h-full min-h-0">
+    // `@container/studio` so the three columns respond to the studio's OWN
+    // available width, not the viewport. The app sidebar (and the images
+    // sub-nav) eat width outside this container — keying the side panels off
+    // viewport `md`/`lg` used to let both claim their fixed widths and crush
+    // the center work-column to zero (content overflowed / "popped out").
+    <div className="@container/studio flex h-full min-h-0">
       {/* LEFT — Preset Catalog ─────────────────────────── */}
-      <div className="hidden md:flex flex-col w-72 lg:w-80 xl:w-96 border-r border-border bg-card/30 min-h-0">
+      <div className="hidden @3xl/studio:flex flex-col w-72 @5xl/studio:w-80 @7xl/studio:w-96 border-r border-border bg-card/30 min-h-0">
         <PresetCatalog
           selectedIds={studio.selectedPresetIds}
           onToggle={(id) => {
@@ -322,11 +327,15 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
 
       {/* CENTER — Work area ─────────────────────────────── */}
       <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-y-auto overscroll-contain">
-        <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/90 px-3 py-2 backdrop-blur md:hidden">
+        {/* Toggle bar for whichever side panel is currently collapsed.
+            Shown below @5xl (Export hidden); the Presets button drops out
+            at @3xl once the catalog is docked, so between @3xl–@5xl only
+            Export remains reachable. */}
+        <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/90 px-3 py-2 backdrop-blur @5xl/studio:hidden">
           <button
             type="button"
             onClick={() => setMobilePanel("presets")}
-            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-card text-sm font-medium"
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-card text-sm font-medium @3xl/studio:hidden"
           >
             <Layers className="h-4 w-4" />
             Presets
@@ -455,7 +464,7 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
       </div>
 
       {/* RIGHT — Export panel ───────────────────────────── */}
-      <div className="hidden lg:flex flex-col w-80 xl:w-96 min-h-0">
+      <div className="hidden @5xl/studio:flex flex-col w-80 @7xl/studio:w-96 min-h-0">
         <ExportPanel
           format={studio.format}
           quality={studio.quality}

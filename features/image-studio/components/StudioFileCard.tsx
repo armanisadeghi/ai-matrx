@@ -121,7 +121,7 @@ export function StudioFileCard({
     return (
         <section className="flex flex-col rounded-2xl border border-border bg-card overflow-hidden">
             {/* Header ────────────────────────────────────────── */}
-            <header className="flex items-center gap-3 p-3 border-b border-border bg-muted/20">
+            <header className="flex flex-wrap items-center gap-3 p-3 border-b border-border bg-muted/20">
                 {/* Thumbnail */}
                 <div className="relative h-14 w-14 rounded-lg overflow-hidden border border-border bg-muted/50 flex-shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -137,7 +137,7 @@ export function StudioFileCard({
                     )}
                 </div>
 
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-40">
                     {/* Filename base — editable */}
                     {renaming ? (
                         <div className="flex items-center gap-1">
@@ -212,9 +212,9 @@ export function StudioFileCard({
                             )}
                         </div>
                     )}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <FileImage className="h-3 w-3" />
-                        <span className="truncate">{file.originalName}</span>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+                        <FileImage className="h-3 w-3 shrink-0" />
+                        <span className="truncate max-w-full">{file.originalName}</span>
                         <span>·</span>
                         <span className="font-mono whitespace-nowrap">
                             {formatDimensions(file.width, file.height)}
@@ -228,7 +228,7 @@ export function StudioFileCard({
                 </div>
 
                 {/* Status / actions */}
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center justify-end gap-1 shrink-0 ml-auto">
                     {variantList.length > 0 && (
                         <span className="rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-medium">
                             {variantList.length}{" "}
