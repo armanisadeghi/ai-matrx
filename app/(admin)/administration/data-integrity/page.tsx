@@ -29,13 +29,15 @@ import { toast } from "sonner";
 
 type Severity = "error" | "warning" | "info";
 
+type CheckKind = "sql" | "probe" | "script";
+
 interface CheckMeta {
   id: string;
   title: string;
   description: string;
   category: string;
   severity: Severity;
-  kind: "sql" | "probe";
+  kind: CheckKind;
   remediation: string | null;
 }
 
@@ -45,6 +47,7 @@ interface CheckResult {
   description: string;
   category: string;
   severity: Severity;
+  kind: CheckKind;
   remediation?: string;
   count: number;
   sample: Record<string, unknown>[];
@@ -139,9 +142,18 @@ function ResultRow({
   running: boolean;
   onRun: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(result.count > 0 || !!result.error);
+  const [open, setOpen] = useState(
+    result.count > 0 || (!!result.error && !result.skipped),
+  );
 
-  const statusBadge = result.skipped ? (
+  // A skipped script gate is not a problem — it's an on-demand run affordance.
+  const onDemandStub = !!result.skipped && result.kind === "script";
+
+  const statusBadge = onDemandStub ? (
+    <Badge variant="outline" className="text-muted-foreground">
+      On-demand
+    </Badge>
+  ) : result.skipped ? (
     <Badge variant="outline" className="text-muted-foreground">
       Skipped
     </Badge>
@@ -162,7 +174,7 @@ function ResultRow({
     </Badge>
   );
 
-  const expandable = result.count > 0 || !!result.error;
+  const expandable = result.count > 0 || !!result.error || onDemandStub;
 
   return (
     <div className="rounded-md border border-border bg-card">
@@ -199,10 +211,12 @@ function ResultRow({
           className="h-7 w-7"
           onClick={() => onRun(result.id)}
           disabled={running}
-          title="Re-run this check"
+          title={onDemandStub ? "Run this gate now" : "Re-run this check"}
         >
           {running ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : onDemandStub ? (
+            <Play className="h-3.5 w-3.5" />
           ) : (
             <RefreshCw className="h-3.5 w-3.5" />
           )}
@@ -212,13 +226,17 @@ function ResultRow({
       {open && expandable && (
         <div className="px-3 pb-3 pt-1 space-y-2 border-t border-border">
           <p className="text-xs text-muted-foreground">{result.description}</p>
-          {result.error && (
+          {result.error && result.skipped ? (
+            <p className="text-xs text-muted-foreground italic">
+              {result.error}
+            </p>
+          ) : result.error ? (
             <Alert variant="destructive" className="py-2">
               <AlertDescription className="text-xs font-mono">
                 {result.error}
               </AlertDescription>
             </Alert>
-          )}
+          ) : null}
           {result.remediation && result.count > 0 && (
             <div className="text-xs">
               <span className="font-medium text-foreground">Fix: </span>
@@ -357,10 +375,12 @@ export default function DataIntegrityPage() {
             Data Integrity
           </h1>
           <p className="text-xs text-muted-foreground mt-1 max-w-3xl">
-            On-demand referential + storage integrity audit for the file system
-            and PDF document bridge. Read-only — nothing here mutates data.
-            Checks live in <code>lib/integrity</code>; the same set runs in CI
-            via <code>pnpm check:data-integrity</code>.
+            On-demand integrity audit: referential/storage checks, security
+            guards, and the repo&apos;s <code>check:*</code> gates. Read-only —
+            nothing here mutates data. Checks live in{" "}
+            <code>lib/integrity</code>; the SQL set also runs via{" "}
+            <code>pnpm check:data-integrity</code>. Repo gates are strictly
+            on-demand — use the per-row run button.
           </p>
         </div>
         <div className="flex items-center gap-2">

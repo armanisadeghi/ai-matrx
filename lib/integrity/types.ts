@@ -8,14 +8,20 @@
 // `scripts/check-data-integrity.ts`. Adding a new invariant = adding one entry
 // to `checks.ts` — both surfaces pick it up automatically.
 //
-// Two check kinds:
-//   - "sql"   — a single SQL statement run through the `execute_admin_query`
-//               RPC. Scale-safe: each query carries a `count(*) over()` window
-//               column (aliased `_total`) and a LIMIT, so we get the true
-//               finding count plus a bounded sample in one round-trip.
-//   - "probe" — selects candidate file rows (SQL) then probes each file's bytes
-//               over HTTP (S3 liveness). Opt-in and bounded; requires an auth
-//               token, otherwise the check reports `skipped`.
+// Three check kinds:
+//   - "sql"    — a single SQL statement run through the `execute_admin_query`
+//                RPC. Scale-safe: each query carries a `count(*) over()` window
+//                column (aliased `_total`) and a LIMIT, so we get the true
+//                finding count plus a bounded sample in one round-trip.
+//   - "probe"  — selects candidate file rows (SQL) then probes each file's bytes
+//                over HTTP (S3 liveness). Opt-in and bounded; requires an auth
+//                token, otherwise the check reports `skipped`.
+//   - "script" — shells out to a repo `pnpm run <script>` gate (the console-only
+//                check:* family) and maps exit code + trailing output to
+//                pass/fail. STRICTLY on-demand: never runs as part of "run all"
+//                — only when explicitly selected by id (the UI's per-check run
+//                button). Requires a ScriptRunner in the context (absent on
+//                serverless → reported skipped).
 
 export type IntegritySeverity = "error" | "warning" | "info";
 
@@ -56,7 +62,23 @@ export interface ProbeIntegrityCheck extends IntegrityCheckBase {
   failureStatuses: number[];
 }
 
-export type IntegrityCheckDef = SqlIntegrityCheck | ProbeIntegrityCheck;
+export interface ScriptIntegrityCheck extends IntegrityCheckBase {
+  kind: "script";
+  /** pnpm script name (from package.json), run as `pnpm run <script>`. */
+  script: string;
+  /**
+   * Rough runtime hint surfaced in the UI so slow gates are labelled before
+   * anyone presses run. Script checks NEVER run implicitly regardless.
+   */
+  expectedDurationSec: number;
+  /** Kill the child after this long. Default: 5 minutes. */
+  timeoutMs?: number;
+}
+
+export type IntegrityCheckDef =
+  | SqlIntegrityCheck
+  | ProbeIntegrityCheck
+  | ScriptIntegrityCheck;
 
 export interface IntegrityCheckResult {
   id: string;
@@ -64,6 +86,7 @@ export interface IntegrityCheckResult {
   description: string;
   category: string;
   severity: IntegritySeverity;
+  kind: IntegrityCheckDef["kind"];
   remediation?: string;
   /** Total offending rows (full count from the window, not just the sample). */
   count: number;
@@ -102,8 +125,18 @@ export type FileProbe = (
   fileId: string,
 ) => Promise<{ status: number | null; ms: number; error?: string }>;
 
+/**
+ * Runs a repo pnpm script and returns its exit code + combined output.
+ * `exitCode` is null when the process was killed (timeout) or failed to spawn.
+ */
+export type ScriptRunner = (
+  def: ScriptIntegrityCheck,
+) => Promise<{ exitCode: number | null; output: string; error?: string }>;
+
 export interface IntegrityRunContext {
   sql: SqlRunner;
   /** When absent, probe-kind checks are reported as skipped. */
   probe?: FileProbe;
+  /** When absent (e.g. serverless), script-kind checks are reported skipped. */
+  script?: ScriptRunner;
 }

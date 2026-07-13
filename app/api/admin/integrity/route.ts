@@ -17,6 +17,7 @@ import { listChecks, runIntegrityChecks } from "@/lib/integrity/runner";
 import {
   createAdminSqlRunner,
   createDownloadProbe,
+  createScriptRunner,
 } from "@/lib/integrity/server";
 
 function errorResponse(error: unknown) {
@@ -72,8 +73,15 @@ export async function POST(request: NextRequest) {
       {
         sql: createAdminSqlRunner(),
         probe: createDownloadProbe(token),
+        script: createScriptRunner(),
       },
-      { checkIds: body.checkIds, includeProbe: body.includeProbe },
+      {
+        checkIds: body.checkIds,
+        includeProbe: body.includeProbe,
+        // Surface unselected repo gates as skipped rows so the UI offers
+        // their run button — never executes them implicitly.
+        stubScripts: true,
+      },
     );
     return NextResponse.json({ report });
   } catch (e) {

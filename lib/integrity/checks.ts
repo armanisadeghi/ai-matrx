@@ -65,6 +65,33 @@ const DEFINER_GRANT_ALLOWLIST_VALUES = DEFINER_GRANT_ALLOWLIST.map(
     `('${e.functionName}', '${e.reason.replace(/'/g, "''")}')`,
 ).join(",\n          ");
 
+// ── Repo gates: the console-only check:* family, surfaced in the same UI ────
+//
+// Each entry shells out to `pnpm run <script>` (strict variant where one
+// exists, so the exit code is authoritative) and maps exit code + trailing
+// output to pass/fail. STRICTLY on-demand — "run all" only shows them as
+// skipped rows with a run button; nothing executes a multi-minute gate
+// implicitly. The CLI (`pnpm check:data-integrity`) omits them entirely: on
+// the console you run the underlying script directly.
+function repoGate(cfg: {
+  id: string;
+  script: string;
+  title: string;
+  description: string;
+  severity: IntegrityCheckDef["severity"];
+  expectedDurationSec: number;
+  timeoutMs?: number;
+}): IntegrityCheckDef {
+  return {
+    kind: "script",
+    category: "Repo Gates",
+    remediation:
+      `Run \`pnpm ${cfg.script}\` locally for the full report; the output ` +
+      "tail below shows what failed.",
+    ...cfg,
+  };
+}
+
 export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
   // ── Files: dead / missing source bytes ────────────────────────────────────
   {
@@ -386,4 +413,149 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       limit 50
     `,
   },
+  // ── Repo gates (on-demand; see repoGate above) ─────────────────────────────
+  repoGate({
+    id: "gate-migrations",
+    script: "check:migrations:strict",
+    title: "Migration ledger (files vs applied)",
+    description:
+      "Diffs migrations/*.sql against the shared public._schema_migrations " +
+      "ledger — screams about unapplied or drifted migrations.",
+    severity: "error",
+    expectedDurationSec: 15,
+  }),
+  repoGate({
+    id: "gate-schema",
+    script: "check:schema:strict",
+    title: "Schema truth-check (code vs live DB)",
+    description:
+      "Pulls the live schema snapshot and diffs it against generated types, " +
+      "every direct .from()/.schema() call, raw schema.table strings, and " +
+      "the dead-relations registry. Catches moved/retired-table 404s that " +
+      "have no build error.",
+    severity: "error",
+    expectedDurationSec: 90,
+    timeoutMs: 10 * 60 * 1000,
+  }),
+  repoGate({
+    id: "gate-dead-relations",
+    script: "check:dead-relations:strict",
+    title: "Dead relation references",
+    description:
+      "Fast offline subset of the schema truth-check — flags code referencing " +
+      "tables known to be moved or retired.",
+    severity: "error",
+    expectedDurationSec: 15,
+  }),
+  repoGate({
+    id: "gate-doctrine",
+    script: "check:doctrine:strict",
+    title: "Doctrine check",
+    description:
+      "Enforces the build-the-platform doctrine: local type shadows, " +
+      "recreated components, parallel slices, and the other named " +
+      "anti-patterns.",
+    severity: "error",
+    expectedDurationSec: 45,
+  }),
+  repoGate({
+    id: "gate-tsconfig",
+    script: "check:tsconfig:strict",
+    title: "tsconfig hygiene",
+    description:
+      "Guards the .next* excludes in tsconfig.json — a truncated dev-server " +
+      "validator inside an included distDir can hide every real type error " +
+      "in the repo.",
+    severity: "error",
+    expectedDurationSec: 10,
+  }),
+  repoGate({
+    id: "gate-surface-drift",
+    script: "check:surface-drift",
+    title: "Surface registration drift",
+    description:
+      "Diffs declared surfaces (manifest) against the DB registration and " +
+      "emitter wiring.",
+    severity: "warning",
+    expectedDurationSec: 20,
+  }),
+  repoGate({
+    id: "gate-hatches",
+    script: "check:hatches:strict",
+    title: "Type-hatch ratchet",
+    description:
+      "Counts type-safety escape hatches (casts/suppressions) against the " +
+      "committed baseline — the count may only go down.",
+    severity: "warning",
+    expectedDurationSec: 30,
+  }),
+  repoGate({
+    id: "gate-ui-primitives",
+    script: "check:ui-primitives:strict",
+    title: "UI primitives check",
+    description:
+      "Flags banned browser dialogs, raw media tags, and other places where " +
+      "a canonical UI primitive must be used.",
+    severity: "error",
+    expectedDurationSec: 30,
+  }),
+  repoGate({
+    id: "gate-api-contracts",
+    script: "check:api-contracts:strict",
+    title: "API contract ratchet",
+    description:
+      "Hand-mirrored API types vs the generated OpenAPI contract — the " +
+      "silent-drift bug class. Count may only go down.",
+    severity: "error",
+    expectedDurationSec: 20,
+  }),
+  repoGate({
+    id: "gate-shapes",
+    script: "check:shapes:strict",
+    title: "Shape system drift",
+    description:
+      "Diffs the content-IR kind registry in code against the live " +
+      "content_ir tables.",
+    severity: "warning",
+    expectedDurationSec: 30,
+  }),
+  repoGate({
+    id: "gate-admin-catalog",
+    script: "check:admin-catalog:strict",
+    title: "Admin dashboard catalog",
+    description:
+      "Every /administration route must be declared in the admin dashboard " +
+      "catalog — flags unlisted or dead entries.",
+    severity: "error",
+    expectedDurationSec: 15,
+  }),
+  repoGate({
+    id: "gate-entity-types",
+    script: "check:entity-types",
+    title: "Entity types generation drift",
+    description:
+      "Verifies the generated entity-types module matches what the generator " +
+      "would produce today (--check mode).",
+    severity: "warning",
+    expectedDurationSec: 20,
+  }),
+  repoGate({
+    id: "gate-realtime-tools",
+    script: "check:realtime-tools:strict",
+    title: "Realtime tools drift",
+    description:
+      "Diffs client realtime tool definitions against the DB tool registry.",
+    severity: "warning",
+    expectedDurationSec: 20,
+  }),
+  repoGate({
+    id: "gate-tools",
+    script: "gate:tools",
+    title: "Tool / DB drift gate",
+    description:
+      "Diffs advertised client-side tools against the tool_def/tool_binding " +
+      "tables in the shared DB.",
+    severity: "warning",
+    expectedDurationSec: 30,
+  }),
 ];
