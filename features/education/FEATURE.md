@@ -67,6 +67,7 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- **2026-07-12** — **Soft-404 fix (D36): bogus `/education/learn|exam-prep|subjects/<slug>` now return real HTTP 404.** Two structural causes removed: (1) the vestigial root-layout `<Suspense>` around `{children}` (leftover from the deleted PostHogProvider) put every page in a streamed hole, committing status 200 before any page-level `notFound()` could run; (2) the segment-wide `education/loading.tsx` boundary did the same for everything under `/education`. Deleted `education/loading.tsx`; added a targeted `library/loading.tsx` (the one education segment with a real server fetch and no `notFound()`-capable child). **Invariant: never add a `loading.tsx` (or wrap in Suspense) at a segment whose subtree contains a dynamic page calling `notFound()`** — the flushed fallback commits HTTP 200 and every missing record becomes a crawlable soft-404.
 - **2026-07-10** — **P5 adaptivity + anti-burnout gaps closed (recovery-after-absence, signal-triggered re-plan, mode-agnostic hero).**
   (1) **Recovery plan after an absence** — the new-vs-competitors capability. `study/planner/recovery.ts`:
   `detectAbsence(plan, lastSessionAt, now)` fires on either signal — ≥2 past study days with pending
