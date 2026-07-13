@@ -7,8 +7,7 @@
  * the agent's variables / context slots → save.
  *
  * Reuses AgentListInlinePicker, ShortcutScopePicker, SurfaceVariableBindingList.
- * Writes via canonical `bindAgentToSurface` (platform.associations) — never
- * the condemned agent_surface path.
+ *  * (the retired junction is gone — associations are the only path).
  *
  * Drop this into any surface UI, or open it via SurfaceAgentBindWindow.
  */

@@ -252,12 +252,12 @@ async function fetchMenuAgentsFromDb(
   // Reads the pre-joined `agent.menu_surface` view: the organization and the
   // agent identity are resolved in SQL, so there is no cross-schema embed for
   // PostgREST to choke on (the old `organizations(*)` embed threw PGRST200 once
-  // `agent_surface` moved into the `agent` schema). The view also inner-joins
+  // the old junction moved schemas). The view also inner-joins
   // the safe agent card, so it only returns surfaces whose agent is visible to
   // the current user — agents you can't access simply won't appear.
   //
   // Source of truth: platform.associations (NOT the retired junction
-  // table). A bind that only lands in agent_surface will never appear here.
+  // table — now graveyarded). Associations are the only place binds exist.
   const { data, error } = await supabase
     .schema("agent")
     .from("menu_surface")
@@ -286,7 +286,7 @@ async function fetchMenuAgentsFromDb(
 
   if (surfaceName && surfaceRows.length === 0) {
     // Loud empty-state: distinguishes "no binds" from "binds exist only on the
-    // condemned agent_surface table / card RLS filtered everything out".
+    // card RLS filtered everything out".
     console.warn(
       "[surface-bound-agents] menu_surface returned 0 rows for surface — if you just bound an agent and expected it here, the bind likely never dual-wrote to platform.associations (or agent.card RLS hid it)",
       {
