@@ -494,7 +494,9 @@ export interface UnknownDataEventRenderBlock {
  */
 export interface ValueStoreStoredRenderBlock {
   type: "value_store_stored";
-  content: string;
+  /** Always null — a non-null content would leak into committed message
+   * parts via assembleMessageParts Pass 2. The payload lives on `data`. */
+  content: null;
   data: {
     kind?: "value_store.stored";
     conversation_id?: string;
@@ -520,7 +522,8 @@ export interface ValueStoreStoredRenderBlock {
  */
 export interface ContextGroomedRenderBlock {
   type: "context_groomed";
-  content: string;
+  /** Always null — see ValueStoreStoredRenderBlock. */
+  content: null;
   data: {
     kind?: "value_store.groomed";
     conversation_id?: string;

@@ -89,6 +89,15 @@ const MEDIA_RENDER_BLOCK_TYPES = new Set([
   "video_output",
 ]);
 
+// Data-event card blocks: same data-not-content shape as media, but kept in
+// a separate set because MEDIA_RENDER_BLOCK_TYPES also feeds media-specific
+// logic elsewhere. Their content is deliberately null so assembleMessageParts
+// Pass 2 never persists them into committed message parts.
+const DATA_CARD_RENDER_BLOCK_TYPES = new Set([
+  "value_store_stored",
+  "context_groomed",
+]);
+
 const _EMPTY_SEGMENTS: ContentSegment[] = [];
 const _EMPTY_SLOTS: UnifiedSlot[] = [];
 const _selectEmptyString = () => "";
@@ -662,6 +671,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                   // them just because content is empty.
                   if (
                     !MEDIA_RENDER_BLOCK_TYPES.has(rb.type) &&
+                    !DATA_CARD_RENDER_BLOCK_TYPES.has(rb.type) &&
                     !rb.content?.trim()
                   ) {
                     return null;

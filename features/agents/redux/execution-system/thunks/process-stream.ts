@@ -190,6 +190,11 @@ import { callbackManager } from "@/utils/callbackManager";
 import { type WidgetHandle } from "@/features/agents/types/widget-handle.types";
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { surfaceDelegatedToolCall } from "./surface-delegated-tool-call.thunk";
+import {
+  HandoffRewindTracker,
+  decideAssistantReservation,
+  reservationBelongsToConversation,
+} from "../utils/handoff-stream-state";
 import { runToolStateEffects } from "@/features/tool-call-visualization/effects/toolStateEffects";
 
 // =============================================================================
@@ -338,18 +343,16 @@ export async function processStream({
   // later (keyed by call_id) we can patch the right observability row.
   const toolCallIdByProviderCallId = new Map<string, string>();
 
-  // Content snapshot taken at the most recent tool boundary (tool_started).
-  // An agent HANDOFF streams the specialist's tokens right after its tool
-  // call with no INIT (lifecycle suppressed on the seamless path) — so the
-  // last tool boundary IS the pre-handoff content mark. When the specialist
-  // dies, the never-suppressed `completion {operation:"sub_agent",
-  // status:"failed"}` rewinds the live bubble to this snapshot (see
-  // rewindContentForFailedHandoff). Null until a tool call streams.
-  let lastToolBoundarySnapshot: {
-    blockCount: number;
-    reasoningChunkCount: number;
-    timelineLength: number;
-  } | null = null;
+  // Handoff rewind bookkeeping (pure core: handoff-stream-state.ts).
+  // Tracks pending tool calls with their pre-call content snapshots and
+  // observed `sub_agent` INIT operation ids. On the never-suppressed
+  // `completion {operation:"sub_agent", status:"failed"}` it decides:
+  // rewind to the HANDOFF call's boundary (the oldest pending call — the
+  // specialist's own inner tools start later and its handoff tool_error
+  // only fires AFTER this completion), skip for a NON-handoff child (its
+  // INIT was observed — handoffs suppress INIT), or loudly keep content
+  // when no boundary exists.
+  const handoffTracker = new HandoffRewindTracker();
 
   let clientFirstChunkAt: number | null = null;
   let totalEvents = 0;
@@ -657,6 +660,13 @@ export async function processStream({
       } else if (isInitEvent(event)) {
         initEvents++;
         const d = event.data;
+        // A `sub_agent` INIT marks a NON-handoff child (handoffs run with
+        // emit_lifecycle=False and never announce one). A later failed
+        // sub_agent completion carrying THIS operation_id must never
+        // trigger the handoff rewind.
+        if (d.operation === "sub_agent") {
+          handoffTracker.onSubAgentInit(d.operation_id);
+        }
         dispatch(
           trackOperationInit({
             requestId,
@@ -694,11 +704,17 @@ export async function processStream({
         );
 
         if (d.operation === "sub_agent" && d.status === "failed") {
-          // Agent handoff failed mid-stream (this completion is NEVER
-          // suppressed — it is the client's only rewind signal). Truncate
-          // the live bubble back to the pre-handoff snapshot; the caller
-          // continues streaming its correction/retry after this event.
-          if (lastToolBoundarySnapshot) {
+          // A child agent raised mid-stream. This completion is emitted for
+          // EVERY raising child — inline agent_call children, summarizers,
+          // reference-mode value-store children — not only handoffs, so the
+          // tracker decides (pure core, handoff-stream-state.ts): rewind
+          // ONLY when this is a handoff failure (no matching sub_agent INIT
+          // was observed — handoffs suppress INIT) and a tool boundary
+          // exists; the caller's correction/retry streams after.
+          const rewindDecision = handoffTracker.decideOnSubAgentFailure(
+            d.operation_id,
+          );
+          if (rewindDecision.action === "rewind") {
             // Close the accumulator's open block FIRST so post-failure
             // caller text opens a FRESH render block instead of appending
             // to (and thereby resurrecting) the specialist's removed one.
@@ -706,19 +722,23 @@ export async function processStream({
             dispatch(
               rewindContentForFailedHandoff({
                 requestId,
-                ...lastToolBoundarySnapshot,
+                ...rewindDecision.snapshot,
               }),
             );
-          } else {
-            // No tool boundary observed before the failure — nothing safe
-            // to rewind to. Keeping extra text beats destroying real
-            // content, but this is a contract violation worth screaming
-            // about (a handoff always begins with a tool call).
+          } else if (rewindDecision.action === "no_boundary") {
+            // Handoff-shaped failure but no tool boundary was observed —
+            // nothing safe to rewind to. Keeping extra text beats
+            // destroying real content, but this is a contract violation
+            // worth screaming about (a handoff always begins with a tool
+            // call).
             console.error(
-              `[stream:${requestId.slice(0, 8)}] sub_agent FAILED completion arrived with no prior tool boundary — cannot rewind the handoff text. The partial specialist answer stays visible.`,
+              `[stream:${requestId.slice(0, 8)}] sub_agent FAILED completion arrived with no prior tool boundary — cannot rewind the handoff text. The partial child output stays visible.`,
               d,
             );
           }
+          // "skip_non_handoff": a lifecycle-visible child failed; the
+          // orchestrator turns it into a normal error tool_result and the
+          // loop continues — nothing to rewind.
         }
 
         if (d.operation === "user_request") {
@@ -817,9 +837,12 @@ export async function processStream({
                 blockIndex: renderBlockEvents,
                 type: "value_store_stored",
                 status: "complete",
-                // Non-empty content keeps the slot renderer's empty-content
-                // guard from dropping the card; the component reads `data`.
-                content: d.descriptor.key,
+                // content stays null like every data-event block: a non-empty
+                // content string leaks into committed message parts via
+                // assembleMessageParts Pass 2 when the event lands outside a
+                // text run. The renderer reads `data`; the slot guard
+                // allowlists this type (DATA_CARD_RENDER_BLOCK_TYPES).
+                content: null,
                 // MATRX-EXCEPTION: ValueStoredEvent has no index signature to
                 // overlap with RenderBlockPayload.data's generated open bag
                 // (Record<string, unknown> | null) — two-step cast required.
@@ -842,7 +865,8 @@ export async function processStream({
                 blockIndex: renderBlockEvents,
                 type: "context_groomed",
                 status: "complete",
-                content: "context compacted",
+                // null for the same Pass-2 leak reason as value_store_stored.
+                content: null,
                 // MATRX-EXCEPTION: same open-bag cast as ValueStoredEvent above.
                 data: d as unknown as Record<string, unknown>,
               },
@@ -1352,23 +1376,29 @@ export async function processStream({
           }),
         );
 
-        // Handoff rewind mark. Captured AFTER the boundary dispatches so the
-        // snapshot includes the just-closed pre-tool text run and the tool
-        // entry itself — a failed-handoff rewind keeps the caller's text and
-        // the (failed) handoff tool card, and drops only what the specialist
-        // streamed after this point. A handoff is exactly ONE tool call,
-        // never batched (server batch policy), so the LAST tool_started
-        // before a failed `sub_agent` completion is always the handoff call.
+        // Handoff rewind marks, per call_id. Captured AFTER the boundary
+        // dispatches so a snapshot includes the just-closed pre-tool text
+        // run and the tool entry itself — a failed-handoff rewind keeps the
+        // caller's text and the (failed) handoff tool card, and drops only
+        // what streamed after the HANDOFF call's boundary. The handoff call
+        // is identified structurally at failure time (oldest still-pending
+        // call — see HandoffRewindTracker); a specialist's own inner tool
+        // events stream on this same wire and must not move the anchor.
         if (toolData.event === "tool_started") {
           const reqAtBoundary =
             getState().activeRequests.byRequestId[requestId];
           if (reqAtBoundary) {
-            lastToolBoundarySnapshot = {
+            handoffTracker.onToolStarted(toolData.call_id, {
               blockCount: reqAtBoundary.renderBlockOrder.length,
               reasoningChunkCount: reqAtBoundary.reasoningChunks.length,
               timelineLength: reqAtBoundary.timeline.length,
-            };
+            });
           }
+        } else if (
+          toolData.event === "tool_completed" ||
+          toolData.event === "tool_error"
+        ) {
+          handoffTracker.onToolSettled(toolData.call_id);
         }
       } else if (isRenderBlockEvent(event)) {
         renderBlockEvents++;
@@ -1513,35 +1543,77 @@ export async function processStream({
               d.parent_refs.conversation_id,
             );
 
-            // ── Agent handoff rebind ────────────────────────────────────
-            // A handoff turn streams the specialist's answer under the
-            // LOOP-START assistant reservation, but the durable row is the
-            // SYNTHETIC assistant message the server announces at finalize
-            // with `metadata.handoff: true` at a LATER position (see
-            // aidream services/agent_handoff/FEATURE.md — "FE rebind").
-            // Re-key the live bubble to the durable id so a refetch finds
-            // the text at the id it actually persisted under, instead of
-            // leaving a ghost bubble at the placeholder id.
-            const isHandoffRebind =
-              role === "assistant" &&
-              d.metadata.handoff === true &&
-              reservedAssistantTurns.length > 0;
+            // ── Conversation scoping (child loops share the wire) ───────
+            // A child agent's loop (handoff specialist, inline agent_call)
+            // announces its OWN loop-start reservations on the parent's
+            // wire with parent_refs.conversation_id = the CHILD
+            // conversation. Those must never enter THIS stream's turn
+            // bookkeeping: an unscoped push made the child's placeholder
+            // the "last turn", so the handoff rebind promoted the wrong
+            // id (a no-op — that id lives under the child conversation)
+            // and the multi-reservation commit split the turn's content.
+            const belongsToConversation = reservationBelongsToConversation(
+              d.parent_refs.conversation_id,
+              conversationId,
+              forceLocalConversationId,
+            );
 
-            if (isHandoffRebind) {
-              const prior =
-                reservedAssistantTurns[reservedAssistantTurns.length - 1];
-              dispatch(
-                promoteMessageId({
-                  conversationId: owningConversationId,
-                  oldId: prior.messageId,
-                  newId: d.record_id,
+            if (role === "assistant") {
+              // ── Agent handoff rebind / turn tracking ──────────────────
+              // A handoff turn streams the specialist's answer under the
+              // LOOP-START assistant reservation, but the durable row is
+              // the SYNTHETIC assistant message the server announces at
+              // finalize with `metadata.handoff: true` at a LATER position
+              // (aidream services/agent_handoff/FEATURE.md — "FE rebind").
+              // decideAssistantReservation updates the tracked turn IN
+              // PLACE for a rebind, so the end-of-stream commit writes the
+              // content to the DURABLE id/position — never a second turn.
+              const decision = decideAssistantReservation(
+                reservedAssistantTurns,
+                {
+                  recordId: d.record_id,
                   position,
-                }),
+                  handoff: d.metadata.handoff === true,
+                  belongsToConversation,
+                },
               );
-              // The end-of-stream commit must write the turn's content to
-              // the DURABLE id/position — update the tracked turn in place.
-              prior.messageId = d.record_id;
-              prior.position = position;
+              if (decision.kind === "rebind") {
+                dispatch(
+                  promoteMessageId({
+                    conversationId: owningConversationId,
+                    oldId: decision.oldMessageId,
+                    newId: d.record_id,
+                    position,
+                  }),
+                );
+              } else if (decision.kind === "track") {
+                // Stash the live requestId on the reserved record so the
+                // renderer keeps reading from
+                // `activeRequests.byRequestId[reqId]` for the entire
+                // conversation lifetime — even AFTER this stream
+                // completes. Without this anchor, AgentAssistantMessage
+                // would flip to the DB-content path the moment the stream
+                // ended, causing a full re-render of the response column.
+                dispatch(
+                  reserveMessage({
+                    conversationId: owningConversationId,
+                    messageId: d.record_id,
+                    role,
+                    position,
+                    requestId,
+                  }),
+                );
+                reservedAssistantTurns.push({
+                  messageId: d.record_id,
+                  position,
+                });
+              }
+              // decision.kind === "foreign": a child conversation's row —
+              // never seeded into this transcript's slice or turn list.
+            } else if (!belongsToConversation) {
+              // A child conversation's user/system row announced on the
+              // parent wire — skip entirely (it must not promote our
+              // optimistic user message or seed a phantom bubble).
             } else if (role === "user" && userMessageClientTempId) {
               // Promote the optimistic user record to the server id. The record
               // already carries the user's content, so no further patch needed
@@ -1555,12 +1627,7 @@ export async function processStream({
                 }),
               );
             } else {
-              // Stash the live requestId on the reserved record so the
-              // renderer keeps reading from `activeRequests.byRequestId[reqId]`
-              // for the entire conversation lifetime — even AFTER this stream
-              // completes. Without this anchor, AgentAssistantMessage would
-              // flip to the DB-content path the moment the stream ended,
-              // causing a full re-render of the response column.
+              // Same requestId-anchor rationale as the assistant branch.
               dispatch(
                 reserveMessage({
                   conversationId: owningConversationId,
@@ -1570,15 +1637,6 @@ export async function processStream({
                   requestId,
                 }),
               );
-            }
-
-            // A handoff rebind re-keyed an EXISTING tracked turn above —
-            // pushing it again would double-commit the turn's content.
-            if (role === "assistant" && !isHandoffRebind) {
-              reservedAssistantTurns.push({
-                messageId: d.record_id,
-                position,
-              });
             }
           }
         } else if (d.table === "user_request") {
