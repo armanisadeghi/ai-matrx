@@ -91,11 +91,11 @@ export async function resolveAgentRuntime(
   const model = selectModelById(state, modelId);
   let caps: ModelCapabilities;
   if (model) {
-    caps = parseCapabilities(model.capabilities);
+    caps = parseCapabilities(model.capabilities, { modelId, modelName: model.name ?? undefined });
   } else {
     // Model not in the registry cache — assume turn-based. The launcher
     // already fetches the model later; we're being defensive here.
-    caps = { input: ["text"], output: ["text"], features: [], interaction: "turn" };
+    caps = { input: ["text"], output: ["text"], features: [], interaction: "turn", multilingual: false };
   }
 
   // Without a surface name we can't pick a non-default runtime. Behave as today.

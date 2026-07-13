@@ -37,3 +37,18 @@ describe("pickRuntime — local-runtime (Phase 5)", () => {
     expect("error" in result).toBe(true);
   });
 });
+
+describe("pickRuntime — interaction-mode exhaustiveness (TASK-003)", () => {
+  it("an extraction model is refused on every surface — never launched as a chat model", () => {
+    for (const surfaceMode of EXECUTION_MODES) {
+      const result = pickRuntime({ modelInteraction: "extraction", surfaceMode });
+      expect("error" in result).toBe(true);
+    }
+  });
+
+  it("a single-shot (image/video gen) model routes like a turn-based model", () => {
+    expect(
+      pickRuntime({ modelInteraction: "single", surfaceMode: "python-stream" }),
+    ).toEqual({ runtime: "python-stream" });
+  });
+});

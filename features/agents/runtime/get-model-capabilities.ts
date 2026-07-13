@@ -31,7 +31,10 @@ export function getCapabilitiesForConversation(
   if (!agent?.modelId) return null;
   const model = selectModelById(state, agent.modelId);
   if (!model) return null;
-  return parseCapabilities(model.capabilities);
+  return parseCapabilities(model.capabilities, {
+    modelId: agent.modelId,
+    modelName: model.name ?? undefined,
+  });
 }
 
 /** Resolves capabilities for an arbitrary model id. */
@@ -41,5 +44,8 @@ export function getCapabilitiesForModel(
 ): ModelCapabilities | null {
   const model = selectModelById(state, modelId);
   if (!model) return null;
-  return parseCapabilities(model.capabilities);
+  return parseCapabilities(model.capabilities, {
+    modelId,
+    modelName: model.name ?? undefined,
+  });
 }
