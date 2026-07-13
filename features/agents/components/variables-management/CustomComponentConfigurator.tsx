@@ -117,8 +117,10 @@ export function CustomComponentConfigurator({
 
       {/* ── Toggle / light-switch labels ─────────────────────────────────── */}
       {meta.requiresToggleValues && (
-        <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
-          <Label className="text-sm font-medium">Toggle Labels</Label>
+        <div className="space-y-2 border-t border-border/60 pt-3">
+          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Toggle Labels
+          </Label>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">
@@ -150,8 +152,10 @@ export function CustomComponentConfigurator({
 
       {/* ── Options — static list editor, replaced by the picklist binding when bound ── */}
       {!isPicklistBound && (
-        <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
-          <Label className="text-sm font-medium">Options</Label>
+        <div className="space-y-2 border-t border-border/60 pt-3">
+          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Options
+          </Label>
           <OptionsEditor
             options={effective.options}
             onChange={handleOptionsChange}
@@ -179,8 +183,10 @@ export function CustomComponentConfigurator({
 
       {/* ── Number / slider settings ─────────────────────────────────────── */}
       {(meta.requiresMinMax || componentType === "number") && (
-        <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
-          <Label className="text-sm font-medium">Number Settings</Label>
+        <div className="space-y-2 border-t border-border/60 pt-3">
+          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Number Settings
+          </Label>
           <div className="grid grid-cols-3 gap-2">
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">

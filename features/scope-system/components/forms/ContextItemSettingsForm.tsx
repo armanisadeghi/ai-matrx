@@ -303,16 +303,20 @@ export function ContextItemSettingsForm({
         </p>
       </div>
 
-      {/* ── Value shape — the first decision: direct-typed value vs. reference ── */}
-      <div className="space-y-3 rounded-lg border border-border p-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Value type</Label>
+      {/* ── Value shape — the first decision: direct-typed value vs. reference.
+          Flat section set off by a hairline (Linear/Stripe settings pattern) —
+          never a nested bordered card, which wastes width on small screens. ── */}
+      <section className="space-y-4 border-t border-border pt-5">
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground block">
+            Value type
+          </Label>
           <EntryModeToggle
             value={entryMode}
             onChange={setEntryMode}
             disabled={busy}
           />
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {isReference
               ? "Points at a file, scope, link, or other Matrx entity instead of a typed-in value — stored as a canonical matrx reference fence."
               : "A typed-in value (text, number, date, …), authored with the input component below."}
@@ -329,21 +333,23 @@ export function ContextItemSettingsForm({
             onToggleAllowedScopeType={toggleAllowedScopeType}
             orgScopeTypes={orgScopeTypes}
             disabled={busy}
-            className="space-y-3 border-t border-border pt-3"
+            className="space-y-3"
           />
         ) : (
-          <div className="space-y-2 border-t border-border pt-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium">Input component</Label>
-              <span className="text-[10px] text-muted-foreground">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Input component
+              </Label>
+              <span className="text-[11px] text-muted-foreground shrink-0">
                 stored as{" "}
-                <code className="font-mono">
+                <code className="font-mono text-foreground">
                   {VALUE_TYPE_CONFIG[derivedValueType]?.label ??
                     derivedValueType}
                 </code>
               </span>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               The same components used in the Agent Builder. The storage type
               is derived automatically from the component you pick.
             </p>
@@ -353,7 +359,7 @@ export function ContextItemSettingsForm({
               readonly={busy}
             />
             {derivedValueType !== item.value_type && (
-              <p className="text-[10px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
+              <p className="text-[11px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
                 <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
                 Storage type changes to {derivedValueType} on save — existing
                 values won&apos;t auto-convert.
@@ -361,7 +367,7 @@ export function ContextItemSettingsForm({
             )}
           </div>
         )}
-      </div>
+      </section>
 
       {/* What already exists — so a type/component change is an informed one
           (existing values don't auto-convert). */}

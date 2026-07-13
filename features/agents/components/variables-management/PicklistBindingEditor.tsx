@@ -109,8 +109,8 @@ export function PicklistBindingEditor({
   };
 
   return (
-    <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
-      <div className="flex items-center justify-between">
+    <div className="space-y-2 border-t border-border/60 pt-3">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <Label className="text-sm font-medium cursor-pointer">
             Bind to a picklist
