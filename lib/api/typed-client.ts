@@ -147,7 +147,9 @@ export function withQuery<P extends string>(
   if (!query) return path;
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(query)) {
-    if (v === null || v === undefined) continue;
+    // Drop null / undefined / empty-string so absent params stay absent
+    // (an empty value must not become `?k=` — that can change server behavior).
+    if (v === null || v === undefined || v === "") continue;
     qs.append(k, String(v));
   }
   const s = qs.toString();
