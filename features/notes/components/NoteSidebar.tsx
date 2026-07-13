@@ -36,6 +36,8 @@ import {
   Search,
   Plus,
   ArrowUpDown,
+  ArrowDownWideNarrow,
+  ArrowUpWideNarrow,
   ChevronsUpDown,
   FolderPlus,
   Trash2,
@@ -109,6 +111,7 @@ import { CreateFolderDialog } from "./CreateFolderDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
 import { NoteSidebarRow } from "./NoteSidebarRow";
 import { NoteSidebarBulkBar } from "./NoteSidebarBulkBar";
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { cn } from "@/lib/utils";
 import type { NoteRecord } from "../redux/notes.types";
@@ -132,8 +135,9 @@ const GROUP_MODES: {
   { mode: "recent", label: "Recent", icon: Clock },
 ];
 
-// Number of recent notes to show at the top in "default" mode
-const DEFAULT_MODE_RECENT_COUNT = 10;
+// Page size for the collapsible "Recent" section at the top of "default" mode.
+// The section starts showing this many and grows by this step on "Show more".
+const RECENT_PAGE_SIZE = 10;
 
 interface NoteSidebarProps {
   instanceId: string;
@@ -249,6 +253,10 @@ export function NoteSidebar({
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
   const [sharedOpen, setSharedOpen] = useState(true);
   const [groupByDropdown, setGroupByDropdown] = useState(false);
+
+  // Collapsible "Recent" section (default mode) — open by default, paginated.
+  const [recentOpen, setRecentOpen] = useState(true);
+  const [recentVisibleCount, setRecentVisibleCount] = useState(RECENT_PAGE_SIZE);
 
   // ── Fetch scope assignments when switching to scope mode ────────────
   useEffect(() => {
@@ -483,13 +491,14 @@ export function NoteSidebar({
     return map;
   }, [filteredNotes, groupBy, sortNotes]);
 
-  // Top-N most recent notes for "default" mode (always by updated_at desc,
-  // independent of the user's sort field/order which applies to folder groups).
-  const defaultModeRecent = useMemo(() => {
+  // Recent notes for "default" mode, always by updated_at desc (independent of
+  // the user's sort field/order, which applies to folder groups). Fully sorted
+  // here; the render slices to `recentVisibleCount` for pagination.
+  const recentSorted = useMemo(() => {
     if (groupBy !== "default") return [] as NoteRecord[];
-    return [...filteredNotes]
-      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
-      .slice(0, DEFAULT_MODE_RECENT_COUNT);
+    return [...filteredNotes].sort((a, b) =>
+      (b.updated_at ?? "").localeCompare(a.updated_at ?? ""),
+    );
   }, [groupBy, filteredNotes]);
 
   // Get group labels for display
@@ -856,21 +865,26 @@ export function NoteSidebar({
         </div>
       )}
 
-      {/* Toolbar: group-by + sort + expand/collapse */}
+      {/* Toolbar. Two kinds of control, made visually distinct so their
+          purpose reads at a glance:
+          • Selectors (Group, Sort) — filled chips showing the CURRENT value.
+          • Actions (order, Select, Expand) — plain icon buttons.
+          Every control carries a proper tooltip. */}
       <div className="shrink-0 flex items-center gap-1 px-2 py-1 border-b border-border/20">
-        {/* Group-by dropdown */}
+        {/* Group-by selector */}
         <div className="relative">
-          <button
-            onClick={() => setGroupByDropdown((v) => !v)}
-            className="flex items-center gap-1 px-1.5 py-0.5 text-[0.625rem] text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded [&_svg]:w-3 [&_svg]:h-3"
-            title="Group by"
-          >
-            <Layers />
-            <span>
-              {GROUP_MODES.find((m) => m.mode === groupBy)?.label ?? "Folder"}
-            </span>
-            <ChevronDown className="w-2! h-2! opacity-50" />
-          </button>
+          <SimpleTooltip text="Group notes by">
+            <button
+              onClick={() => setGroupByDropdown((v) => !v)}
+              className="flex items-center gap-1 h-6 px-1.5 rounded-md text-[0.625rem] font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
+            >
+              <Layers />
+              <span>
+                {GROUP_MODES.find((m) => m.mode === groupBy)?.label ?? "Folder"}
+              </span>
+              <ChevronDown className="w-2! h-2! opacity-50" />
+            </button>
+          </SimpleTooltip>
           {groupByDropdown && (
             <>
               <div
@@ -903,42 +917,62 @@ export function NoteSidebar({
           )}
         </div>
 
-        <button
-          onClick={cycleSortField}
-          className="flex items-center gap-1 px-1.5 py-0.5 text-[0.625rem] text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded [&_svg]:w-3 [&_svg]:h-3"
-          title={`Sort by: ${sortLabel}`}
-        >
-          <ArrowUpDown />
-          <span>{sortLabel}</span>
-        </button>
-        <button
-          onClick={toggleSortOrder}
-          className="px-1 py-0.5 text-[0.625rem] text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded"
-          title={sortOrder === "desc" ? "Newest first" : "Oldest first"}
-        >
-          {sortOrder === "desc" ? "\u2193" : "\u2191"}
-        </button>
-        <div className="flex-1" />
-        <button
-          onClick={toggleSelectionMode}
-          className={cn(
-            "flex items-center justify-center w-5 h-5 cursor-pointer transition-colors rounded [&_svg]:w-3 [&_svg]:h-3",
-            selectionMode
-              ? "text-primary bg-primary/10"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-          title={selectionMode ? "Exit selection mode" : "Select notes"}
-        >
-          <ListChecks />
-        </button>
-        {groupBy !== "recent" && (
+        {/* Sort-field selector */}
+        <SimpleTooltip text={`Sorted by ${sortLabel} \u2014 click to change`}>
           <button
-            onClick={toggleAllFolders}
-            className="flex items-center justify-center w-5 h-5 text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded [&_svg]:w-3 [&_svg]:h-3"
-            title="Expand/collapse all"
+            onClick={cycleSortField}
+            className="flex items-center gap-1 h-6 px-1.5 rounded-md text-[0.625rem] font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
           >
-            <ChevronsUpDown />
+            <ArrowUpDown />
+            <span>{sortLabel}</span>
           </button>
+        </SimpleTooltip>
+
+        {/* Sort-order action */}
+        <SimpleTooltip
+          text={sortOrder === "desc" ? "Newest first" : "Oldest first"}
+        >
+          <button
+            onClick={toggleSortOrder}
+            className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5"
+          >
+            {sortOrder === "desc" ? (
+              <ArrowDownWideNarrow />
+            ) : (
+              <ArrowUpWideNarrow />
+            )}
+          </button>
+        </SimpleTooltip>
+
+        <div className="flex-1" />
+
+        {/* Select-notes action (bulk mode) */}
+        <SimpleTooltip
+          text={selectionMode ? "Exit selection mode" : "Select notes"}
+        >
+          <button
+            onClick={toggleSelectionMode}
+            className={cn(
+              "flex items-center justify-center h-6 w-6 rounded-md cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5",
+              selectionMode
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <ListChecks />
+          </button>
+        </SimpleTooltip>
+
+        {/* Expand/collapse-all action */}
+        {groupBy !== "recent" && (
+          <SimpleTooltip text="Expand or collapse all folders">
+            <button
+              onClick={toggleAllFolders}
+              className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5"
+            >
+              <ChevronsUpDown />
+            </button>
+          </SimpleTooltip>
         )}
       </div>
 
@@ -948,7 +982,85 @@ export function NoteSidebar({
         ref={folderTreeRef}
         onDragOver={handleListAutoScroll}
       >
-        {/* Shared with me — virtual folder at the top with the defaults */}
+        {/* Recent — collapsible, paginated. Sits ABOVE "Shared with me".
+            Default mode only (other modes surface recency differently). */}
+        {groupBy === "default" && recentSorted.length > 0 && (
+          <div className="mb-1 border-b border-border/30">
+            <button
+              type="button"
+              onClick={() => setRecentOpen((v) => !v)}
+              className="group flex items-center gap-1 w-full px-2 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 [&_svg]:w-3 [&_svg]:h-3"
+            >
+              {recentOpen ? (
+                <ChevronDown className="opacity-60" />
+              ) : (
+                <ChevronRight className="opacity-60" />
+              )}
+              <Clock className="text-amber-500 dark:text-amber-400" />
+              <span className="flex-1 text-left truncate">Recent</span>
+              <span className="text-[0.625rem] font-normal opacity-50 tabular-nums">
+                {recentSorted.length}
+              </span>
+            </button>
+            {recentOpen && (
+              <div className="ml-1 pb-1">
+                {recentSorted.slice(0, recentVisibleCount).map((note) => {
+                  const isActive = activeTabId === note.id;
+                  const isOpenTab = openTabIds?.includes(note.id) ?? false;
+                  return (
+                    <NoteSidebarRow
+                      key={note.id}
+                      note={note}
+                      instanceId={instanceId}
+                      isActive={isActive}
+                      isOpenTab={isOpenTab}
+                      allFolders={allFolders}
+                      openKnowledge={openKnowledge}
+                      formatTime={formatTime}
+                      showFolderTag
+                      onSelectNote={selectNote}
+                      selectionMode={selectionMode}
+                      isSelected={selectedIds.has(note.id)}
+                      onToggleSelect={toggleSelect}
+                    />
+                  );
+                })}
+                {(recentSorted.length > recentVisibleCount ||
+                  recentVisibleCount > RECENT_PAGE_SIZE) && (
+                  <div className="flex items-center gap-2 px-2 pt-0.5">
+                    {recentSorted.length > recentVisibleCount && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRecentVisibleCount((c) => c + RECENT_PAGE_SIZE)
+                        }
+                        className="text-[0.625rem] font-medium text-primary/80 hover:text-primary cursor-pointer transition-colors"
+                      >
+                        Show{" "}
+                        {Math.min(
+                          RECENT_PAGE_SIZE,
+                          recentSorted.length - recentVisibleCount,
+                        )}{" "}
+                        more
+                      </button>
+                    )}
+                    {recentVisibleCount > RECENT_PAGE_SIZE && (
+                      <button
+                        type="button"
+                        onClick={() => setRecentVisibleCount(RECENT_PAGE_SIZE)}
+                        className="text-[0.625rem] text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                      >
+                        Show less
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Shared with me — collapsible section, below Recent */}
         {sharedNotes.length > 0 && (
           <div className="mb-1">
             <button
@@ -1049,37 +1161,9 @@ export function NoteSidebar({
             })}
           </div>
         ) : (
-          /* ── Grouped mode: collapsible sections (folder + default + hierarchy) ── */
+          /* ── Grouped mode: collapsible sections (folder + default + hierarchy).
+             Default mode's recents now live in the "Recent" section above. ── */
           <>
-            {/* Default mode: top-N recent notes, then all folders collapsed below */}
-            {groupBy === "default" && defaultModeRecent.length > 0 && (
-              <div className="border-y border-border/30 pb-1 mb-1">
-                <div className="ml-1">
-                  {defaultModeRecent.map((note) => {
-                    const isActive = activeTabId === note.id;
-                    const isOpenTab = openTabIds?.includes(note.id) ?? false;
-                    return (
-                      <NoteSidebarRow
-                        key={note.id}
-                        note={note}
-                        instanceId={instanceId}
-                        isActive={isActive}
-                        isOpenTab={isOpenTab}
-                        allFolders={allFolders}
-                        openKnowledge={openKnowledge}
-                        formatTime={formatTime}
-                        showFolderTag
-                        onSelectNote={selectNote}
-                        selectionMode={selectionMode}
-                        isSelected={selectedIds.has(note.id)}
-                        onToggleSelect={toggleSelect}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {groupKeys.map((groupKey) => {
               const groupNotes = groupedNotes.get(groupKey) ?? [];
               const isExpanded = expandedFolders.has(groupKey);
