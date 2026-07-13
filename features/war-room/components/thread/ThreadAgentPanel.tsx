@@ -36,7 +36,11 @@
 // targeted fetch keyed off THIS tile's conversation, not a guess.)
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useAppStore,
+} from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useStudioAssistant } from "@/features/transcript-studio/hooks/useStudioAssistant";
@@ -60,7 +64,13 @@ import {
   hydrateThreadTranscripts,
   loadThreadSubtasks,
 } from "@/features/war-room/redux/thunks";
-import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
+import {
+  buildThreadAgentContextEntries,
+  buildThreadSessionTranscriptEntries,
+  THREAD_SESSION_TRANSCRIPT_KEY_RE,
+} from "@/features/war-room/service/warRoomAgentContext";
+import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { prefetchThreadFileSignals } from "@/features/war-room/service/prefetchThreadFileSignals";
 import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
@@ -202,6 +212,44 @@ export default function ThreadAgentPanel({
     defaultAgentId: WAR_ROOM_THREAD_AGENT_ID,
     autoCreate: false,
   });
+
+  // ── Prune stale per-session transcript keys (D14 fence 2 hygiene) ────────
+  // `setContextEntries` MERGES — it never removes a key. So a `session_NN_*`
+  // entry the builder no longer emits would linger with a now-false label:
+  //   • `session_NN_raw` after the session's cleaned pass lands (the fresh push
+  //     adds `session_NN_cleaned`, but the raw key — labeled "no cleaned pass
+  //     yet" — stays and contradicts it);
+  //   • `session_NN_*` after that session becomes ACTIVE (its transcript moves
+  //     to `session_cleaned`) or is detached from the thread.
+  // Remove any session-transcript key the CURRENT build doesn't emit. Safe by
+  // construction: the valid set is computed from the same fresh state the push
+  // effect reads, so a key that should exist is never removed.
+  const contextEntries = useAppSelector(
+    selectInstanceContextEntries(conversationId ?? ""),
+  );
+  const store = useAppStore();
+  const sessionContextKeys = contextEntries
+    .map((e) => e.key)
+    .filter((k) => THREAD_SESSION_TRANSCRIPT_KEY_RE.test(k))
+    .sort()
+    .join(",");
+  useEffect(() => {
+    if (!conversationId || !sessionContextKeys) return;
+    const valid = new Set(
+      buildThreadSessionTranscriptEntries(store.getState(), threadId).map(
+        (e) => e.key,
+      ),
+    );
+    for (const key of sessionContextKeys.split(",")) {
+      if (!valid.has(key)) {
+        console.debug(
+          "[war-room] pruning stale session transcript context key",
+          { threadId, conversationId, key },
+        );
+        dispatch(removeContextEntry({ conversationId, key }));
+      }
+    }
+  }, [conversationId, threadId, sessionContextKeys, store, dispatch]);
 
   useEffect(() => {
     traceWarRoomRenderPath(9, "ThreadAgentPanel.tsx", "mount", {

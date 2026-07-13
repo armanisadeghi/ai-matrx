@@ -204,6 +204,18 @@ function pad2(n: number): string {
 }
 
 /**
+ * The per-session transcript key namespace emitted by
+ * `buildThreadSessionTranscriptEntries` (`session_NN_cleaned` /
+ * `session_NN_raw`). ThreadAgentPanel uses this to PRUNE stale keys from the
+ * instance context — `setContextEntries` merges, so a key the builder stops
+ * emitting (raw → cleaned graduation, an active-session switch, a detach)
+ * would otherwise linger with a now-false label. Keep in sync with the key
+ * template below.
+ */
+export const THREAD_SESSION_TRANSCRIPT_KEY_RE =
+  /^session_\d{2,}_(cleaned|raw)$/;
+
+/**
  * Per-session transcript entries for EVERY audio session assigned to the
  * thread (D14 fence 2). The studio context only carries the ACTIVE session
  * (`session_cleaned` / `all_raw` / `recording_NN_*`); a thread with several
