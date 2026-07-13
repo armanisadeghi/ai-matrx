@@ -64,6 +64,11 @@ export const refetchSingleMessage = createAsyncThunk<
       .select("*")
       .eq("id", messageId)
       .is("deleted_at", null)
+      // Hide model-plumbing rows (agent-handoff tool_use/tool_result stubs,
+      // superseded failed turns): is_visible_to_user=false must never re-enter
+      // the visible timeline via a refetch. Column is NOT NULL DEFAULT true,
+      // matching get_cx_conversation_bundle + the conversation-bundle fallback.
+      .eq("is_visible_to_user", true)
       .maybeSingle();
 
     if (error) {
