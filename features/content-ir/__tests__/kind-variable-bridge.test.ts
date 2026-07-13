@@ -293,6 +293,15 @@ describe("variableDefinitionsToKindFields", () => {
     checkbox: { type: "string[]", loss: false }, // no options → no enum-set to lose
     number: { type: "number", loss: false },
     slider: { type: "number", loss: false }, // no min/max/step set
+    datetime: { type: "string", loss: true },
+    time: { type: "string", loss: true },
+    email: { type: "string", loss: true },
+    url: { type: "string", loss: true },
+    phone: { type: "string", loss: true },
+    percent: { type: "number", loss: false },
+    color: { type: "string", loss: true },
+    markdown: { type: "string", loss: true },
+    currency: { type: "string", loss: true },
     image: { type: "string", loss: true },
     audio: { type: "string", loss: true },
     video: { type: "string", loss: true },

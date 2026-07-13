@@ -408,6 +408,28 @@ function convertVariable(v: VariableDefinition): VariableConversion {
       return finish({ type: "string[]" });
     }
 
+    case "percent":
+      // A number 0–100; kind space has a native number scalar.
+      return finish({ type: "number" });
+
+    case "datetime":
+    case "time":
+    case "email":
+    case "url":
+    case "phone":
+    case "color":
+    case "markdown":
+      lossReasons.push(
+        `${type} — string in kind space (no native ${type} scalar)`,
+      );
+      return finish({ type: "string" });
+
+    case "currency":
+      lossReasons.push(
+        `currency {amount, currency} — serialized string in kind space`,
+      );
+      return finish({ type: "string" });
+
     case "image":
     case "audio":
     case "video":

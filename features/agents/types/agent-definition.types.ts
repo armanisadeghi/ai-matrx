@@ -33,6 +33,17 @@ export const VARIABLE_COMPONENT_TYPES = [
   "select", // Compact dropdown single-select
   "number", // Number stepper with optional min/max/step
   "slider", // Range slider with min/max/step
+  // Typed scalar inputs — each maps 1:1 to a storage value_type (see
+  // componentToValueType). Values are plain strings/numbers/json, not MediaRefs.
+  "datetime", // Date + time picker (value_timestamp)
+  "time", // Time-of-day picker (value_time)
+  "email", // Email address input
+  "url", // URL input (a plain link, not a document reference)
+  "phone", // Telephone input
+  "percent", // Number 0–100 rendered/entered as a percentage
+  "color", // Color picker (hex)
+  "markdown", // Markdown source editor, rendered on display
+  "currency", // Amount + currency-code (value_json {amount, currency})
   // Media types — value is a MediaRef, not a string. The runtime expands the
   // MediaRef into the matching message block at request-assembly time.
   "image",

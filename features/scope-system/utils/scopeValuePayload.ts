@@ -7,6 +7,8 @@ export interface ScopeValueColumns {
   value_boolean?: boolean | null;
   value_json?: unknown;
   value_date?: string | null;
+  value_timestamp?: string | null;
+  value_time?: string | null;
   value_document_url?: string | null;
 }
 
@@ -31,11 +33,26 @@ export function buildScopeValuePayload(
 
   const next = String(raw ?? "").trim();
   switch (valueType) {
-    case "number": {
+    case "number":
+    case "percent": {
+      // percent is a plain number (0–100) in value_number; display adds the %.
       const n = Number(next);
       if (next === "" || Number.isNaN(n)) return { value_text: next || null };
       return { value_number: n };
     }
+    case "datetime":
+      return { value_timestamp: next || null };
+    case "time":
+      return { value_time: next || null };
+    case "currency":
+      // Currency is authored as an object {amount, currency} → value_json (handled
+      // by the object branch above); a stray string falls back to value_text.
+      if (!next) return { value_json: null };
+      try {
+        return { value_json: JSON.parse(next) };
+      } catch {
+        return { value_text: next || null };
+      }
     case "boolean": {
       const lower = next.toLowerCase();
       if (lower === "true" || lower === "yes" || lower === "1") {

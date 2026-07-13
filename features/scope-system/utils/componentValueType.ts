@@ -23,6 +23,27 @@ export function componentToValueType(
     case "number":
     case "slider":
       return "number";
+    // Typed scalars — each maps 1:1 to a storage value_type. datetime→value_timestamp,
+    // time→value_time, percent→value_number, currency→value_json, the rest→value_text;
+    // buildScopeValuePayload does the column routing.
+    case "datetime":
+      return "datetime";
+    case "time":
+      return "time";
+    case "email":
+      return "email";
+    case "url":
+      return "url";
+    case "phone":
+      return "phone";
+    case "percent":
+      return "percent";
+    case "color":
+      return "color";
+    case "markdown":
+      return "markdown";
+    case "currency":
+      return "currency";
     // Media components emit a MediaRef object → value_json.
     case "image":
     case "audio":

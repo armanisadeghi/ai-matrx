@@ -25,6 +25,15 @@ export type ContextValueType =
   | "number"
   | "boolean"
   | "date"
+  | "datetime"
+  | "time"
+  | "email"
+  | "url"
+  | "phone"
+  | "percent"
+  | "color"
+  | "markdown"
+  | "currency"
   | "object"
   | "array"
   | "document"
@@ -118,6 +127,8 @@ export type ContextValueFormData = {
   value_number: number | null;
   value_boolean: boolean | null;
   value_date: string | null;
+  value_timestamp: string | null;
+  value_time: string | null;
   value_json: Record<string, unknown> | unknown[] | null;
   value_document_url: string | null;
   value_document_size_bytes: number | null;
