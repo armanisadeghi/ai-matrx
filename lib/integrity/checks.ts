@@ -27,6 +27,44 @@ import type { IntegrityCheckDef } from "./types";
 
 const SAMPLE_LIMIT = 100;
 
+// ── Security: definer-grant recurrence guard (D31 class) ────────────────────
+//
+// Known-good SECURITY DEFINER functions that are DELIBERATELY executable by
+// `anon` with a caller-supplied identity param. Every entry needs a reason —
+// an unexplained new anon grant is ALWAYS a finding (loud recovery). To clear
+// a finding, either fix the function (auth.uid() check / revoke anon) or add
+// it here with a real justification.
+const DEFINER_GRANT_ALLOWLIST: ReadonlyArray<{
+  functionName: string;
+  reason: string;
+}> = [
+  {
+    functionName: "check_upload_quota",
+    reason: "Guest (no-JWT) upload flow must read quota before auth exists.",
+  },
+  {
+    functionName: "get_usage_status",
+    reason: "Guest (no-JWT) usage flow — read-only status for guest users.",
+  },
+  {
+    functionName: "get_user_limits",
+    reason: "Guest (no-JWT) limits read — read-only, no sensitive payload.",
+  },
+  {
+    functionName: "check_rate_limit",
+    reason: "Guest (no-JWT) rate limiting — must run pre-auth by design.",
+  },
+  {
+    functionName: "accept_organization_invitation",
+    reason: "Invite acceptance flow runs before the user has a session.",
+  },
+];
+
+const DEFINER_GRANT_ALLOWLIST_VALUES = DEFINER_GRANT_ALLOWLIST.map(
+  (e) =>
+    `('${e.functionName}', '${e.reason.replace(/'/g, "''")}')`,
+).join(",\n          ");
+
 export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
   // ── Files: dead / missing source bytes ────────────────────────────────────
   {
@@ -242,6 +280,81 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
           select 1 from files.files f
           where f.id::text = p.source_id and f.deleted_at is not null
         )
+      limit ${SAMPLE_LIMIT}
+    `,
+  },
+  // ── Security: definer-grant recurrence guard ──────────────────────────────
+  {
+    id: "definer-grant-anon-identity",
+    kind: "sql",
+    title: "SECURITY DEFINER functions anon can call with a caller-supplied identity",
+    category: "Security",
+    severity: "error",
+    description:
+      "The D31 class: a SECURITY DEFINER function EXECUTE-granted to anon (or " +
+      "PUBLIC, which anon inherits), taking a caller-supplied identity param " +
+      "(p_user_id / p_actor / p_org_id / *_email / …), with no auth.uid() / " +
+      "auth.role() / is_super_admin / service_role check in its body. Any " +
+      "unauthenticated caller can impersonate any user — this exact pattern " +
+      "leaked decrypted MCP OAuth tokens. Scans EVERY PostgREST-exposed " +
+      "schema (read live from the authenticator role's pgrst.db_schemas " +
+      "setting, so it adapts as schemas are exposed). Known-good exceptions " +
+      "are allowlisted IN the check with a reason each (" +
+      DEFINER_GRANT_ALLOWLIST.map((e) => e.functionName).join(", ") +
+      "); an unexplained new anon grant is always a finding.",
+    remediation:
+      "Either the function must derive identity from auth.uid() (drop the " +
+      "identity param) / verify the caller inside its body, or its EXECUTE " +
+      "grant must be revoked from anon/PUBLIC (GRANT to authenticated / " +
+      "service_role only). If the anon grant is genuinely required (guest " +
+      "flow), add the function to DEFINER_GRANT_ALLOWLIST in " +
+      "lib/integrity/checks.ts with the reason.",
+    sql: `
+      with exposed as (
+        select distinct trim(both ' "' from schema_name) as schema_name
+        from pg_catalog.pg_db_role_setting rs
+        join pg_catalog.pg_roles r on r.oid = rs.setrole
+        cross join lateral unnest(rs.setconfig) as cfg
+        cross join lateral regexp_split_to_table(split_part(cfg, '=', 2), ',') as schema_name
+        where r.rolname = 'authenticator'
+          and cfg like 'pgrst.db_schemas=%'
+      ),
+      allowlist(function_name, reason) as (
+        values
+          ${DEFINER_GRANT_ALLOWLIST_VALUES}
+      )
+      select n.nspname as schema,
+             p.proname as function,
+             pg_get_function_identity_arguments(p.oid) as params,
+             case
+               when p.proacl is null then 'PUBLIC (default acl)'
+               when exists (
+                 select 1 from aclexplode(p.proacl) a
+                 join pg_catalog.pg_roles g on g.oid = a.grantee
+                 where g.rolname = 'anon' and a.privilege_type = 'EXECUTE'
+               ) then 'anon'
+               when exists (
+                 select 1 from aclexplode(p.proacl) a
+                 where a.grantee = 0 and a.privilege_type = 'EXECUTE'
+               ) then 'PUBLIC'
+               else 'inherited'
+             end as granted_via,
+             count(*) over() as _total
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+      join exposed e on e.schema_name = n.nspname
+      join pg_catalog.pg_language l on l.oid = p.prolang
+      where p.prosecdef
+        and p.prokind = 'f'
+        and l.lanname in ('sql', 'plpgsql')
+        and has_function_privilege('anon', p.oid, 'EXECUTE')
+        and pg_get_function_identity_arguments(p.oid)
+          ~* '\\m(p_user|p_uid|p_actor|p_actor_id|p_target_user|p_created_by|[a-z_]*user_id|[a-z_]*org_id|[a-z_]*organization_id|[a-z_]*owner_id|[a-z_]*account_id|[a-z_]*member_id|[a-z_]*email[a-z_]*)\\M'
+        and coalesce(p.prosrc, '') !~* '(auth\\.uid|auth\\.role|auth\\.jwt|is_super_admin|service_role)'
+        and not exists (
+          select 1 from allowlist a where a.function_name = p.proname
+        )
+      order by n.nspname, p.proname
       limit ${SAMPLE_LIMIT}
     `,
   },
