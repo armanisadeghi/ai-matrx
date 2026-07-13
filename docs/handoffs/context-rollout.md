@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-07
+updated: 2026-07-12
 repos: [matrx-frontend]
 ---
 
@@ -37,20 +37,20 @@ graveyarded (see `features/scopes/FEATURE.md`, 2026-06-24/25 entries).
 
 ## Remaining work
 
-1. **Legacy hierarchy-selection family is still one-per-type** (flagged during the 2026-07-07
-   restore, not refactored): `features/agent-context/components/hierarchy-selection/*` (7
-   components + `useHierarchySelection`; consumed by `SidebarContextSelector`,
-   `ContextSwitcherWindow`, `TaskContentNew`) keeps radio semantics keyed by type. Already marked
-   for consolidation; converting the per-type dropdown/breadcrumb displays is a per-component UI
-   redesign.
-2. **Knowledge-graph deep integration** — direct scope↔node assignment / scope nodes in the graph.
+1. **Knowledge-graph deep integration** — direct scope↔node assignment / scope nodes in the graph.
    Design not started; the biggest-win item above.
-3. **Notes local multi-scope FILTER UI** — the field's `filter` mode is built; `NoteSidebar` still
+2. **Notes local multi-scope FILTER UI** — the field's `filter` mode is built; `NoteSidebar` still
    filters via active context only. Mount the filter mode + bulk scope read for the orphan hint.
-4. **Header-level context indicator** — blocked on Arman's direction (see Vision).
+3. **Header-level context indicator** — blocked on Arman's direction (see Vision).
 
 ## Done
 
+- Legacy hierarchy-selection family converted to MULTI-SCOPE (2026-07-12): `useHierarchySelection`
+  is id-keyed with additive `toggleScope`/`clearScopeType`; Cascade/Tree/Pills use checkbox
+  semantics with "+N" multi display; `useReduxBridge` diffs to `addActiveScope`/`removeActiveScope`;
+  `AgentAppHierarchyCascade` drops first-wins trimming. Dead variants deleted outright
+  (`HierarchyBreadcrumb`/`HierarchyHoverMenu`/`HierarchyCommand`/`SidebarContextSelector` — no live
+  route rendered them).
 - Full component family + all nine surfaces wired — `features/scopes/components/context-assignment/`.
 - Storage migrated to `platform.associations`; `ctx_scope_assignments` graveyarded (FEATURE.md 2026-06-24/25).
 - Multi-scope active context restored (2026-07-07, Arman-ruled regression): additive slice actions,

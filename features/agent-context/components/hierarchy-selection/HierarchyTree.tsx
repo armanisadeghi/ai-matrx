@@ -177,13 +177,9 @@ export function HierarchyTree({
     if (node.level === "organization") ctx.setOrg(node.id);
     else if (node.level === "project") ctx.setProject(node.id);
     else if (node.level === "task") ctx.setTask(node.id);
-    else if (
-      node.level === "scope" &&
-      node.scopeTypeId &&
-      !node.children.length
-    ) {
-      const current = scopeSelections[node.scopeTypeId];
-      ctx.setScopeValue(node.scopeTypeId, current === node.id ? null : node.id);
+    else if (node.level === "scope" && !node.children.length) {
+      // MULTI-SCOPE: checkbox toggle by scope id — never evicts siblings.
+      ctx.toggleScope(node.id);
     }
   };
 

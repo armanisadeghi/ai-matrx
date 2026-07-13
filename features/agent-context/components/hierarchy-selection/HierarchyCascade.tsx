@@ -132,8 +132,11 @@ export function HierarchyCascade({
             <ScopeLevelCombobox
               key={scopeLevel.typeId}
               scopeLevel={scopeLevel}
-              selectedId={scopeSelections[scopeLevel.typeId] ?? null}
-              onSelect={(id) => ctx.setScopeValue(scopeLevel.typeId, id)}
+              selectedIds={scopeLevel.options
+                .map((o) => o.id)
+                .filter((id) => !!scopeSelections[id])}
+              onToggle={(id) => ctx.toggleScope(id)}
+              onClear={() => ctx.clearScopeType(scopeLevel.typeId)}
               disabled={disabled || !value.organizationId}
               organizationId={value.organizationId}
             />
@@ -208,8 +211,11 @@ export function HierarchyCascade({
           <AnimatedRow index={slotIndex++} key={scopeLevel.typeId}>
             <ScopeLevelCombobox
               scopeLevel={scopeLevel}
-              selectedId={scopeSelections[scopeLevel.typeId] ?? null}
-              onSelect={(id) => ctx.setScopeValue(scopeLevel.typeId, id)}
+              selectedIds={scopeLevel.options
+                .map((o) => o.id)
+                .filter((id) => !!scopeSelections[id])}
+              onToggle={(id) => ctx.toggleScope(id)}
+              onClear={() => ctx.clearScopeType(scopeLevel.typeId)}
               disabled={disabled || !value.organizationId}
               organizationId={value.organizationId}
             />
@@ -299,16 +305,19 @@ interface ScopeLevelComboboxProps {
     color: string;
     options: HierarchyOption[];
   };
-  selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  /** MULTI-SCOPE: every selected scope id of this type (checkbox semantics). */
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+  onClear: () => void;
   disabled?: boolean;
   organizationId: string | null;
 }
 
 function ScopeLevelCombobox({
   scopeLevel,
-  selectedId,
-  onSelect,
+  selectedIds,
+  onToggle,
+  onClear,
   disabled,
   organizationId,
 }: ScopeLevelComboboxProps) {
@@ -318,9 +327,14 @@ function ScopeLevelCombobox({
   const [newName, setNewName] = useState("");
   const [isPending, setIsPending] = useState(false);
 
-  const selectedName = scopeLevel.options.find(
-    (o) => o.id === selectedId,
-  )?.name;
+  const selectedSet = new Set(selectedIds);
+  const firstName = scopeLevel.options.find((o) => selectedSet.has(o.id))?.name;
+  const triggerLabel =
+    selectedIds.length === 0
+      ? `All ${scopeLevel.pluralLabel.toLowerCase()}`
+      : selectedIds.length === 1
+        ? firstName
+        : `${firstName} +${selectedIds.length - 1}`;
 
   const handleCreate = async () => {
     if (!newName.trim() || !organizationId) return;
@@ -353,21 +367,19 @@ function ScopeLevelCombobox({
             disabled={disabled}
             className={cn(
               "h-7 justify-between text-xs font-normal min-w-[220px] max-w-[220px] gap-1.5 px-2",
-              !selectedId && "text-muted-foreground",
+              selectedIds.length === 0 && "text-muted-foreground",
             )}
           >
             <span className="flex items-center gap-1.5 truncate">
               <ScopeIcon iconName={scopeLevel.icon} color={scopeLevel.color} />
-              <span className="truncate">
-                {selectedName ?? `All ${scopeLevel.pluralLabel.toLowerCase()}`}
-              </span>
+              <span className="truncate">{triggerLabel}</span>
             </span>
-            {selectedId ? (
+            {selectedIds.length > 0 ? (
               <X
                 className="h-3 w-3 shrink-0 opacity-50 hover:opacity-100"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onSelect(null);
+                  onClear();
                 }}
               />
             ) : (
@@ -388,25 +400,23 @@ function ScopeLevelCombobox({
                   : "No matches found"}
               </CommandEmpty>
               <CommandGroup>
+                {/* MULTI-SCOPE: checkbox toggles, popover stays open. */}
                 {scopeLevel.options.map((opt) => (
                   <CommandItem
                     key={opt.id}
                     value={opt.name}
-                    onSelect={() => {
-                      onSelect(opt.id === selectedId ? null : opt.id);
-                      setOpen(false);
-                    }}
+                    onSelect={() => onToggle(opt.id)}
                     className="text-xs flex items-center gap-2"
                   >
                     <div
                       className={cn(
                         "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border",
-                        opt.id === selectedId
+                        selectedSet.has(opt.id)
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-muted-foreground/30",
                       )}
                     >
-                      {opt.id === selectedId && (
+                      {selectedSet.has(opt.id) && (
                         <Check className="h-2.5 w-2.5" />
                       )}
                     </div>

@@ -11,20 +11,18 @@
  *   changed).
  * - Scope tags (scopeSelections) → many-to-many join via the canonical
  *   association edge (entity_type='app', entity_id=<app.id>, scope_ids=[...]).
- *   The wrapper hydrates the current assignments on mount and re-derives the
- *   {typeId → scopeId} shape that HierarchyCascade expects from the
- *   raw scope-id list + the scope catalogue.
+ *   The wrapper hydrates the current assignments on mount. HierarchyCascade
+ *   is MULTI-SCOPE (id-keyed, checkbox semantics) — every assigned scope id
+ *   maps straight into the selection, none are dropped.
  *
  * Mirrors the persistence pattern used by NoteContextPicker /
  * TaskScopeTags. No more flat-FK-only shortcut.
  */
 
 import { useMemo } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import type { HierarchySelection } from "@/features/agent-context/components/hierarchy-selection/types";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
-import { selectAllScopesFlat } from "@/features/scopes/redux/selectors/tree";
 import type { EntityType } from "@/features/scopes/types";
 
 // Agent apps live in app.definition (registry token `app`). The pre-reorg
@@ -61,23 +59,13 @@ export function AgentAppHierarchyCascade({
     entityId: appId,
     organizationId,
   });
-  const allScopes = useAppSelector(selectAllScopesFlat);
-
-  // ── Derive the {typeId → scopeId} shape the cascade wants ──────────
-  // The cascade enforces one selection per scope-type. If multiple
-  // scope_ids of the same type happen to be assigned, the first wins
-  // for display purposes (set_entity_scopes is the authoritative writer
-  // — it'll trim the rest on the next save).
-  const scopeSelections = useMemo<Record<string, string | null>>(() => {
-    const out: Record<string, string | null> = {};
-    for (const scopeId of assignedScopeIds) {
-      const scope = allScopes.find((s) => s.id === scopeId);
-      if (!scope) continue;
-      if (out[scope.scope_type_id] != null) continue;
-      out[scope.scope_type_id] = scopeId;
-    }
-    return out;
-  }, [assignedScopeIds, allScopes]);
+  // ── Derive the id-keyed multi-scope shape the cascade wants ────────
+  // MULTI-SCOPE (2026-07-07): every assigned scope id is selected — no
+  // first-wins trimming, no per-type radio.
+  const scopeSelections = useMemo<Record<string, string | null>>(
+    () => Object.fromEntries(assignedScopeIds.map((id) => [id, id])),
+    [assignedScopeIds],
+  );
 
   // ── Build the controlled value the cascade consumes ────────────────
   const value: HierarchySelection = useMemo(

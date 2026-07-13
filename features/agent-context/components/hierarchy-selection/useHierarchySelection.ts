@@ -238,12 +238,35 @@ export function useHierarchySelection(
     });
   };
 
-  const setScopeValue = (typeId: string, scopeId: string | null) => {
+  // MULTI-SCOPE (Arman, 2026-07-07): scopeSelections is keyed by SCOPE ID
+  // (value === key), matching appContextSlice.scope_selections. Toggling a
+  // scope never evicts same-type siblings — checkbox semantics, never radio.
+  const toggleScope = (scopeId: string) => {
     const nextScopes = { ...scopeSelections };
-    if (scopeId) {
-      nextScopes[typeId] = scopeId;
+    if (nextScopes[scopeId]) {
+      delete nextScopes[scopeId];
     } else {
-      delete nextScopes[typeId];
+      nextScopes[scopeId] = scopeId;
+    }
+    setSelection({
+      ...selection,
+      scopeSelections: nextScopes,
+      projectId: null,
+      projectName: null,
+      taskId: null,
+      taskName: null,
+    });
+  };
+
+  const clearScopeType = (typeId: string) => {
+    const typeScopeIds = new Set(
+      (scopeLevels.find((l) => l.typeId === typeId)?.options ?? []).map(
+        (o) => o.id,
+      ),
+    );
+    const nextScopes: Record<string, string | null> = {};
+    for (const [k, v] of Object.entries(scopeSelections)) {
+      if (!typeScopeIds.has(k)) nextScopes[k] = v;
     }
     setSelection({
       ...selection,
@@ -271,7 +294,8 @@ export function useHierarchySelection(
     setOrg,
     setProject,
     setTask,
-    setScopeValue,
+    toggleScope,
+    clearScopeType,
     clear,
   };
 }

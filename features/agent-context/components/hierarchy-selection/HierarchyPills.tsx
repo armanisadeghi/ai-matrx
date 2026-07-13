@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   Building2,
+  Check,
   FolderKanban,
   ListTodo,
   X,
@@ -106,9 +107,14 @@ export function HierarchyPills({
     key: string;
     level: HierarchyLevel | "scope";
     options: HierarchyOption[];
-    selectedId: string | null;
-    selectedName: string | null;
-    onSelect: (id: string | null) => void;
+    /** Single-select dimensions: at most one entry. Scope pills: any number. */
+    selectedIds: string[];
+    selectedLabel: string | null;
+    /** Single-select toggle (org/project/task). */
+    onSelect?: (id: string | null) => void;
+    /** MULTI-SCOPE toggle (scope pills only). */
+    onToggle?: (id: string) => void;
+    onClear: () => void;
     show: boolean;
     icon?: React.ComponentType<{
       className?: string;
@@ -125,9 +131,10 @@ export function HierarchyPills({
       key: "organization",
       level: "organization",
       options: ctx.orgs,
-      selectedId: value.organizationId,
-      selectedName: value.organizationName,
+      selectedIds: value.organizationId ? [value.organizationId] : [],
+      selectedLabel: value.organizationName,
       onSelect: ctx.setOrg,
+      onClear: () => ctx.setOrg(null),
       show: true,
       icon: Building2,
       pillActive: PILL_COLORS.organization.active,
@@ -138,17 +145,24 @@ export function HierarchyPills({
 
   if (includesScopes) {
     for (const scopeLevel of ctx.scopeLevels) {
-      const selectedScopeId = scopeSelections[scopeLevel.typeId] ?? null;
-      const selectedOption = scopeLevel.options.find(
-        (o) => o.id === selectedScopeId,
+      // MULTI-SCOPE: every selected scope of this type shows on the pill.
+      const selectedOfType = scopeLevel.options.filter(
+        (o) => !!scopeSelections[o.id],
       );
+      const label =
+        selectedOfType.length === 0
+          ? null
+          : selectedOfType.length === 1
+            ? selectedOfType[0].name
+            : `${selectedOfType[0].name} +${selectedOfType.length - 1}`;
       pillConfig.push({
         key: `scope-${scopeLevel.typeId}`,
         level: "scope",
         options: scopeLevel.options,
-        selectedId: selectedScopeId,
-        selectedName: selectedOption?.name ?? null,
-        onSelect: (id) => ctx.setScopeValue(scopeLevel.typeId, id),
+        selectedIds: selectedOfType.map((o) => o.id),
+        selectedLabel: label,
+        onToggle: (id) => ctx.toggleScope(id),
+        onClear: () => ctx.clearScopeType(scopeLevel.typeId),
         show: true,
         icon: resolveIcon(scopeLevel.icon),
         inlineColor: scopeLevel.color,
@@ -165,9 +179,10 @@ export function HierarchyPills({
       key: "project",
       level: "project",
       options: ctx.projects,
-      selectedId: value.projectId,
-      selectedName: value.projectName,
+      selectedIds: value.projectId ? [value.projectId] : [],
+      selectedLabel: value.projectName,
       onSelect: ctx.setProject,
+      onClear: () => ctx.setProject(null),
       show: true,
       icon: FolderKanban,
       pillActive: PILL_COLORS.project.active,
@@ -181,9 +196,10 @@ export function HierarchyPills({
       key: "task",
       level: "task",
       options: ctx.tasks,
-      selectedId: value.taskId,
-      selectedName: value.taskName,
+      selectedIds: value.taskId ? [value.taskId] : [],
+      selectedLabel: value.taskName,
       onSelect: ctx.setTask,
+      onClear: () => ctx.setTask(null),
       show: true,
       icon: ListTodo,
       pillActive: PILL_COLORS.task.active,
@@ -207,8 +223,10 @@ export function HierarchyPills({
         if (!pill.show) return null;
         const Icon = pill.icon ?? Folder;
         const isScope = pill.level === "scope";
+        const hasSelection = pill.selectedIds.length > 0;
+        const selectedSet = new Set(pill.selectedIds);
 
-        const colors = pill.selectedId
+        const colors = hasSelection
           ? isScope
             ? "border border-current/20 bg-current/10"
             : pill.pillActive
@@ -227,11 +245,11 @@ export function HierarchyPills({
                 style={
                   isScope && pill.inlineColor
                     ? {
-                        color: pill.selectedId ? pill.inlineColor : undefined,
-                        borderColor: pill.selectedId
+                        color: hasSelection ? pill.inlineColor : undefined,
+                        borderColor: hasSelection
                           ? `${pill.inlineColor}33`
                           : undefined,
-                        backgroundColor: pill.selectedId
+                        backgroundColor: hasSelection
                           ? `${pill.inlineColor}1a`
                           : undefined,
                       }
@@ -247,15 +265,15 @@ export function HierarchyPills({
                   }
                 />
                 <span className="truncate max-w-[120px]">
-                  {pill.selectedName ?? pill.emptyLabel}
+                  {pill.selectedLabel ?? pill.emptyLabel}
                 </span>
                 <ChevronDown className="h-2.5 w-2.5 shrink-0 opacity-60" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
               <DropdownMenuItem
-                className={cn(textSize, !pill.selectedId && "font-semibold")}
-                onClick={() => pill.onSelect(null)}
+                className={cn(textSize, !hasSelection && "font-semibold")}
+                onClick={() => pill.onClear()}
               >
                 All
               </DropdownMenuItem>
@@ -264,10 +282,32 @@ export function HierarchyPills({
                   key={opt.id}
                   className={cn(
                     textSize,
-                    pill.selectedId === opt.id && "font-semibold text-primary",
+                    selectedSet.has(opt.id) && "font-semibold text-primary",
                   )}
-                  onClick={() => pill.onSelect(opt.id)}
+                  onClick={(e) => {
+                    if (isScope) {
+                      // MULTI-SCOPE: toggle, keep the menu open for more picks.
+                      e.preventDefault();
+                      pill.onToggle?.(opt.id);
+                    } else {
+                      pill.onSelect?.(opt.id);
+                    }
+                  }}
                 >
+                  {isScope && (
+                    <span
+                      className={cn(
+                        "mr-1.5 flex h-3 w-3 shrink-0 items-center justify-center rounded-sm border",
+                        selectedSet.has(opt.id)
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-muted-foreground/30",
+                      )}
+                    >
+                      {selectedSet.has(opt.id) && (
+                        <Check className="h-2 w-2" />
+                      )}
+                    </span>
+                  )}
                   {opt.name}
                 </DropdownMenuItem>
               ))}

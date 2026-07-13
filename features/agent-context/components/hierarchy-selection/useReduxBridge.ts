@@ -3,14 +3,17 @@
 import { useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 // Canonical Surface A redux bridge — dispatches active-context writes for the
-// global hierarchy pickers (SidebarContextSelector, ContextSwitcherWindow,
-// TaskContentNew). Classified "Surface-A writer — correct, not a bug" in
+// global hierarchy pickers (ContextSwitcherWindow, TaskContentNew).
+// Classified "Surface-A writer — correct, not a bug" in
 // features/window-panels/docs/inventory/context-scopes.md.
+// Scope writes are ADDITIVE (addActiveScope/removeActiveScope) — MULTI-SCOPE
+// by law (Arman, 2026-07-07); never a wholesale replace, never radio.
 // eslint-disable-next-line no-restricted-syntax -- Surface A: canonical global-context bridge
 import {
   selectAppContext,
   setOrganization,
-  setScopeSelections,
+  addActiveScope,
+  removeActiveScope,
   setProject,
   setTask,
   clearContext,
@@ -54,15 +57,30 @@ export function useHierarchyReduxBridge() {
         return;
       }
 
+      // Diff scope ids and dispatch surgical adds/removes — the additive
+      // multi-scope actions never evict same-type siblings.
       const incomingScopes = sel.scopeSelections ?? {};
       const currentScopes = ctx.scope_selections ?? {};
-      const scopesChanged =
-        JSON.stringify(incomingScopes) !== JSON.stringify(currentScopes);
-
-      if (scopesChanged) {
-        dispatch(setScopeSelections(incomingScopes));
-        return;
+      const incomingIds = new Set(
+        Object.values(incomingScopes).filter((v): v is string => !!v),
+      );
+      const currentIds = new Set(
+        Object.values(currentScopes).filter((v): v is string => !!v),
+      );
+      let scopesChanged = false;
+      for (const id of incomingIds) {
+        if (!currentIds.has(id)) {
+          dispatch(addActiveScope(id));
+          scopesChanged = true;
+        }
       }
+      for (const id of currentIds) {
+        if (!incomingIds.has(id)) {
+          dispatch(removeActiveScope(id));
+          scopesChanged = true;
+        }
+      }
+      if (scopesChanged) return;
 
       if (sel.projectId !== ctx.project_id) {
         dispatch(setProject({ id: sel.projectId, name: sel.projectName }));
