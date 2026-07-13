@@ -163,7 +163,6 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
             conversationId: artifact.conversationId,
             title: artifact.title ?? "HTML Page Editor",
             description: "Edit markdown, preview HTML, and publish your content",
-            onSave: undefined,
             showSaveButton: false,
             isAgentSystem: false,
           },

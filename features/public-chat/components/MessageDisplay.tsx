@@ -463,7 +463,6 @@ function AssistantMessage({
           conversationId: undefined,
           title: "HTML Preview & Publishing",
           description: "Edit markdown, preview HTML, and publish your content",
-          onSave: undefined,
           showSaveButton: false,
           isAgentSystem: false,
         },

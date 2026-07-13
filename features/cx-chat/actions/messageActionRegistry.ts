@@ -37,10 +37,7 @@ import { toast } from "sonner";
 import { chatConversationsActions } from "../_legacy-stubs";
 import { editMessage } from "../_legacy-stubs";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
-import {
-  openOverlay,
-  closeOverlay,
-} from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
 
@@ -152,25 +149,17 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
               mode: "free",
               conversationId: undefined,
               messageId: messageId ?? undefined,
-              onSave: (newContent: string) => {
-                if (sessionId && messageId) {
-                  dispatch(
-                    chatConversationsActions.updateMessage({
-                      sessionId,
-                      messageId,
-                      updates: { content: newContent },
-                    }),
-                  );
-                }
-                dispatch(
-                  closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
-                );
-              },
+              // No `onSave` in data — a function can't survive Redux (the
+              // overlaySlice guard strips it loudly), and the old handler
+              // only dispatched the no-op `chatConversationsActions` stub.
+              // With no conversationId there is no self-handle target either,
+              // so Save is hidden until the cx-chat refactor wires a real
+              // save (via the callback registry — see openers/fullScreenEditor).
               tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
               initialTab: "matrx_split",
               analysisData: metadata as Record<string, unknown> | undefined,
               title: undefined,
-              showSaveButton: true,
+              showSaveButton: false,
               showCopyButton: true,
             },
           }),
@@ -395,19 +384,12 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
               conversationId: conversationId ?? undefined,
               title: "HTML Preview & Publishing",
               description: "Edit markdown, preview HTML, and publish your content",
-              onSave: (newContent: string) => {
-                if (sessionId && messageId) {
-                  dispatch(
-                    chatConversationsActions.updateMessage({
-                      sessionId,
-                      messageId,
-                      updates: { content: newContent },
-                    }),
-                  );
-                }
-                dispatch(closeOverlay({ overlayId: "htmlPreview", instanceId }));
-              },
-              showSaveButton: Boolean(sessionId && messageId),
+              // No `onSave` in data — a function can't survive Redux (the
+              // overlaySlice guard strips it loudly). The old handler here
+              // only dispatched the no-op `chatConversationsActions` stub
+              // anyway; the bridge self-handles the save via `editMessage`
+              // from the conversationId + messageId passed above.
+              showSaveButton: Boolean(conversationId && messageId),
               isAgentSystem: false,
             },
           }),

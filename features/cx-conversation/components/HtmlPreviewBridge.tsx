@@ -173,7 +173,18 @@ export function HtmlPreviewBridge({
         emitFullScreenEditorSave(callbackGroupId, markdownContent);
         return;
       }
-      if (!conversationId || !messageId) return;
+      if (!conversationId || !messageId) {
+        // No callback group AND no chat-message target — the Save button was
+        // shown with nowhere to send the edit. That's a severed-callback bug
+        // at the opening call site (D33 class). SCREAM, never silent.
+        console.error(
+          "[HtmlPreviewBridge] Save invoked with no save target: no callbackGroupId and no conversationId+messageId. " +
+            "The opening call site must pass `onSave` via useOpenHtmlPreviewBridge (callback registry) or a chat target.",
+        );
+        const { toast } = await import("sonner");
+        toast.error("Save is not wired for this content — nothing was saved. This is a bug; please report it.");
+        return;
+      }
       try {
         const { editMessage } = await import(
           "@/features/agents/redux/execution-system/message-crud/edit-message.thunk"
