@@ -1,7 +1,5 @@
 [
   "app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx",
-  "features/administration/kg-cost/service/kgCostService.ts",
-  "features/administration/kg-inspector/service/kgInspectorService.ts",
   "features/agents/services/agentService.ts",
   "features/file-analysis/api/file-analysis.ts",
   "features/files/api/assets.ts",
@@ -14,7 +12,6 @@
   "features/files/redux/thunks.ts",
   "features/files/upload/cloudUpload.ts",
   "features/image-studio/api/python.ts",
-  "features/kg-graph/service/kgGraphService.ts",
   "features/page-extraction/api/stream.ts",
   "features/pdf-extractor/state/thunks.ts",
   "features/pdf/api/streamDrain.tsx",

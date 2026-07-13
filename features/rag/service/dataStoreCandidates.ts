@@ -15,12 +15,13 @@
 // small; the list endpoint is already the app-wide pattern).
 
 import { getJson } from "@/lib/python-client";
+import type { components } from "@/types/python-generated/api-types";
 
-interface ApiDataStoreSummary {
-  id: string;
-  name: string;
-  is_active: boolean;
-}
+// DERIVED from the generated OpenAPI contract (`GET /rag/data-stores` returns
+// `UserDataStoreOut[]`) — never hand-mirrored. This module reads only a few
+// fields; a backend rename still surfaces as a compile error after
+// `pnpm sync-types` rather than a silent runtime drift.
+type ApiDataStoreSummary = components["schemas"]["UserDataStoreOut"];
 
 export async function listDataStoreCandidates(args: {
   search?: string;

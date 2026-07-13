@@ -12,45 +12,26 @@
  * a non-2xx throws a typed `BackendApiError` (see `isRagAlreadyComplete`).
  */
 
-import { getJson, postJson } from "@/lib/python-client";
+import { postJson } from "@/lib/python-client";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { BackendApiError } from "@/lib/api/errors";
+import type { components } from "@/types/python-generated/api-types";
 import type { IngestResponse } from "./ingest";
 
+/**
+ * The file's full RAG lifecycle status. DERIVED from the generated OpenAPI
+ * contract (`FileRagStatusResponse`) — never hand-mirrored, so a backend shape
+ * change surfaces as a compile error after `pnpm sync-types` rather than a
+ * silent runtime drift.
+ */
+export type FileRagStatus = components["schemas"]["FileRagStatusResponse"];
+
 /** Display lifecycle state — the backend derives this (job row + doc anchor). */
-export type FileRagState =
-  | "not_scheduled"
-  | "scheduled"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type FileRagState = FileRagStatus["state"];
 
-export type FileRagTriggerSource =
-  | "auto"
-  | "upload_flag"
-  | "on_demand"
-  | "refresh";
+export type FileRagTriggerSource = NonNullable<FileRagStatus["trigger_source"]>;
 
-export interface FileRagJobError {
-  error_type: string;
-  message: string;
-}
-
-export interface FileRagStatus {
-  file_id: string;
-  state: FileRagState;
-  job_id: string | null;
-  trigger_source: FileRagTriggerSource | null;
-  scheduled_for: string | null; // ISO 8601 (UTC)
-  started_at: string | null;
-  completed_at: string | null;
-  attempt_count: number;
-  skipped_reason: string | null;
-  error: FileRagJobError | null;
-  processed_document_id: string | null;
-  chunk_count: number;
-  document_updated_at: string | null;
-}
+export type FileRagJobError = components["schemas"]["FileRagJobError"];
 
 /** The on-demand ingest / refresh response (mirrors aidream FileIngestResponse). */
 export interface FileIngestResult extends IngestResponse {
@@ -64,8 +45,8 @@ export async function fetchFileRagStatus(
   fileId: string,
   signal?: AbortSignal,
 ): Promise<FileRagStatus> {
-  const { data } = await getJson<FileRagStatus>(
-    `/files/${encodeURIComponent(fileId)}/rag-status`,
+  const { data } = await apiGet(
+    buildPath("/files/{file_id}/rag-status", { file_id: fileId }),
     { signal },
   );
   return data;

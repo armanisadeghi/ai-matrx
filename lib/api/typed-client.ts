@@ -136,12 +136,35 @@ export function buildPath<P extends keyof paths>(
 // Contract-bound verbs
 // ---------------------------------------------------------------------------
 
-/** GET a JSON endpoint. Response is derived from the contract. */
+/** A query-string value; `null`/`undefined` entries are dropped. */
+export type QueryValue = string | number | boolean | null | undefined;
+
+/** Append a query object to a path literal, dropping empty values. */
+export function withQuery<P extends string>(
+  path: P,
+  query?: Record<string, QueryValue>,
+): P {
+  if (!query) return path;
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(query)) {
+    if (v === null || v === undefined) continue;
+    qs.append(k, String(v));
+  }
+  const s = qs.toString();
+  return (s ? `${path}${path.includes("?") ? "&" : "?"}${s}` : path) as P;
+}
+
+/**
+ * GET a JSON endpoint. Response is derived from the contract; the path literal
+ * stays contract-checked even with query params (passed via `opts.query`, which
+ * `withQuery` serializes onto the URL).
+ */
 export function apiGet<P extends PathWith<"get">>(
   path: P,
-  opts?: RequestOptions,
+  opts?: RequestOptions & { query?: Record<string, QueryValue> },
 ): Envelope<GetResult<P>> {
-  return getJson<GetResult<P>>(path, opts);
+  const { query, ...rest } = opts ?? {};
+  return getJson<GetResult<P>>(withQuery(path, query), rest);
 }
 
 /** POST a JSON body. Body AND response are derived from the contract. */

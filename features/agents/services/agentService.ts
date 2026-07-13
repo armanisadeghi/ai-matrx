@@ -10,7 +10,8 @@
 // model + reference lookups. Running an agent uses the existing streaming path,
 // not this client.
 
-import { getJson, patchJson, postJson } from "@/lib/python-client";
+import { getJson } from "@/lib/python-client";
+import { apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
 
 import type {
   AgentDetail,
@@ -49,17 +50,27 @@ export async function listAgents(query: CatalogQuery = {}): Promise<CatalogTree>
 }
 
 export async function getAgent(agentId: string): Promise<AgentDetail> {
-  const { data } = await getJson<AgentDetail>(`${BASE}/agents/${agentId}`);
+  const { data } = await apiGet(
+    buildPath("/agent-service/agents/{agent_id}", { agent_id: agentId }),
+  );
   return data;
 }
 
 export async function listVersions(agentId: string): Promise<AgentVersionInfo[]> {
-  const { data } = await getJson<AgentVersionInfo[]>(`${BASE}/agents/${agentId}/versions`);
+  const { data } = await apiGet(
+    buildPath("/agent-service/agents/{agent_id}/versions", {
+      agent_id: agentId,
+    }),
+  );
   return data;
 }
 
 export async function getVersion(versionId: string): Promise<AgentDetail> {
-  const { data } = await getJson<AgentDetail>(`${BASE}/versions/${versionId}`);
+  const { data } = await apiGet(
+    buildPath("/agent-service/versions/{version_id}", {
+      version_id: versionId,
+    }),
+  );
   return data;
 }
 
@@ -89,12 +100,12 @@ export async function listSkills(query: CatalogQuery = {}): Promise<SkillInfo[]>
 // --- authoring (server-only: meta-agent + schema gate) ---------------------
 
 export async function createAgent(input: CreateAgentInput): Promise<AgentDetail> {
-  const { data } = await postJson<AgentDetail, CreateAgentInput>(`${BASE}/agents`, input);
+  const { data } = await apiPost("/agent-service/agents", input);
   return data;
 }
 
 export async function createStructuredAgent(input: CreateAgentInput): Promise<AgentDetail> {
-  const { data } = await postJson<AgentDetail, CreateAgentInput>(`${BASE}/agents/structured`, input);
+  const { data } = await apiPost("/agent-service/agents/structured", input);
   return data;
 }
 
@@ -102,14 +113,14 @@ export async function updateAgent(
   agentId: string,
   input: UpdateAgentInput,
 ): Promise<AgentDetail> {
-  const { data } = await patchJson<AgentDetail, UpdateAgentInput>(`${BASE}/agents/${agentId}`, input);
+  const { data } = await apiPatch(
+    buildPath("/agent-service/agents/{agent_id}", { agent_id: agentId }),
+    input,
+  );
   return data;
 }
 
 export async function validateSchema(req: ValidateSchemaRequest): Promise<SchemaGateReport> {
-  const { data } = await postJson<SchemaGateReport, ValidateSchemaRequest>(
-    `${BASE}/validate-schema`,
-    req,
-  );
+  const { data } = await apiPost("/agent-service/validate-schema", req);
   return data;
 }

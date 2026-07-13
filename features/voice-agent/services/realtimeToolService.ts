@@ -13,9 +13,13 @@
 //
 // Auth + base URL come from the existing authed Python client (`postJson` in
 // `lib/python-client.ts`): Supabase JWT bearer + `apiConfigSlice` base URL. We
-// do NOT hand-roll fetch or auth. (These endpoints are not yet in the generated
-// OpenAPI `paths`, so `callApi`'s `keyof paths` constraint can't type them; once
-// `pnpm sync-types` regenerates, a typed `callApi` wrapper can replace this.)
+// do NOT hand-roll fetch or auth. The RESPONSE type is now DERIVED from the
+// generated contract (`ToolExecuteResponse`), so a server rename lights up here.
+// The call itself stays on the raw `postJson` (not the typed client): the
+// generated `ToolExecuteRequest` schema marks `store` as required, but this
+// surface intentionally omits it to inherit the server default — routing through
+// `apiPost` would force adding a body field (a runtime change), so the wire body
+// stays a hand-authored mirror of the flattened `ScopedRequest`.
 //
 // HTTP contract: the endpoint returns 200 even on TOOL failure (so the model
 // recovers gracefully) — `ok=false` carries the failure string in `output`. A
@@ -24,6 +28,7 @@
 // crashes.
 
 import { postJson } from "@/lib/python-client";
+import type { components } from "@/types/python-generated/api-types";
 
 /** Optional org/project/task/scope envelope (contract §4 `ToolContextEnvelope`). */
 export interface RealtimeToolContextEnvelope {
@@ -77,13 +82,14 @@ interface RealtimeToolExecuteWireBody {
   scope_ids?: string[];
 }
 
-/** Response from `POST /ai/tools/execute` (contract §4 `ToolExecuteResponse`). */
-export interface RealtimeToolExecuteResponse {
-  call_id: string;
-  ok: boolean;
-  /** ALWAYS a string — the backend `json.dumps`es non-string tool output. */
-  output: string;
-}
+/**
+ * Response from `POST /ai/tools/execute` — DERIVED from the generated OpenAPI
+ * contract (`ToolExecuteResponse`), never hand-mirrored. `output` is ALWAYS a
+ * string (the backend `json.dumps`es non-string tool output). A backend rename
+ * changes the generated type and turns every reader here into a compile error.
+ */
+export type RealtimeToolExecuteResponse =
+  components["schemas"]["ToolExecuteResponse"];
 
 const EXECUTE_PATH = "/ai/tools/execute";
 

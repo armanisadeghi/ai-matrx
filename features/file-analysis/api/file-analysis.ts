@@ -54,6 +54,7 @@ import {
   type RequestOptions,
   type ResponseMeta,
 } from "@/lib/python-client";
+import { apiGet, apiPost, apiPut, buildPath } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 
@@ -135,7 +136,10 @@ export function getAnalysis(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<FileAnalysisResponse> {
-  return getJson<FileAnalysisResponse>(`/files/${fid(fileId)}/analysis`, opts);
+  return apiGet(
+    buildPath("/files/{file_id}/analysis", { file_id: fileId }),
+    opts,
+  );
 }
 
 /**
@@ -167,15 +171,15 @@ export function listPages(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<FilePageOut[]> {
-  return getJson<FilePageOut[]>(`/files/${fid(fileId)}/pages`, opts);
+  return apiGet(buildPath("/files/{file_id}/pages", { file_id: fileId }), opts);
 }
 
 export function getActivePageIds(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<ActivePageIdsResponse> {
-  return getJson<ActivePageIdsResponse>(
-    `/files/${fid(fileId)}/active-pages`,
+  return apiGet(
+    buildPath("/files/{file_id}/active-pages", { file_id: fileId }),
     opts,
   );
 }
@@ -185,8 +189,11 @@ export function getPage(
   pageId: string,
   opts: RequestOptions = {},
 ): Result<FilePageOut> {
-  return getJson<FilePageOut>(
-    `/files/${fid(fileId)}/pages/${fid(pageId)}`,
+  return apiGet(
+    buildPath("/files/{file_id}/pages/{page_id}", {
+      file_id: fileId,
+      page_id: pageId,
+    }),
     opts,
   );
 }
@@ -197,8 +204,11 @@ export function excludePage(
   body: ExcludePageBody,
   opts: RequestOptions = {},
 ): Result<FilePageOut> {
-  return postJson<FilePageOut, ExcludePageBody>(
-    `/files/${fid(fileId)}/pages/${fid(pageId)}/exclude`,
+  return apiPost(
+    buildPath("/files/{file_id}/pages/{page_id}/exclude", {
+      file_id: fileId,
+      page_id: pageId,
+    }),
     body,
     opts,
   );
@@ -235,8 +245,11 @@ export function overridePageText(
   body: OverridePageTextBody,
   opts: RequestOptions = {},
 ): Result<FilePageOverrideOut> {
-  return postJson<FilePageOverrideOut, OverridePageTextBody>(
-    `/files/${fid(fileId)}/pages/${fid(pageId)}/override-text`,
+  return apiPost(
+    buildPath("/files/{file_id}/pages/{page_id}/override-text", {
+      file_id: fileId,
+      page_id: pageId,
+    }),
     body,
     opts,
   );
@@ -246,8 +259,8 @@ export function listOverrides(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<FilePageOverrideOut[]> {
-  return getJson<FilePageOverrideOut[]>(
-    `/files/${fid(fileId)}/overrides`,
+  return apiGet(
+    buildPath("/files/{file_id}/overrides", { file_id: fileId }),
     opts,
   );
 }
@@ -281,8 +294,8 @@ export function createAnnotation(
   body: AnnotationCreateBody,
   opts: RequestOptions = {},
 ): Result<AnnotationOut> {
-  return postJson<AnnotationOut, AnnotationCreateBody>(
-    `/files/${fid(fileId)}/annotations`,
+  return apiPost(
+    buildPath("/files/{file_id}/annotations", { file_id: fileId }),
     body,
     opts,
   );
@@ -294,8 +307,11 @@ export function updateAnnotation(
   body: AnnotationUpdateBody,
   opts: RequestOptions = {},
 ): Result<AnnotationOut> {
-  return putJson<AnnotationOut, AnnotationUpdateBody>(
-    `/files/${fid(fileId)}/annotations/${fid(annotationId)}`,
+  return apiPut(
+    buildPath("/files/{file_id}/annotations/{annotation_id}", {
+      file_id: fileId,
+      annotation_id: annotationId,
+    }),
     body,
     opts,
   );
@@ -317,8 +333,10 @@ export function extractAtBbox(
   body: ExtractAtBboxBody,
   opts: RequestOptions = {},
 ): Result<ExtractAtBboxResponse> {
-  return postJson<ExtractAtBboxResponse, ExtractAtBboxBody>(
-    `/files/${fid(fileId)}/annotations/extract-at-bbox`,
+  return apiPost(
+    buildPath("/files/{file_id}/annotations/extract-at-bbox", {
+      file_id: fileId,
+    }),
     body,
     opts,
   );
@@ -329,8 +347,8 @@ export function snapBbox(
   body: SnapBboxBody,
   opts: RequestOptions = {},
 ): Result<SnapBboxResponse> {
-  return postJson<SnapBboxResponse, SnapBboxBody>(
-    `/files/${fid(fileId)}/annotations/snap-bbox`,
+  return apiPost(
+    buildPath("/files/{file_id}/annotations/snap-bbox", { file_id: fileId }),
     body,
     opts,
   );
@@ -341,8 +359,10 @@ export function bulkFromCandidates(
   body: BulkCandidateBody,
   opts: RequestOptions = {},
 ): Result<BulkCandidateResponse> {
-  return postJson<BulkCandidateResponse, BulkCandidateBody>(
-    `/files/${fid(fileId)}/annotations/bulk-from-candidates`,
+  return apiPost(
+    buildPath("/files/{file_id}/annotations/bulk-from-candidates", {
+      file_id: fileId,
+    }),
     body,
     opts,
   );
@@ -352,8 +372,8 @@ export function getKeyFindings(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<KeyFindingsResponse> {
-  return getJson<KeyFindingsResponse>(
-    `/files/${fid(fileId)}/key-findings`,
+  return apiGet(
+    buildPath("/files/{file_id}/key-findings", { file_id: fileId }),
     opts,
   );
 }
@@ -362,8 +382,8 @@ export function getAnnotationManifest(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<ManifestResponse> {
-  return getJson<ManifestResponse>(
-    `/files/${fid(fileId)}/annotations/manifest`,
+  return apiGet(
+    buildPath("/files/{file_id}/annotations/manifest", { file_id: fileId }),
     opts,
   );
 }
@@ -398,7 +418,7 @@ export function putAnalysisPreferences(
 export function getLabelCatalog(
   opts: RequestOptions = {},
 ): Result<LabelCatalogResponse> {
-  return getJson<LabelCatalogResponse>(`/annotations/label-catalog`, opts);
+  return apiGet("/annotations/label-catalog", opts);
 }
 
 // ─── Entities ────────────────────────────────────────────────────────────────
@@ -407,7 +427,10 @@ export function listEntities(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<EntityOut[]> {
-  return getJson<EntityOut[]>(`/files/${fid(fileId)}/entities`, opts);
+  return apiGet(
+    buildPath("/files/{file_id}/entities", { file_id: fileId }),
+    opts,
+  );
 }
 
 export function createEntity(
@@ -415,8 +438,8 @@ export function createEntity(
   body: EntityCreateBody,
   opts: RequestOptions = {},
 ): Result<EntityOut> {
-  return postJson<EntityOut, EntityCreateBody>(
-    `/files/${fid(fileId)}/entities`,
+  return apiPost(
+    buildPath("/files/{file_id}/entities", { file_id: fileId }),
     body,
     opts,
   );
@@ -428,8 +451,11 @@ export function updateEntity(
   body: EntityUpdateBody,
   opts: RequestOptions = {},
 ): Result<EntityOut> {
-  return putJson<EntityOut, EntityUpdateBody>(
-    `/files/${fid(fileId)}/entities/${fid(entityId)}`,
+  return apiPut(
+    buildPath("/files/{file_id}/entities/{entity_id}", {
+      file_id: fileId,
+      entity_id: entityId,
+    }),
     body,
     opts,
   );
@@ -448,8 +474,8 @@ export function findSimilar(
   body: FindSimilarBody,
   opts: RequestOptions = {},
 ): Result<FindSimilarResponse> {
-  return postJson<FindSimilarResponse, FindSimilarBody>(
-    `/files/${fid(fileId)}/entities/find-similar`,
+  return apiPost(
+    buildPath("/files/{file_id}/entities/find-similar", { file_id: fileId }),
     body,
     opts,
   );
@@ -487,8 +513,8 @@ export function extractRegion(
   body: RegionExtractRequest,
   opts: RequestOptions = {},
 ): Result<RegionExtractResponse> {
-  return postJson<RegionExtractResponse, RegionExtractRequest>(
-    `/files/${fid(fileId)}/regions/extract`,
+  return apiPost(
+    buildPath("/files/{file_id}/regions/extract", { file_id: fileId }),
     body,
     opts,
   );
@@ -499,8 +525,10 @@ export function renderPageWithOverlay(
   body: RenderRequest,
   opts: RequestOptions = {},
 ): Result<RenderResponse> {
-  return postJson<RenderResponse, RenderRequest>(
-    `/files/${fid(fileId)}/render-page-with-overlay`,
+  return apiPost(
+    buildPath("/files/{file_id}/render-page-with-overlay", {
+      file_id: fileId,
+    }),
     body,
     opts,
   );
@@ -530,8 +558,8 @@ export function maskFile(
   body: MaskRequestBody,
   opts: RequestOptions = {},
 ): Result<MaskResponse> {
-  return postJson<MaskResponse, MaskRequestBody>(
-    `/files/${fid(fileId)}/redact/mask`,
+  return apiPost(
+    buildPath("/files/{file_id}/redact/mask", { file_id: fileId }),
     body,
     opts,
   );
@@ -541,11 +569,7 @@ export function restoreText(
   body: RestoreRequestBody,
   opts: RequestOptions = {},
 ): Result<RestoreResponse> {
-  return postJson<RestoreResponse, RestoreRequestBody>(
-    `/redact/restore`,
-    body,
-    opts,
-  );
+  return apiPost("/redact/restore", body, opts);
 }
 
 export function revokeSession(
@@ -565,7 +589,7 @@ export function revokeSession(
 export function getEscrowWrappingKey(
   opts: RequestOptions = {},
 ): Result<EscrowWrappingKeyResponse> {
-  return getJson<EscrowWrappingKeyResponse>("/redact/escrow/wrapping-key", opts);
+  return apiGet("/redact/escrow/wrapping-key", opts);
 }
 
 /** Org-authorized, audit-logged KMS unwrap of an escrowed session key. */
@@ -573,9 +597,5 @@ export function recoverEscrowedKey(
   body: EscrowRecoverBody,
   opts: RequestOptions = {},
 ): Result<EscrowRecoverResponse> {
-  return postJson<EscrowRecoverResponse, EscrowRecoverBody>(
-    "/redact/escrow/recover",
-    body,
-    opts,
-  );
+  return apiPost("/redact/escrow/recover", body, opts);
 }

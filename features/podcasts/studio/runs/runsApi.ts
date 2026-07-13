@@ -21,14 +21,25 @@
 // HTTP failures (400/404/422) throw from postNdjson itself.
 
 import { postNdjson } from "@/lib/python-client";
+import type { components } from "@/types/python-generated/api-types";
 import type {
   PodcastAssetResultEvent,
   TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
-import type { RunAsset, RunAssetKind } from "./run-types";
+import type { RunAsset } from "./run-types";
 
 /** Optional live-progress tap — every stream event is forwarded as-is. */
 export type AssetStreamListener = (evt: TypedStreamEvent) => void;
+
+/**
+ * Request bodies DERIVED from the generated OpenAPI contract — a backend rename
+ * lights up every callsite. The stream MECHANISM stays `postNdjson` (these
+ * endpoints respond with NDJSON, which the JSON typed-client can't wrap), but
+ * the bodies are still contract-bound.
+ */
+export type RegenerateAssetRequest =
+  components["schemas"]["RegenerateAssetRequest"];
+export type AddAssetRequest = components["schemas"]["AddAssetRequest"];
 
 /** Normalize the terminal wire event (optional fields) into the durable
  *  RunAsset DTO shape the rest of the runs code consumes. */
@@ -75,12 +86,7 @@ async function runAssetStream<B>(
  *  Runs an AI agent server-side and resolves with the new durable asset. */
 export async function regenerateAsset(
   runId: string,
-  body: {
-    asset_kind: RunAssetKind;
-    slot: number;
-    model_alias?: string;
-    custom_prompt?: string;
-  },
+  body: RegenerateAssetRequest,
   onEvent?: AssetStreamListener,
 ): Promise<RunAsset> {
   return runAssetStream(
@@ -94,7 +100,7 @@ export async function regenerateAsset(
  *  Runs an AI agent server-side and resolves with the new durable asset. */
 export async function addAsset(
   runId: string,
-  body: { asset_kind: RunAssetKind; description: string; model_alias?: string },
+  body: AddAssetRequest,
   onEvent?: AssetStreamListener,
 ): Promise<RunAsset> {
   return runAssetStream(`/podcast/runs/${runId}/assets/add`, body, onEvent);

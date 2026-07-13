@@ -9,21 +9,8 @@
 // are USER-scoped: the backend filters the graph + mentions to what
 // `ctx.user_id` can see. Keep these shapes in sync with the Pydantic models.
 
-import { getJson } from "@/lib/python-client";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
 import type { GraphPayload, GraphQueryParams, MentionsPage } from "../types";
-
-function buildQuery(
-  params: Record<string, string | number | null | undefined>,
-): string {
-  const qs = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== null && value !== undefined && `${value}` !== "") {
-      qs.set(key, `${value}`);
-    }
-  }
-  const s = qs.toString();
-  return s ? `?${s}` : "";
-}
 
 /**
  * GET /kg/graph — the org-wide graph (no scopeId) or one scope's neighborhood
@@ -33,15 +20,15 @@ export async function fetchKgGraph(
   params: GraphQueryParams = {},
   opts: { signal?: AbortSignal } = {},
 ): Promise<GraphPayload> {
-  const query = buildQuery({
-    organization_id: params.organizationId,
-    scope_id: params.scopeId,
-    kind: params.kind,
-    depth: params.depth,
-    limit: params.limit,
-  });
-  const { data } = await getJson<GraphPayload>(`/kg/graph${query}`, {
+  const { data } = await apiGet("/kg/graph", {
     signal: opts.signal,
+    query: {
+      organization_id: params.organizationId,
+      scope_id: params.scopeId,
+      kind: params.kind,
+      depth: params.depth,
+      limit: params.limit,
+    },
   });
   return data;
 }
@@ -55,13 +42,9 @@ export async function fetchEntityMentions(
   params: { limit?: number; offset?: number } = {},
   opts: { signal?: AbortSignal } = {},
 ): Promise<MentionsPage> {
-  const query = buildQuery({
-    limit: params.limit,
-    offset: params.offset,
-  });
-  const { data } = await getJson<MentionsPage>(
-    `/kg/graph/entity/${encodeURIComponent(entityId)}/mentions${query}`,
-    { signal: opts.signal },
+  const { data } = await apiGet(
+    buildPath("/kg/graph/entity/{entity_id}/mentions", { entity_id: entityId }),
+    { signal: opts.signal, query: { limit: params.limit, offset: params.offset } },
   );
   return data;
 }

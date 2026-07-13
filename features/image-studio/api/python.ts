@@ -15,7 +15,9 @@
  * `applyEdit` + typed sugar for the common families.
  */
 
-import { getJson, postJson, postNdjson } from "@/lib/python-client";
+import { postJson, postNdjson } from "@/lib/python-client";
+import { apiGet } from "@/lib/api/typed-client";
+import type { components } from "@/types/python-generated/api-types";
 import type { ImageEditCompleteData } from "@/types/python-generated/stream-events";
 
 // ---------------------------------------------------------------------------
@@ -332,25 +334,19 @@ export async function upscaleImage(body: {
 // ops whose optional backend isn't installed.
 // ---------------------------------------------------------------------------
 
-export interface OpsCatalogEntry {
-  op: string;
-  family: string;
-  available: boolean;
-  label?: string;
-  description?: string;
-  /** JSON Schema for `params`. */
-  params_schema?: Record<string, unknown>;
-}
+/** One op descriptor — DERIVED from the generated contract, never hand-mirrored. */
+export type OpsCatalogEntry = components["schemas"]["ImageOpDescriptor"];
 
-export interface ImageOpsCatalog {
-  ops: OpsCatalogEntry[];
-  aspect_ratios?: Record<string, number>;
-  backends?: Record<string, boolean>;
-}
+/**
+ * `GET /images/ops` response — DERIVED from the generated OpenAPI contract.
+ * A backend field rename lights up every reader here after `pnpm sync-types`.
+ */
+export type ImageOpsCatalog = components["schemas"]["ImageOpsCatalog"];
 
 export async function listOps(): Promise<ImageOpsCatalog> {
-  // GET, not POST — POSTing a GET-only route returns 405.
-  const { data } = await getJson<ImageOpsCatalog>("/images/ops");
+  // GET, not POST — POSTing a GET-only route returns 405. Contract-bound: the
+  // response type is derived from the `/images/ops` operation, not asserted.
+  const { data } = await apiGet("/images/ops");
   return data;
 }
 

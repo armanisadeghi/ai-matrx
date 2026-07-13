@@ -12,6 +12,12 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D44 — RAG hand-mirrored types diverge from contract; consumers assume non-null on contract-optional fields (2026-07-12)
+Surfaced during the API-contract campaign (see [`lib/api/FEATURE.md`](lib/api/FEATURE.md)). Two latent copies of the `/images/convert` drift bug class, left unconverted because the fix touches consumers (out of that wave's scope):
+- **`features/rag/types/documents.ts`** hand-mirrors `DocumentDetail` / `LineageTree` / `PageSummary` / `PageDetail` / `ChunkRow` instead of deriving from `components["schemas"][...]`. It narrows `source_kind` to a union and marks fields required where the generated schema uses `string`/optional (adds `section_subtype`). Will drift silently on the next backend change. Fix: derive from generated, then reconcile the consumers that rely on the narrowing.
+- **`RagSearchExperience.tsx`** dereferences `ExpandResponse.query_vector_preview` and iterates `InventoryResponse.by_visibility_route` **unguarded**, but the generated contract marks both **optional** — so if the server omits them the FE throws. Deriving those response types (correct) makes this a compile error; guard the consumers, then derive.
+Both are in the `check:api-contracts` baseline (still on the raw client). Decides: frontend.
+
 ### D40 — aidream podcast audio pipeline never reaches a `ready` episode: root cause MOVED script→TTS (2026-07-10)
 **Decides: aidream (podcast pipeline + Google TTS provider, NOT frontend — filed here as the P3 blocker it caused).** Still `0` `education.study_media` rows with `media_kind='audio'` at `status='ready'`, but the failing stage moved after the backend redeploy. Two facts, verified live 2026-07-10 ~17:45 UTC via `POST https://server.app.matrxserver.com/podcast/generate` (real admin JWT, `buildAudioRequest({format:'overview',sourceKind:'note'})` from a real 7-card deck, streamed NDJSON):
 - **FIXED — the script agent.** `create_script` now emits a complete, valid `<podcast_dialogue>…</podcast_dialogue>` (two named hosts "Leo"/"Maya", full multi-turn dialogue) plus a `<speaker_settings>` block. The old "returned prose/thinking, not a script" failure no longer reproduces. The pipeline now also streams over the **agent V2 event vocabulary** (`reasoning`/`data`/`record_update`/`completion`/`info`/`error`), not the legacy `podcast_*` events.

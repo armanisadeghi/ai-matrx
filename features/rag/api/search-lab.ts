@@ -9,6 +9,7 @@
  * `features/rag/components/search/`.
  */
 import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
+import type { components } from "@/types/python-generated/api-types";
 
 // ---------------------------------------------------------------------------
 // /expand — multi-query + HyDE preview
@@ -45,28 +46,13 @@ export async function ragExpand(
 // /inventory — what does this caller have access to?
 // ---------------------------------------------------------------------------
 
-export interface InventoryBucket {
-  source_kind: string;
-  visible_chunks: number;
-  distinct_sources: number;
-}
-
-export interface InventoryTopSource {
-  source_kind: string;
-  source_id: string;
-  chunk_count: number;
-  file_name: string | null;
-  organization_id: string | null;
-  owner_id: string | null;
-  processed_document_id: string | null;
-}
-
-export interface InventoryScope {
-  user_id: string;
-  organization_id: string | null;
-  is_admin: boolean;
-  admin_bypass_acl: boolean;
-}
+// Derived from the generated OpenAPI contract, never hand-mirrored — a backend
+// rename/shape change turns every drifted callsite into a compile error after
+// `pnpm sync-types`. (`InventoryScope`/`InventoryTopSource` are the FE names for
+// the backend `ScopeContext`/`TopSource` schemas.)
+export type InventoryBucket = components["schemas"]["InventoryBucket"];
+export type InventoryTopSource = components["schemas"]["TopSource"];
+export type InventoryScope = components["schemas"]["ScopeContext"];
 
 export interface InventoryResponse {
   scope: InventoryScope;
@@ -275,63 +261,21 @@ export interface AgentToolSearchRequest {
   include_sources?: { source_kind: string; source_id: string }[];
 }
 
-export interface AgentToolEntityMapLink {
-  entity_id: string | null;
-  name: string | null;
-  kind: string | null;
-  weight: number | null;
-}
+// Response shapes DERIVED from the generated OpenAPI contract, never
+// hand-mirrored — a backend rename/shape change becomes a compile error after
+// `pnpm sync-types` instead of a silent runtime drift.
+export type AgentToolEntityMapLink =
+  components["schemas"]["AgentToolEntityMapLink"];
 
-export interface AgentToolEntityMapEntry {
-  entity_id: string | null;
-  name: string | null;
-  kind: string | null;
-  mention_count: number | null;
-  artifact_count: number | null;
-  source_kind_counts: Record<string, number>;
-  top_chunk_id: string | null;
-  importance: number | null;
-  is_concept: boolean;
-  linked: AgentToolEntityMapLink[];
-}
+export type AgentToolEntityMapEntry =
+  components["schemas"]["AgentToolEntityMapEntry"];
 
-export interface AgentToolHit {
-  chunk_id: string | null;
-  source_kind: string | null;
-  source_id: string | null;
-  snippet: string;
-  score: number | null;
-  vector_rank: number | null;
-  lexical_rank: number | null;
-  rerank_score: number | null;
-  metadata: Record<string, unknown>;
-  entities: string[];
-  entity_rank: number | null;
-  file_name: string | null;
-  page_number: number | null;
-}
+export type AgentToolHit = components["schemas"]["AgentToolHit"];
 
-export interface AgentToolSearchOne {
-  query: string;
-  hits: AgentToolHit[];
-  total_candidates: number;
-  embedding_model: string;
-  reranker_model: string | null;
-  latency_ms: number;
-  matched_entities: string[];
-  entity_map: AgentToolEntityMapEntry[];
-  /** The verbatim JSON string the model receives as the tool_result content. */
-  tool_result_text: string;
-  error: string | null;
-}
+export type AgentToolSearchOne = components["schemas"]["AgentToolSearchOne"];
 
-export interface AgentToolSearchResponse {
-  scope: InventoryScope;
-  tool_name: string;
-  args: Record<string, unknown>;
-  results: AgentToolSearchOne[];
-  notes: string[];
-}
+export type AgentToolSearchResponse =
+  components["schemas"]["AgentToolSearchResponse"];
 
 export async function ragAgentToolSearch(
   body: AgentToolSearchRequest,
@@ -355,13 +299,8 @@ export interface AgentToolGetChunkRequest {
   organization_id?: string | null;
 }
 
-export interface AgentToolGetChunkResponse {
-  status: "ok" | "not_found" | "forbidden";
-  scope: InventoryScope;
-  chunk: Record<string, unknown> | null;
-  tool_result_text: string | null;
-  note: string | null;
-}
+export type AgentToolGetChunkResponse =
+  components["schemas"]["AgentToolGetChunkResponse"];
 
 export async function ragAgentToolGetChunk(
   body: AgentToolGetChunkRequest,
