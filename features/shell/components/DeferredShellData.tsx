@@ -8,6 +8,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { setUser, setShellDataLoaded } from "@/lib/redux/slices/userSlice";
 import {
   setModulePreferences,
+  stripLegacyDefaultModelSentinels,
   type UserPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
@@ -68,7 +69,14 @@ export default function DeferredShellData() {
         void dispatch(bootstrapActiveOrganization());
 
         if (shellData.preferences_exists && shellData.preferences) {
-          for (const [key, value] of Object.entries(shellData.preferences)) {
+          // Load boundary: fold the legacy hardcoded defaultModel seed
+          // constants back to null (= platform default) before the module
+          // merges — setModulePreferences is a user-write reducer and must
+          // never sanitize, so it happens here.
+          const sanitized = stripLegacyDefaultModelSentinels(
+            shellData.preferences as Partial<UserPreferences>,
+          );
+          for (const [key, value] of Object.entries(sanitized)) {
             if (key !== "_meta" && value != null) {
               dispatch(
                 setModulePreferences({

@@ -136,7 +136,9 @@ export interface PhotoEditingPreferences {
 }
 
 export interface ImageGenerationPreferences {
-  defaultModel: string;
+  /** Model id, or null = platform default (resolved from the AI catalog at
+   *  consumption time — features/ai-models/redux/platformDefaultModel.ts). */
+  defaultModel: string | null;
   resolution: string;
   style: string;
   useAiEnhancements: boolean;
@@ -144,7 +146,9 @@ export interface ImageGenerationPreferences {
 }
 
 export interface TextGenerationPreferences {
-  defaultModel: string;
+  /** Model id, or null = platform default (resolved from the AI catalog at
+   *  consumption time — features/ai-models/redux/platformDefaultModel.ts). */
+  defaultModel: string | null;
   tone: string;
   creativityLevel: string;
   language: string;
@@ -307,7 +311,9 @@ export interface PlaygroundPreferences {
 }
 
 export interface AiModelsPreferences {
-  defaultModel: string;
+  /** Model id, or null = platform default (resolved from the AI catalog at
+   *  consumption time — features/ai-models/redux/platformDefaultModel.ts). */
+  defaultModel: string | null;
   activeModels: string[];
   inactiveModels: string[];
   newModels: string[];
@@ -381,7 +387,9 @@ export type ThinkingMode = "none" | "simple" | "deep";
 
 export interface PromptsPreferences {
   showSettingsOnMainPage: boolean;
-  defaultModel: string; // ID of the default model from active models
+  /** Model id, or null = platform default (resolved from the AI catalog at
+   *  consumption time — features/ai-models/redux/platformDefaultModel.ts). */
+  defaultModel: string | null;
   defaultTemperature: number; // 0-2 in 0.01 increments
   alwaysIncludeInternalWebSearch: boolean;
   includeThinkingInAutoPrompts: ThinkingMode;
@@ -589,11 +597,75 @@ function stripSupersededVideoConferenceAudio(
   return cleaned as Partial<VideoConferencePreferences>;
 }
 
+/**
+ * LOUD MIGRATION (2026-07, D41 item 3): the preferences seed used to HARDCODE
+ * default models — a model UUID for prompts/aiModels, "GPT-4o" for
+ * textGeneration, "standard" for imageGeneration. The seed is now `null` =
+ * "platform default" (resolved from the AI catalog at consumption time via
+ * features/ai-models/redux/platformDefaultModel.ts), but persisted rows
+ * (IDB / localStorage mirror / remote users.user_preferences) still carry
+ * those seeded constants and are INDISTINGUISHABLE from explicit user
+ * choices. Accepted trade-off: the EXACT legacy sentinel values are treated
+ * as null ("platform default") at every load boundary. A user who never
+ * chose a model gets null → catalog default; any other stored value is an
+ * explicit choice and is kept. (Known edge, accepted: a user who
+ * deliberately re-picks the old seeded model — GPT 4.1 Mini — is folded back
+ * to "platform default" on the next load.) The stored blob self-heals on the
+ * next engine save.
+ */
+type DefaultModelModule =
+  | "prompts"
+  | "aiModels"
+  | "textGeneration"
+  | "imageGeneration";
+
+const LEGACY_DEFAULT_MODEL_SENTINELS: Readonly<
+  Record<DefaultModelModule, string>
+> = {
+  prompts: "548126f2-714a-4562-9001-0c31cbeea375", // seeded GPT-4.1 Mini uuid
+  aiModels: "548126f2-714a-4562-9001-0c31cbeea375", // seeded GPT-4.1 Mini uuid
+  textGeneration: "GPT-4o", // seeded display-name string (never a real id)
+  imageGeneration: "standard", // seeded preset string (never a real id)
+};
+
+/**
+ * Strip the legacy hardcoded `defaultModel` seed values from a LOADED
+ * preferences payload (persisted blob / remote row) — with a warning, never
+ * silently — so a stale seed can't masquerade as a user choice. Load
+ * boundaries ONLY: user-initiated writes (setPreference / setModulePreferences
+ * from the UI) are never sanitized.
+ */
+export function stripLegacyDefaultModelSentinels(
+  loaded: Partial<UserPreferences>,
+): Partial<UserPreferences> {
+  const out: Partial<UserPreferences> = { ...loaded };
+  const scrub = <K extends DefaultModelModule>(module: K): void => {
+    const prefs = out[module];
+    if (prefs?.defaultModel === LEGACY_DEFAULT_MODEL_SENTINELS[module]) {
+      console.warn(
+        `[userPreferences] MIGRATION: persisted ${module}.defaultModel holds the ` +
+          `legacy seeded constant "${prefs.defaultModel}" — treating it as null ` +
+          "(platform default, resolved from the AI catalog). The stored blob " +
+          "self-heals on the next save.",
+      );
+      out[module] = { ...prefs, defaultModel: null };
+    }
+  };
+  scrub("prompts");
+  scrub("aiModels");
+  scrub("textGeneration");
+  scrub("imageGeneration");
+  return out;
+}
+
 // Helper function to ensure preferences have the proper structure
 export const initializeUserPreferencesState = (
-  preferences: Partial<UserPreferences> = {},
+  rawPreferences: Partial<UserPreferences> = {},
   setAsLoaded: boolean = false,
 ): UserPreferencesState => {
+  // Callers pass PERSISTED data here (store bootstrap / SSR-loaded rows) —
+  // a load boundary, so the legacy defaultModel seed constants are stripped.
+  const preferences = stripLegacyDefaultModelSentinels(rawPreferences);
   const defaultMeta = {
     isLoading: false,
     error: null,
@@ -616,7 +688,9 @@ export const initializeUserPreferencesState = (
     },
     prompts: {
       showSettingsOnMainPage: false,
-      defaultModel: "548126f2-714a-4562-9001-0c31cbeea375", // GPT-4.1 Mini
+      // null = platform default, resolved from the AI catalog (is_primary on
+      // ai.model_public) at consumption time — never a hardcoded model id.
+      defaultModel: null,
       defaultTemperature: 1.0,
       alwaysIncludeInternalWebSearch: true,
       includeThinkingInAutoPrompts: "none",
@@ -691,14 +765,16 @@ export const initializeUserPreferencesState = (
       watermarkEnabled: false,
     },
     imageGeneration: {
-      defaultModel: "standard",
+      // null = platform default (catalog-resolved) — see prompts.defaultModel.
+      defaultModel: null,
       resolution: "1080p",
       style: "realistic",
       useAiEnhancements: true,
       colorPalette: "vibrant",
     },
     textGeneration: {
-      defaultModel: "GPT-4o",
+      // null = platform default (catalog-resolved) — see prompts.defaultModel.
+      defaultModel: null,
       tone: "neutral",
       creativityLevel: "medium",
       language: "en",
@@ -749,7 +825,8 @@ export const initializeUserPreferencesState = (
       preferredEndpoint: "",
     },
     aiModels: {
-      defaultModel: "548126f2-714a-4562-9001-0c31cbeea375", // GPT-4.1 Mini
+      // null = platform default (catalog-resolved) — see prompts.defaultModel.
+      defaultModel: null,
       activeModels: [],
       inactiveModels: [],
       newModels: [],
@@ -1079,9 +1156,12 @@ const userPreferencesSlice = createSlice({
     // persisted per A15/partialize).
     builder.addCase(REHYDRATE_ACTION_TYPE, (state, action: RehydrateAction) => {
       if (action.payload.sliceName !== "userPreferences") return;
-      const loaded = action.payload.state as
+      const rawLoaded = action.payload.state as
         Partial<UserPreferences> | undefined;
-      if (!loaded) return;
+      if (!rawLoaded) return;
+      // Load boundary: fold the legacy hardcoded defaultModel seed constants
+      // back to null so a stale seed can't masquerade as a user choice.
+      const loaded = stripLegacyDefaultModelSentinels(rawLoaded);
 
       if (loaded.favorites)
         state.favorites = { ...state.favorites, ...loaded.favorites };

@@ -14,7 +14,10 @@ export const defaultUserPreferences: UserPreferences = {
   },
   prompts: {
     showSettingsOnMainPage: false,
-    defaultModel: "548126f2-714a-4562-9001-0c31cbeea375", // GPT-4.1 Mini
+    // null = platform default, resolved from the AI catalog (is_primary on
+    // ai.model_public) at consumption time via
+    // features/ai-models/redux/platformDefaultModel.ts — never a hardcoded id.
+    defaultModel: null,
     defaultTemperature: 1.0,
     alwaysIncludeInternalWebSearch: true,
     includeThinkingInAutoPrompts: "none",
@@ -72,14 +75,16 @@ export const defaultUserPreferences: UserPreferences = {
     watermarkEnabled: false,
   },
   imageGeneration: {
-    defaultModel: "standard",
+    // null = platform default (catalog-resolved) — see prompts.defaultModel.
+    defaultModel: null,
     resolution: "1080p",
     style: "realistic",
     useAiEnhancements: true,
     colorPalette: "vibrant",
   },
   textGeneration: {
-    defaultModel: "GPT-4o",
+    // null = platform default (catalog-resolved) — see prompts.defaultModel.
+    defaultModel: null,
     tone: "neutral",
     creativityLevel: "medium",
     language: "en",
@@ -143,7 +148,8 @@ export const defaultUserPreferences: UserPreferences = {
     preferredEndpoint: "",
   },
   aiModels: {
-    defaultModel: "548126f2-714a-4562-9001-0c31cbeea375", // GPT-4.1 Mini
+    // null = platform default (catalog-resolved) — see prompts.defaultModel.
+    defaultModel: null,
     activeModels: [],
     inactiveModels: [],
     newModels: [],
