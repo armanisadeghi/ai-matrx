@@ -163,7 +163,20 @@ export async function createScanPdf(
         }
         continue;
       }
-      result = event.data as unknown as ScanPdfResult;
+      // Content-processing progress (clean/chunk/embed/NER, `kind`
+      // discriminant) streams AFTER the scan result — never the result.
+      if (d && typeof d === "object" && "kind" in d) {
+        const msg = typeof d.message === "string" ? d.message : null;
+        if (msg) onProgress?.(msg);
+        continue;
+      }
+      if (d && typeof d === "object" && "status" in d) {
+        result = event.data as unknown as ScanPdfResult;
+        // Resolve the scan NOW — the server keeps streaming pipeline
+        // progress for ~30s+, and it finishes that work even after we
+        // stop reading (streams detach on disconnect, never cancel).
+        break;
+      }
     }
   }
   if (!result) {
