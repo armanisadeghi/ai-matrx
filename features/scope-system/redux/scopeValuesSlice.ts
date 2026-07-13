@@ -8,6 +8,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { ContextValueType, ContextItem } from "./contextItemsSlice";
+import { updateContextItem, deleteContextItem } from "./contextItemsSlice";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 
 /**
@@ -205,6 +206,47 @@ const slice = createSlice({
         );
         state.savingPairs = state.savingPairs.filter((k) => k !== key);
         state.error = action.error.message ?? "Failed to save value";
+      })
+      // Cross-slice cache patch: a context item's DEFINITION lives in
+      // contextItemsSlice, but each `byScope` row is a DENORMALIZED join of that
+      // definition + the per-scope value. Editing the item (type, component,
+      // display name, …) must re-flow those definition fields into every cached
+      // row, or the field renders with the stale type/component after the drawer
+      // closes. Mutation-driven, per FEATURE.md fetching invariant #5.
+      .addCase(updateContextItem.fulfilled, (state, action) => {
+        const item = action.payload;
+        for (const scopeId of Object.keys(state.byScope)) {
+          const list = state.byScope[scopeId];
+          if (!list.some((r) => r.item_id === item.id)) continue;
+          state.byScope[scopeId] = list.map((row) =>
+            row.item_id === item.id
+              ? {
+                  ...row,
+                  // Definition fields only — never touch the value_* columns.
+                  key: item.key,
+                  slug: item.slug,
+                  display_name: item.display_name,
+                  description: item.description,
+                  category: item.category,
+                  value_type: item.value_type,
+                  custom_component: item.custom_component ?? null,
+                  fetch_hint: item.fetch_hint,
+                  sensitivity: item.sensitivity,
+                  allowed_reference_types: item.allowed_reference_types ?? null,
+                  max_items: item.max_items,
+                  allowed_scope_type_ids: item.allowed_scope_type_ids ?? null,
+                }
+              : row,
+          );
+        }
+      })
+      .addCase(deleteContextItem.fulfilled, (state, action) => {
+        const itemId = action.payload;
+        for (const scopeId of Object.keys(state.byScope)) {
+          const list = state.byScope[scopeId];
+          const next = list.filter((r) => r.item_id !== itemId);
+          if (next.length !== list.length) state.byScope[scopeId] = next;
+        }
       });
   },
 });

@@ -53,6 +53,7 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { EntryModeToggle, type EntryMode } from "@/features/scopes/components/reference/EntryModeToggle";
 import { ReferenceConfigFields } from "@/features/scopes/components/reference/ReferenceConfigFields";
+import { ContextItemCurrentValues } from "./ContextItemCurrentValues";
 
 interface ContextItemSettingsFormProps {
   itemId: string;
@@ -361,6 +362,17 @@ export function ContextItemSettingsForm({
           </div>
         )}
       </div>
+
+      {/* What already exists — so a type/component change is an informed one
+          (existing values don't auto-convert). */}
+      {orgId && (
+        <ContextItemCurrentValues
+          itemId={item.id}
+          scopeTypeId={item.scope_type_id}
+          orgId={orgId}
+          labelPlural={scopeTypeNode?.label_plural}
+        />
+      )}
 
       <div className="space-y-1.5">
         <Label className="text-xs">Description</Label>
