@@ -1423,6 +1423,49 @@ export interface UntypedDataPayload {
   type: string;
 }
 
+// --- Conversation Value Store Events (kind-discriminated data events) ---
+
+export interface ValueDescriptor {
+  key: string;
+  description: string;
+  kind: string;
+  chars: number;
+  truncated?: boolean;
+  preview?: string;
+  json_keys?: string[] | null;
+  fence: string;
+}
+
+export interface ValueStoredEvent {
+  kind?: "value_store.stored";
+  conversation_id: string;
+  descriptor: ValueDescriptor;
+  source_agent_id?: string | null;
+  source_call_id?: string | null;
+}
+
+export interface ContextGroomedEvent {
+  kind?: "value_store.groomed";
+  conversation_id: string;
+  stubbed_keys?: string[];
+  retained_keys?: string[];
+  source: string;
+}
+
+export type ValueStoreDataEvent = ValueStoredEvent | ContextGroomedEvent;
+
+/** Narrows a `data` event payload to ValueStoredEvent (a sub-agent result landed in the store). */
+export function isValueStoredEvent(value: unknown): value is ValueStoredEvent {
+  return typeof value === "object" && value !== null
+    && (value as { kind?: unknown }).kind === "value_store.stored";
+}
+
+/** Narrows a `data` event payload to ContextGroomedEvent (model-view groom stamps applied). */
+export function isContextGroomedEvent(value: unknown): value is ContextGroomedEvent {
+  return typeof value === "object" && value !== null
+    && (value as { kind?: unknown }).kind === "value_store.groomed";
+}
+
 // --- Completion Result Models ---
 
 export interface LlmRequestResult {
