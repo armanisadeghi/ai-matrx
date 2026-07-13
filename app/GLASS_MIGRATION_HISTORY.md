@@ -111,5 +111,7 @@ After the migration, all glass classes are in `globals.css` which is fine for br
 
 ## Reference File
 
-`app/shell-original-a6b46613c.css` — full verbatim copy of `styles/shell.css` at commit `a6b46613c`.
-Use this as the canonical reference if any glass value needs to be verified.
+`app/shell-original-a6b46613c.css` was a full verbatim copy of `styles/shell.css` at
+commit `a6b46613c`, kept as a glass-value reference during the migration. It was unreferenced
+dead weight (2,076 lines) and has been **removed** — recover it from git history at that commit
+if a historical glass value ever needs verifying.
