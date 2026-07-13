@@ -171,6 +171,15 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-07-12` — **Default-model prefs: null = "Platform default" (D41 item 3).**
+  `prompts/textGeneration/imageGeneration/aiModels.defaultModel` are `string | null`; the seeds are
+  null and the legacy seeded constants ("GPT-4o", "standard", the GPT-4.1-Mini uuid) are folded to
+  null loudly at every load boundary (`stripLegacyDefaultModelSentinels` in `userPreferencesSlice`).
+  `SettingsModelPicker` takes `string | null` + `allowPlatformDefault`/`defaultModality`; the text
+  and image tabs render a "Platform default (<resolved name>)" option — name resolved via
+  `features/ai-models/redux/platformDefaultModel.ts` (`is_primary` on the catalog), never hardcoded.
+  `TextGenerationTab`'s hardcoded model-name list is replaced by live catalog rows with text output
+  (same pattern as the image tab). Never seed a concrete model id/name as a preference default.
 - `2026-07-11` — **ImageGenerationTab model picker is catalog-driven.** The hardcoded model list
   (`dall-e-3`/`stable-diffusion`/`midjourney`/`flux` — two of which were never catalog models) is
   replaced by `useModelCatalog("user")` filtered to `output.includes("image")`; option values are
