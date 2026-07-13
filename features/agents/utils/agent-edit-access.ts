@@ -17,10 +17,17 @@
  * WRITEBACK IS NOT UNIVERSAL. `persist: "auto"` only lands if aidream has a
  * writeback handler registered for the slot's `source.kind`
  * (`aidream/services/conversation_context/context_writeback.py` — today: note,
- * studio_document, working_document, canvas_item, cx_ai_data_records). A kind
- * with no handler is a SILENT server-side no-op, so a surface offering that mode
- * for an unsupported kind is promising a save that never happens — see
- * `SCOPE_ITEM_NO_WRITEBACK_REASON`.
+ * studio_document, working_document, canvas_item, cx_ai_data_records, and
+ * ctx_item). A kind with no handler is a SILENT server-side no-op — offering
+ * "Save to the source" for one is promising a save that never happens. Before
+ * you let a new `source.kind` be agent-editable + auto, CHECK that a handler
+ * exists; if it doesn't, the fix is to write the handler, not to hide the option.
+ *
+ * Scope-bound (`ctx_item`) slots DO write back as of 2026-07-12: the agent's edit
+ * lands on the exact `(context_item_id, scope_id)` cell it was read from, via the
+ * `set_context_value` RPC — append-only (new version, previous `is_current` flipped),
+ * stamped `source_type='ai_enriched'` + `authored_by`, and re-checked against the
+ * user's write access to that scope. Attributed, auditable, revertible.
  *
  * Pure — no React, no persistence. The controls live in
  * `components/context-slots-management/AgentEditAccessControl.tsx`.
@@ -51,12 +58,11 @@ export const AGENT_EDIT_ACCESS_LABEL: Record<AgentEditAccess, string> = {
 };
 
 /**
- * aidream has no `ctx_item` writeback handler, so a scope-bound slot can never
- * save the agent's edits back to the scope item — the server drops them without
- * a word. Surfaces take the option away and show this instead.
+ * The save mode a scope-bound (`ctx_item`) slot defaults to when the user makes it
+ * agent-editable: write the edit back to the scope cell it came from. Every write is
+ * a new version stamped `ai_enriched` — nothing is overwritten in place.
  */
-export const SCOPE_ITEM_NO_WRITEBACK_REASON =
-  "Scope-bound slots can't be saved back to the scope item yet — the agent's edits last for the conversation.";
+export const SCOPE_ITEM_DEFAULT_SAVE_MODE: ContextSlotPersist = "auto";
 
 export interface AgentEditSaveMode {
   id: ContextSlotPersist;
@@ -73,7 +79,7 @@ export const AGENT_EDIT_SAVE_MODES: AgentEditSaveMode[] = [
   {
     id: "auto",
     label: "Save to the source",
-    hint: "The agent's edits are written back to the record this slot came from.",
+    hint: "The agent's edits are written back to the record this slot came from — saved as a new version, never overwritten in place.",
   },
   {
     id: "client",

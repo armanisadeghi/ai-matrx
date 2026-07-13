@@ -10,6 +10,7 @@ import {
   applyAgentEditAccess,
   agentEditAccessChanged,
   decodeAgentEditAccess,
+  SCOPE_ITEM_DEFAULT_SAVE_MODE,
 } from "@/features/agents/utils/agent-edit-access";
 import { buildContextSlotFromItem } from "@/features/agents/utils/context-item-slot-mapping";
 import type { ContextSlot } from "@/features/agents/types/agent-api-types";
@@ -131,10 +132,11 @@ describe("buildContextSlotFromItem", () => {
     const slot = buildContextSlotFromItem(ITEM, {
       key: "client_name",
       access: "editable",
+      saveMode: SCOPE_ITEM_DEFAULT_SAVE_MODE,
     });
     expect(slot.mutable).toBe(true);
-    // Scope-bound slots have no server writeback handler — conversation-only.
-    expect(slot.persist).toBe("never");
+    // The agent's edits write back to the scope cell (aidream's ctx_item handler).
+    expect(slot.persist).toBe("auto");
     expect(slot.source?.kind).toBe("ctx_item");
   });
 });

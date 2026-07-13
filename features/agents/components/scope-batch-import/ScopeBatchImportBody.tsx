@@ -67,6 +67,7 @@ import { AgentEditAccessToggle } from "@/features/agents/components/context-slot
 import {
   applyAgentEditAccess,
   decodeAgentEditAccess,
+  SCOPE_ITEM_DEFAULT_SAVE_MODE,
   type AgentEditAccess,
 } from "@/features/agents/utils/agent-edit-access";
 
@@ -87,12 +88,12 @@ const EMPTY_SELECTION: RowSelection = {
 };
 
 /**
- * Scope-bound slots have no writeback handler on the server (aidream registers
- * `note` / `studio_document` / `working_document` / `canvas_item` — never
- * `ctx_item`), so an agent-editable scope slot is conversation-only: the agent
- * can rewrite it while it works, and the edit is dropped at the end of the turn.
+ * An agent-editable scope slot writes its edits back to the scope cell it was read
+ * from (aidream's `ctx_item` writeback handler → the `set_context_value` RPC): a new
+ * version stamped `ai_enriched`, never an in-place overwrite. Per-slot control over
+ * this lives in the single-slot editor; batch takes the default.
  */
-const AGENT_EDITABLE_SAVE_MODE = "never" as const;
+const AGENT_EDITABLE_SAVE_MODE = SCOPE_ITEM_DEFAULT_SAVE_MODE;
 
 export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyProps) {
   const dispatch = useAppDispatch();
@@ -425,7 +426,7 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
                 </TableHead>
                 <TableHead className="w-[190px]">
                   <div className="flex items-center justify-between gap-2">
-                    <span title="Whether the agent may change this value while it works, or only read it.">
+                    <span title="Whether the agent may change this value while it works, or only read it. An editable slot's edits are saved back to the scope value as a new version.">
                       Agent access
                     </span>
                     {accessEligibleItems.length > 0 && (

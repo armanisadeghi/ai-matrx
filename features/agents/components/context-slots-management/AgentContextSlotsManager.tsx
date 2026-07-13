@@ -64,7 +64,7 @@ import {
   type InlineMode,
 } from "@/features/agents/components/context-slots-management/InlinePolicyControl";
 import { AgentEditAccessControl } from "@/features/agents/components/context-slots-management/AgentEditAccessControl";
-import { SCOPE_ITEM_NO_WRITEBACK_REASON } from "@/features/agents/utils/agent-edit-access";
+import { SCOPE_ITEM_DEFAULT_SAVE_MODE } from "@/features/agents/utils/agent-edit-access";
 import { cn } from "@/lib/utils";
 
 const CONTEXT_TYPES: ContextObjectType[] = [
@@ -199,16 +199,6 @@ function slotToForm(slot: ContextSlot): SlotFormState {
   };
 }
 
-/**
- * The save mode a slot can actually honour. A scope-bound slot has no writeback
- * handler on the server, so "auto" would silently discard the agent's edits —
- * it reads (and saves) as conversation-only instead.
- */
-function effectivePersist(form: SlotFormState): ContextSlotPersist {
-  if (form.ctxBound && form.persist === "auto") return "never";
-  return form.persist;
-}
-
 function formToContextSlot(form: SlotFormState): {
   slot: ContextSlot | null;
   error: string | null;
@@ -238,7 +228,7 @@ function formToContextSlot(form: SlotFormState): {
 
   if (form.mutable) {
     slot.mutable = true;
-    slot.persist = effectivePersist(form);
+    slot.persist = form.persist;
   }
 
   // Scope-context binding (independent of agent access): fills the slot from the active
@@ -544,19 +534,23 @@ function SlotEditorFields({
         <AgentEditAccessControl
           value={{
             access: form.mutable ? "editable" : "read_only",
-            // A legacy scope-bound slot can carry persist="auto" — writeback the
-            // server never performs. Show (and, on save, store) the truth.
-            saveMode: effectivePersist(form),
+            saveMode: form.persist,
           }}
-          onChange={(next) =>
+          onChange={(next) => {
+            // Turning ON edit for a scope-bound slot defaults to writing back to the
+            // scope cell — that's what "the agent can edit this" means for a scope
+            // value. An unbound slot has no source yet, so it stays conversation-only
+            // until the author names one.
+            const enabling = next.access === "editable" && !form.mutable;
+            const saveMode =
+              enabling && form.ctxBound && next.saveMode === "never"
+                ? SCOPE_ITEM_DEFAULT_SAVE_MODE
+                : next.saveMode;
             onChange({
               mutable: next.access === "editable",
-              persist: next.saveMode,
-            })
-          }
-          saveToSourceDisabledReason={
-            form.ctxBound ? SCOPE_ITEM_NO_WRITEBACK_REASON : undefined
-          }
+              persist: saveMode,
+            });
+          }}
         />
       </Section>
 

@@ -337,6 +337,11 @@ export interface ContextSlotSource {
    * scope of `scope_type_id` supplying `item_key` (resolved by scope_binding_resolution).
    * `id` carries the exact ctx_context_items UUID (collision-proof). `on_missing` is
    * "empty" | "skip" | "error" (default "empty").
+   *
+   * NOTE: the CELL a value came from is `(id, scope_id)` — and `scope_id` is NEVER authored
+   * here. It depends on the caller's active scope set, so the server attaches it at
+   * resolution time and the writeback (`persist:"auto"`) uses it to hit the exact cell.
+   * Don't add it to a stored slot; a hardcoded scope would write the wrong client's value.
    */
   scope_type_id?: string;
   item_key?: string;
