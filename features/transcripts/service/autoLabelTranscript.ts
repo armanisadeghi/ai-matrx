@@ -6,7 +6,7 @@
  * persist to the transcripts row when the title is still a placeholder.
  */
 
-import { postJson } from "@/lib/python-client";
+import { apiPost } from "@/lib/api/typed-client";
 
 const TITLE_MIN_CHARS = 8;
 const LABEL_INPUT_MAX_CHARS = 8000;
@@ -19,7 +19,11 @@ export async function autoLabelDraftTranscript(
   const trimmed = text.trim();
   if (trimmed.length < TITLE_MIN_CHARS) return;
 
-  await postJson("/api/content-label", {
+  // Was POSTing to "/api/content-label" — a path that exists on NEITHER the
+  // Next app NOR the aidream backend (the real route is "/content-label", no
+  // "/api" prefix), so auto-labeling 404'd silently for every FE-direct save.
+  // Bound to the contract so the wrong path can't come back (it wouldn't type).
+  await apiPost("/content-label", {
     text: trimmed.slice(0, LABEL_INPUT_MAX_CHARS),
     content_type: "transcript",
     label_max_chars: LABEL_MAX_CHARS,

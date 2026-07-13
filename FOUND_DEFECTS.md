@@ -142,6 +142,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D46** — draft-transcript auto-labeling 404'd silently: `autoLabelDraftTranscript` POSTed to `/api/content-label` through the python client, but that path exists on neither the Next app nor the aidream backend (real route is `/content-label`, no `/api` prefix) — every FE-direct/Voice-Pad save's auto-title silently failed. Fixed + bound to the contract via `apiPost("/content-label", …)` so the wrong path can't recur. Surfaced by the API-contract campaign. 2026-07-12.
 - **D45** — folder rename/move were silent server-side no-ops: FE sent `PATCH /folders {folder_name, parent_id}` but the backend model has neither (renames via `folder_path` only), so Pydantic dropped them and the change reverted on refresh. Fixed `updateFolder` thunk to send the target `folder_path`; `CreateFolderRequest`/`FolderPatchRequest` now derived from the contract (phantom fields = compile error). 2026-07-12, `74942304f`. **Live rename/move UI test still pending** (type-safe + reasoned across rename/move-to-root/reparent/visibility-only cases; not yet exercised in-browser).
 
 - **D45** — mobile flashcard cloze/matching rendering gap → promoted to TASK-004 (2026-07-12).

@@ -22,6 +22,5 @@
   "features/rag/api/search.ts",
   "features/rag/api/stages.ts",
   "features/rag/components/RepositoriesPage.tsx",
-  "features/rag/hooks/useLibraryCatalog.ts",
-  "features/transcripts/service/autoLabelTranscript.ts"
+  "features/rag/hooks/useLibraryCatalog.ts"
 ]
