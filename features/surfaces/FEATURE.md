@@ -29,20 +29,43 @@ The original `UiSurfaceCrud` (under `/admin/lookups`) is a flat table. With
 
 The v2 page solves all four.
 
-## ⛔️ CONDEMNED: agent↔surface binding via `agent.agent_surface`
+## Agent↔surface bindings — canonical model (associations-only, 2026-07-12)
 
-> **Status: being removed. Do not extend.** `features/surfaces/services/agent-surface-bindings.service.ts` binds an agent to a surface through the bespoke `agent_surface` M2M table. The whole mechanism is wrong under the current canonical model and is slated for replacement. The write paths emit `console.error` beacons at runtime (captured into the Error Inspector) because a *successful* broken write is worse than a failure — it silently mis-binds.
+**A binding is an edge in `platform.associations`** (source `agent` → target `surface`), written ONLY through `bindAgentToSurface` / `upsertAgentSurfaceBinding` in [`services/bind-agent-to-surface.service.ts`](./services/bind-agent-to-surface.service.ts) (which is the sole surface-side caller of `associationsService`). The condemned bespoke `agent_surface` junction (P1–P4: single project/task FKs, single-scope cardinality, passive-context binding, bespoke M2M) is **gone** — data migrated count-verified, table retired to `graveyard`, its service + `console.error` beacons deleted (`migrations/agent_surface_to_associations.sql`).
 
-Four distinct defects (the code is annotated `P1`–`P4`):
+- **Tier-encoded edge role** is the identity of one scope tier: `binding:global` · `binding:u:<userId>` · `binding:o:<orgId>` · `binding:p:<projectId>` · `binding:t:<taskId>` — so multiple tiers per (agent, surface) coexist under `associations_unique` and each upsert idempotently updates its own tier.
+- **Payload lives in edge metadata**: `{ tier, user_id, project_id, task_id, value_mappings, visibility, version }`.
+- **Reads go through `agent.menu_surface`** (pre-joined, RLS-safe view over associations ⋈ `agent.card` ⋈ `ui_surface` ⋈ orgs; exposes `role` + hoisted tier columns + `value_mappings`). List/stat/drift/usage reads all use it; the browser has NO direct grant on `platform.associations`.
+- **Launch resolution**: `fetchSurfaceBindingLayers(agentId, surfaceName)` (same service) returns weakest→strongest `MappingLayer`s for `mergeValueMappingLayers`: inheritance parents first (see below), then per surface `global → org rows by membership (oldest→newest) → user`. Org tiers apply by RLS membership — never an "active org" filter (P3: binding scope comes from the user's EXPLICIT picker selection; `ensureOrgId` supplies only the assoc access org).
+- **Binding id = association id** everywhere (Redux slice, shortcut seeding via `create_shortcut_from_agent_surface`, drift remediation — which updates `metadata.value_mappings` on `platform.associations` via the admin client, server-side only).
+- Redux stays `agentSurfaceBindingsSlice` + thunks in `redux/thunks.ts` — same shapes, associations-backed.
 
-- **P1 — `project_id` / `task_id` as single FKs.** Project and task are now **many-to-many across every table** in the system. The single FK columns are being removed; do not write or read them as "the" project/task.
-- **P2 — single scope / scope-type relationship.** Scopes and scope types are **M2M by design**. One-org / one-scope-tier-per-binding is a cardinality that no longer exists.
-- **P3 — action context vs. user-selected context (the dangerous one).** Binding is a **user action**, so the org/scope it binds to MUST come from what the user **explicitly selected in the UI** — never from the passive, cached active context (`appContextSlice` active org / `scope_selections`) just because it's loaded. This is the Global-vs-Local context invariant (CLAUDE.md, `features/scopes/FEATURE.md`). Reading passive context here silently binds to something the user never chose.
-- **P4 — wrong mechanism entirely (the kicker).** Connecting an agent to a surface is an **association**. It MUST go through the canonical `platform.associations` system (`features/scopes` `associationsService` + the `canonical-associations` skill). **No new M2M relationships outside canonical associations.** When the association-backed binding lands, `agent_surface` + this service are deleted.
+## Surface inheritance (v1, 2026-07-12 — Arman-approved)
 
-**TEMPORARY BRIDGE (2026-07-10):** every condemned `agent_surface` upsert/delete now dual-writes/removes the matching `agent → surface` edge in `platform.associations` (via `associationsService`). Without this, binds "succeed" in the admin UI and never appear in any context menu — the menu reads `agent.menu_surface`, which is built from associations, not `agent_surface`. The CONDEMNED WRITE beacon still fires (loud by design). Remove the bridge when the write path is fully cut over.
+`SurfaceManifest.inheritsFrom` declares a parent surface. A child inherits, child-wins-per-key:
 
-**Replacement path:** model the agent↔surface link as a canonical association edge; source org/scope from the user's explicit selection in the binding UI (not `appContextSlice`); represent project/task/scope as M2M association edges, never FK columns.
+| Inherited | Resolved in |
+|---|---|
+| Values (bindable declarations) | `registry.ts` `withInheritance` (parent values first, child overrides by `name`; baselines still floored last) |
+| Agent bindings (value_mappings) | `fetchSurfaceBindingLayers` — parent layers are WEAKER: `parent:global → parent:org → parent:user → child:*`; inherited layers get `binding:parent:<surface>:…` provenance names |
+| Agent roles / config namespaces | `registry.ts` union, child overrides by key |
+
+- Guards are LOUD: unknown parent, cycle, or depth > 3 **throws at module init** (`getSurfaceAncestry`).
+- Manifest sync mirrors `inheritsFrom` → `ui_surface.parent_surface_name` (never clears a DB-authored parent when the manifest is silent) and mirrors the MERGED value set into `ui_surface_value`.
+- The chain is code-first (registry manifests). The DB's blanket `parent_surface_name = matrx-default/default` rows do NOT cascade bindings — only manifest-declared parents do (deliberate: cascading Default to all ~100 surfaces would be a behavior change).
+- Live families: `matrx-user/transcripts` ⊃ `transcripts-cleanup` (60 effective values, 36 own); `matrx-user/pdf-extractor` ⊃ `extractor-chunker` / `analysis-studio` / `scanner`. Bind an agent ONCE on the parent and it applies on every child.
+
+## Agent roles + namespaced config (runtime settings system)
+
+Two per-surface settings primitives, both resolved `manifest/DB default → global → org-by-membership → [ctx scope, reserved] → user` (newest `updated_at` wins ties, with a console.warn):
+
+- **Agent roles** — where a surface PLUGS IN agents (`SurfaceManifest.agentRoles`, mirrored to `ui.ui_surface_agent_role`; user/org selections in `ui_surface_agent_pref`, kinds `selection`/`roster_item`, `single`/`multi`). Reader/writer: [`services/surface-config.service.ts`](./services/surface-config.service.ts); Redux `redux/surfaceConfigSlice.ts`; hook `hooks/useSurfaceConfig.ts`. Stale roles deleted by sync CASCADE their pref rows (reported).
+- **Config namespaces** — typed JSONB buckets in `ui.ui_surface_config` (dictionary, session_defaults, …). Each namespace registers a PURE handler (validate / layered merge / empty) in [`config/namespace-registry.ts`](./config/namespace-registry.ts); adding one = handler + a manifest `configNamespaces` line, zero SQL. A malformed row is rejected loudly, never merged.
+- Per-session choices are feature-owned and applied ON TOP of the resolved `effective` — never stored in these tables. Per-user surface UI state is the separate `user_surface_state` primitive (`user-state/`).
+
+## Full-screen admin editor — `/administration/surfaces/[...name]`
+
+[`admin-detail/SurfaceAdminDetailPage.tsx`](./admin-detail/SurfaceAdminDetailPage.tsx) (Wave 4). Catch-all route (slash-safe via `surfaceAdminHref` in `utils/surface-hierarchy.ts`). Edits identity (active/description/rename/url_pattern/executor/parent), shows the parent/child tree (`buildChildrenByParent` / `getAncestorChain` — reads the DB mirror), declared values, roles + prefs, config namespaces, bound agents, and tools. The 5-panel per-agent shell (`/agents/[id]/surfaces`, `admin/`) and the batch editor (`admin/batch/SurfaceBindingsBatchEditor.tsx`) write through the same associations-backed thunks.
 
 ## Architecture
 
@@ -132,6 +155,8 @@ After the user-requested "go all in" pass, the page picks up:
 - The candidate-count badge on the "Candidates" button shows how many catalog rows aren't yet seeded — naturally trends to 0 over time.
 
 ## Change Log
+
+- **2026-07-12** — **Bindings replaced by canonical associations + surface inheritance v1.** (1) Condemned `agent_surface` junction DELETED end-to-end: rows migrated count-verified into `platform.associations` (tier-encoded `role`), table → `graveyard`, `agent-surface-bindings.service.ts` + its beacons removed by deletion, `create_shortcut_from_agent_surface` / `agx_usage_scan_core` repointed, `menu_surface` exposes `role`, drift-scan/remediate/stat reads moved to the view/edge, Diagram Editor (`bdaf5ee0`) ↔ `matrx-user/mermaid-editor` global edge seeded (`migrations/agent_surface_to_associations.sql`, applied + ledgered; aidream models regenerated). (2) `SurfaceManifest.inheritsFrom` + registry merge (values/roles/config, loud cycle/depth guards) + binding cascade in `fetchSurfaceBindingLayers` + manifest-sync mirrors of `parent_surface_name` and merged values. First families wired: transcripts ⊃ cleanup; pdf-extractor ⊃ extractor-chunker/analysis-studio/scanner. DB value mirror re-synced (649 rows). (3) Roles / config namespaces / full-screen admin editor documented above.
 
 - **2026-07-11** — **Agents list: hide empty sections + detach.** Sections only render when they have agents. Unlink control on detachable binds calls `unbindAgentFromSurface` (associations remove); platform default-contract agents stay non-detachable here.
 - **2026-07-11** — **Agents chrome polish.** Panel title is the pretty surface label only (manifest `label` or acronym-aware slug — no `matrx-user/…`, no "Surface agents"). `SurfaceBoundAgentsList` drops the filler heading; sections are Public + Mine (always), org names (when present), Shared with me; compact single-line rows. Default-contract agents fold into Public.

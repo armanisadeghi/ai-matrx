@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-07
+updated: 2026-07-12
 repos: [matrx-frontend]
 vision: []
 ---
@@ -12,17 +12,15 @@ Every UI declares itself as a **surface** (code-first manifests in
 emit live values via `buildScope()`; agents consume them at launch. The system's living doc is
 `features/surfaces/FEATURE.md`.
 
-**The ground has shifted:** the binding mechanism this work was built on —
-`agx_agent_surface.value_mappings` — was **condemned 2026-07-02** (see the "⛔️ CONDEMNED" section
-in `features/surfaces/FEATURE.md`). It is slated for deletion in favor of `platform.associations`;
-its write paths fire `console.error` beacons. Do not extend it.
+Bindings are canonical `platform.associations` edges (agent → surface, tier-encoded `role`,
+payload in metadata) as of 2026-07-12 — the condemned `agent_surface` mechanism is deleted.
+See "Agent↔surface bindings — canonical model" in `features/surfaces/FEATURE.md`.
 
 ## Vision — Arman's words
 
-- **Surface inheritance APPROVED** (2026-07-07): "Yes! This one is huge! Approved!" — parent/child
-  surfaces per `docs/handoffs/SURFACE_INHERITANCE_PROPOSAL.md`, re-scoped: values/roles/config
-  inheritance (v1) on top of the association-based bindings; the proposal's binding-cascade section
-  is dead with the condemned mechanism.
+- **Surface inheritance APPROVED** (2026-07-07): "Yes! This one is huge! Approved!" — shipped
+  2026-07-12 (values/roles/config + binding cascade); design section now lives in
+  `features/surfaces/FEATURE.md` → "Surface inheritance (v1)".
 - Verification standard — the owner's favorite context test: put "Matrx is the product name (not
   matrix)" in context, feed text containing "matrix", check the output spells "Matrx".
 - Recovery layers must be LOUD (console.warn/error + toast) — a silently-skipped binding is how
@@ -41,11 +39,6 @@ its write paths fire `console.error` beacons. Do not extend it.
 
 ## Remaining work
 
-1. **Replace agent↔surface binding with `platform.associations`.** The condemned
-   `agx_agent_surface.value_mappings` store must be migrated to the canonical association system,
-   then deleted (DB + FE write/read paths). Invoke the `canonical-associations` skill; the
-   condemned write paths already scream via console.error beacons — silence them by deletion, not
-   suppression.
 2. **Wave 5 — user hub `/surfaces`** (not built): `app/(core)/surfaces/{layout,page}.tsx` +
    `[...name]/page.tsx`; list = active matrx-user surfaces with ≥1 role or config namespace;
    detail = Me|Org scope switcher + Roles/Dictionary/ConfigForm/Tools (settings primitives from
@@ -58,16 +51,17 @@ its write paths fire `console.error` beacons. Do not extend it.
 4. **Wave 7 — surface-registration skill** (absent): the layered recipe (values → roles/namespaces
    → registry+drift → DB sync → emitter → verification incl. the Matrx-vs-matrix test), with
    transcripts-cleanup as the worked example. Unblocks the all-surfaces sweep (~100 surfaces).
-5. **Surface inheritance v1 (APPROVED — after item 1):** `inheritsFrom` on `SurfaceManifest` +
-   parent layer at the bottom of the existing merge engines (`withInjectedBaselines`,
-   `mergeValueMappingLayers`) for values/roles/config. Design:
-   `docs/handoffs/SURFACE_INHERITANCE_PROPOSAL.md` (its binding-cascade section is dead — bindings
-   cascade lands with/after the associations replacement).
-6. **`features/surfaces/FEATURE.md` documentation gap:** roles, config namespaces, and the
-   full-screen admin editor are undocumented. Use the `context-docs` skill.
-
 ## Done
 
+- **Bindings → `platform.associations` (2026-07-12):** junction migrated count-verified +
+  graveyarded, condemned service/beacons deleted, all FE paths on
+  `bind-agent-to-surface.service.ts` / `agent.menu_surface`; Diagram Editor ↔ mermaid-editor
+  edge seeded. (`migrations/agent_surface_to_associations.sql`)
+- **Surface inheritance v1 (2026-07-12):** `inheritsFrom` + registry merge (values/roles/config,
+  loud cycle/depth guards) + binding cascade + manifest-sync `parent_surface_name` mirror; live
+  families: transcripts ⊃ cleanup, pdf-extractor ⊃ chunker/analysis-studio/scanner.
+- **FEATURE.md doc gap closed (2026-07-12):** canonical binding model, inheritance, roles,
+  config namespaces, and the full-screen admin editor documented.
 - Wave 4 admin full-screen editor — `app/(admin)/administration/surfaces/[...name]/page.tsx`.
 - `url_pattern` sync (2026-07-02) — manifest-sync service.
 - Batch bindings editor — surfaces admin.

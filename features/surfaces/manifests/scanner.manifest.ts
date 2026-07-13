@@ -69,6 +69,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const scannerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scanner",
+  inheritsFrom: "matrx-user/pdf-extractor",
   label: "Scanner",
   values: mergeBaselineValues(
     pickBaseline(

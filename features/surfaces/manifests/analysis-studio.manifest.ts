@@ -88,6 +88,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const analysisStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/analysis-studio",
+  inheritsFrom: "matrx-user/pdf-extractor",
   label: "Analysis Studio",
   values: mergeBaselineValues(
     pickBaseline(

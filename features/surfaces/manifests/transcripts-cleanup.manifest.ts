@@ -363,6 +363,9 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const transcriptsCleanupManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts-cleanup",
+  // Surface inheritance v1: shares the transcript-family values + agent
+  // bindings declared on the parent; page-specific values below override.
+  inheritsFrom: "matrx-user/transcripts",
   label: "Transcript Cleanup",
   values: mergeBaselineValues(
     pickBaseline(

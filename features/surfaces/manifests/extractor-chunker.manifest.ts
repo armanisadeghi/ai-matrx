@@ -151,6 +151,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const extractorChunkerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/extractor-chunker",
+  inheritsFrom: "matrx-user/pdf-extractor",
   label: "Extractor Chunker",
   values: mergeBaselineValues(
     // Baseline:
