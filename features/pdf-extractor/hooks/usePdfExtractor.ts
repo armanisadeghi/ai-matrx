@@ -293,6 +293,22 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   const [batchStatus, setBatchStatus] = useState<BatchStatus>("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Live post-extraction pipeline status per doc id (clean → chunk → embed →
+  // NER events streamed by the server's content-processing orchestrator
+  // during batch upload). The studio surfaces the active doc's entry in its
+  // live-status strip. Cleared per doc when its `record_update` lands.
+  const [processingStatus, setProcessingStatus] = useState<
+    Record<string, string>
+  >({});
+
+  // Bumped every time a doc's terminal `record_update` arrives and its fresh
+  // row has been refetched — the studio watches this to refresh the active
+  // doc + page rows without prop-drilling a callback through the upload UIs.
+  const [processedDocSignal, setProcessedDocSignal] = useState<{
+    docId: string;
+    at: number;
+  } | null>(null);
+
   // Track first completed tab id during batch extraction
   const firstCompletedTabRef = useRef<string | null>(null);
 
@@ -535,28 +551,111 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               },
         );
 
+        // Progress helper — writes a live message onto this session's
+        // still-extracting placeholder tabs (per-page extraction events
+        // don't carry a filename, so the extracting placeholders are the
+        // best anchor; with max_concurrent uploads the message is shared).
+        const setExtractingProgress = (msg: string) => {
+          setTabs((prev) =>
+            prev.map((tab) =>
+              placeholderTabs.some((p) => p.id === tab.id) &&
+              tab.status === "extracting"
+                ? { ...tab, progressMessage: msg }
+                : tab,
+            ),
+          );
+        };
+
         for await (const event of stream) {
           if (event.event === "info") {
             if (event.data.code === "pdf_page_progress") {
               // Update progress on the currently extracting tab
-              const msg = event.data.user_message ?? "";
-              setTabs((prev) =>
-                prev.map((tab) => {
-                  if (
-                    placeholderTabs.some((p) => p.id === tab.id) &&
-                    tab.status === "extracting"
-                  ) {
-                    return { ...tab, progressMessage: msg };
-                  }
-                  return tab;
-                }),
-              );
+              setExtractingProgress(event.data.user_message ?? "");
             }
           }
 
+          // Terminal per-doc signal: the server finished the WHOLE pipeline
+          // (extract + clean + chunk + embed + NER) for one document and the
+          // row is now the full truth — do the one refetch here.
+          if (
+            event.event === "record_update" &&
+            event.data.table === "processed_documents"
+          ) {
+            const recordId = event.data.record_id;
+            invalidateProcessedDocumentCache(recordId);
+            const fresh = await fetchDocument(recordId);
+            setTabs((prev) =>
+              prev.map((tab) =>
+                tab.id === recordId
+                  ? {
+                      ...tab,
+                      document: fresh ?? tab.document,
+                      progressMessage: undefined,
+                    }
+                  : tab,
+              ),
+            );
+            setProcessingStatus((prev) => {
+              const next = { ...prev };
+              delete next[recordId];
+              return next;
+            });
+            setProcessedDocSignal({ docId: recordId, at: Date.now() });
+            continue;
+          }
+
           if (event.event === "data") {
-            // Batch-extract sends untyped row-per-file results — narrow once.
             const evtData = event.data as Record<string, unknown>;
+
+            // Typed live-extraction events (same vocabulary as the
+            // /pdf/extract-text stream): page-by-page progress.
+            if (evtData.type === "pdf_extract_started") {
+              const total = evtData.total_pages as number;
+              const fname = evtData.filename as string;
+              setExtractingProgress(
+                `Reading ${fname} (${total} page${total === 1 ? "" : "s"})…`,
+              );
+              continue;
+            }
+            if (evtData.type === "pdf_page_extracted") {
+              const page = evtData.page_number as number;
+              const total = evtData.total_pages as number;
+              const method = evtData.extraction_method as string;
+              setExtractingProgress(
+                `Extracted page ${page} of ${total}${method === "ocr" ? " (OCR)" : ""}…`,
+              );
+              continue;
+            }
+
+            // Content-processing orchestrator progress (clean → chunk →
+            // embed → NER), streamed after the doc row exists. Keyed by the
+            // processed_documents id so the studio can show it on the doc
+            // the user was just routed to.
+            if (evtData.kind === "content.processing.progress") {
+              const docId = evtData.processed_document_id as string | null;
+              const stage = (evtData.stage as string) ?? "processing";
+              const message = (evtData.message as string) ?? "";
+              const label = `${stage}: ${message}`;
+              if (docId) {
+                setProcessingStatus((prev) => ({ ...prev, [docId]: label }));
+                setTabs((prev) =>
+                  prev.map((tab) =>
+                    tab.id === docId ? { ...tab, progressMessage: label } : tab,
+                  ),
+                );
+              } else {
+                setExtractingProgress(label);
+              }
+              continue;
+            }
+
+            // Anything else with filename+status is a per-file batch result.
+            if (
+              typeof evtData.filename !== "string" ||
+              typeof evtData.status !== "string"
+            ) {
+              continue;
+            }
             const docId = evtData.doc_id as string | null;
             const filename = evtData.filename as string;
             const status = evtData.status as string;
@@ -698,6 +797,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         );
 
         setBatchStatus("idle");
+        // The stream is over — no more processing events can arrive, so any
+        // leftover per-doc status is stale. Clear it.
+        setProcessingStatus({});
         clearFiles();
         // Refresh history
         loadHistory();
@@ -1293,6 +1395,10 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     removeFile,
     clearFiles,
     extractFiles,
+
+    // Live post-extraction pipeline status (batch upload)
+    processingStatus,
+    processedDocSignal,
 
     // Actions
     cleanContent,

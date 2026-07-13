@@ -62,6 +62,10 @@ export async function* consumeBatchExtractNdjsonStream(
       }
     }
 
+    // Flush any bytes the decoder is still holding (a multibyte char split
+    // across the final chunk) — without this the terminal line/`end` event
+    // can be silently dropped. Mirrors stream-parser.ts.
+    buffer += decoder.decode();
     const tail = buffer.trim();
     if (tail) {
       tap.onRawLine(tail, lineIndex);

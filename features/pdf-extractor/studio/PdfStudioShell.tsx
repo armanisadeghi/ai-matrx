@@ -180,6 +180,29 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     enabled: !!activeDoc,
   });
 
+  // A batch-uploaded doc finished its FULL server pipeline (extract + clean +
+  // chunk + embed + NER) — the hook already refetched the row into its tab;
+  // sync the shell's own copies (active doc, page rows, sidebar list).
+  const processedDocSignal = extractor.processedDocSignal;
+  const activeDocIdRef = useRef<string | null>(null);
+  activeDocIdRef.current = activeDoc?.id ?? null;
+  useEffect(() => {
+    if (!processedDocSignal) return;
+    docsState.refresh();
+    if (processedDocSignal.docId === activeDocIdRef.current) {
+      void extractor.fetchDocument(processedDocSignal.docId).then((fresh) => {
+        if (fresh && activeDocIdRef.current === fresh.id) setActiveDoc(fresh);
+      });
+      refreshPages();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per signal
+  }, [processedDocSignal]);
+
+  // Live status for the active doc's post-extraction pipeline (batch upload).
+  const activeProcessingStatus = activeDoc
+    ? (extractor.processingStatus[activeDoc.id] ?? null)
+    : null;
+
   const activeCldFileId =
     activeDoc?.sourceKind === "cld_file" && activeDoc.sourceId
       ? activeDoc.sourceId
@@ -745,7 +768,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
           <LiveStatusStrip
             pipelineRunning={pipelineRunning}
             aiCleanRunning={aiCleanRunning}
-            liveStatus={liveStatus}
+            liveStatus={liveStatus ?? activeProcessingStatus}
           />
 
           {/* Hidden-panes restore strip */}
@@ -810,7 +833,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               onRunAiClean={handleRunAiClean}
               aiCleanRunning={aiCleanRunning}
               streamingCleanText={streamingCleanText}
-              streamingStatus={liveStatus}
+              streamingStatus={liveStatus ?? activeProcessingStatus}
               onOpenUpload={() => setUploadOpen(true)}
               editMode={pdfPaneEditMode}
               cropPagesInput={cropPagesInput}
