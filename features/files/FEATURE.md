@@ -6,6 +6,9 @@
 
 This is the live architecture doc for the new file management system under `features/files/`. It supersedes the legacy Supabase-Storage-based system progressively over 12 phases ([migration/MASTER-PLAN.md](migration/MASTER-PLAN.md)).
 
+> **Cross-repo system-of-record — the file BACKEND is now a standalone service:** `/Users/armanisadeghi/code/common-docs/matrx-files-service/FEATURE.md`. The aidream file layer was extracted into the independent `matrx-files` microservice (deployed to EC2 2026-07-13). **Nothing changes for this repo yet** — file bytes/signing still go through aidream in-process, same endpoints. When traffic cuts over, the base URL for byte-heavy file ops becomes `files.matrxserver.com` with an identical wire contract (a base-URL swap, not a rewrite). Read the system-of-record before any file-backend-facing change.
+
+
 If you're modifying anything in this feature, **also update this doc and [migration/INVENTORY.md](migration/INVENTORY.md) in the same change.** Stale docs cascade across parallel agents.
 
 ---
