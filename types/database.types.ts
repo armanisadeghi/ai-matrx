@@ -6146,7 +6146,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      fn_list_repositories: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
@@ -12613,6 +12613,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      fn_create_share_link: {
+        Args: {
+          p_expires_at?: string
+          p_max_uses?: number
+          p_permission_level?: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
+      fn_deactivate_share_link: {
+        Args: { p_share_token: string }
+        Returns: boolean
+      }
+      fn_list_share_links: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: Json
+      }
       is_safe_webhook_url: { Args: { p_url: string }; Returns: boolean }
       webhook_dispatch: { Args: { p_limit?: number }; Returns: number }
       webhook_event_payload: {
@@ -19229,6 +19247,30 @@ export type Database = {
       }
       canonical_certify_ok: {
         Args: { p_schema: string; p_table: string; p_token: string }
+        Returns: boolean
+      }
+      fn_grant_resource_permission: {
+        Args: {
+          p_expires_at?: string
+          p_grantee_id: string
+          p_grantee_type?: string
+          p_level?: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
+      fn_list_resource_permissions: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: Json
+      }
+      fn_revoke_resource_permission: {
+        Args: {
+          p_grantee_id: string
+          p_grantee_type?: string
+          p_resource_id: string
+          p_resource_type: string
+        }
         Returns: boolean
       }
       has_access: {
@@ -27951,6 +27993,17 @@ export type Database = {
           window_blocked: boolean
         }[]
       }
+      fn_kg_cost_batch_detail: { Args: { p_batch_id: string }; Returns: Json }
+      fn_kg_cost_list_orgs: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      fn_kg_cost_org_detail: { Args: { p_org_id: string }; Returns: Json }
+      fn_kg_cost_pending_batches: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      fn_kg_cost_summary: { Args: never; Returns: Json }
       fork_processed_document: {
         Args: { p_source_id: string }
         Returns: string
@@ -33174,12 +33227,82 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      fn_bulk_delete_library_documents: {
+        Args: { p_ids?: string[]; p_status?: string }
+        Returns: Json
+      }
       fn_data_store_members_rich: {
         Args: { p_store_id: string }
         Returns: Json
       }
+      fn_delete_library_document: { Args: { p_id: string }; Returns: Json }
+      fn_delete_library_document_and_source: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      fn_get_library_document: {
+        Args: { p_chunks_limit?: number; p_id: string; p_pages_limit?: number }
+        Returns: Json
+      }
+      fn_get_library_full_page: {
+        Args: { p_id: string; p_page_index: number }
+        Returns: Json
+      }
       fn_get_user_data_store: {
         Args: { p_member_limit?: number; p_store_id: string }
+        Returns: Json
+      }
+      fn_kg_inspector_entities: {
+        Args: {
+          p_kind?: string
+          p_limit?: number
+          p_offset?: number
+          p_organization_id?: string
+          p_q?: string
+        }
+        Returns: Json
+      }
+      fn_kg_inspector_entity_mentions: {
+        Args: { p_entity_id: string; p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      fn_kg_inspector_top_edges: {
+        Args: { p_kind?: string; p_limit?: number; p_organization_id?: string }
+        Returns: Json
+      }
+      fn_list_data_store_grants: {
+        Args: { p_store_id: string }
+        Returns: {
+          audience: string
+          id: string
+          industry_id: string
+          industry_name: string
+          industry_slug: string
+          organization_id: string
+          organization_name: string
+        }[]
+      }
+      fn_list_library_catalog: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          description: string
+          id: string
+          kind: string
+          member_count: number
+          name: string
+          short_code: string
+          subscribed: boolean
+        }[]
+      }
+      fn_list_library_chunks: {
+        Args: {
+          p_children_only?: boolean
+          p_id: string
+          p_limit?: number
+          p_offset?: number
+          p_page_number?: number
+          p_parent_only?: boolean
+        }
         Returns: Json
       }
       fn_list_user_data_stores: {

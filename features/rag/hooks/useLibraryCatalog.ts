@@ -2,17 +2,22 @@
 
 /**
  * Tenant-facing catalog of DISCOVERABLE shared knowledge libraries + self-service
- * subscribe — Shared Knowledge Resources, opt-in tier. All over HTTP
- * (`/rag/library-catalog`); the backend `library_subscribe` RPC enforces
- * "member of org + store discoverable". Lazy by design.
+ * subscribe — Shared Knowledge Resources, opt-in tier. Direct-to-Supabase:
+ * LIST calls `rag.fn_list_library_catalog` (discoverable+active stores, member
+ * count, subscribed = an explicit org-audience grant for the caller's
+ * effective org). Subscribe/unsubscribe call the existing
+ * `rag.library_subscribe`/`library_unsubscribe` SECURITY DEFINER RPCs
+ * directly — they re-validate org membership internally (identity from
+ * auth.uid()), so passing `selectEffectiveOrganizationId` is safe even if a
+ * caller somehow isn't a member: the RPC just 403s. Lazy by design.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { postJson } from "@/lib/python-client";
-import { apiDelete, apiGet, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { createClient } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
 
 export interface LibraryCatalogItem {
   id: string;
@@ -24,14 +29,20 @@ export interface LibraryCatalogItem {
   subscribed: boolean;
 }
 
-// Wire shape DERIVED from the generated OpenAPI contract, never hand-mirrored.
-type ApiCatalogItem = components["schemas"]["LibraryCatalogItemOut"];
+interface RpcCatalogRow {
+  id: string;
+  name: string;
+  short_code: string | null;
+  description: string | null;
+  kind: string;
+  member_count: number;
+  subscribed: boolean;
+}
 
-function toItem(c: ApiCatalogItem): LibraryCatalogItem {
+function toItem(c: RpcCatalogRow): LibraryCatalogItem {
   return {
     id: c.id,
     name: c.name,
-    // Contract marks these optional (`?: string | null`); coalesce absent → null.
     shortCode: c.short_code ?? null,
     description: c.description ?? null,
     kind: c.kind,
@@ -42,6 +53,7 @@ function toItem(c: ApiCatalogItem): LibraryCatalogItem {
 
 export function useLibraryCatalog() {
   const userId = useAppSelector(selectUserId);
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const [items, setItems] = useState<LibraryCatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +67,13 @@ export function useLibraryCatalog() {
     setError(null);
     (async () => {
       try {
-        const { data } = await apiGet("/rag/library-catalog");
-        if (!cancelled) setItems((data ?? []).map(toItem));
+        const supabase = createClient();
+        const { data, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_list_library_catalog",
+          { p_organization_id: organizationId ?? undefined },
+        );
+        if (rpcError) throw rpcError;
+        if (!cancelled) setItems(((data ?? []) as RpcCatalogRow[]).map(toItem));
       } catch (e) {
         if (!cancelled)
           setError(e instanceof Error ? e.message : "Could not load the library catalog");
@@ -67,15 +84,21 @@ export function useLibraryCatalog() {
     return () => {
       cancelled = true;
     };
-  }, [userId, bumper]);
+  }, [userId, organizationId, bumper]);
 
   const subscribe = useCallback(
     async (storeId: string): Promise<boolean> => {
+      if (!organizationId) {
+        setError("an organization is required to subscribe");
+        return false;
+      }
       try {
-        // Raw client: the contract declares NO requestBody for subscribe, so
-        // `apiPost` derives an empty body and would drop the historical `{}`
-        // payload this call sends. Response is unused (success = resolved).
-        await postJson(`/rag/library-catalog/${encodeURIComponent(storeId)}/subscribe`, {});
+        const supabase = createClient();
+        const { error: rpcError } = await ragDb(supabase).rpc("library_subscribe", {
+          p_store_id: storeId,
+          p_organization_id: organizationId,
+        });
+        if (rpcError) throw rpcError;
         refresh();
         return true;
       } catch (e) {
@@ -83,17 +106,22 @@ export function useLibraryCatalog() {
         return false;
       }
     },
-    [refresh],
+    [organizationId, refresh],
   );
 
   const unsubscribe = useCallback(
     async (storeId: string): Promise<boolean> => {
+      if (!organizationId) {
+        setError("an organization is required");
+        return false;
+      }
       try {
-        await apiDelete(
-          buildPath("/rag/library-catalog/{store_id}/subscribe", {
-            store_id: storeId,
-          }),
-        );
+        const supabase = createClient();
+        const { error: rpcError } = await ragDb(supabase).rpc("library_unsubscribe", {
+          p_store_id: storeId,
+          p_organization_id: organizationId,
+        });
+        if (rpcError) throw rpcError;
         refresh();
         return true;
       } catch (e) {
@@ -101,7 +129,7 @@ export function useLibraryCatalog() {
         return false;
       }
     },
-    [refresh],
+    [organizationId, refresh],
   );
 
   return { items, loading, error, refresh, subscribe, unsubscribe };

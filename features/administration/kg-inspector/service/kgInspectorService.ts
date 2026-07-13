@@ -1,31 +1,67 @@
 /**
  * features/administration/kg-inspector/service/kgInspectorService.ts
  *
- * Typed client for the read-only KG inspector backend
- * (`aidream/api/routers/kg_inspector.py`, bare prefix `/kg-inspector`).
- *
- * React → Python directly (per CLAUDE.md — no Next.js middle hop). Every
- * wire type below is DERIVED from the OpenAPI-generated contract
- * (`types/python-generated/api-types.ts`), never hand-mirrored — a backend
- * rename lights up every drifted callsite as a compile error after
- * `pnpm sync-types`. This is an admin-only forensic surface (Phase C.5) for
+ * Direct-to-Supabase client for the read-only KG inspector surface.
+ * `rag.fn_kg_inspector_entities` / `_entity_mentions` / `_top_edges` mirror
+ * the retired `aidream/api/routers/kg_inspector.py` endpoints exactly —
+ * admin-gated INSIDE each function (public.is_super_admin()), identity from
+ * auth.uid() only. This is an admin-only forensic surface (Phase C.5) for
  * eyeballing NER entity / mention / edge data quality before the full
  * cytoscape viz (Phase G).
  */
-import { apiGet, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import { createClient } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
 
-export type KgEntityRow = components["schemas"]["EntityRow"];
+export interface KgEntityRow {
+  id: string;
+  kind: string;
+  canonical_name: string;
+  organization_id: string | null;
+  mention_count: number;
+  source_count: number;
+  confidence_avg: number | null;
+  created_at: string;
+}
 
-export type KgEntitiesPage = components["schemas"]["EntitiesPage"];
+export interface KgEntitiesPage {
+  items: KgEntityRow[];
+  total: number;
+  limit: number;
+  offset: number;
+}
 
-export type KgMentionRow = components["schemas"]["MentionRow"];
+export interface KgMentionRow {
+  chunk_id: string;
+  source_kind: string | null;
+  source_id: string | null;
+  snippet: string;
+  span_start: number | null;
+  span_end: number | null;
+  confidence: number | null;
+}
 
-export type KgMentionsPage = components["schemas"]["MentionsPage"];
+export interface KgMentionsPage {
+  items: KgMentionRow[];
+  total: number;
+  limit: number;
+  offset: number;
+}
 
-export type KgEdgeRow = components["schemas"]["EdgeRow"];
+export interface KgEdgeRow {
+  id: string;
+  kind: string;
+  src_id: string;
+  src_name: string;
+  src_kind: string;
+  dst_id: string;
+  dst_name: string;
+  dst_kind: string;
+  weight: number | null;
+}
 
-export type KgEdgesTop = components["schemas"]["EdgesTop"];
+export interface KgEdgesTop {
+  items: KgEdgeRow[];
+}
 
 export interface ListEntitiesParams {
   organizationId?: string | null;
@@ -39,17 +75,18 @@ export async function listKgEntities(
   params: ListEntitiesParams = {},
   opts: { signal?: AbortSignal } = {},
 ): Promise<KgEntitiesPage> {
-  const { data } = await apiGet("/kg-inspector/entities", {
-    signal: opts.signal,
-    query: {
-      organization_id: params.organizationId,
-      kind: params.kind,
-      q: params.q,
-      limit: params.limit ?? 50,
-      offset: params.offset ?? 0,
-    },
+  const supabase = createClient();
+  let query = ragDb(supabase).rpc("fn_kg_inspector_entities", {
+    p_organization_id: params.organizationId ?? undefined,
+    p_kind: params.kind ?? undefined,
+    p_q: params.q ?? undefined,
+    p_limit: params.limit ?? 50,
+    p_offset: params.offset ?? 0,
   });
-  return data;
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as KgEntitiesPage;
 }
 
 export async function listKgEntityMentions(
@@ -57,29 +94,30 @@ export async function listKgEntityMentions(
   params: { limit?: number; offset?: number } = {},
   opts: { signal?: AbortSignal } = {},
 ): Promise<KgMentionsPage> {
-  const { data } = await apiGet(
-    buildPath("/kg-inspector/entities/{entity_id}/mentions", {
-      entity_id: entityId,
-    }),
-    {
-      signal: opts.signal,
-      query: { limit: params.limit ?? 50, offset: params.offset ?? 0 },
-    },
-  );
-  return data;
+  const supabase = createClient();
+  let query = ragDb(supabase).rpc("fn_kg_inspector_entity_mentions", {
+    p_entity_id: entityId,
+    p_limit: params.limit ?? 50,
+    p_offset: params.offset ?? 0,
+  });
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as KgMentionsPage;
 }
 
 export async function listKgTopEdges(
   params: { organizationId?: string | null; kind?: string | null; limit?: number } = {},
   opts: { signal?: AbortSignal } = {},
 ): Promise<KgEdgesTop> {
-  const { data } = await apiGet("/kg-inspector/edges/top", {
-    signal: opts.signal,
-    query: {
-      organization_id: params.organizationId,
-      kind: params.kind,
-      limit: params.limit ?? 50,
-    },
+  const supabase = createClient();
+  let query = ragDb(supabase).rpc("fn_kg_inspector_top_edges", {
+    p_organization_id: params.organizationId ?? undefined,
+    p_kind: params.kind ?? undefined,
+    p_limit: params.limit ?? 50,
   });
-  return data;
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as KgEdgesTop;
 }

@@ -1,24 +1,23 @@
 // features/rag/service/dataStoreCandidates.ts
 //
 // Candidate source for the `data_store` entity token in the association
-// pickers. Lists through the Python API (`GET /rag/data-stores`, service-role
-// pool with explicit user checks; same path as `useDataStores`) — NOT because
-// of schema exposure (`rag.*` IS PostgREST-exposed as of 2026-06), but because
-// the Python visibility clause (data_store_grants global/industry/org branches)
-// is richer than the current rag RLS on `data_stores`: a direct supabase-js read
-// would return FEWER stores wherever sharing/grants matter. A direct-read swap is
-// viable only after per-table RLS parity (SEARCH_SYSTEM_HANDOFF.md PENDING #4).
+// pickers. Direct-to-Supabase: `rag.fn_list_user_data_stores` already
+// replicates the full owner + org + library-grant visibility clause
+// (identity from auth.uid() only), so there's no RLS-parity gap left — see
+// features/rag/hooks/useDataStores.ts, which uses the same RPC.
 // Registered on the entity-registry overlay as `listCandidates`, which every
 // picker consults before the generic read.
 //
-// The endpoint has no search param — filter client-side (store counts are
-// small; the list endpoint is already the app-wide pattern).
+// No search param on the RPC — filter client-side (store counts are small;
+// this mirrors the app-wide pattern for this list).
 
-import { apiGet } from "@/lib/api/typed-client";
+import { createClient } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
 
-// Response shape (`UserDataStoreOut[]`) is DERIVED from the generated OpenAPI
-// contract by `apiGet` — never hand-mirrored. This module reads only a few
-// fields; a backend rename surfaces as a compile error after `pnpm sync-types`.
+interface RpcDataStoreSummary {
+  id: string;
+  name: string;
+}
 
 export async function listDataStoreCandidates(args: {
   search?: string;
@@ -29,11 +28,14 @@ export async function listDataStoreCandidates(args: {
 > {
   const { search, limit = 100 } = args;
   try {
-    const { data } = await apiGet("/rag/data-stores", {
-      query: { include_inactive: false },
-    });
+    const supabase = createClient();
+    const { data, error: rpcError } = await ragDb(supabase).rpc(
+      "fn_list_user_data_stores",
+      { p_include_inactive: false },
+    );
+    if (rpcError) throw rpcError;
     const needle = search?.trim().toLowerCase();
-    const rows = (Array.isArray(data) ? data : [])
+    const rows = ((data ?? []) as RpcDataStoreSummary[])
       .filter((s) => !needle || s.name.toLowerCase().includes(needle))
       .slice(0, limit)
       .map((s) => ({ id: s.id, title: s.name }));

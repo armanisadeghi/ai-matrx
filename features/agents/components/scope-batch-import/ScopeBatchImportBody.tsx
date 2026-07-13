@@ -87,6 +87,9 @@ const EMPTY_SELECTION: RowSelection = {
   contextSlot: false,
 };
 
+const EMPTY_VARIABLES: VariableDefinition[] = [];
+const EMPTY_SLOTS: ContextSlot[] = [];
+
 /**
  * An agent-editable scope slot writes its edits back to the scope cell it was read
  * from (aidream's `ctx_item` writeback handler → the `set_context_value` RPC): a new
@@ -95,7 +98,10 @@ const EMPTY_SELECTION: RowSelection = {
  */
 const AGENT_EDITABLE_SAVE_MODE = SCOPE_ITEM_DEFAULT_SAVE_MODE;
 
-export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyProps) {
+export function ScopeBatchImportBody({
+  agentId,
+  onDone,
+}: ScopeBatchImportBodyProps) {
   const dispatch = useAppDispatch();
 
   const activeOrgId = useAppSelector(selectActiveOrganizationId);
@@ -108,11 +114,11 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
   const typesLoaded = useAppSelector((s) =>
     orgId ? selectScopeTypesLoadedForOrg(s, orgId) : false,
   );
-  const scopeTypes = useAppSelector((s) => (orgId ? selectScopeTypesByOrg(s, orgId) : []));
+  const scopeTypes = useAppSelector((s) => selectScopeTypesByOrg(s, orgId));
   const itemsLoaded = useAppSelector((s) =>
     scopeTypeId ? selectItemsLoadedForType(s, scopeTypeId) : false,
   );
-  const items = useAppSelector((s) => (scopeTypeId ? selectItemsByType(s, scopeTypeId) : []));
+  const items = useAppSelector((s) => selectItemsByType(s, scopeTypeId));
 
   useEffect(() => {
     if (orgId && !typesLoaded) dispatch(fetchScopeTypes(orgId));
@@ -122,15 +128,22 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
     if (scopeTypeId && !itemsLoaded) dispatch(listScopeTypeItems(scopeTypeId));
   }, [scopeTypeId, itemsLoaded, dispatch]);
 
-  const rawVariables = useAppSelector((s) => selectAgentVariableDefinitions(s, agentId));
+  const rawVariables = useAppSelector((s) =>
+    selectAgentVariableDefinitions(s, agentId),
+  );
   const rawSlots = useAppSelector((s) => selectAgentContextSlots(s, agentId));
-  const variables: VariableDefinition[] = useMemo(() => rawVariables ?? [], [rawVariables]);
-  const slots: ContextSlot[] = useMemo(() => rawSlots ?? [], [rawSlots]);
+  const variables = rawVariables ?? EMPTY_VARIABLES;
+  const slots = rawSlots ?? EMPTY_SLOTS;
 
   // Context items already bound (via a normal binding, or via a prior batch run) —
   // these render pre-checked + disabled so a re-run of the tool can never double-add.
   const boundVariableItemIds = useMemo(
-    () => new Set(variables.map((v) => v.binding?.contextItemId).filter(Boolean) as string[]),
+    () =>
+      new Set(
+        variables
+          .map((v) => v.binding?.contextItemId)
+          .filter(Boolean) as string[],
+      ),
     [variables],
   );
   // Context item → the index of the slot already bound to it. Those rows stay
@@ -149,7 +162,9 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
   const [selection, setSelection] = useState<Record<string, RowSelection>>({});
   // Access picks live apart from the add/skip picks: a row can be already-added
   // (no selection) and still have its access changed.
-  const [accessEdits, setAccessEdits] = useState<Record<string, AgentEditAccess>>({});
+  const [accessEdits, setAccessEdits] = useState<
+    Record<string, AgentEditAccess>
+  >({});
   // A different scope type means a different item set — start the picks over.
   // Render-time reset (not an effect) per the React "adjusting state when a
   // prop changes" pattern — avoids the extra cascading-render commit.
@@ -171,7 +186,8 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
 
   /** A row can set access once it HAS a slot — either already added, or being added now. */
   const rowHasSlot = (itemId: string): boolean =>
-    boundSlotIndexByItemId.has(itemId) || Boolean(selection[itemId]?.contextSlot);
+    boundSlotIndexByItemId.has(itemId) ||
+    Boolean(selection[itemId]?.contextSlot);
 
   const toggle = (itemId: string, column: "variable" | "contextSlot") => {
     setSelection((prev) => {
@@ -198,7 +214,10 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
             ? boundVariableItemIds.has(item.id)
             : boundSlotIndexByItemId.has(item.id);
         if (alreadyBound) continue;
-        next[item.id] = { ...(next[item.id] ?? EMPTY_SELECTION), [column]: true };
+        next[item.id] = {
+          ...(next[item.id] ?? EMPTY_SELECTION),
+          [column]: true,
+        };
       }
       return next;
     });
@@ -270,12 +289,18 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
     for (const item of items) {
       const row = selection[item.id];
       if (row?.variable && !boundVariableItemIds.has(item.id)) {
-        const name = uniquifyKey(suggestKeyFromContextItem(item), existingVarNames);
+        const name = uniquifyKey(
+          suggestKeyFromContextItem(item),
+          existingVarNames,
+        );
         existingVarNames.add(name);
         newVariables.push(buildVariableFromItem(item, { name }));
       }
       if (row?.contextSlot && !boundSlotIndexByItemId.has(item.id)) {
-        const key = uniquifyKey(suggestKeyFromContextItem(item), existingSlotKeys);
+        const key = uniquifyKey(
+          suggestKeyFromContextItem(item),
+          existingSlotKeys,
+        );
         existingSlotKeys.add(key);
         newSlots.push(
           buildContextSlotFromItem(item, {
@@ -299,7 +324,11 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
       });
     });
 
-    if (newVariables.length === 0 && newSlots.length === 0 && updatedSlots.length === 0)
+    if (
+      newVariables.length === 0 &&
+      newSlots.length === 0 &&
+      updatedSlots.length === 0
+    )
       return;
 
     if (newVariables.length > 0) {
@@ -365,10 +394,16 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Scope type</Label>
-          <Select value={scopeTypeId} onValueChange={setScopeTypeId} disabled={!orgId}>
+          <Select
+            value={scopeTypeId}
+            onValueChange={setScopeTypeId}
+            disabled={!orgId}
+          >
             <SelectTrigger>
               <SelectValue
-                placeholder={!orgId ? "Pick an organization first" : "Choose a scope type…"}
+                placeholder={
+                  !orgId ? "Pick an organization first" : "Choose a scope type…"
+                }
               />
             </SelectTrigger>
             <SelectContent>
@@ -518,7 +553,8 @@ export function ScopeBatchImportBody({ agentId, onDone }: ScopeBatchImportBodyPr
             : "Select at least one item to add, or change a slot's agent access."}
         </p>
         <Button onClick={handleSubmit} disabled={!canSubmit}>
-          {selectedVariableCount + selectedSlotCount === 0 && updatedSlots.length > 0
+          {selectedVariableCount + selectedSlotCount === 0 &&
+          updatedSlots.length > 0
             ? "Save changes"
             : "Add selected"}
         </Button>
@@ -569,9 +605,16 @@ function RowCheckbox({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <Checkbox checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+      <Checkbox
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={onCheckedChange}
+      />
       {badge && (
-        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+        <Badge
+          variant="secondary"
+          className="text-[10px] px-1.5 py-0 font-normal"
+        >
           {badge}
         </Badge>
       )}

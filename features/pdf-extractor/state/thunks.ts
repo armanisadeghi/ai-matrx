@@ -1,6 +1,8 @@
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { apiGet, buildPath } from "@/lib/api/typed-client";
+import { createClient } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
+import type { ApiChunksResponse } from "./types";
 import {
   chunksFetchError,
   chunksFetchStart,
@@ -44,35 +46,37 @@ export function fetchChunksForPage(
 
       dispatch(chunksFetchStart({ docId, pageNumber }));
       try {
-        const { data } = await apiGet(
-          buildPath("/rag/library/{processed_document_id}/chunks", {
-            processed_document_id: docId,
-          }),
-          { query: { limit: 50, page_number: pageNumber } },
+        const supabase = createClient();
+        const { data, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_list_library_chunks",
+          {
+            p_id: docId,
+            p_limit: 50,
+            p_page_number: pageNumber,
+          },
         );
+        if (rpcError) {
+          // The RPC raises "document not found" for a doc the caller can't
+          // see (the previous HTTP endpoint's 404-equivalent) — treat that
+          // the same way the old 404 branch did: an empty, non-error result.
+          if (rpcError.message?.includes("document not found")) {
+            dispatch(
+              chunksFetchSuccess({ docId, pageNumber, rows: [], total: 0 }),
+            );
+            return;
+          }
+          throw new Error(rpcError.message);
+        }
+        const resp = data as unknown as ApiChunksResponse | null;
         dispatch(
           chunksFetchSuccess({
             docId,
             pageNumber,
-            rows: Array.isArray(data?.chunks) ? data.chunks : [],
-            total: typeof data?.total === "number" ? data.total : 0,
+            rows: Array.isArray(resp?.chunks) ? resp.chunks : [],
+            total: typeof resp?.total === "number" ? resp.total : 0,
           }),
         );
       } catch (err: unknown) {
-        const status =
-          typeof err === "object" &&
-          err !== null &&
-          "status" in err &&
-          typeof (err as { status?: unknown }).status === "number"
-            ? (err as { status: number }).status
-            : null;
-
-        if (status === 404) {
-          dispatch(
-            chunksFetchSuccess({ docId, pageNumber, rows: [], total: 0 }),
-          );
-          return;
-        }
         const message =
           err instanceof Error ? err.message : "Failed to load chunks";
         dispatch(chunksFetchError({ docId, pageNumber, error: message }));

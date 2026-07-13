@@ -2,16 +2,17 @@
 
 /**
  * Publish a data store to an audience + list its grants — Shared Knowledge
- * Resources. All over HTTP (`/rag/data-stores/{id}/grants`) because these are
- * privileged MUTATIONS behind super-admin-gated SECURITY DEFINER RPCs — not
- * because of schema exposure (`rag.*` IS PostgREST-exposed as of 2026-06; see
- * features/rag/docs/SEARCH_SYSTEM_HANDOFF.md). Lazy by design — nothing fires
- * until a consumer mounts.
+ * Resources. Direct-to-Supabase: LIST calls `rag.fn_list_data_store_grants`
+ * (owner/org-member/super-admin gated, identity from auth.uid() only — a
+ * different visibility rule than the consumer-facing `dsg_select_entitled`
+ * RLS policy). Publish/revoke call the existing super-admin-gated
+ * `rag.library_grant_publish`/`library_grant_revoke` SECURITY DEFINER RPCs
+ * directly. Lazy by design — nothing fires until a consumer mounts.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { apiDelete, apiGet, apiPost, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import { createClient } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
 
 export type GrantAudience = "global" | "industry" | "organization";
 
@@ -25,15 +26,20 @@ export interface DataStoreGrant {
   organizationName: string | null;
 }
 
-// Wire shapes DERIVED from the generated OpenAPI contract, never hand-mirrored.
-type ApiGrant = components["schemas"]["DataStoreGrantOut"];
+interface RpcGrantRow {
+  id: string;
+  audience: string;
+  industry_id: string | null;
+  industry_name: string | null;
+  industry_slug: string | null;
+  organization_id: string | null;
+  organization_name: string | null;
+}
 
-function toGrant(g: ApiGrant): DataStoreGrant {
+function toGrant(g: RpcGrantRow): DataStoreGrant {
   return {
     id: g.id,
     audience: (g.audience as GrantAudience) ?? "organization",
-    // Contract marks these optional (`?: string | null`); coalesce the absent
-    // case to null to match the DataStoreGrant shape the UI renders.
     industryId: g.industry_id ?? null,
     industryName: g.industry_name ?? null,
     industrySlug: g.industry_slug ?? null,
@@ -59,12 +65,13 @@ export function useDataStoreGrants(storeId: string | null) {
     setError(null);
     (async () => {
       try {
-        const { data } = await apiGet(
-          buildPath("/rag/data-stores/{store_id}/grants", {
-            store_id: storeId,
-          }),
+        const supabase = createClient();
+        const { data, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_list_data_store_grants",
+          { p_store_id: storeId },
         );
-        if (!cancelled) setGrants((data ?? []).map(toGrant));
+        if (rpcError) throw rpcError;
+        if (!cancelled) setGrants(((data ?? []) as RpcGrantRow[]).map(toGrant));
       } catch (e) {
         if (!cancelled)
           setError(e instanceof Error ? e.message : "Could not load grants");
@@ -85,16 +92,17 @@ export function useDataStoreGrants(storeId: string | null) {
     }): Promise<boolean> => {
       if (!storeId) return false;
       try {
-        await apiPost(
-          buildPath("/rag/data-stores/{store_id}/grants", {
-            store_id: storeId,
-          }),
+        const supabase = createClient();
+        const { error: rpcError } = await ragDb(supabase).rpc(
+          "library_grant_publish",
           {
-            audience: input.audience,
-            industry_id: input.industryId ?? undefined,
-            organization_id: input.organizationId ?? undefined,
+            p_store_id: storeId,
+            p_audience: input.audience,
+            p_industry_id: input.industryId ?? undefined,
+            p_organization_id: input.organizationId ?? undefined,
           },
         );
+        if (rpcError) throw rpcError;
         refresh();
         return true;
       } catch (e) {
@@ -109,12 +117,12 @@ export function useDataStoreGrants(storeId: string | null) {
     async (grantId: string): Promise<boolean> => {
       if (!storeId) return false;
       try {
-        await apiDelete(
-          buildPath("/rag/data-stores/{store_id}/grants/{grant_id}", {
-            store_id: storeId,
-            grant_id: grantId,
-          }),
+        const supabase = createClient();
+        const { error: rpcError } = await ragDb(supabase).rpc(
+          "library_grant_revoke",
+          { p_grant_id: grantId },
         );
+        if (rpcError) throw rpcError;
         refresh();
         return true;
       } catch (e) {

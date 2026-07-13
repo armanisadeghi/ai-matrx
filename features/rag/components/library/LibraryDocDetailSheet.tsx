@@ -48,7 +48,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import { apiDelete, apiGet, apiPatch, buildPath } from "@/lib/api/typed-client";
+import { createClient } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
 import type { components } from "@/types/python-generated/api-types";
 import { StatusBadge } from "./StatusBadge";
 import { StageStatusPills } from "./StageStatusPills";
@@ -122,12 +123,16 @@ export function LibraryDocDetailSheet({
     }
     setRenaming(true);
     try {
-      await apiPatch(
-        buildPath("/rag/library/{processed_document_id}", {
-          processed_document_id: doc.id,
-        }),
-        { name: renameValue.trim() },
-      );
+      const supabase = createClient();
+      // Curator-or-owner gated: docproc.processed_documents RLS
+      // (processed_documents_owner_all + processed_documents_curator_update)
+      // already matches LibraryPatchRequest's authorization exactly.
+      const { error: updateError } = await supabase
+        .schema("docproc")
+        .from("processed_documents")
+        .update({ name: renameValue.trim() })
+        .eq("id", doc.id);
+      if (updateError) throw new Error(updateError.message);
       toast.success("Document renamed");
       setRenameOpen(false);
       reload();
@@ -143,27 +148,37 @@ export function LibraryDocDetailSheet({
     if (!doc) return;
     setDeleting(true);
     try {
+      const supabase = createClient();
       if (confirmDeleteMode === "file") {
         // Full delete — processing + source cld_files row.
-        const { data } = await apiDelete(
-          buildPath("/rag/library/{processed_document_id}/full", {
-            processed_document_id: doc.id,
-          }),
+        const { data, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_delete_library_document_and_source",
+          { p_id: doc.id },
         );
+        if (rpcError) throw new Error(rpcError.message);
+        const result = data as unknown as {
+          deleted_pages?: number;
+          deleted_chunks?: number;
+          deleted_cld_file?: boolean;
+        } | null;
         toast.success(
-          data?.deleted_cld_file
-            ? `File deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}, source file moved to trash.`
-            : `Processing deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. (Source file was not a cld_files row, so the binary stays.)`,
+          result?.deleted_cld_file
+            ? `File deleted: ${result?.deleted_pages ?? 0} pages, ${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}, source file moved to trash.`
+            : `Processing deleted: ${result?.deleted_pages ?? 0} pages, ${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. (Source file was not a cld_files row, so the binary stays.)`,
         );
       } else {
         // Processing-only delete — keeps the source binary.
-        const { data } = await apiDelete(
-          buildPath("/rag/library/{processed_document_id}", {
-            processed_document_id: doc.id,
-          }),
+        const { data, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_delete_library_document",
+          { p_id: doc.id },
         );
+        if (rpcError) throw new Error(rpcError.message);
+        const result = data as unknown as {
+          deleted_pages?: number;
+          deleted_chunks?: number;
+        } | null;
         toast.success(
-          `Processing deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. Source file intact — re-process to rebuild.`,
+          `Processing deleted: ${result?.deleted_pages ?? 0} pages, ${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. Source file intact — re-process to rebuild.`,
         );
       }
       setConfirmDeleteOpen(false);
@@ -957,27 +972,32 @@ function SheetFullPagePreviews({
     setError(null);
     setCleaned("");
     setRaw("");
-    apiGet(
-      buildPath("/rag/library/{processed_document_id}/page/{page_index}", {
-        processed_document_id: documentId,
-        page_index: pageIndex,
-      }),
-    )
-      .then(({ data }) => {
-        if (cancelled || !data) return;
-        setCleaned(data.cleaned_text);
-        setRaw(data.raw_text);
-      })
-      .catch((err) => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_get_library_full_page",
+          { p_id: documentId, p_page_index: pageIndex },
+        );
+        if (cancelled) return;
+        if (rpcError) throw new Error(rpcError.message);
+        const page = data as unknown as {
+          cleaned_text: string;
+          raw_text: string;
+        } | null;
+        if (!page) return;
+        setCleaned(page.cleaned_text);
+        setRaw(page.raw_text);
+      } catch (err) {
         if (!cancelled) {
           setError(
             err instanceof Error ? err.message : "Failed to load page text",
           );
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -1061,17 +1081,18 @@ function SheetChunksPanel({
     setRows([]);
     const limit = Math.min(Math.max(fallbackSamples.length, 1), 500);
 
-    apiGet(
-      buildPath("/rag/library/{processed_document_id}/chunks", {
-        processed_document_id: documentId,
-      }),
-      { query: { limit, offset: 0 } },
-    )
-      .then(({ data }) => {
-        if (cancelled || !data) return;
-        setRows(Array.isArray(data.chunks) ? data.chunks : []);
-      })
-      .catch((err) => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data, error: rpcError } = await ragDb(supabase).rpc(
+          "fn_list_library_chunks",
+          { p_id: documentId, p_limit: limit, p_offset: 0 },
+        );
+        if (cancelled) return;
+        if (rpcError) throw new Error(rpcError.message);
+        const resp = data as unknown as { chunks: ApiChunkRow[] } | null;
+        setRows(Array.isArray(resp?.chunks) ? resp.chunks : []);
+      } catch (err) {
         if (!cancelled) {
           setFetchError(
             err instanceof Error
@@ -1079,10 +1100,10 @@ function SheetChunksPanel({
               : `Failed to load ${RAG_VOCAB.segmentsShort.toLowerCase()}`,
           );
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;

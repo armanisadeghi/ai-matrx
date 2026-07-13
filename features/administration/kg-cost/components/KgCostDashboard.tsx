@@ -357,9 +357,9 @@ function PendingBatchesTable({
             onClick={() => onPick(row.id)}
           >
             <TableCell className="font-mono text-xs">
-              {row.custom_id.length > 30
-                ? `${row.custom_id.slice(0, 30)}…`
-                : row.custom_id}
+              {(row.custom_id ?? "").length > 30
+                ? `${(row.custom_id ?? "").slice(0, 30)}…`
+                : (row.custom_id ?? "")}
             </TableCell>
             <TableCell>
               <Badge variant="outline" className="font-mono">
@@ -824,7 +824,7 @@ function BatchDetailDialog({
 
                 <dt className="text-muted-foreground">User</dt>
                 <dd className="font-mono text-xs">
-                  {detail.user_id.slice(0, 8)}…
+                  {(detail.user_id ?? "").slice(0, 8)}…
                 </dd>
 
                 <dt className="text-muted-foreground">Source</dt>

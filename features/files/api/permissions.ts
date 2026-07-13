@@ -1,116 +1,140 @@
 /**
  * features/files/api/permissions.ts
  *
- * Grant / revoke permissions on files and folders.
- *
- * Backend contract: features/files/cld_files_frontend.md §6 (Permissions).
+ * Grant / revoke permissions on files and folders. Direct-to-Supabase:
+ * `iam.fn_list_resource_permissions` / `fn_grant_resource_permission` /
+ * `fn_revoke_resource_permission` mirror the retired Python
+ * `PermissionsManager` exactly — every call requires 'admin' access on the
+ * resource via `iam.has_access(type, id, 'admin')`, the same auth.uid()-based
+ * resolver RLS itself calls. Identity from auth.uid() only.
  */
 
-import {
-  getJson,
-  postJson,
-  type RequestOptions,
-  type ResponseMeta,
-} from "@/lib/python-client";
-import { apiDelete, buildPath, withQuery } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import { createClient } from "@/utils/supabase/client";
+import { iamDb } from "@/utils/supabase/iamDb";
 import type { CloudFilePermissionRow, GrantPermissionRequest } from "@/features/files/types";
+
+interface RpcPermissionRow {
+  resource_id: string;
+  resource_type: string;
+  grantee_id: string;
+  grantee_type: string;
+  permission_level: string;
+  granted_by: string | null;
+  expires_at: string | null;
+}
+
+async function listPermissions(
+  resourceType: "file" | "folder",
+  resourceId: string,
+): Promise<CloudFilePermissionRow[]> {
+  const supabase = createClient();
+  const { data, error } = await iamDb(supabase).rpc("fn_list_resource_permissions", {
+    p_resource_type: resourceType,
+    p_resource_id: resourceId,
+  });
+  if (error) throw new Error(error.message);
+  return (data as unknown as RpcPermissionRow[]) ?? [];
+}
+
+async function grantPermission(
+  resourceType: "file" | "folder",
+  resourceId: string,
+  body: GrantPermissionRequest,
+): Promise<CloudFilePermissionRow> {
+  const supabase = createClient();
+  const { data, error } = await iamDb(supabase).rpc("fn_grant_resource_permission", {
+    p_resource_type: resourceType,
+    p_resource_id: resourceId,
+    p_grantee_id: body.grantee_id,
+    p_grantee_type: body.grantee_type ?? "user",
+    p_level: body.level ?? "read",
+    p_expires_at: body.expires_at ?? undefined,
+  });
+  if (error) throw new Error(error.message);
+  return data as unknown as CloudFilePermissionRow;
+}
+
+async function revokePermission(
+  resourceType: "file" | "folder",
+  resourceId: string,
+  granteeId: string,
+  granteeType: "user" | "group" = "user",
+): Promise<{ deleted: boolean }> {
+  const supabase = createClient();
+  const { data, error } = await iamDb(supabase).rpc("fn_revoke_resource_permission", {
+    p_resource_type: resourceType,
+    p_resource_id: resourceId,
+    p_grantee_id: granteeId,
+    // The user-group ACL tier is removed DB-side; 'group' has no meaningful
+    // target column, so it's treated the same as the default 'user' grantee.
+    p_grantee_type: granteeType === "group" ? "user" : granteeType,
+  });
+  if (error) throw new Error(error.message);
+  return { deleted: Boolean(data) };
+}
 
 // ---------------------------------------------------------------------------
 // File permissions
 // ---------------------------------------------------------------------------
 
-// list/grant stay on the raw client: their request body (`GrantPermissionRequest`)
-// is already the generated schema, but the contract response is `PermissionRecord`
-// (all-optional + index-signature), whereas consumers read the concrete DB-row
-// `CloudFilePermissionRow`. Binding would erase the row's concrete fields.
+// `opts` is accepted-and-ignored on every export below — callers still pass
+// the old python-client `{ requestId }` shape (features/files/redux/thunks.ts
+// uses it for its own request ledger, not the network call itself), and
+// dropping the parameter would force every call site to change for no
+// behavioral gain. It plays no role in a direct-Supabase call.
+
 export async function listFilePermissions(
   fileId: string,
-  opts: RequestOptions = {},
-): Promise<{ data: CloudFilePermissionRow[]; meta: ResponseMeta }> {
-  return getJson<CloudFilePermissionRow[]>(
-    `/files/${fileId}/permissions`,
-    opts,
-  );
+  _opts?: unknown,
+): Promise<{ data: CloudFilePermissionRow[] }> {
+  return { data: await listPermissions("file", fileId) };
 }
 
 export async function grantFilePermission(
   fileId: string,
   body: GrantPermissionRequest,
-  opts: RequestOptions = {},
-): Promise<{ data: CloudFilePermissionRow; meta: ResponseMeta }> {
-  return postJson<CloudFilePermissionRow, GrantPermissionRequest>(
-    `/files/${fileId}/permissions`,
-    body,
-    opts,
-  );
+  _opts?: unknown,
+): Promise<{ data: CloudFilePermissionRow }> {
+  return { data: await grantPermission("file", fileId, body) };
 }
 
 export async function revokeFilePermission(
   fileId: string,
   granteeId: string,
   params: { granteeType?: "user" | "group" } = {},
-  opts: RequestOptions = {},
-): Promise<{ data: components["schemas"]["DeleteResponse"]; meta: ResponseMeta }> {
-  const granteeType = params.granteeType ?? "user";
-  // Contract-bound (`revoke_file_permission_...`). `grantee_type` is always sent
-  // (default "user"), preserving the prior always-present query param.
-  return apiDelete(
-    withQuery(
-      buildPath("/files/{file_id}/permissions/{grantee_id}", {
-        file_id: fileId,
-        grantee_id: granteeId,
-      }),
-      { grantee_type: granteeType },
-    ),
-    opts,
-  );
+  _opts?: unknown,
+): Promise<{ data: { deleted: boolean } }> {
+  return {
+    data: await revokePermission("file", fileId, granteeId, params.granteeType ?? "user"),
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Folder permissions (cascade to contents)
 // ---------------------------------------------------------------------------
 
-// Same as the file variants: response deliberately typed as the DB-row
-// `CloudFilePermissionRow`, which disagrees with the contract's `PermissionRecord`.
 export async function listFolderPermissions(
   folderId: string,
-  opts: RequestOptions = {},
-): Promise<{ data: CloudFilePermissionRow[]; meta: ResponseMeta }> {
-  return getJson<CloudFilePermissionRow[]>(
-    `/folders/${folderId}/permissions`,
-    opts,
-  );
+  _opts?: unknown,
+): Promise<{ data: CloudFilePermissionRow[] }> {
+  return { data: await listPermissions("folder", folderId) };
 }
 
 export async function grantFolderPermission(
   folderId: string,
   body: GrantPermissionRequest,
-  opts: RequestOptions = {},
-): Promise<{ data: CloudFilePermissionRow; meta: ResponseMeta }> {
-  return postJson<CloudFilePermissionRow, GrantPermissionRequest>(
-    `/folders/${folderId}/permissions`,
-    body,
-    opts,
-  );
+  _opts?: unknown,
+): Promise<{ data: CloudFilePermissionRow }> {
+  return { data: await grantPermission("folder", folderId, body) };
 }
 
 export async function revokeFolderPermission(
   folderId: string,
   granteeId: string,
   params: { granteeType?: "user" | "group" } = {},
-  opts: RequestOptions = {},
-): Promise<{ data: components["schemas"]["DeleteResponse"]; meta: ResponseMeta }> {
-  const granteeType = params.granteeType ?? "user";
-  // Contract-bound (`revoke_folder_permission_...`).
-  return apiDelete(
-    withQuery(
-      buildPath("/folders/{folder_id}/permissions/{grantee_id}", {
-        folder_id: folderId,
-        grantee_id: granteeId,
-      }),
-      { grantee_type: granteeType },
-    ),
-    opts,
-  );
+  _opts?: unknown,
+): Promise<{ data: { deleted: boolean } }> {
+  return {
+    data: await revokePermission("folder", folderId, granteeId, params.granteeType ?? "user"),
+  };
 }

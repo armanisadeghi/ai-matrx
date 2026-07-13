@@ -19,8 +19,10 @@
  * they all expose `.schema()`.
  *
  * NOTE: file-permission grants are NOT in this schema — they live in the
- * canonical `public.permissions` store (resource_type='file'). Reach those via
- * the normal `client.from('permissions')`, never through `filesDb`.
+ * canonical `iam.permissions` store (resource_type='file'/'folder'). Reach
+ * those via `iamDb(supabase).rpc('fn_list_resource_permissions', ...)` (see
+ * utils/supabase/iamDb.ts) — list/grant/revoke are admin-gated inside the
+ * RPC (iam.has_access), never a plain `.from('permissions')` select.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";

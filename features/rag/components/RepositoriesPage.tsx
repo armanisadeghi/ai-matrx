@@ -6,6 +6,10 @@
  * Lists every code.code_repositories row owned by the caller, with
  * file counts (total vs already-indexed) and a one-click "Index" button
  * that walks every code_file in the repo through ingest_source().
+ *
+ * The LIST is direct-to-Supabase (`code.fn_list_repositories`, identity from
+ * auth.uid() only) — pure DB read, no processing. Index stays on Python —
+ * genuine background work.
  */
 
 import { useEffect, useState } from "react";
@@ -34,12 +38,30 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { postJson } from "@/lib/python-client";
-import { apiGet } from "@/lib/api/typed-client";
+import { createClient } from "@/utils/supabase/client";
+import { codeDb } from "@/utils/supabase/codeDb";
 import type { components } from "@/types/python-generated/api-types";
 
-// Repository shapes — DERIVED from the generated contract (never hand-mirrored).
-type ApiRepo = components["schemas"]["RepositorySummary"];
+// Index-response shape — DERIVED from the generated contract (never hand-mirrored).
 type ApiIndexResponse = components["schemas"]["IndexRepositoryResponse"];
+
+// List shape comes from `code.fn_list_repositories` (jsonb) — same field
+// names as the retired RepositorySummary contract.
+interface ApiRepo {
+  repository_id: string | null;
+  name: string;
+  git_url: string | null;
+  git_branch: string | null;
+  sync_status: string | null;
+  file_count: number;
+  indexed_file_count: number;
+  last_synced_at: string | null;
+}
+
+interface RpcReposResponse {
+  repositories: ApiRepo[];
+  unattached_files: number;
+}
 
 export function RepositoriesPage() {
   const userId = useAppSelector(selectUserId);
@@ -55,20 +77,24 @@ export function RepositoriesPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    apiGet("/rag/repositories")
-      .then(({ data }) => {
-        if (cancelled || !data) return;
-        setRepos(Array.isArray(data.repositories) ? data.repositories : []);
-        setUnattached(
-          typeof data.unattached_files === "number" ? data.unattached_files : 0,
-        );
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err?.message ?? "Failed to load repositories");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    (async () => {
+      const supabase = createClient();
+      const { data, error: rpcError } = await codeDb(supabase).rpc(
+        "fn_list_repositories",
+      );
+      if (cancelled) return;
+      if (rpcError) {
+        setError(rpcError.message ?? "Failed to load repositories");
+        setLoading(false);
+        return;
+      }
+      const resp = data as unknown as RpcReposResponse | null;
+      setRepos(Array.isArray(resp?.repositories) ? resp.repositories : []);
+      setUnattached(
+        typeof resp?.unattached_files === "number" ? resp.unattached_files : 0,
+      );
+      setLoading(false);
+    })();
     return () => {
       cancelled = true;
     };

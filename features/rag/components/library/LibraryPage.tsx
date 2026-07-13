@@ -77,7 +77,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { apiDelete, apiPost, buildPath } from "@/lib/api/typed-client";
+import { createClient } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
@@ -183,9 +184,19 @@ export function LibraryPage() {
   const handleBulkDelete = async (status: DocStatus) => {
     setBulkRunning(true);
     try {
-      const { data } = await apiPost("/rag/library/bulk-delete", { status });
+      const supabase = createClient();
+      const { data, error: rpcError } = await ragDb(supabase).rpc(
+        "fn_bulk_delete_library_documents",
+        { p_status: status },
+      );
+      if (rpcError) throw new Error(rpcError.message);
+      const result = data as unknown as {
+        deleted_documents?: number;
+        deleted_pages?: number;
+        deleted_chunks?: number;
+      } | null;
       toast.success(
-        `Deleted ${data?.deleted_documents ?? 0} ${status} documents (${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()})`,
+        `Deleted ${result?.deleted_documents ?? 0} ${status} documents (${result?.deleted_pages ?? 0} pages, ${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()})`,
       );
       setBulkConfirmStatus(null);
       setRefreshKey((n) => n + 1);
@@ -299,19 +310,20 @@ export function LibraryPage() {
     });
     if (!proceed) return;
     try {
+      const supabase = createClient();
       if (mode === "file") {
-        await apiDelete(
-          buildPath("/rag/library/{processed_document_id}/full", {
-            processed_document_id: doc.id,
-          }),
+        const { error: rpcError } = await ragDb(supabase).rpc(
+          "fn_delete_library_document_and_source",
+          { p_id: doc.id },
         );
+        if (rpcError) throw new Error(rpcError.message);
         toast.success(`Deleted file "${doc.name}"`);
       } else {
-        await apiDelete(
-          buildPath("/rag/library/{processed_document_id}", {
-            processed_document_id: doc.id,
-          }),
+        const { error: rpcError } = await ragDb(supabase).rpc(
+          "fn_delete_library_document",
+          { p_id: doc.id },
         );
+        if (rpcError) throw new Error(rpcError.message);
         toast.success(`Deleted processing for "${doc.name}"`);
       }
       setRefreshKey((n) => n + 1);

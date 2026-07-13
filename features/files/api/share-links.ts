@@ -1,53 +1,86 @@
 /**
  * features/files/api/share-links.ts
  *
- * Share links for files and folders. Authed endpoints for create/list/revoke,
- * plus PUBLIC (no-auth) resolve + download for the /share/:token route.
+ * Share links for files and folders. Direct-to-Supabase for the authed
+ * list/create/deactivate calls: `files.fn_list_share_links` /
+ * `fn_create_share_link` / `fn_deactivate_share_link` mirror the retired
+ * Python `PermissionsManager` — list/create require 'admin' access on the
+ * resource via `iam.has_access`. `fn_deactivate_share_link` additionally
+ * FIXES a gap in the Python original, which had no ownership check at all:
+ * only the link's creator or a resource admin may deactivate it now.
  *
- * Backend contract: features/files/cld_files_frontend.md §8.
+ * `resolveShareLink` / `downloadSharedFile` stay on Python — genuine
+ * anonymous file-bytes serving, not a plain DB read.
  */
 
 import {
-  getJson,
-  postJson,
   publicDownloadBlob,
   publicGetJson,
-  type RequestOptions,
-  type ResponseMeta,
 } from "@/lib/python-client";
-import { apiDelete, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import { createClient } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 import type {
   CloudShareLinkRow,
   CreateShareLinkRequest,
   ShareLinkResolveResponse,
 } from "@/features/files/types";
 
+interface RpcShareLinkRow {
+  share_token: string;
+  resource_id: string;
+  resource_type: string;
+  permission_level: string;
+  created_by: string | null;
+  expires_at: string | null;
+  max_uses: number | null;
+  use_count: number | null;
+}
+
+async function listShareLinks(
+  resourceType: "file" | "folder",
+  resourceId: string,
+): Promise<CloudShareLinkRow[]> {
+  const supabase = createClient();
+  const { data, error } = await filesDb(supabase).rpc("fn_list_share_links", {
+    p_resource_type: resourceType,
+    p_resource_id: resourceId,
+  });
+  if (error) throw new Error(error.message);
+  return (data as unknown as RpcShareLinkRow[]) ?? [];
+}
+
+async function createShareLink(
+  resourceType: "file" | "folder",
+  resourceId: string,
+  body: CreateShareLinkRequest,
+): Promise<CloudShareLinkRow> {
+  const supabase = createClient();
+  const { data, error } = await filesDb(supabase).rpc("fn_create_share_link", {
+    p_resource_type: resourceType,
+    p_resource_id: resourceId,
+    p_permission_level: body.permission_level ?? "read",
+    p_expires_at: body.expires_at ?? undefined,
+    p_max_uses: body.max_uses ?? undefined,
+  });
+  if (error) throw new Error(error.message);
+  return data as unknown as CloudShareLinkRow;
+}
+
 // ---------------------------------------------------------------------------
 // Authed — file share links
 // ---------------------------------------------------------------------------
 
-// list/create stay on the raw client: the request body (`CreateShareLinkRequest`)
-// is already the generated schema, but the contract response is `ShareLinkRecord`
-// (all-optional + index-signature), whereas consumers read the concrete DB-row
-// `CloudShareLinkRow`. Binding would erase the row's concrete fields.
 export async function listFileShareLinks(
   fileId: string,
-  opts: RequestOptions = {},
-): Promise<{ data: CloudShareLinkRow[]; meta: ResponseMeta }> {
-  return getJson<CloudShareLinkRow[]>(`/files/${fileId}/share-links`, opts);
+): Promise<{ data: CloudShareLinkRow[] }> {
+  return { data: await listShareLinks("file", fileId) };
 }
 
 export async function createFileShareLink(
   fileId: string,
   body: CreateShareLinkRequest,
-  opts: RequestOptions = {},
-): Promise<{ data: CloudShareLinkRow; meta: ResponseMeta }> {
-  return postJson<CloudShareLinkRow, CreateShareLinkRequest>(
-    `/files/${fileId}/share-links`,
-    body,
-    opts,
-  );
+): Promise<{ data: CloudShareLinkRow }> {
+  return { data: await createShareLink("file", fileId, body) };
 }
 
 // ---------------------------------------------------------------------------
@@ -56,21 +89,15 @@ export async function createFileShareLink(
 
 export async function listFolderShareLinks(
   folderId: string,
-  opts: RequestOptions = {},
-): Promise<{ data: CloudShareLinkRow[]; meta: ResponseMeta }> {
-  return getJson<CloudShareLinkRow[]>(`/folders/${folderId}/share-links`, opts);
+): Promise<{ data: CloudShareLinkRow[] }> {
+  return { data: await listShareLinks("folder", folderId) };
 }
 
 export async function createFolderShareLink(
   folderId: string,
   body: CreateShareLinkRequest,
-  opts: RequestOptions = {},
-): Promise<{ data: CloudShareLinkRow; meta: ResponseMeta }> {
-  return postJson<CloudShareLinkRow, CreateShareLinkRequest>(
-    `/folders/${folderId}/share-links`,
-    body,
-    opts,
-  );
+): Promise<{ data: CloudShareLinkRow }> {
+  return { data: await createShareLink("folder", folderId, body) };
 }
 
 // ---------------------------------------------------------------------------
@@ -79,18 +106,18 @@ export async function createFolderShareLink(
 
 export async function deactivateShareLink(
   shareToken: string,
-  opts: RequestOptions = {},
-): Promise<{ data: components["schemas"]["DeleteResponse"]; meta: ResponseMeta }> {
-  // Contract-bound (`deactivate_share_link_...`). `buildPath` URL-encodes the
-  // token exactly as the prior `encodeURIComponent` did.
-  return apiDelete(
-    buildPath("/files/share-links/{share_token}", { share_token: shareToken }),
-    opts,
-  );
+): Promise<{ data: { deleted: boolean } }> {
+  const supabase = createClient();
+  const { data, error } = await filesDb(supabase).rpc("fn_deactivate_share_link", {
+    p_share_token: shareToken,
+  });
+  if (error) throw new Error(error.message);
+  return { data: { deleted: Boolean(data) } };
 }
 
 // ---------------------------------------------------------------------------
-// Public (no auth) — resolve + download
+// Public (no auth) — resolve + download. Genuine anonymous file-bytes
+// serving through the server's file pipeline — stays on Python.
 // ---------------------------------------------------------------------------
 
 export async function resolveShareLink(

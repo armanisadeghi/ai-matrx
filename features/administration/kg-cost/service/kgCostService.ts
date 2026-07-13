@@ -1,53 +1,110 @@
 /**
  * features/administration/kg-cost/service/kgCostService.ts
  *
- * Typed client for the read-only KG-cost backend
- * (`aidream/api/routers/kg_cost.py`, bare prefix `/kg-cost`).
- *
- * React → Python directly (per CLAUDE.md — no Next.js middle hop). Every
- * wire type below is DERIVED from the OpenAPI-generated contract
- * (`types/python-generated/api-types.ts`), never hand-mirrored — a backend
- * rename lights up every drifted callsite as a compile error after
- * `pnpm sync-types`. This is an admin-only surface, gated by the (admin)
- * layout + `_require_admin` on every Python handler.
+ * Direct-to-Supabase client for the read-only KG-cost dashboard.
+ * `public.fn_kg_cost_summary` / `_list_orgs` / `_org_detail` /
+ * `_pending_batches` / `_batch_detail` mirror the retired
+ * `aidream/api/routers/kg_cost.py` endpoints exactly — admin-gated INSIDE
+ * each function (public.is_super_admin()), identity from auth.uid() only.
  */
-import { apiGet, buildPath } from "@/lib/api/typed-client";
-import type { components } from "@/types/python-generated/api-types";
+import { createClient } from "@/utils/supabase/client";
 
 // ---------------------------------------------------------------------------
-// Wire types — DERIVED from the generated contract (source of truth)
+// Wire types — same field names the retired FastAPI models used
 // ---------------------------------------------------------------------------
 
-// The provider / kind / status enums have no standalone generated schema —
-// they are inlined on the batch models. Derive them off a contract field so
-// they still track the wire vocabulary.
-export type BatchStatus = components["schemas"]["BatchRow"]["status"];
-export type BatchProvider = components["schemas"]["BatchRow"]["provider"];
-export type BatchKind = components["schemas"]["BatchRow"]["kind"];
+export type BatchStatus = string;
+export type BatchProvider = string;
+export type BatchKind = string;
 
-export type KgCostSummaryResponse =
-  components["schemas"]["KgCostSummaryResponse"];
+export interface KgCostSummaryResponse {
+  spend_today_usd: number;
+  spend_7d_usd: number;
+  orgs_over_80pct: number;
+  pending_batches: number;
+  ner_coverage_pct: number;
+}
 
-export type OrgCostRow = components["schemas"]["OrgCostRow"];
+export interface OrgCostRow {
+  organization_id: string;
+  organization_name: string | null;
+  daily_auto_rag_budget_usd: number;
+  daily_auto_rag_cost_used_usd: number;
+  daily_auto_rag_window_start: string | null;
+  percent_used: number;
+  last_charge_at: string | null;
+}
 
-export type OrgCostListResponse = components["schemas"]["OrgCostListResponse"];
+export interface OrgCostListResponse {
+  items: OrgCostRow[];
+  total: number;
+}
 
-export type DailySpendPoint = components["schemas"]["DailySpendPoint"];
+export interface DailySpendPoint {
+  date: string;
+  cost_usd: number;
+}
 
-export type TopSourceRow = components["schemas"]["TopSourceRow"];
+export interface TopSourceRow {
+  source: string;
+  cost_usd: number;
+  count: number;
+}
 
-export type BatchSummaryByStatus =
-  components["schemas"]["BatchSummaryByStatus"];
+export interface BatchSummaryByStatus {
+  status: string;
+  count: number;
+  total_cost_usd: number;
+}
 
-export type OrgCostDetailResponse =
-  components["schemas"]["OrgCostDetailResponse"];
+export interface OrgCostDetailResponse {
+  organization_id: string;
+  organization_name: string | null;
+  budget_usd: number;
+  used_today_usd: number;
+  window_start: string | null;
+  daily_series: DailySpendPoint[];
+  top_sources: TopSourceRow[];
+  batch_summary: BatchSummaryByStatus[];
+}
 
-export type BatchRow = components["schemas"]["BatchRow"];
+export interface BatchRow {
+  id: string;
+  custom_id: string | null;
+  provider: string;
+  batch_id: string | null;
+  kind: string;
+  user_id: string | null;
+  organization_id: string | null;
+  organization_name: string | null;
+  source_kind: string | null;
+  source_id: string | null;
+  status: string;
+  est_cost_usd: number;
+  poll_count: number;
+  submitted_at: string;
+  last_polled_at: string | null;
+  next_poll_at: string | null;
+}
 
-export type PendingBatchListResponse =
-  components["schemas"]["PendingBatchListResponse"];
+export interface PendingBatchListResponse {
+  items: BatchRow[];
+  total: number;
+}
 
-export type BatchDetailResponse = components["schemas"]["BatchDetailResponse"];
+export interface BatchDetailResponse extends BatchRow {
+  purpose: string | null;
+  cost_usd: number | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  response_uri: string | null;
+  error: unknown;
+  metadata: unknown;
+  completed_at: string | null;
+  cost_recorded_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 // ---------------------------------------------------------------------------
 // Calls
@@ -56,52 +113,66 @@ export type BatchDetailResponse = components["schemas"]["BatchDetailResponse"];
 export async function getKgCostSummary(
   opts: { signal?: AbortSignal } = {},
 ): Promise<KgCostSummaryResponse> {
-  const { data } = await apiGet("/kg-cost/summary", {
-    signal: opts.signal,
-  });
-  return data;
+  const supabase = createClient();
+  let query = supabase.rpc("fn_kg_cost_summary");
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as KgCostSummaryResponse;
 }
 
 export async function listOrgCosts(
   params: { limit?: number; offset?: number } = {},
   opts: { signal?: AbortSignal } = {},
 ): Promise<OrgCostListResponse> {
-  const { data } = await apiGet("/kg-cost/orgs", {
-    signal: opts.signal,
-    query: { limit: params.limit ?? 100, offset: params.offset ?? 0 },
+  const supabase = createClient();
+  let query = supabase.rpc("fn_kg_cost_list_orgs", {
+    p_limit: params.limit ?? 100,
+    p_offset: params.offset ?? 0,
   });
-  return data;
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as OrgCostListResponse;
 }
 
 export async function getOrgCostDetail(
   orgId: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<OrgCostDetailResponse> {
-  const { data } = await apiGet(
-    buildPath("/kg-cost/orgs/{org_id}", { org_id: orgId }),
-    { signal: opts.signal },
-  );
-  return data;
+  const supabase = createClient();
+  let query = supabase.rpc("fn_kg_cost_org_detail", { p_org_id: orgId });
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as OrgCostDetailResponse;
 }
 
 export async function listPendingBatches(
   params: { limit?: number; offset?: number } = {},
   opts: { signal?: AbortSignal } = {},
 ): Promise<PendingBatchListResponse> {
-  const { data } = await apiGet("/kg-cost/batches/pending", {
-    signal: opts.signal,
-    query: { limit: params.limit ?? 100, offset: params.offset ?? 0 },
+  const supabase = createClient();
+  let query = supabase.rpc("fn_kg_cost_pending_batches", {
+    p_limit: params.limit ?? 100,
+    p_offset: params.offset ?? 0,
   });
-  return data;
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as PendingBatchListResponse;
 }
 
 export async function getBatchDetail(
   batchRowId: string,
   opts: { signal?: AbortSignal } = {},
 ): Promise<BatchDetailResponse> {
-  const { data } = await apiGet(
-    buildPath("/kg-cost/batches/{batch_row_id}", { batch_row_id: batchRowId }),
-    { signal: opts.signal },
-  );
-  return data;
+  const supabase = createClient();
+  let query = supabase.rpc("fn_kg_cost_batch_detail", {
+    p_batch_id: batchRowId,
+  });
+  if (opts.signal) query = query.abortSignal(opts.signal);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as BatchDetailResponse;
 }

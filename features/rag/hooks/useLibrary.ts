@@ -11,8 +11,8 @@
  * (public.rag_library_list / public.rag_library_summary_totals) replicate the
  * old FastAPI queries 1:1, keyed on auth.uid().
  *
- * The doc-detail read (useLibraryDoc) still hits the HTTP endpoint — its page
- * text / chunk previews are a heavier read left for a follow-up.
+ * useLibraryDoc (the doc-detail read) now also goes direct, via
+ * `rag.fn_get_library_document` — page text / chunk previews included.
  *
  * The snake_case → camelCase mapping happens here so the component layer stays
  * clean; the RPC returns the same snake_case shape the FastAPI models did.
@@ -22,8 +22,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { supabase } from "@/utils/supabase/client";
+import { ragDb } from "@/utils/supabase/ragDb";
 import type { components } from "@/types/python-generated/api-types";
 import type {
   DocStatus,
@@ -416,41 +416,43 @@ export function useLibraryDoc(processedDocumentId: string | null) {
     setError(null);
     if (switchingDoc) setDoc(null);
 
-    apiGet(
-      buildPath("/rag/library/{processed_document_id}", {
-        processed_document_id: processedDocumentId,
-      }),
-      { signal: ctrl.signal },
-    )
-      .then(({ data }) => {
+    (async () => {
+      try {
+        const { data, error: rpcError } = await ragDb(supabase)
+          .rpc("fn_get_library_document", {
+            p_id: processedDocumentId,
+            p_pages_limit: 25,
+            p_chunks_limit: 20,
+          })
+          .abortSignal(ctrl.signal);
         if (cancelled || requestSeq !== requestSeqRef.current) return;
+        if (rpcError) throw new Error(rpcError.message);
         if (!data) {
           setDoc(null);
           setError("Document not found");
           return;
         }
         try {
-          setDoc(mapDetail(data));
+          setDoc(mapDetail(data as unknown as ApiDocDetail));
         } catch (err) {
           setDoc(null);
           setError(
             err instanceof Error ? err.message : "Failed to parse document",
           );
         }
-      })
-      .catch((err) => {
-        if (cancelled || (err as Error)?.name === "AbortError") return;
+      } catch (err) {
+        if (cancelled) return;
         if (requestSeq !== requestSeqRef.current) return;
         setDoc(null);
         setError(
           (err as { message?: string })?.message ?? "Failed to load document",
         );
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled && requestSeq === requestSeqRef.current) {
           setLoading(false);
         }
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
