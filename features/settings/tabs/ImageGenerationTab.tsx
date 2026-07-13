@@ -6,6 +6,7 @@ import { SettingsSelect } from "@/components/official/settings/primitives/Settin
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
+import { useModels } from "@/features/ai-models/hooks/useModels";
 import { selectPlatformDefaultImageModelName } from "@/features/ai-models/redux/platformDefaultModel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useSetting } from "../hooks/useSetting";
@@ -37,6 +38,9 @@ export default function ImageGenerationTab() {
   // Catalog-driven: the image-model options are the live catalog rows whose
   // capabilities declare image output — never a hardcoded model-name list.
   const { models, isLoading } = useModelCatalog("user");
+  // Hydrates the model registry (no-op when the shell already did) so the
+  // platform-default resolver can name the is_primary model in the label.
+  useModels();
   const platformDefaultName = useAppSelector(
     selectPlatformDefaultImageModelName,
   );
