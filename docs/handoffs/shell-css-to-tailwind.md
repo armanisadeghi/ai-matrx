@@ -1,6 +1,7 @@
 ---
 status: active
 updated: 2026-07-12
+verify_surface: /demos/header-demo → select "Structured" variant → header renders IconButtons (back chevron + action pills). Compare computed styles + screenshot before/after each slice.
 repos: [matrx-frontend]
 ---
 
@@ -52,9 +53,11 @@ Port Bucket A leaf-first (lowest blast radius first). **Every slice: screenshot 
 surface at desktop + mobile, sidebar open + closed, before and after — no slice ships without a
 visual diff.** Keep Bucket B untouched.
 
-1. **Leaf utilities** — `.icon-btn`, `.icon-btn-glass`, `.icon-btn-icon` and the tactile
-   helpers (`.shell-tactile*`). Self-contained, reused everywhere; convert consumers to Tailwind
-   classes (or a shared `cn()` cluster), then delete the CSS. Lowest risk, highest reuse.
+1. **`.shell-tactile` / `.shell-tactile-subtle`** — hover/active `transform: scale()` helpers.
+   Pure styling, BUT used in ~20 files (sidebar controls, header variants, `CodeSidebarMenu`,
+   `ChatSidebarMenu`, `AgentRunSidebarMenu`, demos). Higher blast radius than `.icon-btn*` was —
+   port the CSS to a shared Tailwind cluster + swap every consumer in one pass, or leave it as a
+   thin utility. Verify a hover/press still scales on a sidebar row and a header action.
 2. **Static nav-item styling** — the non-state parts of `.shell-nav-item` / `.shell-nav-icon` /
    `.shell-nav-label` (padding, radius, colors, transitions). Leave the `:has(:checked)` and
    `data-pathname` active-state rules (Bucket B) in CSS.
@@ -66,8 +69,15 @@ visual diff.** Keep Bucket B untouched.
 Do NOT attempt: converting the sidebar/mobile-menu toggles, the `data-pathname` active-nav map,
 view transitions, or keyframes. Those are Bucket B by design.
 
+**Dead-code finding (verify then delete, separate from the port):** `.notes-toolbar`
+(`container-name: notes-toolbar`, `app/(core)/notes/notes.css`) is applied in ZERO components
+repo-wide, so its whole `@container notes-toolbar` block is inert. The `.icon-btn*` slice already
+removed the dead rows referencing ported classes; the rest of that container block is likely also
+dead. Confirm the class truly isn't applied (grep all string forms) before removing.
+
 ## Done
 
 - Grid-squeeze bug (mobile + persisted sidebar-open pinned `main` to 208px) fixed — `styles/shell.css` §13.
 - Dead `app/shell-original-a6b46613c.css` (2,076 ln, zero refs) deleted.
 - CI guard for the grid-cascade invariant added — `styles/__tests__/shell-grid-invariants.test.ts`.
+- Bucket A slice 1: IconButton `.icon-btn*` geometry ported to Tailwind in the component — see `features/shell/components/IconButton.tsx` (before/after computed styles + screenshot verified identical).
