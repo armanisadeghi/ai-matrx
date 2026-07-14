@@ -18,6 +18,7 @@ import {
   Network,
   Headphones,
   StickyNote,
+  Brain,
   Boxes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ const KIND_ICON: Record<TargetKind, typeof Layers> = {
   summary: FileText,
   mind_map: Network,
   audio: Headphones,
+  memory_aid: Brain,
   notes: StickyNote,
 };
 

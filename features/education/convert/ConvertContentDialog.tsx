@@ -28,6 +28,7 @@ import {
   Network,
   Headphones,
   NotebookPen,
+  Brain,
   ArrowRight,
   Loader2,
   Boxes,
@@ -109,6 +110,13 @@ const TARGETS: TargetMeta[] = [
     blurb: "A podcast-style overview you can listen to",
     icon: Headphones,
     capability: "education.audio_generate",
+  },
+  {
+    kind: "memory_aid",
+    label: "Memory aids",
+    blurb: "Mnemonics, analogies & a memory-palace scaffold",
+    icon: Brain,
+    capability: "education.memory_generate",
   },
 ];
 
