@@ -67,6 +67,7 @@ import { EnhanceSetDialog } from "./EnhanceSetDialog";
 import { serializeDeck } from "@/features/education/media/audio/audioBrief";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
+import { ClassPicker } from "@/features/education/classes/components/ClassPicker";
 
 /** Phase 1B — the extra study modes on the spine, alongside classic Study. */
 const OTHER_STUDY_MODES = [
@@ -351,6 +352,11 @@ export function SetDetailView({ setId }: { setId: string }) {
                           )
                         }
                       />
+                    </div>
+                  )}
+                  {canEdit && (
+                    <div className="mt-2">
+                      <ClassPicker entityType="fc_set" entityId={setId} />
                     </div>
                   )}
                   {viewOnly && (

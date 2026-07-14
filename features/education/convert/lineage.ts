@@ -11,6 +11,7 @@
 // failure returns [].
 
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { educationEntityHref } from "@/features/education/data/entityRoutes";
 import type { Json } from "@/types/database.types";
 import type { TargetKind } from "./types";
 
@@ -60,16 +61,7 @@ export async function listGeneratedFrom(
 
 /** Route fallback for an edge written before metadata carried the href. */
 function hrefFallback(artifactType: string, artifactId: string): string {
-  switch (artifactType) {
-    case "fc_set":
-      return `/education/flashcards/${artifactId}`;
-    case "assessment":
-      return `/education/quizzes/${artifactId}`;
-    case "study_media":
-      return `/education/media/${artifactId}`;
-    case "note":
-      return `/education/notes/${artifactId}`;
-    default:
-      return "/education";
-  }
+  // Reuse the canonical education token→route map (features/education/data/
+  // entityRoutes.ts) — one source of truth for /education hrefs.
+  return educationEntityHref(artifactType, artifactId) ?? "/education";
 }
