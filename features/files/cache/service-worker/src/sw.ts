@@ -55,9 +55,13 @@ const STORE_URL_MAP = "urlMap";
 // gate startup on a not-yet-configured cache.
 const config: {
     backendUrl: string | null;
+    // The standalone matrx-files service origin (NEXT_PUBLIC_FILES_URL). File /
+    // share downloads move here at cutover; we cache them the same as backend.
+    filesUrl: string | null;
     userId: string | null;
 } = {
     backendUrl: null,
+    filesUrl: null,
     userId: null,
 };
 
@@ -315,7 +319,10 @@ function isPotentiallyOurs(request: Request, parsed: URL): boolean {
     // them to the page.
     if (SIGNED_URL_RE.test(parsed.search)) return false;
     // Backend file-download / share-download endpoints — synchronous match.
-    if (config.backendUrl && parsed.origin === config.backendUrl) {
+    if (
+        (config.backendUrl && parsed.origin === config.backendUrl) ||
+        (config.filesUrl && parsed.origin === config.filesUrl)
+    ) {
         if (FILES_DOWNLOAD_RE.test(parsed.pathname)) return true;
         if (SHARE_DOWNLOAD_RE.test(parsed.pathname)) return true;
     }
@@ -341,10 +348,10 @@ async function recognize(
     // before we got here. We re-check the user/backend config defensively in
     // case the SW received this request between activate and `set-config`.
     if (!config.userId) return null;
-    if (!config.backendUrl) return null;
+    if (!config.backendUrl && !config.filesUrl) return null;
 
-    // Backend `/files/{id}/download`
-    if (parsed.origin === config.backendUrl) {
+    // Backend or files-service `/files/{id}/download`
+    if (parsed.origin === config.backendUrl || parsed.origin === config.filesUrl) {
         const filesMatch = FILES_DOWNLOAD_RE.exec(parsed.pathname);
         if (filesMatch) {
             const fileId = filesMatch[1];
@@ -541,6 +548,7 @@ interface MessageBase {
 }
 interface SetConfigMsg extends MessageBase {
     kind: "set-config";
+    filesUrl?: string;
     backendUrl: string;
     userId: string | null;
 }
@@ -573,6 +581,7 @@ self.addEventListener("message", async (event) => {
     switch (msg.kind) {
         case "set-config":
             config.backendUrl = msg.backendUrl.replace(/\/$/, "");
+            config.filesUrl = msg.filesUrl ? msg.filesUrl.replace(/\/$/, "") : null;
             config.userId = msg.userId;
             return;
         case "invalidate":

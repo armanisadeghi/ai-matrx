@@ -63,15 +63,20 @@ export function createServerContext(
 }
 
 function resolveBaseUrl(ctx: ServerCloudFilesContext): string {
+  // NEXT_PUBLIC_FILES_URL wins when set — it routes the file/asset/share API to
+  // the standalone matrx-files microservice (https://files.matrxserver.com).
+  // Everything else stays on the aidream backend URL. An explicit ctx.baseUrl
+  // still overrides both (tests / per-call targeting).
   const configured =
     ctx.baseUrl ??
+    (process.env.NEXT_PUBLIC_FILES_URL as string | undefined) ??
     (BACKEND_URLS.production as string | undefined) ??
     (process.env.NEXT_PUBLIC_BACKEND_URL_PROD as string | undefined) ??
     (process.env.NEXT_PUBLIC_BACKEND_URL as string | undefined);
   if (!configured) {
     throw new BackendApiError({
       code: "cloud_sync_unavailable",
-      detail: "NEXT_PUBLIC_BACKEND_URL is not configured",
+      detail: "NEXT_PUBLIC_FILES_URL / NEXT_PUBLIC_BACKEND_URL is not configured",
       userMessage: "Cloud sync is unavailable. Contact support.",
       status: 503,
     });

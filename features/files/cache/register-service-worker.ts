@@ -83,9 +83,14 @@ async function postSetConfig(args: {
     navigator.serviceWorker.controller ??
     (await navigator.serviceWorker.ready.then((r) => r.active));
   if (!target) return;
+  // NEXT_PUBLIC_FILES_URL: when set, file/share downloads go to the standalone
+  // matrx-files service; tell the SW so it caches those the same as backend
+  // downloads. Read from env here so no call site needs to thread it through.
+  const filesUrl = (process.env.NEXT_PUBLIC_FILES_URL as string | undefined) || undefined;
   target.postMessage({
     kind: "set-config",
     backendUrl: args.backendUrl.replace(/\/$/, ""),
+    filesUrl: filesUrl ? filesUrl.replace(/\/$/, "") : undefined,
     userId: args.userId,
   });
 }
