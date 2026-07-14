@@ -10,6 +10,13 @@
 // Reuses the hardened FastFire capture primitives (continuousCapture) — ONE warm
 // mic across the whole session — the Cartesia read-aloud speaker, and the spine.
 // React Compiler is on: no manual memo.
+//
+// Cross-surface orphan-on-interrupt fix (same pattern as
+// useSpokenPractice.endSession, education/spoken-practice): endSession marks
+// the study_session terminal (completed) as its first move, and quit() now
+// marks it terminal too (abandoned) — so an interrupted tab or an early quit
+// can never leave the session stuck in status='active' forever with attempts
+// recorded but no terminal state. Loud-recovers (console + toast) on failure.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -289,6 +296,12 @@ export function AudioReviewSession({
     setPhase("asking");
   }
 
+  // Terminal-first completion (same pattern as useSpokenPractice.endSession,
+  // cross-surface orphan-on-interrupt fix). Mark the study_session terminal
+  // IMMEDIATELY — before anything that could still be async/slow in the future
+  // — so a crash or a tab close mid-flight can never leave the session stuck
+  // in status='active' with recorded attempts but no terminal state. Loud on
+  // failure; we still proceed (the summary screen is client-side).
   async function endSession() {
     if (capturingRef.current) {
       stopContinuousCapture();
@@ -296,19 +309,47 @@ export function AudioReviewSession({
     }
     if (sessionId) {
       const correct = results.filter((r) => r.result === "correct").length;
-      await studyService.updateSession(sessionId, {
+      const completed = await studyService.updateSession(sessionId, {
         status: "completed",
         ended_at: new Date().toISOString(),
         aggregate_score: cards.length ? correct / cards.length : 0,
       });
+      if (completed.error) {
+        console.error(
+          "[audio-review] could not mark session completed:",
+          completed.error,
+        );
+        toast.error(
+          "We couldn't save your session status just now — your answers were recorded.",
+        );
+      }
     }
     setPhase("summary");
   }
 
+  // Abandon: the learner quit mid-session (back button, "Quit"). Mark the
+  // session terminal here too — same orphan-on-interrupt fix as endSession —
+  // so leaving early never leaves status='active' forever with attempts
+  // attached but no terminal state.
   function quit() {
     if (capturingRef.current) {
       stopContinuousCapture();
       capturingRef.current = false;
+    }
+    if (sessionId && phaseRef.current !== "summary") {
+      void studyService
+        .updateSession(sessionId, {
+          status: "abandoned",
+          ended_at: new Date().toISOString(),
+        })
+        .then((res) => {
+          if (res.error) {
+            console.error(
+              "[audio-review] could not mark session abandoned:",
+              res.error,
+            );
+          }
+        });
     }
     router.push("/education/audio-study");
   }
