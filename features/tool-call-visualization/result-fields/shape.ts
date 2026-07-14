@@ -15,7 +15,7 @@
  *  - Every branch is reachable and documented.
  */
 
-import type { MediaRef } from "@/features/files/types";
+import type { MediaRef } from "@/features/files";
 
 // ─── Discriminated union ────────────────────────────────────────────────────
 
@@ -35,6 +35,8 @@ export type ResultShape =
     | { kind: "url"; value: string }
     | { kind: "media"; ref: MediaRef; alt?: string }
     | { kind: "list"; items: Array<string | number | boolean | null> }
+    /** An array that is entirely UUIDs — NEVER listed out; rendered as a count + copy-all. */
+    | { kind: "idList"; ids: string[] }
     | { kind: "table"; rows: Array<Record<string, unknown>>; columns: TableColumn[] }
     | { kind: "object"; value: Record<string, unknown> }
     | { kind: "json"; value: unknown };
@@ -260,6 +262,12 @@ export function detectResultShape(value: unknown): ResultShape {
             return { kind: "table", rows: value as Array<Record<string, unknown>>, columns };
         }
         if (isScalarList(value)) {
+            // Every item a UUID → a wall of ids conveys nothing in a chat.
+            // Render as a count + copy-all chip instead (owner rule: never
+            // show a user a list of raw UUIDs).
+            if (value.every((v) => typeof v === "string" && looksLikeUuid(v))) {
+                return { kind: "idList", ids: value as string[] };
+            }
             return { kind: "list", items: value };
         }
         return { kind: "json", value };

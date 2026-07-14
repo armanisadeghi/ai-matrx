@@ -56,7 +56,51 @@ function compareCells(a: unknown, b: unknown): number {
     return cellToText(a).localeCompare(cellToText(b));
 }
 
-/** Render a single cell — scalar inline, structure via compact ResultValue. */
+/**
+ * A nested object/array inside a table cell. Rendering it expanded made one
+ * cell swallow half the page (the owner-flagged "wrapping monster"). It now
+ * collapses to a tiny summary toggle — "{5 fields}" / "[3 items]" — and only
+ * expands to the full ResultValue on click. Nothing is hidden, nothing wraps.
+ */
+const NestedCell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => {
+    const [open, setOpen] = React.useState(false);
+    const summary = Array.isArray(value)
+        ? `[${value.length} ${value.length === 1 ? "item" : "items"}]`
+        : `{${Object.keys(value as Record<string, unknown>).length} fields}`;
+    if (!open) {
+        return (
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(true);
+                }}
+                className="whitespace-nowrap font-mono text-xs text-muted-foreground hover:text-foreground"
+                title="Expand"
+            >
+                {summary}
+            </button>
+        );
+    }
+    return (
+        <div className="min-w-0">
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(false);
+                }}
+                className="mb-1 whitespace-nowrap font-mono text-xs text-muted-foreground hover:text-foreground"
+                title="Collapse"
+            >
+                {summary} ×
+            </button>
+            <ResultValue value={value} density="inline" depth={depth + 1} />
+        </div>
+    );
+};
+
+/** Render a single cell — scalar inline, structure collapsed behind a toggle. */
 const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => {
     if (value === null || value === undefined) {
         return <span className="italic text-muted-foreground">—</span>;
@@ -64,9 +108,8 @@ const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => 
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         return <ResultValue value={value} density="inline" depth={depth + 1} />;
     }
-    // Nested object/array — compact inline render (its own caps apply).
     if (Array.isArray(value) || isPlainObject(value)) {
-        return <ResultValue value={value} density="inline" depth={depth + 1} />;
+        return <NestedCell value={value} depth={depth} />;
     }
     return <span className="break-words">{cellToText(value)}</span>;
 };

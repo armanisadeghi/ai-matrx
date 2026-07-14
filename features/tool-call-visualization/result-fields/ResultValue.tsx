@@ -27,7 +27,7 @@ import { UrlChip } from "./UrlChips";
 import { EmptyResult } from "./EmptyResult";
 import { KeyValueGrid } from "./KeyValueGrid";
 import { ResultTable } from "./ResultTable";
-import { ShortId } from "./ShortId";
+import { ShortId, IdListChip } from "./ShortId";
 
 export type ResultDensity = "inline" | "full";
 
@@ -159,6 +159,9 @@ export const ResultValue: React.FC<ResultValueProps> = ({
 
             case "list":
                 return <ScalarList items={shape.items} density={density} />;
+
+            case "idList":
+                return <IdListChip ids={shape.ids} />;
 
             case "table":
                 return <ResultTable rows={shape.rows} columns={shape.columns} density={density} depth={depth} />;

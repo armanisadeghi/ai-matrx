@@ -5,51 +5,41 @@
  * write (the working document AND any other ctx text key). Works BOTH live and
  * on reload.
  *
- * The owner's model, implemented literally: an agent patch arrives WHOLE the
- * instant the tool starts — `entry.arguments` carries the exact text being
- * removed (`old_str`) and replacing it (`new_str`), or a whole new body
- * (overwrite/append/insert). So the ENTIRE diff is known immediately; there is
- * nothing to wait for. We:
- *   1. render the diff INSTANTLY from the args (never wait for completion);
- *   2. show it HUMAN — the removed span struck/destructive, the inserted span
- *      success, surrounding text plain (an insert does NOT mark the rest);
- *   3. when LIVE, animate the replacement filling into place (a snappy paced
- *      reveal — `AnimatedDiffReveal` / `useDiffReveal`), since `new_str` doesn't
- *      token-stream from the backend; persisted/reloaded shows the final diff at
- *      once (no animation);
- *   4. for the live working doc, RECONCILE to the server's authoritative content
- *      when the post-write re-read lands ("refresh just in case we got it
- *      wrong") — the optimistic local apply is replaced by the server truth.
+ * DESIGN — "the seamless piece of paper" (owner-specified, 2026-07-14):
+ * the body renders as ONE full-width sheet of paper: a subtle background +
+ * hairline border that reads as a document, nothing else. NO header row, NO
+ * icon, NO command badge, NO card-within-a-card — the shell's folded line
+ * already says "Updated working document". The document IS the visualization.
  *
- * The diff engine is the canonical `components/diff` engine (`computeTextDiff` +
- * word/char segments) — never a hand-rolled or GitHub-style side-by-side.
+ * DIFF INTELLIGENCE: users want to see the document with the changed areas
+ * highlighted — not pluses and minuses. And when the edit is effectively a
+ * rewrite there is nothing meaningful to highlight, so:
+ *   • before is empty (overwrite / append / first write), OR
+ *   • ≥90% of the resulting lines changed
+ * → show the FINAL content plainly, no diff markup at all.
  *
- * before / after sourcing:
- *   - LIVE working-doc: BEFORE = the doc content frozen the moment the patch
- *     begins (a ref, so the post-completion re-read can't clobber it); AFTER =
- *     the patch applied locally (optimistic, `applyWorkingDocPatch`) until the
- *     server's authoritative content lands, then the server content. → a full
- *     document diff that reconciles.
- *   - PERSISTED / general: the args are the source of truth and survive reload.
- *     str_replace → BEFORE = `old_str`, AFTER = `new_str`. overwrite → AFTER =
- *     the whole new body diffed against the prior (one big insert). append /
- *     prepend / insert → the added span against the base.
+ * Data model (unchanged): an agent patch arrives WHOLE the instant the tool
+ * starts — `entry.arguments` carries `old_str`/`new_str` (or a whole new
+ * body), so the entire diff is known immediately. Live renders animate the
+ * replacement filling in (`AnimatedDiffReveal`); persisted renders show the
+ * final diff at once. The live working doc reconciles to the server's
+ * authoritative content when the post-write re-read lands.
+ *
+ * The diff engine is the canonical `components/diff` engine (`computeTextDiff`)
+ * — never a hand-rolled or GitHub-style side-by-side.
  */
 
 import React, { useMemo, useState } from "react";
-import { FileText } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { AnimatedDiffReveal } from "@/components/diff/text/AnimatedDiffReveal";
+import { computeTextDiff } from "@/components/diff/text/engine/computeTextDiff";
 import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal } from "../_shared";
-import { humanizeKey } from "../../result-fields/shape";
 import type { WorkingDocPatchArgs } from "./applyWorkingDocPatch";
 import {
   deriveWorkingDocDiffFrame,
@@ -72,7 +62,28 @@ function readPatchArgs(
   };
 }
 
-const SCROLL = "max-h-96 overflow-auto rounded-md border border-border bg-background px-3 py-2.5";
+/** Above this fraction of changed lines, a "diff" is really a rewrite. */
+const REWRITE_RATIO = 0.9;
+
+/**
+ * True when highlighting would be noise: no prior text, or ≥90% of the
+ * resulting document's lines changed. In both cases the final content alone
+ * is the honest display.
+ */
+function isEffectivelyRewrite(before: string, after: string): boolean {
+  if (before.trim().length === 0) return true;
+  const { stats } = computeTextDiff(before, after);
+  const changed = stats.additions + stats.modifications;
+  const total = changed + stats.unchanged;
+  return total > 0 && changed / total >= REWRITE_RATIO;
+}
+
+/** The paper sheet — the ONE frame this renderer draws. */
+const Paper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="max-h-96 w-full overflow-auto rounded-lg border border-border/60 bg-background px-4 py-3">
+    {children}
+  </div>
+);
 
 export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
   const { entry, isPersisted, conversationId, requestId } = props;
@@ -126,30 +137,18 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
   } else if (typeof newStr === "string") {
     // Persisted / general — accurate from args, which survive reload.
     after = newStr;
-    if (typeof oldStr === "string") {
-      // str_replace → diff the removed section against its replacement.
-      before = oldStr;
-    } else {
-      // overwrite / append / prepend / insert → one big insert vs the prior. We
-      // have no prior here (args don't carry the whole-doc base), so diff
-      // against empty → the whole new body shows as added (a clean insert).
-      before = "";
-    }
+    // str_replace → diff the removed section against its replacement.
+    // overwrite / append / prepend / insert → no prior in the args; the
+    // rewrite rule below shows the new body plainly.
+    before = typeof oldStr === "string" ? oldStr : "";
   }
-
-  const label = isWorkingDoc
-    ? "Working document"
-    : key
-      ? humanizeKey(key)
-      : "Context";
 
   // Structural (json_*) or text-less patch → compact summary, never a spinner.
   const isStructural = command !== null && STRUCTURAL_PATCH_COMMANDS.has(command);
   const hasText = after !== null && before !== null;
 
-  let body: React.ReactNode;
   if (isStructural || !hasText) {
-    body = (
+    return (
       <p className="text-xs text-muted-foreground">
         {isStructural
           ? "Structured update applied."
@@ -158,31 +157,25 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
             : "Updating…"}
       </p>
     );
-  } else {
-    body = (
-      <div className={SCROLL}>
+  }
+
+  const rewrite = isEffectivelyRewrite(before as string, after as string);
+
+  return (
+    <Paper>
+      {rewrite ? (
+        // Full rewrite (or fresh body): the final document, no highlights.
+        <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+          {after}
+        </div>
+      ) : (
         <AnimatedDiffReveal
           before={before as string}
           after={after as string}
           reveal={{ active: animate, replayKey: entry.callId }}
         />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2 rounded-lg border border-border bg-card p-3 animate-in fade-in">
-      <div className="flex items-center gap-2">
-        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <span className="text-sm text-foreground">{label}</span>
-        {command && (
-          <Badge variant="secondary" className="ml-auto font-mono font-normal">
-            {command}
-          </Badge>
-        )}
-      </div>
-      {body}
-    </div>
+      )}
+    </Paper>
   );
 };
 

@@ -109,3 +109,59 @@ export const ShortId: React.FC<ShortIdProps> = ({
     </span>
   );
 };
+
+/**
+ * IdListChip — the ONLY sanctioned rendering for an array of UUIDs.
+ *
+ * A list of raw UUIDs conveys nothing in a chat; this shows just the count
+ * ("3 ids") in quiet muted text with a copy control that puts the full
+ * newline-joined list on the clipboard. One line, no card, no listing.
+ */
+export const IdListChip: React.FC<{ ids: string[]; className?: string }> = ({
+  ids,
+  className,
+}) => {
+  const [copied, setCopied] = React.useState(false);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const onCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    void copyText(ids.join("\n")).then((ok) => {
+      if (!ok) return;
+      setCopied(true);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 text-xs text-muted-foreground",
+        className,
+      )}
+    >
+      {ids.length} {ids.length === 1 ? "id" : "ids"}
+      <button
+        type="button"
+        onClick={onCopy}
+        aria-label={copied ? "Copied" : "Copy ids"}
+        title="Copy all ids"
+        className={cn(
+          "inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none",
+          copied && "text-primary",
+        )}
+      >
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      </button>
+    </span>
+  );
+};

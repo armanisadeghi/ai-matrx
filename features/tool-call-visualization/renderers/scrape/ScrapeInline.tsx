@@ -391,22 +391,13 @@ export const ScrapeInline: React.FC<ToolRendererProps> = ({
         );
     }
 
+    // NO summary header ("Read N pages · chars") — the shell's folded line
+    // already announces the read, and each page card carries its own domain +
+    // char count. Repeating it above the cards was the owner-flagged "two ugly
+    // icons and large text squeezing the beautiful page card". The cards ARE
+    // the visualization.
     return (
         <div className="space-y-2.5">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <BookOpenCheck className="h-4 w-4 flex-shrink-0 text-primary" />
-                <span className="font-medium">
-                    Read {parsed.pages.length}{" "}
-                    {parsed.pages.length === 1 ? "page" : "pages"}
-                    {parsed.totalChars > 0 && (
-                        <span className="text-muted-foreground">
-                            {" "}
-                            · {parsed.totalChars.toLocaleString()} chars
-                        </span>
-                    )}
-                </span>
-            </div>
-
             <div className="space-y-2">
                 {parsed.pages.map((page, i) => (
                     <ReadPageCard

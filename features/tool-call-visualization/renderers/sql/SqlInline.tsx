@@ -3,29 +3,26 @@
 /**
  * SqlInline — inline + overlay renderer for the `sql` and `db_query` tools.
  *
- * Database tools are "poor in richness": the raw payload is a SQL string and/or
- * a data blob. This renderer makes them a SHOWCASE:
+ * DESIGN DOCTRINE (owner-specified, 2026-07-14 — the reference for every
+ * "unpredictable data" tool renderer):
  *
- *   • Running / not terminal — the plain-English intent line ("Querying
- *     `users`") + the raw SQL as a highlighted ```sql block, with a subtle
- *     inline "Running…" cue (small spinner, never a big one). Write modes with
- *     no SQL show the `data` payload via <ResultValue> instead.
- *   • Completed — the RESULT leads. Query rows render as a table via
- *     <ResultValue> with an "<n> rows" badge; write outcomes render a clean
- *     "Inserted N rows" line plus any returned data/ids. The raw SQL is tucked
- *     into a collapsed "Show SQL" disclosure so the "ugly SQL" is available but
- *     never dominates.
- *   • Error — <ToolErrorCard>.
- *
- * Everything reads the entry DEFENSIVELY: shapes vary (`{rows}`, `{inserted,
- * ids}`, `{inserted, data}`, plus updated/deleted counts), `data` may be a JSON
- * string, and any field may be missing.
+ *   • NO card chrome. The shell's folded line already frames the tool call
+ *     ("Queried the database · Inserted 3 rows into `offering`"); the expanded
+ *     body is FLUSH content — no border, no background, no padding box. A card
+ *     inside the shell inside the batch produced the triple-nested look.
+ *   • NO repetition. The shell line carries the intent (via the registry's
+ *     `getHeaderSubtitle` → summarizeSql). The body never re-states it, never
+ *     re-draws a Database icon, never re-announces the count the shell showed.
+ *   • NO status icons. No CheckCircle, no spinner. State is tense + shimmer on
+ *     the shell line.
+ *   • NEVER a wall of UUIDs. Returned ids collapse to `IdListChip` ("3 ids" +
+ *     copy-all). This falls out of ResultValue's idList shape automatically.
+ *   • The raw SQL / payload stays available behind "Show SQL"/"Show payload".
  */
 
 import React from "react";
-import { CheckCircle2, ChevronDown, ChevronRight, Database, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import {
     Collapsible,
     CollapsibleContent,
@@ -37,32 +34,9 @@ import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ResultValue } from "../../result-fields/ResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
-import { summarizeSql } from "./summarizeSql";
+import { IdListChip } from "../../result-fields/ShortId";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Render the intent line as a single inline line. `summarizeSql` wraps table
- * names in backticks (`Querying \`users\``); we turn those spans into `font-mono`
- * code so the table reads as code WITHOUT pulling in the block-level markdown
- * renderer (which would add margins + force full width inside the flex header).
- */
-const IntentLine: React.FC<{ text: string }> = ({ text }) => {
-    const parts = text.split("`");
-    return (
-        <span className="min-w-0 truncate text-sm text-foreground">
-            {parts.map((part, i) =>
-                i % 2 === 1 ? (
-                    <span key={i} className="font-mono text-[0.95em]">
-                        {part}
-                    </span>
-                ) : (
-                    <React.Fragment key={i}>{part}</React.Fragment>
-                ),
-            )}
-        </span>
-    );
-};
 
 /** Render a raw SQL string as a fenced ```sql block (reuses syntax highlight). */
 const SqlCodeBlock: React.FC<{ sql: string }> = ({ sql }) => (
@@ -92,14 +66,14 @@ function normalizePayload(raw: unknown): unknown {
     }
 }
 
-/** The collapsed "Show SQL"/"Show payload" disclosure. */
+/** The collapsed "Show SQL"/"Show payload" disclosure — quiet, borderless. */
 const SourceDisclosure: React.FC<{
     label: string;
     children: React.ReactNode;
 }> = ({ label, children }) => {
     const [open, setOpen] = React.useState(false);
     return (
-        <Collapsible open={open} onOpenChange={setOpen} className="border-t border-border pt-2">
+        <Collapsible open={open} onOpenChange={setOpen}>
             <CollapsibleTrigger
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
@@ -164,125 +138,82 @@ export const SqlInline: React.FC<ToolRendererProps> = ({
     const query = (getArg<unknown>(entry, "query") ?? "") as unknown;
     const queryStr = typeof query === "string" ? query.trim() : "";
     const rawData = getArg<unknown>(entry, "data");
-    const intent = summarizeSql({
-        query,
-        action: getArg<unknown>(entry, "action"),
-        table: getArg<unknown>(entry, "table"),
-        data: rawData,
-    });
 
     // ── error ────────────────────────────────────────────────────────────────
     if (entry.status === "error") {
         return <ToolErrorCard entry={entry} onOpenOverlay={onOpenOverlay} toolGroupId={toolGroupId} />;
     }
 
-    // ── running / not terminal — show the SQL (or payload) while we wait ───────
+    // ── running — the SQL (or payload) flush, nothing else. The shell line
+    // shimmers with the intent; adding a spinner/card here would repeat it. ───
     if (!isTerminal(entry)) {
         return (
-            <div className="rounded-lg border border-border bg-card p-3 space-y-2 animate-in fade-in">
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                    <Database className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <IntentLine text={intent} />
-                    <Loader2 className="ml-auto h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
-                </div>
+            <div className="min-w-0 animate-in fade-in">
                 {queryStr ? (
-                    <div className="min-w-0">
-                        <SqlCodeBlock sql={queryStr} />
-                    </div>
+                    <SqlCodeBlock sql={queryStr} />
                 ) : rawData !== undefined ? (
-                    <div className="min-w-0 border-t border-border pt-2">
-                        <ResultValue value={normalizePayload(rawData)} density="inline" />
-                    </div>
+                    <ResultValue value={normalizePayload(rawData)} density="inline" />
                 ) : null}
             </div>
         );
     }
 
-    // ── completed — the result leads ──────────────────────────────────────────
+    // ── completed — only what the shell line does NOT already say ─────────────
     const result = resultAsObject(entry);
     const resultRows = result && Array.isArray(result.rows) ? (result.rows as unknown[]) : null;
     const writeOutcome = result && !resultRows ? asWriteOutcome(result) : null;
 
-    return (
-        <div className="rounded-lg border border-border bg-card p-3 space-y-2.5 animate-in fade-in">
-            {/* Query result: rows table + count badge */}
-            {resultRows && (
-                <>
-                    <div className="flex items-center gap-2">
-                        <Database className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <IntentLine text={intent} />
-                        <Badge variant="secondary" className="ml-auto font-normal">
-                            {resultRows.length} {rowWord(resultRows.length)}
-                        </Badge>
-                    </div>
-                    {resultRows.length > 0 ? (
-                        <div className="min-w-0 border-t border-border pt-2">
-                            <ResultValue value={resultRows} density="inline" />
-                        </div>
-                    ) : (
-                        <p className="border-t border-border pt-2 text-xs italic text-muted-foreground">
-                            No rows returned.
-                        </p>
-                    )}
-                </>
-            )}
+    // Ids that are all strings render as the count+copy chip; anything odd
+    // falls through to ResultValue (which still catches all-UUID arrays).
+    const idStrings =
+        writeOutcome?.ids && writeOutcome.ids.every((v) => typeof v === "string")
+            ? (writeOutcome.ids as string[])
+            : null;
 
-            {/* Write outcome: count line + returned data/ids */}
+    return (
+        <div className="min-w-0 space-y-2 animate-in fade-in">
+            {/* Query result: quiet count line + the rows table, flush. */}
+            {resultRows &&
+                (resultRows.length > 0 ? (
+                    <>
+                        <p className="text-xs text-muted-foreground">
+                            {resultRows.length} {rowWord(resultRows.length)}
+                        </p>
+                        <ResultValue value={resultRows} density="inline" />
+                    </>
+                ) : (
+                    <p className="text-xs italic text-muted-foreground">No rows returned.</p>
+                ))}
+
+            {/* Write outcome: ONE quiet line — counts + ids chip. The shell line
+                already announced the action; this is confirmation, not headline. */}
             {!resultRows && writeOutcome && (
                 <>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
-                        {writeOutcome.counts.length > 0 ? (
-                            writeOutcome.counts.map((c) => (
-                                <span key={c.label} className="text-sm text-foreground">
-                                    {c.label}{" "}
-                                    <span className="font-medium">
-                                        {c.n} {rowWord(c.n)}
-                                    </span>
-                                </span>
-                            ))
-                        ) : (
-                            <span className="text-sm text-foreground">Write completed</span>
-                        )}
-                        {writeOutcome.ids && writeOutcome.ids.length > 0 && (
-                            <Badge variant="secondary" className="ml-auto font-normal">
-                                {writeOutcome.ids.length} {writeOutcome.ids.length === 1 ? "id" : "ids"}
-                            </Badge>
-                        )}
-                    </div>
+                    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {writeOutcome.counts.map((c) => (
+                            <span key={c.label}>
+                                {c.label} {c.n} {rowWord(c.n)}
+                            </span>
+                        ))}
+                        {writeOutcome.counts.length === 0 && <span>Write completed</span>}
+                        {idStrings && idStrings.length > 0 && <IdListChip ids={idStrings} />}
+                    </p>
                     {writeOutcome.data != null && (
-                        <div className="min-w-0 border-t border-border pt-2">
-                            <ResultValue value={writeOutcome.data} density="inline" />
-                        </div>
+                        <ResultValue value={writeOutcome.data} density="inline" />
                     )}
-                    {writeOutcome.ids && writeOutcome.ids.length > 0 && writeOutcome.data == null && (
-                        <div className="min-w-0 border-t border-border pt-2">
-                            <ResultValue value={writeOutcome.ids} density="inline" />
-                        </div>
+                    {!idStrings && writeOutcome.ids && writeOutcome.ids.length > 0 && (
+                        <ResultValue value={writeOutcome.ids} density="inline" />
                     )}
                 </>
             )}
 
             {/* Fallback: result exists but matches neither shape — never hide it. */}
             {!resultRows && !writeOutcome && entry.result != null && (
-                <>
-                    <div className="flex items-center gap-2">
-                        <Database className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <IntentLine text={intent} />
-                    </div>
-                    <div className="min-w-0 border-t border-border pt-2">
-                        <ResultValue value={entry.result} density="inline" />
-                    </div>
-                </>
+                <ResultValue value={entry.result} density="inline" />
             )}
 
-            {/* Completed with no result body at all — confirm the intent ran. */}
-            {entry.result == null && (
-                <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
-                    <IntentLine text={intent} />
-                </div>
-            )}
+            {/* Completed with no result body: the shell line is the whole story —
+                render nothing but the source disclosure. */}
 
             {/* The "ugly SQL" — available but tucked away. */}
             {queryStr ? (
