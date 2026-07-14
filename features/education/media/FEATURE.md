@@ -96,6 +96,17 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
 
 ## Change log
 
+- **2026-07-14** — Cross-surface orphan-on-interrupt fix (same pattern as
+  `education/spoken-practice`'s GAP 2, `54d379d53`). `AudioReviewSession.endSession` already
+  marked the `study_session` terminal (`completed`) synchronously with no async enrichment after
+  it, but `quit()` (back button / "Quit" mid-session) never touched session status at all —
+  leaving `status='active'` forever with attempts recorded but no terminal state whenever a
+  learner left early. `quit()` now mirrors `useSpokenPractice.quit()`: marks the session
+  `'abandoned'` + `ended_at`, loud-recovering (`console.error`) on failure; `endSession` also now
+  loud-recovers (console + toast) if the completed-status write itself fails. Verified via
+  Supabase MCP by driving both the completed and abandoned paths programmatically against
+  `education.study_session` (real mic capture can't run headlessly): both reach a terminal
+  status, and the live `audio_review` session set shows zero `active` rows after.
 - **2026-07-10** — P3 gap-closing pass. (1) Fixed a real bug: `AudioReviewSession` created its
   session with `sourceKind: 'deck'` (violates the `study_session` check constraint → silently
   orphaned attempts); now `'set'` + loud failure. (2) Mind-map **clickable nodes** shipped:
