@@ -10,10 +10,8 @@ export default async function ScheduleDetailPage({ params }: Props) {
   const { id } = await params;
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
-        <ScheduleDetail taskId={id} />
-      </div>
+    <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)]">
+      <ScheduleDetail taskId={id} />
     </div>
   );
 }

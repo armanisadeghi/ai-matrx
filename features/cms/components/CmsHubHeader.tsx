@@ -16,6 +16,9 @@ const HUB_NAV_ITEMS = [
 
 export function CmsHubHeader({ right }: { right?: React.ReactNode }) {
   return (
-    <RouteHeader center={<RouteModeNav items={HUB_NAV_ITEMS} />} right={right} />
+    <RouteHeader
+      center={<RouteModeNav items={HUB_NAV_ITEMS} />}
+      right={right}
+    />
   );
 }

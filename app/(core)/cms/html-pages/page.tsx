@@ -103,7 +103,6 @@ function HtmlPagesListBody() {
             <LoadingTapButton ariaLabel="Creating page" disabled />
           ) : (
             <PlusTapButton
-              variant="transparent"
               ariaLabel="New page"
               onClick={() => void handleCreate()}
               disabled={isPending}

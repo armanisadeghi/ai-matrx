@@ -24,7 +24,8 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/cms",
       label: "Site list",
-      description: "Owner-scoped site list + create-site dialog + link to standalone HTML pages.",
+      description:
+        "Owner-scoped site list + create-site dialog + link to standalone HTML pages.",
       filePath: "app/(core)/cms/page.tsx",
       status: "Live",
     },
@@ -38,14 +39,16 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/cms/[siteId]/settings",
       label: "Site settings",
-      description: "General fields, global CSS, and the danger-zone site delete (type-slug confirm, guarded, cascading).",
+      description:
+        "General fields, global CSS, and the danger-zone site delete (type-slug confirm, guarded, cascading).",
       filePath: "app/(core)/cms/[siteId]/settings/page.tsx",
       status: "Live",
     },
     {
       url: "/cms/[siteId]/components",
       label: "Components",
-      description: "Header/footer/etc. component CRUD, including delete (fixed 2026-07-09 — route was missing the delete case).",
+      description:
+        "Header/footer/etc. component CRUD, including delete (fixed 2026-07-09 — route was missing the delete case).",
       filePath: "app/(core)/cms/[siteId]/components/page.tsx",
       status: "Live",
     },
@@ -81,7 +84,8 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "CmsAgentsAdminClient",
       filePath: "features/cms/components/admin/CmsAgentsAdminClient.tsx",
-      description: "Tab shell for the visibility surface — fetches the site list once, composes the four panel tabs.",
+      description:
+        "Tab shell for the visibility surface — fetches the site list once, composes the four panel tabs.",
       tier: "internal",
     },
     {
@@ -93,19 +97,22 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "SitePageTreePanel",
       filePath: "features/cms/components/admin/SitePageTreePanel.tsx",
-      description: "Per-site page list with published/draft badges, preview/live links (C4), and capture-screenshot link-outs.",
+      description:
+        "Per-site page list with published/draft badges, preview/live links (C4), and capture-screenshot link-outs.",
       tier: "internal",
     },
     {
       name: "PolicyEditorPanel",
       filePath: "features/cms/components/admin/PolicyEditorPanel.tsx",
-      description: "F4 agent_write_policy editor per site (blocked/draft_only/full).",
+      description:
+        "F4 agent_write_policy editor per site (blocked/draft_only/full).",
       tier: "internal",
     },
     {
       name: "ApprovalsQueuePanel",
       filePath: "features/cms/components/admin/ApprovalsQueuePanel.tsx",
-      description: "F3 validation-exception review/approve UI, built against P3's ContentException shape.",
+      description:
+        "F3 validation-exception review/approve UI, built against P3's ContentException shape.",
       tier: "internal",
     },
     {
@@ -120,13 +127,15 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/api/cms/sites",
       method: "POST",
-      description: "{action}-dispatch: list/get/create/update/delete (owner) + admin_list_sites/admin_update_policy/admin_list_activity (requireSuperAdmin).",
+      description:
+        "{action}-dispatch: list/get/create/update/delete (owner) + admin_list_sites/admin_update_policy/admin_list_activity (requireSuperAdmin).",
       filePath: "app/api/cms/sites/route.ts",
     },
     {
       url: "/api/cms/pages",
       method: "POST",
-      description: "{action}-dispatch: full page CRUD + draft/publish/discard/rollback (owner) + admin_list (requireSuperAdmin).",
+      description:
+        "{action}-dispatch: full page CRUD + draft/publish/discard/rollback (owner) + admin_list (requireSuperAdmin).",
       filePath: "app/api/cms/pages/route.ts",
     },
     {
@@ -144,7 +153,8 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/api/cms/approvals",
       method: "POST",
-      description: "{action}-dispatch: list/approve/reject (requireSuperAdmin). F3 queue — returns available:false until P1's client_content_exceptions table exists.",
+      description:
+        "{action}-dispatch: list/approve/reject (requireSuperAdmin). F3 queue — returns available:false until P1's client_content_exceptions table exists.",
       filePath: "app/api/cms/approvals/route.ts",
     },
     {
@@ -158,7 +168,8 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
   relatedFeatures: [
     {
       name: "HTML Pages (standalone)",
-      description: "Sibling system, same DB, no site/draft concept — quick-publish HTML from chat/canvas/code blocks.",
+      description:
+        "Sibling system, same DB, no site/draft concept — quick-publish HTML from chat/canvas/code blocks.",
     },
   ],
 };

@@ -5,20 +5,26 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Edit, Loader2, PlayCircle, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import {
+  LoadingTapButton,
+  PlayTapButton,
+  TrashTapButton,
+} from "@/components/icons/tap-buttons";
 import {
   deleteScheduledTask,
   runTaskNowThunk,
   toggleTaskEnabled,
 } from "../../redux/tasks/thunks";
 import { useTaskDetail } from "../../hooks/useTaskDetail";
+import { useScheduledTasks } from "../../hooks/useScheduledTasks";
 import { SpecCard } from "./SpecCard";
 import { TriggerCard } from "./TriggerCard";
 import { RunHistoryCard } from "./RunHistoryCard";
@@ -31,6 +37,7 @@ export function ScheduleDetail({ taskId }: Props) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { task, status, error } = useTaskDetail(taskId);
+  const { tasks } = useScheduledTasks();
   const [running, setRunning] = useState(false);
 
   if (status === "loading" || status === "idle") {
@@ -99,65 +106,58 @@ export function ScheduleDetail({ taskId }: Props) {
   };
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
-      <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="sm" className="gap-1.5">
-          <Link href="/schedules">
-            <ArrowLeft className="h-4 w-4" /> Schedules
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold leading-tight truncate">
-            {task.title}
-          </h1>
-          {task.description && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {task.description}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {task.enabled ? "Enabled" : "Paused"}
-            <Switch
-              checked={task.enabled}
-              onCheckedChange={(enabled) =>
-                dispatch(toggleTaskEnabled(task.id, enabled)).catch((err) => {
-                  toast.error(err instanceof Error ? err.message : "Failed");
-                })
-              }
-            />
-          </div>
-          <Button onClick={handleRunNow} disabled={running} size="sm">
+    <>
+      <EntityModeHeader
+        backHref="/schedules"
+        entityLabel={task.title}
+        entityOptions={tasks.map((t) => ({
+          label: t.title,
+          href: `/schedules/${t.id}`,
+          active: t.id === task.id,
+        }))}
+        modes={[
+          { name: "View", href: `/schedules/${task.id}`, icon: Eye },
+          { name: "Edit", href: `/schedules/${task.id}/edit`, icon: Pencil },
+          { name: "New", href: "/schedules/new", icon: Plus },
+        ]}
+        right={
+          <>
+            <label className="mr-1 hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="hidden sm:inline">
+                {task.enabled ? "Enabled" : "Paused"}
+              </span>
+              <Switch
+                checked={task.enabled}
+                onCheckedChange={(enabled) =>
+                  dispatch(toggleTaskEnabled(task.id, enabled)).catch((err) => {
+                    toast.error(err instanceof Error ? err.message : "Failed");
+                  })
+                }
+              />
+            </label>
             {running ? (
-              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              <LoadingTapButton ariaLabel="Queuing run" disabled />
             ) : (
-              <PlayCircle className="h-4 w-4 mr-1.5" />
+              <PlayTapButton
+                ariaLabel="Run now"
+                onClick={() => void handleRunNow()}
+              />
             )}
-            Run now
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/schedules/${task.id}/edit`}>
-              <Edit className="h-4 w-4 mr-1.5" /> Edit
-            </Link>
-          </Button>
-          <Button
-            onClick={handleDelete}
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4 mr-1.5" /> Delete
-          </Button>
-        </div>
+            <TrashTapButton
+              ariaLabel="Delete schedule"
+              onClick={() => void handleDelete()}
+            />
+          </>
+        }
+      />
+      <div className="space-y-4 max-w-5xl mx-auto">
+        {task.description && (
+          <p className="text-sm text-muted-foreground">{task.description}</p>
+        )}
+        <SpecCard task={task} />
+        <TriggerCard task={task} />
+        <RunHistoryCard taskId={task.id} />
       </div>
-
-      <SpecCard task={task} />
-      <TriggerCard task={task} />
-      <RunHistoryCard taskId={task.id} />
-    </div>
+    </>
   );
 }

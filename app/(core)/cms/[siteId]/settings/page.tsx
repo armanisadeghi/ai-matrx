@@ -3,7 +3,10 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSiteContext } from "../SiteLayoutClient";
-import { CmsSiteService, SiteNotEmptyError } from "@/features/cms/services/cmsService";
+import {
+  CmsSiteService,
+  SiteNotEmptyError,
+} from "@/features/cms/services/cmsService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,7 +34,9 @@ export default function SiteSettingsPage() {
 
   // Danger zone — delete site
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [forceDeleteState, setForceDeleteState] = useState<{ pageCount: number } | null>(null);
+  const [forceDeleteState, setForceDeleteState] = useState<{
+    pageCount: number;
+  } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const runDelete = async (force: boolean) => {
@@ -45,7 +50,9 @@ export default function SiteSettingsPage() {
         setDeleteDialogOpen(false);
         setForceDeleteState({ pageCount: err.pageCount });
       } else {
-        toast.error(err instanceof Error ? err.message : "Failed to delete site");
+        toast.error(
+          err instanceof Error ? err.message : "Failed to delete site",
+        );
       }
     } finally {
       setIsDeleting(false);
@@ -208,10 +215,12 @@ export default function SiteSettingsPage() {
 
         {/* Danger zone */}
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-destructive">Danger Zone</h3>
+          <h3 className="text-sm font-semibold text-destructive">
+            Danger Zone
+          </h3>
           <p className="text-xs text-muted-foreground">
-            Permanently deletes this site and everything under it — pages, components, versions,
-            and activity history. This cannot be undone.
+            Permanently deletes this site and everything under it — pages,
+            components, versions, and activity history. This cannot be undone.
           </p>
           <Button
             variant="outline"
@@ -233,13 +242,17 @@ export default function SiteSettingsPage() {
         placeholder={site.slug}
         confirmLabel="Delete Site"
         busy={isDeleting}
-        validate={(value) => (value !== site.slug ? "Slug does not match" : null)}
+        validate={(value) =>
+          value !== site.slug ? "Slug does not match" : null
+        }
         onConfirm={() => runDelete(false)}
       />
 
       <ConfirmDialog
         open={!!forceDeleteState}
-        onOpenChange={(open) => !isDeleting && !open && setForceDeleteState(null)}
+        onOpenChange={(open) =>
+          !isDeleting && !open && setForceDeleteState(null)
+        }
         title={`Site "${site.name}" is not empty`}
         description={`This site has ${forceDeleteState?.pageCount ?? 0} page(s). Force-deleting removes the site and every page, component, and version under it. This cannot be undone.`}
         confirmLabel="Force Delete"

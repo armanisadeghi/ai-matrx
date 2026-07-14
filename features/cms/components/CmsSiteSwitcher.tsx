@@ -44,7 +44,10 @@ export function CmsSiteSwitcher({
     CmsSiteService.listSites()
       .then(setSites)
       .catch((err: unknown) => {
-        console.error("[cms] site switcher list failed:", extractErrorMessage(err));
+        console.error(
+          "[cms] site switcher list failed:",
+          extractErrorMessage(err),
+        );
         setSites([]);
       });
   }, [open, sites]);

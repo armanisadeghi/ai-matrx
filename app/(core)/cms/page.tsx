@@ -110,7 +110,6 @@ export default function SitesListPage() {
     <CmsHubHeader
       right={
         <PlusTapButton
-          variant="transparent"
           ariaLabel="New site"
           onClick={() => setDialogOpen(true)}
         />

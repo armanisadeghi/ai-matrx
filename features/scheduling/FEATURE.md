@@ -186,6 +186,7 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-07-13** — `/schedules/[id]` view + edit now consume the new `EntityModeHeader` shell template (back + title sibling-dropdown + View|Edit|New center nav + enabled-switch/run/delete as glass tap targets); `ScheduleDetail`'s in-body back row, h1 title block, and button row are deleted; body widened to `max-w-5xl`.
 - **2026-07-13** — `/schedules`, `/schedules/new`, `/schedules/[id]/edit` conformed to the (core) shell-header doctrine (`core-route-headers` skill): in-body faux headers + `h-[calc(100dvh-2.5rem)]` replaced with `RouteHeader` injection (title/back left, count center on the list, refresh + new as tap targets right) and `h-full` bodies with `var(--shell-header-h)` top clearance.
 - **2026-05-16** — Soft-delete semantics + HTTP wire-type cleanup.
   Decoupled "deleted" from "paused" on `sch_task` so the Delete action

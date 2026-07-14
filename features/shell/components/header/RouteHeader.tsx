@@ -43,7 +43,9 @@ export default function RouteHeader({ left, center, right }: RouteHeaderProps) {
     <PageHeader>
       <div className="grid grid-cols-[auto_1fr_auto] items-center w-full gap-2">
         <div className="flex items-center min-w-0">{left}</div>
-        <div className="flex items-center justify-center min-w-0">{center}</div>
+        <div className="flex items-center justify-center min-w-0 overflow-hidden">
+          {center}
+        </div>
         <div className="flex items-center justify-end min-w-0">{right}</div>
       </div>
     </PageHeader>

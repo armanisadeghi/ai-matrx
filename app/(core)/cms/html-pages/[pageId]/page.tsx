@@ -102,7 +102,6 @@ function HtmlPageEditBody() {
           <div className="flex items-center w-full min-w-0 gap-0 p-0">
             <ChevronLeftTapButton
               href={backHref}
-              variant="transparent"
               ariaLabel="Back to published pages"
             />
             <h1 className="ml-2 text-sm font-medium text-foreground truncate">
@@ -127,7 +126,6 @@ function HtmlPageEditBody() {
           <div className="flex items-center w-full min-w-0 gap-0 p-0">
             <ChevronLeftTapButton
               href={backHref}
-              variant="transparent"
               ariaLabel="Back to published pages"
             />
             <h1 className="ml-2 text-sm font-medium text-foreground truncate">

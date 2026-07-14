@@ -170,7 +170,11 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
                 )}
               >
                 {ActiveIcon && <ActiveIcon />}
-                <span>{current?.name ?? "Menu"}</span>
+                {/* Phones: icon-only trigger — the label would overflow the
+                    tiny center cell into the shell's right icons. */}
+                <span className={cn(ActiveIcon && "hidden sm:inline")}>
+                  {current?.name ?? "Menu"}
+                </span>
                 <ChevronDown className="opacity-60" />
               </span>
             </button>

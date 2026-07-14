@@ -35,6 +35,15 @@ The shell header is a **transparent glass strip** over the page. The shell owns 
 6. **Double menus** — a page-level nav next to the sidebar. Large routes register ONE menu in `features/shell/constants/route-menu-registry.ts` (desktop `RouteMenuSlot` + `MobileRouteMenuSlot` come free).
 7. **Avatar collision** — `ml-auto` / `justify-between` actions in the body drifting behind the fixed avatar (the old `pr-14` hack). Fixed automatically by moving actions into the bounded center zone.
 
+## Templates — reach for these FIRST
+
+Two drop-in templates in `features/shell/components/header/templates/` cover almost every route; consuming one is the default, hand-rolling is the exception:
+
+- **`EntityModeHeader`** — the agents pattern for any `[id]` route: back chevron + entity-name **sibling dropdown** + center `RouteModeNav` (View | Edit | …) + right tap-target actions. Reference consumer: `/schedules/[id]` (`features/scheduling/components/detail/ScheduleDetail.tsx`).
+- **`CrumbTrailHeader`** — the org/scopes pattern for drill-down hierarchies: clickable trail, per-level sibling dropdowns, mobile collapses to the last crumb.
+
+**Tap buttons stay `glass` (the default) in the header row — never pass `variant="transparent"`;** the icons must match the shell's hamburger/inbox buttons.
+
 ## Compose with RouteHeader — the default
 
 `RouteHeader` (`features/shell/components/header/RouteHeader.tsx`) is the canonical three-part injection: `left` (back tap-target + identity), `center` (the ONE nav/selection control — usually `RouteModeNav`), `right` (tap-target actions). Prefer it over hand-rolled `<PageHeader>` rows and over `HeaderStructured` whenever the route has sub-views. **No title text in the center when a nav can live there** — "Content Manager"-style labels are filler; the nav IS the identity. A lone `text-sm font-medium` title on the left is fine for single-view routes.

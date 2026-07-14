@@ -69,13 +69,7 @@ export function useSiteContext() {
 function SiteHeaderFallback() {
   return (
     <RouteHeader
-      left={
-        <ChevronLeftTapButton
-          href="/cms"
-          variant="transparent"
-          ariaLabel="All sites"
-        />
-      }
+      left={<ChevronLeftTapButton href="/cms" ariaLabel="All sites" />}
     />
   );
 }
@@ -175,13 +169,13 @@ export default function SiteLayoutClient({
         <SiteHeaderFallback />
         <div className="flex items-center justify-center h-full">
           <div className="flex flex-col items-center gap-3 text-destructive">
-          <AlertCircle className="h-8 w-8" />
-          <p className="text-sm font-medium">
-            {error?.includes("403")
-              ? "You don't have access to this site"
-              : "Failed to load site"}
-          </p>
-          <p className="text-xs text-muted-foreground">{error}</p>
+            <AlertCircle className="h-8 w-8" />
+            <p className="text-sm font-medium">
+              {error?.includes("403")
+                ? "You don't have access to this site"
+                : "Failed to load site"}
+            </p>
+            <p className="text-xs text-muted-foreground">{error}</p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -217,11 +211,7 @@ export default function SiteLayoutClient({
       <RouteHeader
         left={
           <>
-            <ChevronLeftTapButton
-              href="/cms"
-              variant="transparent"
-              ariaLabel="All sites"
-            />
+            <ChevronLeftTapButton href="/cms" ariaLabel="All sites" />
             <CmsSiteSwitcher siteId={siteId} siteName={site.name} />
           </>
         }
@@ -245,13 +235,11 @@ export default function SiteLayoutClient({
         right={
           <>
             <ExternalLinkTapButton
-              variant="transparent"
               ariaLabel="Open live site"
               href={clientSiteRootUrl(site.slug)}
               className="hidden sm:inline-flex"
             />
             <PlusTapButton
-              variant="transparent"
               ariaLabel="New page"
               href={`/cms/${siteId}/pages/new`}
             />

@@ -14,7 +14,6 @@ export default function NewSchedulePage() {
           <>
             <ChevronLeftTapButton
               href="/schedules"
-              variant="transparent"
               ariaLabel="Back to schedules"
             />
             <h1 className="ml-2 text-sm font-medium text-foreground truncate">

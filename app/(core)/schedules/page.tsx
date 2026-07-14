@@ -3,7 +3,10 @@
 "use client";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { PlusTapButton, RefreshCwTapButton } from "@/components/icons/tap-buttons";
+import {
+  PlusTapButton,
+  RefreshCwTapButton,
+} from "@/components/icons/tap-buttons";
 import { useScheduledTasks } from "@/features/scheduling/hooks/useScheduledTasks";
 import { ScheduleList } from "@/features/scheduling/components/list/ScheduleList";
 
@@ -30,17 +33,12 @@ export default function SchedulesPage() {
         right={
           <>
             <RefreshCwTapButton
-              variant="transparent"
               ariaLabel="Refresh"
               onClick={() => refetch()}
               disabled={status === "loading"}
               className={status === "loading" ? "animate-spin" : undefined}
             />
-            <PlusTapButton
-              variant="transparent"
-              ariaLabel="New schedule"
-              href="/schedules/new"
-            />
+            <PlusTapButton ariaLabel="New schedule" href="/schedules/new" />
           </>
         }
       />
