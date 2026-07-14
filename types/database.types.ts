@@ -25790,6 +25790,7 @@ export type Database = {
         Args: {
           p_app: string
           p_config: Json
+          p_expected_updated_at?: string
           p_min_supported_app_version: string
           p_schema_version: number
         }
