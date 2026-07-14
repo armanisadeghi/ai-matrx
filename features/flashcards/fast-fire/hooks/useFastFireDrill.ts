@@ -321,7 +321,28 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       const full = stopContinuousCapture();
       setDeadlineTs(null);
 
-      // Upload the durable full-session recording (best-effort).
+      // 1) TERMINAL FIRST. Mark the session completed IMMEDIATELY, before the
+      //    (potentially slow) session-audio upload and the optional holistic
+      //    review — so an interrupted tab, a failed upload, or a failed
+      //    review can never orphan the session in status='active' forever
+      //    (same class of fix as spoken-practice's endSession). Loud on
+      //    failure; the drill still completes client-side either way.
+      if (sessionId) {
+        const completed = await studyService.updateSession(sessionId, {
+          status: "completed",
+          ended_at: new Date().toISOString(),
+        });
+        if (completed.error) {
+          console.error(
+            "[useFastFireDrill] could not mark session completed:",
+            completed.error,
+          );
+        }
+      }
+
+      // 2) Durable full-session audio — best-effort enrichment, attached
+      //    AFTER the session is already terminal (never blocks completion;
+      //    a failed upload just means no session_audio_file_id, loud-logged).
       if (full && full.size > 0) {
         try {
           // The capture core emits WAV; derive ext/mime from the blob itself.
@@ -344,29 +365,25 @@ export function useFastFireDrill(): UseFastFireDrillResult {
           if (fileId && !cancelled) {
             dispatch(setSessionAudio({ fileId }));
             if (sessionId) {
-              const { studyService } =
-                await import("@/features/education/study/service/studyService");
-              await studyService.updateSession(sessionId, {
+              const audioRes = await studyService.updateSession(sessionId, {
                 session_audio_file_id: fileId,
-                status: "completed",
-                ended_at: new Date().toISOString(),
               });
+              if (audioRes.error) {
+                console.error(
+                  "[useFastFireDrill] session_audio_file_id update failed:",
+                  audioRes.error,
+                );
+              }
             }
           }
         } catch (err) {
           console.error("[useFastFireDrill] session upload failed:", err);
         }
-      } else if (sessionId) {
-        // No audio but still close the session out cleanly.
-        const { studyService } =
-          await import("@/features/education/study/service/studyService");
-        await studyService.updateSession(sessionId, {
-          status: "completed",
-          ended_at: new Date().toISOString(),
-        });
       }
 
-      // Optional holistic review (no-op if no review agent configured).
+      // 3) Optional holistic review (no-op if no review agent configured).
+      //    Persists its own session_review; the session already stands
+      //    completed, so a failed review is a value-add gap, never a blocker.
       void dispatch(reviewSession({ sessionId }));
 
       if (!cancelled) dispatch(completeDrill());
