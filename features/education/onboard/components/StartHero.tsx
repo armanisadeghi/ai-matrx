@@ -40,6 +40,7 @@ import { ConfidenceBadge } from "@/features/education/trust/components/Confidenc
 import { getGenerator, isTargetAvailable } from "@/features/education/convert/registry";
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
 import { useKitGeneration } from "../useKitGeneration";
+import { INGEST_ACCEPT, describeIngestSupport } from "../formatSupport";
 import type { KitTargetState } from "../types";
 
 type InputMode = "upload" | "paste" | "link";
@@ -82,8 +83,13 @@ export function StartHero() {
 
   const isYouTube = /(?:youtube\.com|youtu\.be)/i.test(url);
 
+  // An unsupported file (Office / HEIC / unknown) is honestly blocked up front —
+  // FileSupportNote already explains why — so we never start a doomed run or
+  // spend the entitlement check on it.
+  const fileSupported = !file || describeIngestSupport(file).supported;
+
   const hasInput =
-    (mode === "upload" && !!file) ||
+    (mode === "upload" && !!file && fileSupported) ||
     (mode === "paste" && pasteText.trim().length > 0) ||
     (mode === "link" && url.trim().length > 0);
 
@@ -133,8 +139,9 @@ export function StartHero() {
           Turn your material into a grounded study kit
         </h1>
         <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-          Drop a PDF, paste your notes, or link a page. We build flashcards, a
-          summary, and a mind map — every card cited back to your own material.
+          Drop a PDF, image, audio, or video — paste your notes, or link a page.
+          We build flashcards, a summary, and a mind map — every card cited back
+          to your own material.
         </p>
       </header>
 
@@ -277,7 +284,7 @@ function InputPanel(props: {
             <input
               ref={props.fileInputRef}
               type="file"
-              accept=".pdf,.txt,.md,.markdown,.csv,.tsv,.json,.html,text/*,application/pdf"
+              accept={INGEST_ACCEPT}
               className="hidden"
               onChange={(e) => props.onFile(e.target.files?.[0] ?? null)}
             />
@@ -290,6 +297,7 @@ function InputPanel(props: {
                 <p className="text-xs text-muted-foreground">
                   {(props.file.size / 1024).toFixed(0)} KB · click to change
                 </p>
+                <FileSupportNote file={props.file} />
               </>
             ) : (
               <>
@@ -298,7 +306,7 @@ function InputPanel(props: {
                   Drop a file or click to browse
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  PDF, text, Markdown, or CSV
+                  PDF, image, audio, video, text, Markdown, or CSV
                 </p>
               </>
             )}
@@ -331,6 +339,32 @@ function InputPanel(props: {
         )}
       </div>
     </div>
+  );
+}
+
+// ─── Per-file honest status ──────────────────────────────────────────────────
+
+/**
+ * The one-line "how we'll read this" status shown the moment a file is chosen —
+ * supported kinds explain the pipeline (OCR / transcription / extraction),
+ * unsupported kinds say so plainly instead of failing only at generate time.
+ * Reads the SAME `formatSupport` truth table the ingest branch uses.
+ */
+function FileSupportNote({ file }: { file: File }) {
+  const support = describeIngestSupport(file);
+  if (support.supported) {
+    return (
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-500" />
+        <span>{support.note}</span>
+      </p>
+    );
+  }
+  return (
+    <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-500">
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+      <span>{support.note}</span>
+    </p>
   );
 }
 

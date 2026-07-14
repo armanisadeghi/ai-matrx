@@ -42,7 +42,7 @@ export interface NormalizedIngest {
 
 /** A stage in the ingest progress stream (for the hero UI). */
 export interface IngestProgress {
-  phase: "uploading" | "extracting" | "scraping" | "ready";
+  phase: "uploading" | "extracting" | "scraping" | "transcribing" | "ready";
   message: string;
 }
 

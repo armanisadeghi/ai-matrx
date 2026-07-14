@@ -60,19 +60,53 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
   reachable solely when a user picks an `.apkg`. A static import chain to it eagerly compiles the
   emscripten module and hangs the page build — do not re-introduce one. (`code-splitting` skill.)
 
-## Format coverage (honest scope + roadmap)
+## Format coverage (the honest matrix)
 
-The hero ingests **PDF, plain text / Markdown / CSV-family files, pasted text, and URLs / YouTube
-links** — that is the whole supported set today, and the UI copy is kept honest to it (the file
-picker `accept` filter, the drop-zone hint "PDF, text, Markdown, or CSV", and the error copy all
-name only what actually ingests). The hero headline says "Turn your material…", not "anything", for
-the same reason.
+**ONE source of truth: `formatSupport.ts`.** `classifyIngestFile` / `describeIngestSupport` /
+`INGEST_ACCEPT` decide what the front door reads, how it reads it, and the exact honest line the UI
+shows and the ingest throws. `useIngest` (the engine) and `StartHero` (the picker `accept`, the
+drop-zone hint, and the per-file `FileSupportNote`) BOTH read it, so the advertised set and the
+readable set can never drift. Every supported kind routes to an **existing** platform pipeline — we
+wire, we don't build extractors.
 
-**Not yet ingestable at the hero (recorded roadmap, not a silent gap):** DOCX / PPTX / other Office
-formats, audio, video, and images (OCR). Each needs an ingest adapter (`useIngest` → `fileHandler`
-→ extraction) before it can be advertised. Until then the copy must not imply them, and dropping an
-unsupported file surfaces the honest ingest error rather than a fake success. When an adapter lands,
-extend `useIngest` + the `accept` filter + the drop hint together.
+| Input | Status | Pipeline (all existing) |
+|---|---|---|
+| PDF | ✅ | pdf-extractor stream (`streamPdfExtractText`) — native text + Tesseract OCR for scans |
+| Image (png/jpg/jpeg/webp/gif/bmp/tiff) | ✅ | **same** pdf-extractor stream (it accepts images) — Tesseract OCR |
+| Audio (mp3/wav/m4a/aac/ogg/flac/opus) | ✅ | Groq-Whisper via `transcribeSignedUrl` → `/api/audio/transcribe-url` |
+| Video (mp4/mov/webm/m4v) | ✅ | **same** Groq-Whisper URL route (it demuxes the container) |
+| Text / Markdown / CSV / TSV / JSON / HTML / RTF | ✅ | read inline |
+| Paste | ✅ | anchored as a durable `.md` |
+| URL (generic web page) | ✅ | scraper (`useScraperApi.scrapeUrl`) |
+| YouTube / web-video URL | ⚠️ page text only | scraper HTML — see the gap below |
+| Word / PowerPoint / Excel (docx/pptx/xlsx…) | ❌ gated | none exists — see the gap below |
+| HEIC / HEIF photo | ❌ gated | backend OCR rejects HEIC; user exports JPG/PNG |
+
+Every file kind is uploaded through `fileHandler` first (durable ownership) and that upload's
+`cld_files` id is the lineage anchor for image/audio/video exactly as it is for PDF. Extraction
+runs on the branch its kind selects; the result is `{ text, ref.fileId }` — the unchanged converter
+contract. `meta.extractionMethod` records the path (`native` / `ocr` / `transcript`).
+
+### The two honest gaps (gated loudly, not faked)
+
+- **Office documents (DOCX / PPTX / XLSX).** No text-extraction path exists anywhere today — not in
+  the frontend, not in aidream (its RAG ingest `sources.py` explicitly raises `UnsupportedMimeError`
+  for `.docx`/`.xlsx`; `/assets` is an image/PDF media-render pipeline, not an office extractor).
+  Dropping one surfaces the honest "export to PDF, or paste the text" message and the Build button
+  stays disabled. Wiring it means a NEW backend extractor (e.g. `libreoffice_converter` → the PDF
+  pipeline, or `python-docx`/`unstructured` behind an aidream route) — out of scope for a wire-only
+  task; do that first, then add a `kind: "office"` branch here.
+- **YouTube / web-video real transcript.** The hero still scrapes the page HTML for a YouTube link,
+  which yields page text, **not** the spoken transcript (the copy says so). A genuine transcript
+  path DOES exist server-side — aidream's media-fallback resolver runs the "YouTube Video
+  Transcription Analysis" agent (`0cd86da2-2679-4c10-9746-e6723779fe94`, Gemini, `youtube_url`
+  variable) — but it is registered only as an in-agent-run resolver, not a callable HTTP endpoint,
+  and the agent-definition registry is mid-reorg (not cleanly client-runnable). Wiring it needs a
+  first-class run-agent-to-text seam (or an aidream `/youtube/transcript` route); until then the
+  YouTube option is labelled honestly rather than faked.
+
+When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT`) and the matching
+`useIngest` branch together — never one without the other.
 
 ## Gotchas learned
 

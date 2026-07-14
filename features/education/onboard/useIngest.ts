@@ -1,35 +1,30 @@
 // features/education/onboard/useIngest.ts
 //
-// The front door: normalize ANY input (paste, file, PDF, URL, YouTube) into a
-// `NormalizedIngest` — extracted text + a durable cld_files anchor — through the
-// canonical pipelines (fileHandler for storage, the PDF extractor for PDF text,
-// the scraper for URLs). Every input ends up as a file the user owns AND as text
-// the converter can fan out. No parallel path: uploads go through fileHandler,
-// PDF text through the pdf-extractor service, URLs through the scraper.
+// The front door: normalize ANY input (paste, file, PDF, image, audio, video,
+// URL, YouTube) into a `NormalizedIngest` — extracted text + a durable cld_files
+// anchor — through the canonical platform pipelines. Every input ends up as a
+// file the user owns AND as text the converter can fan out. No parallel path:
+//   • storage      → fileHandler (the ONE file entry point)
+//   • PDF text      → the pdf-extractor stream (`streamPdfExtractText`)
+//   • image OCR     → the SAME pdf-extractor stream (it accepts images; Tesseract)
+//   • audio/video   → Groq-Whisper transcription (`transcribeSignedUrl`)
+//   • URLs          → the scraper
+// The set of readable file types (and the honest gate for the rest) lives in
+// ONE place — `formatSupport.ts` — shared with the hero UI so they never drift.
 
 "use client";
 
 import { useCallback } from "react";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { fileHandler, useFileUpload } from "@/features/files";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { usePdfClient } from "@/features/pdf/api/client";
 import { streamPdfExtractText } from "@/features/pdf-extractor/service/streamPdf";
+import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedUrl";
+import { describeIngestSupport } from "./formatSupport";
 import type { RawIngestInput, NormalizedIngest, IngestProgress } from "./types";
 
 /** Agent context ceiling — keep source text well under the model window. */
 const MAX_CHARS = 48_000;
-
-function isPdf(file: File): boolean {
-  return (
-    file.type === "application/pdf" ||
-    file.name.toLowerCase().endsWith(".pdf")
-  );
-}
-
-function isTextLike(file: File): boolean {
-  if (file.type.startsWith("text/")) return true;
-  return /\.(txt|md|markdown|csv|tsv|json|html?|rtf)$/i.test(file.name);
-}
 
 function clamp(text: string): { text: string; truncated: boolean } {
   if (text.length <= MAX_CHARS) return { text, truncated: false };
@@ -138,12 +133,89 @@ export function useIngest(): UseIngestResult {
       if (!file) throw new Error("No file provided.");
       const title = input.title?.trim() || file.name.replace(/\.[^.]+$/, "");
 
-      // Upload the original for durable ownership (goes to "my files").
+      // Honest gate: reject unsupported file kinds (Office, HEIC, unknown) BEFORE
+      // we spend an upload — the same message the hero shows up front.
+      const support = describeIngestSupport(file);
+      if (!support.supported) throw new Error(support.note);
+      const kind = support.kind;
+
+      // Upload the original for durable ownership (goes to "my files"). This is
+      // the lineage anchor for EVERY file kind — PDF, image, audio, video, text.
       onProgress?.({ phase: "uploading", message: `Uploading ${file.name}…` });
       const uploaded = await upload({ kind: "file", file });
       const fileId = uploaded.fileId;
 
-      if (isPdf(file)) {
+      // ── Image → OCR via the pdf-extractor stream (accepts images; Tesseract) ─
+      if (kind === "image") {
+        onProgress?.({ phase: "extracting", message: "Reading the text in your image…" });
+        const complete = await streamPdfExtractText({
+          file,
+          baseUrl: pdf.backendUrl ?? "",
+          headers: await pdf.authHeaders(),
+        });
+        const raw = (complete.text_content ?? "").trim();
+        if (!raw) {
+          throw new Error(
+            "Couldn't read any text from that image. It works best on printed pages, slides, and screenshots — for handwriting, try a clearer, well-lit photo or paste the text.",
+          );
+        }
+        const { text, truncated } = clamp(raw);
+        return {
+          text,
+          title,
+          ref: { kind: "file", fileId },
+          meta: {
+            chars: text.length,
+            extractionMethod: "ocr",
+            truncated,
+            inputKind: "file",
+          },
+        };
+      }
+
+      // ── Audio / video → Groq-Whisper transcription of the uploaded file ──────
+      if (kind === "audio" || kind === "video") {
+        if (!fileId) {
+          throw new Error(
+            "Couldn't save that recording to transcribe it — please try again.",
+          );
+        }
+        onProgress?.({
+          phase: "transcribing",
+          message:
+            kind === "video"
+              ? "Transcribing the spoken audio from your video…"
+              : "Transcribing your audio…",
+        });
+        // The transcription backend fetches the file itself — hand it a durable
+        // signed URL minted through the file handler (never a hand-built path).
+        const signedUrl = await fileHandler
+          .use({ kind: "file_id", fileId })
+          .as({ kind: "html_src" });
+        const result = await transcribeSignedUrl(signedUrl);
+        const raw = (result.text ?? "").trim();
+        if (!raw || raw.length < 8) {
+          throw new Error(
+            kind === "video"
+              ? "Couldn't hear enough speech in that video to transcribe. Make sure it has a clear spoken track."
+              : "Couldn't transcribe that audio — make sure it contains clear speech.",
+          );
+        }
+        const { text, truncated } = clamp(raw);
+        return {
+          text,
+          title,
+          ref: { kind: "file", fileId },
+          meta: {
+            chars: text.length,
+            extractionMethod: "transcript",
+            truncated,
+            inputKind: "file",
+          },
+        };
+      }
+
+      if (kind === "pdf") {
         onProgress?.({ phase: "extracting", message: "Extracting text from the PDF…" });
         const complete = await streamPdfExtractText({
           file,
@@ -178,7 +250,7 @@ export function useIngest(): UseIngestResult {
         };
       }
 
-      if (isTextLike(file)) {
+      if (kind === "text") {
         onProgress?.({ phase: "extracting", message: "Reading the file…" });
         const raw = (await file.text()).trim();
         if (!raw) throw new Error("That file is empty.");
@@ -191,9 +263,10 @@ export function useIngest(): UseIngestResult {
         };
       }
 
-      throw new Error(
-        `Can't extract text from "${file.name}" yet. Supported: PDF, text, Markdown, CSV — or paste the content directly.`,
-      );
+      // Unreachable: `describeIngestSupport` above gates every unsupported kind,
+      // and pdf/image/audio/video/text are all handled. Kept as a loud backstop
+      // so a future new `IngestFileKind` can't silently fall through.
+      throw new Error(describeIngestSupport(file).note);
     },
     [anchorText, scrapeUrl, upload, pdf],
   );
