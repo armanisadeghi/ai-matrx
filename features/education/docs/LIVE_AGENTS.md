@@ -573,14 +573,18 @@ Contract + surface live in `features/education/tutor/` (see its `FEATURE.md`).
 
 | Key | Agent id | Model | Shape |
 |---|---|---|---|
-| `EDU_TUTOR_AGENTS.tutor` | `d80cc27e-63ce-49b6-a285-fdb78a66c537` | gemini-3.5-flash | Streaming TEXT chat, zero user-facing variables. Grounding rides four declared CONTEXT SLOTS (`learner_memory`, `study_material`, `teaching_mode`, `personality_style`), filled via `setContextEntries` and re-sent every turn (so memory stays live for the whole conversation, not just at launch). Grounds in the learner's own material with inline citations, honest boundary, Socratic/Direct, personality-tunable. |
+| `EDU_TUTOR_AGENTS.tutor` | `cb268e29-f123-4281-9fe9-d017882025dc` | gemini-3.5-flash | Streaming TEXT chat, zero user-facing variables. Grounding rides four declared CONTEXT SLOTS (`learner_memory`, `study_material`, `teaching_mode`, `personality_style`), filled via `setContextEntries` and re-sent every turn. Grounds in the learner's own material with inline citations, honest boundary, Socratic/Direct, personality-tunable. **PER-TURN STRUCTURED TRUST:** emits a hidden `<!--MATRX_TRUST_V1 {confidence,groundedIn,citations[]}-->` envelope on the final line of every answer; the FE (`turnTrust.ts` + `TutorTurnTrust`) renders the real per-turn envelope (badge + citations, or refusal). Never fabricates `grounded`. |
 | `FC_AGENTS.microCoach` | `0d6c715b-b861-4769-b0de-5d33f29f64a8` | gemini-flash-lite | `{ tip }` — one-sentence post-grade coaching, `fc_micro_coach` (AGENT_SPECS §11). Lights up the no-op lane in `StudyDeck`. |
 
 Superseded: `df4a4142-…` (first draft, `learner_memory`/`study_material` never wired as prompt variables) →
 recreated as `46b7b357-…` (variable-based, live-verified 2026-07-07) → recreated again same day as
-`d80cc27e-…` (context-slot version, the current live id — variables rendered as an awkward editable
-strip in the composer; context slots are silent and re-sent per turn). Both prior ids are deactivated
-in `agent.definition` (verified live via Supabase, 2026-07-10) — do not point new code at them.
+`d80cc27e-…` (context-slot version — variables rendered as an awkward editable strip in the composer;
+context slots are silent and re-sent per turn) → re-authored 2026-07-14 as `cb268e29-…`
+("Education AI Tutor (Structured Trust)", the current live id — SAME four context slots + model, adds
+the per-turn hidden `MATRX_TRUST_V1` envelope). Do not point new code at the earlier ids.
+`df4a4142-…` + `46b7b357-…` are deactivated; `d80cc27e-…` is left active (only superseded) so any
+in-flight conversation that still references it keeps resolving. Two accidental duplicate builds from
+the same 2026-07-14 re-author session (`2454c9f0-…` + `20890f73-…`) are retired `is_active:false`.
 
 ---
 

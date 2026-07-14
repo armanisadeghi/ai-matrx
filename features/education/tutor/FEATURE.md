@@ -34,7 +34,11 @@ that makes it a tutor: **grounding injection**.
   pre-loaded with that context. Consumed by flashcards `StudyDeck`.
 - `TutorHome.tsx` / `TutorLanding.tsx` — list home + fresh-conversation empty state (starters).
 - `TutorSettingsPanel.tsx` — the two tunable knobs (teaching mode + personality).
-- `TutorTrustStrip.tsx` — the P0 grounding-derived trust surface (see Trust below).
+- `TutorTurnTrust.tsx` — the P0 PER-TURN structured trust surface: the real `TrustEnvelope` for the
+  latest answer (`ConfidenceBadge` + `SourceCitations`, or `RefusalNotice`), mounted under the
+  answer via `afterMessages`. The primary trust surface (see Trust below).
+- `TutorTrustStrip.tsx` — the grounding-derived trust surface, now the FALLBACK when a turn has no
+  structured envelope (see Trust below).
 
 **Data / logic** (`features/education/tutor/`)
 - `agents.ts` — `EDU_TUTOR_AGENTS` (the live tutor agent id). `DEFAULT_TUTOR_AGENT_ID`.
@@ -43,8 +47,12 @@ that makes it a tutor: **grounding injection**.
   a compact `summaryText`.
 - `grounding.ts` — `assembleTutorGrounding()` → the context slots (`learner_memory`,
   `study_material` [seed + weak-card digest], `teaching_mode`, `personality_style`) **plus the
-  surface `trust` envelope** (`deriveGroundingTrust` — real citations from the known sources, an
-  honest `inferred` floor, `not_in_material` when nothing is loaded).
+  surface `trust` envelope** (`deriveGroundingTrust` — the FALLBACK strip's envelope: real
+  citations from the known sources, an honest `inferred` floor, `not_in_material` when nothing is
+  loaded).
+- `turnTrust.ts` — the PER-TURN structured-trust channel: `extractTurnTrust()` pulls the tutor's
+  hidden `<!--MATRX_TRUST_V1 …-->` envelope out of an assistant message's raw text and coerces it
+  through the canonical `coerceTrustEnvelope`. Never throws; null when a turn has no envelope.
 - `settings.ts` — per-learner tutor prefs (Socratic/Direct + personality) on the **durable settings
   system** (`userPreferences.tutor.*`, synced across devices). Owns the tutor vocabulary (unions +
   defaults) the `userPreferences` slice type-imports, the non-React `getTutorSettings()` accessor
@@ -64,7 +72,7 @@ promote with the stale-focus guard), extracted from `ChatRoomClient`. `/chat` ca
 
 ## How grounding works (load-bearing)
 
-The tutor is a streaming TEXT chat agent (`d80cc27e-…`, the current live id in `agents.ts` — see
+The tutor is a streaming TEXT chat agent (`cb268e29-…`, the current live id in `agents.ts` — see
 `LIVE_AGENTS.md` for the full supersession chain) with **zero user-facing variables** (so
 the chat composer stays clean) and **four declared CONTEXT SLOTS**: `learner_memory`,
 `study_material`, `teaching_mode`, `personality_style` (each with a `max_inline_chars` ceiling —
@@ -81,18 +89,31 @@ queries the learner's notes/flashcards/quiz live when the injected material is t
 
 ## Trust (P0)
 
-The tutor is P0's honest-answer surface, on TWO layers:
+The tutor is P0's honest-answer surface, now with a **real per-turn structured envelope** (the
+target state the earlier grounding-derived strip was a placeholder for):
+
 - **Per-answer (agent prompt):** cite the learner's material inline (`(from your card "…")`), and
   when the material doesn't cover a question, refuse honestly and offer general knowledge as an
   explicit choice rather than fabricate.
-- **Structured surface envelope (`TutorTrustStrip`):** the live tutor is a streaming markdown
-  agent that can't yet carry a per-claim envelope per turn, so the strip renders a
-  grounding-DERIVED `TrustEnvelope` (`grounding.ts#deriveGroundingTrust`) — `ConfidenceBadge` +
-  `SourceCitations` from the KNOWN sources (seed + weak cards), floored honestly at `inferred`
-  (never a fabricated `grounded`), and the `not_in_material` "answers are general knowledge"
-  notice when nothing is loaded. Present on fresh + resumed transcripts, and refreshed per turn.
-  **Target:** a per-turn structured envelope once the streaming channel can carry it (the `lanes/`
-  one-shot JSON agents already emit real per-answer envelopes — `helpLive` threads one).
+- **Per-turn STRUCTURED envelope (primary) — `turnTrust.ts` + `TutorTurnTrust`:** the re-authored
+  tutor agent (`cb268e29-…`) emits, on the final line of every markdown answer, ONE hidden
+  machine-readable `TrustEnvelope` for THAT turn:
+  `<!--MATRX_TRUST_V1 {"confidence":…,"groundedIn":…,"citations":[…]}-->`. An HTML comment is dropped
+  by the chat markdown renderer, so it rides ALONGSIDE the prose in the same stream without
+  polluting the student's view (the "structured channel alongside streamed prose" pattern).
+  `extractTurnTrust()` parses the latest assistant message's raw text through the ONE canonical
+  `coerceTrustEnvelope` contract; `EducationTutorClient` renders `TutorTurnTrust` flush under that
+  answer via `AgentConversationColumn`'s `afterMessages` slot — `ConfidenceBadge` +
+  `SourceCitations` for `grounded`/`inferred`, `RefusalNotice` for `not_in_material`. This mirrors
+  how the one-shot `lanes/helpLive` agent threads its `trust` envelope, adapted to a streaming
+  markdown turn. The agent is prompt-bound to never fabricate `grounded` — honest `inferred` /
+  `not_in_material` beats fake citations.
+- **Grounding-derived strip (`TutorTrustStrip`) — FALLBACK only:** rendered *only when the current
+  turn carries no structured envelope* (fresh/empty conversation, mid-stream before the closing
+  `-->` lands, or an older answer that predates the structured channel). It shows the
+  grounding-DERIVED `TrustEnvelope` (`grounding.ts#deriveGroundingTrust`) from the KNOWN sources
+  (seed + weak cards), floored at `inferred`, with the `not_in_material` "answers are general
+  knowledge" notice when nothing is loaded.
 
 ## Voice (reused, not rebuilt)
 
@@ -133,16 +154,22 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
 
 ## Open / follow-ups
 
-- **Per-turn STRUCTURED trust:** the surface strip is grounding-derived (`inferred` floor); a
-  per-turn per-claim envelope needs the streaming markdown agent to emit a structured channel
-  alongside its prose (or content-IR). The `lanes/` JSON agents already do — the streaming path
-  can't yet.
 - **Conversation sharing UX:** the `useAccess` view/edit gate + `ShareButton` are wired, but the
   shareable read-only transcript is only exercised once real tutor-conversation shares exist.
 - **Enforcement:** `education.tutor_message` stays `enforced: false` until the aidream-side spend
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-07-14** — **Per-turn STRUCTURED trust (target state reached).** Re-authored the tutor agent
+  (`d80cc27e` → `cb268e29`, "Education AI Tutor (Structured Trust)", same four context slots + model)
+  to emit a hidden per-turn `TrustEnvelope` on the final line of every markdown answer
+  (`<!--MATRX_TRUST_V1 …-->`) — mirroring how `helpLive` threads its envelope, adapted to a streaming
+  turn. Added `turnTrust.ts` (`extractTurnTrust`, parses it via the canonical `coerceTrustEnvelope`)
+  + `TutorTurnTrust` (real per-turn `ConfidenceBadge`+`SourceCitations` / `RefusalNotice`, rendered
+  under the answer via `afterMessages`). The grounding-derived `TutorTrustStrip` is now the FALLBACK,
+  shown only when a turn carries no structured envelope. Preserves cross-session memory, per-turn
+  memory refresh, entitlement metering, and access gating. Backend verified (`agent_run`: honest
+  `not_in_material` envelope) + live browser (grounded citation + honest refusal).
 - **2026-07-10 (b)** — **Tutor settings → durable platform settings.** Moved the Socratic/Direct +
   personality prefs off per-browser localStorage onto the synced settings system
   (`userPreferences.tutor`, `features/settings`), so they follow the learner across devices.
