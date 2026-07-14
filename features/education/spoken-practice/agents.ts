@@ -1,17 +1,18 @@
 // features/education/spoken-practice/agents.ts
 //
 // THE single source of truth for the live Spoken Practice agent ids.
-// Authored + verified in-system (agent_author + agent_run, gemini-3.5-flash);
-// see FEATURE.md for the contract. These permanent ids track the latest
-// published version, so prompts/rubrics can be tuned in-system with no code
-// change (same convention as FC_AGENTS / ASSESSMENT_AGENTS).
+// Authored + verified in-system (agent_author + agent_run, gemini-3.5-flash,
+// tools disabled); see FEATURE.md for the contracts. These permanent ids track
+// the latest published version, so prompts/rubrics can be tuned in-system with
+// no code change (same convention as FC_AGENTS / ASSESSMENT_AGENTS).
 //
-// Spoken Practice does NOT fork a grading path: it REUSES the crown-jewel spoken
-// grader (FC_AGENTS.gradeSpoken) and the mode-agnostic end-of-session "professor"
-// review (via the tutor `reviewSession` lane) exactly as FastFire + Audio Review
-// do. The ONLY new agent is the session designer that generates the prompts.
-
-import { FC_AGENTS } from "@/features/flashcards/data/agents";
+// Spoken Practice owns THREE DEDICATED, MODE-AWARE agents (examiner / interviewer
+// / debate-judge). It does NOT reuse the FastFire flashcard grader or the
+// flashcard batch-review agent: those are tuned for card drills and leaked
+// tool-narration + "flashcard" framing into the user-facing oral-exam review
+// (adversarial-review GAP 1). It still REUSES the grading-core primitives
+// (upload + runSpokenGrader + coerceSpokenGrade), the study spine, and the trust
+// stack unchanged — only the AGENTS are dedicated.
 
 export const SPOKEN_PRACTICE_AGENTS = {
   /**
@@ -23,9 +24,23 @@ export const SPOKEN_PRACTICE_AGENTS = {
    */
   designSession: "e1d9c1f7-c523-4e7a-8090-a74495cdc58f",
 
-  // ── REUSED (do not re-author) ──────────────────────────────────────────────
-  /** front, back, rubric, seconds_allowed (+ audio message part) → spoken grade. */
-  gradeSpoken: FC_AGENTS.gradeSpoken,
+  /**
+   * front (prompt), back (reference answer), rubric (mode-framed), seconds_allowed
+   * (+ audio message part) → unified spoken grade JSON (result, score, rubric,
+   * transcript, audio_feedback, missing, misconception). Mode is conveyed via the
+   * first line of `rubric`; the grader frames feedback as examiner/interviewer/
+   * judge and never says "flashcard". Consumed by `coerceSpokenGrade` unchanged.
+   */
+  gradeAnswer: "58090ae0-316c-44a9-ae0f-1d621e1946bc",
+
+  /**
+   * mode, transcript (prompt + spoken answer + verdict per turn), aggregate
+   *   → { summary, strengths[], weaknesses[] }
+   * The dedicated, MODE-AWARE end-of-session review (examiner / interviewer /
+   * debate-judge). Tools disabled — reasons ONLY over the passed transcript, so it
+   * can never narrate DB discovery. Same output shape the summary renderer reads.
+   */
+  reviewSession: "c51f73a5-5748-4789-994d-3dbcaba63bca",
 } as const;
 
 export type SpokenPracticeAgentKey = keyof typeof SPOKEN_PRACTICE_AGENTS;

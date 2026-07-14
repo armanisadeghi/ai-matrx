@@ -10,20 +10,24 @@ The signature differentiator: **real-time spoken grading of open-ended answers i
 
 ## The one rule: reuse the voice + grading + spine stack, never fork it
 
-This feature is almost entirely composition. It adds a state machine and one new agent; everything hard is reused (the VOICE_INTERACTIONS invariant: "new voice surface = new prompt/rubric + new orchestration UI, NOT a new capture or grading path").
+This feature is almost entirely composition. It adds a state machine and three dedicated mode-aware agents (designer + grader + reviewer); everything hard is reused — the capture singleton, the spoken-grade primitives (`grading-core`), the study spine, and the trust stack (the VOICE_INTERACTIONS invariant: "new voice surface = new prompt/rubric + new orchestration UI, NOT a new capture or grading path"). It has its OWN grader + reviewer agents (not the FastFire flashcard ones) so per-answer feedback and the closing review are framed as examiner/interviewer/judge and never leak flashcard/tool language.
 
 | Concern | Reused primitive | Location |
 |---|---|---|
 | Mic capture (one warm mic, sample-accurate clips) | `continuousCapture` singleton (`startContinuousCapture` / `startCardClip` / `stopCardClip` / `stopContinuousCapture`) | `features/flashcards/fast-fire/audio/continuousCapture.ts` |
-| Per-answer grade + spine record | `gradeSpokenAnswer` thunk (upload → grade → `recordAttempt`) → `SpokenGrade` | `features/flashcards/fast-fire/agents/gradeSpokenAnswer.thunk.ts` |
-| The grader agent (crown jewel) | `FC_AGENTS.gradeSpoken` (`fc_grade_spoken`) | `features/flashcards/data/agents.ts` |
-| End-of-session "professor" review | `reviewSession` lane (writes `study_session.session_review`) | `features/education/tutor/lanes/reviewSession.ts` |
+| Spoken-grade **primitives** (upload · grader-run · coerce) | `uploadResponseClip` / `runSpokenGrader` / `coerceSpokenGrade` → `SpokenGrade` | `features/flashcards/fast-fire/agents/grading-core.ts` |
+| Per-answer grade + spine record | `gradePracticeAnswer` thunk (upload → grade → `recordAttempt`) — **in-feature**, composes the primitives with the DEDICATED grader | `data/gradePracticeAnswer.ts` |
+| End-of-session review + spine record | `reviewPracticeSession` thunk (writes `study_session.session_review`) — **in-feature**, DEDICATED reviewer | `data/reviewPracticeSession.ts` |
 | The study spine | `studyService.createSession` / `updateSession` (+ `recordAttempt` via the grader) | `features/education/study/service/studyService.ts` |
 | Read prompts aloud | `useCartesiaSpeaker` | `features/tts/hooks/useCartesiaSpeaker.ts` |
 | Trust rendering | `ConfidenceBadge`, `SourceCitations`, `GradeVerdict` | `features/education/trust/` |
 | Metering (pre-visible limit) | `useEntitlementGuard` + `EntitlementMeter` (`education.spoken_practice`) | `features/entitlements/` |
 
-**The ONLY new agent:** `Education: Spoken Practice Session Designer` — `e1d9c1f7-c523-4e7a-8090-a74495cdc58f` (gemini-3.5-flash). See `agents.ts`.
+**Three DEDICATED, MODE-AWARE agents** (all gemini-3.5-flash, tools disabled; ids in `agents.ts`). Spoken Practice does NOT reuse the FastFire flashcard grader or the flashcard batch-review agent — those are tuned for card drills and leaked tool-narration + "flashcard" framing into the user-facing oral-exam review (adversarial-review GAP 1, fixed 2026-07-14):
+
+- `Education: Spoken Practice Session Designer` — `e1d9c1f7-c523-4e7a-8090-a74495cdc58f`. Designs the grounded prompt set.
+- `Education: Spoken Practice Grader` — `58090ae0-316c-44a9-ae0f-1d621e1946bc`. Grades one spoken answer; mode/persona conveyed via the first line of `rubric`; output is the unified `SpokenGrade`/`GradeVerdict` shape (consumed by `coerceSpokenGrade` unchanged); never says "flashcard".
+- `Education: Spoken Practice Session Review` — `c51f73a5-5748-4789-994d-3dbcaba63bca`. Mode-aware examiner/interviewer/debate-judge review over the serialized transcript; **tools disabled** so it can never narrate DB discovery; output `{ summary, strengths[], weaknesses[] }` (the shape the summary renderer already consumes).
 
 ---
 
@@ -50,9 +54,11 @@ Why not `assessment`/`assessment_item`? The prompts are ephemeral (AI-generated 
 
 ## Flow (`useSpokenPractice`)
 
-`generating` → warm mic → create session → **for each prompt:** `asking` (TTS reads intro+prompt) → `answering` (mic clip; press **Done**, no short timer — long-form answers; `ANSWER_MAX_SECONDS` runaway guard only) → `grading` (`gradeSpokenAnswer`) → `result` (verdict + trust + reference) → next → `reviewing` (`reviewSession`) → `summary`.
+`generating` → warm mic → create session → **for each prompt:** `asking` (TTS reads intro+prompt) → `answering` (mic clip; press **Done**, no short timer — long-form answers; `ANSWER_MAX_SECONDS` runaway guard only) → `grading` (`gradePracticeAnswer`) → `result` (verdict + trust + reference) → next → `reviewing` (`reviewPracticeSession`) → `summary`.
 
 Local-state orchestrator (like `AudioReviewSession` / `SingleCardVoiceTest`) — NOT a parallel Redux slice (the fast-fire slice is drill-specific). Audio never enters state (only `file_id`s + grades). Grades reach the UI only after the agent resolves.
+
+**Completion is terminal-FIRST (no orphaned `active` sessions — adversarial-review GAP 2, fixed 2026-07-14).** `endSession` marks the `study_session` `status='completed'` + `ended_at` + `aggregate_score` as its **first** await, BEFORE the (potentially slow) full-session audio upload and BEFORE the async review. So an interrupted tab, a failed upload, or a failed review can never leave a session stuck in `status='active'` with recorded attempts but no terminal state. The session audio (`session_audio_file_id`) and the `session_review` are attached afterward as best-effort enrichment; if the review fails we loud-recover (console + toast) — the session still completes and the scorecard shows without the narrative.
 
 ---
 
@@ -68,12 +74,14 @@ Local-state orchestrator (like `AudioReviewSession` / `SingleCardVoiceTest`) —
 
 ```
 features/education/spoken-practice/
-  agents.ts                         SPOKEN_PRACTICE_AGENTS (designer id + reused grader) + SPOKEN_PROMPT_ITEM_TYPE
+  agents.ts                         SPOKEN_PRACTICE_AGENTS (designer + dedicated grader + dedicated reviewer) + SPOKEN_PROMPT_ITEM_TYPE
   types.ts                          modes, PracticePlan/Prompt, PracticeConfig/Source, PromptResult, RunnerPhase
   constants.ts                      MODE_CONFIG (per-mode copy/icons/rubric focus) + tunables
   data/generateSession.ts           the designer-agent run thunk + coercePracticePlan
+  data/gradePracticeAnswer.ts       per-answer grade (upload + runSpokenGrader w/ dedicated grader + recordAttempt); mode via rubric prefix
+  data/reviewPracticeSession.ts     mode-aware end-of-session review (dedicated reviewer over a serialized transcript) → session_review
   data/grounding.ts                 buildDeckSource / buildTopicSource / promptTrust
-  hooks/useSpokenPractice.ts        the orchestrator (phase machine; composes capture + grader + review + spine)
+  hooks/useSpokenPractice.ts        the orchestrator (phase machine; composes capture + grader + review + spine; terminal-first completion)
   components/
     SpokenPracticeClient.tsx        code-split boundary (ssr:false)
     SpokenPracticeSurface.tsx       home → setup → runner → summary router
@@ -91,8 +99,9 @@ Shared edits: `features/entitlements/registry.ts` (+`education.spoken_practice`)
 ## Open / future
 
 - **Real-time debate rebuttal:** today debate prompts are designed up-front (the grader's meaning feedback responds to the actual answer). A follow-up could add a per-turn rebuttal agent that reads the student's transcript and generates the next counter-challenge live.
-- **No dedicated `SourceFeature`:** the designer run reuses `education-assessment` (adding a new value lives in the frozen `features/agents` module). Add `education-spoken-practice` when that module is next touched.
+- **No dedicated `SourceFeature`:** the three agent runs reuse the closest siblings — designer `education-assessment`, grader `education-assessment-grade`, review `education-tutor` (adding a new value lives in the frozen `features/agents` module). Add `education-spoken-practice*` when that module is next touched.
 - **Enforcement:** `education.spoken_practice` ships `enforced:false`; flip only after a `billing.capability_limit` row + the aidream re-check exist and the number is approved.
 
 ## Change Log
-- **2026-07-14** — Shipped. Three modes (oral exam / interview / debate), new session-designer agent (live-verified oral + debate on gemini-3.5-flash), full reuse of the FastFire capture + spoken grader + study spine + tutor review lane. No new table; `study_attempt` method vocabulary extended (`oral_exam`/`interview_prep`/`debate`) with no DB migration (method is free-form).
+- **2026-07-14 (b)** — Adversarial-review fixes. **GAP 1:** repointed grading + review off the FastFire flashcard agents onto TWO new DEDICATED, MODE-AWARE agents — grader `58090ae0-…` and reviewer `c51f73a5-…` (both gemini-3.5-flash, **tools disabled**). Root cause of the garbled reviews: the reused `fc_review_batch` (a tool-enabled agent) received object-typed variables it expected as JSON strings, found no usable data, and narrated hunting the DB — persisting flashcard-framed, tool-narration reviews. New review agent reads a properly serialized transcript and has no tools. Grading + review now run through in-feature `gradePracticeAnswer` / `reviewPracticeSession` (composing the reused `grading-core` primitives + study spine; FastFire code untouched). Live-verified all three modes via `agent_run` (coherent, on-topic, no "flashcard"/DB language). **GAP 2:** `endSession` now marks the session terminal (`completed` + `ended_at` + `aggregate_score`) BEFORE the async audio upload + review, so an interrupted/failed review can never orphan a session in `status='active'`; loud-recovers if the review fails.
+- **2026-07-14 (a)** — Shipped. Three modes (oral exam / interview / debate), new session-designer agent (live-verified oral + debate on gemini-3.5-flash), full reuse of the FastFire capture + spoken grader + study spine + tutor review lane. No new table; `study_attempt` method vocabulary extended (`oral_exam`/`interview_prep`/`debate`) with no DB migration (method is free-form).

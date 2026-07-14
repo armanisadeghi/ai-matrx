@@ -9,8 +9,11 @@
 //
 // EVERYTHING heavy is REUSED, never forked (VOICE_INTERACTIONS invariant):
 //   · continuousCapture  — the hardened one-warm-mic capture singleton
-//   · gradeSpokenAnswer  — upload + grade + recordAttempt (the crown-jewel path)
-//   · reviewSession lane — the mode-agnostic "professor" batch review
+//   · grading-core        — upload + runSpokenGrader + coerceSpokenGrade (reused by
+//     the in-feature gradePracticeAnswer, which points at the DEDICATED mode-aware
+//     spoken-practice grader instead of the flashcard one — GAP 1)
+//   · reviewPracticeSession — the DEDICATED mode-aware examiner/interviewer/judge
+//     review (replaces the flashcard batch-review agent that leaked DB-narration)
 //   · studyService       — createSession / updateSession (the ONE study spine)
 //   · useCartesiaSpeaker — read the prompt aloud
 // This hook only adds the prompt-sequencing state machine + long-form answering
@@ -31,21 +34,18 @@ import {
   subscribeLevel,
   playBuzzer,
 } from "@/features/flashcards/fast-fire/audio/continuousCapture";
-import { gradeSpokenAnswer } from "@/features/flashcards/fast-fire/agents/gradeSpokenAnswer.thunk";
 import { uploadResponseClip } from "@/features/flashcards/fast-fire/agents/grading-core";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { studyService } from "@/features/education/study/service/studyService";
 import { verdictResult } from "@/features/education/trust/types";
-import {
-  reviewSession,
-  type ReviewSessionResult,
-} from "@/features/education/tutor/lanes/reviewSession";
+import type { ReviewSessionResult } from "@/features/education/tutor/lanes/reviewSession";
 import {
   buildReviewAggregate,
   type ReviewAttempt,
 } from "@/features/education/tutor/lanes/learnerContext";
 import { generateSession } from "../data/generateSession";
-import { SPOKEN_PROMPT_ITEM_TYPE } from "../agents";
+import { gradePracticeAnswer } from "../data/gradePracticeAnswer";
+import { reviewPracticeSession } from "../data/reviewPracticeSession";
 import { ANSWER_MAX_SECONDS } from "../constants";
 import type {
   PracticeConfig,
@@ -257,17 +257,15 @@ export function useSpokenPractice(): UseSpokenPractice {
     try {
       const clip = await stopCardClip(current.id);
       const res = await dispatch(
-        gradeSpokenAnswer({
-          front: current.prompt,
-          back: current.referenceAnswer,
+        gradePracticeAnswer({
+          mode: config.mode,
+          prompt: current.prompt,
+          referenceAnswer: current.referenceAnswer,
+          rubric: current.rubric,
           secondsAllowed: elapsed,
           clip,
-          rubric: current.rubric,
-          itemType: SPOKEN_PROMPT_ITEM_TYPE,
           itemId: current.id,
-          method: config.mode,
           sessionId,
-          surface: "spoken-practice",
         }),
       );
       if (res.status === "graded" && res.grade) {
@@ -311,6 +309,7 @@ export function useSpokenPractice(): UseSpokenPractice {
   }, [phase, finishAnswer]);
 
   const endSession = useCallback(async () => {
+    const config = configRef.current;
     let sessionClip: Blob | null = null;
     if (capturingRef.current) {
       sessionClip = stopContinuousCapture();
@@ -320,18 +319,9 @@ export function useSpokenPractice(): UseSpokenPractice {
 
     const activePlan = plan;
     const currentResults = results;
-    if (!activePlan || !sessionId) {
+    if (!activePlan || !sessionId || !config) {
       setPhase("summary");
       return;
-    }
-
-    // Durable full-session audio (never throws → null on failure).
-    let sessionAudioFileId: string | null = null;
-    if (sessionClip) {
-      sessionAudioFileId = await uploadResponseClip(sessionClip, {
-        folderPath: CloudFolders.SYSTEM_SPOKEN_PRACTICE_SESSIONS,
-        metadata: { surface: "spoken-practice", sessionId },
-      });
     }
 
     const attempts: ReviewAttempt[] = [];
@@ -345,10 +335,14 @@ export function useSpokenPractice(): UseSpokenPractice {
         transcript: r.grade?.transcript ?? "",
       });
     }
-
     const aggregate = buildReviewAggregate(attempts, activePlan.prompts.length);
 
-    await studyService.updateSession(sessionId, {
+    // 1) TERMINAL FIRST (GAP 2). Mark the session completed IMMEDIATELY, before
+    //    the (potentially slow) session-audio upload and the async review — so an
+    //    interrupted tab, a failed upload, or a failed review can never orphan the
+    //    session in status='active' with recorded attempts but no terminal state.
+    //    Loud on failure; we still proceed (the summary screen is client-side).
+    const completed = await studyService.updateSession(sessionId, {
       status: "completed",
       ended_at: new Date().toISOString(),
       aggregate_score: {
@@ -357,16 +351,48 @@ export function useSpokenPractice(): UseSpokenPractice {
         correct: aggregate.correct,
         accuracy: aggregate.accuracy,
       },
-      ...(sessionAudioFileId
-        ? { session_audio_file_id: sessionAudioFileId }
-        : {}),
     });
+    if (completed.error) {
+      console.error(
+        "[spoken-practice] could not mark session completed:",
+        completed.error,
+      );
+      toast.error(
+        "We couldn't save your session status just now — your answers were recorded.",
+      );
+    }
 
-    // The examiner's batch summary (reused professor grader). Persists
-    // session_review itself; returns it for inline display, or null on skip.
+    // 2) Durable full-session audio — best-effort enrichment, attached AFTER the
+    //    session is already terminal (never blocks completion; null on failure).
+    if (sessionClip) {
+      const sessionAudioFileId = await uploadResponseClip(sessionClip, {
+        folderPath: CloudFolders.SYSTEM_SPOKEN_PRACTICE_SESSIONS,
+        metadata: { surface: "spoken-practice", sessionId },
+      });
+      if (sessionAudioFileId) {
+        await studyService.updateSession(sessionId, {
+          session_audio_file_id: sessionAudioFileId,
+        });
+      }
+    }
+
+    // 3) The dedicated, mode-aware examiner's / interviewer's / judge's review.
+    //    Persists session_review itself; returns it for inline display. On failure
+    //    we LOUD-RECOVER: the session already stands completed, we just note the
+    //    review gap and show the scorecard without the narrative.
     const summary = await dispatch(
-      reviewSession({ sessionId, attempts, aggregate }),
+      reviewPracticeSession({
+        sessionId,
+        mode: config.mode,
+        attempts,
+        aggregate,
+      }),
     );
+    if (!summary) {
+      console.warn(
+        `[spoken-practice] session ${sessionId} completed but the ${config.mode} review was not generated (review gap) — scorecard shown without a narrative review.`,
+      );
+    }
     setReview(summary);
     setPhase("summary");
   }, [dispatch, plan, results, sessionId]);
