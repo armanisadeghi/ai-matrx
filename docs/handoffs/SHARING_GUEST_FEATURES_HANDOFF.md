@@ -51,7 +51,7 @@ repos: [matrx-frontend, aidream]
    - **Funnel tie-in** already works for the `cx_agent_*` family (real FKs); confirm the conversation thread carries over (see promotion CAVEAT in Resources).
 
 2. **Fork-on-share.** The fork PRIMITIVE already exists — `agx_duplicate_agent(p_agent_id, p_as_system)` (`migrations/agx_duplicate_agent_preserve_system_type.sql`): SECURITY DEFINER, copies the full config, gated `check_resource_access('agx_agent', id, 'viewer') OR is_public`. A viewer+ share-holder can already fork. Remaining:
-   - **Close the `OR is_public` leak.** That clause lets ANY authenticated user duplicate a public agent's FULL secrets (`messages/settings/model_id/tools`) — directly violating "public = run-only, never see/fork." Remove `OR is_public` (or split: a public duplicate copies only the non-secret shell). **Model-violation fix — do this regardless.**
+   - **The `OR is_public` clause** lets ANY authenticated user duplicate a public agent's FULL secrets (`messages/settings/model_id/tools`) — which reads as a conflict with "public = run-only, never see/fork." BUT it's also how "fork a builtin/system template into my workspace" works today (the migration comment calls that flow legitimate). Pending Arman's call (see Decisions): either builtins stay forkable-with-secrets (leave as-is), or forking requires a real secrets-share and a public duplicate copies only the non-secret shell.
    - **`/s/[token]` agent case** (`SharedResourceView.tsx#renderBody` falls to `GenericRenderer` today): render the builder-secrets view (below) + a Fork button calling `agx_duplicate_agent`. Add `agent` to `isForkable` + `forkSharedResource` (`utils/permissions/shareLinks.ts`); the deep-link target `/agents/{id}` is auth-gated, so a share-holder-guest needs a real authorized route.
    - **Read-only builder for a view-share** (silent-lost-work risk — same class we just fixed for notes). Verified: the builder (`AgentBuilderClient`/`Desktop`) has NO owner/readOnly gate — it renders whatever RLS lets `getAgent` (`lib/agents/data.ts:52-63`, `select("*")`) read, and it's an **autosave editor**. So a viewer-level share-holder already opens the full secrets builder AND every edit RLS-rejects silently. Add a `useAccess('agent', id)`-driven read-only builder mode (view-share = read + fork, edit-share = edit original + fork). `get_resource_access` already resolves agent access levels.
 
@@ -68,6 +68,10 @@ repos: [matrx-frontend, aidream]
 6. **Share-link expiry / max-uses UI.** `ShareLinkPanel` doesn't expose `p_expires_at` / `p_max_uses` (RPC supports both).
 
 7. **Broaden allowlists as renderers land.** Many types are `is_link_shareable=false`; as each renderer ships, enable + set `public_columns` via the admin panel.
+
+## Decisions needed (Arman)
+
+1. **Should a PUBLIC/builtin agent be forkable-with-secrets?** Situation: today any signed-in user can duplicate a public agent (system/builtin templates included) and the copy carries the full secret config (prompt, settings, model, tools) — that's how "fork a builtin into my workspace to customize it" works now (`agx_duplicate_agent`'s `OR is_public`). Your rule says public agents are run-only and can't be forked because you can't see their secrets. These conflict for builtins/templates specifically. Decide: (a) keep builtins forkable-with-secrets (templates are meant to be copied+customized — leave `agx_duplicate_agent` as-is); or (b) enforce the rule strictly — forking requires a secrets-share, and duplicating a public agent copies only the non-secret shell. Everything else in the fork model (share ⇒ fork) is unaffected either way.
 
 ## Done
 
