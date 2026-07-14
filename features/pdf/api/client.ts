@@ -112,7 +112,18 @@ export function usePdfClient(): PdfClient {
 
   async function authHeaders(): Promise<Record<string, string>> {
     await waitForAuth();
-    return getHeaders() as Record<string, string>;
+    // `getHeaders()` always stamps `Content-Type: application/json` — fine for
+    // JSON callers (who go through `jsonHeaders()` below), but fatal for the
+    // multipart/raw-fetch callers this function exists for: an explicit
+    // Content-Type here defeats the browser's automatic multipart boundary on
+    // a `FormData` body, so the backend receives a body it can't parse at all
+    // (observed live as a 422 "field required" on every field, incl. `file`).
+    // Strip it; JSON callers re-add their own via `jsonHeaders()`.
+    const { "Content-Type": _jsonContentType, ...rest } = getHeaders() as Record<
+      string,
+      string
+    >;
+    return rest;
   }
 
   async function jsonHeaders(): Promise<Record<string, string>> {

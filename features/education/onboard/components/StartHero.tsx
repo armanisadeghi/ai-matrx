@@ -164,6 +164,13 @@ export function StartHero() {
             fileInputRef={fileInputRef}
           />
 
+          {kit.phase === "error" && kit.error && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{kit.error}</span>
+            </div>
+          )}
+
           <KitPicker selected={selected} onToggle={toggleTarget} />
 
           <div className="space-y-2">
