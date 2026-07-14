@@ -2,12 +2,9 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { CmsPageService } from "@/features/cms/services/cmsService";
 import { useSiteContext } from "./SiteLayoutClient";
-import PageListView from "../../../../features/cms/components/PageListView";
-import { Button } from "@/components/ui/button";
-import { Plus, Settings, Puzzle } from "lucide-react";
+import PageListView from "@/features/cms/components/PageListView";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import { createCmsSiteExtraSections } from "@/features/cms/agent-context/cmsSiteExtraSections";
@@ -51,31 +48,6 @@ export default function SiteDashboardPage() {
       contextData={buildSurfaceScope() as Record<string, unknown>}
     >
       <div className="h-full flex flex-col overflow-hidden">
-        {/* ── Sub-header with site actions ─────────────────────── */}
-        <div className="flex-none flex items-center justify-between px-4 sm:px-6 py-2 border-b border-border/30 bg-muted/10">
-          <div className="flex items-center gap-2">
-            <Link href={`/cms/${siteId}/settings`}>
-              <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-7">
-                <Settings className="h-3.5 w-3.5" />
-                Settings
-              </Button>
-            </Link>
-            <Link href={`/cms/${siteId}/components`}>
-              <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-7">
-                <Puzzle className="h-3.5 w-3.5" />
-                Components
-              </Button>
-            </Link>
-          </div>
-          <Link href={`/cms/${siteId}/pages/new`}>
-            <Button size="sm" className="gap-1.5 text-xs">
-              <Plus className="h-3.5 w-3.5" />
-              New Page
-            </Button>
-          </Link>
-        </div>
-
-        {/* ── Page list ────────────────────────────────────────── */}
         <div className="flex-1 overflow-auto">
           <PageListView
             pages={pages}

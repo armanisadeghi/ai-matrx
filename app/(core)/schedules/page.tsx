@@ -1,10 +1,9 @@
-// app/(authenticated)/schedules/page.tsx
+// app/(core)/schedules/page.tsx
 
 "use client";
 
-import Link from "next/link";
-import { Plus, RefreshCw, CalendarClock } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { PlusTapButton, RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import { useScheduledTasks } from "@/features/scheduling/hooks/useScheduledTasks";
 import { ScheduleList } from "@/features/scheduling/components/list/ScheduleList";
 
@@ -12,54 +11,42 @@ export default function SchedulesPage() {
   const { refetch, tasks, status } = useScheduledTasks();
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
-      <header className="shrink-0 border-b border-border bg-card/40">
-        <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-3  ">
-          <div className="flex items-center gap-2 min-w-0 ">
-            <div className="rounded-md p-1.5 bg-blue-50 dark:bg-blue-950/40">
-              <CalendarClock className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-semibold text-base sm:text-lg leading-none truncate">
-                Schedules
-              </h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 pr-12">
-            <Button
-              variant="outline"
-              size="icon"
+    <>
+      <RouteHeader
+        left={
+          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
+            Schedules
+          </h1>
+        }
+        center={
+          tasks.length > 0 ? (
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {tasks.length} schedule{tasks.length === 1 ? "" : "s"}
+              {" · "}
+              {tasks.filter((t) => t.enabled).length} enabled
+            </span>
+          ) : undefined
+        }
+        right={
+          <>
+            <RefreshCwTapButton
+              variant="transparent"
+              ariaLabel="Refresh"
               onClick={() => refetch()}
               disabled={status === "loading"}
-              aria-label="Refresh"
-              className="h-8 w-8"
-            >
-              <RefreshCw
-                className={
-                  status === "loading"
-                    ? "h-3.5 w-3.5 animate-spin"
-                    : "h-3.5 w-3.5"
-                }
-              />
-            </Button>
-            <Button asChild size="sm" className="gap-1.5">
-              <Link href="/schedules/new">
-                <Plus className="h-4 w-4" /> New schedule
-              </Link>
-            </Button>
-          </div>
-        </div>
-        {tasks.length > 0 && (
-          <div className="px-4 sm:px-6 pb-2 text-xs text-muted-foreground">
-            {tasks.length} schedule{tasks.length === 1 ? "" : "s"}
-            {" · "}
-            {tasks.filter((t) => t.enabled).length} enabled
-          </div>
-        )}
-      </header>
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+              className={status === "loading" ? "animate-spin" : undefined}
+            />
+            <PlusTapButton
+              variant="transparent"
+              ariaLabel="New schedule"
+              href="/schedules/new"
+            />
+          </>
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)]">
         <ScheduleList />
       </div>
-    </div>
+    </>
   );
 }

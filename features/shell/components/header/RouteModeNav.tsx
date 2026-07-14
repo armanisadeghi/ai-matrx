@@ -135,7 +135,10 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
   const ActiveIcon = current?.icon;
 
   return (
-    <div ref={cellRef} className="relative flex min-w-0 justify-center">
+    // w-full is load-bearing: the measured width must be the CELL's available
+    // space, not the currently-rendered variant's content width — otherwise a
+    // compact first render (portal not yet laid out) locks the nav in "menu".
+    <div ref={cellRef} className="relative flex w-full min-w-0 justify-center">
       {/* Hidden measurers — always at natural width, never affect layout. */}
       <div
         aria-hidden

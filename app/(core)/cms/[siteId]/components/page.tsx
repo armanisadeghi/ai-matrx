@@ -174,11 +174,10 @@ export default function ComponentsPage() {
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-3xl mx-auto p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground">Components</h2>
+        <div className="flex items-center justify-end">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5 text-xs">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
                 <Plus className="h-3.5 w-3.5" />
                 New Component
               </Button>

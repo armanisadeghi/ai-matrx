@@ -35,6 +35,12 @@ The shell header is a **transparent glass strip** over the page. The shell owns 
 6. **Double menus** — a page-level nav next to the sidebar. Large routes register ONE menu in `features/shell/constants/route-menu-registry.ts` (desktop `RouteMenuSlot` + `MobileRouteMenuSlot` come free).
 7. **Avatar collision** — `ml-auto` / `justify-between` actions in the body drifting behind the fixed avatar (the old `pr-14` hack). Fixed automatically by moving actions into the bounded center zone.
 
+## Compose with RouteHeader — the default
+
+`RouteHeader` (`features/shell/components/header/RouteHeader.tsx`) is the canonical three-part injection: `left` (back tap-target + identity), `center` (the ONE nav/selection control — usually `RouteModeNav`), `right` (tap-target actions). Prefer it over hand-rolled `<PageHeader>` rows and over `HeaderStructured` whenever the route has sub-views. **No title text in the center when a nav can live there** — "Content Manager"-style labels are filler; the nav IS the identity. A lone `text-sm font-medium` title on the left is fine for single-view routes.
+
+Sibling routes sharing one header (e.g. `/cms` + `/cms/html-pages`) get ONE shared header component in the feature (`features/cms/components/CmsHubHeader.tsx` is the reference) — never two diverging copies.
+
 ## Fix recipe by route archetype
 
 - **List/gallery page** → copy `/agents/all`: `PageHeader` with a small injected header (search / filters / New), body `h-full overflow-hidden`, scroll container inside, floating grid content gets `pt-[var(--shell-header-h)]` if it has interactive elements at the top.
@@ -55,6 +61,13 @@ grep -rLn "PageHeader" <route dir>  # route family never injecting the header
 grep -rn "pt-12\|pt-10\|pt-8" <route dir>  # hardcoded header offsets → var(--shell-header-h)
 ```
 Find a new faux-header class combo? **Add it to `FAUX_HEADER_MARKERS` in `scripts/check-page-headers.ts`** in the same change — the guard must learn what you learned.
+
+## Gotchas proven in the field
+
+- **Radix `asChild` wrappers take ONE child.** Injecting `<PageHeader>` as a sibling inside `NonEditableContextMenu`/any trigger wrapper crashes with "Primitive.span failed to slot". Put the header OUTSIDE the wrapper.
+- **Turbopack HMR corruption can 404 sub-routes** (route matches on baseline, 404s after rapid edits, root still 200). Recompile/restart the dev server before diagnosing your diff.
+- **`RouteModeNav` root must be `w-full`** — it measures its own box; without `w-full` a compact first paint locks it in the "menu" variant forever (fixed 2026-07-13; don't regress it).
+- **Mobile header budget:** left identity truncates (`max-w-[100px] sm:max-w-[180px]`), secondary right actions hide below `sm` (`hidden sm:inline-flex`) — one primary action stays.
 
 ## Verify in the browser — mandatory, both viewports
 

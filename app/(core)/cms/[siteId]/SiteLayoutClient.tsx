@@ -8,8 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { extractErrorMessage } from "@/utils/errors";
-import { useParams, usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import {
   CmsSiteService,
   CmsPageService,
@@ -24,8 +23,17 @@ import {
   buildSiteStructureXml,
   type SiteStructureCurrent,
 } from "@/features/cms/utils/buildSiteStructureXml";
-import { Loader2, AlertCircle, ChevronRight, PanelTop } from "lucide-react";
+import { Loader2, AlertCircle, FileText, Puzzle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
+import {
+  ChevronLeftTapButton,
+  ExternalLinkTapButton,
+  PlusTapButton,
+} from "@/components/icons/tap-buttons";
+import { CmsSiteSwitcher } from "@/features/cms/components/CmsSiteSwitcher";
+import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
 
 interface SiteContextValue {
   site: ClientSite;
@@ -56,55 +64,19 @@ export function useSiteContext() {
   return ctx;
 }
 
-function Breadcrumb({
-  siteName,
-  siteId,
-}: {
-  siteName: string;
-  siteId: string;
-}) {
-  const pathname = usePathname();
-
-  const crumbs: { label: string; href: string }[] = [
-    { label: "Content", href: "/cms" },
-    { label: siteName, href: `/cms/${siteId}` },
-  ];
-
-  if (pathname.includes("/pages/new")) {
-    crumbs.push({ label: "New Page", href: pathname });
-  } else if (pathname.match(/\/pages\/[^/]+$/)) {
-    crumbs.push({ label: "Edit Page", href: pathname });
-  } else if (pathname.endsWith("/settings")) {
-    crumbs.push({ label: "Settings", href: pathname });
-  } else if (pathname.endsWith("/components")) {
-    crumbs.push({ label: "Components", href: pathname });
-  }
-
+/** Header shown while the site is loading/errored — back affordance only, so
+ *  the shell row is never dead. */
+function SiteHeaderFallback() {
   return (
-    <nav className="flex items-center gap-1 text-sm" aria-label="Breadcrumb">
-      {crumbs.map((crumb, i) => {
-        const isLast = i === crumbs.length - 1;
-        return (
-          <React.Fragment key={crumb.href}>
-            {i > 0 && (
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            )}
-            {isLast ? (
-              <span className="font-medium text-foreground truncate max-w-[200px]">
-                {crumb.label}
-              </span>
-            ) : (
-              <Link
-                href={crumb.href}
-                className="text-muted-foreground hover:text-foreground transition-colors truncate max-w-[200px]"
-              >
-                {crumb.label}
-              </Link>
-            )}
-          </React.Fragment>
-        );
-      })}
-    </nav>
+    <RouteHeader
+      left={
+        <ChevronLeftTapButton
+          href="/cms"
+          variant="transparent"
+          ariaLabel="All sites"
+        />
+      }
+    />
   );
 }
 
@@ -185,19 +157,24 @@ export default function SiteLayoutClient({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100dvh-var(--shell-header-h,56px))]">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-sm">Loading site…</p>
+      <>
+        <SiteHeaderFallback />
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="text-sm">Loading site…</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (error || !site) {
     return (
-      <div className="flex items-center justify-center h-[calc(100dvh-var(--shell-header-h,56px))]">
-        <div className="flex flex-col items-center gap-3 text-destructive">
+      <>
+        <SiteHeaderFallback />
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-3 text-destructive">
           <AlertCircle className="h-8 w-8" />
           <p className="text-sm font-medium">
             {error?.includes("403")
@@ -205,20 +182,21 @@ export default function SiteLayoutClient({
               : "Failed to load site"}
           </p>
           <p className="text-xs text-muted-foreground">{error}</p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/cms")}
-            >
-              ← All Sites
-            </Button>
-            <Button variant="outline" size="sm" onClick={fetchSite}>
-              Retry
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/cms")}
+              >
+                All Sites
+              </Button>
+              <Button variant="outline" size="sm" onClick={fetchSite}>
+                Retry
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -236,16 +214,51 @@ export default function SiteLayoutClient({
         buildStructureXml,
       }}
     >
-      <div className="h-[calc(100dvh-var(--shell-header-h,56px))] flex flex-col overflow-hidden">
-        <div className="flex-none border-b border-border/50 bg-background/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <PanelTop className="h-5 w-5 text-primary flex-shrink-0" />
-              <Breadcrumb siteName={site.name} siteId={siteId} />
-            </div>
-          </div>
-        </div>
-
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton
+              href="/cms"
+              variant="transparent"
+              ariaLabel="All sites"
+            />
+            <CmsSiteSwitcher siteId={siteId} siteName={site.name} />
+          </>
+        }
+        center={
+          <RouteModeNav
+            items={[
+              { name: "Pages", href: `/cms/${siteId}`, icon: FileText },
+              {
+                name: "Components",
+                href: `/cms/${siteId}/components`,
+                icon: Puzzle,
+              },
+              {
+                name: "Settings",
+                href: `/cms/${siteId}/settings`,
+                icon: Settings,
+              },
+            ]}
+          />
+        }
+        right={
+          <>
+            <ExternalLinkTapButton
+              variant="transparent"
+              ariaLabel="Open live site"
+              href={clientSiteRootUrl(site.slug)}
+              className="hidden sm:inline-flex"
+            />
+            <PlusTapButton
+              variant="transparent"
+              ariaLabel="New page"
+              href={`/cms/${siteId}/pages/new`}
+            />
+          </>
+        }
+      />
+      <div className="h-full flex flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
       </div>
     </SiteContext.Provider>

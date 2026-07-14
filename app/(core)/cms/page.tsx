@@ -23,8 +23,8 @@ import {
   FileCode,
   ArrowRight,
 } from "lucide-react";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import { CmsHubHeader } from "@/features/cms/components/CmsHubHeader";
+import { PlusTapButton } from "@/components/icons/tap-buttons";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CMS_HUB_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsHubContextMenuProps";
 import { createCmsHubExtraSections } from "@/features/cms/agent-context/cmsHubExtraSections";
@@ -107,23 +107,15 @@ export default function SitesListPage() {
   };
 
   const header = (
-    <PageHeader>
-      <HeaderStructured
-        title="Content Manager"
-        actions={[
-          {
-            icon: "FileCode",
-            label: "Published Pages",
-            onPress: () => router.push("/cms/html-pages"),
-          },
-          {
-            icon: "Plus",
-            label: "New Site",
-            onPress: () => setDialogOpen(true),
-          },
-        ]}
-      />
-    </PageHeader>
+    <CmsHubHeader
+      right={
+        <PlusTapButton
+          variant="transparent"
+          ariaLabel="New site"
+          onClick={() => setDialogOpen(true)}
+        />
+      }
+    />
   );
 
   // ── Loading ──────────────────────────────────────────────────────────

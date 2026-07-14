@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { useHtmlPagesManager } from "@/features/html-pages/hooks/useHtmlPagesManager";
 import HtmlPageListView from "@/features/html-pages/components/HtmlPageListView";
 import { HtmlPagesContextMenu } from "@/features/html-pages/components/HtmlPagesContextMenu";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { CmsHubHeader } from "@/features/cms/components/CmsHubHeader";
 import {
-  ChevronLeftTapButton,
   LoadingTapButton,
   PlusTapButton,
 } from "@/components/icons/tap-buttons";
@@ -98,37 +97,30 @@ function HtmlPagesListBody() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
-          <ChevronLeftTapButton
-            href="/cms"
-            variant="transparent"
-            ariaLabel="Back to sites"
-          />
-          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
-            Published Pages
-          </h1>
-          <div className="ml-auto shrink-0 flex items-center">
-            {isCreating ? (
-              <LoadingTapButton ariaLabel="Creating page" disabled />
-            ) : (
-              <PlusTapButton
-                variant="transparent"
-                ariaLabel="New page"
-                onClick={() => void handleCreate()}
-                disabled={isPending}
-              />
-            )}
-          </div>
-        </div>
-      </PageHeader>
+      <CmsHubHeader
+        right={
+          isCreating ? (
+            <LoadingTapButton ariaLabel="Creating page" disabled />
+          ) : (
+            <PlusTapButton
+              variant="transparent"
+              ariaLabel="New page"
+              onClick={() => void handleCreate()}
+              disabled={isPending}
+            />
+          )
+        }
+      />
 
       <HtmlPagesContextMenu
         pages={pages}
         onNewPage={() => void handleCreate()}
         onOpenPage={(pageId) => openPage(pageId)}
       >
-        <div ref={scrollRef} className="h-full overflow-auto pt-12 relative">
+        <div
+          ref={scrollRef}
+          className="h-full overflow-auto pt-[var(--shell-header-h)] relative"
+        >
           {(isPending || navigatingId) && (
             <div className="absolute inset-0 z-10 bg-background/40 flex items-center justify-center pointer-events-none">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -157,7 +149,7 @@ export default function HtmlPagesListPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center h-full pt-12 text-muted-foreground">
+        <div className="flex items-center justify-center h-full pt-[var(--shell-header-h)] text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       }

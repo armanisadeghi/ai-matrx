@@ -78,8 +78,7 @@ export default function SiteSettingsPage() {
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-2xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground">Site Settings</h2>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-2">
             {saved && (
               <span className="text-xs text-emerald-600 dark:text-emerald-400">

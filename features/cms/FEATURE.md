@@ -257,7 +257,7 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
-- `2026-07-13` — **`/cms` hub conforms to the (core) shell-header doctrine** (reference fix for the `core-route-headers` skill): killed the in-body faux header + `h-[calc(100dvh-var(--shell-header-h))]`; title + Published Pages / New Site actions now inject via `<PageHeader>` + `HeaderStructured` (glass icons on desktop, bottom sheet on mobile); body is `h-full`, grid clears the glass via `pt-[calc(var(--shell-header-h)+0.75rem)]`.
+- `2026-07-13` — **Whole CMS route family on the gold-standard header** (round 2 of the `core-route-headers` reference fix). Hub level: `CmsHubHeader` (`features/cms/components/CmsHubHeader.tsx`) injects `RouteHeader` + `RouteModeNav` **Sites | Pages** on both `/cms` and `/cms/html-pages` — no title text, New Site / New Page are right-slot tap targets. Site level: `SiteLayoutClient` now injects the layout-level header — back chevron + `CmsSiteSwitcher` (agents-style entity dropdown, keeps sub-view on switch) + **Pages | Components | Settings** center nav + open-live/new-page tap targets; deleted the bordered in-body breadcrumb bar, the dashboard's stacked sub-header (Settings/Components/"+ New Page" buttons), and the settings/components in-body `<h2>` title rows; all `h-[calc(100dvh-…)]` → `h-full` + `pt-[var(--shell-header-h)]`. Also fixed `RouteModeNav` (w-full measurement trap: compact first paint locked it in "menu" forever).
 - `2026-07-10` — CMS Surfaces Rollout gap-closing: (1) `/cms/html-pages` LIST route now mounts the
   `matrx-user/html-page` v3 menu — outer chrome (`NonEditableContextMenu` in `page.tsx`) plus per-row
   (table) and per-card (grid) menus via the new reusable `HtmlPagesContextMenu`; both emit

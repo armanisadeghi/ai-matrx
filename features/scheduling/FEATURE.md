@@ -186,6 +186,7 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-07-13** — `/schedules`, `/schedules/new`, `/schedules/[id]/edit` conformed to the (core) shell-header doctrine (`core-route-headers` skill): in-body faux headers + `h-[calc(100dvh-2.5rem)]` replaced with `RouteHeader` injection (title/back left, count center on the list, refresh + new as tap targets right) and `h-full` bodies with `var(--shell-header-h)` top clearance.
 - **2026-05-16** — Soft-delete semantics + HTTP wire-type cleanup.
   Decoupled "deleted" from "paused" on `sch_task` so the Delete action
   actually hides the row from the user's view (previously a deleted

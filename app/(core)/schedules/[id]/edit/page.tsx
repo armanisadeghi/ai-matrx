@@ -1,12 +1,13 @@
-// app/(authenticated)/schedules/[id]/edit/page.tsx
+// app/(core)/schedules/[id]/edit/page.tsx
 
 "use client";
 
 import { use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { useTaskDetail } from "@/features/scheduling/hooks/useTaskDetail";
 import { ScheduleForm } from "@/features/scheduling/components/form/ScheduleForm";
 
@@ -19,25 +20,22 @@ export default function EditSchedulePage({ params }: Props) {
   const { task, status, error } = useTaskDetail(id);
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
-      <header className="shrink-0 border-b border-border bg-card/40 px-4 sm:px-6 py-3 flex items-center gap-3">
-        <Button asChild variant="ghost" size="sm" className="gap-1.5">
-          <Link href={`/schedules/${id}`}>
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Link>
-        </Button>
-        <div className="min-w-0">
-          <h1 className="font-semibold text-base leading-none truncate">
-            Edit schedule
-          </h1>
-          {task && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-              {task.title}
-            </p>
-          )}
-        </div>
-      </header>
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+    <>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton
+              href={`/schedules/${id}`}
+              variant="transparent"
+              ariaLabel="Back to schedule"
+            />
+            <h1 className="ml-2 text-sm font-medium text-foreground truncate">
+              {task?.title ?? "Edit schedule"}
+            </h1>
+          </>
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+1rem)]">
         <div className="max-w-3xl mx-auto">
           {status === "loading" || status === "idle" ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -63,6 +61,6 @@ export default function EditSchedulePage({ params }: Props) {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
