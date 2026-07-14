@@ -342,6 +342,10 @@ Hard rules: no JSX prop spread in `features/overlays/OverlayController.tsx`; no 
 
 **A client needing temporary privileged reach (provider realtime sessions, direct provider calls) mints a brokered credential from aidream `POST /api/broker/tokens` — NEVER holds a long-lived provider key.** The client primitive lives at `lib/api/broker/` (typed envelope, mint client, refresh-ahead cache, mode dispatch, hooks) — **invoke the `token-broker-client` skill** before wiring any provider connection from client code. Contract: [`lib/api/broker/FEATURE.md`](./lib/api/broker/FEATURE.md); cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/token-broker/FEATURE.md`. Test harness: `/demos/token-broker`.
 
+## Cross-Repo — App Config (remote runtime configuration for desktop clients)
+
+Shipped desktop apps read non-secret runtime values (server URLs, flags, min versions) from one anon-readable Supabase `app_config` row per app. This repo's role: the admin UI at `/administration/app-config` (editor, history/restore, `admin_update_app_config` RPC writes). **Spec approved 2026-07-14, not yet built.** Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/app-config/FEATURE.md` — read it before touching this feature in ANY repo.
+
 ---
 
 ## Cross-Repo — matrx-extend
