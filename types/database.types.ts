@@ -22140,6 +22140,63 @@ export type Database = {
         }
         Relationships: []
       }
+      app_config: {
+        Row: {
+          app: string
+          config: Json
+          min_supported_app_version: string
+          schema_version: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          app: string
+          config: Json
+          min_supported_app_version: string
+          schema_version?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          app?: string
+          config?: Json
+          min_supported_app_version?: string
+          schema_version?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      app_config_history: {
+        Row: {
+          app: string
+          changed_at: string
+          changed_by: string | null
+          config: Json
+          id: number
+          min_supported_app_version: string
+          schema_version: number
+        }
+        Insert: {
+          app: string
+          changed_at?: string
+          changed_by?: string | null
+          config: Json
+          id?: never
+          min_supported_app_version: string
+          schema_version: number
+        }
+        Update: {
+          app?: string
+          changed_at?: string
+          changed_by?: string | null
+          config?: Json
+          id?: never
+          min_supported_app_version?: string
+          schema_version?: number
+        }
+        Relationships: []
+      }
       app_instances: {
         Row: {
           architecture: string | null
@@ -25725,6 +25782,28 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "admins"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_update_app_config: {
+        Args: {
+          p_app: string
+          p_config: Json
+          p_min_supported_app_version: string
+          p_schema_version: number
+        }
+        Returns: {
+          app: string
+          config: Json
+          min_supported_app_version: string
+          schema_version: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "app_config"
           isOneToOne: true
           isSetofReturn: false
         }
