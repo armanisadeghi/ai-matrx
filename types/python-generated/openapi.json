@@ -71706,7 +71706,7 @@
           "listId": {
             "type": "string",
             "title": "Listid",
-            "description": "udt_picklists.id the options are hydrated from."
+            "description": "udt_structured_lists.id the options are hydrated from."
           },
           "groupName": {
             "anyOf": [

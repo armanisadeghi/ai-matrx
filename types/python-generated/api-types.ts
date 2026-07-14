@@ -25924,7 +25924,7 @@ export interface components {
         PicklistBinding: {
             /**
              * Listid
-             * @description udt_picklists.id the options are hydrated from.
+             * @description udt_structured_lists.id the options are hydrated from.
              */
             listId: string;
             /**
