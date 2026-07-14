@@ -9,6 +9,7 @@ import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/Au
 import { StudyTodayCard } from "../../study/dashboard/StudyTodayCard";
 import { EduHero } from "../sections/EduHero";
 import { SectionRenderer } from "../sections/SectionRenderer";
+import { EDU_TOOLS } from "../../data/tools";
 import {
   EDU_AXES,
   EDU_BASE,
@@ -16,7 +17,33 @@ import {
   EDU_WORKSPACE_LABEL,
   eduHref,
 } from "../../constants";
-import type { EduSection } from "../../types";
+import type { EduSection, EduStatusCard } from "../../types";
+
+/**
+ * The hub's tool discovery section — DATA-DRIVEN off EDU_TOOLS (never a second,
+ * hand-authored list). Live tools sort first (featured ones lead), so a newly
+ * shipped tool appears here automatically the moment its `tools.ts` entry
+ * flips to `status: "live"`. Any future `coming-soon` entries fall to the end
+ * and render with the existing muted StatusPill — no bespoke "coming soon"
+ * branch needed.
+ */
+function buildStudyToolCards(): EduStatusCard[] {
+  return [...EDU_TOOLS]
+    .sort((a, b) => {
+      const statusRank = (s: typeof a.status) => (s === "live" ? 0 : 1);
+      const byStatus = statusRank(a.status) - statusRank(b.status);
+      if (byStatus !== 0) return byStatus;
+      return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+    })
+    .map((tool) => ({
+      title: tool.name,
+      description: tool.tagline,
+      status: tool.status,
+      href: eduHref(tool.slug),
+      icon: tool.icon,
+      accessTier: tool.accessTier,
+    }));
+}
 
 export function EducationHub() {
   const sections: EduSection[] = [
@@ -31,6 +58,13 @@ export function EducationHub() {
         description: axis.blurb,
         href: eduHref(axis.segment),
       })),
+    },
+    {
+      kind: "status-cards",
+      heading: "Study tools",
+      subheading:
+        "Every tool is live and ready — flashcards, spoken practice, games, and more. Jump straight in.",
+      cards: buildStudyToolCards(),
     },
     {
       kind: "feature-grid",
