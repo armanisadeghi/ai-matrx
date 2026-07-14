@@ -451,6 +451,7 @@ export function makeSelectAssembledRequest(conversationId: string) {
       (s: RootState) => s.instanceContext,
       (s: RootState) => s.instanceClientTools,
       (s: RootState) => s.appContext,
+      (s: RootState) => s.adminPreferences,
     ],
     (
       conversations,
@@ -462,6 +463,7 @@ export function makeSelectAssembledRequest(conversationId: string) {
       instanceContext,
       instanceClientTools,
       appContext,
+      adminPreferences,
     ): AssembledAgentStartRequest | null => {
       const state = {
         conversations,
@@ -473,6 +475,7 @@ export function makeSelectAssembledRequest(conversationId: string) {
         instanceContext,
         instanceClientTools,
         appContext,
+        adminPreferences,
       } as RootState;
       return assembleRequest(state, conversationId);
     },

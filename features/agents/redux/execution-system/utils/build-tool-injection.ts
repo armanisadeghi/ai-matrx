@@ -37,6 +37,7 @@ import {
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { callbackManager } from "@/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
+import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 // CRITICAL: register the capability providers in the SAME (client) module graph
 // that reads them. They were previously only imported from app/Providers.tsx —
 // a Server Component — so the side-effect ran server-side and the client
@@ -214,6 +215,22 @@ export async function buildToolInjection(
     (stateMap as Record<string, ClientCapabilityPayloads[ClientCapabilityName]>)[
       entry.name
     ] = entry.payload;
+  }
+
+  const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
+  if (desktopTargetInstanceId) {
+    const existingDesktopState = stateMap["desktop-native"];
+    stateMap["desktop-native"] = {
+      platform: "",
+      engine_version: "",
+      instance_id: "",
+      tunnel_state: "none",
+      ...(existingDesktopState ?? {}),
+      target_instance_id: desktopTargetInstanceId,
+    };
+    if (!activeCapabilities.includes("desktop-native")) {
+      activeCapabilities.push("desktop-native");
+    }
   }
 
   // STOPGAP: arm the coding toolset client-side while a sandbox is bound.

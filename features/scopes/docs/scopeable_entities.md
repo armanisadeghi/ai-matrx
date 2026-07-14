@@ -19,7 +19,7 @@ tables are candidates to merge/drop later. Ordered by likelihood of inclusion.
 | Conversations | `cx_conversation` | `conversation`, `conversations`, `dm_conversations`, `sms_conversations` |
 | Workflows | `wf_definition` | `workflow`, `workflow_data` |
 | UDT Datasets | `udt_datasets` | `user_tables` (renamed) |
-| UDT Picklists | `udt_picklists` | `user_lists` (renamed) |
+| Structured Lists | `udt_structured_lists` | `user_lists` → `udt_picklists` → `udt_structured_lists` |
 | UDT Workbooks | `udt_workbooks` | — |
 | Sandboxes | `sandbox_instances` | — |
 | Flashcards | `flashcard_data` | `flashcard_sets`, `user_flashcard_sets` |

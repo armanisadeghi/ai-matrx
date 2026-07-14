@@ -62,6 +62,7 @@ interface AssistantTurnGroupProps {
   compact?: boolean;
   /** Every assistant member of this logical turn, in transcript order. */
   members: AssistantTurnGroupMember[];
+  deferColdMarkdown?: boolean;
 }
 
 export function AssistantTurnGroup({
@@ -69,6 +70,7 @@ export function AssistantTurnGroup({
   surfaceKey,
   compact = false,
   members: rawMembers,
+  deferColdMarkdown = false,
 }: AssistantTurnGroupProps) {
   const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
 
@@ -155,6 +157,7 @@ export function AssistantTurnGroup({
           // group's trailing bar below owns chrome for the whole turn,
           // so Copy / Speak / Print can aggregate across iterations.
           hideActionBar={true}
+          deferColdMarkdown={deferColdMarkdown}
         />
       ))}
 

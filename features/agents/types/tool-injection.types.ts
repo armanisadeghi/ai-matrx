@@ -96,6 +96,8 @@ export interface DesktopNativeState {
   engine_version: string;
   /** Desktop instance id (cloud_sync identity) for multi-device users. */
   instance_id: string;
+  /** Optional admin/dev target; delegated desktop calls are pinned to this id. */
+  target_instance_id?: string;
   /** Reachability over the public tunnel — routing hint only. */
   tunnel_state?: "none" | "active" | "error";
   /**

@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 242 active entity tokens. A token here is FK-valid for
+// 243 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -214,6 +214,7 @@ export type EntityTypeToken =
   | "sms_notification"
   | "sms_notification_preference"
   | "sms_phone_number"
+  | "structured_list"
   | "studio_run"
   | "studio_session"
   | "study_attempt"
@@ -517,6 +518,7 @@ export type ScopeableEntityToken =
   | "sms_notification"
   | "sms_notification_preference"
   | "sms_phone_number"
+  | "structured_list"
   | "studio_run"
   | "studio_session"
   | "study_attempt"
@@ -592,6 +594,7 @@ export type ListedEntityToken =
   | "content_ir_kind"
   | "dataset"
   | "learn_doc"
+  | "structured_list"
   | "surface"
   | "workbook";
 
@@ -785,6 +788,7 @@ export const ENTITY_TYPE_METADATA = {
   "sms_notification": { token: "sms_notification", schema: "communication", table: "sms_notifications", label: "SMS Notification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "sms_notification_preference": { token: "sms_notification_preference", schema: "communication", table: "sms_notification_preferences", label: "SMS Notification Preference", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "sms_phone_number": { token: "sms_phone_number", schema: "communication", table: "sms_phone_numbers", label: "SMS Phone Number", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "structured_list": { token: "structured_list", schema: "workbench", table: "udt_structured_lists", label: "Structured List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "studio_run": { token: "studio_run", schema: "transcripts", table: "studio_runs", label: "Studio Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "studio_session": { token: "studio_session", schema: "transcripts", table: "studio_sessions", label: "Audio Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "study_attempt": { token: "study_attempt", schema: "education", table: "study_attempt", label: "Study Attempt", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -1031,6 +1035,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "sms_notification",
   "sms_notification_preference",
   "sms_phone_number",
+  "structured_list",
   "studio_run",
   "studio_session",
   "study_attempt",

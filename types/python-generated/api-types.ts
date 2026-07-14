@@ -359,6 +359,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/app-config/{app}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get App Config */
+        get: operations["get_app_config_app_config__app__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dictionary/publish": {
         parameters: {
             query?: never;
@@ -2405,6 +2422,40 @@ export interface paths {
         put?: never;
         /** Resolve a compute-target ref into the full sandbox binding payload clients ship on chat requests. Lets clients keep the existing `sandbox: {...}` request field while supporting local-PC targets. */
         post: operations["resolve_compute_target_compute_targets_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/desktop-instances/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Desktop Instances */
+        get: operations["list_desktop_instances_desktop_instances__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/desktop-instances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Desktop Instances */
+        get: operations["list_desktop_instances_desktop_instances_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -14627,6 +14678,8 @@ export interface components {
              * @default true
              */
             store?: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
             /** User Input */
             user_input?: string | {
                 [key: string]: unknown;
@@ -15527,6 +15580,24 @@ export interface components {
             notes?: string | null;
             /** Status */
             status?: string | null;
+        };
+        /** AppConfigResponse */
+        AppConfigResponse: {
+            /** App */
+            app: string;
+            /** Schema Version */
+            schema_version: number;
+            /** Min Supported App Version */
+            min_supported_app_version: string;
+            /** Config */
+            config: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /**
          * AppLogEntry
@@ -17370,6 +17441,8 @@ export interface components {
             source_app?: string | null;
             /** Source Feature */
             source_feature?: string | null;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
             /** Ai Model Id */
             ai_model_id: string;
             /** Messages */
@@ -18331,6 +18404,8 @@ export interface components {
              * @default true
              */
             store?: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
             /** User Input */
             user_input?: string | {
                 [key: string]: unknown;
@@ -19469,6 +19544,23 @@ export interface components {
              * @default 0
              */
             rag_boost?: number;
+        };
+        /** DesktopInstanceSummary */
+        DesktopInstanceSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Live */
+            live: boolean;
+            /** Dev */
+            dev: boolean;
+            /** Last Seen */
+            last_seen?: string | null;
+            /** App Instance Id */
+            app_instance_id: string;
+            /** Platform */
+            platform?: string | null;
         };
         /** DetectDocumentRequest */
         DetectDocumentRequest: {
@@ -21993,6 +22085,8 @@ export interface components {
              * @default true
              */
             store?: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
             /** User Input */
             user_input?: string | {
                 [key: string]: unknown;
@@ -25769,6 +25863,12 @@ export interface components {
             created_at?: string | null;
             /** Expires At */
             expires_at?: string | null;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
+            /** Claimed By Instance Id */
+            claimed_by_instance_id?: string | null;
+            /** Claim Expires At */
+            claim_expires_at?: string | null;
         };
         /**
          * PermissionRecord
@@ -26399,6 +26499,8 @@ export interface components {
              * @default true
              */
             store?: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
             /** User Input */
             user_input?: string | {
                 [key: string]: unknown;
@@ -30357,6 +30459,8 @@ export interface components {
              * @default true
              */
             store?: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
             /** Agent Id */
             agent_id: string;
             /** Conversation Id */
@@ -33068,6 +33172,37 @@ export interface operations {
             };
         };
     };
+    get_app_config_app_config__app__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     publish_dictionary_dictionary_publish_post: {
         parameters: {
             query?: never;
@@ -34018,7 +34153,10 @@ export interface operations {
     };
     list_user_pending_calls_ai_user_pending_calls_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description matrx-local caller instance_id. When present, pending calls are atomically claimed for this desktop instance. */
+                instance_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -34032,6 +34170,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PendingCallSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -36558,6 +36705,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_desktop_instances_desktop_instances__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesktopInstanceSummary"][];
+                };
+            };
+        };
+    };
+    list_desktop_instances_desktop_instances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesktopInstanceSummary"][];
                 };
             };
         };

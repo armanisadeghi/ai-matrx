@@ -1,7 +1,12 @@
-# User lists — data model and behavior (Supabase)
+# Structured Lists — data model notes (Supabase)
 
-**Source of truth:** `public.user_lists` and `public.user_list_items` on the **automation-matrix** Supabase project (`txzxabzwovsujtloxrus`, `public` schema).  
-**Purpose:** Named collections (**lists**) owned by a user, each with many **items** (rows). Items support **optional grouping** via `group_name`. Used for structured choice lists, agent tools, and sharing as resource type `user_lists`.
+> Historical note: this document describes the pre-UDT `user_lists` / `user_list_items` model.
+> Structured Lists are stored in `workbench.udt_structured_lists` /
+> `workbench.udt_structured_list_items`. The product/data concept is **Structured List**; "picklist"
+> describes one usage mode, not the full data shape.
+
+**Historical source of truth:** `public.user_lists` and `public.user_list_items` on the **automation-matrix** Supabase project (`txzxabzwovsujtloxrus`, `public` schema).  
+**Purpose:** Named, editable collections (**Structured Lists**) owned by a user, each with many **items** (rows). Items support **optional grouping** via `group_name`. A Structured List can be consumed as dropdown/picklist choices, but it can also represent grouped checklists, shopping lists, menus, lightweight taxonomies, and other reusable item collections.
 
 ---
 

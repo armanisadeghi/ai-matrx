@@ -1222,6 +1222,42 @@
   .matrx-glass-shadow    { @apply shadow-glass; }
   .matrx-glass-shadow-lg { @apply shadow-glass-lg; }
 
+  /* Context-menu text-selection trigger: glassy without the heavy black halo. */
+  .context-menu-floating-icon {
+    background: hsl(var(--primary) / 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    color: hsl(var(--primary-foreground));
+    box-shadow:
+      0 8px 22px -14px rgba(15, 23, 42, 0.42),
+      0 1px 3px rgba(15, 23, 42, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.34);
+    backdrop-filter: blur(10px) saturate(1.35);
+    -webkit-backdrop-filter: blur(10px) saturate(1.35);
+  }
+
+  .context-menu-floating-icon:hover {
+    background: hsl(var(--primary) / 0.95);
+    box-shadow:
+      0 10px 24px -16px rgba(15, 23, 42, 0.5),
+      0 1px 3px rgba(15, 23, 42, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  }
+
+  .dark .context-menu-floating-icon {
+    background: hsl(var(--primary) / 0.7);
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow:
+      0 6px 18px -14px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .context-menu-floating-icon:hover {
+    background: hsl(var(--primary) / 0.82);
+    box-shadow:
+      0 8px 20px -16px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
   /* =========================================================================
      TapTargetButton — SINGLE SOURCE OF TRUTH for tap-button geometry + feedback.
      This is the ONLY place these are defined (previously also duplicated in
@@ -1977,4 +2013,3 @@
 .matrx-univer-shell [class*="univer-ribbon"][class*="row"] {
   justify-content: flex-start !important;
 }
-

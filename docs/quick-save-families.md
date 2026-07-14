@@ -116,7 +116,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 | **UDT Tables** | Save engine + bespoke dialogs; no shared Core/Hook | [`save-to-table.ts`](../features/data-tables/save-to-table.ts), [`SaveTableModal.tsx`](../components/mardown-display/tables/SaveTableModal.tsx), [`AppendToTableDialog.tsx`](../components/mardown-display/blocks/json/AppendToTableDialog.tsx) |
 | **Workbooks** | One-shot push button + destination chooser | [`SendToWorkbookButton.tsx`](../components/mardown-display/tables/SendToWorkbookButton.tsx), [`workbook-service.ts`](../features/data-tables/workbook-service.ts) |
 | **Documents** | Full editor routes; no capture-save overlay | [`DocumentEditor.tsx`](../features/data-tables/components/DocumentEditor.tsx), [`document-service.ts`](../features/data-tables/document-service.ts) |
-| **Picklists / Lists** | Manager windows + server actions; no content capture flow | [`PicklistManagerV2Window.tsx`](../features/window-panels/windows/PicklistManagerV2Window.tsx), [`list-actions.ts`](../features/user-lists/actions/list-actions.ts) |
+| **Structured Lists** | Manager windows + server actions; no content capture flow. Canonical tables are `udt_structured_lists` / `udt_structured_list_items`. | [`PicklistManagerV2Window.tsx`](../features/window-panels/windows/PicklistManagerV2Window.tsx), [`list-actions.ts`](../features/user-lists/actions/list-actions.ts) |
 | **Projects** | Peek + task project picker only; no quick-save family | [`ProjectPeek.tsx`](../features/organizations/peek/kinds/ProjectPeek.tsx) |
 | **Agent shortcuts** | Hook + window; create-in-place, not content capture | [`useShortcutQuickCreate.ts`](../features/agent-shortcuts/hooks/useShortcutQuickCreate.ts), [`AgentShortcutQuickCreateWindow.tsx`](../features/window-panels/windows/agents/AgentShortcutQuickCreateWindow.tsx) |
 
@@ -129,7 +129,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 ## Confirmed — add these families
 
 - [ ] **UDT Data Table** — `QuickSaveTableCore` + append/replace/create column reconcile (lift from `SaveTableModal` / `save-to-table.ts`)
-- [ ] **UDT Picklist (List)** — capture rows/items → create list or append to existing
+- [ ] **Structured List** — capture rows/items → create list or append to existing; can later be consumed as dropdown/picklist choices
 - [ ] **Document** — capture markdown/text → create doc or append section
 - [ ] **Workbook** — capture tabular data → new sheet or target workbook (unify `SendToWorkbookButton`)
 - [ ] **Project** — capture content → create project or attach to existing (title, description, scope)

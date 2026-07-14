@@ -8,6 +8,7 @@ import { setMode, toggleMode } from "@/styles/themes/themeSlice";
 import {
   setServerOverride,
   setCustomServerUrl,
+  setDesktopTargetInstanceId,
   clearAdminPreferences,
 } from "@/lib/redux/preferences/adminPreferencesSlice";
 import { setIsInWindow, setLayoutStyle } from "@/lib/redux/slices/layoutSlice";
@@ -94,6 +95,10 @@ export const sliceBindings: Record<string, SliceBinding> = {
     write: (key, value) => {
       if (key === "serverOverride") return setServerOverride(value as never);
       if (key === "customServerUrl") return setCustomServerUrl(value as string);
+      if (key === "desktopTargetInstanceId")
+        return setDesktopTargetInstanceId(
+          typeof value === "string" && value ? value : null,
+        );
       if (key === "clear") return clearAdminPreferences();
       throw new Error(`adminPreferences has no writable key "${key}"`);
     },

@@ -1,6 +1,20 @@
-# User Lists Feature
+# Structured Lists Feature
 
-Named collections of labeled items — used for structured choice lists, agent tools, and workflow references.
+Structured Lists are reusable, editable collections of item objects. A list can stay flat, or each item can
+carry a `group_name` so the same data can be projected as grouped sections, dependent dropdown options,
+categorized checklists, shopping lists, task lists, menus, lightweight taxonomies, reusable labels, or
+agent/runtime choice sets.
+
+The product concept is **Structured List**. The backing tables are
+`workbench.udt_structured_lists` / `workbench.udt_structured_list_items`, `/lists` is the current route,
+and "picklist" means the specific mode where a Structured List is bound to a dropdown/choice input. Do
+not treat the list as read-only because it is used as a picklist; owners/editors can create, rename,
+group, update, and delete items anywhere the list editor is available.
+
+A Structured List is intentionally lighter than a UDT dataset. It has one fixed item shape
+(`label`, protected `description`, `help_text`, optional `group_name`, optional `icon_name`) plus list
+metadata. A UDT dataset is the full table model: dynamic columns, typed cells, validation, row history,
+bulk writes, and richer data operations.
 
 ## Route
 
@@ -25,10 +39,12 @@ All mutations use Server Actions (`features/user-lists/actions/list-actions.ts`)
 
 ### Item `description` is an owner-only secret (migration 0064)
 
-A picklist item's `description` is the payload injected into agent prompts when a variable is bound to a list (see the agents feature). It is an **absolute secret to non-owners** and must never reach a consumer's client:
+A Structured List item's `description` is the payload injected into agent prompts when the list is used as
+a picklist binding for an agent variable (see the agents feature). It is an **absolute secret to
+non-owners** and must never reach a consumer's client:
 
 - **Consumer read path:** `getPicklistForSelection(listId)` → `get_picklist_for_selection` RPC returns **labels only** (`id,label,help_text,group_name,icon_name`), never `description`. Use this anywhere a non-owner can see the result (agent runtime dropdowns, etc.).
-- **Owner/editor read path:** `getListWithItems` → `get_user_list_with_items` returns `description` **only** to the list owner/editor (`auth.uid()` gate); non-owners get `null`. The editor (`useQuickLists`) reads items directly — RLS now restricts `udt_picklist_items` SELECT to owner+editor, so `.select('*')` still works for them and returns nothing for everyone else.
+- **Owner/editor read path:** `getListWithItems` → `get_user_list_with_items` returns `description` **only** to the list owner/editor (`auth.uid()` gate); non-owners get `null`. The editor (`useQuickLists`) reads items directly — RLS restricts `udt_structured_list_items` SELECT to owner+editor, so `.select('*')` works for them and returns nothing for everyone else.
 - **Server injection:** the Python backend resolves `description` via the service connection (bypasses RLS) and injects it only into the in-flight provider request — never persisted. Do NOT add a client read path that returns `description`.
 
 ### Key components

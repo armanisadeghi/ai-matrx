@@ -780,6 +780,11 @@ export type AssembledAgentStartRequest = Omit<
   "user_input"
 > & {
   user_input?: string | MessagePart[] | null;
+  /**
+   * Additive aidream field for instance-targeted desktop tool delegation.
+   * Omitted for Auto/default routing.
+   */
+  target_instance_id?: string;
 };
 
 /**
@@ -791,6 +796,11 @@ export type AssembledConversationRequest = Omit<
   "user_input"
 > & {
   user_input?: string | MessagePart[] | null;
+  /**
+   * Additive aidream field for instance-targeted desktop tool delegation.
+   * Omitted for Auto/default routing.
+   */
+  target_instance_id?: string;
 };
 
 /**

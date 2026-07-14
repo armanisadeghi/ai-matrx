@@ -2,7 +2,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-07-12`
+**Last updated:** `2026-07-14`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -30,6 +30,8 @@ The system runs in three stages with three consumer surfaces:
 | **Runner / Chat / Shortcut / App** | `POST /ai/agents/{id}` | **Agent ID + form values** (variables, context, user input) | Server owns the agent definition; client sends only what changes per call |
 
 After the first turn, everything collapses to `POST /ai/conversations/{conversationId}` (or `POST /ai/chat` for ephemeral). See **AGENT_INVOCATION_LIFECYCLE.md**.
+
+Admin/dev desktop targeting is an additive request overlay, not part of agent authoring. When `adminPreferences.desktopTargetInstanceId` is set by the admin Server environment tab, first-turn, continuation, resume, manual, and legacy `callApi` agent turn paths stamp `client.state["desktop-native"].target_instance_id` with the selected `public.app_instances.instance_id` (`/desktop-instances.id`); compatibility paths also include a root `target_instance_id`. Auto stores `null` and omits the target so aidream keeps default routing.
 
 ### Variables vs. context slots
 
@@ -283,6 +285,12 @@ Rendering each iteration as its own visual unit fragmented the answer: every ite
 
 A turn with exactly one assistant `cx_message` becomes a one-member group. Visually and behaviourally identical to the pre-grouping render: same content, same bar, same single-message `Copy` / `Speak` text (aggregation is skipped when `groupMessageIds.length <= 1`).
 
+### Cold deep-link windowing
+
+`/chat/[conversationId]` cold loads render the transcript bottom-first. `AgentConversationDisplay` derives display groups through `display-groups.ts`, then applies a visible group window from the messages slice. The first hydrated frame shows the latest user group + latest assistant group only; after the cold markdown settle delay, `AgentConversationColumn` reveals the prior four groups above that pair and keeps the latest user group anchored in the scroll container while `MarkdownStream` finishes layout.
+
+The top sentinel is locked during this cold settle window so it cannot auto-trigger while the transcript is still shorter than the viewport. Once unlocked, upward scroll reveals two already-loaded groups at a time; only after the hidden loaded groups are exhausted does it dispatch `loadOlderMessages`. Live `requestId` streams and URL-promotion conversations skip the cold markdown/window path, so active streaming bubbles keep the existing stream contract.
+
 ---
 
 ## Working document (per-conversation) & scratchpad (user-global)
@@ -325,6 +333,9 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-07-14` — **Cold chat deep-links render bottom-first.** Existing `/chat/[conversationId]` loads now keep a transcript skeleton up until the DB bundle resolves, render the latest user + assistant groups first, defer cold DB markdown behind a short skeleton, auto-reveal the prior four groups above without shifting the viewport, and lazy-reveal older loaded groups two at a time before fetching older pages. Streaming/URL-promotion conversations bypass the cold path.
+- `2026-07-14` — **`cx_fork_conversation` preserves artifact discovery indices.** The direct Supabase fork thunk (`forkConversation`) was failing on assistant messages containing multiple artifacts of the same `chat.artifact.artifact_type` because the RPC copied discovery rows without `artifact_index`, collapsing them into one NULLS-NOT-DISTINCT natural-key slot. Migration `20260714161847_fix_cx_fork_artifact_indices.sql` now remaps `source_system/source_id` to the forked message and copies `artifact_index`; verified against the reported production conversation in a rollback transaction.
+- `2026-07-14` — **Admin desktop target override for delegated desktop tools.** Agent turn assembly now reads the admin-only `adminPreferences.desktopTargetInstanceId` override and stamps `client.state["desktop-native"].target_instance_id` only when an admin pins a registered desktop engine; Auto omits the target. Covered first turns, continuations, resumes, manual/dev runs, `useRunAgent`, and the legacy `callApi` agent paths so aidream can route delegated `chat.tool_call` work to one exact matrx-local instance.
 - `2026-07-14` — **`desktop-native` capability: web turns can delegate to the user's matrx-local desktop.** New capability provider (`client-capabilities/desktop-native.provider.ts`) declares `desktop-native` + `client.state["desktop-native"]` (`{platform, engine_version, instance_id, tunnel_state}` — normalizes stored `"windows"` → `"win32"` to match aidream's `sys.platform` filter) on every turn AND resume (both flow through `buildToolInjection`), gated on live presence: a non-deleted `app_instances` row with `last_seen` inside 11 min (engine heartbeats every 5 min), read direct from Supabase with a module TTL cache (`client-capabilities/desktop-presence.ts`) — **never declared while no desktop is online** (a dead declared executor delegates calls into a 30-day-ledger void). `surfaceDelegatedToolCall` routes desktop tools (`local_*`) by OWNERSHIP: presence re-checked, then the `delegated` ledger row is left alone for the matrx-local engine to execute + resume headlessly (posting an error would steal the call); no desktop → loud `unsupported_client_tool` as before. UI: `DesktopPresenceIndicator` (laptop + emerald dot, `useDesktopPresence` — same cache as the provider) in both smart-input toolbars. Verified live: turn advertised `load_desktop_tools`, loaded `local_file`/`local_documents`, suspended with the row in `status='delegated'`.
 - `2026-07-13` — **Mobile header conformance** (`core-route-headers` skill campaign): re-enabled `AgentHeaderMobile` in `AgentHeader.tsx` (was commented out by an unrelated commit — below `lg` the whole header row vanished; the Switch-mode bottom sheet is back), gave `AgentBuilderMobile`'s Build/Test tab bar `pt-[var(--shell-header-h)]` so it clears the glass header, and fixed `/agents/all` mobile: the tab pills row + content now use `var(--shell-header-h)`-based top clearance instead of floating into the header (content still scrolls behind the glass).
 - `2026-07-13` — **Drift report rollup shows only drifted agents.** `agx_usage_report` verified correct live (per-agent severity counts + pending-alert join present); the report vs AgentsListHeader-tint discrepancy was the FE rollup listing EVERY in-scope agent and labeling the total "agents with drift". `usages.selectors.ts` now filters (`userRowHasDrift`/`adminRowHasDrift`: severity buckets, stale pins, open alert, others-redflags) in `makeSelectReportSorted` + `makeSelectReportTotals`.

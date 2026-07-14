@@ -95,6 +95,8 @@ interface AgentAssistantMessageProps {
    * button. Retry is non-destructive (the failed turn stays in history).
    */
   canRetry?: boolean;
+  /** Chat cold-load only: show a short text skeleton before DB markdown mounts. */
+  deferColdMarkdown?: boolean;
 }
 
 export function AgentAssistantMessage({
@@ -105,6 +107,7 @@ export function AgentAssistantMessage({
   surfaceKey,
   hideActionBar = false,
   canRetry = false,
+  deferColdMarkdown = false,
 }: AgentAssistantMessageProps) {
   useDebugContext("AgentAssistantMessage");
 
@@ -125,8 +128,22 @@ export function AgentAssistantMessage({
 
   const dispatch = useAppDispatch();
   const [retrying, setRetrying] = useState(false);
+  const shouldDeferColdMarkdown =
+    deferColdMarkdown && !requestId && !!messageId && !isStreamActive;
+  const [coldMarkdownSettledMessageId, setColdMarkdownSettledMessageId] =
+    useState<string | null>(null);
+  const coldMarkdownReady =
+    !shouldDeferColdMarkdown || coldMarkdownSettledMessageId === messageId;
   const [providerRetryBusyAction, setProviderRetryBusyAction] =
     useState<ProviderRetryControlAction | null>(null);
+
+  useEffect(() => {
+    if (!shouldDeferColdMarkdown || !messageId) return undefined;
+    const timer = window.setTimeout(() => {
+      setColdMarkdownSettledMessageId(messageId);
+    }, 140);
+    return () => window.clearTimeout(timer);
+  }, [shouldDeferColdMarkdown, messageId]);
 
   const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
   const handleFullPrint = useCallback(() => {
@@ -400,7 +417,9 @@ export function AgentAssistantMessage({
       // assistant turn reveals the bar; non-compact mode keeps it visible.
       className="group/assistant-msg rounded transition-shadow"
     >
-      {bufferStream && isStreamActive && !failed ? (
+      {!coldMarkdownReady ? (
+        <AssistantMarkdownSkeleton />
+      ) : bufferStream && isStreamActive && !failed ? (
         <>
           {showProviderRetry && providerRetry && (
             <ProviderRetryCard
@@ -470,6 +489,18 @@ export function AgentAssistantMessage({
           surfaceKey={surfaceKey}
         />
       )}
+    </div>
+  );
+}
+
+function AssistantMarkdownSkeleton() {
+  return (
+    <div className="space-y-2 py-1" aria-hidden>
+      <div className="h-3.5 w-[96%] animate-pulse rounded bg-muted/55" />
+      <div className="h-3.5 w-[88%] animate-pulse rounded bg-muted/50" />
+      <div className="h-3.5 w-[72%] animate-pulse rounded bg-muted/45" />
+      <div className="h-3.5 w-[94%] animate-pulse rounded bg-muted/40" />
+      <div className="h-3.5 w-[42%] animate-pulse rounded bg-muted/35" />
     </div>
   );
 }

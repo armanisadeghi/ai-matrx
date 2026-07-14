@@ -56,6 +56,7 @@ import {
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { buildAmbientContext } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import { setInstanceStatus } from "../conversations/conversations.slice";
+import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
   createRequest,
   setRequestStatus,
@@ -186,6 +187,7 @@ export const resumeInstance = createAsyncThunk<
         applyPolicy && applyPolicy !== "default"
           ? { apply_policy: applyPolicy }
           : undefined;
+      const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
 
       const body: Record<string, unknown> = {
         user_request_id: userRequestId,
@@ -196,6 +198,9 @@ export const resumeInstance = createAsyncThunk<
         }),
         ...(injection.client && { client: injection.client }),
         ...(userOverrides && { user: userOverrides }),
+        ...(desktopTargetInstanceId && {
+          target_instance_id: desktopTargetInstanceId,
+        }),
         ...(debug && { debug: true }),
       };
       // ResumeRequest does NOT declare a top-level `sandbox` (unlike the

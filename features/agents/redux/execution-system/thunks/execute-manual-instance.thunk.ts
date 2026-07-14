@@ -101,6 +101,7 @@ import {
   selectActiveServer,
   selectEndpointOverrideConfig,
 } from "@/lib/redux/slices/apiConfigSlice";
+import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
   selectEffectiveOrganizationId,
   selectProjectId,
@@ -458,6 +459,12 @@ export async function assembleManualRequest(
 
   if (selectIsBlockMode(state)) request.block_mode = true;
   if (selectIsSnapshot(state)) request.snapshot = true;
+
+  const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
+  if (desktopTargetInstanceId) {
+    (request as Record<string, unknown>).target_instance_id =
+      desktopTargetInstanceId;
+  }
 
   if (selectIsMemoryToggleRequested(state)) {
     const target = selectMemoryToggleTarget(state);

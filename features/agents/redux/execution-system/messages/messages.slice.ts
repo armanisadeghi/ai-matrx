@@ -207,6 +207,13 @@ export interface MessagesEntry {
   hasMoreOlder: boolean;
   /** Re-entry guard for the older-page fetch. */
   isLoadingOlder: boolean;
+  /**
+   * Optional transcript render window, counted in display groups rather than
+   * raw rows by the UI. `null` preserves legacy behavior: render every loaded
+   * message. Chat cold-load sets this to 2, then grows it as older context is
+   * revealed above the current viewport.
+   */
+  visibleGroupLimit: number | null;
 }
 
 export interface MessagesState {
@@ -239,6 +246,7 @@ function getOrCreate(
       oldestPosition: null,
       hasMoreOlder: false,
       isLoadingOlder: false,
+      visibleGroupLimit: null,
     };
     state.byConversationId[conversationId] = entry;
   }
@@ -547,6 +555,37 @@ const messagesSlice = createSlice({
       entry.isLoadingOlder = loading;
     },
 
+    /** Set/clear the display-group render window for a conversation. */
+    setVisibleGroupLimit(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        limit: number | null;
+      }>,
+    ) {
+      const { conversationId, limit } = action.payload;
+      const entry = getOrCreate(state, conversationId);
+      entry.visibleGroupLimit =
+        typeof limit === "number" ? Math.max(1, Math.floor(limit)) : null;
+    },
+
+    /** Grow the display-group render window without clobbering unlimited mode. */
+    revealOlderGroups(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        count: number;
+      }>,
+    ) {
+      const { conversationId, count } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry || entry.visibleGroupLimit === null) return;
+      entry.visibleGroupLimit = Math.max(
+        1,
+        entry.visibleGroupLimit + Math.max(1, Math.floor(count)),
+      );
+    },
+
     /** Remove a message from the transcript (e.g. after soft-delete). */
     removeMessage(
       state,
@@ -592,6 +631,7 @@ const messagesSlice = createSlice({
       entry.oldestPosition = null;
       entry.hasMoreOlder = false;
       entry.isLoadingOlder = false;
+      entry.visibleGroupLimit = null;
     },
   },
 
@@ -618,6 +658,8 @@ export const {
   hydrateMessages,
   prependMessages,
   setOlderLoading,
+  setVisibleGroupLimit,
+  revealOlderGroups,
   removeMessage,
   setConversationLabel,
   clearMessages,

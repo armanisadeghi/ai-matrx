@@ -61,6 +61,7 @@ interface ChatRoomClientProps {
 }
 
 const SOURCE_FEATURE = "chat-route";
+const CHAT_INITIAL_MESSAGE_LIMIT = 12;
 
 /**
  * Chat room client — orchestrates one conversation surface.
@@ -113,6 +114,9 @@ export function ChatRoomClient({
   );
 
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isColdLoadingConversation, setIsColdLoadingConversation] = useState(
+    Boolean(conversationIdProp),
+  );
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -197,6 +201,7 @@ export function ChatRoomClient({
     const ctrl = new AbortController();
     loadAbortRef.current = ctrl;
     loadedKeyRef.current = conversationIdProp;
+    setIsColdLoadingConversation(true);
 
     (async () => {
       try {
@@ -215,6 +220,7 @@ export function ChatRoomClient({
           state.messages?.byConversationId?.[conversationIdProp]?.orderedIds
             ?.length ?? 0;
         if (exists && alreadyLiveCount > 0) {
+          setIsColdLoadingConversation(false);
           // Make sure focus points at this conversation, then bail — unless
           // this load was already superseded by a navigation (don't revert the
           // surface back to the conversation the user just left).
@@ -240,10 +246,12 @@ export function ChatRoomClient({
           loadConversation({
             conversationId: conversationIdProp,
             surfaceKey,
+            messageLimit: CHAT_INITIAL_MESSAGE_LIMIT,
             signal: ctrl.signal,
           }),
         ).unwrap();
         if (ctrl.signal.aborted) return;
+        setIsColdLoadingConversation(false);
         // Cold-resume: if the server left this conversation paused waiting on a
         // client-delegated tool the user never answered (closed the tab
         // mid-prompt), re-surface the prompt(s) now so they can answer and
@@ -253,6 +261,7 @@ export function ChatRoomClient({
         // branch above returns early, where prompts arrive over the stream.)
         void dispatch(surfaceColdPendingCalls(conversationIdProp));
       } catch (err) {
+        if (!ctrl.signal.aborted) setIsColdLoadingConversation(false);
         if (loadedKeyRef.current === conversationIdProp) {
           loadedKeyRef.current = null;
         }
@@ -393,6 +402,14 @@ export function ChatRoomClient({
     );
   }
 
+  if (conversationIdProp && isColdLoadingConversation) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
+        <ChatRoomSkeleton />
+      </div>
+    );
+  }
+
   // Header Agents chrome — live Run scope from Redux at click time (draft +
   // transcript + agent). Plain fn; React Compiler memoizes. DOM selection in
   // the composer is best-effort via activeElement when it's a textarea.
@@ -474,6 +491,7 @@ export function ChatRoomClient({
             surfaceKey={surfaceKey}
             constrainWidth
             edgeToEdgeScroll
+            deferColdMarkdown={!!conversationIdProp}
             smartInputProps={{
               sendButtonVariant: "blue",
               // Lives in the Chat Options (+) → Preferences tab now.

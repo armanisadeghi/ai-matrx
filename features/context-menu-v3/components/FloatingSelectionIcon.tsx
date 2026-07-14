@@ -74,10 +74,10 @@ export const FloatingSelectionIcon = React.forwardRef<
         e.preventDefault();
         onOpen(e);
       }}
-      className={`fixed z-[9999] flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-200 ${
+      className={`context-menu-floating-icon fixed z-[9999] flex items-center justify-center rounded-full transition-all duration-200 ${
         dropdownOpen
           ? "opacity-0 pointer-events-none"
-          : "hover:shadow-xl hover:scale-110 active:scale-95 animate-in fade-in slide-in-from-top-2"
+          : "hover:scale-110 active:scale-95 animate-in fade-in slide-in-from-top-2"
       } ${isMobile ? "w-12 h-12" : "w-10 h-10"}`}
       style={{
         left: `${finalLeft}px`,

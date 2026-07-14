@@ -88,6 +88,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { captureApiError } from "@/lib/diagnostics/captureApiError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
+import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
 
 // ─── Auto-generated types (source of truth for all request/response shapes) ──
 
@@ -955,6 +956,16 @@ export function callApi<
 
     // ── Step 5: Assemble request body ─────────────────────────────────────
     const body = buildRequestBody(config.body, _scope);
+    const desktopTargetInstanceId =
+      state.adminPreferences?.desktopTargetInstanceId ?? null;
+    if (
+      desktopTargetInstanceId &&
+      body &&
+      typeof body === "object" &&
+      isAiTurnPath(config.path as string)
+    ) {
+      applyDesktopTargetToRequestBody(body, desktopTargetInstanceId);
+    }
 
     // ── Step 6: Apply test overrides ──────────────────────────────────────
     const headers = applyTestHeaders(auth.headers, config._testOverrides);
@@ -1016,6 +1027,15 @@ export function callApi<
       return { error };
     }
   };
+}
+
+function isAiTurnPath(path: string): boolean {
+  return (
+    path === "/ai/agents/{agent_id}" ||
+    path === "/ai/agents-blocks/{agent_id}" ||
+    path === "/ai/conversations/{conversation_id}" ||
+    path === "/ai/manual"
+  );
 }
 
 // ============================================================================

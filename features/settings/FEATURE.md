@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** 2026-06-15
+**Last updated:** 2026-07-14
 
 ---
 
@@ -55,7 +55,7 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 **Redux slice(s) exposed through `useSetting`**
 - `userPreferences` (`lib/redux/preferences/userPreferencesSlice.ts`) — 20 modules (incl. `favorites` — user-curated pins, capped at `FAVORITES_MAX`, mutated via dedicated `addFavorite`/`removeFavorite`/`toggleFavorite`/`reorderFavorites` reducers); persistence: **synced** (warm-cache: IDB + localStorage + Supabase).
 - `theme` (`styles/themes/themeSlice.ts`) — `{ mode: "light" | "dark" }`; persistence: **synced** (boot-critical: pre-paint localStorage).
-- `adminPreferences` (`lib/redux/slices/adminPreferencesSlice.ts`) — server override; persistence: **local-only** (flagged for sync migration).
+- `adminPreferences` (`lib/redux/preferences/adminPreferencesSlice.ts`) — admin-only backend host override and desktop delegation target override (`desktopTargetInstanceId`); persistence: **local-only** (flagged for sync migration).
 - `layout` (`lib/redux/slices/layoutSlice.ts`) — layoutStyle + isInWindow; persistence: **local-only** (flagged for sync migration).
 - `windowManager` (`lib/redux/slices/windowManagerSlice.ts`) — action-only writes (`toggleHidden`, `restoreAll`); persistence: **session**.
 
@@ -97,7 +97,7 @@ Path:
 - `useSetting` parses the path (`parseSettingsPath`), looks up the slice binding (`getSliceBinding`), and dispatches `binding.write(key, value)`.
 - For `userPreferences.*`, the write resolves to `setPreference({ module, preference, value })` — the warm-cache sync policy's middleware picks it up, debounces ≤250ms, and writes to IDB + localStorage mirror + Supabase.
 - For `theme.mode`, the write is `setMode(value)` — boot-critical middleware synchronously writes to localStorage and broadcasts across tabs.
-- For `adminPreferences.*` / `layout.*`, the write goes to Redux only — no persistence tier yet (flagged for migration).
+- For `adminPreferences.*` / `layout.*`, the write goes to Redux only — no persistence tier yet (flagged for migration). `adminPreferences.desktopTargetInstanceId` is intentionally local/admin-only: `null` means Auto/no `target_instance_id`; a string is `public.app_instances.instance_id` for a specific desktop engine.
 
 Exit: Every subscribed component re-renders on the slice update; the sync engine's debounced write flushes in the background.
 
@@ -121,6 +121,18 @@ Path:
 3. Add a registry entry in `features/settings/registry.ts` with `{ id, label, icon, parentId?, component: lazyTab(...), persistence }`.
 4. Done. The tree, breadcrumb, search, and admin gating pick it up automatically.
 
+### 5. Admin desktop delegation override
+
+Trigger: an admin opens **Admin → Server environment → Desktop app (dev override)** and chooses a registered desktop instance.
+
+Path:
+- The tab reads/writes `adminPreferences.desktopTargetInstanceId` through `useSetting`, beside the localhost-server override.
+- The selector is populated from aidream `GET /desktop-instances`, backed by `public.app_instances`. Response fields: `id` (stable `app_instances.instance_id`, used as the target), `name`, `live`, `dev`, `last_seen`, `app_instance_id` (row UUID, `app_instances.id`), and `platform`.
+- `Auto / installed app` stores `null`, so agent calls omit `target_instance_id` and aidream keeps default desktop routing.
+- A concrete selection stores the desktop `instance_id`; agent turn assembly stamps `target_instance_id` so delegated desktop tools route to that exact engine.
+
+Exit: The local admin override persists in Redux with the other admin overrides and is never surfaced as a normal user preference.
+
 ---
 
 ## Invariants & gotchas
@@ -128,6 +140,7 @@ Path:
 - **Primitives have no `className` prop.** Ever. Variations must be new enum values on existing props. If you need a visual variation that isn't supported, add a prop to the primitive — don't pass `className`.
 - **Tabs never import Redux.** They can call `useSelector` only for *read-only derived state that isn't a preference* (e.g. in `WindowsTab` where open-window counts come directly from `windowManager.windows`). For anything writable, `useSetting` is the only path.
 - **Tabs never import shadcn.** All form controls come from `@/components/official/settings`. The one documented exception is `AiModelsTab`, which lazy-wraps the legacy `AiModelsPreferences` until a `SettingsModelList` primitive exists.
+- **Admin/dev overrides stay in `adminPreferences`.** The localhost-server override and desktop `target_instance_id` selector live in the same admin-gated tab and must remain local-only/dev affordances, not synced user preferences.
 - **`useSetting` throws at init when the slice isn't bound.** Treat that as a "fix your slice binding" signal, not a caller bug. Add to `slice-bindings.ts`.
 - **Any in-shell component that pushes a route MUST go through `useSettingsNavigate()` (or `useSettingsTabNavigate()` for tab switches).** Calling `router.push("/somewhere")` directly inside a tab silently dismisses the settings window and yanks the user out of the surface — the shell isn't aware the route changed, the overlay just blinks out and the new page renders bare. Cmd/Ctrl/middle-click "open in new tab" must keep working; the hook handles it. `SettingsLink`, `OrganizationCard`, and `UserContentTemplateManager` are the reference consumers. The Boy-scout rule applies: if you encounter a stray `router.push` inside a settings-mounted component while working in a file, route it through the hook in the same change.
 - **Writing through `useSetting` for `windowManager` requires an action-only key.** `toggleHidden`, `restoreAll` — no `read` roundtrip. For the full `minimizeAll(payload)` write you need viewport dims, so call `useAppDispatch()` directly with `minimizeAll(...)` (see `WindowsTab`).
@@ -172,6 +185,7 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-07-14` — **Admin desktop app dev override.** Added `adminPreferences.desktopTargetInstanceId` beside the localhost-server override and surfaced it in the admin-only Server environment tab as **Desktop app (dev override)**. The selector loads registered desktop instances from aidream `GET /desktop-instances` (`id`, `name`, `live`, `dev`, `last_seen`, `app_instance_id`, `platform`), stores `null` for Auto/no target, and feeds agent turn assembly with `target_instance_id` only when an admin pins a specific desktop engine.
 - `2026-07-13` — **Shape-drift backfill system (no more console-flooding "self-heals on next save").**
   25/26 `users.user_preferences` rows carried retired shape values (legacy `defaultModel` seed
   constants; superseded `videoConference` audio fields). The FE stripped them on every load with a

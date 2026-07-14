@@ -45,6 +45,7 @@ import type { RootState } from "@/lib/redux/store";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useStudioAssistant } from "@/features/transcript-studio/hooks/useStudioAssistant";
 import { fetchStudioDocumentsThunk } from "@/features/transcript-studio/redux/thunks";
+import { selectActiveAssistantAgentId } from "@/features/transcript-studio/redux/selectors";
 import { AssistantAgentBar } from "@/features/transcript-studio/components/scribe/AssistantAgentBar";
 import { WorkingDocumentHeader } from "@/features/transcript-studio/components/scribe/WorkingDocumentHeader";
 import { ExperimentalAgentScreen } from "@/features/transcript-studio/components/scribe/ExperimentalAgentScreen";
@@ -113,6 +114,7 @@ export default function ThreadAgentPanel({
     noteId ? selectNoteById(noteId)(s) : undefined,
   );
   const attachments = useAppSelector(selectAttachmentsForThread(threadId));
+  const activeAgentId = useAppSelector(selectActiveAssistantAgentId(sessionId));
 
   // Ensure the task's subtasks are hydrated so `tile_task.subtasks` is complete.
   useEffect(() => {
@@ -271,10 +273,13 @@ export default function ThreadAgentPanel({
     void dispatch(
       attachEntityToThread(threadId, "conversation", conversationId, {
         label: "Thread agent conversation",
-        metadata: { role: "agent" },
+        metadata: {
+          role: "agent",
+          agentId: activeAgentId ?? WAR_ROOM_THREAD_AGENT_ID,
+        },
       }),
     );
-  }, [threadId, conversationId, dispatch]);
+  }, [threadId, conversationId, activeAgentId, dispatch]);
 
   // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
   // The war-room agent is the same studio-assistant agent used by Scribe; the

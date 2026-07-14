@@ -2,7 +2,7 @@
 
 **Status:** `active` — primary output surface for agent responses; rapidly evolving
 **Tier:** `1`
-**Last updated:** `2026-06-19`
+**Last updated:** `2026-07-14`
 
 > Combined doc: **Artifacts** (wire format + block renderer) and **Canvas** (DB / library that persists + versions them). These two cannot be understood separately.
 
@@ -194,6 +194,7 @@ Rules:
 
 ## Change log
 
+- `2026-07-14` — codex: **Conversation fork now preserves artifact discovery source identity.** `cx_fork_conversation` was updated in migration `20260714161847_fix_cx_fork_artifact_indices.sql` after the reported "Fork at this message" failure on a message with three `data_table` discovery rows. The RPC now copies `artifact_index` and explicitly remaps `source_system/source_id` to the forked message, keeping the `uq_cx_artifact_source_natural_key` invariant aligned with the July 7 artifact-index migration.
 - `2026-07-10` — claude: **Pin code/JSON blocks as editable conversation context (v1).** User action on CodeBlock/JsonBlock → `attachBlockAsEditableContext` materializes to `canvas_items` (type=`code`), rewrites the message to R1 `<artifact id>`, clears the live-stream render anchor so version history shows in-session, and publishes the canvas UUID as an `instanceContext` key with `mutable:true` / `persist:auto` / `source.kind=canvas_item`. Registry `userEditable` flag (code + mermaid) drives `ArtifactRefBlock` `resolve:"latest"`. aidream `@register_writeback("canvas_item")` → `cx_canvas_save_user_version`. Migration `canvas_save_user_version_preserve_links.sql` copies `external_system`/`external_id`/org/metadata/source identity onto new version rows (known defect from handoff item 3). Context rail opens pinned artifacts in canvas; process-stream refreshes on `context_delta`/`context_persisted`.
 - `2026-07-10` (2) — claude: **Attach-context hardening.** Mid-stream attach gated; fence probe before upsert; clear `_streamRequestId` for whole request cohort; identical fences all rewrite to one UUID; re-attach publishes chain-head content/`base_version` under root id; orphan row reuse on rewrite-fail retry; BUG-B empty-delta wipe guard; R8 `conversation_artifacts` deduped by version-chain root.
 - `2026-07-07` — claude: **Tool-graph corruption via materialization CLOSED (FOUND_DEFECTS bcc588b6 root fix).** The stream-end single-reservation fold could write LATER iterations' tool_calls onto the first assistant row and materialization persisted that union via `cx_message_set_content` → duplicated tool_use ids → provider 400 on replay. Three layers: `process-stream.ts` single-reservation branch now partitions by iteration (multi-iteration tool runs commit only the reservation's own iteration; later iterations go to client-temp records + loud under-announce scream); aidream migration 0151 APPLIED (RPC rejects any tool_call-set change, `tool_call_graph_change_forbidden`; 15 corrupted rows repaired from archived originals); `cxMessageContentRewriter` handles the rejection without retry-looping (raw content stays inline-rendered). Backend per-iteration reservation announcements (aidream `persistence.py`) make the multi-reservation path the norm.

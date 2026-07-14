@@ -1,13 +1,15 @@
 "use client";
 
-import { Database, ShieldCheck } from "lucide-react";
+import { Database, Monitor, RefreshCw, ShieldCheck } from "lucide-react";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsTextInput } from "@/components/official/settings/primitives/SettingsTextInput";
+import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { useSetting } from "../hooks/useSetting";
 import type { ServerEnvironment } from "@/lib/redux/preferences/adminPreferencesSlice";
+import { useDesktopInstances } from "@/hooks/use-desktop-instances";
 
 export default function AdminServerTab() {
   const [override, setOverride] = useSetting<ServerEnvironment | null>(
@@ -16,6 +18,46 @@ export default function AdminServerTab() {
   const [customUrl, setCustomUrl] = useSetting<string | null>(
     "adminPreferences.customServerUrl",
   );
+  const [desktopTargetInstanceId, setDesktopTargetInstanceId] = useSetting<
+    string | null
+  >("adminPreferences.desktopTargetInstanceId");
+  const {
+    data: desktopInstances,
+    loading: desktopInstancesLoading,
+    error: desktopInstancesError,
+    refetch: refetchDesktopInstances,
+  } = useDesktopInstances();
+
+  const selectedDesktopStillListed = desktopInstances.some(
+    (target) => target.id === desktopTargetInstanceId,
+  );
+  const desktopOptions = [
+    {
+      value: "auto",
+      label: "Auto / installed app",
+      description: "Send no target_instance_id.",
+    },
+    ...desktopInstances.map((target) => {
+      const channel = target.dev ? "dev" : "live";
+      const status = target.live ? "live" : "offline";
+      const lastSeen = formatLastSeen(target.last_seen);
+      return {
+        value: target.id,
+        label: `${target.name} (${channel} · ${status})`,
+        description: `${target.id}${lastSeen ? ` · last seen ${lastSeen}` : ""}`,
+      };
+    }),
+    ...(desktopTargetInstanceId && !selectedDesktopStillListed
+      ? [
+          {
+            value: desktopTargetInstanceId,
+            label: "Previously selected desktop",
+            description: `${desktopTargetInstanceId} · not in current registered instances list`,
+            disabled: true,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
@@ -61,6 +103,41 @@ export default function AdminServerTab() {
           />
         )}
       </SettingsSection>
+
+      <SettingsSection title="Desktop app (dev override)" icon={Monitor}>
+        <SettingsSelect<string>
+          label="Desktop instance"
+          description="Admin-only target for delegated desktop tools. Auto preserves the default aidream routing behavior."
+          warning={desktopInstancesError}
+          badge={{ label: "Admin", variant: "admin" }}
+          value={desktopTargetInstanceId ?? "auto"}
+          onValueChange={(v) =>
+            setDesktopTargetInstanceId(v === "auto" ? null : v)
+          }
+          options={desktopOptions}
+          disabled={desktopInstancesLoading}
+          width="lg"
+        />
+        <SettingsButton
+          label="Registered instances"
+          description="Refresh aidream's registered desktop instances."
+          actionLabel="Refresh"
+          actionIcon={RefreshCw}
+          onClick={() => {
+            void refetchDesktopInstances();
+          }}
+          loading={desktopInstancesLoading}
+          size="sm"
+          last
+        />
+      </SettingsSection>
     </>
   );
+}
+
+function formatLastSeen(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return null;
+  return new Date(timestamp).toLocaleString();
 }

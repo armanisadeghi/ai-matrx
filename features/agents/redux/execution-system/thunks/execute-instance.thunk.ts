@@ -60,6 +60,7 @@ import {
 } from "./resolve-base-url";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import { selectEndpointOverrideConfig } from "@/lib/redux/slices/apiConfigSlice";
+import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
   createRequest,
   setRequestStatus,
@@ -226,6 +227,11 @@ export function assembleRequest(
       if (memoryModel) request.memory_model = memoryModel;
       if (memoryScope) request.memory_scope = memoryScope;
     }
+  }
+
+  const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
+  if (desktopTargetInstanceId) {
+    request.target_instance_id = desktopTargetInstanceId;
   }
 
   // USER-layer output-directive apply policy. The user's preference is the
@@ -625,6 +631,9 @@ export const executeInstance = createAsyncThunk<
           }),
           ...(payload.client && { client: payload.client }),
           ...(payload.sandbox && { sandbox: payload.sandbox }),
+          ...(payload.target_instance_id && {
+            target_instance_id: payload.target_instance_id,
+          }),
           // USER-layer apply policy — re-sent every turn so a mid-conversation
           // preference change applies immediately (omitted when "default").
           ...(payload.user && { user: payload.user }),

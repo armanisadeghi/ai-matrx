@@ -18,8 +18,8 @@
 //
 // War-room specifics ride in the edge `metadata`: `is_active` (the focused member
 // of a single-active type) and `position` (gallery order). `assoc_add` OVERWRITES
-// metadata on conflict, so re-adding an edge updates these in place — that is how
-// single-active demotion and active-pointer flips are done, idempotently.
+// metadata on conflict, so this mapper always sends the full preserved metadata
+// object when updating an existing edge.
 //
 // React → Supabase directly (no Next.js middle tier); RLS enforces access. Every
 // mutation is loud on failure (throws) — callers wrap with reportWarRoomError.
@@ -232,8 +232,9 @@ interface CreateAssignmentInput {
 /**
  * Attach a resource to a container. For single-active types (task/project/note/
  * studio_session) `makeActive` (default true) demotes the prior active one. The
- * UNIQUE (source,target) edge makes re-attaching the same resource idempotent —
- * it updates the edge's metadata in place rather than erroring.
+ * UNIQUE (source,target) edge makes re-attaching the same resource idempotent.
+ * When an existing edge is updated, metadata is treated as a patch so durable
+ * stamps (`agentId`, `pinned`, etc.) survive active/label refreshes.
  */
 export async function createAssignment(
   input: CreateAssignmentInput,
@@ -251,7 +252,7 @@ export async function createAssignment(
   // True no-op ONLY when nothing would change: already linked, already in the
   // desired active state, same label, and no metadata override passed. If a new
   // label/metadata or an activation IS requested, fall through to the upsert so
-  // it actually applies (assoc_add coalesces label, overwrites metadata).
+  // it actually applies (with metadata patched over the existing edge below).
   if (already) {
     const wantActive = single ? makeActive : true;
     const activeMatches = (already.is_active ?? true) === wantActive;
@@ -266,8 +267,7 @@ export async function createAssignment(
   const position = already?.position ?? sameType.length;
   const isActive = single ? makeActive : true;
 
-  // Demote prior active siblings of a single-active type (assoc_add overwrites
-  // metadata on conflict, so this updates each existing edge in place).
+  // Demote prior active siblings of a single-active type.
   if (single && makeActive) {
     const demote = sameType.filter(
       (a) => a.is_active && a.entity_id !== entityId,
@@ -287,8 +287,9 @@ export async function createAssignment(
     );
   }
 
+  const metadataPatch = isPlainObject(input.metadata) ? input.metadata : {};
   const metadata: Json = mergeMeta(
-    isPlainObject(input.metadata) ? input.metadata : {},
+    mergeMeta(already?.metadata, metadataPatch),
     { is_active: isActive, position },
   );
   const res = await associationsService.add({

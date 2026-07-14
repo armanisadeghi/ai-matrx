@@ -18,14 +18,13 @@
  * tool_call stubs with their full payloads from `observability.toolCalls`.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectConversationMessages,
-  isFailedRecord,
+  selectVisibleMessageGroupLimit,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import type { MessageRole } from "@/features/agents/types/agent-message-types";
 import {
   selectStreamPhase,
   selectLatestRequestId,
@@ -37,7 +36,12 @@ import { AgentUserMessage } from "./user/AgentUserMessage";
 // right-click, so blocks stay free (just tags) instead of mounting a menu each.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { resolveMarkdownContext } from "@/features/context-menu-v2/markdown/resolveMarkdownContext";
-import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
+import {
+  applyDisplayGroupWindow,
+  buildDisplayEntries,
+  groupDisplayEntries,
+  type DisplayGroup,
+} from "./display-groups";
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
@@ -47,7 +51,7 @@ const AssistantTurnGroup = dynamic(
     import("./assistant/AssistantTurnGroup").then((m) => ({
       default: m.AssistantTurnGroup,
     })),
-  { ssr: false },
+  { ssr: false, loading: () => <AssistantDynamicFallback /> },
 );
 
 // Dynamic (ssr:false) — same as AssistantTurnGroup. AgentAssistantMessage
@@ -58,7 +62,7 @@ const AgentAssistantMessage = dynamic(
     import("./assistant/AgentAssistantMessage").then((m) => ({
       default: m.AgentAssistantMessage,
     })),
-  { ssr: false },
+  { ssr: false, loading: () => <AssistantDynamicFallback /> },
 );
 
 const AgentEmptyMessageDisplay = dynamic(
@@ -69,44 +73,18 @@ const AgentEmptyMessageDisplay = dynamic(
   { ssr: false },
 );
 
-interface DisplayEntry {
-  key: string;
-  role: MessageRole;
-  /** Server-assigned `cx_message.id` for committed rows; null for the live entry. */
-  messageId: string | null;
-  /** Live stream request id — set only on the `__streaming__` entry. */
-  requestId: string | null;
-  isStreamActive: boolean;
-  /** This assistant turn failed (persisted `status='failed'` or live error). */
-  isFailed: boolean;
-  /** Offer Retry — true only on the conversation's last, failed, recoverable turn. */
-  canRetry: boolean;
-}
+const COLD_MARKDOWN_ANCHOR_WINDOW_MS = 4200;
 
-/**
- * Output shape of the grouping pass: either a single user message, or a
- * contiguous run of assistant messages (one logical agentic "turn"). Each
- * group renders through AssistantTurnGroup, which collapses N sub-messages
- * into one visual unit with one trailing action bar.
- */
-type DisplayGroup =
-  | { kind: "user"; key: string; messageId: string }
-  | {
-      kind: "assistant";
-      key: string;
-      members: AssistantTurnGroupMember[];
-    }
-  // A failed turn renders on its own — never folded into a sibling answer's
-  // turn group, so the answer's action bar (copy / speak / print) never
-  // aggregates the error text or the retry that replaced it.
-  | {
-      kind: "assistant-failed";
-      key: string;
-      messageId: string | null;
-      requestId: string | null;
-      isStreamActive: boolean;
-      canRetry: boolean;
-    };
+function AssistantDynamicFallback() {
+  return (
+    <div className="py-1 space-y-3" aria-hidden>
+      <div className="h-3.5 w-[96%] animate-pulse rounded bg-muted/55" />
+      <div className="h-3.5 w-[88%] animate-pulse rounded bg-muted/50" />
+      <div className="h-3.5 w-[72%] animate-pulse rounded bg-muted/45" />
+      <div className="h-3.5 w-[42%] animate-pulse rounded bg-muted/35" />
+    </div>
+  );
+}
 
 interface AgentConversationDisplayProps {
   conversationId: string;
@@ -118,26 +96,25 @@ interface AgentConversationDisplayProps {
    */
   surfaceKey?: string;
   compact?: boolean;
-}
-
-function isEmptyReservedAssistant(record: {
-  role: string;
-  status: string;
-  content: unknown;
-}): boolean {
-  if (record.role !== "assistant") return false;
-  if (record.status !== "reserved") return false;
-  return Array.isArray(record.content) && record.content.length === 0;
+  scrollRef?: RefObject<HTMLDivElement | null>;
+  deferColdMarkdown?: boolean;
+  fallbackVisibleGroupLimit?: number | null;
 }
 
 export function AgentConversationDisplay({
   conversationId,
   surfaceKey,
   compact = false,
+  scrollRef,
+  deferColdMarkdown = false,
+  fallbackVisibleGroupLimit = null,
 }: AgentConversationDisplayProps) {
   const messages = useAppSelector(selectConversationMessages(conversationId));
   const phase = useAppSelector(selectStreamPhase(conversationId));
   const latestRequestId = useAppSelector(selectLatestRequestId(conversationId));
+  const visibleGroupLimit = useAppSelector(
+    selectVisibleMessageGroupLimit(conversationId),
+  );
   // Anchor for the scroll-on-submit behavior: the conversation's last user
   // message. On a new submit we scroll THIS to the top of the viewport so the
   // rest of the page opens up for the incoming answer (see effect below).
@@ -151,186 +128,22 @@ export function AgentConversationDisplay({
     phase === "interstitial" ||
     phase === "error";
 
-  const displayEntries = useMemo((): DisplayEntry[] => {
-    // The streaming bubble is the assistant cx_message anchored to the
-    // CURRENT live request (its `_streamRequestId` matches `latestRequestId`)
-    // — NOT just "the most recent assistant." The distinction matters during
-    // the window after a NEW submit creates a fresh active request but
-    // BEFORE the server has reserved its assistant cx_message: in that gap,
-    // the most-recent assistant in `orderedIds` is the PRIOR turn's, which
-    // is fully committed against its own (stable) `_streamRequestId`. If we
-    // mislabel it as the streaming bubble, we'd override its requestId with
-    // the new latestRequestId and the renderer would read from an empty
-    // stream — the prior message blanks out until the new reservation lands.
-    //
-    // Strict match keeps every committed message anchored to its own
-    // streaming source forever; the streaming bubble naturally appears
-    // once the server actually reserves the new assistant record (which
-    // gets `_streamRequestId === latestRequestId` from process-stream).
-    let streamingAssistantId: string | null = null;
-    if (isActive && latestRequestId) {
-      for (let i = messages.length - 1; i >= 0; i--) {
-        const rec = messages[i];
-        if (rec.role !== "assistant") continue;
-        if (rec._streamRequestId === latestRequestId) {
-          streamingAssistantId = rec.id;
-        }
-        // Stop at the most recent assistant either way — we only ever care
-        // about whether the NEWEST assistant is the active stream's record.
-        break;
-      }
-    }
-
-    const isErrorPhase = phase === "error";
-
-    const entries: DisplayEntry[] = [];
-    for (const rec of messages) {
-      // `tool` / `system` rows never render as their own turn and MUST be
-      // dropped HERE, not in the grouping pass. Tool-result rows are V2 DB
-      // stubs whose payloads inline onto the preceding assistant's tool_call
-      // segments (`selectMessageInterleavedContent` returns no segments for
-      // them); system rows are display-skipped downstream. This is load-
-      // bearing: in V2 `position` order an agentic turn is assistant → tool →
-      // assistant → …, so a tool row sits BETWEEN two assistant iterations. If
-      // it survives into `displayGroups` it flushes the open turn group,
-      // fragmenting ONE logical answer into several stacked groups — each with
-      // its own `space-y-6` gap (and, pre-fix, its own action bar). That
-      // fragmentation is the "giant gaps between tool calls and text" report:
-      // those iterations are a single turn and must render as one seamless
-      // `AssistantTurnGroup`.
-      if (rec.role === "tool" || rec.role === "system") continue;
-      const isStreamingMessage = rec.id === streamingAssistantId;
-      // Skip empty reserved assistants UNLESS they're the active streaming
-      // bubble (in which case the requestId-driven MarkdownStream path
-      // renders the in-flight chunks even though byId.content is still empty).
-      if (isEmptyReservedAssistant(rec) && !isStreamingMessage) continue;
-      // A turn is failed when its persisted record says so (`status='failed'`
-      // / `metadata.failed`), OR when it is the live streaming bubble and the
-      // request just errored (record_update may not have stamped the status
-      // yet). Failed turns render standalone so they never fold into a
-      // successful answer's copy / speak / print aggregation.
-      const recFailed =
-        rec.role === "assistant" &&
-        (isFailedRecord(rec) || (isStreamingMessage && isErrorPhase));
-      // Always use the record's own `_streamRequestId` — never override
-      // with `latestRequestId`. This is what guarantees prior turns stay
-      // pinned to their own (already-completed) streaming source, even
-      // while a NEW request is in flight on the same conversation.
-      entries.push({
-        key: rec.id,
-        role: rec.role,
-        messageId: rec.id,
-        requestId: rec._streamRequestId ?? null,
-        isStreamActive: isStreamingMessage,
-        isFailed: recFailed,
-        canRetry: false,
-      });
-    }
-
-    // The virtual streaming entry. When a request is active but the server has
-    // not yet reserved its assistant cx_message (the pre-token gap on every
-    // turn) — or never will, because the fetch failed before any event landed
-    // (immediate error: chunkCount 0, firstChunkAt null) — there is no real
-    // assistant record to render. Synthesize one anchored to the live request
-    // so the pre-token indicator AND the error state have a bubble to live in.
-    // Once the server reserves the real record, `streamingAssistantId` becomes
-    // non-null and this block is skipped — a seamless swap to the real entry.
-    if (isActive && latestRequestId && streamingAssistantId === null) {
-      entries.push({
-        key: `__streaming__:${latestRequestId}`,
-        role: "assistant",
-        messageId: null,
-        requestId: latestRequestId,
-        isStreamActive: true,
-        // When the request errored before the server reserved an assistant
-        // cx_message (immediate "Failed to fetch"), this synthetic entry IS
-        // the failed bubble — there is no persisted record to carry it.
-        isFailed: isErrorPhase,
-        canRetry: false,
-      });
-    }
-
-    // Offer Retry only on the conversation's LAST turn, and only when it
-    // failed. Historical failed attempts (already followed by a retry) keep
-    // their error bubble but no button. Once a retry is in flight the last
-    // entry is the new streaming bubble (not failed), so the button is gone.
-    const last = entries[entries.length - 1];
-    if (last && last.role === "assistant" && last.isFailed) {
-      last.canRetry = true;
-    }
-
-    return entries;
+  const allDisplayGroups = useMemo((): DisplayGroup[] => {
+    const entries = buildDisplayEntries({
+      messages,
+      isActive,
+      latestRequestId,
+      isErrorPhase: phase === "error",
+    });
+    return groupDisplayEntries(entries);
   }, [messages, isActive, latestRequestId, phase]);
 
-  // Group contiguous assistant entries into one logical turn each.
-  // Multi-iteration agentic flows produce many adjacent assistant
-  // cx_message rows (one per server-side iteration). Visually those are
-  // a SINGLE turn — one prompt, one answer that happens to include tool
-  // calls and intermediate thinking. The grouping pass collapses them
-  // into AssistantTurnGroup, which renders them flush with one trailing
-  // action bar. Single-iteration turns become a one-member group and
-  // render identically to the pre-grouping behavior.
-  const displayGroups = useMemo((): DisplayGroup[] => {
-    const groups: DisplayGroup[] = [];
-    let buffer: AssistantTurnGroupMember[] = [];
-    const flush = () => {
-      if (buffer.length === 0) return;
-      groups.push({
-        kind: "assistant",
-        // Stable key across re-renders: anchored on the first member's
-        // key — that id is stable for the life of the group (new
-        // iterations are APPENDED; the group never reshuffles its head).
-        key: `grp:${buffer[0].key}`,
-        members: buffer,
-      });
-      buffer = [];
-    };
-    for (const entry of displayEntries) {
-      if (entry.role === "assistant") {
-        if (entry.isFailed) {
-          // Failed turn → its own group. A failed row that shares its stream
-          // source with buffered members must own the run's ONLY
-          // stream-anchored render: its `requestId` render already shows the
-          // whole request's slots (with the error trailing), so any buffered
-          // sibling with the same requestId would paint the same content a
-          // second time. Drop those siblings, then close any open run so the
-          // failed bubble sits between (not inside) the surrounding turns.
-          if (entry.requestId) {
-            buffer = buffer.filter((m) => m.requestId !== entry.requestId);
-          }
-          flush();
-          groups.push({
-            kind: "assistant-failed",
-            key: entry.key,
-            messageId: entry.messageId,
-            requestId: entry.requestId,
-            isStreamActive: entry.isStreamActive,
-            canRetry: entry.canRetry,
-          });
-          continue;
-        }
-        buffer.push({
-          key: entry.key,
-          messageId: entry.messageId,
-          requestId: entry.requestId,
-          isStreamActive: entry.isStreamActive,
-        });
-        continue;
-      }
-      flush();
-      if (entry.role === "user" && entry.messageId) {
-        groups.push({
-          kind: "user",
-          key: entry.key,
-          messageId: entry.messageId,
-        });
-      }
-      // `system` entries are intentionally skipped — the previous
-      // single-message render loop also returned null for them.
-    }
-    flush();
-    return groups;
-  }, [displayEntries]);
+  const effectiveVisibleGroupLimit =
+    visibleGroupLimit ?? fallbackVisibleGroupLimit;
+  const displayGroups = useMemo(
+    () => applyDisplayGroupWindow(allDisplayGroups, effectiveVisibleGroupLimit),
+    [allDisplayGroups, effectiveVisibleGroupLimit],
+  );
 
   // Key of the conversation's LAST user turn — the scroll anchor.
   const lastUserKey = useMemo(() => {
@@ -366,6 +179,75 @@ export function AgentConversationDisplay({
     }
   }, [lastUserKey]);
 
+  const scrollSnapshotRef = useRef<{
+    firstKey: string | undefined;
+    scrollHeight: number;
+  } | null>(null);
+  useLayoutEffect(() => {
+    const scrollEl = scrollRef?.current;
+    const firstKey = displayGroups[0]?.key;
+    const previous = scrollSnapshotRef.current;
+    if (scrollEl && previous && previous.firstKey !== firstKey) {
+      const previousKeyStillVisible =
+        previous.firstKey != null &&
+        displayGroups.some((group) => group.key === previous.firstKey);
+      if (previousKeyStillVisible) {
+        const delta = scrollEl.scrollHeight - previous.scrollHeight;
+        if (delta > 0) {
+          scrollEl.scrollTo({ top: scrollEl.scrollTop + delta });
+        }
+      }
+    }
+    scrollSnapshotRef.current = {
+      firstKey,
+      scrollHeight: scrollEl?.scrollHeight ?? 0,
+    };
+  }, [displayGroups, scrollRef]);
+
+  const didAnchorColdRevealRef = useRef(false);
+  useEffect(() => {
+    if (!deferColdMarkdown) return undefined;
+    if (didAnchorColdRevealRef.current) return undefined;
+    if (
+      effectiveVisibleGroupLimit === null ||
+      effectiveVisibleGroupLimit <= 2
+    ) {
+      return undefined;
+    }
+    didAnchorColdRevealRef.current = true;
+    let animationFrame = 0;
+    let stopped = false;
+    const anchorLatestUser = () => {
+      const scrollEl = scrollRef?.current;
+      const target = lastUserRef.current;
+      if (!scrollEl || !target) return;
+      const scrollRect = scrollEl.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const delta = targetRect.top - scrollRect.top;
+      if (Math.abs(delta) > 1) {
+        scrollEl.scrollTo({ top: scrollEl.scrollTop + delta });
+      }
+    };
+    const timer = window.setTimeout(() => {
+      const startedAt = performance.now();
+      const tick = () => {
+        anchorLatestUser();
+        if (
+          !stopped &&
+          performance.now() - startedAt < COLD_MARKDOWN_ANCHOR_WINDOW_MS
+        ) {
+          animationFrame = window.requestAnimationFrame(tick);
+        }
+      };
+      animationFrame = window.requestAnimationFrame(tick);
+    }, 220);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [deferColdMarkdown, effectiveVisibleGroupLimit, lastUserKey]);
+
   const assistantGroupCount = displayGroups.filter(
     (g) => g.kind === "assistant" || g.kind === "assistant-failed",
   ).length;
@@ -380,10 +262,20 @@ export function AgentConversationDisplay({
         conversationId,
         messageCount: messages.length,
         assistantGroupCount,
+        renderedGroupCount: displayGroups.length,
+        totalGroupCount: allDisplayGroups.length,
         streamPhase: phase,
       },
     );
-  }, [surfaceKey, conversationId, messages.length, assistantGroupCount, phase]);
+  }, [
+    surfaceKey,
+    conversationId,
+    messages.length,
+    assistantGroupCount,
+    displayGroups.length,
+    allDisplayGroups.length,
+    phase,
+  ]);
 
   // Single-instance delegation: the ONE menu resolves the right-clicked
   // message / block from the DOM at open time. Pure DOM reads (no React/Redux),
@@ -448,6 +340,7 @@ export function AgentConversationDisplay({
                 surfaceKey={surfaceKey}
                 compact={compact}
                 canRetry={group.canRetry}
+                deferColdMarkdown={deferColdMarkdown}
               />
             );
           }
@@ -459,6 +352,7 @@ export function AgentConversationDisplay({
               surfaceKey={surfaceKey}
               compact={compact}
               members={group.members}
+              deferColdMarkdown={deferColdMarkdown}
             />
           );
         })}

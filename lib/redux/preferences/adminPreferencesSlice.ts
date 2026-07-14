@@ -39,11 +39,24 @@ interface AdminPreferencesState {
    * Must be a full origin string, e.g. 'https://my-preview.app.matrxserver.com'
    */
   customServerUrl: string | null;
+
+  /**
+   * Admin/dev override for desktop tool delegation.
+   *
+   * null = Auto / installed app. The request omits target_instance_id and
+   * aidream uses today's routing behavior.
+   *
+   * string = app_instances.instance_id for a specific matrx-local desktop
+   * engine. Agent turns stamp target_instance_id so aidream routes delegated
+   * desktop tools to that exact engine.
+   */
+  desktopTargetInstanceId: string | null;
 }
 
 const initialState: AdminPreferencesState = {
   serverOverride: null,
   customServerUrl: null,
+  desktopTargetInstanceId: null,
 };
 
 const adminPreferencesSlice = createSlice({
@@ -64,12 +77,22 @@ const adminPreferencesSlice = createSlice({
       state.serverOverride = "custom";
       state.customServerUrl = action.payload;
     },
+    setDesktopTargetInstanceId: (
+      state,
+      action: PayloadAction<string | null>,
+    ) => {
+      state.desktopTargetInstanceId = action.payload;
+    },
     clearAdminPreferences: () => initialState,
   },
 });
 
-export const { setServerOverride, setCustomServerUrl, clearAdminPreferences } =
-  adminPreferencesSlice.actions;
+export const {
+  setServerOverride,
+  setCustomServerUrl,
+  setDesktopTargetInstanceId,
+  clearAdminPreferences,
+} = adminPreferencesSlice.actions;
 export default adminPreferencesSlice.reducer;
 
 // Selectors — use generic state type to avoid importing full store
@@ -82,6 +105,10 @@ export const selectServerOverride = (
 export const selectCustomServerUrl = (
   state: StateWithAdminPreferences,
 ): string | null => state.adminPreferences.customServerUrl;
+
+export const selectDesktopTargetInstanceId = (
+  state: StateWithAdminPreferences,
+): string | null => state.adminPreferences.desktopTargetInstanceId;
 
 export const selectEffectiveServer = (
   state: StateWithAdminPreferences,

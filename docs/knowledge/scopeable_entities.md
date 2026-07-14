@@ -24,7 +24,7 @@ Multi-role is fine and expected. A **compound transform** like `D --U--> S` mean
 | Agent Chats | D --U--> S<br>S --U--> D | `cx_conversation`, `cx_messages` | `conversation`, `conversations` |
 | Workflows | U | `wf_definition` | `workflow`, `workflow_data` |
 | UDT Datasets | S/D | `udt_datasets` | `user_tables` (renamed) |
-| UDT Picklists | S | `udt_picklists` | `user_lists` (renamed) |
+| Structured Lists | S | `udt_structured_lists` | `user_lists` → `udt_picklists` → `udt_structured_lists` |
 | UDT Workbooks | S/D | `udt_workbooks` | — |
 | Sandboxes | U | `sandbox_instances` | — |
 | Flashcards | D | `flashcard_data` | `flashcard_sets`, `user_flashcard_sets` |

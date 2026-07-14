@@ -9,8 +9,17 @@ import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectHasMoreOlderMessages,
+  selectIsLoadingOlderMessages,
+  selectMessageCount,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  revealOlderGroups,
+  setVisibleGroupLimit,
+} from "@/features/agents/redux/execution-system/messages/messages.slice";
+import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
 import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
 
 import { cn } from "@/lib/utils";
@@ -30,6 +39,18 @@ const CreatorRunPanel = dynamic(
     })),
   { ssr: false, loading: () => null },
 );
+
+const CHAT_INITIAL_VISIBLE_GROUPS = 2;
+const CHAT_AUTO_VISIBLE_GROUPS = 6;
+const CHAT_REVEAL_STEP_GROUPS = 2;
+const CHAT_OLDER_PAGE_SIZE = 8;
+const CHAT_SETTLE_REVEAL_DELAY_MS = 180;
+const CHAT_COLD_HISTORY_UNLOCK_DELAY_MS = 4800;
+
+interface ChatVisibleGroupWindow {
+  displayId: string;
+  limit: number;
+}
 
 interface SmartInputForwardProps {
   sendButtonVariant?: "default" | "blue";
@@ -100,6 +121,12 @@ interface AgentConversationColumnProps {
    * the last assistant message. Scrolls with the conversation.
    */
   afterMessages?: React.ReactNode;
+  /**
+   * Defer cold, DB-hydrated assistant markdown for a beat so the chat route
+   * shows a stable text-skeleton instead of exposing MarkdownStream assembly.
+   * Live requestId-backed streaming bypasses this.
+   */
+  deferColdMarkdown?: boolean;
 }
 
 export function AgentConversationColumn({
@@ -113,17 +140,91 @@ export function AgentConversationColumn({
   hideInput = false,
   hideCreatorPanel = false,
   afterMessages,
+  deferColdMarkdown = false,
 }: AgentConversationColumnProps) {
+  const dispatch = useAppDispatch();
   const displayId = displayConversationId ?? conversationId;
   const scrollRef = useRef<HTMLDivElement>(null);
+  const didAutoRevealRef = useRef(false);
+  const autoRevealDisplayRef = useRef<string | null>(null);
+  const [chatVisibleGroupWindow, setChatVisibleGroupWindow] =
+    useState<ChatVisibleGroupWindow | null>(null);
+  const [coldHistoryUnlockedDisplayId, setColdHistoryUnlockedDisplayId] =
+    useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
 
   // Subscribed because we need to swap landing → message list the moment the
   // first message lands. `selectMessageCount` returns a primitive (number),
   // so re-renders are cheap.
   const messageCount = useAppSelector(selectMessageCount(displayId));
+  const hasMoreOlder = useAppSelector(selectHasMoreOlderMessages(displayId));
+  const isLoadingOlder = useAppSelector(selectIsLoadingOlderMessages(displayId));
   const showLanding = !!landingContent && messageCount === 0;
   const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
+  const chatVisibleGroupLimit =
+    chatVisibleGroupWindow?.displayId === displayId
+      ? chatVisibleGroupWindow.limit
+      : null;
+  const isColdHistoryRevealLocked =
+    deferColdMarkdown && coldHistoryUnlockedDisplayId !== displayId;
+
+  useEffect(() => {
+    if (!deferColdMarkdown || messageCount === 0) return undefined;
+    if (autoRevealDisplayRef.current !== displayId) {
+      autoRevealDisplayRef.current = displayId;
+      didAutoRevealRef.current = false;
+    }
+    if (didAutoRevealRef.current) return undefined;
+    didAutoRevealRef.current = true;
+    dispatch(
+      setVisibleGroupLimit({
+        conversationId: displayId,
+        limit: CHAT_INITIAL_VISIBLE_GROUPS,
+      }),
+    );
+    let unlockTimer = 0;
+    const timer = window.setTimeout(() => {
+      setChatVisibleGroupWindow((current) => ({
+        displayId,
+        limit:
+          current?.displayId === displayId
+            ? Math.max(current.limit, CHAT_AUTO_VISIBLE_GROUPS)
+            : CHAT_AUTO_VISIBLE_GROUPS,
+      }));
+      dispatch(
+        revealOlderGroups({
+          conversationId: displayId,
+          count: CHAT_AUTO_VISIBLE_GROUPS - CHAT_INITIAL_VISIBLE_GROUPS,
+        }),
+      );
+      if (
+        hasMoreOlder &&
+        !isLoadingOlder &&
+        messageCount < CHAT_AUTO_VISIBLE_GROUPS
+      ) {
+        void dispatch(
+          loadOlderMessages({
+            conversationId: displayId,
+            pageSize: CHAT_OLDER_PAGE_SIZE,
+          }),
+        );
+      }
+      unlockTimer = window.setTimeout(() => {
+        setColdHistoryUnlockedDisplayId(displayId);
+      }, CHAT_COLD_HISTORY_UNLOCK_DELAY_MS);
+    }, CHAT_SETTLE_REVEAL_DELAY_MS);
+    return () => {
+      window.clearTimeout(timer);
+      if (unlockTimer) window.clearTimeout(unlockTimer);
+    };
+  }, [
+    deferColdMarkdown,
+    dispatch,
+    displayId,
+    hasMoreOlder,
+    isLoadingOlder,
+    messageCount,
+  ]);
 
   useEffect(() => {
     if (!isWarRoomThreadAgentSurface(surfaceKey)) return;
@@ -219,10 +320,30 @@ export function AgentConversationColumn({
               <OlderMessagesSentinel
                 conversationId={displayId}
                 scrollRef={scrollRef}
+                disabled={isColdHistoryRevealLocked}
+                revealStep={CHAT_REVEAL_STEP_GROUPS}
+                pageSize={CHAT_OLDER_PAGE_SIZE}
+                visibleGroupLimitOverride={chatVisibleGroupLimit}
+                onRevealOlderGroups={(count) => {
+                  setChatVisibleGroupWindow((current) => ({
+                    displayId,
+                    limit:
+                      current?.displayId === displayId
+                        ? current.limit + count
+                        : CHAT_INITIAL_VISIBLE_GROUPS + count,
+                  }));
+                }}
               />
               <AgentConversationDisplay
                 conversationId={displayId}
                 surfaceKey={surfaceKey}
+                scrollRef={scrollRef}
+                deferColdMarkdown={deferColdMarkdown}
+                fallbackVisibleGroupLimit={
+                  deferColdMarkdown
+                    ? (chatVisibleGroupLimit ?? CHAT_INITIAL_VISIBLE_GROUPS)
+                    : null
+                }
               />
               {afterMessages}
             </div>

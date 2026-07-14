@@ -116,6 +116,11 @@ export const selectIsLoadingOlderMessages =
   (state: RootState): boolean =>
     state.messages.byConversationId[conversationId]?.isLoadingOlder ?? false;
 
+export const selectVisibleMessageGroupLimit =
+  (conversationId: string) =>
+  (state: RootState): number | null =>
+    state.messages.byConversationId[conversationId]?.visibleGroupLimit ?? null;
+
 export const selectOldestLoadedPosition =
   (conversationId: string) =>
   (state: RootState): number | null =>

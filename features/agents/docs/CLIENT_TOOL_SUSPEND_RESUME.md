@@ -47,7 +47,8 @@ When the agent decides to call a client-delegated tool the server emits:
 
 ```
 event: tool_event
-data:  { event: "tool_delegated", call_id, tool_name, data: { arguments, … } }
+data:  { event: "tool_delegated", call_id, tool_name,
+         data: { arguments, target_instance_id?, … } }
 ```
 
 Then internally `_suspend_for_delegation` runs:
@@ -61,6 +62,34 @@ Then internally `_suspend_for_delegation` runs:
 The client's reducer (frontend: `processStream`; extension: the
 STREAM_CHUNK consumer) sees the stream cleanly end. Importantly the
 **conversation is not done** — it's mid-flight waiting on the client.
+
+#### Desktop target selection
+
+For matrx-local delegated tools, the turn can be pinned to one desktop
+engine. The request that starts/resumes the turn sends the selected stable
+desktop id here:
+
+```json
+{
+  "client": {
+    "capabilities": ["desktop-native"],
+    "state": {
+      "desktop-native": {
+        "target_instance_id": "inst_abc123"
+      }
+    }
+  }
+}
+```
+
+Backend contract:
+
+- Request field: `client.state["desktop-native"].target_instance_id`.
+- Fallback: `client.state["desktop-native"].instance_id` is also accepted
+  for desktop-originated turns.
+- Ledger column: `chat.tool_call.target_instance_id text NULL`.
+- `NULL` means legacy behavior: any desktop for the user may claim.
+- Non-null means only that matrx-local `instance_id` may claim.
 
 ### 2.2 Submit phase (client → server)
 
@@ -206,6 +235,67 @@ after a ~10s TTL (so a never-opened resume can't suppress recovery
 forever). Frontend: `resume-claims.ts`. Extension:
 `recentContinueBroadcasts` in `src/lib/tools/dispatch.ts`.
 
+### 2.7 Desktop pending-call claim
+
+matrx-local engines discover delegated work through the user-scoped sweep:
+
+```
+GET /ai/user/pending_calls?instance_id=<caller_instance_id>
+Authorization: Bearer <jwt>
+```
+
+`instance_id` is the caller's stable matrx-local desktop id. The backend
+atomically claims matching rows before returning them. Returned rows satisfy:
+
+```
+target_instance_id IS NULL OR target_instance_id = :caller_instance_id
+```
+
+Claim columns:
+
+- `chat.tool_call.claimed_by_instance_id text NULL`
+- `chat.tool_call.claimed_at timestamptz NULL`
+- `chat.tool_call.claim_expires_at timestamptz NULL`
+
+Claim semantics:
+
+- First caller wins via one `UPDATE … WHERE status='delegated' …
+  RETURNING` statement.
+- The same caller can poll again and renew its claim idempotently.
+- A different desktop cannot see/claim the row until the claim lease expires.
+- Untargeted rows (`target_instance_id IS NULL`) still support the
+  single-desktop case, but two desktops cannot both receive the same claimed
+  row from this endpoint.
+
+Response items include the existing pending-call fields plus
+`target_instance_id`, `claimed_by_instance_id`, and `claim_expires_at`.
+
+The desktop instance picker reads:
+
+```
+GET /desktop-instances
+Authorization: Bearer <jwt>
+```
+
+Response:
+
+```json
+[
+  {
+    "id": "inst_abc123",
+    "name": "Arman's MacBook",
+    "live": true,
+    "dev": false,
+    "last_seen": "2026-07-14T18:25:43.000Z",
+    "app_instance_id": "8f2b…",
+    "platform": "darwin"
+  }
+]
+```
+
+Use `id` as `client.state["desktop-native"].target_instance_id` when the
+admin override chooses a desktop.
+
 ---
 
 ## 3. Frontend implementation (matrx-frontend)
@@ -232,13 +322,16 @@ dispatch(resumeInstance({ conversationId, userRequestId }))
 routes delegated calls by ownership: `local_*` tools belong to the
 matrx-local desktop executor. While a desktop is online
 (`client-capabilities/desktop-presence.ts`), the web leaves the `delegated`
-ledger row alone — the desktop engine polls `GET /ai/user/pending_calls`,
-executes, POSTs the result, and opens the resume itself (headless; see
+ledger row alone — the desktop engine polls
+`GET /ai/user/pending_calls?instance_id=<caller>`, atomically claims matching
+rows, executes, POSTs the result, and opens the resume itself (headless; see
 matrx-local `app/services/delegation/FEATURE.md`). Posting a result from the
 web would steal the call from its owner. Only when NO desktop is online does
 the web post the loud `unsupported_client_tool` error so the turn doesn't
 wedge. The `desktop-native` capability is declared (turn start + resume, via
-`buildToolInjection`'s provider registry) ONLY while presence is live.
+`buildToolInjection`'s provider registry) while presence is live; when the
+admin override chooses a target desktop, send
+`client.state["desktop-native"].target_instance_id`.
 
 This is enforced structurally: an ESLint `no-restricted-syntax` rule bans
 any literal or template containing `/tool_results` outside
@@ -565,6 +658,7 @@ Problem 15.
 
 | Date | Change |
 |---|---|
+| 2026-07-14 | Targetable desktop delegation: request field `client.state["desktop-native"].target_instance_id` stamps `chat.tool_call.target_instance_id`; matrx-local calls `GET /ai/user/pending_calls?instance_id=<caller>` to atomically claim rows via `claimed_by_instance_id` / `claimed_at` / `claim_expires_at`; frontend reads `/desktop-instances` for `{id,name,live,dev,last_seen}`. |
 | 2026-07-14 | Desktop ownership routing: `surfaceDelegatedToolCall` leaves `local_*` delegated calls in the ledger for the matrx-local engine while a desktop is online (presence via `app_instances`); the `desktop-native` capability rides turn start + resume through the `buildToolInjection` provider registry. Anti-pattern 11 added. |
 | 2026-05-25 | Initial — captures the suspend → submit → resume protocol; supersedes `DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md` and clarifies the boundary against `PYTHON_RESUME_SPEC.md` and the extension's cursor-replay scaffold. Both clients ship the wiring; ESLint chokepoint protects the frontend funnel. |
 | 2026-06-15 | Cold-resume shipped in both clients — reopening a `paused` conversation re-surfaces its outstanding delegated prompt(s) via `GET …/pending_calls` → the shared `surfaceDelegatedToolCall` path. The frontend live `tool_delegated` handler was extracted into that one shared thunk (zero drift). See the "Cold-resume" section above and `DELEGATION_LOOP_BUGS.md` Problem 15. |

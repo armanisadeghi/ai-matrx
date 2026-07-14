@@ -31,8 +31,11 @@ import {
   selectFirstMessageId,
   selectHasMoreOlderMessages,
   selectIsLoadingOlderMessages,
+  selectMessageCount,
+  selectVisibleMessageGroupLimit,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
+import { revealOlderGroups } from "@/features/agents/redux/execution-system/messages/messages.slice";
 
 interface OlderMessagesSentinelProps {
   conversationId: string;
@@ -42,11 +45,23 @@ interface OlderMessagesSentinelProps {
    * after a prepend.
    */
   scrollRef: RefObject<HTMLDivElement | null>;
+  /** Number of display groups to reveal each time the user scrolls upward. */
+  revealStep?: number;
+  /** Raw DB message page size used when no hidden loaded groups remain. */
+  pageSize?: number;
+  disabled?: boolean;
+  visibleGroupLimitOverride?: number | null;
+  onRevealOlderGroups?: (count: number) => void;
 }
 
 export function OlderMessagesSentinel({
   conversationId,
   scrollRef,
+  revealStep = 2,
+  pageSize,
+  disabled = false,
+  visibleGroupLimitOverride,
+  onRevealOlderGroups,
 }: OlderMessagesSentinelProps) {
   const dispatch = useAppDispatch();
   const hasMoreOlder = useAppSelector(
@@ -56,6 +71,10 @@ export function OlderMessagesSentinel({
     selectIsLoadingOlderMessages(conversationId),
   );
   const firstMessageId = useAppSelector(selectFirstMessageId(conversationId));
+  const messageCount = useAppSelector(selectMessageCount(conversationId));
+  const visibleGroupLimit = useAppSelector(
+    selectVisibleMessageGroupLimit(conversationId),
+  );
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -64,6 +83,10 @@ export function OlderMessagesSentinel({
   const hasMoreRef = useRef(hasMoreOlder);
   const loadingRef = useRef(isLoadingOlder);
   const firstIdRef = useRef(firstMessageId);
+  const messageCountRef = useRef(messageCount);
+  const visibleGroupLimitRef = useRef(visibleGroupLimit);
+  const disabledRef = useRef(disabled);
+  const visibleGroupLimitOverrideRef = useRef(visibleGroupLimitOverride);
   useEffect(() => {
     hasMoreRef.current = hasMoreOlder;
   }, [hasMoreOlder]);
@@ -73,6 +96,18 @@ export function OlderMessagesSentinel({
   useEffect(() => {
     firstIdRef.current = firstMessageId;
   }, [firstMessageId]);
+  useEffect(() => {
+    messageCountRef.current = messageCount;
+  }, [messageCount]);
+  useEffect(() => {
+    visibleGroupLimitRef.current = visibleGroupLimit;
+  }, [visibleGroupLimit]);
+  useEffect(() => {
+    disabledRef.current = disabled;
+  }, [disabled]);
+  useEffect(() => {
+    visibleGroupLimitOverrideRef.current = visibleGroupLimitOverride;
+  }, [visibleGroupLimitOverride]);
 
   /**
    * Snapshot captured at IO-fire time, consumed by the matching layout
@@ -95,7 +130,7 @@ export function OlderMessagesSentinel({
       (entries) => {
         const entry = entries[0];
         if (!entry?.isIntersecting) return;
-        if (!hasMoreRef.current) return;
+        if (disabledRef.current) return;
         if (loadingRef.current) return;
 
         pendingAnchor.current = {
@@ -103,7 +138,20 @@ export function OlderMessagesSentinel({
           prevFirstId: firstIdRef.current,
         };
 
-        void dispatch(loadOlderMessages({ conversationId }));
+        const limit =
+          visibleGroupLimitOverrideRef.current ?? visibleGroupLimitRef.current;
+        if (limit !== null && limit < messageCountRef.current) {
+          onRevealOlderGroups?.(revealStep);
+          dispatch(revealOlderGroups({ conversationId, count: revealStep }));
+          return;
+        }
+
+        if (!hasMoreRef.current) {
+          pendingAnchor.current = null;
+          return;
+        }
+
+        void dispatch(loadOlderMessages({ conversationId, pageSize }));
       },
       {
         root: scrollEl,
@@ -116,7 +164,14 @@ export function OlderMessagesSentinel({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [conversationId, dispatch, scrollRef]);
+  }, [
+    conversationId,
+    dispatch,
+    onRevealOlderGroups,
+    pageSize,
+    revealStep,
+    scrollRef,
+  ]);
 
   // Scroll-anchor restore. Runs synchronously after the prepend reducer's
   // commit so the user's viewport doesn't jump.

@@ -29,9 +29,12 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useBackendApi } from "@/hooks/useBackendApi";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import { consumeStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { extractErrorMessage } from "@/utils/errors";
+import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
 
 export interface RunAgentArgs {
   /** Live agent id (UUID) or slug. */
@@ -58,6 +61,7 @@ export interface UseRunAgent {
 
 export function useRunAgent(): UseRunAgent {
   const api = useBackendApi();
+  const desktopTargetInstanceId = useAppSelector(selectDesktopTargetInstanceId);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const streamErrorRef = useRef<string | null>(null);
@@ -86,9 +90,13 @@ export function useRunAgent(): UseRunAgent {
         variables:
           variables && Object.keys(variables).length > 0 ? variables : undefined,
         config_overrides: configOverrides,
+        ...(desktopTargetInstanceId && {
+          target_instance_id: desktopTargetInstanceId,
+        }),
         stream: true,
         debug: false,
       };
+      applyDesktopTargetToRequestBody(body, desktopTargetInstanceId);
 
       try {
         const response = await api.post(
@@ -145,7 +153,7 @@ export function useRunAgent(): UseRunAgent {
         setRunning(false);
       }
     },
-    [api],
+    [api, desktopTargetInstanceId],
   );
 
   return { run, running, error, reset };

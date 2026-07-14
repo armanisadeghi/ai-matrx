@@ -119,7 +119,7 @@ A scope value is a curated, authoritative fact about the scope — not a guess t
 
 Any entity of these types can be tagged to a scope via `ctx_scope_assignments`:
 
-Notes, Files, Tasks, Agents, Agent Apps, Agent Shortcuts, Skills, Conversations, Workflows, UDT Datasets, UDT Picklists, UDT Workbooks, Sandboxes, Flashcards, Quizzes, Canvas/Artifacts, Content Templates, Transcripts/Audio, Research, Scrapes, Code, Projects.
+Notes, Files, Tasks, Agents, Agent Apps, Agent Shortcuts, Skills, Conversations, Workflows, UDT Datasets, Structured Lists, UDT Workbooks, Sandboxes, Flashcards, Quizzes, Canvas/Artifacts, Content Templates, Transcripts/Audio, Research, Scrapes, Code, Projects.
 
 (Further candidates still under review are listed in the detail doc.)
 

@@ -2,7 +2,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-06-19`
+**Last updated:** `2026-07-14`
 
 ---
 
@@ -79,7 +79,27 @@ spreadsheet, an imported CSV/XLSX, or an agent-maintained list of records lives.
 
 ---
 
-## Two complementary storage models
+## Structured Lists vs. Typed Datasets
+
+Structured Lists are reusable, editable collections of item objects. They can be flat, or each item can
+carry a `group_name` so the same list can render as grouped sections, dependent dropdown choices,
+categorized checklists, shopping lists, task lists, menus, lightweight taxonomies, reusable labels, or
+agent/runtime choice sets.
+
+The important naming rule: **Structured List** is the product/data concept; **picklist** is one usage mode.
+When a Structured List powers a dropdown or agent variable choice, it behaves like a picklist. That does
+not make the underlying list read-only or dropdown-only. Owners/editors can mutate the list and its items.
+
+A Structured List is not a full table. Its item shape is intentionally fixed: `label`, protected
+`description`, `help_text`, optional `group_name`, optional `icon_name`, and ownership/visibility metadata.
+A UDT typed dataset is the true table model: dynamic columns, typed cells, row validation, row history,
+cell-level writes, bulk operations, and richer import/export flows.
+
+Current database names are `workbench.udt_structured_lists` /
+`workbench.udt_structured_list_items`. Some UI folders and TypeScript/Python symbols still use
+picklist/list vocabulary while the app/server packages move to the Structured List naming.
+
+## Two complementary table storage models
 
 | Model | Table family | Shape | Best for | Phase |
 |---|---|---|---|---|
@@ -108,7 +128,8 @@ become 5 linked datasets under one workbook.
   `CreateTableModal.tsx`, `EditTableModal.tsx`, `TableConfigModal.tsx`, `AddRowModal.tsx`,
   `EditRowModal.tsx`, `DeleteRowModal.tsx`, `AddColumnModal.tsx`, `ImportTableModal.tsx`,
   `ExportTableModal.tsx`, `TableCards.tsx`, `TableListItem.tsx`
-- `features/udt-picklist/` — picklist (dropdown) management: `PicklistLanding.tsx`,
+- `features/udt-picklist/` — Structured List management UI:
+  `PicklistLanding.tsx`,
   `PicklistManagerV1/V2/V3.tsx`, `usePicklists.ts`
 - `components/mardown-display/tables/SaveTableModal.tsx` — saves a markdown/stream table to a
   dataset. Default path creates a NEW dataset; a collapsed "Save to an existing table instead"
@@ -165,7 +186,8 @@ become 5 linked datasets under one workbook.
   (`workbook_source` enum), `original_file_id`, standard owner/scope/`is_public` columns.
 - `udt_dataset_row_versions` — **New (P1).** Append-only history: `(row_id, table_id, data,
   prior_data, change_kind, changed_by, changed_at)`. Written by trigger on every row mutation.
-- `udt_picklists` / `udt_picklist_items` — reusable dropdown lists.
+- `udt_structured_lists` / `udt_structured_list_items` — Structured Lists: reusable, editable item collections that
+  can be consumed as dropdown/picklist choices but are not limited to that use.
 
 **RLS** — `udt_datasets` / `udt_workbooks` SELECT = owner OR `is_public` OR
 `has_permission(<table>, id, 'viewer')`; UPDATE = owner OR `has_permission(..,'editor')`.
@@ -419,6 +441,13 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-07-14` — codex: **Structured List naming clarified.** Added the product/data concept:
+  Structured Lists are editable item collections that can be consumed as picklists/dropdowns, but
+  are not read-only or dropdown-only. Documented the boundary with typed datasets: fixed item shape
+  plus grouping vs. dynamic columns, typed cells, validation, history, and bulk operations.
+- `2026-07-14` — codex: **Structured List database rename.** Canonical backing tables are now
+  `workbench.udt_structured_lists` and `workbench.udt_structured_list_items`; `structured_list` is
+  registered in `platform.entity_types` and the shareable resource registry.
 - `2026-06-22` — claude: **Convert-to-table naming — no duplicate failures.** `createDatasetFromTable` now runs every name through `resolveUniqueDatasetName` (ordinal/date/timestamp fallbacks). Chat table convert derives the preferred name via `deriveDatasetNameForChatTable`: last `# heading` in the source message before the artifact, then artifact title, then column headers, then generic fallback.
 - `2026-06-19` — claude: **Dialog nested dropdown z-index fix (`/data/[id]` modals).** Shared Radix primitives (`Select`, `Popover`, `DropdownMenu`, `Tooltip`) now portal into the active `DialogContent` via `useNestedPortalContainer` and render at `z-[10001]` (above dialog overlay/content at `z-[10000]`). Fixes Select/DropdownMenu/Popover menus appearing behind Edit Row, Table Settings, Reference Overlay, and other table modals. Replaced raw `<Button>`, custom search pill, and `HubToolbarToggle` with `DocumentsHubToolbar` (`TapTargetButtonGroup` for card/table/sort view, controlled search input, `PlusTapButton` / `LoadingTapButton`). Added `LayoutGridTapButton` + `ListTapButton` pre-composed icons.
 - `2026-06-18` — claude: **Real root cause of the `<ParagraphMenu>` "reading 'key'" crash: string vs numeric `NamedStyleType`.** Univer's `NamedStyleType` is a **numeric** enum (`HEADING_1=4`, `HEADING_2=5`, `HEADING_3=6`, …), but some snapshots (from an external markdown→Univer converter) stored `paragraphStyle.namedStyleType` as the **string** `"HEADING_1"`. Univer does `HEADING_ICON_MAP[namedStyleType]` → string key is `undefined` → `icon.key` throws inside `<ParagraphMenu>` the instant the cursor lands in a heading, tearing down Univer's React root so the doc disappears. (Only fires when focused/cursor-in-heading — reproduced in the owner's session, not a no-interaction load, and only on docs with headings.) Fixes: **(1)** new loud recovery util `utils/sanitizeUniverDocSnapshot.ts` normalizes string→numeric `NamedStyleType` before every `createUniverDoc` (boot + remote reload) and `console.warn`s when it fires; **(2)** one-time idempotent DB repair converting string `namedStyleType` → numeric across `udt_document_snapshots` (2 docs / 31 snapshots). Debugging note: the real doc was owned by a different account, so testing as `admin@admin.com` first surfaced an unrelated RLS read-deny — reproduce as the resource owner.

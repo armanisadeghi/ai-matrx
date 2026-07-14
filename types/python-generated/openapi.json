@@ -644,6 +644,48 @@
         }
       }
     },
+    "/app-config/{app}": {
+      "get": {
+        "tags": [
+          "App Config"
+        ],
+        "summary": "Get App Config",
+        "operationId": "get_app_config_app_config__app__get",
+        "parameters": [
+          {
+            "name": "app",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppConfigResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/dictionary/publish": {
       "post": {
         "tags": [
@@ -1947,17 +1989,47 @@
         "summary": "List User Pending Calls",
         "description": "List ALL client-delegated tool calls awaiting this user's response,\nacross every conversation. Powers a global \"you have N tool prompts waiting\"\nbadge in the app shell.",
         "operationId": "list_user_pending_calls_ai_user_pending_calls_get",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "matrx-local caller instance_id. When present, pending calls are atomically claimed for this desktop instance.",
+              "title": "Instance Id"
+            },
+            "description": "matrx-local caller instance_id. When present, pending calls are atomically claimed for this desktop instance."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/PendingCallSummary"
                   },
-                  "type": "array",
                   "title": "Response List User Pending Calls Ai User Pending Calls Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -5685,6 +5757,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/desktop-instances/": {
+      "get": {
+        "tags": [
+          "Desktop Instances"
+        ],
+        "summary": "List Desktop Instances",
+        "operationId": "list_desktop_instances_desktop_instances__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DesktopInstanceSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Desktop Instances Desktop Instances  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/desktop-instances": {
+      "get": {
+        "tags": [
+          "Desktop Instances"
+        ],
+        "summary": "List Desktop Instances",
+        "operationId": "list_desktop_instances_desktop_instances_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DesktopInstanceSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Desktop Instances Desktop Instances Get"
                 }
               }
             }
@@ -40552,6 +40674,17 @@
             "title": "Store",
             "default": true
           },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
+          },
           "user_input": {
             "anyOf": [
               {
@@ -42921,6 +43054,43 @@
         },
         "type": "object",
         "title": "AnnotationUpdateBody"
+      },
+      "AppConfigResponse": {
+        "properties": {
+          "app": {
+            "type": "string",
+            "title": "App"
+          },
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version"
+          },
+          "min_supported_app_version": {
+            "type": "string",
+            "title": "Min Supported App Version"
+          },
+          "config": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Config"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "app",
+          "schema_version",
+          "min_supported_app_version",
+          "config",
+          "updated_at"
+        ],
+        "title": "AppConfigResponse"
       },
       "AppLogEntry": {
         "properties": {
@@ -48161,6 +48331,17 @@
             ],
             "title": "Source Feature"
           },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
+          },
           "ai_model_id": {
             "type": "string",
             "title": "Ai Model Id"
@@ -50962,6 +51143,17 @@
             "type": "boolean",
             "title": "Store",
             "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
           },
           "user_input": {
             "anyOf": [
@@ -54004,6 +54196,63 @@
           "derivation_kind"
         ],
         "title": "DerivativeRequest"
+      },
+      "DesktopInstanceSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live"
+          },
+          "dev": {
+            "type": "boolean",
+            "title": "Dev"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen"
+          },
+          "app_instance_id": {
+            "type": "string",
+            "title": "App Instance Id"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "live",
+          "dev",
+          "app_instance_id"
+        ],
+        "title": "DesktopInstanceSummary"
       },
       "DetectDocumentRequest": {
         "properties": {
@@ -60865,6 +61114,17 @@
             "type": "boolean",
             "title": "Store",
             "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
           },
           "user_input": {
             "anyOf": [
@@ -71240,6 +71500,39 @@
               }
             ],
             "title": "Expires At"
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
+          },
+          "claimed_by_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claimed By Instance Id"
+          },
+          "claim_expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Expires At"
           }
         },
         "type": "object",
@@ -72917,6 +73210,17 @@
             "type": "boolean",
             "title": "Store",
             "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
           },
           "user_input": {
             "anyOf": [
@@ -83233,6 +83537,17 @@
             "type": "boolean",
             "title": "Store",
             "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
           },
           "agent_id": {
             "type": "string",
