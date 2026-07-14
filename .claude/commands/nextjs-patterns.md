@@ -1,7 +1,5 @@
 # Next.js 16 App Router Patterns
 
-> **Official guide:** `~/.arman/rules/nextjs-best-practices/nextjs-guide.md`
-
 Enforce proper server/client component boundaries, shared services, and Next.js 16 patterns for the code at `$ARGUMENTS`.
 
 ---

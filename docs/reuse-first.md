@@ -94,6 +94,7 @@ delete yours and extend ours.
 ## Primitives Index
 
 <!-- Keep this current. Agents cannot reuse what they cannot find.
+     Guarded: `pnpm check:reuse-index` fails (:strict) on any path that no longer exists.
      First batch = high-reuse platform primitives only.
      Skip: shadcn/ui (`components/ui/*`), `cn`, Redux hooks, Supabase clients.
      Format: Need → Use → Location -->

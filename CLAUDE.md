@@ -2,7 +2,7 @@
 
 Large-scale Next.js no-code AI app builder and admin dashboard. Desktop-first, mobile-responsive.
 
-> **Official Next.js / React / TypeScript best practices:** `~/.arman/rules/nextjs-best-practices/nextjs-guide.md` — single source of truth for rendering, caching, performance, mobile, Tailwind, component contracts, API patterns. This file covers project-specific conventions only.
+> **Official Next.js / React / TypeScript best practices:** run `/nextjs-patterns` ([.claude/commands/nextjs-patterns.md](./.claude/commands/nextjs-patterns.md)) — server/client boundaries, shared services, App Router patterns. This file covers project-specific conventions only.
 
 ---
 
@@ -12,7 +12,7 @@ Large-scale Next.js no-code AI app builder and admin dashboard. Desktop-first, m
 
 Every task is a probe exposing what the platform is missing. Build (or extend) the generic, named, documented primitive, then complete the task by consuming it. Code that serves only this one artifact is **forbidden** — a second implementation of something we already own is a defect even if it works; delete yours and extend ours. The five anti-patterns this kills (local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap): **[PRINCIPLES.md](./PRINCIPLES.md)**. Enforced by ESLint ([`eslint.config.mjs`](./eslint.config.mjs)), `pnpm check:doctrine` ([script](./scripts/check-doctrine.ts)), and the pre-commit hook; every `FEATURE.md` has a Doctrine section ([template](./features/_FEATURE_TEMPLATE.md)).
 
-**Before writing ANY new function, component, hook, slice, service, or table, read [docs/reuse-first.md](./docs/reuse-first.md)** — the ladder (**Reuse → Extend → Compose → Create**, exhaust each rung), the mandatory search gate (concept + synonyms + the Primitives Index; "found nothing" names the queries you ran), the importable-code rules (pure core, thin shell, no speculative abstraction), and the new-table bar (exceptional — same entity, new variant → column/flag/JSONB on the existing table). Your summary states what you searched, what you found, and what you reused or extended.
+**Before writing ANY new function, component, hook, slice, service, or table, read [docs/reuse-first.md](./docs/reuse-first.md)** — the ladder (**Reuse → Extend → Compose → Create**, exhaust each rung), the mandatory search gate (concept + synonyms + the Primitives Index; "found nothing" names the queries you ran), the importable-code rules (pure core, thin shell, no speculative abstraction), and the new-table bar (exceptional — same entity, new variant → column/flag/JSONB on the existing table). Its Primitives Index is guarded by `pnpm check:reuse-index` — fix or delete a row when a file moves. Your summary states what you searched, what you found, and what you reused or extended.
 
 ---
 
@@ -52,33 +52,27 @@ Always use the latest stable release of every package — no deprecated APIs.
 - **Types:** generated types are the source of truth — `types/database.types.ts` (Supabase) + `types/python-generated/api-types.ts` (OpenAPI). Strict, no `any`; never hand-mirror or widen a generated type. Standards: [`TYPESCRIPT_STANDARDS.md`](./TYPESCRIPT_STANDARDS.md). **Fixing a type error or writing Supabase query/RPC code? Invoke the `type-safety` skill first** — silencing an error (cast / suppression / shadow type) is the opposite of fixing it; a real fix changes the code and the data, and an error you can't fix properly gets escalated with a decision brief, never hidden.
 - **Realtime:** Supabase Broadcast for ephemeral messaging/presence; Postgres Changes only when RLS-driven authorization is required.
 - **Errors:** every async op has structured error handling. Never swallow.
-
-### Development Rules
-
-- Build Protective & Recovery Layers, but ensure Loud recovery. Every recovery/fixer layer screams when it fires, because a recovery firing means a real bug got past the proactive layer.
-
+- **Loud recovery:** build protective/recovery layers, but every recovery/fixer **screams when it fires** — a recovery firing means a real bug got past the proactive layer.
 
 ### Supabase
 
 - **Project:** `txzxabzwovsujtloxrus` (Matrx Main, `us-west-1`, Postgres 17). The only DB this repo talks to. `NEXT_PUBLIC_SUPABASE_URL` → `db.matrxserver.com`. Always pass `project_id: "txzxabzwovsujtloxrus"` to Supabase MCP tools — do not guess between Matrx Main / My Matrx / Matrx Flow / Matrx DM / Matrx Games.
 - **Clients:** `@/utils/supabase/client` (browser), `@/utils/supabase/server` (SSR). `createAdminClient()` is restricted — see Protected Resources.
-- **Canonical standards:** [docs/official/canonical_db.md](docs/official/canonical_db.md). Many tables moved from `public` into domain schemas — on any DB error, check the table's live schema first. **Spot a stale table reference or a non-canonical table while working? You own it:** report it and migrate the table + every consumer, client AND server — for code in other repos, write the exact prompt and hand it to the user to relay to that repo's agent.
+- **Canonical standards:** [docs/official/db-rules.md](docs/official/db-rules.md). Many tables moved from `public` into domain schemas — on any DB error, check the table's live schema first. **Spot a stale table reference or a non-canonical table while working? You own it:** report it and migrate the table + every consumer, client AND server — for code in other repos, write the exact prompt and hand it to the user to relay to that repo's agent.
 
 ### Database migrations — the DB is the source of truth, NOT the files
 
 > A `.sql` file in `migrations/` changes **nothing** until applied to Supabase — writing one and reporting "done" is the single most damaging mistake here. A migration is done only when **applied AND verified live AND `pnpm db-types` regenerated.**
 
-The app code has **no DDL path** (Supabase JS / PostgREST only). Agents apply DDL through the **Supabase MCP** (`apply_migration` / `execute_sql`), always available and gated to `project_id: "txzxabzwovsujtloxrus"`. Cross-repo system:
-- **Shared ledger** `public._schema_migrations` (key `(source, filename)`) records every applied migration across aidream / matrx-frontend / matrx-extend (one shared DB).
-- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` vs the ledger (`source='matrx-frontend'`) and screams in a red box about anything unapplied or **drifted** (file changed since it was recorded); runs on every commit (non-blocking); `:strict` exits non-zero for CI.
-- **Apply:** run the migration via the Supabase MCP `apply_migration`. Migrations MUST be **idempotent** (`IF NOT EXISTS`, `CREATE OR REPLACE`) so re-applying a drifted file is safe. **Then record it** — `check:migrations` stays red until the ledger row matches: insert/update `_schema_migrations` (`source='matrx-frontend'`, `filename`, `checksum` = SHA-256 of the file bytes). aidream's `python db/apply_migrations.py --source matrx-frontend` is the batch applier for that repo and records the ledger itself; from here, the MCP one-off + ledger write is the path.
-- **Verify live:** a file means nothing until applied — confirm the column/function/trigger actually exists with an `execute_sql` query before reporting done.
-- After applying: `pnpm db-types` → `types/database.types.ts` (or `pnpm sync-types` for DB + Python API types + type-check).
+App code has **no DDL path** (Supabase JS / PostgREST only); agents apply DDL via the **Supabase MCP** (`apply_migration` / `execute_sql`, project `txzxabzwovsujtloxrus`).
+- **Apply + record:** migrations MUST be **idempotent** (`IF NOT EXISTS`, `CREATE OR REPLACE`). After applying, upsert the shared cross-repo ledger `public._schema_migrations` (key `(source, filename)`; `source='matrx-frontend'`, `checksum` = SHA-256 of file bytes) — it spans aidream / matrx-frontend / matrx-extend (one shared DB). aidream's `python db/apply_migrations.py --source matrx-frontend` batch-applies and records the ledger itself; from here, the MCP one-off + ledger write is the path.
+- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` vs the ledger and screams about anything unapplied or **drifted** (file changed since recorded); runs on every commit (non-blocking), `:strict` for CI. Then confirm the column/function/trigger exists live via `execute_sql` before reporting done.
+- **Regenerate:** `pnpm db-types` → `types/database.types.ts` (or `pnpm sync-types` for DB + Python API types + type-check).
 - A migration that must never apply gets `-- migrate: skip: <reason>` in its first 25 lines.
 
 **Schema truth-check — code vs the LIVE DB.** `pnpm check:schema` pulls the live schema (via the `public.schema_truth_snapshot()` RPC → committed `scripts/schema-check/current-schema.json`) and diffs it against the generated types, every direct `.from()/.schema()`, raw `schema.table` strings, and the dead-relations registry — catching moved/retired-table 404s that have no build error. Loud + non-blocking (`:strict` for CI); `pnpm check:dead-relations` is its fast offline subset on every commit. **Drift in an autogenerated file (`database.types.ts`, `types/python-generated/*`, `dead-relations.json`) means edit the SOURCE and regenerate — the report says which command.** Read [`scripts/schema-check/FEATURE.md`](./scripts/schema-check/FEATURE.md) before adding a check or touching the guard.
 
-**Typecheck with `pnpm type-check` — never a bare `tsc -p tsconfig.json` you hand-rolled.** Generated Next build output (`.next`, plus every `NEXT_DISTDIR` variant a parallel agent's dev server creates: `.next-preview`, `.next-preview-cutoverqa`, …) is excluded from tsc AND eslint via a `.next*` glob. It has to be: `next dev` *appends* its distDir types to `tsconfig.json`'s `include` on boot, those dirs hold machine-written validators, and a dev server killed mid-write leaves one **truncated** — whose parse error made `tsc` report 3 syntax errors and **nothing else**, hiding every real type error in the repo while looking green. `pnpm check:tsconfig` guards the exclude (`:strict` for CI); `pnpm clean:next` removes stale alternate build dirs.
+**Typecheck with `pnpm type-check` — never a hand-rolled `tsc -p tsconfig.json`.** Next build output (`.next` + every `NEXT_DISTDIR` variant a parallel agent's dev server creates: `.next-preview`, …) stays excluded from tsc AND eslint via the `.next*` glob — `next dev` *appends* its distDir types to `tsconfig.json`'s `include` on boot, and one truncated machine-written validator (dev server killed mid-write) makes `tsc` report 3 syntax errors and **nothing else**, hiding every real type error while looking green. `pnpm check:tsconfig` guards the exclude (`:strict` for CI); `pnpm clean:next` removes stale alternate build dirs.
 
 **Invoke the `finalize-and-ship` skill** at the end of any task — it runs migrations + type sync + the other pre-push checks before committing.
 
@@ -114,11 +108,9 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 
 **Shell:** `(core)` and `(admin)` both render `AppShell` (`features/shell/components/AppShell.tsx`): sidebar + transparent header + `#shell-header-center`. **`(core)` routes:** route chrome via `<PageHeader>`, body `h-full overflow-hidden` — see [`features/shell/components/header/variants/USAGE.md`](./features/shell/components/header/variants/USAGE.md); **fixing or building any `(core)` route header/body → invoke the `core-route-headers` skill** (classification, exemplars, mobile bottom-sheet rules, browser verification). **Admin exception:** content sits below the header (not behind it) via scoped `styles/shell.css` rules — admin pages may use `h-[calc(100dvh-2.5rem)]`. `(transitional)`/`(legacy)` still use `ResponsiveLayout`.
 
-**Unified `/demos` index** (`app/(dev)/demos/page.dev.tsx`) auto-discovers demos under `(dev)/demos/` and links `(legacy)` demos. Add one by location: auth shell → `(dev)/demos/<name>/page.dev.tsx`; public → `(public-demos)/demos/public/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`.
+**Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full` in dev**, **`core` in prod** (`aimatrx.com`; internal demos run on a separate Vercel project with `full`). In `core`, `(dev)` leaves and the `/demos/*` redirects (defined in `next.config.js`) are invisible (clean 404, not 307→404); in `full` both compile. Preview locally: `MATRX_PROFILE=core pnpm dev`.
 
-**Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full` in dev**, **`core` in prod**. In `core`, `(dev)` leaves (renamed `*.dev.tsx`/`*.dev.ts`) and the `/demos/*` redirects are invisible (clean 404, not 307→404); in `full` both compile. Prod (`aimatrx.com`) is `core`; internal demos run on a separate Vercel project with `full`. Preview core locally: `MATRX_PROFILE=core pnpm dev`.
-
-**Adding a `(dev)` route:** name leaves `page.dev.tsx` / `layout.dev.tsx` / `loading.dev.tsx` / `route.dev.ts`; helpers (`components/`, `hooks/`, `utils/`) keep plain `.tsx`/`.ts`. Helpers imported by prod code still compile into core ("fake demos" tech debt — relocate to `components/` over time). `/demos/*` redirects live in `next.config.js`.
+**Demos:** the `/demos` index (`app/(dev)/demos/page.dev.tsx`) auto-discovers demos under `(dev)/demos/` and links `(legacy)` demos. Add by location: auth shell → `(dev)/demos/<name>/page.dev.tsx`; public → `(public-demos)/demos/public/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`. `(dev)` route leaves are named `page.dev.tsx` / `layout.dev.tsx` / `loading.dev.tsx` / `route.dev.ts`; helpers (`components/`, `hooks/`, `utils/`) keep plain `.tsx`/`.ts` — helpers imported by prod code still compile into core ("fake demos" tech debt; relocate to `components/` over time).
 
 ---
 
@@ -243,7 +235,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Agent context + Brokers | `features/agent-context/FEATURE.md` (narrowed: broker resolution + slot fill; scope CRUD lives in `features/scopes/`) |
 | Tool call visualization | `features/tool-call-visualization/FEATURE.md` |
 | Streaming system | `features/agents/docs/STREAMING_SYSTEM.md` |
-| **Content-IR / Shape System** — canonical structured-content platform (`__kind` kinds, streaming JSON→IR envelopes, kind registry + `kind_surface`/`kind_component`/`kind_example`, render routing; workflow node I/O speaks kinds). **Read BEFORE touching stream/DB block parsing, `__kind`, `metadata.__ir`, or any kind asset** | `features/content-ir/FEATURE.md` → `docs/SHAPE_SYSTEM.md` |
+| **Content-IR / Shape System** — canonical structured-content platform (`__kind` kinds, streaming JSON→IR envelopes, kind registry + `kind_surface`/`kind_component`/`kind_example`, render routing; workflow node I/O speaks kinds). **Read BEFORE touching stream/DB block parsing, `__kind`, `metadata.__ir`, or any kind asset** | `features/content-ir/FEATURE.md` → `features/content-ir/docs/SHAPE_SYSTEM.md` |
 | Artifacts + Canvas | `features/artifacts/FEATURE.md` |
 | Chat + Conversation | **Live `/chat` route:** `features/agents/components/chat/FEATURE.md` (the real route, on `features/agents/`). Unified shell (future) + legacy surfaces: `features/conversation/FEATURE.md` |
 | Notes | `features/notes/FEATURE.md` |
