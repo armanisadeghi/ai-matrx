@@ -80,7 +80,7 @@ export function buildPicklistItemFence(args: {
     if (s.label) item.label = s.label;
     return item as ReferenceItem;
   });
-  return buildReferenceFence({ type: "picklist_item", items });
+  return buildReferenceFence({ type: "structured_list_item", items });
 }
 
 // ── Parse (round-trip) ───────────────────────────────────────────────────────

@@ -32,6 +32,9 @@ export type KnownItemType =
   | "file"
   | "session"
   | "table"
+  | "structured_list"
+  // "picklist" retained read-only for pre-rename historical payloads; new
+  // payloads use "structured_list". See common-docs/structured-lists-rename.
   | "picklist"
   | "workbook"
   | "document"

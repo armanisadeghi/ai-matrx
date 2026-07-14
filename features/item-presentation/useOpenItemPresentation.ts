@@ -71,6 +71,8 @@ export function useOpenItemPresentation() {
         case "file":
           openFile({ fileId: id });
           return true;
+        case "structured_list":
+        // Legacy read-only alias for pre-rename payloads.
         case "picklist":
           openPicklist({ forcedListId: id });
           return true;

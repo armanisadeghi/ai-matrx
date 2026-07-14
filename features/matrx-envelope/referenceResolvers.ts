@@ -147,10 +147,10 @@ async function resolveCell(
  * nested `ref` object.
  */
 const RESOLVERS: Record<string, ReferenceResolver> = {
-  // ── Picklist family ────────────────────────────────────────────────────────
-  /** `picklist` → { list_id }. Live value = the list name. */
-  picklist: {
-    openItemType: "picklist",
+  // ── Structured list family ─────────────────────────────────────────────────
+  /** `structured_list` → { list_id }. Live value = the list name. */
+  structured_list: {
+    openItemType: "structured_list",
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.list_id) return undefined;
@@ -169,19 +169,19 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     },
   },
 
-  /** `picklist_group` → { list_id, group_name }. Live value = the group name. */
-  picklist_group: {
-    openItemType: "picklist",
+  /** `structured_list_group` → { list_id, group_name }. Live value = the group name. */
+  structured_list_group: {
+    openItemType: "structured_list",
     openId: (ref) => ref.list_id,
     resolveValue: async (_supabase, ref) => stringify(ref.group_name),
   },
 
   /**
-   * `picklist_item` → { list_id, item_id }. Live value = the item's description
-   * (fallback to its label). Opens the picklist (`list_id`).
+   * `structured_list_item` → { list_id, item_id }. Live value = the item's
+   * description (fallback to its label). Opens the list (`list_id`).
    */
-  picklist_item: {
-    openItemType: "picklist",
+  structured_list_item: {
+    openItemType: "structured_list",
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.item_id) return undefined;
@@ -794,6 +794,12 @@ export function getReferenceResolver(
     agent_app: "app",
     data_table: "dataset",
     document: "udt_document",
+    // Read-time only: pre-rename historical references still name the picklist
+    // family. NEW content always emits structured_list*. See
+    // common-docs/structured-lists-rename/FEATURE.md (history policy).
+    picklist: "structured_list",
+    picklist_group: "structured_list_group",
+    picklist_item: "structured_list_item",
     podcast_episode: "pc_episode",
     podcast_show: "pc_show",
     sandbox: "sandbox_instance",

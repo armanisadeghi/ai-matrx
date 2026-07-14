@@ -84,11 +84,13 @@ const UUID_RE =
 /** Per-reference-type chip icon. Falls back to a generic link glyph. */
 function chipIcon(type: string): ComponentType<{ className?: string }> {
   switch (type) {
-    case "picklist":
+    case "structured_list":
+    case "picklist": // legacy read-only
       return List;
-    case "picklist_group":
-      return ListChecks;
-    case "picklist_item":
+    case "structured_list_group":
+    case "structured_list_item":
+    case "picklist_group": // legacy read-only
+    case "picklist_item": // legacy read-only
       return ListChecks;
     case "table":
       return Table;

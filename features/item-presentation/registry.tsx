@@ -95,6 +95,8 @@ export type ItemOpenKind =
   | { kind: "agent" }
   | { kind: "note" }
   | { kind: "file" }
+  | { kind: "structured_list" }
+  // Legacy read-only alias for pre-rename payloads (routes to the same opener).
   | { kind: "picklist" }
   // Wired as openers ship for these types (an agent is building them). Each
   // becomes one branch in `useOpenItemPresentation` + one `open` entry here.
@@ -471,16 +473,41 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
         "workbench",
       ),
   },
-  picklist: {
-    type: "picklist",
-    label: "Picklist",
+  structured_list: {
+    type: "structured_list",
+    label: "Structured List",
     icon: ListChecks,
     accent: {
       text: "text-lime-600 dark:text-lime-400",
       bg: "bg-lime-500/10",
       ring: "ring-lime-500/20",
     },
-    open: { kind: "picklist" },
+    open: { kind: "structured_list" },
+    enrich: (s, id) =>
+      fetchRow(
+        s,
+        "udt_structured_lists",
+        id,
+        "list_name, description",
+        (r) => ({
+          name: clip(r.list_name, 80),
+          about: clip(r.description),
+        }),
+        "workbench",
+      ),
+  },
+  // Legacy read-only alias: pre-rename payloads with type "picklist" still open.
+  // New payloads use "structured_list". See common-docs/structured-lists-rename.
+  picklist: {
+    type: "picklist",
+    label: "Structured List",
+    icon: ListChecks,
+    accent: {
+      text: "text-lime-600 dark:text-lime-400",
+      bg: "bg-lime-500/10",
+      ring: "ring-lime-500/20",
+    },
+    open: { kind: "structured_list" },
     enrich: (s, id) =>
       fetchRow(
         s,
