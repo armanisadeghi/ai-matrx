@@ -62,6 +62,8 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
 import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
+import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
+import { ReferenceConfigFields } from "@/features/scopes/components/reference/ReferenceConfigFields";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import {
   FeedConfigEditor,
@@ -84,12 +86,10 @@ import type {
 type ValueType = DB["public"]["Enums"]["context_value_type"];
 type Sensitivity = DB["public"]["Enums"]["context_sensitivity"];
 
-// Direct-entry primitives only. "reference" is deliberately excluded — System
-// Context resources have no reference-authoring path yet (no
-// allowed_reference_types / max_items / allowed_scope_type_ids config UI, and
-// `ContextValueInput`'s reference branch requires those). Selecting it here
-// used to silently produce a dead "Reference picker unavailable" value editor.
-// Wire the scope-system's `ReferenceConfigFields` in before reintroducing it.
+// Direct-entry primitives + "reference" (attach an entity). Reference authoring
+// wires the scope-system's `ReferenceConfigFields` (allowed types / cardinality /
+// allowed scope types) into the manual-feed editor; `ContextValueInput`'s
+// reference branch then renders the entity picker against the item's config.
 const VALUE_TYPE_OPTIONS: { value: ValueType; label: string }[] = [
   { value: "string", label: "Text (string)" },
   { value: "number", label: "Number" },
@@ -98,6 +98,7 @@ const VALUE_TYPE_OPTIONS: { value: ValueType; label: string }[] = [
   { value: "object", label: "Object (JSON)" },
   { value: "array", label: "Array (JSON)" },
   { value: "document", label: "Document / media" },
+  { value: "reference", label: "Reference (attach an entity)" },
 ];
 
 const SENSITIVITY_OPTIONS: { value: Sensitivity; label: string }[] = [
@@ -435,6 +436,7 @@ export default function SystemContextPage() {
       {editing && (
         <EditItemDialog
           item={editing}
+          categories={categories}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
@@ -833,6 +835,18 @@ function OutputCell({ item }: { item: SystemContextItem }) {
       </span>
     );
   }
+  // Reference cells store a canonical ```matrx fence in value_text — render it
+  // as live chips (the same renderer used everywhere a fence appears), never a
+  // raw fence string.
+  if (item.value_type === "reference") {
+    return (
+      <ContextValueDisplay
+        value={{ value_text: item.current_value }}
+        valueType="reference"
+        className="max-w-[220px]"
+      />
+    );
+  }
   return (
     <code className="block max-w-[220px] truncate font-mono text-xs text-foreground">
       {item.current_value}
@@ -874,10 +888,12 @@ function isMediaComponentType(t: string | undefined): boolean {
 // also edits the value; other feeds edit only the definition/feed config.
 function EditItemDialog({
   item,
+  categories,
   onClose,
   onSaved,
 }: {
   item: SystemContextItem;
+  categories: SystemContextCategory[];
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
@@ -889,15 +905,48 @@ function EditItemDialog({
     asFeedConfig(item.feed_config),
   );
   const [value, setValue] = useState<unknown>(() => initialEditorValue(item));
+  const [allowedReferenceTypes, setAllowedReferenceTypes] = useState<string[]>(
+    item.allowed_reference_types ?? [],
+  );
+  const [maxItems, setMaxItems] = useState(
+    item.max_items != null ? String(item.max_items) : "1",
+  );
+  const [allowedScopeTypeIds, setAllowedScopeTypeIds] = useState<string[]>(
+    item.allowed_scope_type_ids ?? [],
+  );
   const [saving, setSaving] = useState(false);
 
+  const isReferenceItem = item.value_type === "reference";
   const customComponent =
     (item.custom_component as VariableCustomComponent | null) ?? undefined;
+  const orgScopeTypes = useMemo(
+    () =>
+      categories.map((c) => ({
+        id: c.scope_type_id,
+        label_singular: c.label_singular,
+      })),
+    [categories],
+  );
+
+  function toggleReferenceType(t: string) {
+    setAllowedReferenceTypes((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+    );
+  }
+  function toggleAllowedScopeType(id: string) {
+    setAllowedScopeTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   async function save() {
+    if (isReferenceItem && allowedReferenceTypes.length === 0) {
+      toast.error("Select at least one reference type.");
+      return;
+    }
     setSaving(true);
     try {
-      // 1. The definition + feed.
+      // 1. The definition + feed (+ reference-config for reference items).
       const patchRes = await fetch("/api/admin/system-context", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -908,6 +957,15 @@ function EditItemDialog({
           sensitivity,
           feed_type: feedType,
           feed_config: feedConfig,
+          ...(isReferenceItem
+            ? {
+                allowed_reference_types: allowedReferenceTypes,
+                max_items: Math.max(1, Number(maxItems) || 1),
+                allowed_scope_type_ids: allowedReferenceTypes.includes("scope")
+                  ? allowedScopeTypeIds
+                  : null,
+              }
+            : {}),
         }),
       });
       if (!patchRes.ok) {
@@ -1004,6 +1062,23 @@ function EditItemDialog({
             />
           </div>
 
+          {feedType === "manual" && isReferenceItem && (
+            <div className="rounded-md border border-border bg-muted/30 p-3">
+              <div className="mb-2 text-xs font-medium text-muted-foreground">
+                Reference configuration
+              </div>
+              <ReferenceConfigFields
+                allowedReferenceTypes={allowedReferenceTypes}
+                onToggleReferenceType={toggleReferenceType}
+                maxItems={maxItems}
+                onMaxItemsChange={setMaxItems}
+                allowedScopeTypeIds={allowedScopeTypeIds}
+                onToggleAllowedScopeType={toggleAllowedScopeType}
+                orgScopeTypes={orgScopeTypes}
+              />
+            </div>
+          )}
+
           {feedType === "manual" && (
             <Field
               label="Value"
@@ -1013,15 +1088,40 @@ function EditItemDialog({
                   : "No scope to write to."
               }
             >
-              <ContextValueInput
-                valueType={item.value_type}
-                customComponent={customComponent}
-                displayName={displayName || item.key}
-                value={value}
-                onChange={setValue}
-                minHeight={56}
-                maxHeight={400}
-              />
+              {isReferenceItem ? (
+                item.scope_id ? (
+                  <ContextValueInput
+                    valueType="reference"
+                    referenceConfig={{
+                      allowed_reference_types: allowedReferenceTypes,
+                      max_items: Math.max(1, Number(maxItems) || 1),
+                      allowed_scope_type_ids: allowedScopeTypeIds.length
+                        ? allowedScopeTypeIds
+                        : null,
+                    }}
+                    scopeId={item.scope_id}
+                    displayName={displayName || item.key}
+                    value={value}
+                    onChange={setValue}
+                    minHeight={56}
+                    maxHeight={400}
+                  />
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    No scope to write to.
+                  </p>
+                )
+              ) : (
+                <ContextValueInput
+                  valueType={item.value_type}
+                  customComponent={customComponent}
+                  displayName={displayName || item.key}
+                  value={value}
+                  onChange={setValue}
+                  minHeight={56}
+                  maxHeight={400}
+                />
+              )}
             </Field>
           )}
         </div>
@@ -1168,10 +1268,41 @@ function AddItemDialog({
   const [value, setValue] = useState<unknown>("");
   const [feedType, setFeedType] = useState<FeedType>("dataset");
   const [feedConfig, setFeedConfig] = useState<FeedConfig>({});
+  const [allowedReferenceTypes, setAllowedReferenceTypes] = useState<string[]>(
+    [],
+  );
+  const [maxItems, setMaxItems] = useState("1");
+  const [allowedScopeTypeIds, setAllowedScopeTypeIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const isManual = feedType === "manual";
+  const isReference = valueType === "reference";
   const keyValid = key === "" || /^[a-z0-9_]+$/.test(key);
+
+  // The single value-holding scope for the selected category (system scope
+  // types carry exactly one). Present once the category exists — the reference
+  // picker needs it to resolve the org for the "scope" sub-picker.
+  const scopeId =
+    categories.find((c) => c.scope_type_id === scopeTypeId)?.scope_id ?? null;
+  const orgScopeTypes = useMemo(
+    () =>
+      categories.map((c) => ({
+        id: c.scope_type_id,
+        label_singular: c.label_singular,
+      })),
+    [categories],
+  );
+
+  function toggleReferenceType(t: string) {
+    setAllowedReferenceTypes((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+    );
+  }
+  function toggleAllowedScopeType(id: string) {
+    setAllowedScopeTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   async function save() {
     if (!scopeTypeId) {
@@ -1194,6 +1325,10 @@ function AddItemDialog({
       toast.error("Pick a knowledge resource for the dataset feed.");
       return;
     }
+    if (isReference && allowedReferenceTypes.length === 0) {
+      toast.error("Select at least one reference type.");
+      return;
+    }
 
     const hasValue =
       isManual &&
@@ -1212,9 +1347,17 @@ function AddItemDialog({
           value_type: isManual ? valueType : "string",
           sensitivity,
           description: description.trim(),
-          custom_component: isManual ? (customComponent ?? null) : null,
+          // Reference and custom-component authoring are mutually exclusive.
+          custom_component:
+            isManual && !isReference ? (customComponent ?? null) : null,
           feed_type: feedType,
           feed_config: isManual ? {} : feedConfig,
+          allowed_reference_types: isReference ? allowedReferenceTypes : null,
+          max_items: isReference ? Math.max(1, Number(maxItems) || 1) : 1,
+          allowed_scope_type_ids:
+            isReference && allowedReferenceTypes.includes("scope")
+              ? allowedScopeTypeIds
+              : null,
           valueColumns: hasValue
             ? buildScopeValuePayload(value, valueType)
             : undefined,
@@ -1347,30 +1490,80 @@ function AddItemDialog({
                 </Field>
               </div>
 
-              <div className="rounded-md border border-border bg-muted/30 p-3">
-                <div className="mb-2 text-xs font-medium text-muted-foreground">
-                  Input component (how the value is authored)
-                </div>
-                <CustomComponentConfigurator
-                  value={customComponent}
-                  onChange={setCustomComponent}
-                />
-              </div>
+              {isReference ? (
+                <>
+                  <div className="rounded-md border border-border bg-muted/30 p-3">
+                    <div className="mb-2 text-xs font-medium text-muted-foreground">
+                      Reference configuration
+                    </div>
+                    <ReferenceConfigFields
+                      allowedReferenceTypes={allowedReferenceTypes}
+                      onToggleReferenceType={toggleReferenceType}
+                      maxItems={maxItems}
+                      onMaxItemsChange={setMaxItems}
+                      allowedScopeTypeIds={allowedScopeTypeIds}
+                      onToggleAllowedScopeType={toggleAllowedScopeType}
+                      orgScopeTypes={orgScopeTypes}
+                    />
+                  </div>
 
-              <Field
-                label="Initial value"
-                hint="Optional — you can set it later."
-              >
-                <ContextValueInput
-                  valueType={valueType}
-                  customComponent={customComponent}
-                  displayName={displayName || key || "value"}
-                  value={value}
-                  onChange={setValue}
-                  minHeight={56}
-                  maxHeight={400}
-                />
-              </Field>
+                  <Field
+                    label="Initial value"
+                    hint="Optional — you can attach the entity now or later via Edit."
+                  >
+                    {scopeId ? (
+                      <ContextValueInput
+                        valueType="reference"
+                        referenceConfig={{
+                          allowed_reference_types: allowedReferenceTypes,
+                          max_items: Math.max(1, Number(maxItems) || 1),
+                          allowed_scope_type_ids: allowedScopeTypeIds.length
+                            ? allowedScopeTypeIds
+                            : null,
+                        }}
+                        scopeId={scopeId}
+                        displayName={displayName || key || "value"}
+                        value={value}
+                        onChange={setValue}
+                        minHeight={56}
+                        maxHeight={400}
+                      />
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">
+                        Create the item first, then attach an entity from its
+                        Edit dialog.
+                      </p>
+                    )}
+                  </Field>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-md border border-border bg-muted/30 p-3">
+                    <div className="mb-2 text-xs font-medium text-muted-foreground">
+                      Input component (how the value is authored)
+                    </div>
+                    <CustomComponentConfigurator
+                      value={customComponent}
+                      onChange={setCustomComponent}
+                    />
+                  </div>
+
+                  <Field
+                    label="Initial value"
+                    hint="Optional — you can set it later."
+                  >
+                    <ContextValueInput
+                      valueType={valueType}
+                      customComponent={customComponent}
+                      displayName={displayName || key || "value"}
+                      value={value}
+                      onChange={setValue}
+                      minHeight={56}
+                      maxHeight={400}
+                    />
+                  </Field>
+                </>
+              )}
             </>
           )}
         </div>
