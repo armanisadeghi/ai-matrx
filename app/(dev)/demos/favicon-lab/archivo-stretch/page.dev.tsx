@@ -1,8 +1,8 @@
 import { buildVariantFaviconMetadata } from "../faviconMeta";
 import VariantPreview from "../VariantPreview";
 
-export const metadata = buildVariantFaviconMetadata("stretchFull");
+export const metadata = buildVariantFaviconMetadata("archivoStretch");
 
 export default function Page() {
-  return <VariantPreview id="stretchFull" />;
+  return <VariantPreview id="archivoStretch" />;
 }

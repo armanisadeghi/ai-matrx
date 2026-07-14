@@ -79,10 +79,14 @@ export default function FaviconLabPage() {
         <header className="mb-8">
           <h1 className="text-2xl font-semibold">Favicon Bakeoff</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-3xl">
-            Six generators for the two-letter route badge, judged at real tab
-            sizes (16–32px). The goal: two letters, big and flush, without ugly
-            distortion. War Room&apos;s live tab currently uses{" "}
-            <span className="font-medium text-foreground">Stretch — 4px inset</span>.
+            Candidate generators for the two-letter route badge, judged as real
+            tab favicons. Every one keeps a guaranteed{" "}
+            <span className="font-medium text-foreground">1.5px tile ring</span>{" "}
+            around the whole edge so the white letters never dissolve into a
+            near-white page — either by stretching to fill (flush all sides) or
+            by sizing big and clipping (true shape, tips cut). War Room&apos;s
+            live tab uses{" "}
+            <span className="font-medium text-foreground">Stretch · 1.5px inset</span>.
           </p>
           <div className="mt-4 rounded-lg border border-border bg-card p-3">
             <p className="text-xs font-medium mb-2">

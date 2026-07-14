@@ -7,6 +7,7 @@ import {
   type FaviconRouteEntry,
 } from "@/constants/favicon-route-data";
 import { Metadata } from "next";
+import { ARCHIVO_GLYPHS } from "@/utils/favicon-archivo-glyphs";
 
 /** Narrowed non-array/non-string/non-URL branch of `Metadata["icons"]`. */
 type MetadataIcons = Exclude<
@@ -83,27 +84,123 @@ function pathnameIsUnderAdminHosts(pathname: string): boolean {
   );
 }
 
+// ─── Active favicon style ─────────────────────────────────────────────────────
+// The badge design generateSVGFavicon renders for EVERY route. Flip this one
+// value to instantly restore the previous look — nothing else changes.
+//   "archivoStretch" — big Archivo Black letters filled to a 1.5px tile ring
+//                      (bakeoff winner; two-letter codes read large and flush).
+//   "legacy"         — the previous small system-font badge (deactivated).
+const FAVICON_STYLE: "archivoStretch" | "legacy" = "archivoStretch";
+
+// Geometry shared by the active style (64-unit canvas).
+const FAV_S = 64;
+const FAV_INSET = 1.5; // guaranteed tile-color ring around the whole edge
+const FAV_RX = 12;
+const FAV_INNER = FAV_S - FAV_INSET * 2; // 61
+
+// ── Tunable badge geometry ────────────────────────────────────────────────────
+// MIN_ASPECT: how much horizontal squeeze a multi-letter code may take. 1 = zero
+//   distortion (letters keep true proportions); lower = more squeeze allowed to
+//   grow taller. 0.82 keeps distortion mild and readable.
+const FAV_MIN_ASPECT = 0.82;
+// Fraction of the inner box a multi-letter code fills vertically (cap height).
+const FAV_MULTI_VFILL = 0.9;
+// Fraction of the inner box a SINGLE letter fills — deliberately moderate so N,
+// C, etc. look calm, not blown up. No distortion ever for a single letter.
+const FAV_SINGLE_FILL = 0.66;
+
 /**
- * Generates an SVG favicon optimised for browser-tab rendering (~16–32px).
+ * ACTIVE generator — Archivo Black letters as vector OUTLINES on the tile.
  *
- * Design choices for small-size legibility:
- * - Slightly smaller corner radius (rx=10) keeps more of the colour field visible
- * - Slightly lighter inner text shadow improves contrast on coloured backgrounds
- * - 2-char letters use a condensed letter-spacing so they fit without crowding
+ * - Letters are real <path> outlines (not <text>), so they render in every
+ *   browser's restricted favicon rasterizer — where @font-face is ignored and
+ *   named fonts silently produce nothing.
+ * - Multi-letter codes are sized by the letters' INK bounds and optically
+ *   centered; horizontal squeeze is capped at FAV_MIN_ASPECT so they read
+ *   natural, not stretched.
+ * - A single letter uses a uniform (undistorted) scale at a moderate size.
+ * - A 1.5px-inset rounded clip guarantees the tile ring so white letters never
+ *   dissolve into a near-white page or tab bar.
+ * - Any character without an outline (emoji, punctuation) falls back to the
+ *   legacy text badge so a favicon is never blank.
  */
-export function generateSVGFavicon(config: FaviconConfig): string {
+function generateSVGFaviconArchivo(config: FaviconConfig): string {
+  const { color } = config;
+  const displayText = config.emoji || config.letter || "M";
+  const glyphs = [...displayText].map((c) => ARCHIVO_GLYPHS[c]);
+
+  // Emoji / unmapped glyph → legacy text render (never blank).
+  if (glyphs.some((g) => !g)) return generateSVGFaviconLegacy(config);
+
+  // Lay glyphs left-to-right by advance; collect ink bounds of the whole word.
+  let cursor = 0;
+  let inkX0 = Infinity;
+  let inkX1 = -Infinity;
+  let inkY0 = Infinity;
+  let inkY1 = -Infinity;
+  const paths = glyphs
+    .map((g) => {
+      inkX0 = Math.min(inkX0, cursor + g!.x0);
+      inkX1 = Math.max(inkX1, cursor + g!.x1);
+      inkY0 = Math.min(inkY0, g!.y0);
+      inkY1 = Math.max(inkY1, g!.y1);
+      const p = `<path transform="translate(${cursor} 0)" d="${g!.d}"/>`;
+      cursor += g!.a;
+      return p;
+    })
+    .join("");
+
+  const inkW = inkX1 - inkX0;
+  const inkH = inkY1 - inkY0;
+
+  let scaleX: number;
+  let scaleY: number;
+  if (glyphs.length >= 2) {
+    // Fit the ink width to the box, then allow only a bounded vertical grow so
+    // letters get taller (less short/wide) without heavy distortion.
+    scaleX = FAV_INNER / inkW;
+    scaleY = Math.min((FAV_MULTI_VFILL * FAV_INNER) / inkH, scaleX / FAV_MIN_ASPECT);
+  } else {
+    // Single letter: uniform, moderate, undistorted; never overflow the width.
+    scaleX = scaleY = Math.min(
+      (FAV_SINGLE_FILL * FAV_INNER) / inkH,
+      FAV_INNER / inkW,
+    );
+  }
+
+  // Optically center the ink box in both axes (SVG y flips: y_svg = ty - y*scaleY).
+  const tx = FAV_INSET + (FAV_INNER - inkW * scaleX) / 2 - inkX0 * scaleX;
+  const ty = FAV_INSET + (FAV_INNER - inkH * scaleY) / 2 + inkY1 * scaleY;
+  const transform = `translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${scaleX.toFixed(5)} ${(-scaleY).toFixed(5)})`;
+
+  const clip = `<clipPath id="fring"><rect x="${FAV_INSET}" y="${FAV_INSET}" width="${FAV_INNER}" height="${FAV_INNER}" rx="${FAV_RX - FAV_INSET}"/></clipPath>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${FAV_S} ${FAV_S}"><defs>${clip}</defs><rect width="${FAV_S}" height="${FAV_S}" rx="${FAV_RX}" fill="${color}"/><g clip-path="url(#fring)" fill="#FFFFFF"><g transform="${transform}">${paths}</g></g></svg>`;
+}
+
+/**
+ * DEACTIVATED — the previous small system-font badge. Kept intact so flipping
+ * FAVICON_STYLE back to "legacy" restores the exact prior look.
+ */
+function generateSVGFaviconLegacy(config: FaviconConfig): string {
   const { color, letter, emoji } = config;
   const displayText = emoji || letter || "M";
   const len = displayText.length;
 
-  // Font sizes tuned so the glyph fills the 64×64 canvas at the right weight
   const fontSize = len === 1 ? "46" : len === 2 ? "34" : "26";
-  // Optical vertical centering for cap-height (not ascender)
   const yPosition = len === 1 ? "55" : len === 2 ? "53" : "52";
-  // Tighten letter-spacing for 2-char combos so both letters stay inside the badge
   const letterSpacing = len === 2 ? "-1" : "0";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${color}" rx="10"/><text x="32" y="${yPosition}" font-family="system-ui,-apple-system,sans-serif" font-size="${fontSize}" font-weight="800" fill="white" text-anchor="middle" letter-spacing="${letterSpacing}">${displayText}</text></svg>`;
+}
+
+/**
+ * Generates an SVG favicon for a route badge, in the currently-active style
+ * (see FAVICON_STYLE). Used by every route through generateFaviconMetadata.
+ */
+export function generateSVGFavicon(config: FaviconConfig): string {
+  return FAVICON_STYLE === "archivoStretch"
+    ? generateSVGFaviconArchivo(config)
+    : generateSVGFaviconLegacy(config);
 }
 
 /**
