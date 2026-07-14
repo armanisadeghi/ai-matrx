@@ -100,10 +100,39 @@ const NestedCell: React.FC<{ value: unknown; depth: number }> = ({ value, depth 
     );
 };
 
+/**
+ * A long string inside a cell. Unclamped it makes one cell own half the page;
+ * it clamps to 2 lines and expands in place on click (nothing hidden for good).
+ */
+const LongTextCell: React.FC<{ value: string }> = ({ value }) => {
+    const [open, setOpen] = React.useState(false);
+    return (
+        <button
+            type="button"
+            onClick={(e) => {
+                e.stopPropagation();
+                setOpen((v) => !v);
+            }}
+            title={open ? "Collapse" : "Expand"}
+            className={cn(
+                "block max-w-md text-left break-words",
+                !open && "line-clamp-2",
+            )}
+        >
+            {value}
+        </button>
+    );
+};
+
+const LONG_CELL_CHARS = 80;
+
 /** Render a single cell — scalar inline, structure collapsed behind a toggle. */
 const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => {
     if (value === null || value === undefined) {
         return <span className="italic text-muted-foreground">—</span>;
+    }
+    if (typeof value === "string" && value.length > LONG_CELL_CHARS) {
+        return <LongTextCell value={value} />;
     }
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         return <ResultValue value={value} density="inline" depth={depth + 1} />;
@@ -185,16 +214,18 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                     </span>
                 ))}
 
-            <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full border-collapse text-sm">
+            {/* Data-density type (text-xs) — a result table is reference material,
+                never louder than the message text around it. */}
+            <div className="overflow-x-auto rounded-md border border-border/60">
+                <table className="w-full border-collapse text-xs">
                     <thead>
-                        <tr className="bg-muted/50">
+                        <tr>
                             {columns.map((col) => {
                                 const active = sortKey === col.key;
                                 return (
                                     <th
                                         key={col.key}
-                                        className="border-b border-border px-3 py-2 text-left align-bottom font-medium text-muted-foreground"
+                                        className="border-b border-border/60 px-2.5 py-1.5 text-left align-bottom text-[11px] font-medium text-muted-foreground"
                                     >
                                         <button
                                             type="button"
@@ -231,9 +262,9 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                             </tr>
                         ) : (
                             shown.map((row, ri) => (
-                                <tr key={ri} className="border-b border-border last:border-0 hover:bg-muted/30">
+                                <tr key={ri} className="border-b border-border/60 last:border-0 hover:bg-muted/30">
                                     {columns.map((col) => (
-                                        <td key={col.key} className="px-3 py-2 align-top text-foreground">
+                                        <td key={col.key} className="px-2.5 py-1.5 align-top text-foreground">
                                             <Cell value={row[col.key]} depth={depth} />
                                         </td>
                                     ))}

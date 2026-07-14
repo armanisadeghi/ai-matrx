@@ -78,12 +78,20 @@ function isEffectivelyRewrite(before: string, after: string): boolean {
   return total > 0 && changed / total >= REWRITE_RATIO;
 }
 
-/** The paper sheet — the ONE frame this renderer draws. */
+/**
+ * The paper sheet — the ONE frame this renderer draws. It must read as a
+ * physical page sitting on the chat background: a slightly different surface
+ * tone + hairline border, full conversation width, and DOCUMENT-scale type
+ * (13px — quieter than the message text around it, never louder).
+ */
 const Paper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="max-h-96 w-full overflow-auto rounded-lg border border-border/60 bg-background px-4 py-3">
+  <div className="max-h-96 w-full overflow-auto rounded-xl border border-border/50 bg-card px-5 py-4 shadow-xs">
     {children}
   </div>
 );
+
+/** Document-scale typography shared by both paper bodies. */
+const PAPER_TEXT = "text-[13px] leading-relaxed";
 
 export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
   const { entry, isPersisted, conversationId, requestId } = props;
@@ -165,7 +173,7 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
     <Paper>
       {rewrite ? (
         // Full rewrite (or fresh body): the final document, no highlights.
-        <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+        <div className={`whitespace-pre-wrap break-words text-foreground ${PAPER_TEXT}`}>
           {after}
         </div>
       ) : (
@@ -173,6 +181,7 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
           before={before as string}
           after={after as string}
           reveal={{ active: animate, replayKey: entry.callId }}
+          className={PAPER_TEXT}
         />
       )}
     </Paper>

@@ -1121,10 +1121,19 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
     }),
 ];
 
+/**
+ * NO harness chrome (owner rule): a fixture renders EXACTLY as it would inside
+ * a real assistant message — flush on the page background, same width, same
+ * colors. The only harness artifact is the tiny label above. Wrapping fixtures
+ * in a bordered bg-card box double-layered every renderer and made it
+ * impossible to tell test chrome from the component under review.
+ */
 function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {
     return (
-        <div className="rounded-lg border border-border bg-card p-3">
-            <div className="mb-2 text-xs font-medium text-muted-foreground">{label}</div>
+        <div>
+            <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/60">
+                {label}
+            </div>
             {children}
         </div>
     );
@@ -1558,10 +1567,10 @@ export default function ResultFieldsGalleryPage() {
                     The research blob WITHOUT a curated report — the renderer leads with the sources summary; expand the
                     row, then the overlay shows Report / Sources / Full Text / Input / Raw tabs.
                 </p>
-                <div className="rounded-lg border border-border bg-card p-3">
+                <div>
                     <ToolCallVisualization entries={[RESEARCH_ENTRY]} isPersisted hasContent />
                 </div>
-                <div className="rounded-lg border border-border bg-card p-3">
+                <div>
                     <ToolCallVisualization entries={[RESEARCH_REPORT_ENTRY]} isPersisted hasContent />
                 </div>
             </section>
@@ -1570,7 +1579,7 @@ export default function ResultFieldsGalleryPage() {
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Dynamic (DB) renderer — `agent_call` compiled from `tool_ui` via the canonical runtime (click to expand)
                 </h2>
-                <div className="rounded-lg border border-border bg-card p-3">
+                <div>
                     <ToolCallVisualization entries={[AGENT_CALL_ENTRY]} isPersisted hasContent />
                 </div>
             </section>
@@ -1584,7 +1593,7 @@ export default function ResultFieldsGalleryPage() {
                     fetched by `tool_name` and compiled at runtime through the same Babel sandbox the Agent Apps runtime uses — the
                     code-first path that scales to user- and agent-authored components across every platform.
                 </p>
-                <div className="rounded-lg border border-border bg-card p-3">
+                <div>
                     {DB_RENDERER_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
@@ -1612,7 +1621,7 @@ export default function ResultFieldsGalleryPage() {
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     CTX renderers — context (live unified) / ctx_get / ctx_batch / ctx_patch (click a row to expand)
                 </h2>
-                <div className="rounded-lg border border-border bg-card p-3">
+                <div>
                     {CTX_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
@@ -1639,7 +1648,7 @@ export default function ResultFieldsGalleryPage() {
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Database / SQL renderers — sql / db_query / db_schema (click a row to expand)
                 </h2>
-                <div className="rounded-lg border border-border bg-card p-3">
+                <div>
                     {SQL_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
@@ -1650,7 +1659,7 @@ export default function ResultFieldsGalleryPage() {
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     ToolCallVisualization shell — real path (click a row to expand)
                 </h2>
-                <div className="rounded-lg border border-border bg-card p-3">
+                <div>
                     {STATE_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
