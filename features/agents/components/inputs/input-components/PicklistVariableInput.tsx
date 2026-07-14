@@ -29,7 +29,7 @@ const OTHER_PREFIX = "Other: ";
 /**
  * Adapter that renders a picklist-bound variable using the existing choice components in
  * LABEL space, converting selections to/from the canonical ```matrx reference fence
- * (`type:"picklist_item"`, FLAT items `{ list_id, item_id, label? }`). The secret
+ * (`type:"structured_list_item"`, FLAT items `{ list_id, item_id, label? }`). The secret
  * description is never fetched or shown here — only labels. The persisted value is a fence
  * STRING (single = one item; multi = N items plus any "Other" free-text lines after the
  * closing fence); the server resolves the fence to each item's hidden description on the

@@ -87,7 +87,7 @@ export type VariableComponentType = (typeof VARIABLE_COMPONENT_TYPES)[number];
  * Binding of a variable to a user picklist (udt_structured_lists). When set, the variable's
  * options are hydrated at runtime from the picklist (labels only — the secret `description`
  * never reaches the client) and the emitted value is a ```matrx reference fence string
- * (`kind:"reference"`, `type:"picklist_item"`), not text. Orthogonal to `type`, so a
+ * (`kind:"reference"`, `type:"structured_list_item"`), not text. Orthogonal to `type`, so a
  * picklist can render as select / radio / buttons / checkbox.
  */
 export interface PicklistBinding {
