@@ -41,6 +41,7 @@ import {
   saveAudioToStorage,
   getAudioUrl,
 } from "@/features/transcripts/service/audioStorageService";
+import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedUrl";
 import { rawSegmentsAppended } from "../../redux/slice";
 import { insertRawSegment } from "../../service/studioService";
 import type { RawSegment } from "../../types";
@@ -60,13 +61,6 @@ interface WhisperSegment {
   text: string;
 }
 
-interface TranscribeUrlResponse {
-  success?: boolean;
-  text?: string;
-  duration?: number | null;
-  segments?: WhisperSegment[];
-  error?: string;
-}
 
 const ACCEPTED_TYPES =
   "audio/*,video/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.mov,.flac";
@@ -177,19 +171,6 @@ export function AudioImportDialog({
     [dispatch, sessionId, readTail],
   );
 
-  const transcribeStorageUrl = useCallback(async (storageUrl: string) => {
-    const res = await fetch("/api/audio/transcribe-url", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: storageUrl }),
-    });
-    const data = (await res.json()) as TranscribeUrlResponse;
-    if (!res.ok || data.success === false) {
-      throw new Error(data.error || `Transcription failed (${res.status}).`);
-    }
-    return data;
-  }, []);
-
   const handleSubmitFile = useCallback(async () => {
     if (!file || !userId) return;
     try {
@@ -209,7 +190,7 @@ export function AudioImportDialog({
       );
       setProgressLabel("Transcribing…");
       const signedUrl = await getAudioUrl(upload.fileId);
-      const data = await transcribeStorageUrl(signedUrl);
+      const data = await transcribeSignedUrl(signedUrl);
       const count = await ingestSegments(data.segments ?? [], data.text ?? "");
       toast.success(
         `Imported ${count} segment${count === 1 ? "" : "s"} from "${file.name}".`,
@@ -223,7 +204,7 @@ export function AudioImportDialog({
       setBusy(false);
       setProgressLabel(null);
     }
-  }, [file, userId, transcribeStorageUrl, ingestSegments, reset, onOpenChange]);
+  }, [file, userId, ingestSegments, reset, onOpenChange]);
 
   const handleSubmitUrl = useCallback(async () => {
     const trimmed = url.trim();
@@ -231,7 +212,7 @@ export function AudioImportDialog({
     try {
       setBusy(true);
       setProgressLabel("Transcribing…");
-      const data = await transcribeStorageUrl(trimmed);
+      const data = await transcribeSignedUrl(trimmed);
       const count = await ingestSegments(data.segments ?? [], data.text ?? "");
       toast.success(`Imported ${count} segment${count === 1 ? "" : "s"}.`);
       reset();
@@ -243,7 +224,7 @@ export function AudioImportDialog({
       setBusy(false);
       setProgressLabel(null);
     }
-  }, [url, transcribeStorageUrl, ingestSegments, reset, onOpenChange]);
+  }, [url, ingestSegments, reset, onOpenChange]);
 
   const openCloudFiles = useCallback(() => {
     dispatch(openOverlay({ overlayId: "cloudFilesWindow" }));

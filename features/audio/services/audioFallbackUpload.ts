@@ -22,6 +22,7 @@ import { CloudFolders, fileHandler } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { AUDIO_API_ROUTES, RETRY_CONFIG } from "../constants";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
+import { transcribeSignedUrl } from "./transcribeSignedUrl";
 import {
   normalizeAudioContentType,
   audioExtensionForType,
@@ -144,36 +145,9 @@ export async function uploadAndTranscribeFull(
   try {
     handle = await uploadWithRetry(blob);
 
-    const body: Record<string, string> = { url: handle.signedUrl };
-    if (options?.language) body.language = options.language;
-    if (options?.prompt) body.prompt = options.prompt;
-
-    const response = await fetch(AUDIO_API_ROUTES.TRANSCRIBE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      const errorMsg = data.error || "URL transcription failed";
-      await logClientError({
-        errorCode: `HTTP_${response.status}`,
-        errorMessage: errorMsg,
-        fileSizeBytes: blob.size,
-        apiRoute: AUDIO_API_ROUTES.TRANSCRIBE_URL,
-      });
-      return { success: false, text: "", error: errorMsg };
-    }
-
-    return {
-      success: true,
-      text: data.text,
-      language: data.language,
-      duration: data.duration,
-      segments: data.segments,
-    };
+    // Canonical URL-transcription contract (shared with AudioImportDialog and
+    // the education Study-Kit ingest). Throws on a non-OK / failed envelope.
+    return await transcribeSignedUrl(handle.signedUrl, options);
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Fallback transcription failed";
