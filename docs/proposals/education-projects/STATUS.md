@@ -50,25 +50,32 @@ monetization) and B (the connected study loop) are done.
 - Fixed D45 (mobile cloze/matching — was already done), D49 (canvas blank artifacts), D38 (learn_doc
   registry), D51 (vision-variant path collision — the real handwritten-grading bug).
 
+## 3b. Second wave this session (2026-07-14, parallel fleet)
+
+- **Tutor per-turn structured trust** ✅ — re-authored agent emits a per-turn envelope; grounded/inferred badge + citations or honest refusal (live-verified both ways).
+- **Flashcards meters** ✅ — `commit()` wired into generate_cards / card_enrichment / live_grade.
+- **Cross-surface stuck-session recovery** ✅ — Audio Review + FastFire now complete terminally-first / mark abandoned on quit.
+- **Pronunciation / language-fluency assessment** ✅ — 4th Spoken Practice mode, dual content+pronunciation grading (honest holistic granularity).
+- **Parent / guardian dashboard (K-8)** ✅ — `/education/family`, consent-based, read-only, reuses P5 analytics; **security-reviewed airtight**.
+- **Per-class hub (Wave 2)** ✅ — see Tier 4.
+- **Standardized exam content libraries** 🟡 — starter seed live (below).
+- **YouTube real-transcript ingestion** 🟡 — aidream endpoint + FE wired; **deploys with the next aidream release**.
+
 ## 4. Pending — the exact remaining list
 
 ### Tier 0 — one true blocker
-- 🟡 **Ship the handwritten-grading fix to prod** (aidream `08314b357`). Blocked only on the aidream
-  tree carrying others' uncommitted work + untracked migrations (won't stash).
+- 🟡 **Ship the aidream release to prod** (carries the handwritten-grading fix `08314b357` AND the new
+  YouTube-transcript endpoint). Blocked only on the aidream tree carrying others' uncommitted work +
+  untracked migrations (won't stash).
 
-### Tier 1 — small completions (dependency-free unless noted)
-- 🔲 **DOCX / PPTX ingestion** — no extractor exists; honestly gated. *Needs a dependency choice.*
-- 🟡 **YouTube real-transcript ingestion** — agent exists, no HTTP endpoint (currently page-scrape).
-- 🟡 **Flashcards meters** — `generate_cards`/`card_enrichment`/`live_grade` still need `commit()`.
-- 🔲 **Enforcement flip + free-tier numbers** — all new caps permissive; needs numbers + aidream spend re-check.
-- 🟡 **Tutor per-turn structured trust** — grounding-derived today; per-claim envelope is the ideal.
-- 🟡 **Cross-surface stuck-session recovery** — fixed for spoken practice; FastFire / Audio Review share the pattern.
+### Tier 1 — small completions / decisions
+- 🔲 **DOCX / PPTX ingestion** — no extractor exists; honestly gated. *Needs a dependency choice (LibreOffice vs python-docx).*
+- 🔲 **Enforcement flip + free-tier numbers** — all new caps permissive; needs Arman's numbers + aidream spend re-check.
+- 🟡 **D52 guardian email-enumeration** — `guardian_grant`/`request` branch their error on whether an email exists (+ no rate limit); product-UX call (generic response vs typo feedback).
 
-### Tier 2 — vision "Coming Soon" not yet built
+### Tier 2 — vision "Coming Soon"
 - 🔲 Study songs / musical mnemonics (audio) — *may need a music model; decision pending.*
-- 🔲 Pronunciation / language-fluency assessment.
-- 🟡 Standardized exam content libraries (curated SAT·ACT·AP·MCAT·LSAT·GRE decks). **Starter seed live (2026-07-14):** 9 certified curated decks (SAT Math·AP Biology·GRE Verbal, 128 cards) + 3 study guides, generated via the real flashcards agent, marked Certified, surfaced on each exam-prep page (`ExamCuratedLibrary`) + the community library. AI-generated starters pending human verification; ACT/IB/MCAT/LSAT/GMAT follow the same recipe.
-- 🔲 Parent / guardian dashboard (K–8).
+- 🟡 Standardized exam content libraries — **starter seed live (2026-07-14):** 9 certified curated decks (SAT Math·AP Biology·GRE Verbal, 128 cards) + 3 study guides, real-agent-generated, marked Certified, on each exam-prep page (`ExamCuratedLibrary`) + community library. AI starters pending human verification; ACT/IB/MCAT/LSAT/GMAT follow the same recipe.
 
 ### Tier 3 — Convergence C (institutional frontier, largely un-started)
 - 🔲 Teacher tools (assignment, distribution, auto-grade, class analytics).
@@ -89,13 +96,19 @@ monetization) and B (the connected study loop) are done.
 
 ## 5. Repo / deploy state (2026-07-14)
 
-- **matrx-frontend:** all education work pushed to `origin/main`. No lost work; every local branch is
-  merged into `main`.
+- **matrx-frontend:** first-wave education work is on `origin/main`; the second-wave fleet (tutor trust,
+  flashcards meters, recovery, pronunciation, parent dashboard, per-class hub, exam libraries, YouTube FE)
+  is committed on local `main` (~15 commits ahead), unpushed — **a push deploys aimatrx.com prod (Arman's call).**
+  Education-area `pnpm type-check` is clean. No lost work; every local branch merged into `main`.
 - **Two frontend stashes (NOT education, need landing by owners):** `stash@{0}` "pre-education-cert-stash"
   = context-slots/agent-input work; `stash@{1}` = files-api/preferences work.
-- **aidream:** deployed to prod v0.1.544 (TTS) + v0.1.545 (episode titles). Grading fix `08314b357` is on
-  aidream local `main`, **unpushed / not on prod**.
+- **aidream:** prod = v0.1.544 (TTS) + v0.1.545 (episode titles). Local `main` has the handwritten-grading
+  fix `08314b357` AND the YouTube-transcript endpoint `3c94ed4af`, **unpushed / not on prod** — one aidream
+  release ships both. Blocked only by others' uncommitted aidream work (won't stash).
 
 ## Change log
-- **2026-07-14** — Created. Reflects the audio resurrection, 3 new vision sections (memory/spoken/handwritten),
-  ingestion breadth, honest meters, hub discoverability, and the full pending list.
+- **2026-07-14 (wave 2)** — Parallel fleet: tutor per-turn structured trust, flashcards meters, cross-surface
+  session recovery, pronunciation mode, parent/guardian dashboard (+security review), per-class hub (W2),
+  exam content-library starter seed, YouTube-transcript wiring. Education type-check clean.
+- **2026-07-14 (wave 1)** — Created. Audio resurrection, 3 new vision sections (memory/spoken/handwritten),
+  ingestion breadth, honest meters, hub discoverability, D38/D45/D49/D51.
