@@ -4047,6 +4047,7 @@ export type Database = {
       agent_run_stage: {
         Row: {
           cost: number | null
+          created_at: string
           error: Json | null
           finished_at: string | null
           id: string
@@ -4055,9 +4056,11 @@ export type Database = {
           stage_key: string
           started_at: string
           status: string
+          updated_at: string
         }
         Insert: {
           cost?: number | null
+          created_at?: string
           error?: Json | null
           finished_at?: string | null
           id?: string
@@ -4066,9 +4069,11 @@ export type Database = {
           stage_key: string
           started_at?: string
           status?: string
+          updated_at?: string
         }
         Update: {
           cost?: number | null
+          created_at?: string
           error?: Json | null
           finished_at?: string | null
           id?: string
@@ -4077,6 +4082,7 @@ export type Database = {
           stage_key?: string
           started_at?: string
           status?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -4276,6 +4282,7 @@ export type Database = {
           reverted_at: string | null
           search_text: string
           status: Database["public"]["Enums"]["code_edit_status"]
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -4292,6 +4299,7 @@ export type Database = {
           reverted_at?: string | null
           search_text: string
           status: Database["public"]["Enums"]["code_edit_status"]
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -4308,6 +4316,7 @@ export type Database = {
           reverted_at?: string | null
           search_text?: string
           status?: Database["public"]["Enums"]["code_edit_status"]
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -4682,6 +4691,7 @@ export type Database = {
           kind: string
           metadata: Json
           mime_type: string | null
+          updated_at: string
           url: string
           user_id: string
         }
@@ -4695,6 +4705,7 @@ export type Database = {
           kind: string
           metadata?: Json
           mime_type?: string | null
+          updated_at?: string
           url: string
           user_id: string
         }
@@ -4708,6 +4719,7 @@ export type Database = {
           kind?: string
           metadata?: Json
           mime_type?: string | null
+          updated_at?: string
           url?: string
           user_id?: string
         }
@@ -4965,6 +4977,7 @@ export type Database = {
           success: boolean
           trigger_reason: string | null
           triggered_at: string
+          updated_at: string
           user_id: string
           user_request_id: string | null
         }
@@ -4985,6 +4998,7 @@ export type Database = {
           success?: boolean
           trigger_reason?: string | null
           triggered_at?: string
+          updated_at?: string
           user_id: string
           user_request_id?: string | null
         }
@@ -5005,6 +5019,7 @@ export type Database = {
           success?: boolean
           trigger_reason?: string | null
           triggered_at?: string
+          updated_at?: string
           user_id?: string
           user_request_id?: string | null
         }
@@ -5062,6 +5077,7 @@ export type Database = {
           metadata: Json
           source: string
           status: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -5079,6 +5095,7 @@ export type Database = {
           metadata?: Json
           source?: string
           status?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -5096,6 +5113,7 @@ export type Database = {
           metadata?: Json
           source?: string
           status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -5141,6 +5159,7 @@ export type Database = {
           total_duration_ms: number | null
           total_tokens: number | null
           trim_summary: Json | null
+          updated_at: string
           user_request_id: string
         }
         Insert: {
@@ -5168,6 +5187,7 @@ export type Database = {
           total_duration_ms?: number | null
           total_tokens?: number | null
           trim_summary?: Json | null
+          updated_at?: string
           user_request_id: string
         }
         Update: {
@@ -5195,6 +5215,7 @@ export type Database = {
           total_duration_ms?: number | null
           total_tokens?: number | null
           trim_summary?: Json | null
+          updated_at?: string
           user_request_id?: string
         }
         Relationships: [
@@ -5242,6 +5263,7 @@ export type Database = {
           response_payload: Json | null
           trigger_message_id: string | null
           unified_payload: Json | null
+          updated_at: string
           user_request_id: string | null
         }
         Insert: {
@@ -5257,6 +5279,7 @@ export type Database = {
           response_payload?: Json | null
           trigger_message_id?: string | null
           unified_payload?: Json | null
+          updated_at?: string
           user_request_id?: string | null
         }
         Update: {
@@ -5272,6 +5295,7 @@ export type Database = {
           response_payload?: Json | null
           trigger_message_id?: string | null
           unified_payload?: Json | null
+          updated_at?: string
           user_request_id?: string | null
         }
         Relationships: [
@@ -5520,6 +5544,7 @@ export type Database = {
           result_preview: string | null
           tool_name: string
           ts: string
+          updated_at: string
           user_id: string | null
         }
         Insert: {
@@ -5540,6 +5565,7 @@ export type Database = {
           result_preview?: string | null
           tool_name: string
           ts?: string
+          updated_at?: string
           user_id?: string | null
         }
         Update: {
@@ -5560,6 +5586,7 @@ export type Database = {
           result_preview?: string | null
           tool_name?: string
           ts?: string
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: [
@@ -27126,6 +27153,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cx_message_set_reaction: {
+        Args: { p_message_id: string; p_reaction: string }
+        Returns: Json
+      }
       cx_message_soft_delete: {
         Args: { p_message_id: string }
         Returns: string
@@ -28150,6 +28181,19 @@ export type Database = {
           settings: Json
           source: string
           variable_defaults: Json
+        }[]
+      }
+      get_agent_public: {
+        Args: { p_agent_id: string }
+        Returns: {
+          agent_type: string
+          category: string
+          context_slots: Json
+          description: string
+          id: string
+          name: string
+          tags: string[]
+          variable_definitions: Json
         }[]
       }
       get_agent_usage_stats: {
@@ -40580,6 +40624,15 @@ export type Database = {
     Functions: {
       heal_user_preferences_drift: { Args: never; Returns: number }
       normalize_preferences_jsonb: { Args: { p: Json }; Returns: Json }
+      user_preferences_drift_report: {
+        Args: never
+        Returns: {
+          drifted_fields: string
+          organization_id: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
