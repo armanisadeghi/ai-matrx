@@ -29,7 +29,7 @@ export function PracticeSetup({
 }: {
   mode: SpokenPracticeMode;
   onBack: () => void;
-  start: (config: PracticeConfig) => Promise<void>;
+  start: (config: PracticeConfig) => Promise<boolean>;
 }) {
   const cfg = MODE_CONFIG[mode];
   const Icon = cfg.icon;
@@ -78,7 +78,11 @@ export function PracticeSetup({
         count,
         source,
       };
-      await guard.guard(() => start(config));
+      await guard.guard(async () => {
+        // Meter only a session that actually started; a failed start (bad
+        // design, mic denied, save error) returns false and burns nothing.
+        if (await start(config)) await guard.commit();
+      });
     } finally {
       setBusy(false);
     }

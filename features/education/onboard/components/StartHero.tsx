@@ -113,7 +113,9 @@ export function StartHero() {
                 url,
               } as const);
 
-      await kit.run(input, kinds, { focus: focus.trim() || undefined });
+      // Meter only a real ingest; an empty selection / failed ingest burns nothing.
+      const ok = await kit.run(input, kinds, { focus: focus.trim() || undefined });
+      if (ok) await ingestGuard.commit();
     });
   }, [
     canGenerate,

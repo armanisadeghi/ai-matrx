@@ -107,7 +107,7 @@ export function AudioStudyNew() {
     // Canonical guard: server-truth check BEFORE spending; a cap-hit opens the
     // respectful contextual paywall (not a toast) and never starts the work.
     await gen.guard(async () => {
-      await create({
+      const ok = await create({
         format,
         sourceKind,
         deckId: sourceKind === "deck" ? deckId : undefined,
@@ -115,6 +115,8 @@ export function AudioStudyNew() {
         hostCount,
         adaptive: sourceKind === "deck" && adaptive,
       });
+      // Meter only a real generation; a failed/early-returned create burns nothing.
+      if (ok) await gen.commit();
     });
   }
 

@@ -272,6 +272,11 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
         toast.error(created.error ?? `Could not save the ${config.noun}`);
         return;
       }
+      // Metered action SUCCEEDED — record real usage so the meter decrements
+      // (honest even while enforced:false; the capability is quiz_generate or
+      // practice_test_generate per `config.capability`). Failed branches return
+      // first, so a failed generation never burns quota.
+      await entitlement.commit();
       toast.success(
         `Created "${created.data.assessment.title}" with ${items.length} question${items.length === 1 ? "" : "s"}`,
       );

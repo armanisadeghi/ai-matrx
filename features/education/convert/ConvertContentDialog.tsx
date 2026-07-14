@@ -172,10 +172,13 @@ export function ConvertContentDialog({
   const canConvert = sourceText.trim().length > 0;
   const targets = TARGETS.filter((t) => !excludeKinds?.includes(t.kind));
 
-  const runConvert = async (kind: TargetKind) => {
+  // Returns true only when the conversion completed (status → done). The row's
+  // guard meters the entitlement on that success; a failed conversion returns
+  // false and never burns quota.
+  const runConvert = async (kind: TargetKind): Promise<boolean> => {
     if (!canConvert) {
       toast.error("There's no content to convert yet.");
-      return;
+      return false;
     }
     setRows((r) => ({ ...r, [kind]: { status: "running" } }));
     const source: ConvertSource = {
@@ -196,10 +199,12 @@ export function ConvertContentDialog({
       toast.success(`Created "${result.title}"`, {
         action: { label: "Open", onClick: () => router.push(result.href) },
       });
+      return true;
     } catch (e) {
       const message = e instanceof Error ? e.message : "Generation failed";
       setRows((r) => ({ ...r, [kind]: { status: "error", message } }));
       toast.error(message);
+      return false;
     }
   };
 
@@ -273,7 +278,8 @@ function TargetRow({
   meta: TargetMeta;
   available: boolean;
   state: RowState;
-  onConvert: () => void | Promise<void>;
+  /** Runs the conversion; resolves true on success so usage is metered. */
+  onConvert: () => Promise<boolean>;
   onOpen: (href: string) => void;
 }) {
   // Canonical check-before-spend + paywall. `guard()` awaits the server-truth
@@ -329,7 +335,12 @@ function TargetRow({
           size="sm"
           variant="outline"
           disabled={disabled}
-          onClick={() => void gen.guard(onConvert)}
+          onClick={() =>
+            void gen.guard(async () => {
+              // Meter only a successful conversion; a failure burns nothing.
+              if (await onConvert()) await gen.commit();
+            })
+          }
           title={!available ? "This target isn't available yet" : `Convert to ${meta.label}`}
         >
           {running || gen.isChecking ? (

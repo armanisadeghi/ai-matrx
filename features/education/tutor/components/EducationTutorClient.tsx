@@ -18,7 +18,8 @@
 // mints one, injects grounding, promotes the URL after first submit) and
 // existing (conversationId prop → load the transcript, launcher gated off).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createSelector } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -30,10 +31,13 @@ import { loadConversation } from "@/features/agents/redux/execution-system/thunk
 import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { setFocus, clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  selectConversationMessages,
+  selectMessageCount,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
-import { useEntitlement } from "@/features/entitlements/hooks";
+import { useEntitlement, useEntitlementConsume } from "@/features/entitlements/hooks";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
@@ -97,6 +101,15 @@ export function EducationTutorClient({
   // The remaining-count meter is the canonical primitive (renders nothing while
   // unlimited/permissive; shows "X of Y left" once limits exist).
   const hasMeter = tutorMsg.limit != null;
+  // Record real usage per sent message so the meter is honest (even while
+  // enforced:false). The composer lives inside the agents smart-input (no submit
+  // callback we can hook without touching features/agents), so we meter by
+  // watching the count of USER-authored messages on this conversation grow. The
+  // baseline is captured once per mount, so already-sent history is never
+  // re-metered; only positive deltas consume — this can only ever under-count
+  // (the TRUST-safe direction), never charge twice. A first-class composer
+  // `onSubmit` hook would make this exact (tracked in FEATURE.md).
+  const commitTutorMessage = useEntitlementConsume("education.tutor_message");
 
   // ── Access gate (P7): view vs edit on an EXISTING conversation ────────────
   // Tutor threads are `chat.conversation` rows (the registered `conversation`
@@ -294,6 +307,47 @@ export function EducationTutorClient({
   // composer, so using the landing slot would leave the fresh route with no way
   // to type. `afterMessages` keeps the real SmartAgentInput mounted.
   const messageCount = useAppSelector(selectMessageCount(conversationId ?? ""));
+
+  // ── Metered usage per sent tutor message (P8) ─────────────────────────────
+  // Count USER-authored messages on this conversation; a memoized selector so
+  // the component re-renders only when that count changes, not on every stream
+  // token. See `commitTutorMessage` above for why we meter by count delta.
+  const selectUserMessageCount = useMemo(
+    () =>
+      createSelector(
+        selectConversationMessages(conversationId ?? ""),
+        (msgs) => msgs.reduce((n, m) => n + (m.role === "user" ? 1 : 0), 0),
+      ),
+    [conversationId],
+  );
+  const userMessageCount = useAppSelector(selectUserMessageCount);
+  const meteredUserCountRef = useRef<number | null>(null);
+  // Reset the baseline whenever the bound conversation changes so a swap (fresh
+  // → promoted route) never re-meters the carried-over history.
+  useEffect(() => {
+    meteredUserCountRef.current = null;
+  }, [conversationId]);
+  useEffect(() => {
+    if (!conversationId || !authReady || isInitializing || isSharedView) return;
+    // First settled render for this conversation → capture the baseline (any
+    // already-loaded messages are history, not new sends).
+    if (meteredUserCountRef.current === null) {
+      meteredUserCountRef.current = userMessageCount;
+      return;
+    }
+    if (userMessageCount > meteredUserCountRef.current) {
+      const delta = userMessageCount - meteredUserCountRef.current;
+      meteredUserCountRef.current = userMessageCount;
+      for (let i = 0; i < delta; i++) void commitTutorMessage();
+    }
+  }, [
+    userMessageCount,
+    conversationId,
+    authReady,
+    isInitializing,
+    isSharedView,
+    commitTutorMessage,
+  ]);
 
   // ── Per-turn learner-memory refresh ───────────────────────────────────────
   // Grounding is INJECTED at launch, but `request.context` is re-sent every

@@ -65,8 +65,11 @@ export interface UseSpokenPractice {
   review: ReviewSessionResult | null;
   micLevel: number;
   error: string | null;
-  /** Begin a session (call inside a click gesture — it warms the mic). */
-  start: (config: PracticeConfig) => Promise<void>;
+  /**
+   * Begin a session (call inside a click gesture — it warms the mic). Resolves
+   * true only when the session fully started, so the caller can meter usage.
+   */
+  start: (config: PracticeConfig) => Promise<boolean>;
   /** Submit the current spoken answer now (the learner pressed "Done"). */
   submitAnswer: () => void;
   /** Skip the current prompt without answering. */
@@ -123,8 +126,12 @@ export function useSpokenPractice(): UseSpokenPractice {
 
   const current = plan?.prompts[index] ?? null;
 
+  // Returns true only when the grounded session was designed AND fully started
+  // (mic warmed, study-spine session opened, phase → asking). The caller meters
+  // the entitlement on that success; any early error return yields false so a
+  // failed start never burns quota.
   const start = useCallback(
-    async (config: PracticeConfig) => {
+    async (config: PracticeConfig): Promise<boolean> => {
       configRef.current = config;
       setError(null);
       setResults([]);
@@ -147,7 +154,7 @@ export function useSpokenPractice(): UseSpokenPractice {
       if (!designed) {
         setError("Couldn't design your session. Please try again.");
         setPhase("error");
-        return;
+        return false;
       }
 
       // 2) Warm ONE mic (inside the start gesture chain).
@@ -161,7 +168,7 @@ export function useSpokenPractice(): UseSpokenPractice {
           e instanceof Error ? e.message : "Couldn't access the microphone",
         );
         setPhase("error");
-        return;
+        return false;
       }
 
       // 3) Open the study-spine session (mode carries the practice type).
@@ -184,12 +191,13 @@ export function useSpokenPractice(): UseSpokenPractice {
         capturingRef.current = false;
         setError(session.error ?? "Couldn't start the session");
         setPhase("error");
-        return;
+        return false;
       }
 
       setSessionId(session.data.id);
       setPlan(designed);
       setPhase("asking");
+      return true;
     },
     [dispatch],
   );

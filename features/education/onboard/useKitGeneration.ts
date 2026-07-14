@@ -32,12 +32,16 @@ export interface UseKitGeneration {
   /** Top-level error (ingest failure sinks the whole run). */
   error: string | null;
   busy: boolean;
-  /** Run the whole flow. Resolves when every target has settled. */
+  /**
+   * Run the whole flow. Resolves true once the document was ingested and every
+   * target has settled (so the caller can meter `ingest_document`), false on an
+   * empty selection or a failed ingest.
+   */
   run: (
     input: RawIngestInput,
     kinds: TargetKind[],
     options?: { count?: number; difficulty?: string; focus?: string },
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   reset: () => void;
 }
 
@@ -68,16 +72,19 @@ export function useKitGeneration(): UseKitGeneration {
     [],
   );
 
+  // Returns true once the document was ingested and the kit fan-out ran (phase
+  // → done). The caller meters `ingest_document` on that success; an empty
+  // selection or a failed ingest returns false and never burns quota.
   const run = useCallback(
     async (
       input: RawIngestInput,
       kinds: TargetKind[],
       options?: { count?: number; difficulty?: string; focus?: string },
-    ) => {
+    ): Promise<boolean> => {
       if (kinds.length === 0) {
         setError("Pick at least one thing to create.");
         setPhase("error");
-        return;
+        return false;
       }
       setError(null);
       setSource(null);
@@ -100,7 +107,7 @@ export function useKitGeneration(): UseKitGeneration {
       } catch (e) {
         setError(e instanceof Error ? e.message : "Couldn't read that source.");
         setPhase("error");
-        return;
+        return false;
       }
 
       setPhase("generating");
@@ -132,6 +139,7 @@ export function useKitGeneration(): UseKitGeneration {
       );
 
       setPhase("done");
+      return true;
     },
     [convertMany, normalize, patchTarget],
   );

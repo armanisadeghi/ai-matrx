@@ -94,6 +94,10 @@ export function MemoryNew() {
           toast.error(media.error ?? "Couldn't save the memory aids");
           return;
         }
+        // Metered action SUCCEEDED — record real usage so the meter decrements
+        // (honest even while enforced:false). Failed branches above return
+        // first, so a failed generation never burns quota.
+        await gen.commit();
         router.push(`/education/memory/${media.data.id}`);
       } catch (e) {
         toast.error(

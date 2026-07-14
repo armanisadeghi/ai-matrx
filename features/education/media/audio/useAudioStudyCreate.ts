@@ -44,8 +44,11 @@ export function useAudioStudyCreate() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
-  async function create(input: AudioStudyCreateInput): Promise<void> {
-    if (busy) return;
+  // Returns true only when the run + artifact were created and we navigated —
+  // the caller meters the entitlement on that success (a failed/early-returned
+  // generation returns false and never burns quota).
+  async function create(input: AudioStudyCreateInput): Promise<boolean> {
+    if (busy) return false;
     setBusy(true);
     try {
       // 1. Resolve the source → content + trust + adaptive weak-area note.
@@ -58,7 +61,7 @@ export function useAudioStudyCreate() {
 
       if (!resolved) {
         toast.error("Couldn't load that source — pick a deck with cards, or type a topic.");
-        return;
+        return false;
       }
       if (input.sourceKind === "deck" && (resolved as { truncated?: boolean }).truncated) {
         toast.info("This deck is large — the audio covers the first 80 cards.");
@@ -103,7 +106,7 @@ export function useAudioStudyCreate() {
       });
       if (media.error || !media.data) {
         toast.error(media.error ?? "Couldn't create the audio study");
-        return;
+        return false;
       }
 
       // 5. Hand the request to the run page + navigate. A refresh clears the
@@ -111,8 +114,10 @@ export function useAudioStudyCreate() {
       //    re-generating (no duplicate work).
       stashPendingStart(run.id, request);
       router.push(`/education/audio-study/${media.data.id}`);
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't start generation");
+      return false;
     } finally {
       setBusy(false);
     }
