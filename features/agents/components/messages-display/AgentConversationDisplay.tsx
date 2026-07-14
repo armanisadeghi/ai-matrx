@@ -18,7 +18,13 @@
  * tool_call stubs with their full payloads from `observability.toolCalls`.
  */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type RefObject,
+} from "react";
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -138,8 +144,12 @@ export function AgentConversationDisplay({
     return groupDisplayEntries(entries);
   }, [messages, isActive, latestRequestId, phase]);
 
+  // Cold `/chat/[id]` owns the initial bottom-window locally. That local
+  // limit must take precedence over any Redux value left from a prior visit
+  // to the same conversation, otherwise a warm in-memory conversation can
+  // briefly render from the oldest loaded group.
   const effectiveVisibleGroupLimit =
-    visibleGroupLimit ?? fallbackVisibleGroupLimit;
+    fallbackVisibleGroupLimit ?? visibleGroupLimit;
   const displayGroups = useMemo(
     () => applyDisplayGroupWindow(allDisplayGroups, effectiveVisibleGroupLimit),
     [allDisplayGroups, effectiveVisibleGroupLimit],
@@ -183,6 +193,12 @@ export function AgentConversationDisplay({
     firstKey: string | undefined;
     scrollHeight: number;
   } | null>(null);
+  const didAnchorColdRevealRef = useRef(false);
+  useEffect(() => {
+    scrollSnapshotRef.current = null;
+    didAnchorColdRevealRef.current = false;
+  }, [conversationId]);
+
   useLayoutEffect(() => {
     const scrollEl = scrollRef?.current;
     const firstKey = displayGroups[0]?.key;
@@ -204,7 +220,6 @@ export function AgentConversationDisplay({
     };
   }, [displayGroups, scrollRef]);
 
-  const didAnchorColdRevealRef = useRef(false);
   useEffect(() => {
     if (!deferColdMarkdown) return undefined;
     if (didAnchorColdRevealRef.current) return undefined;

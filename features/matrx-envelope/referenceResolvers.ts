@@ -156,7 +156,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
       if (!ref.list_id) return undefined;
       const { data, error } = await supabase
         .schema("workbench")
-        .from("udt_picklists")
+        .from("udt_structured_lists")
         .select("list_name, description")
         .eq("id", ref.list_id)
         .maybeSingle();
@@ -187,7 +187,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
       if (!ref.item_id) return undefined;
       const { data, error } = await supabase
         .schema("workbench")
-        .from("udt_picklist_items")
+        .from("udt_structured_list_items")
         .select("description, label")
         .eq("id", ref.item_id)
         .maybeSingle();

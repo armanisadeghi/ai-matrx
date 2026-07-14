@@ -30,7 +30,7 @@ type ItemPatch = Partial<
 >;
 
 /**
- * Data + optimistic-mutation hook for the udt_picklists editor (V2 / table layout).
+ * Data + optimistic-mutation hook for the udt_structured_lists editor (V2 / table layout).
  * - Loads all accessible lists (RLS-filtered) up front (lightweight).
  * - Loads items lazily when a list is activated; caches them in-memory.
  * - All mutations are optimistic; server errors revert and surface in `error`.
@@ -56,8 +56,8 @@ export function usePicklists() {
       try {
         const { data, error: err } = await supabase
           .schema("workbench")
-          .from("udt_picklists")
-          .select("*, udt_picklist_items(count)")
+          .from("udt_structured_lists")
+          .select("*, udt_structured_list_items(count)")
           .order("updated_at", { ascending: false, nullsFirst: false });
         if (err) throw err;
         if (cancelled) return;
@@ -70,7 +70,7 @@ export function usePicklists() {
           public_read: row.public_read ?? true,
           created_at: row.created_at,
           updated_at: row.updated_at,
-          item_count: row.udt_picklist_items?.[0]?.count ?? 0,
+          item_count: row.udt_structured_list_items?.[0]?.count ?? 0,
         }));
         setLists(mapped);
         if (mapped.length > 0) setActiveListId((id) => id ?? mapped[0]!.id);
@@ -101,7 +101,7 @@ export function usePicklists() {
       try {
         const { data, error: err } = await supabase
           .schema("workbench")
-          .from("udt_picklist_items")
+          .from("udt_structured_list_items")
           .select("*")
           .eq("list_id", activeListId)
           .order("group_name", { ascending: true, nullsFirst: false })

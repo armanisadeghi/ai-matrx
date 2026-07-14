@@ -39,8 +39,8 @@ interface PicklistManagerV2Props {
 }
 
 /**
- * PicklistManagerV2 — flat-table picklist manager (`udt_picklists` /
- * `udt_picklist_items`).
+ * PicklistManagerV2 — flat-table picklist manager (`udt_structured_lists` /
+ * `udt_structured_list_items`).
  *
  * One screen, one table, five editable columns
  * (Label / Description / Help Text / Group / Icon). Embeddable as-is in a

@@ -3,11 +3,11 @@
 /**
  * PicklistManager
  *
- * Spreadsheet-style editor for udt_picklists / udt_picklist_items.
+ * Spreadsheet-style editor for udt_structured_lists / udt_structured_list_items.
  *
  * Schema notes:
- * - udt_picklists: id, list_name, description, user_id, is_public, public_read, created_at, updated_at
- * - udt_picklist_items: id, list_id (FK -> udt_picklists.id, ON DELETE CASCADE),
+ * - udt_structured_lists: id, list_name, description, user_id, is_public, public_read, created_at, updated_at
+ * - udt_structured_list_items: id, list_id (FK -> udt_structured_lists.id, ON DELETE CASCADE),
  *     label, description, help_text, group_name, icon_name, user_id, is_public, public_read, created_at, updated_at
  * - There is NO sort_order column on items. Items are sorted alphabetically within group_name,
  *   with ungrouped items pushed to the bottom.
@@ -166,7 +166,7 @@ type PicklistItem = {
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 // ---------- Icon registry ----------
-// Keyed by the string stored in udt_picklist_items.icon_name so we can render whatever is in the DB.
+// Keyed by the string stored in udt_structured_list_items.icon_name so we can render whatever is in the DB.
 
 const ICONS: Record<string, LucideIcon> = {
   home: Home,
@@ -351,13 +351,13 @@ export function PicklistManagerV1({
         const [listRes, itemsRes] = await Promise.all([
           supabase
             .schema("workbench")
-            .from("udt_picklists")
+            .from("udt_structured_lists")
             .select("*")
             .eq("id", forcedListId)
             .maybeSingle(),
           supabase
             .schema("workbench")
-            .from("udt_picklist_items")
+            .from("udt_structured_list_items")
             .select("*")
             .eq("list_id", forcedListId),
         ]);
@@ -379,7 +379,7 @@ export function PicklistManagerV1({
 
       const { data: listsData, error: listsErr } = await supabase
         .schema("workbench")
-        .from("udt_picklists")
+        .from("udt_structured_lists")
         .select("*")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false });
@@ -399,7 +399,7 @@ export function PicklistManagerV1({
       if (first) {
         const { data: itemsData, error: itemsErr } = await supabase
           .schema("workbench")
-          .from("udt_picklist_items")
+          .from("udt_structured_list_items")
           .select("*")
           .eq("list_id", first);
         if (!cancelled && !itemsErr) setItems(itemsData ?? []);
@@ -422,7 +422,7 @@ export function PicklistManagerV1({
     (async () => {
       const { data, error } = await supabase
         .schema("workbench")
-        .from("udt_picklist_items")
+        .from("udt_structured_list_items")
         .select("*")
         .eq("list_id", activeId);
       if (!cancelled && !error) setItems(data ?? []);
@@ -460,7 +460,7 @@ export function PicklistManagerV1({
 
     const { error } = await supabase
       .schema("workbench")
-      .from("udt_picklists")
+      .from("udt_structured_lists")
       .insert({
         id: optimistic.id,
         list_name: "",
@@ -488,7 +488,7 @@ export function PicklistManagerV1({
     setSaveStatus("saving");
     const { error } = await supabase
       .schema("workbench")
-      .from("udt_picklists")
+      .from("udt_structured_lists")
       .update({ [field]: value })
       .eq("id", id);
     if (error) {
@@ -519,7 +519,7 @@ export function PicklistManagerV1({
       if (undone) return;
       const { error } = await supabase
         .schema("workbench")
-        .from("udt_picklists")
+        .from("udt_structured_lists")
         .delete()
         .eq("id", id);
       if (error) {
@@ -568,7 +568,7 @@ export function PicklistManagerV1({
 
     const { error } = await supabase
       .schema("workbench")
-      .from("udt_picklist_items")
+      .from("udt_structured_list_items")
       .insert({
         id: optimistic.id,
         list_id: activeId,
@@ -607,7 +607,7 @@ export function PicklistManagerV1({
     setSaveStatus("saving");
     const { error } = await supabase
       .schema("workbench")
-      .from("udt_picklist_items")
+      .from("udt_structured_list_items")
       .update({ [field]: value })
       .eq("id", id);
     if (error && snapshot) {
@@ -631,7 +631,7 @@ export function PicklistManagerV1({
       if (undone) return;
       const { error } = await supabase
         .schema("workbench")
-        .from("udt_picklist_items")
+        .from("udt_structured_list_items")
         .delete()
         .eq("id", id);
       if (error) {
@@ -669,7 +669,7 @@ export function PicklistManagerV1({
 
     const { error } = await supabase
       .schema("workbench")
-      .from("udt_picklist_items")
+      .from("udt_structured_list_items")
       .update({ group_name: newName || null })
       .eq("list_id", activeId)
       .eq("group_name", oldName);

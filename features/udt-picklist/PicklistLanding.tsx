@@ -48,7 +48,7 @@ const FEATURES = [
     icon: Database,
     title: "Real data, not config",
     description:
-      "Backed by udt_picklists / udt_picklist_items in Postgres. Reusable everywhere a list of options is needed.",
+      "Backed by udt_structured_lists / udt_structured_list_items in Postgres. Reusable everywhere a list of options is needed.",
   },
   {
     icon: Keyboard,
@@ -121,12 +121,12 @@ const VARIANTS: Array<{
 
 const SCHEMA = [
   {
-    title: "udt_picklists",
+    title: "udt_structured_lists",
     description:
       "One row per list. Carries name, description, owner, visibility (private / shared / public).",
   },
   {
-    title: "udt_picklist_items",
+    title: "udt_structured_list_items",
     description:
       "Each row is a selectable option: label, description, help text, group, icon. Cascade-delete with its parent list.",
   },
@@ -214,7 +214,7 @@ export default function PicklistLanding() {
               Two editors, same data
             </h2>
             <p className="mt-3 text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-              Both edit <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em]">udt_picklists</code>{" "}
+              Both edit <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em]">udt_structured_lists</code>{" "}
               directly. Pick whichever feels faster — they're under live
               comparison.
             </p>

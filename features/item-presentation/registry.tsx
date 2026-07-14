@@ -484,7 +484,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     enrich: (s, id) =>
       fetchRow(
         s,
-        "udt_picklists",
+        "udt_structured_lists",
         id,
         "list_name, description",
         (r) => ({

@@ -344,18 +344,18 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     scopeable: true,
   },
   {
-    key: "picklist",
+    key: "structured_list",
     label: "List",
     labelPlural: "Lists",
     role: "source",
     icon: List,
-    description: "Reusable option lists and picklists.",
-    table: "udt_picklists",
-    // udt_picklists DOES carry organization_id (verified live 2026-06-27); the
-    // prior `false` was stale catalogue drift that hid org-owned picklists from
+    description: "Reusable, optionally grouped lists of editable option objects.",
+    table: "udt_structured_lists",
+    // udt_structured_lists DOES carry organization_id (verified live 2026-06-27);
+    // the prior `false` was stale catalogue drift that hid org-owned lists from
     // both the inventory count and the org shared-items list.
     hasOrgColumn: true,
-    shareKey: "udt_picklists",
+    shareKey: "structured_list",
     titleColumn: "description",
     orgRoute: null,
     scopeable: true,

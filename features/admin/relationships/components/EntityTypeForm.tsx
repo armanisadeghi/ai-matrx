@@ -128,7 +128,7 @@ export function EntityTypeForm({
           <Input
             value={editor.tableName}
             onChange={(e) => onChange({ ...editor, tableName: e.target.value })}
-            placeholder="e.g. udt_picklists"
+            placeholder="e.g. udt_structured_lists"
             className="h-8 font-mono"
             style={{ fontSize: "16px" }}
           />

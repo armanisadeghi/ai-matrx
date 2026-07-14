@@ -22,7 +22,7 @@ async function getListDetail(listId: string): Promise<{
       supabase.rpc("get_user_list_with_items", { p_list_id: listId }),
       supabase
         .schema("workbench")
-        .from("udt_picklists")
+        .from("udt_structured_lists")
         .select("user_id")
         .eq("id", listId)
         .single(),

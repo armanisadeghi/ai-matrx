@@ -58,7 +58,7 @@ export default function ShareModalWindow({
       cx_conversation: `/chat/${resourceId}`,
       canvas_items: `/canvas/${resourceId}`,
       udt_datasets: `/data/${resourceId}`,
-      udt_picklists: `/lists/${resourceId}`,
+      structured_list: `/lists/${resourceId}`,
       transcripts: `/transcripts/${resourceId}`,
       quiz_sessions: `/quizzes/${resourceId}`,
       sandbox_instances: `/sandbox/${resourceId}`,

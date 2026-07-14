@@ -41,7 +41,7 @@ export async function getOwnedListsSummary(
 export async function getAccessibleLists(): Promise<UserList[]> {
   const { data, error } = await supabase
     .schema("workbench")
-    .from("udt_picklists")
+    .from("udt_structured_lists")
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw new Error(`Failed to load lists: ${error.message}`);
@@ -113,7 +113,7 @@ export async function updateList(input: UpdateListInput) {
 export async function deleteList(listId: string): Promise<void> {
   const { error } = await supabase
     .schema("workbench")
-    .from("udt_picklists")
+    .from("udt_structured_lists")
     .delete()
     .eq("id", listId);
   if (error) throw new Error(`Failed to delete list: ${error.message}`);
@@ -134,7 +134,7 @@ export async function addItemToList(params: {
 }) {
   const { data, error } = await supabase
     .schema("workbench")
-    .from("udt_picklist_items")
+    .from("udt_structured_list_items")
     .insert({
       list_id: params.listId,
       user_id: params.userId,
@@ -164,7 +164,7 @@ export async function updateItem(
 ) {
   const { data, error } = await supabase
     .schema("workbench")
-    .from("udt_picklist_items")
+    .from("udt_structured_list_items")
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", itemId)
     .select()
@@ -176,7 +176,7 @@ export async function updateItem(
 export async function deleteItem(itemId: string): Promise<void> {
   const { error } = await supabase
     .schema("workbench")
-    .from("udt_picklist_items")
+    .from("udt_structured_list_items")
     .delete()
     .eq("id", itemId);
   if (error) throw new Error(`Failed to delete item: ${error.message}`);

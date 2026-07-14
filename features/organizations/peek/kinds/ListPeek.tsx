@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * ListPeek — peek preview for a udt_picklists row.
+ * ListPeek — peek preview for a udt_structured_lists row.
  *
- * Note: udt_picklists has no name/title column — the user-facing label is
+ * Note: udt_structured_lists has no name/title column — the user-facing label is
  * stored in the `description` column, which doubles as the dialog title.
  */
 
@@ -28,7 +28,7 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
       setLoading(true);
       const { data } = await supabase
         .schema("workbench")
-        .from("udt_picklists")
+        .from("udt_structured_lists")
         .select("description, created_at")
         .eq("id", id)
         .maybeSingle();

@@ -64,7 +64,7 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   skill: FlaskConical,
   udt_datasets: Table,
   udt_documents: FileText,
-  udt_picklists: ListChecks,
+  structured_list: ListChecks,
   udt_workbooks: Table,
   wc_claim: Building2,
   feature_doc: FileText,

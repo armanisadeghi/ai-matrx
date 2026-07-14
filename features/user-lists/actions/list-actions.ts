@@ -80,7 +80,7 @@ export async function deleteListAction(listId: string) {
 
   const { error } = await supabase
     .schema("workbench")
-    .from("udt_picklists")
+    .from("udt_structured_lists")
     .delete()
     .eq("id", listId)
     .eq("user_id", user.id);
@@ -108,7 +108,7 @@ export async function addItemAction(params: {
 
   const { data, error } = await supabase
     .schema("workbench")
-    .from("udt_picklist_items")
+    .from("udt_structured_list_items")
     .insert({
       list_id: params.listId,
       user_id: user.id,
@@ -144,7 +144,7 @@ export async function updateItemAction(params: {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const patch: TablesUpdate<{ schema: "workbench" }, "udt_picklist_items"> = {
+  const patch: TablesUpdate<{ schema: "workbench" }, "udt_structured_list_items"> = {
     updated_at: new Date().toISOString(),
   };
   if (params.label !== undefined) patch.label = params.label;
@@ -155,7 +155,7 @@ export async function updateItemAction(params: {
 
   const { data, error } = await supabase
     .schema("workbench")
-    .from("udt_picklist_items")
+    .from("udt_structured_list_items")
     .update(patch)
     .eq("id", params.itemId)
     .select()
@@ -176,7 +176,7 @@ export async function deleteItemAction(itemId: string, listId: string) {
 
   const { error } = await supabase
     .schema("workbench")
-    .from("udt_picklist_items")
+    .from("udt_structured_list_items")
     .delete()
     .eq("id", itemId)
     .eq("user_id", user.id);

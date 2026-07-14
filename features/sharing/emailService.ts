@@ -53,10 +53,10 @@ async function getResourceDetails(
       }
 
       case "collection":
-      case "udt_picklists": {
+      case "structured_list": {
         const { data } = await supabase
           .schema("workbench")
-          .from("udt_picklists")
+          .from("udt_structured_lists")
           .select("list_name")
           .eq("id", resourceId)
           .single();
