@@ -79,9 +79,13 @@ monetization) and B (the connected study loop) are done.
 - 🔲 Community/certified library at scale + moderation.
 
 ### Tier 4 — Wave 2 fan-out (documented, not built)
-- 🔲 Per-class hub ([`W2-class-hub.md`](./W2-class-hub.md), unblocked now). Class/group social rooms ·
-  talk-to-the-hosts audio · offline mode · browser-extension clipper · native mobile parity ·
-  standards alignment (Common Core/NGSS) · grade-adaptive theming (K-5).
+- ✅ Per-class hub ([`W2-class-hub.md`](./W2-class-hub.md)) — **shipped 2026-07-14**, scopes-native (class =
+  scope; content↔class = platform.associations; exam dates = scope.settings; zero new tables).
+  `/education/classes` + `/education/classes/[classId]`; `features/education/classes/FEATURE.md`.
+  Open follow-ups (flagged for Arman): teacher/roster/sharing (Convergence C), planner auto-read of a
+  class's exam calendar, per-tool class-filtered list views.
+- 🔲 Class/group social rooms · talk-to-the-hosts audio · offline mode · browser-extension clipper ·
+  native mobile parity · standards alignment (Common Core/NGSS) · grade-adaptive theming (K-5).
 
 ## 5. Repo / deploy state (2026-07-14)
 
