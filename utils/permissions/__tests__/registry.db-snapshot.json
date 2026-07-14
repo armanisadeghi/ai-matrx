@@ -407,6 +407,17 @@
     "is_active": true
   },
   {
+    "resource_type": "scope",
+    "table_name": "scopes",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": "visibility",
+    "display_label": "Scope",
+    "url_path_template": "/scopes/{id}",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
     "resource_type": "scope_association_suggestion",
     "table_name": "scope_association_suggestions",
     "id_column": "id",
@@ -484,6 +495,17 @@
     "is_active": true
   },
   {
+    "resource_type": "structured_list",
+    "table_name": "udt_structured_lists",
+    "id_column": "id",
+    "owner_column": "user_id",
+    "is_public_column": "is_public",
+    "display_label": "Structured List",
+    "url_path_template": "/lists/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "studio_session",
     "table_name": "studio_sessions",
     "id_column": "id",
@@ -557,17 +579,6 @@
     "is_public_column": "is_public",
     "display_label": "Document",
     "url_path_template": "/documents/{id}",
-    "rls_uses_has_permission": true,
-    "is_active": true
-  },
-  {
-    "resource_type": "udt_picklists",
-    "table_name": "udt_picklists",
-    "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
-    "display_label": "List",
-    "url_path_template": "/lists/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },

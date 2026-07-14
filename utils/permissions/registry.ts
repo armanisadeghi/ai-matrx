@@ -618,16 +618,30 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/documents/{id}",
     rlsUsesHasPermission: true,
   },
-  udt_picklists: {
-    resourceType: "udt_picklists",
-    tableName: "udt_picklists",
+  structured_list: {
+    resourceType: "structured_list",
+    tableName: "udt_structured_lists",
     schemaName: "workbench",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
-    displayLabel: "List",
+    displayLabel: "Structured List",
     urlPathTemplate: "/lists/{id}",
     rlsUsesHasPermission: true,
+  },
+  // Active DB registry row that predates this mirror; surfaced by the parity
+  // snapshot regen during the structured-list rename. Mirrored here so the
+  // TS↔DB guard stays green.
+  scope: {
+    resourceType: "scope",
+    tableName: "scopes",
+    schemaName: "context",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: "visibility",
+    displayLabel: "Scope",
+    urlPathTemplate: "/scopes/{id}",
+    rlsUsesHasPermission: false,
   },
   udt_workbooks: {
     resourceType: "udt_workbooks",
