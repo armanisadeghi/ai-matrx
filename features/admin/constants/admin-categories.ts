@@ -565,6 +565,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "App Config",
+        description:
+          "Remote runtime config for shipped desktop clients (public.app_config) — server URLs, flags, min versions, and operator notices with diff-confirmed saves and version history.",
+        iconName: "MonitorCog",
+        link: "/administration/app-config",
+        isNew: true,
+      },
+      {
         title: "CMS Agent Activity",
         description:
           "Fleet-wide CMS visibility — agent/human write activity, per-site page tree with preview/live links, agent write-policy editor, and validation-exception approvals.",

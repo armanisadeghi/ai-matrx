@@ -20,6 +20,14 @@ export interface ConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   title: React.ReactNode;
   description?: React.ReactNode;
+  /**
+   * Rich body rendered between the header and the footer, OUTSIDE the
+   * description `<p>` — use for block-level content (diffs, previews, lists)
+   * that would be invalid HTML inside `description`.
+   */
+  content?: React.ReactNode;
+  /** Extra classes for the dialog content (e.g. a wider max-w for diffs). */
+  contentClassName?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "default" | "destructive";
@@ -39,6 +47,8 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
+  content,
+  contentClassName,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   variant = "default",
@@ -47,13 +57,14 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className={contentClassName}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description ? (
             <AlertDialogDescription>{description}</AlertDialogDescription>
           ) : null}
         </AlertDialogHeader>
+        {content ?? null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
