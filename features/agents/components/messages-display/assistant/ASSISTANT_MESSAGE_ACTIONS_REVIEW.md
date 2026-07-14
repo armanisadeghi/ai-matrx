@@ -138,6 +138,14 @@ The ⋯ menu now has this structure (same for assistant + user messages, modulo 
 
 **Selection-aware TTS (NEW):** `StreamingSpeakerButton` accepts `getTextOverride?: () => string | null`, snapshotted at click (mousedown is prevented so the selection survives). `AssistantActionBar` passes a reader that returns the current selection ONLY if it sits inside this turn's `data-message-id` wrappers — select part of a response, hit Speak, hear just that part.
 
+### Fix wave 3 (2026-07-13) — defects closed
+
+- **Like/Dislike now PERSIST** — `metadata.user_reaction` via new `cx_message_set_reaction` RPC (security invoker, jsonb_set; '' or NULL clears; applied + ledgered). `setMessageReaction` thunk (message-crud) does optimistic patch + rollback; the bar hydrates from the record, clicking the active reaction clears it. NOTE: RLS requires conversation **editor** — viewers of a shared conversation cannot react (flagged, acceptable for now).
+- **Edit paths unified** — bar pencil and menu "Edit content" both call `openAssistantMessageEditor` (message-options/) — one `mode:"assistant-message"` contract, one instance id.
+- **`add-docs` post-auth resume branch added** (was the only auth-gated action without one).
+- **Note quick-save on shared primitives** — QuickNoteSaveCore consumes `RefinableContentEditor` (its duplicated toolbar/TrimRow copy deleted) and portals footer actions into `QuickNoteSaveWindow`'s `footerRight` slot via `footerHost` — the same pattern as the task window. Both flagship windows now share ONE toolbar/trim/editor implementation and ONE footer pattern.
+- **Still open (needs backend):** Analyze response / Debug stream degrade after reload — `chat.message` persists no request linkage (verified live: metadata keys are just `finish_reason`; `chat.request` has no message id). Fix belongs in aidream: persist `request_id` into assistant-message metadata at finalize.
+
 ### Related (not in bar/menu)
 
 | Name | Where | Notes |
