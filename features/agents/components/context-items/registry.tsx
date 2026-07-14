@@ -48,6 +48,7 @@ import { WebpageBody, WebpageFooter } from "./bodies/WebpageBody";
 import { DataBody } from "./bodies/DataBody";
 import { MediaBody, MediaFooter } from "./bodies/MediaBody";
 import { WorkingDocumentBody } from "./bodies/WorkingDocumentBody";
+import { ProcessedDocumentBody } from "./bodies/ProcessedDocumentBody";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
 import { BookmarkReferenceBody } from "./bodies/BookmarkReferenceBody";
 import {
@@ -143,6 +144,19 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "input_document",
     editable: false,
     Body: GenericBody,
+  },
+  {
+    // A RAG processed document (rag.processed_documents), attached to a
+    // conversation as a durable `platform.associations` edge and surfaced by
+    // AttachedDocumentChips. Clicking the chip opens the "Smart Canvas
+    // Controller": the full LibraryPreviewPage (pages / cleaned / raw / chunks +
+    // in-document search), keyed by the processed_document_id. No JSON dump.
+    blockTypes: ["processed_document"],
+    typeLabel: "Document",
+    icon: FileText,
+    themeKey: "processed_document",
+    editable: false,
+    Body: ProcessedDocumentBody,
   },
 
   // Active-context layers — the org / scope(s) / project / task the user set

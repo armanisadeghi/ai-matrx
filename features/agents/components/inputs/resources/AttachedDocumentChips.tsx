@@ -26,6 +26,9 @@ import {
   type ContainerLink,
 } from "@/features/scopes/hooks/useContainerLinks";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
+import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
+import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
+import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import { DocumentRepresentationPill } from "@/features/agents/components/inputs/resources/DocumentRepresentationPill";
 import {
   cleanDocumentLabel,
@@ -43,8 +46,57 @@ function metaAsJson(fileId: string | null, rep?: DocumentRepresentation): Json {
   return m as Json;
 }
 
+/**
+ * Build the normalized drawer descriptor for one attached-document chip so a
+ * click opens the shared ContextItemDrawer on the RIGHT registered viewer
+ * (`processed_document` → LibraryPreviewPage; `file` → MediaBody) instead of a
+ * raw-JSON GenericBody dump.
+ */
+function processedDocDrawerItem(
+  link: ContainerLink,
+  conversationId: string,
+): ContextDrawerItem {
+  const meta = parseAttachedDocumentMetadata(link.metadata);
+  return {
+    id: `processed_document:${link.resourceId}`,
+    blockType: "processed_document",
+    typeLabel: "Document",
+    title: cleanDocumentLabel(link.label),
+    icon: FileText,
+    themeKey: "processed_document",
+    origin: "block",
+    conversationId,
+    editable: false,
+    refs: {
+      processedDocumentId: link.resourceId,
+      fileId: meta.file_id ?? null,
+    },
+    raw: link.metadata,
+  };
+}
+
+function fileDrawerItem(
+  link: ContainerLink,
+  conversationId: string,
+): ContextDrawerItem {
+  return {
+    id: `file:${link.resourceId}`,
+    blockType: "document",
+    typeLabel: "File",
+    title: cleanDocumentLabel(link.label),
+    icon: FileText,
+    themeKey: "document",
+    origin: "block",
+    conversationId,
+    editable: false,
+    refs: { fileId: link.resourceId },
+    raw: link.metadata,
+  };
+}
+
 interface ProcessedDocumentChipProps {
   link: ContainerLink;
+  onOpen: () => void;
   onDetach: () => void;
   onChangeRepresentation: (
     fileId: string | null,
@@ -63,6 +115,7 @@ interface ProcessedDocumentChipProps {
  */
 function ProcessedDocumentChip({
   link,
+  onOpen,
   onDetach,
   onChangeRepresentation,
   onSwitchToRawFile,
@@ -96,6 +149,7 @@ function ProcessedDocumentChip({
         title={title}
         icon={FileText}
         themeKey="processed_document"
+        onClick={onOpen}
         onRemove={onDetach}
         variant="compact"
       />
@@ -130,6 +184,8 @@ export function AttachedDocumentChips({
     orgId,
   });
 
+  const drawer = useContextItemDrawer();
+
   const processedDocs = links.linksFor("processed_document");
   const files = links.linksFor("file");
 
@@ -146,6 +202,18 @@ export function AttachedDocumentChips({
   const visibleFiles = files.filter((l) => !processedFileIds.has(l.resourceId));
 
   if (processedDocs.length === 0 && visibleFiles.length === 0) return null;
+
+  // One flat drawer list across every visible chip (processed docs, then files),
+  // so the drawer's prev/next walks every attached document. Order MUST match
+  // the render order below for the clicked index to line up.
+  const drawerItems: ContextDrawerItem[] = [
+    ...processedDocs.map((l) => processedDocDrawerItem(l, conversationId)),
+    ...visibleFiles.map((l) => fileDrawerItem(l, conversationId)),
+  ];
+
+  const openDrawer = (id: string) => {
+    drawer.openItem(drawerItems, id);
+  };
 
   const detach = (token: "processed_document" | "file", resourceId: string) => {
     void links.detach(token, resourceId).then((res) => {
@@ -220,6 +288,7 @@ export function AttachedDocumentChips({
           <ProcessedDocumentChip
             key={link.edgeId}
             link={link}
+            onOpen={() => openDrawer(`processed_document:${link.resourceId}`)}
             onDetach={() => detach("processed_document", link.resourceId)}
             onChangeRepresentation={(fileId, rep) =>
               changeRepresentation(link, fileId, rep)
@@ -242,6 +311,7 @@ export function AttachedDocumentChips({
                 title={title}
                 icon={FileText}
                 themeKey="document"
+                onClick={() => openDrawer(`file:${link.resourceId}`)}
                 onRemove={() => detach("file", link.resourceId)}
                 variant="compact"
               />
@@ -249,6 +319,7 @@ export function AttachedDocumentChips({
           );
         })}
       </AnimatePresence>
+      <ContextItemDrawer controller={drawer} />
     </div>
   );
 }

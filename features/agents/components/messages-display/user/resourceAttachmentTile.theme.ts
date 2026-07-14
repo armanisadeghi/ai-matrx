@@ -127,6 +127,7 @@ const BLOCK_TYPE_THEME_KEY: Record<string, string> = {
   input_transcript_session: "transcript_session",
   input_workbook: "workbook",
   input_document: "document",
+  processed_document: "document",
   youtube_video: "youtube",
   image: "image",
   image_output: "image",
