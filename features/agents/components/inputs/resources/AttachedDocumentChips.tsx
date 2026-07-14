@@ -18,8 +18,9 @@
 
 import { FileText } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { toast } from "sonner";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { getActiveOrgId } from "@/lib/organizations/activeOrg";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   useContainerLinks,
   type ContainerLink,
@@ -31,7 +32,7 @@ import {
   parseAttachedDocumentMetadata,
   type AttachedDocumentMetadata,
 } from "@/features/agents/components/inputs/resources/attached-documents";
-import { peekFileDocument } from "@/features/files/api/document-lookup";
+import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import type { ProcessedDocumentSource } from "@/features/agents/utils/processedDocumentContext";
 import type { Json } from "@/types/database.types";
@@ -42,31 +43,72 @@ function metaAsJson(fileId: string | null, rep?: DocumentRepresentation): Json {
   return m as Json;
 }
 
+interface ProcessedDocumentChipProps {
+  link: ContainerLink;
+  onDetach: () => void;
+  onChangeRepresentation: (
+    fileId: string | null,
+    rep: DocumentRepresentation,
+  ) => void;
+  onSwitchToRawFile: (fileId: string) => void;
+}
+
 /**
- * Reconstruct the minimal `ProcessedDocumentSource` the representation pill
- * needs from the edge metadata (+ the file-document probe cache when warm). The
- * pill only reads `has_clean_content` (to disable "Clean" while it's still
- * processing) and `file_id` (to offer "Attach as file instead").
+ * One `processed_document → conversation` chip. Owns the file-document probe so
+ * the representation pill's `has_clean_content` is ACCURATE: it fires
+ * `useFileDocument(file_id)` and reflects the real value once resolved. Until it
+ * resolves (or when absent/unavailable) it defaults to `false` — conservatively
+ * NOT offering "Clean" until a warm probe confirms clean content exists (the
+ * backend leads with raw when clean isn't ready, so a disabled Clean is honest).
  */
-function sourceForPill(
-  processedDocumentId: string,
-  meta: AttachedDocumentMetadata,
-): ProcessedDocumentSource {
+function ProcessedDocumentChip({
+  link,
+  onDetach,
+  onChangeRepresentation,
+  onSwitchToRawFile,
+}: ProcessedDocumentChipProps) {
+  const meta = parseAttachedDocumentMetadata(link.metadata);
+  const representation = meta.representation ?? "clean";
+  const title = cleanDocumentLabel(link.label);
   const fileId = meta.file_id ?? null;
-  const peeked = fileId ? peekFileDocument(fileId) : undefined;
-  const hasClean =
-    peeked?.kind === "found"
-      ? peeked.doc.has_clean_content
-      : // No warm probe → don't disable Clean (backend leads with raw if not ready).
-        true;
-  return {
+
+  const { state } = useFileDocument(fileId);
+  const hasClean = state.status === "found" ? state.doc.has_clean_content : false;
+
+  const source: ProcessedDocumentSource = {
     kind: "processed_document",
-    processed_document_id: processedDocumentId,
+    processed_document_id: link.resourceId,
     file_id: fileId,
     derivation_kind: "",
     total_pages: null,
     has_clean_content: hasClean,
   };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.85 }}
+      className="inline-flex items-center gap-1"
+    >
+      <ResourceAttachmentTile
+        typeLabel="Document"
+        title={title}
+        icon={FileText}
+        themeKey="processed_document"
+        onRemove={onDetach}
+        variant="compact"
+      />
+      <DocumentRepresentationPill
+        source={source}
+        representation={representation}
+        onChange={(rep) => onChangeRepresentation(fileId, rep)}
+        onAttachAsFile={() => {
+          if (fileId) onSwitchToRawFile(fileId);
+        }}
+      />
+    </motion.div>
+  );
 }
 
 interface AttachedDocumentChipsProps {
@@ -79,7 +121,8 @@ export function AttachedDocumentChips({
   const convOrgId = useAppSelector(
     (s) => s.conversations.byConversationId[conversationId]?.organizationId,
   );
-  const orgId = convOrgId ?? getActiveOrgId();
+  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
+  const orgId = convOrgId ?? effectiveOrgId;
 
   const links = useContainerLinks({
     containerType: "conversation",
@@ -89,7 +132,20 @@ export function AttachedDocumentChips({
 
   const processedDocs = links.linksFor("processed_document");
   const files = links.linksFor("file");
-  if (processedDocs.length === 0 && files.length === 0) return null;
+
+  // Suppress the raw `file` chip whenever a `processed_document` edge already
+  // exists for the SAME origin file (its metadata.file_id === the file edge's
+  // resource id). During the cold-cache upgrade both edges briefly coexist;
+  // showing both would render a transient DOUBLE chip AND — if the user submits
+  // in that window — inject the same document's context twice. One chip only.
+  const processedFileIds = new Set(
+    processedDocs
+      .map((l) => parseAttachedDocumentMetadata(l.metadata).file_id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0),
+  );
+  const visibleFiles = files.filter((l) => !processedFileIds.has(l.resourceId));
+
+  if (processedDocs.length === 0 && visibleFiles.length === 0) return null;
 
   const detach = (token: "processed_document" | "file", resourceId: string) => {
     void links.detach(token, resourceId).then((res) => {
@@ -100,6 +156,7 @@ export function AttachedDocumentChips({
           resourceId,
           error: res.error,
         });
+        toast.error(`Couldn't remove document: ${res.error}`);
       }
     });
   };
@@ -124,6 +181,7 @@ export function AttachedDocumentChips({
             resourceId: link.resourceId,
             error: res.error,
           });
+          toast.error(`Couldn't change document format: ${res.error}`);
         }
       });
   };
@@ -137,55 +195,39 @@ export function AttachedDocumentChips({
           resourceId: link.resourceId,
           error: res.error,
         });
+        toast.error(`Couldn't switch to raw file: ${res.error}`);
         return;
       }
-      void links.attach(
-        "file",
-        fileId,
-        link.label ?? undefined,
-        metaAsJson(fileId),
-      );
+      void links
+        .attach("file", fileId, link.label ?? undefined, metaAsJson(fileId))
+        .then((attachRes) => {
+          if (!attachRes.ok) {
+            console.error("[attached-document] switch-to-file attach failed", {
+              conversationId,
+              fileId,
+              error: attachRes.error,
+            });
+            toast.error(`Couldn't switch to raw file: ${attachRes.error}`);
+          }
+        });
     });
   };
 
   return (
     <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
       <AnimatePresence mode="popLayout">
-        {processedDocs.map((link) => {
-          const meta = parseAttachedDocumentMetadata(link.metadata);
-          const representation = meta.representation ?? "clean";
-          const title = cleanDocumentLabel(link.label);
-          const source = sourceForPill(link.resourceId, meta);
-          return (
-            <motion.div
-              key={link.edgeId}
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              className="inline-flex items-center gap-1"
-            >
-              <ResourceAttachmentTile
-                typeLabel="Document"
-                title={title}
-                icon={FileText}
-                themeKey="processed_document"
-                onRemove={() => detach("processed_document", link.resourceId)}
-                variant="compact"
-              />
-              <DocumentRepresentationPill
-                source={source}
-                representation={representation}
-                onChange={(rep) =>
-                  changeRepresentation(link, meta.file_id ?? null, rep)
-                }
-                onAttachAsFile={() => {
-                  if (meta.file_id) switchToRawFile(link, meta.file_id);
-                }}
-              />
-            </motion.div>
-          );
-        })}
-        {files.map((link) => {
+        {processedDocs.map((link) => (
+          <ProcessedDocumentChip
+            key={link.edgeId}
+            link={link}
+            onDetach={() => detach("processed_document", link.resourceId)}
+            onChangeRepresentation={(fileId, rep) =>
+              changeRepresentation(link, fileId, rep)
+            }
+            onSwitchToRawFile={(fileId) => switchToRawFile(link, fileId)}
+          />
+        ))}
+        {visibleFiles.map((link) => {
           const title = cleanDocumentLabel(link.label);
           return (
             <motion.div

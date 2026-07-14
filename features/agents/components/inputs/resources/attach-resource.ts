@@ -19,6 +19,7 @@
  */
 
 import type { Dispatch } from "@reduxjs/toolkit";
+import { toast } from "sonner";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
@@ -33,9 +34,9 @@ import { isEditableCapableBlockType } from "@/features/agents/redux/execution-sy
 import {
   addAssociation,
   removeAssociation,
-  associationsKey,
   type AssociationWriteResult,
 } from "@/features/scopes/redux/thunks/associations";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import {
   lookupFileDocument,
   peekFileDocument,
@@ -174,23 +175,6 @@ function edgeMetadata(
   return meta as Json;
 }
 
-/** True when the conversation already has an incoming edge of `token` → `id`. */
-function conversationHasEdge(
-  getState: () => RootState,
-  conversationId: string,
-  token: AttachedDocumentToken,
-  sourceId: string,
-): boolean {
-  const key = associationsKey("conversation", conversationId);
-  const edges = getState().scopesTree.associationsByKey[key]?.edges ?? [];
-  return edges.some(
-    (e) =>
-      e.direction === "incoming" &&
-      e.otherType === token &&
-      e.otherId === sourceId,
-  );
-}
-
 /** Create a `token → conversation` attachment edge (idempotent). */
 async function attachDocumentEdge(
   dispatch: AppDispatch,
@@ -241,8 +225,23 @@ async function upgradeFileEdgeToProcessedDocument(
   }
   if (state.kind !== "found") return;
   // The user may have detached the file edge while the probe was in flight —
-  // never resurrect it onto the conversation.
-  if (!conversationHasEdge(getState, conversationId, "file", fileId)) return;
+  // never resurrect it onto the conversation. The Redux association cache LAGS
+  // the detach RPC (a warm-cache read can still show the just-removed edge), so
+  // re-verify against the DB (authoritative) immediately before the upgrade
+  // write. This closes the cold-cache TOCTOU where a raced detach could be
+  // undone by the upgrade creating a fresh processed_document edge.
+  const live = await associationsService.listForEntity(
+    "conversation",
+    conversationId,
+  );
+  if (!live.ok) return; // can't confirm it's still attached — don't risk resurrection
+  const stillAttached = live.data.edges.some(
+    (e) =>
+      e.direction === "incoming" &&
+      e.otherType === "file" &&
+      e.otherId === fileId,
+  );
+  if (!stillAttached) return;
   const representation: DocumentRepresentation = state.doc.has_clean_content
     ? "clean"
     : "raw";
@@ -302,6 +301,11 @@ export function useAttachResource(
     const label = cleanDocumentLabel(resourceLabel(resource));
 
     // A real (non-media) file → a durable association edge to the conversation.
+    // NOTE (fast-submit window): attach is fire-and-forget with no optimistic
+    // edge, so a submit fired inside the RPC round-trip can miss the edge for
+    // that one turn. Accepted for now — the edge is durable and present for the
+    // NEXT turn, and the window is a single round-trip. If this bites, reflect a
+    // pending edge optimistically in the associations cache before the RPC.
     if (blockType === "document") {
       const fileId = extractFileId(resource.data);
       if (fileId) {
@@ -327,6 +331,7 @@ export function useAttachResource(
                 fileId,
                 error: res.error,
               });
+              toast.error(`Couldn't attach document: ${res.error}`);
             }
           });
           return;
@@ -348,6 +353,7 @@ export function useAttachResource(
               fileId,
               error: res.error,
             });
+            toast.error(`Couldn't attach document: ${res.error}`);
             return;
           }
           if (cached === undefined) {
