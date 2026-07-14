@@ -24,12 +24,14 @@ export async function GET(request: Request) {
     const code = searchParams.get("code");
 
     const redirectToParam = searchParams.get("redirectTo");
+    const type = searchParams.get("type");
     // Validate to a same-site relative path BEFORE it is concatenated into the
     // final redirect URL — an absolute / userinfo-trick value (e.g. "@evil.com")
     // would otherwise produce an off-site open redirect (`${baseUrl}@evil.com`).
+    const defaultRedirect = type === "recovery" ? "/reset-password" : "/dashboard";
     let redirectTo = safeRelativePath(
-      redirectToParam ? decodeURIComponent(redirectToParam) : "/dashboard",
-      "/dashboard",
+      redirectToParam ? decodeURIComponent(redirectToParam) : null,
+      defaultRedirect,
     );
 
     if (

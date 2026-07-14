@@ -1,8 +1,7 @@
 /**
- * Email Service
- *
- * Handles sending emails via SMTP
- * Uses Nodemailer with your Gmail SMTP settings
+ * Client-side email helper — POSTs to /api/email/send (server uses Resend API).
+ * Auth emails (signup, password reset) are sent by Supabase SMTP, not this path.
+ * See features/email/FEATURE.md.
  */
 
 import { extractErrorMessage } from "@/utils/errors";
@@ -20,10 +19,7 @@ export interface EmailResult {
   messageId?: string;
 }
 
-/**
- * Send an email using the API route
- * This calls /api/email/send which handles the actual SMTP connection
- */
+/** Send via /api/email/send (server-side Resend API). */
 export async function sendEmail(options: SendEmailOptions): Promise<EmailResult> {
   try {
     const response = await fetch('/api/email/send', {

@@ -1,5 +1,8 @@
 # Email System Testing Guide
 
+> **Canonical config:** `features/email/FEATURE.md`. Auth email sender is
+> `noreply@updates.aimatrx.com` (Supabase SMTP), not app `EMAIL_FROM`.
+
 This guide provides step-by-step instructions for testing all email functionality in AI Matrx.
 
 ## Prerequisites
@@ -10,7 +13,7 @@ Before testing, ensure:
    ```bash
    RESEND_API_KEY=re_xxxxxxxxxxxx
    EMAIL_FROM=AI Matrx <noreply@aimatrx.com>
-   EMAIL_ALLOWED_DOMAINS=aimatrx.com
+   EMAIL_ALLOWED_DOMAINS=aimatrx.com,updates.aimatrx.com
    ADMIN_EMAIL=admin@aimatrx.com
    NEXT_PUBLIC_SITE_URL=http://localhost:3000
    ```
@@ -226,7 +229,7 @@ Before testing, ensure:
 2. Check inbox for confirmation email
 
 **Expected Result**:
-- Email received from `noreply@aimatrx.com`
+- Email received from `noreply@updates.aimatrx.com`
 - Subject: "Confirm your signup" (or custom template)
 - Contains confirmation link
 - AI Matrx branding
@@ -240,7 +243,7 @@ Before testing, ensure:
 3. Check inbox for reset email
 
 **Expected Result**:
-- Email received from `noreply@aimatrx.com`
+- Email received from `noreply@updates.aimatrx.com`
 - Subject: "Reset Your Password"
 - Contains reset link
 - Link works and allows password change

@@ -1,11 +1,6 @@
 /**
- * Email Send API Route
- * 
- * Handles sending emails via Resend
- * 
- * Environment variables needed:
- * - RESEND_API_KEY=re_xxxxxxxxxxxx
- * - EMAIL_FROM=AI Matrx <noreply@aimatrx.com>
+ * App email send (Resend API). Requires RESEND_API_KEY + EMAIL_FROM.
+ * Auth email is Supabase SMTP — separate credential; see features/email/FEATURE.md.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

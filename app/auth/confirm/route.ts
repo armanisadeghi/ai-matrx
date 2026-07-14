@@ -10,10 +10,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const token_hash = searchParams.get("token_hash");
     const type = searchParams.get("type") as EmailOtpType | null;
-    // Use redirectTo instead of next, default to '/dashboard' to match other
-    // routes. MUST be a same-site relative path — it is used as the redirect
-    // base below, so an attacker-supplied absolute URL would be an open redirect.
-    const redirectTo = safeRelativePath(searchParams.get("redirectTo"), "/dashboard");
+    const defaultRedirect = type === "recovery" ? "/reset-password" : "/dashboard";
+    const redirectTo = safeRelativePath(searchParams.get("redirectTo"), defaultRedirect);
 
     if (process.env.NODE_ENV === "development") {
         console.log("Email confirmation attempt:");

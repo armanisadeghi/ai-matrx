@@ -286,17 +286,19 @@ export async function forgotPasswordAction(formData: FormData) {
   const email = formData.get("email")?.toString();
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
-  const callbackUrl = formData.get("callbackUrl")?.toString();
+  const formCallbackUrl = formData.get("callbackUrl")?.toString();
 
   if (!email) {
     return encodedRedirect("error", "/forgot-password", "Email is required");
   }
 
+  const siteOrigin =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? origin;
+  const resetCallbackUrl = new URL("/auth/callback", siteOrigin);
+  resetCallbackUrl.searchParams.set("redirectTo", encodeURIComponent("/reset-password"));
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    // The callback route reads the camelCase `redirectTo` param (and
-    // decodeURIComponent's it) — snake_case `redirect_to` was silently ignored,
-    // so the reset link landed on /dashboard and never reached /reset-password.
-    redirectTo: `${origin}/auth/callback?redirectTo=${encodeURIComponent("/reset-password")}`,
+    redirectTo: resetCallbackUrl.toString(),
   });
 
   if (error) {
@@ -310,7 +312,7 @@ export async function forgotPasswordAction(formData: FormData) {
 
   // Only follow same-site relative paths — never an attacker-controlled
   // absolute URL from the form (open-redirect / phishing vector).
-  const safeCallback = callbackUrl ? safeRelativePath(callbackUrl, "") : "";
+  const safeCallback = formCallbackUrl ? safeRelativePath(formCallbackUrl, "") : "";
   if (safeCallback) {
     return redirect(safeCallback);
   }

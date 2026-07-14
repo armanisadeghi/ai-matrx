@@ -1,6 +1,9 @@
 # Email Service
 
-Centralized email functionality using Resend for transactional emails.
+Centralized **application** email via Resend API (`lib/email/client.ts`).
+
+**Auth email** (signup confirm, password reset) is Supabase → Resend SMTP — not this
+client. Two paths, two Resend keys: see `features/email/FEATURE.md`.
 
 ## Files
 
@@ -11,9 +14,11 @@ Centralized email functionality using Resend for transactional emails.
 ## Environment Variables
 
 ```bash
-RESEND_API_KEY=re_xxxxxxxxxxxx
+RESEND_API_KEY=           # app Resend key — NOT the Supabase SMTP (ai-matrx-main) key
 EMAIL_FROM=AI Matrx <noreply@aimatrx.com>
-CRON_SECRET=your-secret-for-cron-jobs  # Optional, for securing cron endpoints
+EMAIL_ALLOWED_DOMAINS=aimatrx.com,updates.aimatrx.com
+ADMIN_EMAIL=admin@aimatrx.com
+CRON_SECRET=              # optional — cron endpoints
 ```
 
 ## API Endpoints

@@ -1,3 +1,7 @@
+/**
+ * Application email via Resend API (Path 1).
+ * Supabase Auth email uses Resend SMTP with a separate key — see features/email/FEATURE.md.
+ */
 import { Resend } from "resend";
 
 // Lazy initialization to avoid build-time errors when API key is not available
