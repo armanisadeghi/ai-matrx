@@ -36,7 +36,7 @@ import {
 import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openAssistantMessageEditor } from "../message-options/openAssistantMessageEditor";
 import { toast } from "sonner";
 import {
   selectMessageById,
@@ -308,27 +308,15 @@ export function AssistantActionBar({
     });
   };
 
-  // Edit goes through the mode-based path. The OverlayController dispatches
-  // editMessage on save — no closure stored in Redux, no freeze.
+  // Edit goes through the shared opener (same one the ⋯ menu's "Edit content"
+  // uses) — one save contract, no closure stored in Redux.
   const handleEdit = () => {
-    dispatch(
-      openOverlay({
-        overlayId: "fullScreenEditor",
-        instanceId: `assistant-edit-${messageId}`,
-        data: {
-          content,
-          mode: "assistant-message",
-          conversationId,
-          messageId,
-          tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
-          initialTab: "matrx_split",
-          analysisData: metadata ?? undefined,
-          title: undefined,
-          showSaveButton: true,
-          showCopyButton: true,
-        },
-      }),
-    );
+    openAssistantMessageEditor(dispatch, {
+      content,
+      conversationId,
+      messageId,
+      metadata,
+    });
   };
 
   return (

@@ -71,6 +71,7 @@ import { selectConversationTitle } from "@/features/agents/redux/execution-syste
 import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
 import { buildTaskSeedFromMessage } from "./buildTaskSeedFromMessage";
+import { openAssistantMessageEditor } from "./openAssistantMessageEditor";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -847,14 +848,13 @@ function appItems(ctx: MessageActionContext): MenuItem[] {
 // ============================================================================
 
 /**
- * Edit the message in-place. Works for both user and assistant messages:
- *   - Opens the full-screen editor prefilled with the current flat text.
- *   - On save, the bridge self-handles via `editMessage` (cx_message_edit RPC),
- *     preserving the message's non-text blocks. We pass conversationId +
- *     messageId and NO callback — that IS the self-handle contract. (Passing an
- *     `onSave` function through `openOverlay` data is the bug that silently
- *     broke every editor save; the controller can't serialise a function. See
- *     features/overlays/callbacks/fullScreenEditor.ts.)
+ * Edit the assistant message in-place — via `openAssistantMessageEditor`, the
+ * SAME opener the action-bar pencil uses (`mode: "assistant-message"`, same
+ * instance id, same save contract):
+ *   - On save, the OverlayController self-handles via `editMessage`
+ *     (cx_message_edit RPC). No callback rides `openOverlay` data — passing an
+ *     `onSave` function through Redux is the bug that silently broke every
+ *     editor save (see features/overlays/callbacks/fullScreenEditor.ts).
  *   - `editMessage` marks the conversation's cache-bypass flag so the next AI
  *     turn sees the updated content.
  */
@@ -867,24 +867,14 @@ function editContentItem(ctx: MessageActionContext): MenuItem {
     iconColor: "text-emerald-500 dark:text-emerald-400",
     label: "Edit content",
     action: () => {
-      dispatch(
-        openOverlay({
-          overlayId: "fullScreenEditor",
-          instanceId: `edit-content-${messageId}`,
-          data: {
-            content,
-            mode: "free",
-            conversationId,
-            messageId: messageId ?? undefined,
-            tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
-            initialTab: "matrx_split",
-            analysisData: metadata as Record<string, unknown> | undefined,
-            title: undefined,
-            showSaveButton: true,
-            showCopyButton: true,
-          },
-        }),
-      );
+      // Shared opener — identical contract (mode, instance, save path) to the
+      // action-bar pencil, so the two edit entry points can never drift.
+      openAssistantMessageEditor(dispatch, {
+        content,
+        conversationId,
+        messageId,
+        metadata,
+      });
       onClose();
     },
     category: "Edit",
