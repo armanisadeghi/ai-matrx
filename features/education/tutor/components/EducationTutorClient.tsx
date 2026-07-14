@@ -34,6 +34,8 @@ import { setContextEntries } from "@/features/agents/redux/execution-system/inst
 import {
   selectConversationMessages,
   selectMessageCount,
+  selectLatestAssistantMessageId,
+  selectMessageContent,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
@@ -46,8 +48,10 @@ import { Eye } from "lucide-react";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
 import { assembleTutorGrounding, type TutorGroundingSeed } from "../grounding";
 import type { TrustEnvelope } from "@/features/education/trust/types";
+import { extractTurnTrust } from "../turnTrust";
 import { TutorLanding } from "./TutorLanding";
 import { TutorTrustStrip } from "./TutorTrustStrip";
+import { TutorTurnTrust } from "./TutorTurnTrust";
 
 const SOURCE_FEATURE = "education-tutor" as const;
 const BASE_PATH = "/education/tutor/[conversationId]";
@@ -308,6 +312,26 @@ export function EducationTutorClient({
   // to type. `afterMessages` keeps the real SmartAgentInput mounted.
   const messageCount = useAppSelector(selectMessageCount(conversationId ?? ""));
 
+  // ── Per-turn STRUCTURED trust (target state) ──────────────────────────────
+  // The re-authored tutor agent emits a machine-readable TrustEnvelope for THAT
+  // turn in a hidden HTML comment at the end of its markdown answer (see
+  // turnTrust.ts). We read the latest assistant message's raw text and parse the
+  // envelope, then render the honest per-turn surface (ConfidenceBadge +
+  // SourceCitations, or RefusalNotice) flush under the answer via `afterMessages`
+  // — a REAL per-claim envelope, not the grounding-derived strip. Null while a
+  // turn streams (no closing `-->` yet) or on older answers that predate the
+  // structured channel; the derived strip is the fallback in that case.
+  const latestAssistantId = useAppSelector(
+    selectLatestAssistantMessageId(conversationId ?? ""),
+  );
+  const latestAssistantContent = useAppSelector(
+    selectMessageContent(conversationId ?? "", latestAssistantId ?? ""),
+  );
+  const turnTrust = useMemo(
+    () => extractTurnTrust(latestAssistantContent),
+    [latestAssistantContent],
+  );
+
   // ── Metered usage per sent tutor message (P8) ─────────────────────────────
   // Count USER-authored messages on this conversation; a memoized selector so
   // the component re-renders only when that count changes, not on every stream
@@ -423,9 +447,12 @@ export function EducationTutorClient({
           )}
         </div>
       )}
-      {/* P0 trust surface: what the tutor is grounded in (real citations),
-          honest confidence, and the refusal convention. */}
-      <TutorTrustStrip trust={tutorTrust} />
+      {/* P0 trust surface. Preferred: the PER-TURN structured envelope for the
+          latest answer renders under it (below, via `afterMessages`). The
+          grounding-DERIVED strip is the FALLBACK — shown only when the current
+          turn carries no structured envelope (fresh/empty, mid-stream, or an
+          older answer that predates the structured channel). */}
+      {!turnTrust && <TutorTrustStrip trust={tutorTrust} />}
       <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
         <AgentConversationColumn
           conversationId={conversationId}
@@ -450,6 +477,8 @@ export function EducationTutorClient({
           afterMessages={
             showEmptyState ? (
               <TutorLanding conversationId={conversationId} />
+            ) : turnTrust ? (
+              <TutorTurnTrust trust={turnTrust} />
             ) : undefined
           }
         />

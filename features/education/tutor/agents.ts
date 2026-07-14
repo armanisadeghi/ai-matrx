@@ -21,8 +21,21 @@ export const EDU_TUTOR_AGENTS = {
    * query the learner's notes/flashcards/docs live. Cites the learner's material
    * inline, honest about the boundary. Grounding is injected via
    * `setContextEntries` in EducationTutorClient.
+   *
+   * PER-TURN STRUCTURED TRUST: this agent emits, on the final line of every
+   * markdown answer, a hidden machine-readable TrustEnvelope for THAT turn —
+   * `<!--MATRX_TRUST_V1 {confidence,groundedIn,citations[]}-->`. The FE parses it
+   * (`turnTrust.ts`) and renders the real per-turn envelope (ConfidenceBadge +
+   * SourceCitations, or RefusalNotice) under the answer, mirroring how the
+   * one-shot `helpLive` lane threads its envelope. The grounding-derived
+   * `TutorTrustStrip` is now only the fallback when a turn carries no envelope.
+   * See features/education/tutor/FEATURE.md → Trust.
+   *
+   * Superseded `d80cc27e-…` (the prior streaming tutor with the same four
+   * context slots but NO per-turn structured channel — grounding-derived strip
+   * only). See LIVE_AGENTS.md for the supersession chain.
    */
-  tutor: "d80cc27e-63ce-49b6-a285-fdb78a66c537",
+  tutor: "cb268e29-f123-4281-9fe9-d017882025dc",
 } as const;
 
 export type EduTutorAgentKey = keyof typeof EDU_TUTOR_AGENTS;
