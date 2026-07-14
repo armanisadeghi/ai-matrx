@@ -16,8 +16,8 @@
  *     callers without an active request). No live subscription.
  *
  * Sidebar scope:
- *   - This Message — tools for the current request / snapshot (default).
- *   - All Messages — every tool call in the conversation (cached + paged).
+ *   - Current — tools for the current request / snapshot (default).
+ *   - All — every tool call in the conversation (cached + paged).
  *
  * Layout:
  *   - Left sidebar (`EntrySidebar`)  — scope toggle + one row per entry.
@@ -100,26 +100,26 @@ const EntrySidebar: React.FC<{
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {conversationScopeAvailable && (
-        <div className="flex-shrink-0 border-b border-border px-1.5 py-1.5">
+        <div className="flex-shrink-0 border-b border-border p-2">
           <ToggleGroup
             type="single"
             value={scope}
             onValueChange={(v) => {
               if (v === "message" || v === "conversation") onScopeChange(v);
             }}
-            className="grid w-full grid-cols-2 gap-0.5 rounded-md bg-muted/60 p-0.5"
+            className="grid w-full grid-cols-2 gap-1 rounded-md bg-muted/60 p-0.5"
           >
             <ToggleGroupItem
               value="message"
-              className="h-6 rounded-sm px-1 text-[10px] font-medium data-[state=on]:bg-background data-[state=on]:shadow-sm"
+              className="h-7 whitespace-nowrap rounded px-2 text-xs font-medium data-[state=on]:bg-background data-[state=on]:shadow-sm"
             >
-              This message
+              Current
             </ToggleGroupItem>
             <ToggleGroupItem
               value="conversation"
-              className="h-6 rounded-sm px-1 text-[10px] font-medium data-[state=on]:bg-background data-[state=on]:shadow-sm"
+              className="h-7 whitespace-nowrap rounded px-2 text-xs font-medium data-[state=on]:bg-background data-[state=on]:shadow-sm"
             >
-              All messages
+              All
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
