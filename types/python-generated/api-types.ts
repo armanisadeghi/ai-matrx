@@ -1528,6 +1528,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v2/ai/prompts/{prompt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Prompt V2
+         * @description Run a saved prompt on the spine — identical pipeline to `/api/ai/prompts/{prompt_id}`.
+         */
+        post: operations["start_prompt_v2_v2_ai_prompts__prompt_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/utilities/pdf/compress": {
         parameters: {
             query?: never;
@@ -4307,6 +4327,29 @@ export interface paths {
          *     `ExecutionEngine.record_note`.
          */
         get: operations["execution_events_admin_runtime_executions__execution_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/system-costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * System Costs
+         * @description Every Matrx-System-org execution carrying cost — spend no user is paying for.
+         *     Arman's rule (2026-07-13): system-owned work cannot bill quietly; this is the
+         *     dedicated admin read (the watchdog red-banners every NEW dollar; the dashboard
+         *     system-costs page consumes this endpoint).
+         */
+        get: operations["system_costs_admin_runtime_system_costs_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29852,6 +29895,38 @@ export interface components {
              */
             use_user_agent_overrides?: boolean;
         };
+        /** SystemCostEntry */
+        SystemCostEntry: {
+            /** Execution Id */
+            execution_id: string;
+            /** Request Id */
+            request_id: string;
+            /** Type */
+            type: string;
+            /** Status */
+            status: string;
+            /** Cost */
+            cost: string;
+            /** Meters */
+            meters: {
+                [key: string]: string;
+            };
+            /** Link Kind */
+            link_kind?: string | null;
+            /** Link Id */
+            link_id?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /** SystemCostsResponse */
+        SystemCostsResponse: {
+            /** Total Cost */
+            total_cost: string;
+            /** Entry Count */
+            entry_count: number;
+            /** Entries */
+            entries: components["schemas"]["SystemCostEntry"][];
+        };
         /** SystemErrorDetail */
         SystemErrorDetail: {
             /** Id */
@@ -34965,6 +35040,41 @@ export interface operations {
             };
         };
     };
+    start_prompt_v2_v2_ai_prompts__prompt_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prompt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromptStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     compress_pdf_utilities_pdf_compress_post: {
         parameters: {
             query?: {
@@ -40017,6 +40127,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExecutionEventsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    system_costs_admin_runtime_system_costs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemCostsResponse"];
                 };
             };
             /** @description Validation Error */
