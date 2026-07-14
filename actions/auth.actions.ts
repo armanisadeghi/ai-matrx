@@ -18,7 +18,10 @@ export async function signUpAction(formData: FormData): Promise<void> {
   const supabase = await createClient();
 
   const origin = (await headers()).get("origin");
-  const safeRedirectTo = safeRelativePath(formData.get("redirectTo")?.toString(), "/dashboard");
+  const safeRedirectTo = safeRelativePath(
+    formData.get("redirectTo")?.toString(),
+    "/dashboard",
+  );
 
   if (process.env.NODE_ENV === "development") {
     console.log("SignUpAction - RedirectTo:", safeRedirectTo);
@@ -180,7 +183,9 @@ export async function signUpAction(formData: FormData): Promise<void> {
   }
 
   // If we get here, something unexpected happened
-  console.error("SignUpAction - Unexpected response: no user or session returned");
+  console.error(
+    "SignUpAction - Unexpected response: no user or session returned",
+  );
   return encodedRedirect(
     "error",
     "/sign-up",
@@ -191,7 +196,10 @@ export async function signUpAction(formData: FormData): Promise<void> {
 export async function signInAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const safeRedirectTo = safeRelativePath(formData.get("redirectTo")?.toString(), "/dashboard");
+  const safeRedirectTo = safeRelativePath(
+    formData.get("redirectTo")?.toString(),
+    "/dashboard",
+  );
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -293,9 +301,12 @@ export async function forgotPasswordAction(formData: FormData) {
   }
 
   const siteOrigin =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? origin;
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? origin ?? undefined;
   const resetCallbackUrl = new URL("/auth/callback", siteOrigin);
-  resetCallbackUrl.searchParams.set("redirectTo", encodeURIComponent("/reset-password"));
+  resetCallbackUrl.searchParams.set(
+    "redirectTo",
+    encodeURIComponent("/reset-password"),
+  );
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: resetCallbackUrl.toString(),
@@ -312,7 +323,9 @@ export async function forgotPasswordAction(formData: FormData) {
 
   // Only follow same-site relative paths — never an attacker-controlled
   // absolute URL from the form (open-redirect / phishing vector).
-  const safeCallback = formCallbackUrl ? safeRelativePath(formCallbackUrl, "") : "";
+  const safeCallback = formCallbackUrl
+    ? safeRelativePath(formCallbackUrl, "")
+    : "";
   if (safeCallback) {
     return redirect(safeCallback);
   }
@@ -339,7 +352,11 @@ export async function resetPasswordAction(formData: FormData) {
   }
 
   if (password !== confirmPassword) {
-    return encodedRedirect("error", "/reset-password", "Passwords do not match");
+    return encodedRedirect(
+      "error",
+      "/reset-password",
+      "Passwords do not match",
+    );
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -347,7 +364,11 @@ export async function resetPasswordAction(formData: FormData) {
   });
 
   if (error) {
-    return encodedRedirect("error", "/reset-password", "Password update failed");
+    return encodedRedirect(
+      "error",
+      "/reset-password",
+      "Password update failed",
+    );
   }
 
   return encodedRedirect("success", "/reset-password", "Password updated");

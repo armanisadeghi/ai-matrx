@@ -30,6 +30,18 @@ export const WAR_ROOM_CONTEXT_KEY = "war_room";
  *  overview renders inline even for a busy room/master roster. */
 const INLINE_CEIL = 24_000;
 
+/** Thread-tier agent: greet on first turn without waiting for user input. */
+const THREAD_AUTO_INITIALIZATION =
+  "As soon as the user starts this conversation, even if they say nothing, " +
+  "take a moment to understand the basics of this thread (only this thread, " +
+  "not the entire war room) and quickly tell the user what you observe and " +
+  "what you are ready to do. In a very concise way, inform them of the " +
+  "resources available in short bullets, such as the working document which " +
+  "allows the two of you to collaborate, etc. Keep it short, concise and " +
+  "direct. To start, take a quick look around, but do not dig into the " +
+  "details of everything and don't bloat your context with unnecessary " +
+  "information.";
+
 /** Budget: max inline resource rows on the current thread (pinned first). */
 const MAX_CURRENT_THREAD_RESOURCES = 60;
 /** Budget: max inline PINNED rows per thread at room scope. */
@@ -144,6 +156,17 @@ export interface WarRoomContextModel {
 }
 
 // ── XML helpers ───────────────────────────────────────────────────────────
+
+function indent(level: number): string {
+  return "  ".repeat(level);
+}
+
+/** Block element with text body — open/close tags on their own lines. */
+function textElement(tag: string, content: string, level: number): string {
+  const pad = indent(level);
+  const bodyPad = indent(level + 1);
+  return `${pad}<${tag}>\n${bodyPad}${esc(content)}\n${pad}</${tag}>`;
+}
 
 function esc(s: string): string {
   return s
@@ -262,16 +285,15 @@ function currentThreadBlock(t: WarRoomThreadModel): string {
   ];
   if (t.taskId) {
     lines.push(
-      "    <task" +
-        attr("id", t.taskId) +
-        attr("status", t.taskStatus) +
-        ">" +
-        esc(t.taskTitle ?? "") +
-        "</task>",
+      "    <task" + attr("id", t.taskId) + attr("status", t.taskStatus) + ">",
+      "      " + esc(t.taskTitle ?? ""),
+      "    </task>",
     );
   }
   if (t.noteId) {
-    lines.push("    <note" + attr("id", t.noteId) + attr("chars", t.noteChars) + "/>");
+    lines.push(
+      "    <note" + attr("id", t.noteId) + attr("chars", t.noteChars) + "/>",
+    );
   }
   if (t.hasAudio) {
     // The ACTIVE recording's cleaned transcript is in your studio context as
@@ -341,16 +363,13 @@ function accessLegend(model: WarRoomContextModel): string | null {
 
 /** Total pinned rows across a room (master budget gate). */
 function roomPinnedCount(room: WarRoomRoomModel): number {
-  return room.threads.reduce(
-    (n, t) => n + (t.pinnedResources?.length ?? 0),
-    0,
-  );
+  return room.threads.reduce((n, t) => n + (t.pinnedResources?.length ?? 0), 0);
 }
 
 /** Serialize the model to the concise `<war_room>` XML block. */
 export function renderWarRoomXml(model: WarRoomContextModel): string {
   const lines: string[] = [`<war_room scope="${model.scope}">`];
-  lines.push(`  <role>${esc(model.role)}</role>`);
+  lines.push(textElement("role", model.role, 1));
 
   if (model.scope === "all") {
     const rooms = model.rooms ?? [];
@@ -392,7 +411,12 @@ export function renderWarRoomXml(model: WarRoomContextModel): string {
 
   const legend = accessLegend(model);
   if (legend) lines.push(legend);
-  lines.push(`  <how_to>${esc(model.howTo)}</how_to>`);
+  lines.push(textElement("how_to", model.howTo, 1));
+  if (model.scope === "thread") {
+    lines.push(
+      textElement("auto_initialization", THREAD_AUTO_INITIALIZATION, 1),
+    );
+  }
   lines.push("</war_room>");
   return lines.join("\n");
 }

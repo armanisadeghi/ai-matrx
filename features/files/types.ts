@@ -130,6 +130,38 @@ export type CloudFileVersionRow = FilesTables["file_versions"]["Row"];
 export type CloudFilePermissionRow = IamTables["permissions"]["Row"];
 export type CloudShareLinkRow = FilesTables["share_links"]["Row"];
 
+/**
+ * Summary JSON returned by `iam.fn_list_resource_permissions` and
+ * `iam.fn_grant_resource_permission` — NOT a full `iam.permissions` row.
+ * Maps grantee/org columns into `grantee_id` + `grantee_type` and file-level
+ * `read|write|admin` permission strings.
+ */
+export interface IamResourcePermissionRpcRow {
+  resource_id: string;
+  resource_type: string;
+  grantee_id: string;
+  grantee_type: string;
+  permission_level: string;
+  granted_by: string | null;
+  expires_at: string | null;
+}
+
+/**
+ * Summary JSON returned by `files.fn_list_share_links` and
+ * `files.fn_create_share_link` — NOT a full `files.share_links` row.
+ * Omits `id`, `created_at`, `is_active`, and `organization_id`.
+ */
+export interface FilesShareLinkRpcRow {
+  share_token: string;
+  resource_id: string;
+  resource_type: string;
+  permission_level: string;
+  created_by: string | null;
+  expires_at: string | null;
+  max_uses: number | null;
+  use_count: number | null;
+}
+
 // ---------------------------------------------------------------------------
 // 3. API (REST) types — from Python OpenAPI schemas
 // ---------------------------------------------------------------------------
@@ -651,11 +683,7 @@ export interface SelectionState {
 // ---------------------------------------------------------------------------
 
 export type UploadStatus =
-  | "pending"
-  | "uploading"
-  | "success"
-  | "error"
-  | "cancelled";
+  "pending" | "uploading" | "success" | "error" | "cancelled";
 
 export interface UploadState {
   requestId: string;
@@ -1049,7 +1077,6 @@ export interface UpdateFolderArg {
     metadata?: Record<string, unknown>;
   };
 }
-
 
 // ---------------------------------------------------------------------------
 // 10i. Rename / copy thunk args (camelCase mirrors)

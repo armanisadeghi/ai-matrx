@@ -11,47 +11,58 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { iamDb } from "@/utils/supabase/iamDb";
-import type { CloudFilePermissionRow, GrantPermissionRequest } from "@/features/files/types";
+import type {
+  GrantPermissionRequest,
+  IamResourcePermissionRpcRow,
+} from "@/features/files/types";
 
-interface RpcPermissionRow {
-  resource_id: string;
-  resource_type: string;
-  grantee_id: string;
-  grantee_type: string;
-  permission_level: string;
-  granted_by: string | null;
-  expires_at: string | null;
+function parsePermissionRpcRows(data: unknown): IamResourcePermissionRpcRow[] {
+  if (!Array.isArray(data)) return [];
+  return data as unknown as IamResourcePermissionRpcRow[];
+}
+
+function parsePermissionRpcRow(data: unknown): IamResourcePermissionRpcRow {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("fn_grant_resource_permission returned an invalid row");
+  }
+  return data as unknown as IamResourcePermissionRpcRow;
 }
 
 async function listPermissions(
   resourceType: "file" | "folder",
   resourceId: string,
-): Promise<CloudFilePermissionRow[]> {
+): Promise<IamResourcePermissionRpcRow[]> {
   const supabase = createClient();
-  const { data, error } = await iamDb(supabase).rpc("fn_list_resource_permissions", {
-    p_resource_type: resourceType,
-    p_resource_id: resourceId,
-  });
+  const { data, error } = await iamDb(supabase).rpc(
+    "fn_list_resource_permissions",
+    {
+      p_resource_type: resourceType,
+      p_resource_id: resourceId,
+    },
+  );
   if (error) throw new Error(error.message);
-  return (data as unknown as RpcPermissionRow[]) ?? [];
+  return parsePermissionRpcRows(data);
 }
 
 async function grantPermission(
   resourceType: "file" | "folder",
   resourceId: string,
   body: GrantPermissionRequest,
-): Promise<CloudFilePermissionRow> {
+): Promise<IamResourcePermissionRpcRow> {
   const supabase = createClient();
-  const { data, error } = await iamDb(supabase).rpc("fn_grant_resource_permission", {
-    p_resource_type: resourceType,
-    p_resource_id: resourceId,
-    p_grantee_id: body.grantee_id,
-    p_grantee_type: body.grantee_type ?? "user",
-    p_level: body.level ?? "read",
-    p_expires_at: body.expires_at ?? undefined,
-  });
+  const { data, error } = await iamDb(supabase).rpc(
+    "fn_grant_resource_permission",
+    {
+      p_resource_type: resourceType,
+      p_resource_id: resourceId,
+      p_grantee_id: body.grantee_id,
+      p_grantee_type: body.grantee_type ?? "user",
+      p_level: body.level ?? "read",
+      p_expires_at: body.expires_at ?? undefined,
+    },
+  );
   if (error) throw new Error(error.message);
-  return data as unknown as CloudFilePermissionRow;
+  return parsePermissionRpcRow(data);
 }
 
 async function revokePermission(
@@ -61,14 +72,17 @@ async function revokePermission(
   granteeType: "user" | "group" = "user",
 ): Promise<{ deleted: boolean }> {
   const supabase = createClient();
-  const { data, error } = await iamDb(supabase).rpc("fn_revoke_resource_permission", {
-    p_resource_type: resourceType,
-    p_resource_id: resourceId,
-    p_grantee_id: granteeId,
-    // The user-group ACL tier is removed DB-side; 'group' has no meaningful
-    // target column, so it's treated the same as the default 'user' grantee.
-    p_grantee_type: granteeType === "group" ? "user" : granteeType,
-  });
+  const { data, error } = await iamDb(supabase).rpc(
+    "fn_revoke_resource_permission",
+    {
+      p_resource_type: resourceType,
+      p_resource_id: resourceId,
+      p_grantee_id: granteeId,
+      // The user-group ACL tier is removed DB-side; 'group' has no meaningful
+      // target column, so it's treated the same as the default 'user' grantee.
+      p_grantee_type: granteeType === "group" ? "user" : granteeType,
+    },
+  );
   if (error) throw new Error(error.message);
   return { deleted: Boolean(data) };
 }
@@ -86,7 +100,7 @@ async function revokePermission(
 export async function listFilePermissions(
   fileId: string,
   _opts?: unknown,
-): Promise<{ data: CloudFilePermissionRow[] }> {
+): Promise<{ data: IamResourcePermissionRpcRow[] }> {
   return { data: await listPermissions("file", fileId) };
 }
 
@@ -94,7 +108,7 @@ export async function grantFilePermission(
   fileId: string,
   body: GrantPermissionRequest,
   _opts?: unknown,
-): Promise<{ data: CloudFilePermissionRow }> {
+): Promise<{ data: IamResourcePermissionRpcRow }> {
   return { data: await grantPermission("file", fileId, body) };
 }
 
@@ -105,7 +119,12 @@ export async function revokeFilePermission(
   _opts?: unknown,
 ): Promise<{ data: { deleted: boolean } }> {
   return {
-    data: await revokePermission("file", fileId, granteeId, params.granteeType ?? "user"),
+    data: await revokePermission(
+      "file",
+      fileId,
+      granteeId,
+      params.granteeType ?? "user",
+    ),
   };
 }
 
@@ -116,7 +135,7 @@ export async function revokeFilePermission(
 export async function listFolderPermissions(
   folderId: string,
   _opts?: unknown,
-): Promise<{ data: CloudFilePermissionRow[] }> {
+): Promise<{ data: IamResourcePermissionRpcRow[] }> {
   return { data: await listPermissions("folder", folderId) };
 }
 
@@ -124,7 +143,7 @@ export async function grantFolderPermission(
   folderId: string,
   body: GrantPermissionRequest,
   _opts?: unknown,
-): Promise<{ data: CloudFilePermissionRow }> {
+): Promise<{ data: IamResourcePermissionRpcRow }> {
   return { data: await grantPermission("folder", folderId, body) };
 }
 
@@ -135,6 +154,11 @@ export async function revokeFolderPermission(
   _opts?: unknown,
 ): Promise<{ data: { deleted: boolean } }> {
   return {
-    data: await revokePermission("folder", folderId, granteeId, params.granteeType ?? "user"),
+    data: await revokePermission(
+      "folder",
+      folderId,
+      granteeId,
+      params.granteeType ?? "user",
+    ),
   };
 }

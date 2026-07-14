@@ -50,6 +50,8 @@ import {
   dbRowToCloudFolder,
   dbRowToCloudShareLink,
   parseCloudTreeRows,
+  rpcPermissionRowToCloudFilePermission,
+  rpcShareLinkRowToCloudShareLink,
 } from "./converters";
 import {
   registerRequest,
@@ -1474,7 +1476,7 @@ export const grantPermission = createAsyncThunk<
     dispatch(
       upsertPermissionsForResource({
         resourceId: arg.resourceId,
-        permissions: [dbRowToCloudFilePermission(data)],
+        permissions: [rpcPermissionRowToCloudFilePermission(data)],
       }),
     );
     // P1-6: the returned row already makes the UI correct. Reconcile the full
@@ -1568,7 +1570,7 @@ export const createShareLink = createAsyncThunk<
         : await ShareLinks.createFileShareLink(arg.resourceId, body, {
             requestId,
           });
-    const link = dbRowToCloudShareLink(data);
+    const link = rpcShareLinkRowToCloudShareLink(data);
     await dispatch(loadShareLinks({ resourceId: arg.resourceId })).unwrap();
     return link;
   } finally {

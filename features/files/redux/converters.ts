@@ -20,7 +20,9 @@ import type {
   CloudShareLinkRow,
   CloudTreeRow,
   FileRecordApi,
+  FilesShareLinkRpcRow,
   GranteeType,
+  IamResourcePermissionRpcRow,
   MediaRef,
   PermissionLevel,
   ResourceType,
@@ -294,9 +296,59 @@ export function dbRowToCloudFilePermission(
   };
 }
 
+/**
+ * Map the summary JSON from `iam.fn_*_resource_permission` RPCs into the file
+ * domain shape. The RPC omits the row `id` and canonical columns — callers
+ * that need the full row should read `iam.permissions` directly (see
+ * `loadPermissions`).
+ */
+export function rpcPermissionRowToCloudFilePermission(
+  row: IamResourcePermissionRpcRow,
+): CloudFilePermission {
+  const granteeType: GranteeType =
+    row.grantee_type === "organization" ? "group" : "user";
+
+  return {
+    id: row.grantee_id,
+    resourceId: row.resource_id,
+    resourceType: toResourceType(row.resource_type),
+    granteeId: row.grantee_id,
+    granteeType,
+    permissionLevel: toPermissionLevel(row.permission_level),
+    grantedBy: row.granted_by,
+    grantedAt: new Date().toISOString(),
+    expiresAt: row.expires_at,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Share links
 // ---------------------------------------------------------------------------
+
+/**
+ * Map the summary JSON from `files.fn_*_share_link` RPCs into the file domain
+ * shape. The RPC omits `id`, `created_at`, `is_active`, and `organization_id`
+ * — callers that need the full row should read `files.share_links` directly
+ * (see `loadShareLinks`).
+ */
+export function rpcShareLinkRowToCloudShareLink(
+  row: FilesShareLinkRpcRow,
+): CloudShareLink {
+  const level = toPermissionLevel(row.permission_level);
+  return {
+    id: row.share_token,
+    resourceId: row.resource_id,
+    resourceType: toResourceType(row.resource_type),
+    shareToken: row.share_token,
+    permissionLevel: level === "admin" ? "write" : level,
+    createdBy: row.created_by,
+    createdAt: new Date().toISOString(),
+    expiresAt: row.expires_at,
+    maxUses: row.max_uses,
+    useCount: row.use_count ?? 0,
+    isActive: true,
+  };
+}
 
 export function dbRowToCloudShareLink(row: CloudShareLinkRow): CloudShareLink {
   const level = toPermissionLevel(row.permission_level);
@@ -500,4 +552,3 @@ export function urlToMediaRef(url: string, mimeType?: string | null): MediaRef {
   if (mimeType) ref.mime_type = mimeType;
   return ref;
 }
-
