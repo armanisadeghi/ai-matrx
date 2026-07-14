@@ -37,6 +37,10 @@ import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeak
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { openAssistantMessageEditor } from "../message-options/openAssistantMessageEditor";
+import {
+  setMessageReaction,
+  reactionFromMetadata,
+} from "@/features/agents/redux/execution-system/message-crud/set-message-reaction.thunk";
 import { toast } from "sonner";
 import {
   selectMessageById,
@@ -138,8 +142,6 @@ export function AssistantActionBar({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const [isCopied, setIsCopied] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isDisliked, setIsDisliked] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editHistoryOpen, setEditHistoryOpen] = useState(false);
@@ -170,6 +172,22 @@ export function AssistantActionBar({
       record?.metadata ? (record.metadata as Record<string, unknown>) : null,
     [record?.metadata],
   );
+
+  // Persisted like/dislike — read from metadata.user_reaction, written via
+  // the cx_message_set_reaction RPC (optimistic, with rollback). Clicking the
+  // active reaction again clears it.
+  const reaction = reactionFromMetadata(record?.metadata);
+  const handleReaction = (clicked: "like" | "dislike") => {
+    dispatch(
+      setMessageReaction({
+        conversationId,
+        messageId,
+        reaction: reaction === clicked ? null : clicked,
+      }),
+    )
+      .unwrap()
+      .catch(() => toast.error("Failed to save reaction"));
+  };
 
   // For multi-iteration agentic turns, the surrounding AssistantTurnGroup
   // passes the full chain of assistant message ids. Pull all their records
@@ -331,13 +349,10 @@ export function AssistantActionBar({
         <TapTargetButtonGroup>
           <ThumbsUpTapButton
             variant="group"
-            onClick={() => {
-              setIsLiked(!isLiked);
-              if (isDisliked) setIsDisliked(false);
-            }}
+            onClick={() => handleReaction("like")}
             ariaLabel="Like message"
             className={
-              isLiked
+              reaction === "like"
                 ? "text-green-500 dark:text-green-400"
                 : "text-muted-foreground"
             }
@@ -345,13 +360,10 @@ export function AssistantActionBar({
 
           <ThumbsDownTapButton
             variant="group"
-            onClick={() => {
-              setIsDisliked(!isDisliked);
-              if (isLiked) setIsLiked(false);
-            }}
+            onClick={() => handleReaction("dislike")}
             ariaLabel="Dislike message"
             className={
-              isDisliked
+              reaction === "dislike"
                 ? "text-red-500 dark:text-red-400"
                 : "text-muted-foreground"
             }
