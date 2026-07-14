@@ -9832,6 +9832,48 @@ export type Database = {
         }
         Relationships: []
       }
+      guardian_link: {
+        Row: {
+          created_at: string
+          created_by: string
+          guardian_user_id: string
+          id: string
+          relationship: string | null
+          requested_by: string
+          reviewed_at: string | null
+          revoked_at: string | null
+          status: string
+          student_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          guardian_user_id: string
+          id?: string
+          relationship?: string | null
+          requested_by?: string
+          reviewed_at?: string | null
+          revoked_at?: string | null
+          status?: string
+          student_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          guardian_user_id?: string
+          id?: string
+          relationship?: string | null
+          requested_by?: string
+          reviewed_at?: string | null
+          revoked_at?: string | null
+          status?: string
+          student_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       item_mastery: {
         Row: {
           attempt_count: number
@@ -29235,6 +29277,127 @@ export type Database = {
       get_version_snapshot: {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: Json
+      }
+      guardian_assert_access: {
+        Args: { p_student_id: string }
+        Returns: undefined
+      }
+      guardian_can_view: { Args: { p_student_id: string }; Returns: boolean }
+      guardian_find_user_by_email: {
+        Args: { p_email: string }
+        Returns: string
+      }
+      guardian_grant: {
+        Args: { p_guardian_email: string; p_relationship?: string }
+        Returns: Database["education"]["Tables"]["guardian_link"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "guardian_link"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      guardian_has_active_link: {
+        Args: { p_student_id: string }
+        Returns: boolean
+      }
+      guardian_list_links: {
+        Args: never
+        Returns: {
+          counterpart_email: string
+          counterpart_name: string
+          counterpart_user_id: string
+          created_at: string
+          guardian_user_id: string
+          id: string
+          relationship: string
+          requested_by: string
+          reviewed_at: string
+          role: string
+          status: string
+          student_user_id: string
+        }[]
+      }
+      guardian_request_student: {
+        Args: { p_relationship?: string; p_student_email: string }
+        Returns: Database["education"]["Tables"]["guardian_link"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "guardian_link"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      guardian_respond: {
+        Args: { p_approve: boolean; p_guardian_user_id: string }
+        Returns: Database["education"]["Tables"]["guardian_link"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "guardian_link"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      guardian_student_attempts: {
+        Args: { p_since?: string; p_student_id: string }
+        Returns: Database["education"]["Tables"]["study_attempt"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "study_attempt"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      guardian_student_card_topics: {
+        Args: { p_card_ids: string[]; p_student_id: string }
+        Returns: {
+          card_id: string
+          topic: string
+        }[]
+      }
+      guardian_student_gain: {
+        Args: { p_student_id: string }
+        Returns: Database["education"]["Tables"]["assessment_result"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "assessment_result"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      guardian_student_mastery: {
+        Args: { p_student_id: string }
+        Returns: Database["education"]["Tables"]["item_mastery"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "item_mastery"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      guardian_student_sessions: {
+        Args: { p_student_id: string }
+        Returns: Database["education"]["Tables"]["study_session"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "study_session"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      guardian_student_streak: {
+        Args: { p_student_id: string }
+        Returns: Database["education"]["Tables"]["study_streak"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "study_streak"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      guardian_unlink: {
+        Args: { p_guardian_user_id: string; p_student_user_id: string }
+        Returns: undefined
       }
       hard_delete_file: { Args: { p_file_id: string }; Returns: Json }
       has_access_as: {

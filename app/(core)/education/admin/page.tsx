@@ -397,9 +397,62 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(core)/education/game/play/[roomId]/page.tsx",
       status: "Live",
     },
+    {
+      url: "/education/family",
+      label: "Family / Guardian dashboard",
+      description:
+        "VISION §14 — the parent/guardian hub (list-first). A guardian follows a linked student's study time, mastery, weak areas, trends, and learning gain (READ-ONLY). Serves both sides of the consented link on one page: guardian roster + request-access + sent requests; student consent inbox + direct grant. Access is ALWAYS student-consented; every read is re-checked by the guardian_* RPCs.",
+      filePath: "app/(core)/education/family/page.tsx",
+      status: "Live",
+      notes: [
+        "Feature: features/education/family/** (FamilyDashboard · StudentProgressView · familyService · useGuardianStudents · useGuardianStudentAnalytics) — see features/education/family/FEATURE.md",
+        "DB: education.guardian_link (consent link, status pending/active/revoked) + public.guardian_* SECURITY DEFINER RPCs (migrations/edu_guardian_link.sql)",
+        "Reuse: read-only consumer of the P5 StudyAnalyticsView + computeAnalytics + learningGainService.buildGainReport — NO parallel analytics engine",
+      ],
+    },
+    {
+      url: "/education/family/[studentId]",
+      label: "Student progress (guardian, read-only)",
+      description:
+        "Server-gated read-only view of ONE linked student's cross-mode progress. The Server Component resolves guardian_list_links and 404s unless an ACTIVE guardian link to studentId exists; the client read RPCs re-check on every call. noindex.",
+      filePath: "app/(core)/education/family/[studentId]/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/classes",
+      label: "My Classes (W2 Per-Class Hub — list)",
+      description:
+        "W2-class-hub.md. List-first home for a student's classes. Scopes-native: a class is a SCOPE under a per-user 'Class' scope type (slug='class') in the personal org — created on demand via the canonical create_scope_type/create_scope RPCs. No new tables. Create/edit a class (name, teacher, term, period, exam dates in scope.settings).",
+      filePath: "app/(core)/education/classes/page.tsx",
+      status: "Live",
+      notes: [
+        "Feature: features/education/classes/** (useClasses · useClassContent · ClassesHome · ClassHubView · ClassFormDialog · ClassPicker · AddClassContentSheet) — see features/education/classes/FEATURE.md",
+        "Reuse: legacy scope thunks (features/agent-context/redux/scope) for CRUD; NO new scope semantics",
+        "DB: zero DDL — class=scope, exam dates=scope.settings JSONB, content↔class=platform.associations",
+      ],
+    },
+    {
+      url: "/education/classes/[classId]",
+      label: "Per-Class Hub (course workspace)",
+      description:
+        "The course-scoped hub. Aggregates everything tagged to the class scope (decks/quizzes/notes/media/files) via the class scope's INCOMING platform.associations edges (reuses useContainerLinks + useEntityTitles), plus the class exam calendar with 'plan around this' deep-links to the planner. 'Add content' opens the UniversalAssociationPicker against the class scope. Access is inherited from scope RLS + per-item useAccess — a non-owner resolves nothing.",
+      filePath: "app/(core)/education/classes/[classId]/page.tsx",
+      status: "Live",
+      notes: [
+        "classId param accepts a scope id OR slug (selectScopeBySlugOrId semantics)",
+        "Tagging from an artifact: <ClassPicker entityType entityId /> (thin EntityScopeTagger wrapper locked to the Class scope type) — wired into flashcard SetDetailView",
+      ],
+    },
   ],
 
   components: [
+    {
+      name: "Per-Class Hub (ClassesHome / ClassHubView / ClassFormDialog / ClassPicker / AddClassContentSheet)",
+      filePath: "features/education/classes/components/ClassHubView.tsx",
+      description:
+        "W2 Per-Class Hub. ClassesHome = class list; ClassHubView = the course workspace (aggregated content + exam dates). ClassPicker is the importable 'tag this artifact to a class' control (EntityScopeTagger locked to the Class scope type). AddClassContentSheet = UniversalAssociationPicker against the class scope. Hooks: useClasses (scope CRUD) + useClassContent (useContainerLinks aggregation). No new tables. See features/education/classes/FEATURE.md.",
+      tier: "official",
+    },
     {
       name: "EducationHub",
       filePath: "features/education/components/landing/EducationHub.tsx",
@@ -492,11 +545,33 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
+      name: "StudyAnalyticsView",
+      filePath:
+        "features/education/study/analytics/components/StudyAnalyticsView.tsx",
+      description:
+        "P5 — the PURE, presentation-only progress surface (stats, mastery, per-mode, weak areas, learning-gain teaser, trends). Fed folded data; readOnly strips study-action CTAs. Shared by the self dashboard AND the guardian dashboard so the surface never forks.",
+      tier: "official",
+    },
+    {
       name: "StudyAnalyticsDashboard",
       filePath:
         "features/education/study/analytics/components/StudyAnalyticsDashboard.tsx",
       description:
-        "P5 — the unified cross-mode progress dashboard (/education/progress): outcome-first stats, mastery, per-mode breakdown, weak areas, AI narrative, learning-gain teaser, reuses StudyTrends.",
+        "P5 — the SELF data wrapper over StudyAnalyticsView (/education/progress): owns the current user's data path (useStudyAnalytics + AI narrator + learning-gain fetch).",
+      tier: "official",
+    },
+    {
+      name: "FamilyDashboard",
+      filePath: "features/education/family/components/FamilyDashboard.tsx",
+      description:
+        "VISION §14 — the /education/family hub (list-first): guardian roster (→ read-only student progress), request-access + sent requests, student consent inbox + direct grant. Consent-first; driven by useGuardianStudents + familyService.",
+      tier: "official",
+    },
+    {
+      name: "StudentProgressView",
+      filePath: "features/education/family/components/StudentProgressView.tsx",
+      description:
+        "VISION §14 — read-only guardian detail: a linked student's cross-mode progress. Thin wrapper over StudyAnalyticsView (readOnly) fed by useGuardianStudentAnalytics (the gated guardian_* RPCs). Reuses computeAnalytics + buildGainReport — no parallel engine.",
       tier: "official",
     },
     {

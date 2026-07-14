@@ -8,7 +8,7 @@
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in VISION-education-hub.md.
 
-import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText } from "lucide-react";
+import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -207,20 +207,21 @@ export const EDU_TOOLS: EduToolEntry[] = [
   {
     slug: "practice-oral",
     name: "Spoken Practice",
-    tagline: "Oral exams, interviews & debate — answered out loud, graded live",
-    description: "Answer out loud to an AI examiner, interviewer, or debate opponent. Prompts are grounded in your material; every spoken answer is graded on meaning, and an examiner's summary closes the session.",
+    tagline: "Oral exams, interviews, debate & language — answered out loud, graded live",
+    description: "Answer out loud to an AI examiner, interviewer, debate opponent, or language coach. Prompts are grounded in your material; every spoken answer is graded on meaning (and, in Language & Pronunciation mode, on pronunciation and fluency too), and a persona-matched summary closes the session.",
     icon: Speech,
     letter: "Sp",
     status: "live", // Spoken practice — reuses the FastFire capture + spoken grader + study spine; new session-designer agent per mode
     accessTier: "trial",
     visionRef: "VISION 'Features Coming Soon' — Oral exam/viva, Interview prep, Debate; §4 Tutor, §6 AI Grading",
     capabilities: [
-      "Three modes: oral exam / viva voce, interview prep (college/med/job), debate & argumentation",
+      "Four modes: oral exam / viva voce, interview prep (college/med/job), debate & argumentation, and language & pronunciation",
+      "Language & Pronunciation: say a target-language phrase aloud — graded on BOTH content AND pronunciation/fluency (accuracy, intelligibility, prosody), judged holistically from your recording (transcript-level, not phoneme-perfect)",
       "Grounded in your own deck or pasted material (TrustEnvelope: honest per-prompt confidence)",
       "Voice-first: reuses the FastFire continuous mic capture + crown-jewel spoken grader",
-      "Graded on meaning (accuracy/articulation/completeness · content+delivery · argument/evidence/reasoning)",
+      "Graded on meaning (accuracy/articulation/completeness · content+delivery · argument/evidence/reasoning · content+pronunciation)",
       "Debate opponent counter-argues to stress-test your reasoning",
-      "Every answer records to the study spine (method=mode) + an examiner's batch summary",
+      "Every answer records to the study spine (method=mode) + a persona-matched batch summary",
     ],
     featured: true,
   },
@@ -261,6 +262,44 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Correctness-first scoring + earn-to-upgrade power-ups + comeback assist",
       "Healthy streaks (freezes + rest days), opt-in mastery-gain leagues, outcome badges",
       "Every answer records to the study spine (method='game') → mastery + P5 analytics",
+    ],
+    featured: true,
+  },
+  {
+    slug: "family",
+    name: "Family Dashboard",
+    tagline: "Parents follow a learner's study time, mastery & learning gain",
+    description: "A read-only, privacy-respecting view of a linked student's progress — study time, mastery, weak areas, trends, and learning gain. A guardian only ever sees a student who granted them access.",
+    icon: Users,
+    letter: "Fm",
+    status: "live", // VISION §14 + 'Coming Soon: Parent/guardian dashboard (K-8)'. Guardian↔student consent link (education.guardian_link) + gated guardian_* RPCs; reuses the P5 StudyAnalyticsView + learning-gain engine as a read-only consumer.
+    accessTier: "free",
+    visionRef: "VISION §14 Collaboration, 'Features Coming Soon' — Parent and guardian dashboard; §16 Progress Analytics",
+    capabilities: [
+      "Guardian follows a linked student's study time, mastery %, weak areas, trends, streaks, and pre/post learning gain",
+      "Read-only + privacy-respecting: a guardian only ever sees a student who granted access (student-consented link)",
+      "Consent lifecycle: student grants directly, or guardian requests → student approves; either side can revoke",
+      "Reuses the P5 analytics + learning-gain surfaces as a read-only consumer — no parallel analytics engine",
+      "Server-gated route + SECURITY DEFINER guardian_* RPCs re-check the active link on every read",
+    ],
+    featured: true,
+  },
+  {
+    slug: "classes",
+    name: "My Classes",
+    tagline: "One hub per course — its decks, quizzes, notes, media & exam dates",
+    description: "A course-scoped workspace for each class you take. Tag any study material to a class, and its hub gathers everything in one place with your exam calendar. Scopes-native: a class is a scope, so it can also be your active study context.",
+    icon: GraduationCap,
+    letter: "Cl",
+    status: "live", // W2 Per-Class Hub — scopes-native (class = scope; content↔class = platform.associations); no new tables
+    accessTier: "free",
+    visionRef: "W2-class-hub.md (Wave 2 — per-class hub); VISION §14 Collaboration",
+    capabilities: [
+      "Add the courses you take; each class is a scope in your personal workspace",
+      "Tag decks, quizzes, notes, media, and files to a class (ClassPicker → local scope tags)",
+      "Per-class hub aggregates everything tagged to it + the class's exam dates",
+      "Plan around a class's exams (deep-links into the study planner)",
+      "Scopes-native: set a class active in the scope picker to bias generation + the tutor",
     ],
     featured: true,
   },

@@ -93,38 +93,43 @@ export function buildReport(
   };
 }
 
+/**
+ * Fold a flat list of P1 `assessment_result` rows (baseline|post) into the
+ * `LearningGainReport` read model — pure, no I/O. Falls back to seed fixtures
+ * (clearly flagged `isSeed`) only when there is no complete baseline/post pair
+ * yet, so the UI is real from day one. Shared by the self report (`getReport`,
+ * over the caller's own RLS-scoped rows) AND the guardian dashboard (over a
+ * linked student's rows returned by the gated `guardian_student_gain` RPC) — so
+ * the learning-gain contract is computed in exactly one place.
+ */
+export function buildGainReport(
+  results: AssessmentResultRow[],
+): LearningGainReport {
+  const p1Pairs = pairLearningGain(results).filter((p) => p.baseline && p.post);
+
+  if (p1Pairs.length === 0) {
+    return buildReport(SEED_LEARNING_GAIN, {
+      contractPending: false,
+      isSeed: true,
+    });
+  }
+
+  const rows: LearningGainRow[] = p1Pairs.flatMap((p) => [
+    toGainRow(p.baseline!),
+    toGainRow(p.post!),
+  ]);
+  return buildReport(rows, { contractPending: false, isSeed: false });
+}
+
 export const learningGainService = {
   /**
    * The current user's learning-gain report. Reads P1's real baseline/post
    * pairs from `education.assessment_result` (RLS-scoped to the caller);
-   * falls back to seed fixtures — clearly flagged `isSeed` — only when the
-   * user has no complete pair yet, so the UI is real from day one.
+   * folds them via `buildGainReport`.
    */
   async getReport(): Promise<StudyResult<LearningGainReport>> {
     const { data, error } = await assessmentService.listGainResults();
     if (error) return fail("learningGain.getReport", error);
-
-    const p1Pairs = pairLearningGain(data ?? []).filter(
-      (p) => p.baseline && p.post,
-    );
-
-    if (p1Pairs.length === 0) {
-      return {
-        data: buildReport(SEED_LEARNING_GAIN, {
-          contractPending: false,
-          isSeed: true,
-        }),
-        error: null,
-      };
-    }
-
-    const rows: LearningGainRow[] = p1Pairs.flatMap((p) => [
-      toGainRow(p.baseline!),
-      toGainRow(p.post!),
-    ]);
-    return {
-      data: buildReport(rows, { contractPending: false, isSeed: false }),
-      error: null,
-    };
+    return { data: buildGainReport(data ?? []), error: null };
   },
 };
