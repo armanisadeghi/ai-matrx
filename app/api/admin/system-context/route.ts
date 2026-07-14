@@ -75,6 +75,10 @@ export interface SystemContextItem {
   feed_config: Json;
   feed_status: string | null;
   last_fed_at: string | null;
+  // Reference-config columns (only meaningful when value_type === "reference").
+  allowed_reference_types: string[] | null;
+  max_items: number | null;
+  allowed_scope_type_ids: string[] | null;
 }
 
 export interface SystemContextCategory {
@@ -383,7 +387,7 @@ export async function GET(request: NextRequest) {
   const { data: items, error: itemError } = await contextDb(admin)
     .from("context_items")
     .select(
-      "id, key, display_name, description, value_type, custom_component, sensitivity, status, category, tags, sort_order, is_active, scope_type_id, feed_type, feed_config, feed_status, last_fed_at",
+      "id, key, display_name, description, value_type, custom_component, sensitivity, status, category, tags, sort_order, is_active, scope_type_id, feed_type, feed_config, feed_status, last_fed_at, allowed_reference_types, max_items, allowed_scope_type_ids",
     )
     .in("scope_type_id", scopeTypeIds)
     .order("sort_order", { ascending: true })
@@ -444,6 +448,9 @@ export async function GET(request: NextRequest) {
       feed_config: it.feed_config,
       feed_status: it.feed_status,
       last_fed_at: it.last_fed_at,
+      allowed_reference_types: it.allowed_reference_types,
+      max_items: it.max_items,
+      allowed_scope_type_ids: it.allowed_scope_type_ids,
     };
   });
 
@@ -493,6 +500,12 @@ type CreateItemBody = {
   // The feed — how this item is populated. Defaults to 'manual'.
   feed_type?: FeedType;
   feed_config?: Json;
+  // Reference-config (value_type === "reference" only): which entity types the
+  // cell may point at, its cardinality, and — when "scope" is allowed — which
+  // scope types. Ignored for non-reference items.
+  allowed_reference_types?: string[] | null;
+  max_items?: number | null;
+  allowed_scope_type_ids?: string[] | null;
   // Initial value (manual feeds only): either a raw string (coerced by
   // value_type) or pre-routed value_* columns built client-side.
   value?: string | null;
@@ -654,6 +667,11 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
       // A non-manual feed hasn't run yet; mark it pending so the UI tells the
       // truth (the executor populates the value later).
       feed_status: feedType === "manual" ? null : "pending",
+      // Reference-config — null for non-reference items (max_items keeps its
+      // DB default of 1). validate_reference_value gates cell writes against these.
+      allowed_reference_types: body.allowed_reference_types ?? null,
+      max_items: body.max_items ?? 1,
+      allowed_scope_type_ids: body.allowed_scope_type_ids ?? null,
     })
     .select("id")
     .single();
@@ -780,6 +798,9 @@ export async function PATCH(request: NextRequest) {
     is_active?: boolean;
     feed_type?: FeedType;
     feed_config?: Json;
+    allowed_reference_types?: string[] | null;
+    max_items?: number | null;
+    allowed_scope_type_ids?: string[] | null;
   } | null;
 
   if (!body?.itemId) {
@@ -802,6 +823,11 @@ export async function PATCH(request: NextRequest) {
     patch.feed_status = body.feed_type === "manual" ? null : "pending";
   }
   if (body.feed_config !== undefined) patch.feed_config = body.feed_config;
+  if (body.allowed_reference_types !== undefined)
+    patch.allowed_reference_types = body.allowed_reference_types;
+  if (body.max_items !== undefined) patch.max_items = body.max_items ?? 1;
+  if (body.allowed_scope_type_ids !== undefined)
+    patch.allowed_scope_type_ids = body.allowed_scope_type_ids;
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
