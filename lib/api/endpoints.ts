@@ -329,6 +329,14 @@ export const ENDPOINTS = {
      * through {@link ENDPOINTS.assets.upload} with `preset="podcast"`.
      */
     uploadPodcastVideo: "/media/podcast/upload-video" as const,
+    /**
+     * POST — stream the spoken transcript of a captioned YouTube video as
+     * text. Body: `{ youtube_url }`. Reuses the "YouTube Video Transcription
+     * Analysis" agent server-side (quiet run, no chat clutter). Streams NDJSON:
+     * the transcript arrives as chunk text (`accumulatedText`); a captionless
+     * video yields a non-fatal warning + empty text so callers stay honest.
+     */
+    youtubeTranscript: "/media/youtube/transcript" as const,
   },
 
   /**

@@ -8,6 +8,7 @@
 //   • PDF text      → the pdf-extractor stream (`streamPdfExtractText`)
 //   • image OCR     → the SAME pdf-extractor stream (it accepts images; Tesseract)
 //   • audio/video   → Groq-Whisper transcription (`transcribeSignedUrl`)
+//   • YouTube       → aidream's real spoken-transcript agent (`fetchYouTubeTranscript`)
 //   • URLs          → the scraper
 // The set of readable file types (and the honest gate for the rest) lives in
 // ONE place — `formatSupport.ts` — shared with the hero UI so they never drift.
@@ -17,9 +18,11 @@
 import { useCallback } from "react";
 import { fileHandler, useFileUpload } from "@/features/files";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
+import { useBackendApi } from "@/hooks/useBackendApi";
 import { usePdfClient } from "@/features/pdf/api/client";
 import { streamPdfExtractText } from "@/features/pdf-extractor/service/streamPdf";
 import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedUrl";
+import { fetchYouTubeTranscript } from "./youtubeTranscript";
 import { describeIngestSupport } from "./formatSupport";
 import type { RawIngestInput, NormalizedIngest, IngestProgress } from "./types";
 
@@ -50,6 +53,7 @@ export interface UseIngestResult {
 export function useIngest(): UseIngestResult {
   const { upload } = useFileUpload();
   const { scrapeUrl } = useScraperApi();
+  const backendApi = useBackendApi();
   const pdf = usePdfClient();
 
   /** Persist arbitrary extracted text as a durable `.md` file the user owns. */
@@ -93,24 +97,56 @@ export function useIngest(): UseIngestResult {
         };
       }
 
-      // ── URL / YouTube ──────────────────────────────────────────────────────
-      if (input.kind === "url" || input.kind === "youtube") {
+      // ── YouTube → REAL spoken transcript ────────────────────────────────────
+      // Not the page HTML — aidream's transcription agent (0cd86da2, Gemini)
+      // watches the video and returns what was actually said. Normalized to text
+      // + a durable anchor exactly like every other format. If the video has no
+      // captions/speech we get empty text back and fail honestly (never fake a
+      // transcript from scraped page text).
+      if (input.kind === "youtube") {
         const url = (input.url ?? "").trim();
         if (!url) throw new Error("Enter a URL to ingest.");
         onProgress?.({
-          phase: "scraping",
-          message:
-            input.kind === "youtube"
-              ? "Fetching the video page…"
-              : "Reading the page…",
+          phase: "transcribing",
+          message: "Transcribing what's said in the video…",
         });
+        const { text: transcript } = await fetchYouTubeTranscript(
+          backendApi.post,
+          url,
+        );
+        const raw = transcript.trim();
+        if (!raw || raw.length < 40) {
+          throw new Error(
+            "Couldn't pull a transcript from that video. Try a link with captions, or paste the transcript.",
+          );
+        }
+        const title = input.title?.trim() || titleFromUrl(url);
+        onProgress?.({ phase: "uploading", message: "Saving the transcript…" });
+        const fileId = await anchorText(raw, title);
+        const { text, truncated } = clamp(raw);
+        return {
+          text,
+          title,
+          ref: { kind: "youtube", fileId, url },
+          meta: {
+            chars: text.length,
+            extractionMethod: "transcript",
+            truncated,
+            inputKind: "youtube",
+          },
+        };
+      }
+
+      // ── URL (generic web page) ──────────────────────────────────────────────
+      if (input.kind === "url") {
+        const url = (input.url ?? "").trim();
+        if (!url) throw new Error("Enter a URL to ingest.");
+        onProgress?.({ phase: "scraping", message: "Reading the page…" });
         const scraped = await scrapeUrl(url);
         const raw = (scraped?.textContent ?? "").trim();
         if (!raw || raw.length < 40) {
           throw new Error(
-            input.kind === "youtube"
-              ? "Couldn't pull a transcript from that video. Try a link with captions, or paste the transcript."
-              : "Couldn't read enough text from that page. Try another URL or paste the content.",
+            "Couldn't read enough text from that page. Try another URL or paste the content.",
           );
         }
         const title =
@@ -123,8 +159,8 @@ export function useIngest(): UseIngestResult {
         return {
           text,
           title,
-          ref: { kind: input.kind, fileId, url },
-          meta: { chars: text.length, truncated, inputKind: input.kind },
+          ref: { kind: "url", fileId, url },
+          meta: { chars: text.length, truncated, inputKind: "url" },
         };
       }
 
@@ -268,7 +304,7 @@ export function useIngest(): UseIngestResult {
       // so a future new `IngestFileKind` can't silently fall through.
       throw new Error(describeIngestSupport(file).note);
     },
-    [anchorText, scrapeUrl, upload, pdf],
+    [anchorText, scrapeUrl, backendApi, upload, pdf],
   );
 
   return { normalize };

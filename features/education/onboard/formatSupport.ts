@@ -14,6 +14,11 @@
 //   audio/video→ the Groq-Whisper transcription route (`transcribeSignedUrl`)
 //   text       → read inline
 // Unsupported kinds (office, heic, unknown) are gated, not routed.
+//
+// URLs are classified the same way (`describeUrlSupport`): a generic web page →
+// the scraper; a YouTube link → the REAL spoken transcript (aidream's
+// transcription agent, `fetchYouTubeTranscript`) — no longer an honest-gate
+// "page text only" label.
 
 /** How the front door will read a given file. */
 export type IngestFileKind =
@@ -54,6 +59,47 @@ export function classifyIngestFile(file: File): IngestFileKind {
   if (VIDEO_EXT.test(name) || mime.startsWith("video/")) return "video";
   if (TEXT_EXT.test(name) || mime.startsWith("text/")) return "text";
   return "unknown";
+}
+
+/** How the front door reads a pasted URL: a generic web page vs a YouTube link. */
+export type IngestUrlKind = "youtube" | "url";
+
+const YOUTUBE_URL_RE = /(?:youtube\.com|youtu\.be)/i;
+
+/** Classify a URL into the ONE kind that decides its ingest branch in `useIngest`. */
+export function classifyIngestUrl(url: string): IngestUrlKind {
+  return YOUTUBE_URL_RE.test(url) ? "youtube" : "url";
+}
+
+export interface UrlIngestSupport {
+  kind: IngestUrlKind;
+  /** True when the front door can turn this URL into real study text. */
+  supported: boolean;
+  /** The honest one-liner the hero shows under the link input. */
+  note: string;
+}
+
+/**
+ * Describe how a URL will be ingested — the honest status shown under the link
+ * field. BOTH kinds are fully supported: a generic page is read by the scraper;
+ * a YouTube link is transcribed to the REAL spoken transcript by aidream's
+ * transcription agent (0cd86da2), not scraped page HTML. If a specific video
+ * has no captions/speech, `useIngest` still fails honestly at ingest time.
+ */
+export function describeUrlSupport(url: string): UrlIngestSupport {
+  const kind = classifyIngestUrl(url);
+  if (kind === "youtube") {
+    return {
+      kind,
+      supported: true,
+      note: "YouTube — we'll transcribe what's actually said in the video.",
+    };
+  }
+  return {
+    kind,
+    supported: true,
+    note: "We'll read the page and ground your kit in its content.",
+  };
 }
 
 export interface IngestSupport {

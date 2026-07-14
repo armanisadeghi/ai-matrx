@@ -23,8 +23,9 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 ```
 
 - **`useIngest`** (`useIngest.ts`) normalizes raw input → extracted text + a durable file anchor.
-  PDF via the pdf-extractor stream, text/markdown read inline, URL/YouTube via the scraper; every
-  input is ALSO uploaded through `fileHandler` so the user owns it (and lineage is uniform).
+  PDF via the pdf-extractor stream, text/markdown read inline, a generic URL via the scraper, a
+  YouTube link via the real spoken-transcript endpoint (`fetchYouTubeTranscript`); every input is ALSO
+  uploaded through `fileHandler` so the user owns it (and lineage is uniform).
 - **`useKitGeneration`** (`useKitGeneration.ts`) sequences ingest → the converter fan-out
   (`convertMany`), exposing live per-target state (pending → running → success/error).
 - **The converter** (`features/education/convert/`) is the shared dispatch — see its `FEATURE.md`.
@@ -63,11 +64,12 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 ## Format coverage (the honest matrix)
 
 **ONE source of truth: `formatSupport.ts`.** `classifyIngestFile` / `describeIngestSupport` /
-`INGEST_ACCEPT` decide what the front door reads, how it reads it, and the exact honest line the UI
-shows and the ingest throws. `useIngest` (the engine) and `StartHero` (the picker `accept`, the
-drop-zone hint, and the per-file `FileSupportNote`) BOTH read it, so the advertised set and the
-readable set can never drift. Every supported kind routes to an **existing** platform pipeline — we
-wire, we don't build extractors.
+`INGEST_ACCEPT` decide what the front door reads for FILES; `classifyIngestUrl` / `describeUrlSupport`
+do the same for URLs (generic page vs YouTube). Together they decide what the front door reads, how it
+reads it, and the exact honest line the UI shows and the ingest throws. `useIngest` (the engine) and
+`StartHero` (the picker `accept`, the drop-zone hint, the per-file `FileSupportNote`, and the link
+note) BOTH read it, so the advertised set and the readable set can never drift. Every supported kind
+routes to an **existing** platform pipeline — we wire, we don't build extractors.
 
 | Input | Status | Pipeline (all existing) |
 |---|---|---|
@@ -78,7 +80,7 @@ wire, we don't build extractors.
 | Text / Markdown / CSV / TSV / JSON / HTML / RTF | ✅ | read inline |
 | Paste | ✅ | anchored as a durable `.md` |
 | URL (generic web page) | ✅ | scraper (`useScraperApi.scrapeUrl`) |
-| YouTube / web-video URL | ⚠️ page text only | scraper HTML — see the gap below |
+| YouTube URL | ✅ real spoken transcript | aidream `POST /media/youtube/transcript` (agent `0cd86da2`, Gemini) via `fetchYouTubeTranscript`; captionless video → honest fail |
 | Word / PowerPoint / Excel (docx/pptx/xlsx…) | ❌ gated | none exists — see the gap below |
 | HEIC / HEIF photo | ❌ gated | backend OCR rejects HEIC; user exports JPG/PNG |
 
@@ -87,7 +89,20 @@ Every file kind is uploaded through `fileHandler` first (durable ownership) and 
 runs on the branch its kind selects; the result is `{ text, ref.fileId }` — the unchanged converter
 contract. `meta.extractionMethod` records the path (`native` / `ocr` / `transcript`).
 
-### The two honest gaps (gated loudly, not faked)
+### YouTube → real transcript (shipped 2026-07-14)
+
+The YouTube branch now calls aidream's **`POST /media/youtube/transcript`** (bare mount `/media`;
+router `aidream/api/routers/youtube_transcript.py`) via `fetchYouTubeTranscript`. The endpoint reuses
+the existing "YouTube Video Transcription Analysis" agent (`0cd86da2-2679-4c10-9746-e6723779fe94`,
+Gemini, `youtube_url` variable) through the shared `run_youtube_transcription` service primitive — the
+SAME quiet (`store=False`, no chat clutter) path the in-agent-run media resolver uses. The transcript
+streams back as chunk text (`consumeStream` → `accumulatedText`); a captionless/speechless video
+yields a non-fatal warning + empty text, so `useIngest` fails honestly ("try a link with captions, or
+paste the transcript") rather than faking a transcript from scraped page HTML. `meta.extractionMethod`
+= `"transcript"`. **Deploy note:** the endpoint ships with the next aidream release; until it is live,
+the FE call 404s (honest error) — the wiring is correct and lights up on deploy.
+
+### The remaining honest gap (gated loudly, not faked)
 
 - **Office documents (DOCX / PPTX / XLSX).** No text-extraction path exists anywhere today — not in
   the frontend, not in aidream (its RAG ingest `sources.py` explicitly raises `UnsupportedMimeError`
@@ -96,14 +111,6 @@ contract. `meta.extractionMethod` records the path (`native` / `ocr` / `transcri
   stays disabled. Wiring it means a NEW backend extractor (e.g. `libreoffice_converter` → the PDF
   pipeline, or `python-docx`/`unstructured` behind an aidream route) — out of scope for a wire-only
   task; do that first, then add a `kind: "office"` branch here.
-- **YouTube / web-video real transcript.** The hero still scrapes the page HTML for a YouTube link,
-  which yields page text, **not** the spoken transcript (the copy says so). A genuine transcript
-  path DOES exist server-side — aidream's media-fallback resolver runs the "YouTube Video
-  Transcription Analysis" agent (`0cd86da2-2679-4c10-9746-e6723779fe94`, Gemini, `youtube_url`
-  variable) — but it is registered only as an in-agent-run resolver, not a callable HTTP endpoint,
-  and the agent-definition registry is mid-reorg (not cleanly client-runnable). Wiring it needs a
-  first-class run-agent-to-text seam (or an aidream `/youtube/transcript` route); until then the
-  YouTube option is labelled honestly rather than faked.
 
 When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT`) and the matching
 `useIngest` branch together — never one without the other.
@@ -119,6 +126,12 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
 
 ## Change log
 
+- **2026-07-14** — YouTube → REAL spoken transcript. New aidream endpoint `POST /media/youtube/transcript`
+  (reuses agent `0cd86da2` via the shared `run_youtube_transcription` primitive); FE `useIngest` YouTube
+  branch now calls it through `fetchYouTubeTranscript` instead of the page scraper, `formatSupport` gained
+  `classifyIngestUrl`/`describeUrlSupport` (YouTube marked fully supported), and `StartHero` reads the link
+  note from `describeUrlSupport`. Captionless videos fail honestly. Endpoint deploys with the next aidream
+  release; FE wiring lands now and lights up on deploy.
 - **2026-07-10** — Honesty pass (Convergence-B): hero headline "Turn anything…" → "Turn your
   material…" so it no longer overclaims formats the hero can't ingest. Recorded the DOCX/PPTX/audio/
   video/image ingest gaps as roadmap (see "Format coverage") rather than leaving them implied. The

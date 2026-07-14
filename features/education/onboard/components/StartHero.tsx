@@ -41,7 +41,12 @@ import { ConfidenceBadge } from "@/features/education/trust/components/Confidenc
 import { getGenerator, isTargetAvailable } from "@/features/education/convert/registry";
 import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
 import { useKitGeneration } from "../useKitGeneration";
-import { INGEST_ACCEPT, describeIngestSupport } from "../formatSupport";
+import {
+  INGEST_ACCEPT,
+  describeIngestSupport,
+  describeUrlSupport,
+  classifyIngestUrl,
+} from "../formatSupport";
 import type { KitTargetState } from "../types";
 
 type InputMode = "upload" | "paste" | "link";
@@ -83,7 +88,7 @@ export function StartHero() {
     });
   }, []);
 
-  const isYouTube = /(?:youtube\.com|youtu\.be)/i.test(url);
+  const isYouTube = classifyIngestUrl(url) === "youtube";
 
   // An unsupported file (Office / HEIC / unknown) is honestly blocked up front —
   // FileSupportNote already explains why — so we never start a doomed run or
@@ -160,7 +165,6 @@ export function StartHero() {
             onPaste={setPasteText}
             url={url}
             onUrl={setUrl}
-            isYouTube={isYouTube}
             dragOver={dragOver}
             onDragOver={setDragOver}
             fileInputRef={fileInputRef}
@@ -241,7 +245,6 @@ function InputPanel(props: {
   onPaste: (t: string) => void;
   url: string;
   onUrl: (u: string) => void;
-  isYouTube: boolean;
   dragOver: boolean;
   onDragOver: (b: boolean) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -342,9 +345,7 @@ function InputPanel(props: {
               className="text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              {props.isYouTube
-                ? "We'll pull the video's page text/transcript where available."
-                : "We'll read the page and ground your kit in its content."}
+              {describeUrlSupport(props.url).note}
             </p>
           </div>
         )}
