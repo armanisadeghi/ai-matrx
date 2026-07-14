@@ -64,6 +64,14 @@ import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValue
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
 import { ReferenceConfigFields } from "@/features/scopes/components/reference/ReferenceConfigFields";
+import { CONTEXT_REFERENCE_TYPE_OPTIONS } from "@/features/scopes/utils/referenceCell";
+
+// A global System Context item can't reference a specific user `scope` (that's
+// org-relative, and the member-less system org isn't in the admin's scope tree,
+// so the scope sub-picker can't resolve it). Offer every other reference type.
+const SYSTEM_CONTEXT_REFERENCE_TYPES = CONTEXT_REFERENCE_TYPE_OPTIONS.filter(
+  (t) => t !== "scope",
+);
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import {
   FeedConfigEditor,
@@ -1075,6 +1083,7 @@ function EditItemDialog({
                 allowedScopeTypeIds={allowedScopeTypeIds}
                 onToggleAllowedScopeType={toggleAllowedScopeType}
                 orgScopeTypes={orgScopeTypes}
+                typeOptions={SYSTEM_CONTEXT_REFERENCE_TYPES}
               />
             </div>
           )}
@@ -1276,7 +1285,11 @@ function AddItemDialog({
   const [saving, setSaving] = useState(false);
 
   const isManual = feedType === "manual";
-  const isReference = valueType === "reference";
+  // Reference authoring only exists under the manual feed (the only branch that
+  // exposes the value-type selector). Gating on isManual prevents a stale
+  // valueType='reference' from writing dangling reference-config onto a
+  // non-manual item when the admin switches the feed after choosing reference.
+  const isReference = isManual && valueType === "reference";
   const keyValid = key === "" || /^[a-z0-9_]+$/.test(key);
 
   // The single value-holding scope for the selected category (system scope
@@ -1504,6 +1517,7 @@ function AddItemDialog({
                       allowedScopeTypeIds={allowedScopeTypeIds}
                       onToggleAllowedScopeType={toggleAllowedScopeType}
                       orgScopeTypes={orgScopeTypes}
+                      typeOptions={SYSTEM_CONTEXT_REFERENCE_TYPES}
                     />
                   </div>
 

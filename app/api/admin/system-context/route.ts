@@ -668,7 +668,10 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
       // truth (the executor populates the value later).
       feed_status: feedType === "manual" ? null : "pending",
       // Reference-config — null for non-reference items (max_items keeps its
-      // DB default of 1). validate_reference_value gates cell writes against these.
+      // DB default of 1). NOTE: this admin writes values via service-role direct
+      // insert (member-less system org), bypassing context.write_context_value —
+      // so these constraints are enforced only by the client picker here, not by
+      // a DB trigger. The ReferenceValuePicker constrains selection to them.
       allowed_reference_types: body.allowed_reference_types ?? null,
       max_items: body.max_items ?? 1,
       allowed_scope_type_ids: body.allowed_scope_type_ids ?? null,

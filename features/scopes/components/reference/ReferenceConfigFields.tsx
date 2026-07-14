@@ -25,6 +25,13 @@ export interface ReferenceConfigFieldsProps {
   className?: string;
   /** Match the host form's own label convention (defaults to the `text-xs` used by `ContextItemSettingsForm`). */
   labelClassName?: string;
+  /**
+   * Override the allowed-type choices. Defaults to every option
+   * (`CONTEXT_REFERENCE_TYPE_OPTIONS`). A host that can't support a subtype in
+   * its context (e.g. the System Context admin can't resolve a user `scope`
+   * from the member-less system org) passes a filtered list.
+   */
+  typeOptions?: string[];
 }
 
 /**
@@ -46,13 +53,15 @@ export function ReferenceConfigFields({
   disabled,
   className,
   labelClassName = "text-xs",
+  typeOptions,
 }: ReferenceConfigFieldsProps) {
+  const options = typeOptions ?? CONTEXT_REFERENCE_TYPE_OPTIONS;
   return (
     <div className={className ? className : "space-y-3"}>
       <div className="space-y-1.5">
         <Label className={labelClassName}>Allowed types</Label>
         <div className="flex flex-wrap gap-1.5">
-          {CONTEXT_REFERENCE_TYPE_OPTIONS.map((t) => {
+          {options.map((t) => {
             const active = allowedReferenceTypes.includes(t);
             return (
               <button
