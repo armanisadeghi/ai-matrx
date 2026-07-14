@@ -1662,6 +1662,26 @@ export function resumePendingAuthAction(
           },
         }),
       );
+    } else if (action === "add-docs") {
+      import("@/features/data-tables/export-targets")
+        .then(async ({ pushMarkdownToDocument }) => {
+          const res = await pushMarkdownToDocument(savedContent);
+          if (res.ok && res.href) {
+            const href = res.href;
+            toast.success("Saved as Document", {
+              action: {
+                label: "Open",
+                onClick: () =>
+                  window.open(href, "_blank", "noopener,noreferrer"),
+              },
+            });
+          } else {
+            toast.error("Failed to create document", {
+              description: res.ok ? undefined : res.error,
+            });
+          }
+        })
+        .catch(() => toast.error("Failed to create document"));
     } else if (action === "save-as-file") {
       const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
       const file = new File([savedContent], `message-${ts}.md`, {

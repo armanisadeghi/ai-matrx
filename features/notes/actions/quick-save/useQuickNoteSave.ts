@@ -86,17 +86,26 @@ export function useQuickNoteSave({
   );
   const [folder, setFolder] = useState(defaultFolder);
   const [mode, setMode] = useState<SaveMode>("create");
-  const [selectedNoteId, setSelectedNoteId] = useState<string>("");
+  // Selection is stored WITH the folder+mode it was made under; changing
+  // either invalidates it by derivation (no setState-in-effect reset).
+  const [selection, setSelection] = useState<{
+    folder: string;
+    mode: SaveMode;
+    id: string;
+  } | null>(null);
+  const selectedNoteId =
+    selection && selection.folder === folder && selection.mode === mode
+      ? selection.id
+      : "";
+  const setSelectedNoteId = useCallback(
+    (id: string) => setSelection(id ? { folder, mode, id } : null),
+    [folder, mode],
+  );
   const [updateMethod, setUpdateMethod] = useState<UpdateMethod>("append");
 
   // Save lifecycle
   const [isSaving, setIsSaving] = useState(false);
   const [savedNote, setSavedNote] = useState<Note | null>(null);
-
-  // Reset selection when folder or mode changes
-  useEffect(() => {
-    setSelectedNoteId("");
-  }, [folder, mode]);
 
   const notesInFolder = useAppSelector(selectNotesByFolder(folder));
 

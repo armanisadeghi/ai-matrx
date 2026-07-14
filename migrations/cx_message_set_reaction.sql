@@ -1,8 +1,10 @@
 -- cx_message_set_reaction — persist the user's like/dislike on a message.
 --
--- Stores the reaction at metadata.user_reaction ('like' | 'dislike'; NULL
--- clears it) via jsonb_set so concurrent metadata writers are never
--- clobbered by a client-side read-modify-write.
+-- Stores the reaction at metadata.user_reaction ('like' | 'dislike'; NULL or
+-- '' clears it) via jsonb_set so concurrent metadata writers are never
+-- clobbered by a client-side read-modify-write. The empty-string clear form
+-- exists because supabase codegen types function args non-nullable — the
+-- client passes '' to clear without fighting the generated types.
 --
 -- SECURITY INVOKER on purpose: chat.message RLS (std_update — conversation
 -- editor via iam.has_access) is the authorization layer, same as every other
@@ -20,13 +22,13 @@ as $$
 declare
   v_metadata jsonb;
 begin
-  if p_reaction is not null and p_reaction not in ('like', 'dislike') then
+  if p_reaction is not null and p_reaction not in ('', 'like', 'dislike') then
     raise exception 'invalid reaction: %', p_reaction;
   end if;
 
   update chat.message
      set metadata = case
-       when p_reaction is null
+       when p_reaction is null or p_reaction = ''
          then coalesce(metadata, '{}'::jsonb) - 'user_reaction'
        else jsonb_set(
          coalesce(metadata, '{}'::jsonb),

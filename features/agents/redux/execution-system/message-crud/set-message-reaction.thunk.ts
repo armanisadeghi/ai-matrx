@@ -87,9 +87,10 @@ export const setMessageReaction = createAsyncThunk<
       }),
     );
 
+    // The RPC clears the reaction on '' (codegen types the arg non-nullable).
     const { data, error } = await supabase.rpc("cx_message_set_reaction", {
       p_message_id: messageId,
-      p_reaction: reaction,
+      p_reaction: reaction ?? "",
     });
 
     if (error) {

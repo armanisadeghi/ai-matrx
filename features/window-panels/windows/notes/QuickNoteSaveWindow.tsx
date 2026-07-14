@@ -80,6 +80,10 @@ function QuickNoteSaveWindowInner({
     ? `${BASE_WINDOW_ID}-${instanceId}`
     : BASE_WINDOW_ID;
 
+  // Footer slot: the core portals its window-level actions (Cancel / Save /
+  // post-save row) into the WindowPanel footer.
+  const [footerHost, setFooterHost] = React.useState<HTMLElement | null>(null);
+
   const handleSaved = (_note: Note, action: PostSaveAction) => {
     if (action !== "none") onClose();
   };
@@ -103,6 +107,7 @@ function QuickNoteSaveWindowInner({
       maxHeight={maxHeight}
       position="center"
       onClose={onClose}
+      footerRight={<div ref={setFooterHost} className="flex items-center" />}
     >
       <div className="h-full min-h-0 p-3">
         <QuickNoteSaveCore
@@ -112,6 +117,7 @@ function QuickNoteSaveWindowInner({
           initialEditorMode={initialEditorMode}
           onSaved={handleSaved}
           onCancel={onClose}
+          footerHost={footerHost}
         />
       </div>
     </WindowPanel>
