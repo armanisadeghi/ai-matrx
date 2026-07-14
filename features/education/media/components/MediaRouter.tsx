@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AudioStudyDetail } from "../audio/components/AudioStudyDetail";
 import { MindMapDetail } from "../mindmap/components/MindMapDetail";
+import { MemoryDetail } from "@/features/education/memory/components/MemoryDetail";
 import { studyMediaService } from "../service";
 import type { EduMediaKind } from "../types";
 
@@ -39,5 +40,6 @@ export function MediaRouter({ mediaId }: { mediaId: string }) {
   }
 
   if (kind === "mind_map") return <MindMapDetail mediaId={mediaId} />;
+  if (kind === "memory_aid") return <MemoryDetail mediaId={mediaId} />;
   return <AudioStudyDetail mediaId={mediaId} />;
 }

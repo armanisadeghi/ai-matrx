@@ -19,9 +19,11 @@ export type StudyMediaUpdate = Edu["study_media"]["Update"];
 /**
  * Which study-media kind this artifact is. `audio` + `mind_map` are the P3
  * tools; `summary` is the grounded study summary produced by the P9 Universal
- * Ingest kit flow (shares this table for its trust + visibility + versioning).
+ * Ingest kit flow; `memory_aid` is the Memory Tools artifact (VISION §11 —
+ * mnemonics / analogies / memory palace, structured in `ir_envelope`). All share
+ * this table for their trust + visibility + versioning + source lineage.
  */
-export type EduMediaKind = "audio" | "mind_map" | "summary";
+export type EduMediaKind = "audio" | "mind_map" | "summary" | "memory_aid";
 
 /**
  * The four audio study formats.

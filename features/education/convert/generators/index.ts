@@ -15,6 +15,7 @@ import { registerGenerator } from "../registry";
 import { deckGenerator } from "./deck";
 import { summaryGenerator } from "./summary";
 import { mindMapGenerator } from "./mindMap";
+import { memoryAidGenerator } from "./memoryAid";
 import { notesGenerator } from "@/features/education/notes/notesGenerator";
 import { audioStudyGenerator } from "@/features/education/media/audio/audioGenerator";
 import {
@@ -26,6 +27,9 @@ import {
 registerGenerator(deckGenerator);
 registerGenerator(summaryGenerator);
 registerGenerator(mindMapGenerator);
+// memory_aid (VISION §11 Memory Tools) → mnemonics/analogies/palace via
+// studyMediaService. Owned by features/education/memory.
+registerGenerator(memoryAidGenerator);
 // notes (P4 Smart Notes) → a real platform note. Owned by features/education/notes.
 registerGenerator(notesGenerator);
 // quiz + practice_test (P1 Assessment Engine) → a real education.assessment via
@@ -38,5 +42,5 @@ registerGenerator(audioStudyGenerator);
 
 // ── Progressive placeholders ────────────────────────────────────────────────
 // All converter targets now have a live generator (deck / summary / mind_map /
-// notes / quiz / practice_test / audio). Re-add a placeholder(targetKind,label,
+// memory_aid / notes / quiz / practice_test / audio). Re-add a placeholder(targetKind,label,
 // owner) here if a NEW TargetKind is introduced before its generator lands.

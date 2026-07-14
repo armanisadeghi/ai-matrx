@@ -257,10 +257,23 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       ],
     },
     {
+      url: "/education/memory",
+      label: "Memory Aids",
+      description:
+        "VISION §11 — AI mnemonics, analogies/memory bridges, and memory-palace scaffolding from a deck or topic. Structured aids persist to education.study_media (media_kind='memory_aid', content in ir_envelope). TrustEnvelope on every set; converter target 'memory_aid'; proactive per-card affordance in the flashcards StudyDeck.",
+      filePath: "app/(core)/education/memory/page.tsx",
+      status: "Live",
+      notes: [
+        "Sub-routes: /new (generate), /[id] (view), /[id]/edit (owner controls, EDIT-gated)",
+        "Feature: features/education/memory/** · agents: memory_aid 826aaa26-baaf-4e87-b5a3-2e4bba37f053 · memory_hint 4c5dd04a-4b22-43cd-bd8b-781a4d6dedb5",
+        "Metered: education.memory_generate (useEntitlementGuard + EntitlementMeter, limit shown pre-action)",
+      ],
+    },
+    {
       url: "/education/media/[id]",
       label: "Study Media (shared viewer)",
       description:
-        "P3 — the canonical shareable viewer every study_media share link resolves to; dispatches to the audio or mind-map surface by kind. noindex.",
+        "P3 — the canonical shareable viewer every study_media share link resolves to; dispatches to the audio / mind-map / memory-aid surface by kind. noindex.",
       filePath: "app/(core)/education/media/[id]/page.tsx",
       status: "Live",
     },
@@ -371,7 +384,14 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       name: "Content Converter (contract)",
       filePath: "features/education/convert/useContentConverter.ts",
       description:
-        "P9/P4 — the ONE cross-tool dispatch: convertContent({source,targetKind}) + convertMany (kit fan-out). Live generators: deck/summary/mind_map; placeholders: audio(P3)/quiz+practice_test(P1)/notes(P4). See features/education/convert/FEATURE.md.",
+        "P9/P4 — the ONE cross-tool dispatch: convertContent({source,targetKind}) + convertMany (kit fan-out). Live generators: deck/summary/mind_map/memory_aid/notes/quiz/practice_test/audio. See features/education/convert/FEATURE.md.",
+      tier: "official",
+    },
+    {
+      name: "MemoryAidView / MemoryHome / MemoryNew / MemoryDetail",
+      filePath: "features/education/memory/components/MemoryAidView.tsx",
+      description:
+        "VISION §11 Memory Tools surface: list-first home, generate (deck/topic → memory_aid agent), and the aid viewer (mnemonics/analogies/palace + trust). MemoryAidButton is the opt-in proactive per-card affordance mounted in StudyDeck.",
       tier: "official",
     },
     {

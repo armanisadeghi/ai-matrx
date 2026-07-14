@@ -45,9 +45,11 @@ export type Capability =
   | "education.quiz_generate"
   | "education.practice_test_generate"
   | "education.mindmap_generate"
+  | "education.memory_generate"
   | "education.notes_generate"
   | "education.ingest_document"
   | "education.live_grade"
+  | "education.spoken_practice"
   | "education.game_room_size";
 
 export interface CapabilityDefinition {
@@ -158,6 +160,18 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     upgradeMessage:
       "You've used your mind maps this month. Upgrade for unlimited maps.",
   }),
+  "education.memory_generate": def({
+    id: "education.memory_generate",
+    label: "Generate memory aids",
+    description:
+      "AI-generate mnemonics, analogies, and a memory-palace scaffold from your material.",
+    period: "month",
+    defaultFreeLimit: null,
+    minTier: "free",
+    enforced: false,
+    upgradeMessage:
+      "You've used your memory-aid generations this month. Upgrade for unlimited aids.",
+  }),
   "education.notes_generate": def({
     id: "education.notes_generate",
     label: "Generate smart notes",
@@ -180,6 +194,18 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     enforced: false,
     upgradeMessage:
       "You've reached today's live gradings. Upgrade for unlimited AI grading.",
+  }),
+  "education.spoken_practice": def({
+    id: "education.spoken_practice",
+    label: "Spoken practice session",
+    description:
+      "A voice-first oral-exam / interview / debate session: AI generates grounded prompts and grades each spoken answer on meaning. Metered as one generation-heavy session.",
+    period: "day",
+    defaultFreeLimit: null,
+    minTier: "free",
+    enforced: false,
+    upgradeMessage:
+      "You've reached today's spoken practice sessions. Upgrade for unlimited oral exam, interview, and debate practice.",
   }),
   "education.game_room_size": def({
     id: "education.game_room_size",

@@ -8,7 +8,7 @@
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in VISION-education-hub.md.
 
-import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, NotebookPen, CalendarClock, Gamepad2 } from "lucide-react";
+import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2 } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -148,6 +148,24 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Mind maps + knowledge graphs from notes/decks/docs",
       "Flowcharts, trees, comparison tables, timelines, Venn, cycle, cause-effect",
       "Clickable nodes → source card or Ask-tutor; exportable",
+    ],
+  },
+  {
+    slug: "memory",
+    name: "Memory Aids",
+    tagline: "Mnemonics, analogies & memory palaces that make it stick",
+    description: "AI-generated mnemonics, analogies/memory bridges, and memory-palace scaffolding from any deck or topic — plus proactive per-card memory aids that surface while you study.",
+    icon: Brain,
+    letter: "Me",
+    status: "live", // VISION §11 — memory_aid agent → structured aids on education.study_media; converter target + proactive StudyDeck affordance
+    accessTier: "free",
+    visionRef: "VISION §11 Memory Tools",
+    capabilities: [
+      "AI mnemonics (acronyms, acrostics, rhymes, keyword images) for hard lists/sequences/terms",
+      "Analogies & memory bridges for abstract concepts, with the mapping spelled out",
+      "Memory-palace (method-of-loci) scaffolding for large ordered sets",
+      "Proactive per-card memory aids surfaced alongside flashcards (opt-in)",
+      "Grounded in your own material (TrustEnvelope: citations + confidence); note→memory-aid + upload-kit converter target",
     ],
   },
   {

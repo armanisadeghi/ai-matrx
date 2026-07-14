@@ -30,6 +30,7 @@ export type TargetKind =
   | "summary" // grounded study summary          — LIVE
   | "mind_map" // diagram_spec (study_media)      — LIVE
   | "audio" // audio overview (study_media)      — registers when P3 audio wires in
+  | "memory_aid" // memory aids (study_media)     — LIVE (VISION §11)
   | "quiz" // quiz (P1)                          — registers when P1 lands
   | "practice_test" // full test (P1)            — registers when P1 lands
   | "notes"; // structured notes (P4)            — registers when P4 lands
@@ -39,6 +40,7 @@ export const ALL_TARGET_KINDS: TargetKind[] = [
   "summary",
   "mind_map",
   "audio",
+  "memory_aid",
   "quiz",
   "practice_test",
   "notes",

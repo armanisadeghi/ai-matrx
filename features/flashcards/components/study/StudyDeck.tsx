@@ -79,6 +79,7 @@ import {
   buildReviewAttempts,
 } from "@/features/education/tutor/lanes/learnerContext";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
+import { MemoryAidButton } from "@/features/education/memory/components/MemoryAidButton";
 
 const FC_CARD_ITEM_TYPE = "fc_card";
 /** Below this many graded cards, an end-of-session AI review is more noise
@@ -149,6 +150,13 @@ export interface StudyDeckProps {
   /** Set false to hide the "Ask AI" affordance even when a help agent is configured. */
   enableTutor?: boolean;
   /**
+   * VISION §11 proactive memory aids — an opt-in, per-card "Give me a memory aid"
+   * affordance (mnemonic / analogy / association for the current card). Nothing
+   * fires until the learner taps it, so it never disrupts the study flow. Set
+   * false to hide it entirely.
+   */
+  enableMemoryAids?: boolean;
+  /**
    * Offer the one-tap 1–5 confidence rating (the default, Brainscape-style) with
    * a toggle down to the simple Again/Partial/Correct row. Set false to force the
    * 3-way row only (e.g. a surface where fine confidence adds no signal). The
@@ -193,6 +201,7 @@ export function StudyDeck(props: StudyDeckProps) {
     masteryByCard = {},
     sessionId = null,
     enableTutor = true,
+    enableMemoryAids = true,
     enableConfidence = true,
   } = props;
 
@@ -701,6 +710,16 @@ export function StudyDeck(props: StudyDeckProps) {
                 />
               )}
             </div>
+          )}
+
+          {/* VISION §11 — opt-in proactive memory aid for this card. Nothing
+              fires until tapped; skipped for matching cards (no single answer). */}
+          {enableMemoryAids && current && currentKind !== CARD_KIND.matching && (
+            <MemoryAidButton
+              front={current.front}
+              back={current.back ?? ""}
+              topic={current.topic}
+            />
           )}
         </div>
 
