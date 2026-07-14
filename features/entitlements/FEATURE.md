@@ -2,11 +2,13 @@
 
 > **Status:** Day-1 contract shipped 2026-07-07 · backend + Stripe landing incrementally.
 > **Spec:** [`docs/proposals/education-projects/P8-entitlements-billing.md`](../../docs/proposals/education-projects/P8-entitlements-billing.md).
-> **The contract is live and permissive — but limits are VISIBLE.** Every capability ships
-> `enforced: false`, so nothing is capped until Arman approves the free-tier matrix AND the
-> backend limit + server re-check both exist. Since F1 (2026-07-10) the resolver reports each
-> capability's limits + windows regardless of enforcement, so meters render "X of Y left"
-> ahead of the cap while enforcement stays off (TRUST mandate, pledge claim #3).
+> **The contract is live and permissive — but limits are VISIBLE and now DECREMENT.** Every
+> capability ships `enforced: false`, so nothing is capped until Arman approves the free-tier
+> matrix AND the backend limit + server re-check both exist. Since F1 (2026-07-10) the resolver
+> reports each capability's limits + windows regardless of enforcement, so meters render "X of
+> Y left" ahead of the cap; since F6 (2026-07-13) every metered action records real usage on
+> success, so that meter actually counts down (usage is captured even while enforcement stays
+> off — the honesty half of the TRUST mandate, pledge claim #3).
 
 ## What this is
 
@@ -37,6 +39,45 @@ await generate();
 `useEntitlement` is REACTIVE (reads the boot-hydrated snapshot in Redux). `check()` is the
 imperative, server-truth path — call it immediately before an action that spends.
 
+### Recording usage — the consume-on-success contract (makes the meter honest)
+
+A visible limit is only honest if it actually **decrements**. Every metered action must
+record real usage on its SUCCESS path via `useEntitlementGuard`'s `commit()` (or
+`useEntitlementConsume` where there's no `guard(action)` wrapper). `commit()` calls the
+race-safe `billing.entitlement_consume` RPC (writes a `usage_ledger` row) and patches the
+Redux snapshot so the meter re-renders the new remaining immediately.
+
+```ts
+const gen = useEntitlementGuard("education.memory_generate");
+// gate the START (paywall on a cap-hit), then record usage only on real success:
+await gen.guard(async () => {
+  const media = await generate();          // the metered work
+  if (media.error) { toast.error(...); return; }   // FAILURE branch: no commit → no quota burned
+  await gen.commit();                      // SUCCESS: usage_ledger row lands, meter 15→14
+  router.push(...);
+});
+<gen.Paywall />
+<EntitlementMeter capability="education.memory_generate" />
+```
+
+**Two rules that make this correct:**
+
+1. **Consume on SUCCESS, never on start.** `guard()` only gates the start; it does NOT
+   record usage. Call `commit()` at the genuine success point so a failed/aborted generation
+   never burns quota. Where success lives inside a `Promise<void>` hook that swallows errors,
+   have the hook return a `boolean` and `commit()` on `true` (see `useAudioStudyCreate`,
+   `useSpokenPractice.start`, `useKitGeneration.run`, `ConvertContentDialog#runConvert`).
+2. **Consume regardless of `enforced`.** `enforced` gates only whether a cap BLOCKS at the
+   limit — usage recording (and thus a truthful decrementing meter) happens for EVERY metered
+   capability, enforced or not. `consumeEntitlement` never short-circuits on `enforced:false`
+   (unlike `checkEntitlement`, which does); the RPC itself writes the ledger for un-enforced
+   capabilities and only runs the advisory-locked cap check when enforced.
+
+`commit()` auto-references the last `guard()` pre-check's `checkId`, so a check + a consume
+are one accounted unit (idempotency + audit). It fails soft — a metered action that already
+succeeded never surfaces a metering error; a failed write screams in dev and falls back to a
+full snapshot refresh.
+
 ### Adding a metered capability
 
 1. Add an entry to `CAPABILITY_REGISTRY` in [`registry.ts`](./registry.ts) (`enforced: false`).
@@ -50,12 +91,12 @@ imperative, server-truth path — call it immediately before an action that spen
 |---|---|
 | [`types.ts`](./types.ts) | The verdict shape (`EntitlementResult`), tiers, reasons. Stable contract. |
 | [`registry.ts`](./registry.ts) | Capability registry — the single source of truth for metered/gated actions. |
-| [`hooks.ts`](./hooks.ts) | `useEntitlement(capability)` — the published day-1 hook. |
-| [`service.ts`](./service.ts) | `checkEntitlement` (server-truth pre-action) + `fetchEntitlementSnapshot` (boot). |
-| [`state/entitlementsSlice.ts`](./state/entitlementsSlice.ts) | Session-boot state (tier + usage). Volatile, never persisted. |
+| [`hooks.ts`](./hooks.ts) | `useEntitlement(capability)` (day-1 read hook) + `useEntitlementConsume(capability)` → `commit()` (consume-on-success primitive). |
+| [`service.ts`](./service.ts) | `checkEntitlement` (server-truth pre-action) + `consumeEntitlement` (records usage, never short-circuits on `enforced:false`) + `usageFromConsume` + `fetchEntitlementSnapshot` (boot). |
+| [`state/entitlementsSlice.ts`](./state/entitlementsSlice.ts) | Session-boot state (tier + usage). Volatile, never persisted. `setCapabilityUsage` patches one capability after a consume so the meter re-renders. |
 | [`state/selectors.ts`](./state/selectors.ts) | Per-capability memoized verdict selectors. |
 | [`components/EntitlementMeter.tsx`](./components/EntitlementMeter.tsx) | "X of Y left" meter — the ONLY meter primitive. Drop beside any metered action. |
-| [`components/useEntitlementGuard.tsx`](./components/useEntitlementGuard.tsx) | `guard(action)` — server-truth check before spend; opens the paywall on a cap-hit. |
+| [`components/useEntitlementGuard.tsx`](./components/useEntitlementGuard.tsx) | `guard(action)` — server-truth check before spend; opens the paywall on a cap-hit. `commit()` — records usage on the SUCCESS path (see the consume-on-success contract above). |
 | [`components/CapabilityPaywallDialog.tsx`](./components/CapabilityPaywallDialog.tsx) | Contextual cap-hit paywall (helpful, never hostage). Never a `toast.error`. |
 
 ## Metering model (Arman decisions, 2026-07-07)
@@ -104,8 +145,14 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
 - **`billing.capability_limit` is the SINGLE SOURCE for every number.** The registry
   `defaultFreeLimit` is descriptive-only, read by nobody — never a second source of truth.
 - **Consume the primitives, never hand-roll.** `EntitlementMeter` for the meter,
-  `useEntitlementGuard` for the pre-spend check + paywall. A hand-rolled `remaining` line or a
-  `toast.error` on a cap-hit is a defect (reuse-first doctrine).
+  `useEntitlementGuard` for the pre-spend check + paywall + `commit()`. A hand-rolled
+  `remaining` line, a `toast.error` on a cap-hit, or a direct `billing.entitlement_consume`
+  RPC call is a defect (reuse-first doctrine).
+- **A visible meter MUST decrement — record usage on success.** Every metered action calls
+  `commit()` on its genuine success branch; a metered action with a meter but no consume is a
+  defect (the meter would read "X of Y left" forever — the exact dishonesty P8 kills). Usage
+  is recorded regardless of `enforced` (see the consume-on-success contract). `enforced`
+  gates only the BLOCK, never the record.
 - **Gate capabilities (`period: null`) have no meter and no snapshot limit.** The snapshot/selector
   plumb only metered *windows*, so a gate always resolves `limit: null` and `EntitlementMeter`
   renders nothing for it (correct — a gate has no "X of Y left"). A gate consumer shows its limit
@@ -131,6 +178,14 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
 - [x] Paywall + usage-meter primitives (`EntitlementMeter`, `useEntitlementGuard`, `CapabilityPaywallDialog`).
 - [x] Primitives CONSUMED (F4): flashcards, notes, mindmap, audio, onboard/start, assessment,
       tutor all render `EntitlementMeter` + guard/paywall. See consumer table below.
+- [x] **F6 — the meter is HONEST (consume-on-success).** `useEntitlementGuard.commit()` +
+      `useEntitlementConsume` + `consumeEntitlement` land: every education metered consumer now
+      records real usage in `billing.usage_ledger` on its success path, so "X of Y left"
+      decrements (verified live: `entitlement_consume` on an un-enforced capability writes a
+      ledger row per call → resolver reports 15→14→13 month / 5→4→3 burst). Usage is recorded
+      regardless of `enforced`. Wired: memory, mindmap, audio, quiz/practice-test, notes-convert,
+      spoken-practice, ingest, image-grade. Flashcards (generate/enrich/live-grade) still need
+      their `commit()` — the primitive is ready.
 - [x] `/pricing/pledge` + `/pricing/compare` (education-specific, verified rendering).
 - [x] `/pricing` education-first + DB-backed (F5) — Free caps from `billing.capability_limit`,
       Premium from `billing.product`/`price` (TEST row today). Generic harness `PLANS[]` +
@@ -168,23 +223,42 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
 
 Which registered capabilities have a live consumer, and who owns each. A capability with NO
 consumer is not a bug — it's awaiting the feature that spends it — but it must be tracked here.
+Every metered consumer below now `commit()`s on its success path, so the meter decrements for
+real (F6, 2026-07-13).
 
 | Capability | Consumer surface | Owner |
 |---|---|---|
-| `education.generate_cards` | flashcards create-from-source/topic | flashcards agent |
-| `education.card_enrichment` | flashcards enrich/enhance | flashcards agent |
-| `education.live_grade` | flashcards live grader | flashcards agent |
-| `education.notes_generate` | notes generation | notes agent |
-| `education.ingest_document` | onboard `StartHero` | this feature |
-| `education.mindmap_generate` | `MindMapNew` | this feature |
-| `education.audio_generate` | `AudioStudyNew` | this feature |
-| `education.quiz_generate` | `AssessmentCreate` (quiz) | this feature |
-| `education.practice_test_generate` | `AssessmentCreate` (practice test) | this feature |
-| `education.tutor_message` | `EducationTutorClient` | this feature |
-| `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting | engage/game agent |
+| `education.generate_cards` | flashcards create-from-source/topic — guard wired; **commit pending** | flashcards agent |
+| `education.card_enrichment` | flashcards enrich/enhance — guard wired; **commit pending** (meter by card count via `commit({ quantity })`) | flashcards agent |
+| `education.live_grade` | flashcards live grader (`FastFireSetup`) — guard wired; **commit pending** | flashcards agent |
+| `education.notes_generate` | notes generation (shared `ConvertContentDialog`) — commit on success | notes agent |
+| `education.ingest_document` | onboard `StartHero` (`useKitGeneration.run` → bool) — commit on success | this feature |
+| `education.mindmap_generate` | `MindMapNew` — commit on success | this feature |
+| `education.audio_generate` | `AudioStudyNew` (`useAudioStudyCreate.create` → bool) — commit on success | this feature |
+| `education.quiz_generate` | `AssessmentCreate` (quiz) — commit on success | this feature |
+| `education.practice_test_generate` | `AssessmentCreate` (practice test) — commit on success | this feature |
+| `education.memory_generate` | `MemoryNew` — commit on success | this feature |
+| `education.spoken_practice` | `PracticeSetup` (`useSpokenPractice.start` → bool) — commit on success | spoken-practice agent |
+| `education.image_grade` | `GradeWorkSurface` (grade handwritten work) — commit on success | assessment/image-grade agent |
+| `education.tutor_message` | `EducationTutorClient` — commit per USER message via a count-delta effect (the composer is agents-owned with no submit hook; the delta baseline re-inits per mount so history is never re-metered and it can only under-count, never double-charge). A composer `onSubmit` hook would make it exact — tracked as a follow-up. | this feature |
+| `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting (no meter/consume — a gate) | engage/game agent |
 
 ## Change Log
 
+- **2026-07-13** — **F6: the meter is now honest — consume-on-success wired platform-wide.**
+  Before this, `entitlement_consume` had ZERO callers, so every meter read "X of Y left"
+  forever (a TRUST-mandate violation + no usage captured). Added the consume primitive:
+  `service.consumeEntitlement` (calls the race-safe `billing.entitlement_consume` RPC; NEVER
+  short-circuits on `enforced:false` — usage is recorded regardless of enforcement) +
+  `usageFromConsume`; `hooks.useEntitlementConsume` → `commit()` (patches the snapshot via the
+  purpose-built `setCapabilityUsage` reducer so the meter re-renders instantly);
+  `useEntitlementGuard` now exposes `commit()` (auto-threads the pre-check `checkId`). Wired
+  `commit()` into every education metered consumer's SUCCESS branch (memory, mindmap, audio,
+  quiz/practice-test, notes-convert, spoken-practice, ingest, image-grade); the three hooks
+  whose success is swallowed internally now return a `boolean` so the callsite commits only on
+  real success (failed generation burns no quota). Tutor meters per user message via a
+  count-delta effect (composer is agents-owned, no submit hook). Verified live against
+  `txzxabzwovsujtloxrus`. Flashcards consumers await their `commit()` (flashcards agent).
 - **2026-07-07** — Day-1 contract shipped: `features/entitlements/` (types, registry, hook,
   service, slice, selectors), registered `entitlements` reducer, permissive stub for all 10
   capabilities. Unblocks P1–P5/P9/P10.

@@ -126,6 +126,25 @@ export interface EntitlementCheckResult extends EntitlementResult {
   checkId: string | null;
 }
 
+/**
+ * Result of a metering write (`billing.entitlement_consume`). Returned by
+ * `consumeEntitlement` and the guard's `commit()`. Unlike `check`, a consume is
+ * performed on the SUCCESS path AFTER a metered action completes, and it writes
+ * a `billing.usage_ledger` row EVEN while the capability is `enforced: false` —
+ * `enforced` gates only whether a cap BLOCKS, never whether real usage is
+ * recorded. Recording usage regardless is what makes the "X of Y left" meter
+ * honest (TRUST mandate); the fresh windows below let the meter re-render the
+ * new remaining without a boot re-hydration.
+ */
+export interface EntitlementConsumeResult extends EntitlementResult {
+  /** True when this call wrote a `usage_ledger` row. */
+  consumed: boolean;
+  /** True when `checkId` was already consumed → idempotent no-op (no new row). */
+  duplicate: boolean;
+  /** Whether enforcement is live for this capability (mirrors the snapshot). */
+  enforced: boolean;
+}
+
 /** Snapshot hydrated once at session boot (like `adminLevel`) — resolver truth cache. */
 export interface EntitlementSnapshot {
   tier: EntitlementTier;
