@@ -21,6 +21,7 @@ import { ASSESSMENT_ITEM_TYPE } from "../../data/agents";
 import {
   gradeAnswerLocal,
   gradeAnswerAI,
+  gradeAnswerImage,
   isObjectiveType,
   type GradedAnswer,
 } from "../../data/grading";
@@ -52,6 +53,11 @@ const responseKindFor = (
     : t === "written_response"
       ? "written"
       : "typed";
+
+/** Free-response types that can be answered by photographing handwritten work. */
+export function canPhotographAnswer(t: QuestionType): boolean {
+  return t === "written_response" || t === "short_answer";
+}
 
 export function useTakeAssessment(
   assessment: AssessmentRow,
@@ -116,12 +122,29 @@ export function useTakeAssessment(
   async function submit(
     item: AssessmentItemRow,
     response: string,
+    photo?: File | null,
   ): Promise<GradedAnswer> {
     setGrading(true);
     try {
       const type = item.question_type as QuestionType;
+      const expected =
+        type === "written_response"
+          ? item.rubric ?? item.explanation ?? ""
+          : item.correct_answer ?? "";
       let graded: GradedAnswer;
-      if (isObjectiveType(type)) {
+      if (photo && canPhotographAnswer(type)) {
+        // The IMAGE branch of the grade-on-meaning path — a photographed
+        // handwritten answer, routed to the vision grader (step-level verdict).
+        graded = await dispatch(
+          gradeAnswerImage({
+            question: item.prompt,
+            expected,
+            photo,
+            itemId: item.id,
+            surfaceKey: "assessment-grade-image",
+          }),
+        );
+      } else if (isObjectiveType(type)) {
         graded =
           gradeAnswerLocal(item, response) ?? {
             result: "incorrect",
@@ -131,10 +154,6 @@ export function useTakeAssessment(
             gradedBy: "local",
           };
       } else {
-        const expected =
-          type === "written_response"
-            ? item.rubric ?? item.explanation ?? ""
-            : item.correct_answer ?? "";
         graded = await dispatch(
           gradeAnswerAI({
             question: item.prompt,
@@ -144,16 +163,27 @@ export function useTakeAssessment(
         );
       }
 
+      const gradedByImage = graded.responseImageFileId != null;
       // Record to the shared study spine (feeds FSRS mastery + weak-area review).
+      // A photographed answer records as 'handwritten' with the durable photo
+      // file_id + the grader's transcription + the per-step breakdown.
       await studyService.recordAttempt({
         itemType: ASSESSMENT_ITEM_TYPE,
         itemId: item.id,
         method: assessment.assessment_kind,
         result: graded.result,
         scoreValue: graded.scoreValue,
-        responseKind: responseKindFor(type),
-        responseTranscript: response || null,
+        responseKind: gradedByImage ? "handwritten" : responseKindFor(type),
+        responseTranscript: gradedByImage
+          ? graded.transcription ?? null
+          : response || null,
         gradedBy: graded.gradedBy,
+        ...(gradedByImage
+          ? { responseImageFileId: graded.responseImageFileId }
+          : {}),
+        ...(graded.steps && graded.steps.length > 0
+          ? { score: { steps: graded.steps } }
+          : {}),
         ...(sessionId ? { sessionId } : {}),
       });
 

@@ -339,6 +339,20 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       ],
     },
     {
+      url: "/education/grade-work",
+      label: "Grade My Handwritten Work (vision, step-by-step)",
+      description:
+        "App tool — LIVE. Photograph a worked math/science/free-response problem → a vision AI (Gemini Flash) reads the handwriting, grades ON MEANING against the problem/rubric, and returns a StepGradeVerdict pinpointing exactly where the reasoning broke. Also wired INTO the assessment take flow: any written_response/short_answer item can be answered by photo. NO new table — each standalone problem is a study_attempt (item_type 'handwritten_work', response_kind 'handwritten', response_image_file_id set); assessment photo answers record under item_type 'assessment_item' with response_kind 'handwritten'.",
+      filePath: "app/(core)/education/grade-work/page.tsx",
+      status: "Live",
+      notes: [
+        "Feature: features/education/assessment/grade-work/** (GradeWorkSurface · useGradeWork · GradeWorkClient) + shared primitives HandwrittenWorkInput + StepBreakdown + data/imageGrading.ts (upload→vision grader→coerce)",
+        "New agent: Trust — Grade Handwritten Work (Vision) 77db0f64-15a3-43dd-96f7-ec9380057be8 (Gemini Flash Latest, vision); output = GradeVerdict core + steps[] + transcription (coerceStepGradeVerdict, features/education/trust)",
+        "Grading branch: gradeAnswerImage in features/education/assessment/data/grading.ts (does NOT fork the grader — the image branch of grade-on-meaning)",
+        "Metered via education.image_grade (enforced:false; 20/day + 8/1h burst); photo travels through fileHandler only (system-files/image-grade)",
+      ],
+    },
+    {
       url: "/education/game",
       label: "Study Games (Engagement Engine)",
       description:
@@ -536,6 +550,29 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
         "features/education/spoken-practice/components/SpokenPracticeSurface.tsx",
       description:
         "Spoken Practice surface (mode picker → setup → live runner → examiner summary). Code-split via SpokenPracticeClient (ssr:false); orchestration in useSpokenPractice (composes continuousCapture + gradeSpokenAnswer + reviewSession + studyService).",
+      tier: "official",
+    },
+    {
+      name: "GradeWorkSurface",
+      filePath:
+        "features/education/assessment/grade-work/GradeWorkSurface.tsx",
+      description:
+        "Standalone 'Grade my handwritten work' surface (problem + rubric + snap photo → step-level verdict). Code-split via GradeWorkClient (ssr:false); orchestration in useGradeWork (gradeAnswerImage → vision grader → studyService). Metered via education.image_grade.",
+      tier: "official",
+    },
+    {
+      name: "HandwrittenWorkInput",
+      filePath:
+        "features/education/assessment/components/HandwrittenWorkInput.tsx",
+      description:
+        "Reusable 'snap/upload your worked answer' photo input (local File + preview, rear camera on mobile). Shared by the assessment take flow AND the standalone grade-work surface.",
+      tier: "official",
+    },
+    {
+      name: "StepBreakdown",
+      filePath: "features/education/assessment/components/StepBreakdown.tsx",
+      description:
+        "Renders StepGradeVerdict.steps — the per-step 'where your reasoning broke' timeline. Shared by the take-flow feedback + the grade-work surface.",
       tier: "official",
     },
     {

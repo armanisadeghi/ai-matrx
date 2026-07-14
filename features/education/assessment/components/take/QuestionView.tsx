@@ -18,6 +18,9 @@ import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
+import { HandwrittenWorkInput } from "../HandwrittenWorkInput";
+import { StepBreakdown } from "../StepBreakdown";
+import { canPhotographAnswer } from "./useTakeAssessment";
 import type { GradedAnswer } from "../../data/grading";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "../../data/types";
 
@@ -65,6 +68,8 @@ export function QuestionView({
   total,
   response,
   onResponseChange,
+  photo = null,
+  onPhotoChange,
   graded,
   onOverride,
   disabled,
@@ -74,6 +79,9 @@ export function QuestionView({
   total: number;
   response: string;
   onResponseChange: (v: string) => void;
+  /** The learner's photographed handwritten work (free-response types only). */
+  photo?: File | null;
+  onPhotoChange?: (file: File | null) => void;
   graded: GradedAnswer | null;
   onOverride?: (result: AttemptResult) => void;
   disabled?: boolean;
@@ -82,6 +90,7 @@ export function QuestionView({
   const options = optionsOf(item);
   const locked = graded !== null || disabled;
   const trust = coerceTrustEnvelope(item.trust);
+  const photoable = canPhotographAnswer(type) && !!onPhotoChange;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
@@ -150,20 +159,38 @@ export function QuestionView({
             disabled={locked}
           />
         ) : (
-          <Textarea
-            value={response}
-            onChange={(e) => onResponseChange(e.target.value)}
-            placeholder={
-              type === "written_response"
-                ? "Write your response…"
-                : "Type your answer…"
-            }
-            className={cn(
-              "text-base",
-              type === "written_response" ? "min-h-[140px]" : "min-h-[72px]",
+          <div className="flex flex-col gap-3">
+            <Textarea
+              value={response}
+              onChange={(e) => onResponseChange(e.target.value)}
+              placeholder={
+                type === "written_response"
+                  ? "Write your response…"
+                  : "Type your answer…"
+              }
+              className={cn(
+                "text-base",
+                type === "written_response" ? "min-h-[140px]" : "min-h-[72px]",
+              )}
+              disabled={locked || !!photo}
+            />
+            {photoable && (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    or photograph your handwritten work
+                  </span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+                <HandwrittenWorkInput
+                  photo={photo}
+                  onPhotoChange={(f) => onPhotoChange?.(f)}
+                  disabled={locked}
+                />
+              </>
             )}
-            disabled={locked}
-          />
+          </div>
         )}
       </div>
 
@@ -232,6 +259,21 @@ function FeedbackBlock({
 
       {graded.explanation && (
         <p className="text-sm text-muted-foreground">{graded.explanation}</p>
+      )}
+
+      {graded.steps && graded.steps.length > 0 && (
+        <StepBreakdown steps={graded.steps} />
+      )}
+
+      {graded.transcription && (
+        <details className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            What we read from your photo
+          </summary>
+          <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-foreground">
+            {graded.transcription}
+          </pre>
+        </details>
       )}
 
       <SourceCitations trust={trust} />

@@ -8,7 +8,7 @@
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in VISION-education-hub.md.
 
-import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech } from "lucide-react";
+import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -221,6 +221,26 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Graded on meaning (accuracy/articulation/completeness · content+delivery · argument/evidence/reasoning)",
       "Debate opponent counter-argues to stress-test your reasoning",
       "Every answer records to the study spine (method=mode) + an examiner's batch summary",
+    ],
+    featured: true,
+  },
+  {
+    slug: "grade-work",
+    name: "Grade My Work",
+    tagline: "Snap your handwritten solution — graded step by step",
+    description: "Photograph a worked math, science, or free-response problem and a vision AI reads your handwriting, grades it on meaning against the answer or rubric, and shows exactly which step your reasoning broke on.",
+    icon: ScanText,
+    letter: "Gw",
+    status: "live", // Vision grader (Gemini) reads a photo → step-level GradeVerdict; records to the study spine
+    accessTier: "trial",
+    visionRef: "VISION §6 AI Grading (Handwritten), §17 STEM (handwritten equation recognition, step-by-step grading, whiteboard capture)",
+    capabilities: [
+      "Snap or upload a photo of handwritten / typed worked work (rear camera on mobile)",
+      "Vision AI transcribes what you wrote, then grades on meaning (never exact-string)",
+      "Per-step breakdown pinpoints exactly where the reasoning first broke (follow-through aware)",
+      "Names the misconception + gives an encouraging, specific fix",
+      "Also available inside quizzes / practice tests: answer any written item by photo",
+      "Every grade records to the study spine (item_type handwritten_work, response_kind handwritten)",
     ],
     featured: true,
   },

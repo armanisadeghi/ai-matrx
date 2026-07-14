@@ -29,9 +29,13 @@ import type {
   QuestionType,
 } from "../../data/types";
 
-function isAnswerable(type: QuestionType, response: string): boolean {
+function isAnswerable(
+  type: QuestionType,
+  response: string,
+  photo?: File | null,
+): boolean {
   if (type === "written_response" || type === "short_answer")
-    return response.trim().length > 0;
+    return response.trim().length > 0 || !!photo; // typed OR photographed
   if (type === "fill_blank") return response.trim().length > 0;
   return response.length > 0; // MC/TF: an option is selected
 }
@@ -57,6 +61,7 @@ export function AssessmentTaker({
   const take = useTakeAssessment(assessment, items, options);
   const [index, setIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const [photos, setPhotos] = useState<Record<string, File | null>>({});
   const [finishing, startFinishing] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -83,6 +88,7 @@ export function AssessmentTaker({
   const current = items[index];
   const record = take.records.find((r) => r.item.id === current?.id) ?? null;
   const response = responses[current?.id ?? ""] ?? "";
+  const photo = photos[current?.id ?? ""] ?? null;
   const isLast = index >= items.length - 1;
 
   const handleFinish = async () => {
@@ -100,8 +106,12 @@ export function AssessmentTaker({
   useEffect(() => {
     if (remaining !== 0) return;
     void (async () => {
-      if (current && !record && isAnswerable(current.question_type as QuestionType, response)) {
-        await take.submit(current, response);
+      if (
+        current &&
+        !record &&
+        isAnswerable(current.question_type as QuestionType, response, photo)
+      ) {
+        await take.submit(current, response, photo);
       }
       toast.info("Time's up — submitting your test.");
       await handleFinish();
@@ -111,7 +121,7 @@ export function AssessmentTaker({
 
   const submit = async () => {
     if (!current || record) return;
-    await take.submit(current, response);
+    await take.submit(current, response, photo);
   };
 
   const next = () => {
@@ -124,6 +134,9 @@ export function AssessmentTaker({
 
   const setResponse = (v: string) =>
     setResponses((prev) => ({ ...prev, [current!.id]: v }));
+
+  const setPhoto = (f: File | null) =>
+    setPhotos((prev) => ({ ...prev, [current!.id]: f }));
 
   if (items.length === 0) {
     return (
@@ -195,6 +208,8 @@ export function AssessmentTaker({
                   total={items.length}
                   response={response}
                   onResponseChange={setResponse}
+                  photo={photo}
+                  onPhotoChange={setPhoto}
                   graded={record?.graded ?? null}
                   onOverride={(r: AttemptResult) => take.override(current.id, r)}
                 />
@@ -212,7 +227,11 @@ export function AssessmentTaker({
                       disabled={
                         !current ||
                         take.grading ||
-                        !isAnswerable(current.question_type as QuestionType, response)
+                        !isAnswerable(
+                          current.question_type as QuestionType,
+                          response,
+                          photo,
+                        )
                       }
                     >
                       {take.grading ? (

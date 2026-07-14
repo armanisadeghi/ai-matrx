@@ -20,11 +20,15 @@ component set (`kindConfig` parameterizes labels/routes/timer/capability).
   - `…/[id]` — detail + shareable take URL (`AssessmentDetail`). `?start=1` renders the taker; `?phase=baseline|post`+`?gain=<uuid>` drive learning-gain takings
   - `…/[id]/results?r=<resultId>` — scored report (`AssessmentResults`)
   - `…/[id]/edit` — inline edit + "make deeper" (`AssessmentEdit`, EDIT-gated)
-- Feature code: `features/education/assessment/` (`data/`, `components/`).
+  - **`/education/grade-work`** — standalone "Grade my handwritten work" (`grade-work/GradeWorkClient`
+    → `GradeWorkSurface` + `useGradeWork`): snap a photo of a worked problem → step-level grade.
+- Feature code: `features/education/assessment/` (`data/`, `components/`, `grade-work/`).
 - Agents (authored via `agent_author`, verified via `agent_run`, gemini-3.5-flash):
   `ASSESSMENT_AGENTS` in `data/agents.ts` — `generateQuiz` `afb89a8f…`, `generateQuizFromSource`
   `04acfd83…`, `deepenItem` `00ae6c89…`; grading REUSES `FC_AGENTS.gradeTypedAnswer`
-  (`b39183d1…`, grade-on-meaning), `gradeSpoken`, `verifyAgainstSource`.
+  (`b39183d1…`, grade-on-meaning), `gradeSpoken`, `verifyAgainstSource`. **Vision/handwritten:**
+  `gradeHandwritten` `77db0f64…` (Gemini Flash Latest, vision) — reads a photo, grades on meaning,
+  emits the `GradeVerdict` core + `steps[]` + `transcription` (the ONE image-answer grader).
 
 ## Admin map
 
@@ -71,6 +75,17 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
   results page shows the persisted **delta**. `pairLearningGain` is the read P5 consumes.
 - **Depth-on-demand**: depth is first-class config on every generation path; per-item "make deeper"
   (`deepenItem` agent) appends an applied/exam-grade version in the editor.
+- **Image / handwritten grading** (the vision differentiator — VISION §6 + §17 STEM). Two front
+  doors to ONE path (`data/imageGrading.ts` = the image twin of the spoken crown-jewel
+  `grading-core.ts`): (a) inside the take flow a `written_response`/`short_answer` item can be
+  answered by PHOTO (`HandwrittenWorkInput` → `gradeAnswerImage` — the image BRANCH of the
+  grade-on-meaning path, NOT a forked grader), (b) the standalone `/education/grade-work` surface.
+  Flow: `fileHandler.upload` (photo → durable `file_id`, hidden `system-files/image-grade`) →
+  `runVisionGrader` (launch autoRun:false → `fileHandler.toContentPart({kind:'file_id'})` as an image
+  message part → `executeInstance` → poll extraction → `coerceStepGradeVerdict`) → a `StepGradeVerdict`
+  (verdict core + `steps[]` pinpointing where the reasoning broke + `transcription`). Records to the
+  spine as `response_kind:'handwritten'` with `response_image_file_id` + the steps in `score`
+  (assessment item, or standalone `item_type:'handwritten_work'`). `StepBreakdown` renders the steps.
 
 ## Invariants & gotchas
 
@@ -79,7 +94,13 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
   `KIND_CONFIG[kind]`.
 - **One grading path.** Free-response grades on MEANING via `gradeTypedAnswer` (P0 contract); never
   add exact-string grading. MC/TF/fill grade locally (normalized). `written_response` grades against
-  its `rubric`.
+  its `rubric`. A PHOTOGRAPHED free-response answer routes to the vision grader (`gradeAnswerImage`)
+  — the SAME meaning-grading contract, an added branch, never a fork.
+- **Extend the verdict, don't fork it.** The image path returns `StepGradeVerdict` — the canonical
+  `GradeVerdict` core (features/education/trust) + `steps[]` + `transcription`, coerced by the
+  TOLERANT `coerceStepGradeVerdict` (education agents are tuned in-system, so it accepts key drift:
+  `verdict` token OR `correct`/`partial` booleans; `note`/`notes`; `stepLabel`/`description`). Never
+  add a parallel verdict shape.
 - **TrustEnvelope passthrough.** Agents emit `trust` per item; consumers `coerceTrustEnvelope` + render
   `<SourceCitations>`/`<ConfidenceBadge>` — never re-derive. Topic gen = `inferred`, no citations;
   deck/document gen = `grounded` with real `sourceId`/`excerpt`.
@@ -120,6 +141,17 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- **2026-07-13** — **Handwritten / image / multi-step grading shipped** (VISION §6 AI Grading +
+  §17 STEM; "Why We Win" #4). New vision grader `gradeHandwritten` `77db0f64…` (Gemini Flash Latest)
+  authored + live-tested via `agent_run` (multi-step algebra: caught the distribution error, marked
+  it partial with follow-through). New reusable primitives: `data/imageGrading.ts` (upload→vision
+  grader→coerce, the image twin of spoken `grading-core.ts`), `gradeAnswerImage` (image branch of the
+  grade-on-meaning path — no forked grader), `HandwrittenWorkInput` + `StepBreakdown`, and the trust
+  extension `StepGradeVerdict` + tolerant `coerceStepGradeVerdict` (features/education/trust). Two
+  surfaces: (a) any `written_response`/`short_answer` item in the take flow can be answered by photo,
+  (b) standalone `/education/grade-work`. Records to the spine as `response_kind:'handwritten'` +
+  `response_image_file_id` (no spine migration — the columns/CHECK already accept it). Metered via new
+  `education.image_grade` (registry + `billing.capability_limit` 20/day + 8/1h; enforced:false).
 - **2026-07-10 (Convergence-B)** — Two lineage/loop gaps closed. (1) `quizGenerator` now calls the
   shared `recordSourceLineage` (`features/education/convert`) — a converted quiz/practice_test lands a
   real `assessment --source--> origin` association edge, not only the flat `source_kind`/`source_id`
