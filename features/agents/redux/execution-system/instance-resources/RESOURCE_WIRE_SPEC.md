@@ -90,49 +90,45 @@ editor pills.
 
 ---
 
-## Context-channel resources (NOT a content[] block)
+## Attached documents — a durable association edge (NOT content[], NOT request.context)
 
-One block type does **not** emit a `content[]` block: `processed_document`. A
-processed document (an OCR'd → AI-cleaned file the user attached by reference)
-rides the **context channel** — it emits a lazy pointer into `request.context`
-so the backend materializes the chosen representation on demand instead of the
-FE shipping the body every turn.
+A document the user attaches (an uploaded file, and/or its OCR'd → AI-cleaned
+processed document) is **NOT** a `content[]` block and is **NO LONGER** a
+per-turn `request.context` pointer. It is a **durable `platform.associations`
+edge** to the conversation, so an attachment **persists across turns and reloads**:
 
-- **Builder:** `features/agents/utils/processedDocumentContext.ts` →
-  `buildProcessedDocumentContextValue`.
-- **Selector:** `instance-resources.selectors.ts` → `selectResourceContextPayload`
-  emits one entry per ready `processed_document` resource. It is merged into
-  `request.context` by `instance-context.selectors.ts` →
-  `selectRequestContextPayload` (used by all three execution thunks).
-- **Excluded from `content[]`** in `selectResourcePayloads` (alongside editor
-  pills) so the binary and reference paths never cross.
+- **Edge:** `processed_document → conversation` (default when the file has a
+  processed document) **or** `file → conversation` (the raw file). Both endpoint
+  pairs are registered + active with `container_side=target`; direction is
+  little→big (source = `file`/`processed_document`, target = `conversation`).
+- **The FE's only jobs:** create the edge on attach, remove it on detach, render
+  the chip from the edge list. It ships **nothing** in `request.context` for
+  attachments.
+- **The backend reads the conversation's association edges at call time** and
+  injects the context itself (leads with the processed-document text for a
+  `processed_document` edge, the raw file for a `file` edge). This is a PARALLEL
+  aidream change — the old lazy `request.context` pointer was removed here.
 
-Wire shape (one key per attached document, keyed `attached_document_<id8>`):
+FE source of truth:
+- **Attach:** `attach-resource.ts` → `useAttachResource` (creates the edge via
+  the `addAssociation` thunk). Default = `processed_document` when the file has
+  one, else `file`; a cold cache attaches `file` instantly then upgrades to
+  `processed_document` once the probe resolves.
+- **Render + detach + representation:** `AttachedDocumentChips.tsx` reads the
+  conversation's incoming edges via `useContainerLinks({ containerType:
+  "conversation" })` (`linksFor("processed_document")` + `linksFor("file")`),
+  renders `ResourceAttachmentTile` + `DocumentRepresentationPill`, and
+  detaches / re-attaches to change representation or switch to the raw file.
+- **Edge metadata** (`platform.associations.metadata`) carries
+  `{ representation?: "clean" | "raw", file_id?: string }`. `assoc_add` REPLACES
+  metadata on conflict, so a representation change is an idempotent re-attach.
+- **Shared vocabulary:** `attached-documents.ts` (tokens, metadata shape, the
+  URL-proof label cleaner, org resolver).
 
-```jsonc
-{
-  "attached_document_1a2b3c4d": {
-    "source": {
-      "kind": "processed_document",
-      "id": "<processed_document_id>",
-      "representation": "clean"        // or "raw" — the chosen PRIMARY
-    },
-    "type": "json",
-    "label": "<display label>",
-    "description": "<agent-facing note>"
-    // NB: NO `content` key — the backend treats a source-only rich value as the
-    // LAZY form and resolves the body via context_sources.py on demand.
-  }
-}
-```
-
-**Backend contract (aidream, BUILT):** `aidream/services/conversation_context/context_sources.py`
-+ `aidream/services/documents/context_source_resolver.py` resolve `source.kind
-== "processed_document"` into a cheap descriptor (section ToC + alternate
-formats) and materialize clean/raw on demand. The agent reaches the other
-formats (raw / pages / knowledge_assets / pdf page images) via the
-`document_content` tool, auto-injected whenever a processed document is attached.
-`DocumentRepresentation` values today: `clean` | `raw`.
+> The binary `document` **bytes** path (a file sent as actual bytes in
+> `content[]` — vision / native PDF read) is UNCHANGED and still described under
+> "Type → payload field" above (`image`/`audio`/`video`/`document`). Only the
+> attach-by-reference path moved onto associations.
 
 ### Pending backend support (FE emits these now)
 

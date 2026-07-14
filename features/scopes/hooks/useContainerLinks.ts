@@ -27,6 +27,7 @@ import type {
   AssociationTargetType,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { Json } from "@/types/database.types";
 
 export interface ContainerLink {
   /** The edge id (for keys / removal). */
@@ -36,6 +37,8 @@ export interface ContainerLink {
   /** The attached resource's entity token (the edge source type). */
   token: string;
   label: string | null;
+  /** Per-edge props from `platform.associations.metadata` (e.g. representation). */
+  metadata: Json;
 }
 
 export interface UseContainerLinksArgs {
@@ -63,6 +66,7 @@ export interface UseContainerLinksReturn {
     token: EntityTypeToken,
     resourceId: string,
     label?: string,
+    metadata?: Json,
   ) => Promise<AssociationWriteResult>;
   /** Detach a resource from this container. */
   detach: (
@@ -95,6 +99,7 @@ export function useContainerLinks(
         resourceId: e.otherId,
         token: e.otherType,
         label: e.label ?? null,
+        metadata: e.metadata ?? {},
       }));
 
   const countFor = (token: EntityTypeToken): number =>
@@ -110,6 +115,7 @@ export function useContainerLinks(
     token: EntityTypeToken,
     resourceId: string,
     label?: string,
+    metadata?: Json,
   ): Promise<AssociationWriteResult> => {
     if (!containerId) return { ok: false, error: "Missing container id" };
     return dispatch(
@@ -120,6 +126,7 @@ export function useContainerLinks(
         targetId: containerId,
         orgId: orgId ?? undefined,
         label,
+        metadata,
       }),
     );
   };

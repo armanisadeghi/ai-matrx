@@ -53,7 +53,7 @@ import {
   RESUME_CONFLICT_BACKOFF_MS,
   RESUME_CONFLICT_MAX_RETRIES,
 } from "./resume-claims";
-import { selectRequestContextPayload } from "../instance-context/instance-context.selectors";
+import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { buildAmbientContext } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import {
@@ -171,7 +171,7 @@ export const resumeInstance = createAsyncThunk<
       // apply_context_objects. We rebuild from cached Redux state only (the
       // chips on this conversation + the ambient snapshot) — no heavy
       // pre-send refresh; the resume must open fast.
-      const chipContext = selectRequestContextPayload(conversationId)(state);
+      const chipContext = selectContextPayload(conversationId)(state);
       const ambient = buildAmbientContext(state, conversationId);
       const context: Record<string, unknown> | undefined =
         chipContext || ambient

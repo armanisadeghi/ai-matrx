@@ -36,6 +36,7 @@ import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLo
 // Resource picker + paste-image attach
 import { SmartAgentResourcePickerButton } from "../../inputs/resources/SmartAgentResourcePickerButton";
 import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResourceChips";
+import { AttachedDocumentChips } from "../../inputs/resources/AttachedDocumentChips";
 import { usePasteImageResource } from "../../inputs/resources/usePasteImageResource";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 
@@ -144,6 +145,8 @@ export function CompactAssistantInput({
     <div className="shrink-0 border-t border-border/40 bg-muted/10">
       {/* Resource chips */}
       <SmartAgentResourceChips conversationId={conversationId} />
+      {/* Durable document attachments (association edges) — persist across turns/reloads */}
+      <AttachedDocumentChips conversationId={conversationId} />
 
       {/* Textarea */}
       <div className="px-2 pt-1">

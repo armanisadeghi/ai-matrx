@@ -14,6 +14,7 @@
 
 import React, { useState } from "react";
 import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
+import { AttachedDocumentChips } from "../resources/AttachedDocumentChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
 import { SingleRowActionButtons } from "./SingleRowActionButtons";
@@ -85,6 +86,8 @@ export function SmartAgentInputSingleRow({
 
       {/* Resource chips (stacked above the row when present) */}
       <SmartAgentResourceChips conversationId={conversationId} />
+      {/* Durable document attachments (association edges) — persist across turns/reloads */}
+      <AttachedDocumentChips conversationId={conversationId} />
 
       {/* Single horizontal row */}
       <div className="flex items-center gap-1 bg-card rounded-none border border-border px-2 py-1 w-full min-w-0">

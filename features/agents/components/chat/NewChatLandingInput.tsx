@@ -9,6 +9,7 @@ import { usePasteImageResource } from "@/features/agents/components/inputs/resou
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
 import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
 import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
+import { AttachedDocumentChips } from "@/features/agents/components/inputs/resources/AttachedDocumentChips";
 import {
   smartExecute,
   cancelExecution,
@@ -234,6 +235,8 @@ export function NewChatLandingInput({
           the standard input. Renders nothing (no extra height) when empty. */}
       <div onClick={(e) => e.stopPropagation()}>
         <SmartAgentResourceChips conversationId={conversationId} />
+        {/* Durable document attachments (association edges) — persist across turns/reloads */}
+        <AttachedDocumentChips conversationId={conversationId} />
       </div>
 
       {/* Composer row */}

@@ -1,21 +1,29 @@
 "use client";
 
 /**
- * attach-resource — the single mapping from a picked `Resource` to an
- * instance resource block, shared by every surface that attaches resources
- * to an agent execution instance (SmartAgentResourcePickerButton, the
- * RunControlsMenu Attach tab, …). Previously copy-pasted per surface, which
- * drifted.
+ * attach-resource — the single mapping from a picked `Resource` to how it gets
+ * attached to a conversation, shared by every surface that attaches resources
+ * (SmartAgentResourcePickerButton, the RunControlsMenu Attach tab, …).
+ *
+ * TWO attach shapes, by kind:
+ *  - A stored FILE → a DURABLE `platform.associations` edge to the conversation
+ *    (`processed_document → conversation` when the file has a processed document,
+ *    else `file → conversation`). This PERSISTS across turns and reloads; the
+ *    backend reads the conversation's edges at call time and injects the context.
+ *    The chip renders from the edge list (see `AttachedDocumentChips`), NOT the
+ *    ephemeral `instanceResources` slice.
+ *  - Everything else (media bytes, notes, tasks, webpages, …) → the per-turn
+ *    `instanceResources` block, UNCHANGED (the binary `document` bytes path is
+ *    left untouched — a file with no file identity, or a media block, still rides
+ *    content[]).
  */
 
 import type { Dispatch } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   addResource,
-  removeResource,
   setResourcePreview,
-  setResourceStatus,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import {
   refineBlockType,
@@ -23,21 +31,28 @@ import {
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import {
+  addAssociation,
+  removeAssociation,
+  associationsKey,
+  type AssociationWriteResult,
+} from "@/features/scopes/redux/thunks/associations";
+import {
   lookupFileDocument,
   peekFileDocument,
-  type FileDocumentLookup,
+  type FileDocumentState,
 } from "@/features/files/api/document-lookup";
 import {
-  buildProcessedDocumentSource,
-  defaultRepresentation,
-  isProcessedDocumentSource,
-  type ProcessedDocumentSource,
-} from "@/features/agents/utils/processedDocumentContext";
+  cleanDocumentLabel,
+  resolveConversationOrgId,
+  type AttachedDocumentMetadata,
+  type AttachedDocumentToken,
+} from "@/features/agents/components/inputs/resources/attached-documents";
 import type { Resource } from "@/features/agents/resources/types";
 import type {
   DocumentRepresentation,
   ResourceBlockType,
 } from "@/features/agents/types/instance.types";
+import type { Json } from "@/types/database.types";
 
 /** Map prompt-system resource types to agent ResourceBlockType. */
 export function resourceTypeToBlockType(
@@ -148,116 +163,131 @@ function attachBinary(
   return resourceId;
 }
 
-/**
- * Attach a processed document by REFERENCE with a chosen text representation.
- * Rides the context channel (not content[]). Like editor pills, it has no
- * server-side resolution, so it's marked `ready` immediately.
- */
-export function attachProcessedDocument(
-  dispatch: Dispatch,
+// ─── Document association edges (durable, persist across turns/reloads) ──────
+
+function edgeMetadata(
+  fileId: string | null,
+  representation?: DocumentRepresentation,
+): Json {
+  const meta: AttachedDocumentMetadata = { file_id: fileId };
+  if (representation) meta.representation = representation;
+  return meta as Json;
+}
+
+/** True when the conversation already has an incoming edge of `token` → `id`. */
+function conversationHasEdge(
+  getState: () => RootState,
   conversationId: string,
-  source: ProcessedDocumentSource,
+  token: AttachedDocumentToken,
+  sourceId: string,
+): boolean {
+  const key = associationsKey("conversation", conversationId);
+  const edges = getState().scopesTree.associationsByKey[key]?.edges ?? [];
+  return edges.some(
+    (e) =>
+      e.direction === "incoming" &&
+      e.otherType === token &&
+      e.otherId === sourceId,
+  );
+}
+
+/** Create a `token → conversation` attachment edge (idempotent). */
+async function attachDocumentEdge(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  conversationId: string,
+  token: AttachedDocumentToken,
+  sourceId: string,
+  fileId: string | null,
   label: string,
   representation?: DocumentRepresentation,
-): string {
-  const resourceId = newResourceId();
-  dispatch(
-    addResource({
-      conversationId,
-      blockType: "processed_document",
-      source,
-      resourceId,
-      options: {
-        representation: representation ?? defaultRepresentation(source),
-      },
+): Promise<AssociationWriteResult> {
+  const orgId = resolveConversationOrgId(getState(), conversationId);
+  if (!orgId) {
+    return { ok: false, error: "No organization for this conversation" };
+  }
+  return dispatch(
+    addAssociation({
+      sourceType: token,
+      sourceId,
+      targetType: "conversation",
+      targetId: conversationId,
+      orgId,
+      label,
+      metadata: edgeMetadata(fileId, representation),
     }),
   );
-  dispatch(setResourceStatus({ conversationId, resourceId, status: "ready" }));
-  dispatch(setResourcePreview({ conversationId, resourceId, preview: label }));
-  return resourceId;
 }
 
 /**
- * Chip "Attach as file instead": drop the processed-document reference and
- * re-add the origin binary file so the agent gets the raw bytes (vision / the
- * model reads the PDF natively) instead of the extracted-text representation.
+ * Cold-cache upgrade: a file edge was attached instantly (durable + present for
+ * turn 1); once the file→document probe resolves, if it HAS a processed document
+ * AND the file edge is still attached (the user didn't detach it), swap to the
+ * `processed_document → conversation` edge. Never resurrects a detached
+ * attachment.
  */
-export function switchAttachedDocumentToBinary(
-  dispatch: Dispatch,
-  conversationId: string,
-  resourceId: string,
-  source: ProcessedDocumentSource,
-  label: string,
-): void {
-  dispatch(removeResource({ conversationId, resourceId }));
-  if (source.file_id) {
-    attachBinary(dispatch, conversationId, "document", { id: source.file_id }, label);
-  }
-}
-
-function attachedProcessedDocIds(
+async function upgradeFileEdgeToProcessedDocument(
+  dispatch: AppDispatch,
   getState: () => RootState,
   conversationId: string,
-): Set<string> {
-  const map = getState().instanceResources.byConversationId[conversationId];
-  const ids = new Set<string>();
-  if (map) {
-    for (const r of Object.values(map)) {
-      if (
-        r.blockType === "processed_document" &&
-        isProcessedDocumentSource(r.source)
-      ) {
-        ids.add(r.source.processed_document_id);
-      }
-    }
-  }
-  return ids;
-}
-
-function resourceStillExists(
-  getState: () => RootState,
-  conversationId: string,
-  resourceId: string,
-): boolean {
-  return Boolean(
-    getState().instanceResources.byConversationId[conversationId]?.[resourceId],
-  );
-}
-
-/** Attach a processed document, deduped: skip if the same doc is already on. */
-function attachProcessedDocumentDeduped(
-  dispatch: Dispatch,
-  getState: () => RootState,
-  conversationId: string,
-  doc: FileDocumentLookup,
   fileId: string,
   label: string,
-): void {
-  if (attachedProcessedDocIds(getState, conversationId).has(doc.processed_document_id)) {
+): Promise<void> {
+  let state: FileDocumentState;
+  try {
+    state = await lookupFileDocument(fileId);
+  } catch {
+    return; // transient probe failure — leave the file edge as-is
+  }
+  if (state.kind !== "found") return;
+  // The user may have detached the file edge while the probe was in flight —
+  // never resurrect it onto the conversation.
+  if (!conversationHasEdge(getState, conversationId, "file", fileId)) return;
+  const representation: DocumentRepresentation = state.doc.has_clean_content
+    ? "clean"
+    : "raw";
+  const res = await attachDocumentEdge(
+    dispatch,
+    getState,
+    conversationId,
+    "processed_document",
+    state.doc.processed_document_id,
+    fileId,
+    label,
+    representation,
+  );
+  if (!res.ok) {
+    console.error(
+      "[attached-document] upgrade to processed_document failed — leaving the raw file edge attached",
+      { conversationId, fileId, error: res.error },
+    );
     return;
   }
-  attachProcessedDocument(
-    dispatch,
-    conversationId,
-    buildProcessedDocumentSource(doc, fileId),
-    label,
+  // Drop the now-redundant raw file edge (idempotent; no-op if already gone).
+  await dispatch(
+    removeAssociation({
+      sourceType: "file",
+      sourceId: fileId,
+      targetType: "conversation",
+      targetId: conversationId,
+    }),
   );
 }
 
 /**
- * Returns a handler that attaches a picked Resource to the instance.
+ * Returns a handler that attaches a picked Resource to the conversation.
  *
- * A stored file (or file_url) that refines to a `document` is checked for a
- * processed document (OCR'd → AI-cleaned). To avoid a fast-submit race (the send
- * path never waits for pending attaches), a chip ALWAYS appears synchronously:
- *  - cache hit "found"   → attach by reference immediately (default clean/raw);
- *  - cache hit "absent"  → binary attach immediately;
- *  - cache cold          → binary attach immediately (safe on fast submit — the
- *    file still sends), then upgrade to the reference form when the probe
- *    resolves, IF the chip is still present and not already attached.
- * The chip then offers the quick representation choice + an "Attach as file
- * instead" escape. Non-file / media resources take the binary path unchanged.
- * Closing the hosting popover is the CALLER's job.
+ * A stored file (or file_url) that refines to a `document` becomes a DURABLE
+ * association edge to the conversation:
+ *  - cache hit "found"   → `processed_document → conversation` immediately;
+ *  - cache hit "absent"  → `file → conversation` immediately;
+ *  - cache cold          → `file → conversation` immediately (instant + durable,
+ *    safe on fast submit — the edge is there for turn 1), then upgrade to
+ *    `processed_document → conversation` when the probe resolves, IF still
+ *    attached.
+ * A file with no file identity, and every media / note / task / … resource, take
+ * the per-turn binary/instanceResources path unchanged. Closing the hosting
+ * popover is the CALLER's job.
  */
 export function useAttachResource(
   conversationId: string,
@@ -269,82 +299,71 @@ export function useAttachResource(
     const getState = () => store.getState() as RootState;
     const baseBlockType = resourceTypeToBlockType(resource.type);
     const blockType = refineBlockType(baseBlockType, resource.data);
-    const label = resourceLabel(resource);
+    const label = cleanDocumentLabel(resourceLabel(resource));
 
-    // Only a real (non-media) file document qualifies for representation-attach.
+    // A real (non-media) file → a durable association edge to the conversation.
     if (blockType === "document") {
       const fileId = extractFileId(resource.data);
       if (fileId) {
         const cached = peekFileDocument(fileId);
         if (cached?.kind === "found") {
-          attachProcessedDocumentDeduped(
+          const representation: DocumentRepresentation = cached.doc
+            .has_clean_content
+            ? "clean"
+            : "raw";
+          void attachDocumentEdge(
             dispatch,
             getState,
             conversationId,
-            cached.doc,
+            "processed_document",
+            cached.doc.processed_document_id,
             fileId,
             label,
-          );
+            representation,
+          ).then((res) => {
+            if (!res.ok) {
+              console.error("[attached-document] attach failed", {
+                conversationId,
+                fileId,
+                error: res.error,
+              });
+            }
+          });
           return;
         }
-        if (cached?.kind === "absent" || cached?.kind === "unavailable") {
-          attachBinary(dispatch, conversationId, "document", resource.data, label);
-          return;
-        }
-        // Cold cache — attach binary now (instant, ready, safe on fast submit),
-        // then upgrade if it turns out to qualify and the chip is still there.
-        const resourceId = attachBinary(
-          dispatch,
-          conversationId,
-          "document",
-          resource.data,
-          label,
-        );
-        void upgradeToProcessedDocument(
+        // absent / unavailable / cold — attach the raw file edge now. On a cold
+        // cache, upgrade to processed_document once the probe resolves.
+        void attachDocumentEdge(
           dispatch,
           getState,
           conversationId,
+          "file",
           fileId,
-          resourceId,
+          fileId,
           label,
-        );
+        ).then((res) => {
+          if (!res.ok) {
+            console.error("[attached-document] attach failed", {
+              conversationId,
+              fileId,
+              error: res.error,
+            });
+            return;
+          }
+          if (cached === undefined) {
+            void upgradeFileEdgeToProcessedDocument(
+              dispatch,
+              getState,
+              conversationId,
+              fileId,
+              label,
+            );
+          }
+        });
         return;
       }
     }
 
     attachBinary(dispatch, conversationId, blockType, resource.data, label);
   };
-}
-
-async function upgradeToProcessedDocument(
-  dispatch: Dispatch,
-  getState: () => RootState,
-  conversationId: string,
-  fileId: string,
-  binaryResourceId: string,
-  label: string,
-): Promise<void> {
-  let state;
-  try {
-    state = await lookupFileDocument(fileId);
-  } catch {
-    return; // transient probe failure — leave the binary chip as-is
-  }
-  if (state.kind !== "found") return;
-  // The chip may have been sent/removed while the probe was in flight — never
-  // resurrect it onto the next turn.
-  if (!resourceStillExists(getState, conversationId, binaryResourceId)) return;
-  // Already attached as a processed doc (e.g. a second rapid attach) → just drop
-  // the redundant binary rather than add a duplicate.
-  const already = attachedProcessedDocIds(getState, conversationId).has(
-    state.doc.processed_document_id,
-  );
-  dispatch(removeResource({ conversationId, resourceId: binaryResourceId }));
-  if (already) return;
-  attachProcessedDocument(
-    dispatch,
-    conversationId,
-    buildProcessedDocumentSource(state.doc, fileId),
-    label,
-  );
 }

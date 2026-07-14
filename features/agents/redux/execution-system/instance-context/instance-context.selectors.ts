@@ -1,7 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import { selectResourceContextPayload } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 
 const EMPTY_CONTEXT_ENTRIES: InstanceContextEntry[] = [];
 
@@ -91,21 +90,4 @@ export const selectContextPayload =
       payload[entry.key] = toWireContextValue(entry);
     }
     return payload;
-  };
-
-/**
- * The FULL `request.context` dict: the instanceContext entries
- * (`selectContextPayload`) MERGED with the context-channel resources
- * (`selectResourceContextPayload` — attached processed documents). This is the
- * single source of truth every execution thunk uses to fill `request.context`,
- * so the two channels never drift. Returns `undefined` when both are empty.
- */
-export const selectRequestContextPayload =
-  (conversationId: string) =>
-  (state: RootState): Record<string, unknown> | undefined => {
-    const base = selectContextPayload(conversationId)(state);
-    const resourceCtx = selectResourceContextPayload(conversationId)(state);
-    const hasResourceCtx = Object.keys(resourceCtx).length > 0;
-    if (!base && !hasResourceCtx) return undefined;
-    return { ...(base ?? {}), ...resourceCtx };
   };

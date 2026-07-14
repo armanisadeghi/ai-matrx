@@ -14,6 +14,7 @@
 import React, { useState } from "react";
 import { ArrowUp, CircleStop, Loader2 } from "lucide-react";
 import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
+import { AttachedDocumentChips } from "../resources/AttachedDocumentChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
 import { InputActionButtons } from "./InputActionButtons";
@@ -165,6 +166,8 @@ export function SmartAgentInputStacked({
 
       {/* Resource chips — pinned, never scrolls away */}
       <SmartAgentResourceChips conversationId={conversationId} />
+      {/* Durable document attachments (association edges) — persist across turns/reloads */}
+      <AttachedDocumentChips conversationId={conversationId} />
 
       {/* Textarea — owns its own height transition for smooth flow */}
       <AgentTextarea

@@ -21,6 +21,7 @@ import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { AssociationTargetType } from "@/features/scopes/types";
+import type { Json } from "@/types/database.types";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
@@ -115,6 +116,13 @@ export function addAssociation(args: {
   orgId?: string;
   label?: string;
   role?: string;
+  /**
+   * Free-form edge props stored on `platform.associations.metadata`. `assoc_add`
+   * REPLACES metadata on conflict, so callers that persist per-edge state (a
+   * document's chosen representation, a doc-kind flag) must pass the FULL object
+   * each write. Omitted → the RPC defaults to `{}`.
+   */
+  metadata?: Json;
 }): AppThunk<Promise<AssociationWriteResult>> {
   return async (dispatch) => {
     const res = await associationsService.add(args);

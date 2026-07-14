@@ -32,7 +32,7 @@ import {
   Notebook,
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
-import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
@@ -42,17 +42,10 @@ import {
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type {
-  DocumentRepresentation,
   ManagedResource,
   ResourceBlockType,
 } from "@/features/agents/types/instance.types";
 import type { ResourceEditableState } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
-import { DocumentRepresentationPill } from "@/features/agents/components/inputs/resources/DocumentRepresentationPill";
-import { switchAttachedDocumentToBinary } from "@/features/agents/components/inputs/resources/attach-resource";
-import {
-  defaultRepresentation,
-  isProcessedDocumentSource,
-} from "@/features/agents/utils/processedDocumentContext";
 import { NoteHoverPreview } from "@/features/agents/components/previews/NoteHoverPreview";
 import { TaskHoverPreview } from "@/features/agents/components/previews/TaskHoverPreview";
 import { WebpageHoverPreview } from "@/features/agents/components/previews/WebpageHoverPreview";
@@ -217,8 +210,6 @@ interface ResourceChipProps {
   onRemove: () => void;
   onToggleEditable: () => void;
   onOpen: () => void;
-  onChangeRepresentation: (rep: DocumentRepresentation) => void;
-  onAttachAsFile: () => void;
 }
 
 function ResourceChip({
@@ -226,8 +217,6 @@ function ResourceChip({
   onRemove,
   onToggleEditable,
   onOpen,
-  onChangeRepresentation,
-  onAttachAsFile,
 }: ResourceChipProps) {
   const isPending =
     resource.status === "pending" || resource.status === "resolving";
@@ -246,14 +235,6 @@ function ResourceChip({
         ? "editable"
         : "readonly"
       : null;
-
-  // A processed document rides the context channel with a chosen representation;
-  // show the quick Clean/Raw chooser (+ "attach as file") beside its chip.
-  const showRepresentationPill =
-    resource.blockType === "processed_document" &&
-    isProcessedDocumentSource(resource.source) &&
-    !isPending &&
-    !isError;
 
   const tile = (
     <motion.div
@@ -275,18 +256,6 @@ function ResourceChip({
         error={isError}
         variant="compact"
       />
-      {showRepresentationPill &&
-        isProcessedDocumentSource(resource.source) && (
-          <DocumentRepresentationPill
-            source={resource.source}
-            representation={
-              resource.options.representation ??
-              defaultRepresentation(resource.source)
-            }
-            onChange={onChangeRepresentation}
-            onAttachAsFile={onAttachAsFile}
-          />
-        )}
     </motion.div>
   );
 
@@ -376,7 +345,6 @@ export function SmartAgentResourceChips({
   conversationId,
 }: SmartAgentResourceChipsProps) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
   const resources = useAppSelector(selectInstanceResources(conversationId));
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
@@ -417,41 +385,6 @@ export function SmartAgentResourceChips({
     [conversationId, dispatch],
   );
 
-  const handleChangeRepresentation = useCallback(
-    (resourceId: string, rep: DocumentRepresentation) => {
-      dispatch(
-        updateResourceOptions({
-          conversationId,
-          resourceId,
-          options: { representation: rep },
-        }),
-      );
-    },
-    [conversationId, dispatch],
-  );
-
-  const handleAttachAsFile = useCallback(
-    (resource: ManagedResource) => {
-      if (!isProcessedDocumentSource(resource.source)) return;
-      // Guard a double-click: if the chip was already switched/removed, bail so
-      // we don't remove-nothing then add a SECOND binary copy.
-      const stillPresent = Boolean(
-        store.getState().instanceResources.byConversationId[conversationId]?.[
-          resource.resourceId
-        ],
-      );
-      if (!stillPresent) return;
-      switchAttachedDocumentToBinary(
-        dispatch,
-        conversationId,
-        resource.resourceId,
-        resource.source,
-        getResourceLabel(resource),
-      );
-    },
-    [conversationId, dispatch, store],
-  );
-
   if (!showAttachments) return null;
   // Mirror the textarea: while a submit is in flight the attachments have
   // already been captured into the optimistic user bubble — hide them here so
@@ -475,10 +408,6 @@ export function SmartAgentResourceChips({
               )
             }
             onOpen={() => openDrawerForResource(resource.resourceId)}
-            onChangeRepresentation={(rep) =>
-              handleChangeRepresentation(resource.resourceId, rep)
-            }
-            onAttachAsFile={() => handleAttachAsFile(resource)}
           />
         ))}
       </AnimatePresence>
