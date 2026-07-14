@@ -26,7 +26,13 @@ import type { DrillCard } from "../redux/fastFireSlice";
 const STUDY_MODE = "fast_fire";
 
 export interface UseFastFireLauncherResult {
-  start: () => Promise<void>;
+  /**
+   * Begin a drill (call inside a click gesture — it warms the mic). Resolves
+   * true only when the drill fully started (state machine handed off), so the
+   * caller can meter `education.live_grade` ONCE at session start on real
+   * success — a failed/aborted start never burns quota.
+   */
+  start: () => Promise<boolean>;
   starting: boolean;
   startError: string | null;
 }
@@ -37,10 +43,10 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
-  const start = async (): Promise<void> => {
+  const start = async (): Promise<boolean> => {
     if (!config.setId) {
       setStartError("Pick a flashcard set first.");
-      return;
+      return false;
     }
     setStarting(true);
     setStartError(null);
@@ -51,12 +57,12 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
         const msg = res.error ?? "Could not load the set.";
         setStartError(msg);
         dispatch(setError(msg));
-        return;
+        return false;
       }
       const { set, cards: loaded } = res.data;
       if (loaded.length === 0) {
         setStartError("This set has no cards yet.");
-        return;
+        return false;
       }
 
       // 2. Trim to the configured limit and flatten to the drill shape. Carry any
@@ -106,11 +112,13 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
       dispatch(
         startDrill({ cards: drillCards, sessionId, setName: set.name }),
       );
+      return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not start the drill.";
       console.error("[useFastFireLauncher] start failed:", err);
       setStartError(msg);
       dispatch(setError(msg));
+      return false;
     } finally {
       setStarting(false);
     }

@@ -188,6 +188,10 @@ export function CreateFromTopic() {
       }
 
       const { set, cards } = setRes.data;
+      // Metered action SUCCEEDED (generated AND saved) — record real usage so
+      // the meter decrements (honest even while enforced:false). Failed
+      // branches above return first, so a failed generation never burns quota.
+      await cardGen.commit();
       toast.success(
         `Created "${set.name}" with ${cards.length} ${cards.length === 1 ? "card" : "cards"}`,
       );

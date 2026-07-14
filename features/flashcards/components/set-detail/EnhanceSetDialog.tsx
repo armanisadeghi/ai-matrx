@@ -100,6 +100,11 @@ export function EnhanceSetDialog({
         return;
       }
       patchWork(card.id, { running: null, preview: { mode: "enrich", details } });
+      // Metered action SUCCEEDED (one model call for this card) — record real
+      // usage regardless of whether the user later saves or discards the
+      // preview; the AI call already happened. Failed/empty branches above
+      // return first, so a failed generation never burns quota.
+      await enrichGuard.commit();
     } else {
       const subCards = await dispatch(expandCard({ card, depth }));
       if (!subCards) {
@@ -116,6 +121,8 @@ export function EnhanceSetDialog({
         running: null,
         preview: { mode: "deepen", subCards },
       });
+      // Same one-model-call-per-card metering as the enrich branch above.
+      await enrichGuard.commit();
     }
   };
 

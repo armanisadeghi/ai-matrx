@@ -421,7 +421,15 @@ export function FastFireSetup() {
           size="lg"
           className="w-full gap-2 bg-orange-600 hover:bg-orange-700"
           disabled={!selectedSet || starting || liveGrade.isChecking}
-          onClick={() => void liveGrade.guard(start)}
+          onClick={() =>
+            void liveGrade.guard(async () => {
+              // Metered ONCE at session start (never per card — a per-card
+              // check would stall the timed loop). Commit only on a real
+              // start; a failed/aborted start never burns quota.
+              const started = await start();
+              if (started) await liveGrade.commit();
+            })
+          }
         >
           {starting ? (
             <>
