@@ -14,8 +14,10 @@ import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import TaskPreviewWindow from "@/features/tasks/components/TaskPreviewWindow";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { isMaterializedArtifactId } from "../artifactId";
 import { type ArtifactRendererProps } from "../artifact-renderers";
+import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 
 /**
  * Unified renderer for `tasks` — a DATA-TOUCHING artifact (vision R7).
@@ -50,19 +52,75 @@ export default function TasksArtifact({
       ? (data as { content: string }).content
       : null;
   const content = bridgedContent ?? (typeof data === "string" ? data : raw);
-  if (!content) return null;
+  const materialized = isMaterializedArtifactId(artifactId);
 
   // Pre-materialization (streaming / inline): there is no persisted artifact to
-  // link against yet, so show the proposed checklist only. Convert appears once
-  // the block has materialized into a `canvas_items` row (a real UUID id).
-  if (!isMaterializedArtifactId(artifactId)) {
+  // link against yet, so show the proposed checklist only. Only bail on empty
+  // content HERE — the materialized path below self-loads its checklist
+  // markdown from the canvas row (via `useCanvasItem`), so it must not be gated
+  // on a `content`/`raw` prop the canvas never passes (canvas opens with
+  // `data: { artifactId }`, no raw string). Bailing early was why an opened
+  // canvas panel for a materialized tasks artifact rendered blank (FOUND_DEFECTS
+  // D49 — same class as the table fix).
+  if (!materialized) {
+    if (!content) return null;
     return <TaskChecklist content={content} hideTitle hideActions />;
   }
 
   return (
+    <TasksArtifactMaterialized
+      canvasItemId={artifactId as string}
+      fallbackContent={content ?? ""}
+      conversationId={conversationId}
+    />
+  );
+}
+
+/**
+ * Materialized wrapper — self-loads the checklist markdown from the persisted
+ * canvas row (mirrors `TableArtifactMaterialized`'s row-backed `content`
+ * useMemo) since `TasksArtifactTracked` takes `content` as a required prop and
+ * does not read the row itself.
+ */
+function TasksArtifactMaterialized({
+  canvasItemId,
+  fallbackContent,
+  conversationId,
+}: {
+  canvasItemId: string;
+  fallbackContent: string;
+  conversationId?: string;
+}) {
+  const { row, loading } = useCanvasItem(canvasItemId);
+
+  const content = useMemo(() => {
+    const stored = row?.content as
+      | { data?: unknown }
+      | string
+      | null
+      | undefined;
+    if (
+      stored &&
+      typeof stored === "object" &&
+      "data" in stored &&
+      typeof stored.data === "string"
+    ) {
+      return stored.data;
+    }
+    if (typeof stored === "string") return stored;
+    return fallbackContent;
+  }, [row, fallbackContent]);
+
+  if (loading && !row) {
+    return <MatrxMiniLoader />;
+  }
+
+  if (!content) return null;
+
+  return (
     <TasksArtifactTracked
       content={content}
-      canvasItemId={artifactId as string}
+      canvasItemId={canvasItemId}
       conversationId={conversationId}
     />
   );
