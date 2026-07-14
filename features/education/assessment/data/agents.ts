@@ -23,6 +23,11 @@ export const ASSESSMENT_AGENTS = {
   /** prompt, correct_answer, question_type, current_depth, target_depth, topic, exam_type,
    *  source_content → ONE deeper question object ("make this deeper") */
   deepenItem: "00ae6c89-59cb-4d49-8b62-c434fa0c4d8b",
+  /** VISION grader (Gemini Flash, reads an attached photo). question, expected_answer
+   *  (+ the learner's photographed work as an image message part) → StepGradeVerdict:
+   *  the grade-on-meaning verdict CORE plus a per-step breakdown pinpointing exactly
+   *  where the reasoning broke. The ONE handwritten / image-answer grading path. */
+  gradeHandwritten: "77db0f64-15a3-43dd-96f7-ec9380057be8",
 
   // ── REUSED (do not re-author) ──────────────────────────────────────────────
   /** question, expected_answer, learner_answer → GradeVerdict — the ONE grade-on-meaning
@@ -38,3 +43,11 @@ export type AssessmentAgentKey = keyof typeof ASSESSMENT_AGENTS;
 
 /** The study-spine item_type every graded assessment question records under. */
 export const ASSESSMENT_ITEM_TYPE = "assessment_item" as const;
+
+/**
+ * The study-spine item_type for a STANDALONE handwritten-work grading (the
+ * "Grade my handwritten work" surface) — a worked problem the learner photographs
+ * outside any assessment. Each submission is its own item (a fresh id), so it
+ * records an attempt + a session without needing an assessment row.
+ */
+export const HANDWRITTEN_WORK_ITEM_TYPE = "handwritten_work" as const;

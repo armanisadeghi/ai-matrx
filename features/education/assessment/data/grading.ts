@@ -23,9 +23,12 @@ import {
   coerceGradeVerdict,
   gradeResultScore,
   verdictResult,
+  type GradeStep,
   type GradeVerdict,
+  type StepGradeVerdict,
 } from "@/features/education/trust/types";
 import { ASSESSMENT_AGENTS } from "./agents";
+import { runVisionGrader, uploadWorkPhoto } from "./imageGrading";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "./types";
 
 /** The unified per-answer verdict every question type resolves to. */
@@ -39,6 +42,16 @@ export interface GradedAnswer {
   misconception: string | null;
   /** How this was graded — 'local' (objective match) or the agent id. */
   gradedBy: string;
+  /**
+   * Per-step breakdown — present only for the image/handwritten path, which
+   * grades multi-step work and pinpoints where the reasoning broke. Objective +
+   * typed paths leave it undefined.
+   */
+  steps?: GradeStep[];
+  /** What the vision grader read from the photo (image/handwritten path only). */
+  transcription?: string | null;
+  /** The uploaded photo's durable file_id (image/handwritten path only) — for the study spine. */
+  responseImageFileId?: string | null;
 }
 
 const OBJECTIVE_TYPES: readonly QuestionType[] = [
@@ -207,5 +220,86 @@ export function gradeAnswerAI(args: {
     } finally {
       if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     }
+  };
+}
+
+/**
+ * Map a step-level (image/handwritten) verdict → the unified GradedAnswer. Same
+ * adapter role as `verdictToGraded`, carrying the step breakdown + transcription
+ * + the durable photo file_id through for the study spine.
+ */
+function stepVerdictToGraded(
+  v: StepGradeVerdict,
+  agentId: string,
+  responseImageFileId: string,
+): GradedAnswer {
+  const result = verdictResult(v);
+  return {
+    result,
+    scoreValue: gradeResultScore(result),
+    explanation: v.explanation,
+    misconception: v.misconception,
+    gradedBy: agentId,
+    steps: v.steps,
+    transcription: v.transcription,
+    responseImageFileId,
+  };
+}
+
+/**
+ * Grade a free-response answer submitted as a PHOTO of handwritten/typed work.
+ * The IMAGE BRANCH of the grade-on-meaning path — it does NOT fork the grader,
+ * it routes to the vision grader (`gradeHandwritten`) via the shared image
+ * grading core, then maps the step-level verdict into the SAME `GradedAnswer`
+ * every other question type resolves to (with the per-step breakdown attached).
+ *
+ * `expected` is the model answer / rubric (same contract as `gradeAnswerAI`).
+ * Uploads the photo through fileHandler first; returns a safe fallback verdict
+ * (never throws) on any failure, carrying the uploaded file_id when it exists so
+ * the attempt still records the learner's work.
+ */
+export function gradeAnswerImage(args: {
+  question: string;
+  expected: string;
+  photo: File | Blob;
+  /** For upload metadata / telemetry (the assessment item, when there is one). */
+  itemId?: string;
+  agentId?: string;
+  surfaceKey?: string;
+}) {
+  return async (dispatch: AppDispatch): Promise<GradedAnswer> => {
+    const agentId = args.agentId ?? ASSESSMENT_AGENTS.gradeHandwritten;
+    const fallback: GradedAnswer = {
+      result: "partial",
+      scoreValue: 0.5,
+      explanation:
+        "We couldn't auto-grade this photo — mark it yourself below.",
+      misconception: null,
+      gradedBy: "fallback",
+    };
+
+    const fileId = await uploadWorkPhoto(args.photo, {
+      metadata: { origin: args.surfaceKey ?? "assessment-grade-image", item_id: args.itemId ?? null },
+    });
+    if (!fileId) {
+      return {
+        ...fallback,
+        explanation:
+          "We couldn't upload your photo — check your connection and try again.",
+      };
+    }
+
+    const verdict = await dispatch(
+      runVisionGrader({
+        agentId,
+        question: args.question,
+        expected: args.expected,
+        responseImageFileId: fileId,
+        surfaceKey: args.surfaceKey ?? "assessment-grade-image",
+        sourceFeature: "education-assessment-grade",
+      }),
+    );
+    if (!verdict) return { ...fallback, responseImageFileId: fileId };
+    return stepVerdictToGraded(verdict, agentId, fileId);
   };
 }
