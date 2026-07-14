@@ -230,6 +230,15 @@ export const CloudFolders = {
   SYSTEM_FASTFIRE_RESPONSES: "system-files/fastfire/responses",
 
   /**
+   * Spoken Practice (oral exam / interview / debate) recordings — full-session
+   * clips + per-prompt spoken-answer clips. Same hidden `system-files/` class as
+   * FastFire (so `isSystemPath` keeps them out of the Files browser + Recents).
+   */
+  SYSTEM_SPOKEN_PRACTICE: "system-files/spoken-practice",
+  SYSTEM_SPOKEN_PRACTICE_SESSIONS: "system-files/spoken-practice/sessions",
+  SYSTEM_SPOKEN_PRACTICE_RESPONSES: "system-files/spoken-practice/responses",
+
+  /**
    * LEGACY user-namespace FastFire paths (pre-2026-07 relocation). Kept as a
    * defensive tree + Recents guard until every row is backfilled under
    * `system-files/fastfire/`.
