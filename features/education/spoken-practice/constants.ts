@@ -4,7 +4,13 @@
 // shared runner tunables. The mode config is the ONE place mode-specific labels,
 // icons, and setup copy live — components read from here, never hardcode.
 
-import { GraduationCap, Briefcase, Scale, type LucideIcon } from "lucide-react";
+import {
+  GraduationCap,
+  Briefcase,
+  Scale,
+  Languages,
+  type LucideIcon,
+} from "lucide-react";
 import type { SpokenPracticeMode } from "./types";
 
 export interface ModeConfig {
@@ -68,6 +74,20 @@ export const MODE_CONFIG: Record<SpokenPracticeMode, ModeConfig> = {
     answerVerb: "Argue",
     howItWorks:
       "You're assigned a position and open your case. Later prompts are pointed counter-challenges that steelman the other side. Grading judges argument structure, evidence, and reasoning.",
+  },
+  pronunciation: {
+    mode: "pronunciation",
+    label: "Language & Pronunciation",
+    icon: Languages,
+    tagline: "Say phrases in your target language — graded on pronunciation too.",
+    persona: "Language coach",
+    focusLabel: "Language & focus",
+    focusPlaceholder:
+      "e.g. Spanish — greetings and everyday courtesy · French — ordering at a café",
+    offersDeckGrounding: true,
+    answerVerb: "Say it",
+    howItWorks:
+      "A language coach shows you a target-language phrase to say aloud. Each answer is graded on BOTH what you said (content) AND how you said it — pronunciation, fluency, intelligibility, and prosody, judged from your recording (holistic, not phoneme-level).",
   },
 };
 

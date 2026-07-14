@@ -110,9 +110,17 @@ export function generateSession(args: GenerateSessionArgs) {
   ): Promise<PracticePlan | null> => {
     let conversationId: string | null = null;
     try {
+      // The `pronunciation` mode has a DEDICATED designer that emits
+      // target-language utterances (same plan shape); the three shipped modes
+      // keep the original session designer.
+      const designerAgentId =
+        args.mode === "pronunciation"
+          ? SPOKEN_PRACTICE_AGENTS.designLanguageSession
+          : SPOKEN_PRACTICE_AGENTS.designSession;
+
       const launch = await dispatch(
         launchAgentExecution({
-          agentId: SPOKEN_PRACTICE_AGENTS.designSession,
+          agentId: designerAgentId,
           surfaceKey: "education-spoken-practice-generate",
           // No dedicated SourceFeature exists (adding one lives in the frozen
           // agents module); reuse the closest sibling — generating graded

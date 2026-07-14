@@ -7,11 +7,25 @@
 // over vanity metrics.
 
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Sparkles, TrendingUp, TriangleAlert } from "lucide-react";
+import {
+  CheckCircle2,
+  Languages,
+  Sparkles,
+  TrendingUp,
+  TriangleAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MODE_CONFIG } from "../constants";
 import type { SpokenPracticeMode } from "../types";
 import type { UseSpokenPractice } from "../hooks/useSpokenPractice";
+
+const PRONUNCIATION_ROLLUP: { key: "accuracy" | "fluency" | "intelligibility" | "prosody"; label: string }[] =
+  [
+    { key: "accuracy", label: "Accuracy" },
+    { key: "fluency", label: "Fluency" },
+    { key: "intelligibility", label: "Clarity" },
+    { key: "prosody", label: "Prosody" },
+  ];
 
 export function PracticeSummary({
   mode,
@@ -33,6 +47,24 @@ export function PracticeSummary({
         )
       : null;
 
+  // Pronunciation rollup — average each dimension across answers the language
+  // coach scored (present only in the Language & Pronunciation mode).
+  const scored = results.filter((r) => r.grade?.pronunciation != null);
+  const pronunciationRollup =
+    scored.length > 0
+      ? PRONUNCIATION_ROLLUP.map((dim) => ({
+          label: dim.label,
+          pct: Math.round(
+            (scored.reduce(
+              (s, r) => s + (r.grade!.pronunciation![dim.key] ?? 0),
+              0,
+            ) /
+              scored.length) *
+              100,
+          ),
+        }))
+      : null;
+
   return (
     <div className="mx-auto w-full max-w-lg space-y-5 p-4 sm:p-6">
       <div className="flex flex-col items-center gap-3 text-center">
@@ -49,6 +81,35 @@ export function PracticeSummary({
           </p>
         </div>
       </div>
+
+      {pronunciationRollup && (
+        <section className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Languages className="h-4 w-4 text-primary" />
+            Pronunciation &amp; fluency
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+            {pronunciationRollup.map((dim) => (
+              <div key={dim.label} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{dim.label}</span>
+                  <span className="font-medium text-foreground">{dim.pct}</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${dim.pct}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2.5 text-[10px] leading-snug text-muted-foreground">
+            Averaged across your answers — a holistic read of your speech, not a
+            phoneme-by-phoneme score.
+          </p>
+        </section>
+      )}
 
       {review?.summary && (
         <section className="rounded-xl border border-border bg-card p-4">

@@ -13,13 +13,24 @@ import type {
 } from "@/features/education/trust/types";
 import type { SpokenGrade } from "@/features/flashcards/fast-fire/agents/grading-core";
 
-/** The three signature spoken-practice modes. Doubles as the study-spine `mode`/`method`. */
-export type SpokenPracticeMode = "oral_exam" | "interview_prep" | "debate";
+/**
+ * The signature spoken-practice modes. Doubles as the study-spine `mode`/`method`
+ * (free-form on the spine — extending this vocabulary is a value, never a
+ * migration). `pronunciation` is the foreign-language / pronunciation mode: the
+ * student says a target-language phrase aloud and is graded on BOTH content
+ * correctness AND pronunciation/fluency (see `PronunciationAssessment`).
+ */
+export type SpokenPracticeMode =
+  | "oral_exam"
+  | "interview_prep"
+  | "debate"
+  | "pronunciation";
 
 export const SPOKEN_PRACTICE_MODES: SpokenPracticeMode[] = [
   "oral_exam",
   "interview_prep",
   "debate",
+  "pronunciation",
 ];
 
 export function isSpokenPracticeMode(v: string): v is SpokenPracticeMode {

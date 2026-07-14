@@ -43,6 +43,31 @@ export interface SpokenGradeRubric {
 }
 
 /**
+ * The pronunciation / language-fluency dimensions — present ONLY when a spoken
+ * surface grades HOW something was said (the Spoken Practice "Language &
+ * Pronunciation" mode), never on a content-only spoken drill. It rides on the
+ * SAME `SpokenGrade` adapter (never a forked grade type): content correctness
+ * stays in `verdict` + `rubric`, and these four assess delivery.
+ *
+ * HONEST GRANULARITY: our STT yields a transcript, not phoneme scores. These are
+ * the grader's HOLISTIC, word/syllable-level judgement of the recording — NOT
+ * phoneme-perfect, IPA-exact, or per-phoneme measurements. The UI must present
+ * them that way; do not imply a precision the pipeline can't deliver.
+ */
+export interface PronunciationAssessment {
+  /** How correctly the sounds/words were pronounced for the target language. */
+  accuracy: number;
+  /** Pacing, smoothness, absence of long hesitation. */
+  fluency: number;
+  /** How easily a fluent listener would understand it. */
+  intelligibility: number;
+  /** Intonation, word stress, rhythm appropriate to the target language. */
+  prosody: number;
+  /** 1-2 sentences of honest, transcript-level pronunciation coaching. */
+  notes: string;
+}
+
+/**
  * The spoken-answer grade — a THIN ADAPTER around the canonical `GradeVerdict`
  * core (correct/partial/misconception/explanation), carrying the spoken-only
  * extras (continuous score, speaking rubric, transcript, what was missing). The
@@ -57,6 +82,33 @@ export interface SpokenGrade {
   transcript: string;
   /** Points the learner missed, per the grader. */
   missing: string[];
+  /**
+   * Pronunciation / fluency dimensions — populated only when the grader scores
+   * delivery (Language & Pronunciation mode); null for content-only drills.
+   */
+  pronunciation: PronunciationAssessment | null;
+}
+
+/** Narrow the grader's optional `pronunciation` object (null when absent/empty). */
+function coercePronunciation(raw: unknown): PronunciationAssessment | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const p = raw as Record<string, unknown>;
+  const n = (v: unknown): number =>
+    typeof v === "number" && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0;
+  const hasSignal =
+    typeof p.accuracy === "number" ||
+    typeof p.fluency === "number" ||
+    typeof p.intelligibility === "number" ||
+    typeof p.prosody === "number" ||
+    typeof p.notes === "string";
+  if (!hasSignal) return null;
+  return {
+    accuracy: n(p.accuracy),
+    fluency: n(p.fluency),
+    intelligibility: n(p.intelligibility),
+    prosody: n(p.prosody),
+    notes: typeof p.notes === "string" ? p.notes : "",
+  };
 }
 
 /** Narrow the grader's unknown extracted object to a SpokenGrade (never throws). */
@@ -87,6 +139,7 @@ export function coerceSpokenGrade(raw: unknown): SpokenGrade | null {
     missing: Array.isArray(r.missing)
       ? r.missing.filter((x): x is string => typeof x === "string")
       : [],
+    pronunciation: coercePronunciation(r.pronunciation),
   };
 }
 

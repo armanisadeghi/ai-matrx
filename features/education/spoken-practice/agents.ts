@@ -25,6 +25,17 @@ export const SPOKEN_PRACTICE_AGENTS = {
   designSession: "e1d9c1f7-c523-4e7a-8090-a74495cdc58f",
 
   /**
+   * focus (target language + theme), difficulty, count, study_material
+   *   → the SAME plan shape as designSession, but each `prompt` embeds the exact
+   *     TARGET-LANGUAGE phrase to say (in guillemets + English gloss) and
+   *     `reference_answer` is the clean expected utterance. The dedicated
+   *     designer for the `pronunciation` mode (foreign-language practice); keeps
+   *     the three shipped modes' designer untouched. Consumed by
+   *     `coercePracticePlan` unchanged (same field names).
+   */
+  designLanguageSession: "e681a37f-5e9f-47c0-9f42-3b6caeeb9e88",
+
+  /**
    * front (prompt), back (reference answer), rubric (mode-framed), seconds_allowed
    * (+ audio message part) → unified spoken grade JSON (result, score, rubric,
    * transcript, audio_feedback, missing, misconception). Mode is conveyed via the
@@ -32,6 +43,19 @@ export const SPOKEN_PRACTICE_AGENTS = {
    * judge and never says "flashcard". Consumed by `coerceSpokenGrade` unchanged.
    */
   gradeAnswer: "58090ae0-316c-44a9-ae0f-1d621e1946bc",
+
+  /**
+   * front (target phrase shown), back (clean expected utterance), rubric
+   * (mode-framed), seconds_allowed (+ audio message part) → the unified spoken
+   * grade JSON PLUS a `pronunciation` object { accuracy, fluency,
+   * intelligibility, prosody, notes }. The DEDICATED grader for the
+   * `pronunciation` mode: scores BOTH content correctness AND pronunciation/
+   * fluency, judged HOLISTICALLY from the recording (our STT gives a transcript,
+   * not phoneme scores — the grader is honest about that, no phoneme-perfect
+   * claims). Consumed by `coerceSpokenGrade` unchanged (pronunciation is an
+   * optional extra on the same `SpokenGrade` adapter).
+   */
+  gradePronunciation: "c028777d-c988-4b98-a6ae-141a88512596",
 
   /**
    * mode, transcript (prompt + spoken answer + verdict per turn), aggregate

@@ -54,13 +54,28 @@ export interface GradePracticeAnswerResult {
  */
 function modeRubric(mode: SpokenPracticeMode, rubric: string): string {
   const cfg = MODE_CONFIG[mode];
-  const header = `Practice mode: ${cfg.label} — you are the ${cfg.persona.toLowerCase()}. Grade this spoken answer in that frame; refer to "this answer"/"this question", never to flashcards or cards.`;
+  const header =
+    mode === "pronunciation"
+      ? `Practice mode: ${cfg.label} — you are the ${cfg.persona.toLowerCase()}. Grade this spoken answer on BOTH content (did they say the right target-language phrase) AND pronunciation/fluency; refer to "this phrase"/"this answer", never to flashcards or cards.`
+      : `Practice mode: ${cfg.label} — you are the ${cfg.persona.toLowerCase()}. Grade this spoken answer in that frame; refer to "this answer"/"this question", never to flashcards or cards.`;
   const body = rubric.trim();
   return body ? `${header}\n\n${body}` : header;
 }
 
+/**
+ * The grader for a mode. `pronunciation` uses the DEDICATED language-coach grader
+ * (emits the extra `pronunciation` dimensions); every other mode uses the shared
+ * spoken-practice grader. Both return the unified `SpokenGrade` shape.
+ */
+function graderAgentId(mode: SpokenPracticeMode): string {
+  return mode === "pronunciation"
+    ? SPOKEN_PRACTICE_AGENTS.gradePronunciation
+    : SPOKEN_PRACTICE_AGENTS.gradeAnswer;
+}
+
 export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
   return async (dispatch: AppDispatch): Promise<GradePracticeAnswerResult> => {
+    const gradedByAgent = graderAgentId(args.mode);
     try {
       // Best-effort durable upload — a failed upload must never throw (we skip
       // grading and record a result-less attempt, keeping the ledger honest).
@@ -90,7 +105,7 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
 
       const grade = await dispatch(
         runSpokenGrader({
-          agentId: SPOKEN_PRACTICE_AGENTS.gradeAnswer,
+          agentId: gradedByAgent,
           front: args.prompt,
           back: args.referenceAnswer,
           secondsAllowed: args.secondsAllowed,
@@ -102,12 +117,7 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
       );
 
       if (!grade) {
-        await recordAttempt(
-          args,
-          responseAudioFileId,
-          null,
-          SPOKEN_PRACTICE_AGENTS.gradeAnswer,
-        );
+        await recordAttempt(args, responseAudioFileId, null, gradedByAgent);
         return {
           status: "error",
           responseAudioFileId,
@@ -115,12 +125,7 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
         };
       }
 
-      await recordAttempt(
-        args,
-        responseAudioFileId,
-        grade,
-        SPOKEN_PRACTICE_AGENTS.gradeAnswer,
-      );
+      await recordAttempt(args, responseAudioFileId, grade, gradedByAgent);
       return { status: "graded", grade, responseAudioFileId };
     } catch (err) {
       console.error("[spoken-practice.gradePracticeAnswer] failed:", err);
@@ -157,6 +162,12 @@ async function recordAttempt(
             rubric: grade.rubric,
             missing: grade.missing,
             feedback: grade.verdict.explanation,
+            // Pronunciation dims ride in the attempt's score jsonb (present only
+            // for the pronunciation mode) so the spine row carries the delivery
+            // assessment alongside the content grade.
+            ...(grade.pronunciation
+              ? { pronunciation: grade.pronunciation }
+              : {}),
           },
         }
       : {}),

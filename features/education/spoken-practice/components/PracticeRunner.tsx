@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronRight,
+  Languages,
   Loader2,
   Mic,
   Square,
@@ -21,10 +22,19 @@ import { cn } from "@/lib/utils";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { verdictResult, type GradeResult } from "@/features/education/trust/types";
+import type { PronunciationAssessment } from "@/features/flashcards/fast-fire/agents/grading-core";
 import { Button } from "@/components/ui/button";
 import { MODE_CONFIG } from "../constants";
 import type { SpokenPracticeMode } from "../types";
 import type { UseSpokenPractice } from "../hooks/useSpokenPractice";
+
+const PRONUNCIATION_DIMS: { key: keyof PronunciationAssessment; label: string }[] =
+  [
+    { key: "accuracy", label: "Accuracy" },
+    { key: "fluency", label: "Fluency" },
+    { key: "intelligibility", label: "Clarity" },
+    { key: "prosody", label: "Prosody" },
+  ];
 
 const RESULT_STYLE: Record<
   GradeResult,
@@ -184,6 +194,9 @@ export function PracticeRunner({
                     “{grade.transcript}”
                   </p>
                 )}
+                {grade.pronunciation && (
+                  <PronunciationCard pronunciation={grade.pronunciation} />
+                )}
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -219,6 +232,60 @@ function Centered({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto flex min-h-[60dvh] w-full max-w-md flex-col items-center justify-center gap-4 p-6 text-center">
       {children}
+    </div>
+  );
+}
+
+/**
+ * The pronunciation / fluency scorecard shown after a Language & Pronunciation
+ * answer. HONEST framing: these are a holistic judgement of the recording, not
+ * phoneme-level measurements — the caption says so.
+ */
+function PronunciationCard({
+  pronunciation,
+}: {
+  pronunciation: PronunciationAssessment;
+}) {
+  return (
+    <div className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-left">
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <Languages className="h-3.5 w-3.5" />
+        Pronunciation &amp; fluency
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        {PRONUNCIATION_DIMS.map((dim) => {
+          const value = pronunciation[dim.key];
+          const pct = Math.round((typeof value === "number" ? value : 0) * 100);
+          return (
+            <div key={dim.key} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{dim.label}</span>
+                <span className="font-medium text-foreground">{pct}</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn(
+                    "h-full rounded-full",
+                    pct >= 80
+                      ? "bg-green-500"
+                      : pct >= 50
+                        ? "bg-amber-500"
+                        : "bg-red-500",
+                  )}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {pronunciation.notes && (
+        <p className="mt-2.5 text-xs text-foreground">{pronunciation.notes}</p>
+      )}
+      <p className="mt-1.5 text-[10px] leading-snug text-muted-foreground">
+        Assessed holistically from your recording — not a phoneme-by-phoneme
+        score.
+      </p>
     </div>
   );
 }
