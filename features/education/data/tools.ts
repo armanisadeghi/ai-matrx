@@ -8,7 +8,7 @@
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in VISION-education-hub.md.
 
-import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2 } from "lucide-react";
+import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -203,6 +203,26 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Recovery plan after an absence — triages the backlog, eases you back in gently",
       "Anti-burnout: honored rest days, gentle daily caps (shared with the due queue), tapered finish",
     ],
+  },
+  {
+    slug: "practice-oral",
+    name: "Spoken Practice",
+    tagline: "Oral exams, interviews & debate — answered out loud, graded live",
+    description: "Answer out loud to an AI examiner, interviewer, or debate opponent. Prompts are grounded in your material; every spoken answer is graded on meaning, and an examiner's summary closes the session.",
+    icon: Speech,
+    letter: "Sp",
+    status: "live", // Spoken practice — reuses the FastFire capture + spoken grader + study spine; new session-designer agent per mode
+    accessTier: "trial",
+    visionRef: "VISION 'Features Coming Soon' — Oral exam/viva, Interview prep, Debate; §4 Tutor, §6 AI Grading",
+    capabilities: [
+      "Three modes: oral exam / viva voce, interview prep (college/med/job), debate & argumentation",
+      "Grounded in your own deck or pasted material (TrustEnvelope: honest per-prompt confidence)",
+      "Voice-first: reuses the FastFire continuous mic capture + crown-jewel spoken grader",
+      "Graded on meaning (accuracy/articulation/completeness · content+delivery · argument/evidence/reasoning)",
+      "Debate opponent counter-argues to stress-test your reasoning",
+      "Every answer records to the study spine (method=mode) + an examiner's batch summary",
+    ],
+    featured: true,
   },
   {
     slug: "game",

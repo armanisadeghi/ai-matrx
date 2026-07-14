@@ -326,6 +326,19 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/education/practice-oral",
+      label: "Spoken Practice (oral exam / interview / debate)",
+      description:
+        "App tool — LIVE. Voice-first spoken practice in three modes. Reuses the FastFire continuous mic capture + crown-jewel spoken grader + the study spine (method = mode: 'oral_exam' | 'interview_prep' | 'debate'); prompts designed by a new session-designer agent, graded on meaning, closed by the reused batch 'professor' review. Deep-link a mode via ?mode=. NO new table — the session is a study_session (settings.prompts jsonb); each answer is a study_attempt (item_type 'spoken_prompt', response_kind 'spoken').",
+      filePath: "app/(core)/education/practice-oral/page.tsx",
+      status: "Live",
+      notes: [
+        "Feature: features/education/spoken-practice/** (SpokenPracticeSurface · useSpokenPractice · generateSession · grounding)",
+        "New agent: Spoken Practice Session Designer e1d9c1f7-c523-4e7a-8090-a74495cdc58f (gemini-3.5-flash); grader reuses FC_AGENTS.gradeSpoken; review reuses the tutor reviewSession lane",
+        "Metered via education.spoken_practice (enforced:false); grounded via TrustEnvelope (per-prompt confidence)",
+      ],
+    },
+    {
       url: "/education/game",
       label: "Study Games (Engagement Engine)",
       description:
@@ -515,6 +528,14 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
         "features/education/study/learning-gain/components/LearningGainReportView.tsx",
       description:
         "P5 — pre/post learning-gain report + print/PDF export (reads P1's contract; seed fixtures until it lands).",
+      tier: "official",
+    },
+    {
+      name: "SpokenPracticeSurface",
+      filePath:
+        "features/education/spoken-practice/components/SpokenPracticeSurface.tsx",
+      description:
+        "Spoken Practice surface (mode picker → setup → live runner → examiner summary). Code-split via SpokenPracticeClient (ssr:false); orchestration in useSpokenPractice (composes continuousCapture + gradeSpokenAnswer + reviewSession + studyService).",
       tier: "official",
     },
     {
