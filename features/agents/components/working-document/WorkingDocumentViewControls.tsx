@@ -38,11 +38,20 @@ export const WORKING_DOC_VIEW_MODES = [
 interface WorkingDocumentViewControlsProps {
   conversationId: string;
   className?: string;
+  /**
+   * Show the agent-diff toggle + "Agent edited" affordance. Only the WORKING
+   * document is agent-edited, so the scratchpad (which the agent never writes)
+   * passes `false` — otherwise the toggle is a dead control that flips
+   * `mainView` to a diff the panel never renders for `kind:"scratch"` AND
+   * disables the mode dropdown. Default true.
+   */
+  showDiff?: boolean;
 }
 
 export function WorkingDocumentViewControls({
   conversationId,
   className,
+  showDiff = true,
 }: WorkingDocumentViewControlsProps) {
   const { mainView, editorMode, historyOpen, hasUnseenChange, saving } =
     useWorkingDocViewState(conversationId);
@@ -58,7 +67,7 @@ export function WorkingDocumentViewControls({
       {saving && (
         <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
       )}
-      {hasUnseenChange && editorActive && (
+      {showDiff && hasUnseenChange && editorActive && (
         <span className="hidden text-[10px] text-primary sm:inline">
           Agent edited
         </span>
@@ -107,33 +116,35 @@ export function WorkingDocumentViewControls({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <button
-        type="button"
-        onClick={() =>
-          setWorkingDocMainView(
-            conversationId,
-            mainView === "agent-diff" ? "editor" : "agent-diff",
-          )
-        }
-        title={
-          mainView === "agent-diff"
-            ? "Back to editor"
-            : "View the agent's latest changes"
-        }
-        className={cn(
-          "relative flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
-          mainView === "agent-diff"
-            ? "bg-accent text-foreground"
-            : hasUnseenChange
-              ? "text-primary hover:bg-accent/50"
-              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-        )}
-      >
-        <GitCompare />
-        {hasUnseenChange && mainView !== "agent-diff" && (
-          <span className="absolute right-1 top-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
-        )}
-      </button>
+      {showDiff && (
+        <button
+          type="button"
+          onClick={() =>
+            setWorkingDocMainView(
+              conversationId,
+              mainView === "agent-diff" ? "editor" : "agent-diff",
+            )
+          }
+          title={
+            mainView === "agent-diff"
+              ? "Back to editor"
+              : "View the agent's latest changes"
+          }
+          className={cn(
+            "relative flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+            mainView === "agent-diff"
+              ? "bg-accent text-foreground"
+              : hasUnseenChange
+                ? "text-primary hover:bg-accent/50"
+                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+          )}
+        >
+          <GitCompare />
+          {hasUnseenChange && mainView !== "agent-diff" && (
+            <span className="absolute right-1 top-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+          )}
+        </button>
+      )}
 
       <button
         type="button"

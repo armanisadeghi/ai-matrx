@@ -292,7 +292,10 @@ export function WorkingDocumentPanel({
           )}
 
           {enabled && (
-            <WorkingDocumentViewControls conversationId={conversationId} />
+            <WorkingDocumentViewControls
+              conversationId={conversationId}
+              showDiff={kind === "working"}
+            />
           )}
 
           {enabled && (
