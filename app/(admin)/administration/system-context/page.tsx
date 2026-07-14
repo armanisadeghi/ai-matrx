@@ -66,11 +66,14 @@ import { ContextValueDisplay } from "@/features/scopes/components/reference/Cont
 import { ReferenceConfigFields } from "@/features/scopes/components/reference/ReferenceConfigFields";
 import { CONTEXT_REFERENCE_TYPE_OPTIONS } from "@/features/scopes/utils/referenceCell";
 
-// A global System Context item can't reference a specific user `scope` (that's
-// org-relative, and the member-less system org isn't in the admin's scope tree,
-// so the scope sub-picker can't resolve it). Offer every other reference type.
+// Reference types a global System Context item may attach. Two exclusions:
+//  - `scope`: org-relative, and the member-less system org isn't in the admin's
+//    scope tree, so the scope sub-picker can't resolve it.
+//  - `data_store`: RAG stores have a dedicated "dataset" feed (which hands the
+//    agent a queryable pointer); a data_store reference has no resolver, so
+//    offering both paths is a confusing dead end. Use the dataset feed instead.
 const SYSTEM_CONTEXT_REFERENCE_TYPES = CONTEXT_REFERENCE_TYPE_OPTIONS.filter(
-  (t) => t !== "scope",
+  (t) => t !== "scope" && t !== "data_store",
 );
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import {
@@ -98,11 +101,22 @@ type Sensitivity = DB["public"]["Enums"]["context_sensitivity"];
 // wires the scope-system's `ReferenceConfigFields` (allowed types / cardinality /
 // allowed scope types) into the manual-feed editor; `ContextValueInput`'s
 // reference branch then renders the entity picker against the item's config.
+// The full context_value_type taxonomy — every type `ContextValueInput` renders
+// and `buildScopeValuePayload` routes to a column. Grouped for scan-ability.
 const VALUE_TYPE_OPTIONS: { value: ValueType; label: string }[] = [
   { value: "string", label: "Text (string)" },
+  { value: "markdown", label: "Markdown" },
   { value: "number", label: "Number" },
+  { value: "percent", label: "Percent" },
+  { value: "currency", label: "Currency" },
   { value: "boolean", label: "Boolean" },
   { value: "date", label: "Date" },
+  { value: "datetime", label: "Date & time" },
+  { value: "time", label: "Time" },
+  { value: "email", label: "Email" },
+  { value: "url", label: "URL / link" },
+  { value: "phone", label: "Phone" },
+  { value: "color", label: "Color" },
   { value: "object", label: "Object (JSON)" },
   { value: "array", label: "Array (JSON)" },
   { value: "document", label: "Document / media" },
