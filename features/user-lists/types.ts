@@ -90,7 +90,7 @@ export interface GroupedItem {
 // ─── Selection (label-only) read path ────────────────────────────────────────
 // The consumer-facing shape: labels/help/groups/icons ONLY. The secret `description`
 // is never present — it is resolved server-side at agent-run time. Returned by the
-// get_picklist_for_selection RPC (SECURITY DEFINER, no description column selected).
+// get_structured_list_for_selection RPC (SECURITY DEFINER, no description column selected).
 
 export interface PicklistSelectionItem {
   id: string;

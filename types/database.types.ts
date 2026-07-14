@@ -28867,7 +28867,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      get_picklist_for_selection: { Args: { p_list_id: string }; Returns: Json }
       get_project_members_with_users: {
         Args: { p_project_id: string }
         Returns: {
@@ -29043,6 +29042,10 @@ export type Database = {
       get_ssr_shell_data: { Args: { p_user_id: string }; Returns: Json }
       get_storage_object: {
         Args: { p_bucket_id: string; p_name: string }
+        Returns: Json
+      }
+      get_structured_list_for_selection: {
+        Args: { p_list_id: string }
         Returns: Json
       }
       get_table_cell: { Args: { ref: Json }; Returns: Json }
@@ -41403,13 +41406,6 @@ export type Database = {
             foreignKeyName: "udt_structured_list_items_list_id_fkey"
             columns: ["list_id"]
             isOneToOne: false
-            referencedRelation: "udt_picklists"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_structured_list_items_list_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
             referencedRelation: "udt_structured_lists"
             referencedColumns: ["id"]
           },
@@ -41602,123 +41598,7 @@ export type Database = {
       }
     }
     Views: {
-      udt_picklist_items: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          group_name: string | null
-          help_text: string | null
-          icon_name: string | null
-          id: string | null
-          is_public: boolean | null
-          label: string | null
-          list_id: string | null
-          organization_id: string | null
-          public_read: boolean | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          group_name?: string | null
-          help_text?: string | null
-          icon_name?: string | null
-          id?: string | null
-          is_public?: boolean | null
-          label?: string | null
-          list_id?: string | null
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          group_name?: string | null
-          help_text?: string | null
-          icon_name?: string | null
-          id?: string | null
-          is_public?: boolean | null
-          label?: string | null
-          list_id?: string | null
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_structured_list_items_list_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
-            referencedRelation: "udt_picklists"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_structured_list_items_list_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
-            referencedRelation: "udt_structured_lists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_picklists: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          id: string | null
-          is_public: boolean | null
-          list_name: string | null
-          organization_id: string | null
-          public_read: boolean | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string | null
-          is_public?: boolean | null
-          list_name?: string | null
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string | null
-          is_public?: boolean | null
-          list_name?: string | null
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never

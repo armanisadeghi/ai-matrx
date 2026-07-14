@@ -1,0 +1,6 @@
+-- Layer 1 of the picklist→structured_list campaign: rename RPC
+-- get_picklist_for_selection → get_structured_list_for_selection.
+-- Applied via Supabase MCP; FE features/user-lists/service.ts is the only caller.
+-- (Body identical to the canonicalized get_picklist_for_selection; see
+--  structured_lists_rename_followup.sql. Recorded here for the ledger.)
+-- migrate: skip: applied live via MCP apply_migration structured_lists_rename_layer1_rpc
