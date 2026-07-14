@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { AppConfigEditor } from "@/features/admin/app-config/components/AppConfigEditor";
+import { useAdminEmails } from "@/features/admin/app-config/useAdminEmails";
 import type { AppConfigRow } from "@/features/admin/app-config/types";
 
 interface AppConfigClientProps {
@@ -27,6 +28,7 @@ type View = { mode: "list" } | { mode: "edit"; app: string } | { mode: "new" };
 
 export function AppConfigClient({ initialRows }: AppConfigClientProps) {
   const { toast } = useToast();
+  const adminEmails = useAdminEmails();
   const [rows, setRows] = useState<AppConfigRow[]>(initialRows);
   const [view, setView] = useState<View>({ mode: "list" });
 
@@ -143,12 +145,21 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
                   </td>
                   <td className="px-3 py-2">
                     {row.updated_by ? (
-                      <code
-                        className="text-xs text-muted-foreground"
-                        title={row.updated_by}
-                      >
-                        {row.updated_by.slice(0, 8)}
-                      </code>
+                      adminEmails[row.updated_by] ? (
+                        <span
+                          className="text-xs text-muted-foreground"
+                          title={row.updated_by}
+                        >
+                          {adminEmails[row.updated_by]}
+                        </span>
+                      ) : (
+                        <code
+                          className="text-xs text-muted-foreground"
+                          title={row.updated_by}
+                        >
+                          {row.updated_by.slice(0, 8)}
+                        </code>
+                      )
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}

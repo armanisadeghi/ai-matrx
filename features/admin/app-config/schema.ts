@@ -64,6 +64,8 @@ export const URL_KEY_LABELS: Record<UrlKey, string> = {
 
 const KNOWN_CONFIG_KEYS = new Set<string>([...URL_KEYS, "flags", "notice"]);
 
+const KNOWN_NOTICE_KEYS = new Set<string>(["level", "title", "body", "url"]);
+
 /** Editable notice draft (enabled=false ⇔ notice: null in the payload). */
 export interface NoticeDraft {
   enabled: boolean;
@@ -71,6 +73,8 @@ export interface NoticeDraft {
   title: string;
   body: string;
   url: string;
+  /** Unknown keys inside `notice` — round-trip unchanged, like top-level extras. */
+  extras: Record<string, unknown>;
 }
 
 export const EMPTY_NOTICE_DRAFT: NoticeDraft = {
@@ -79,6 +83,7 @@ export const EMPTY_NOTICE_DRAFT: NoticeDraft = {
   title: "",
   body: "",
   url: "",
+  extras: {},
 };
 
 /** The editor's working decomposition of a config payload. */
@@ -132,6 +137,11 @@ export function configToDraft(config: unknown): ConfigDraft {
     if (typeof raw.title === "string") notice.title = raw.title;
     if (typeof raw.body === "string") notice.body = raw.body;
     if (typeof raw.url === "string") notice.url = raw.url;
+    const noticeExtras: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (!KNOWN_NOTICE_KEYS.has(key)) noticeExtras[key] = value;
+    }
+    notice.extras = noticeExtras;
   }
 
   const extras: Record<string, unknown> = {};
@@ -149,6 +159,7 @@ export function configToDraft(config: unknown): ConfigDraft {
 export function draftToConfig(draft: ConfigDraft): Record<string, unknown> {
   const notice = draft.notice.enabled
     ? {
+        ...draft.notice.extras,
         level: draft.notice.level,
         title: draft.notice.title,
         body: draft.notice.body,

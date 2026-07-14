@@ -66,6 +66,12 @@ function rpcErrorMessage(error: { code?: string; message: string }): string {
   return error.message;
 }
 
+/** ERRCODE 40001 ("Conflict: …") raised by admin_update_app_config when the
+ *  row changed since it was loaded (optimistic-concurrency check). */
+function isConflictError(error: { code?: string; message: string }): boolean {
+  return error.code === "40001" || error.message.startsWith("Conflict:");
+}
+
 export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) {
   const { toast } = useToast();
   const isNew = row === null;
@@ -110,9 +116,19 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
     }
 
     const config = draftToConfig(draft);
-    const parsed = appConfigV1Schema.safeParse(config);
-    if (!parsed.success) {
-      Object.assign(errors, zodIssuesToFieldErrors(parsed.error));
+    // Validate only the EDITABLE draft: preserved malformed flag values pass
+    // through verbatim on save, and no component renders a `flags.<key>`
+    // error, so letting them fail Zod here would soft-brick Save with
+    // "fix the highlighted fields" and nothing highlighted.
+    // Payloads for schema versions other than v1 are not validated
+    // client-side (an inline warning says so) — v1 is the only contract
+    // this editor knows.
+    if (parsedSchemaVersion === 1) {
+      const validatableConfig = draftToConfig({ ...draft, malformedFlags: {} });
+      const parsed = appConfigV1Schema.safeParse(validatableConfig);
+      if (!parsed.success) {
+        Object.assign(errors, zodIssuesToFieldErrors(parsed.error));
+      }
     }
 
     setFieldErrors(errors);
@@ -132,6 +148,27 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
     };
   };
 
+  /** Conflict recovery: pull the fresh row and push it through the same
+   *  post-save refetch path (onSaved → parent refetch) — the admin's draft
+   *  edits stay intact so they can re-review the diff and save again. */
+  const reloadAfterConflict = async (app: string) => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("app_config")
+      .select("*")
+      .eq("app", app)
+      .maybeSingle();
+    if (error || !data) {
+      toast({
+        title: "Reload failed",
+        description: error?.message ?? `Row for "${app}" not found`,
+        variant: "destructive",
+      });
+      return;
+    }
+    onSaved(data);
+  };
+
   const commitSave = async (pending: PendingSave) => {
     setSaving(true);
     const supabase = createClient();
@@ -140,10 +177,24 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
       p_schema_version: pending.schemaVersion,
       p_min_supported_app_version: pending.minVersion,
       p_config: pending.config,
+      // Optimistic concurrency: existing rows must not clobber a save that
+      // landed after this form was loaded. New apps have no baseline.
+      ...(row ? { p_expected_updated_at: row.updated_at } : {}),
     });
     setSaving(false);
 
     if (error) {
+      if (isConflictError(error)) {
+        setPendingSave(null);
+        toast({
+          title: "Save conflict",
+          description:
+            "Someone else changed this row since you loaded it — reloading the latest version. Your edits are kept; review and save again.",
+          variant: "destructive",
+        });
+        await reloadAfterConflict(pending.app);
+        return;
+      }
       toast({
         title: "Save failed",
         description: rpcErrorMessage(error),
@@ -175,7 +226,9 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
     onSaved(data);
   };
 
-  const restoreSnapshot = async (entry: AppConfigHistoryRow) => {
+  /** Returns true on success — never throws (a rejected promise here would
+   *  escape the history panel's try/finally as an unhandled rejection). */
+  const restoreSnapshot = async (entry: AppConfigHistoryRow): Promise<boolean> => {
     setSaving(true);
     const supabase = createClient();
     const { data, error } = await supabase.rpc("admin_update_app_config", {
@@ -183,16 +236,27 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
       p_schema_version: entry.schema_version,
       p_min_supported_app_version: entry.min_supported_app_version,
       p_config: entry.config,
+      ...(row ? { p_expected_updated_at: row.updated_at } : {}),
     });
     setSaving(false);
 
     if (error) {
+      if (isConflictError(error)) {
+        toast({
+          title: "Restore conflict",
+          description:
+            "Someone else changed this row since you loaded it — reloading the latest version. Review the diff and restore again if still wanted.",
+          variant: "destructive",
+        });
+        await reloadAfterConflict(entry.app);
+        return false;
+      }
       toast({
         title: "Restore failed",
         description: rpcErrorMessage(error),
         variant: "destructive",
       });
-      throw new Error(error.message);
+      return false;
     }
     if (!data) {
       toast({
@@ -200,7 +264,7 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
         description: "admin_update_app_config returned no row",
         variant: "destructive",
       });
-      throw new Error("admin_update_app_config returned no row");
+      return false;
     }
 
     setHistoryRefreshKey((k) => k + 1);
@@ -216,7 +280,14 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
     setDraft(configToDraft(data.config));
     setFieldErrors({});
     onSaved(data);
+    return true;
   };
+
+  const schemaVersionValue = Number(schemaVersion.trim());
+  const showSchemaVersionWarning =
+    schemaVersion.trim().length > 0 &&
+    Number.isInteger(schemaVersionValue) &&
+    schemaVersionValue !== 1;
 
   const currentJson = row
     ? configSnapshotJson(row)
@@ -264,6 +335,12 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
           {fieldErrors.schema_version ? (
             <p className="text-xs text-destructive">
               {fieldErrors.schema_version}
+            </p>
+          ) : null}
+          {showSchemaVersionWarning ? (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              This editor validates against payload schema v1 — payloads for
+              other schema versions are not validated client-side.
             </p>
           ) : null}
         </div>

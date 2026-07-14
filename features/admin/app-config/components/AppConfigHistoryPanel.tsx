@@ -18,6 +18,7 @@ import { DiffViewer } from "@/components/diff/DiffViewer";
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { configSnapshotJson } from "@/features/admin/app-config/schema";
+import { useAdminEmails } from "@/features/admin/app-config/useAdminEmails";
 import type {
   AppConfigHistoryRow,
   AppConfigRow,
@@ -26,8 +27,9 @@ import type {
 interface AppConfigHistoryPanelProps {
   app: string;
   currentRow: AppConfigRow;
-  /** Applies the snapshot via the RPC; the parent owns the write path. */
-  onRestore: (entry: AppConfigHistoryRow) => Promise<void>;
+  /** Applies the snapshot via the RPC; the parent owns the write path.
+   *  Resolves true on success, false on failure — never rejects. */
+  onRestore: (entry: AppConfigHistoryRow) => Promise<boolean>;
   /** Bumped by the parent after every successful save to refetch history. */
   refreshKey: number;
 }
@@ -39,6 +41,7 @@ export function AppConfigHistoryPanel({
   refreshKey,
 }: AppConfigHistoryPanelProps) {
   const { toast } = useToast();
+  const adminEmails = useAdminEmails();
   // Keyed by (app, refreshKey) so a key change shows the loading state
   // without a synchronous reset inside the effect.
   const loadKey = `${app}:${refreshKey}`;
@@ -135,12 +138,21 @@ export function AppConfigHistoryPanel({
                   {entry.min_supported_app_version}
                 </span>
                 {entry.changed_by ? (
-                  <code
-                    className="hidden truncate text-xs text-muted-foreground lg:inline"
-                    title={entry.changed_by}
-                  >
-                    by {entry.changed_by.slice(0, 8)}
-                  </code>
+                  adminEmails[entry.changed_by] ? (
+                    <span
+                      className="hidden truncate text-xs text-muted-foreground lg:inline"
+                      title={entry.changed_by}
+                    >
+                      by {adminEmails[entry.changed_by]}
+                    </span>
+                  ) : (
+                    <code
+                      className="hidden truncate text-xs text-muted-foreground lg:inline"
+                      title={entry.changed_by}
+                    >
+                      by {entry.changed_by.slice(0, 8)}
+                    </code>
+                  )
                 ) : null}
               </button>
               <Button
@@ -185,6 +197,22 @@ export function AppConfigHistoryPanel({
               )}. Every installed client in the field picks it up on its next refresh. The current row is snapshotted to history first.`
             : undefined
         }
+        contentClassName="sm:max-w-4xl"
+        content={
+          restoreTarget ? (
+            <div className="max-h-[55vh] overflow-y-auto rounded-md border border-border">
+              <DiffViewer
+                original={currentJson}
+                modified={configSnapshotJson(restoreTarget)}
+                engine="light"
+                language="json"
+                view="split"
+                originalLabel="Current"
+                modifiedLabel="After restore"
+              />
+            </div>
+          ) : null
+        }
         confirmLabel="Restore"
         variant="destructive"
         busy={restoring}
@@ -192,8 +220,8 @@ export function AppConfigHistoryPanel({
           if (!restoreTarget) return;
           setRestoring(true);
           try {
-            await onRestore(restoreTarget);
-            setRestoreTarget(null);
+            const restored = await onRestore(restoreTarget);
+            if (restored) setRestoreTarget(null);
           } finally {
             setRestoring(false);
           }
