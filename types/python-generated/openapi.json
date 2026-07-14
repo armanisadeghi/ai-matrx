@@ -3420,6 +3420,57 @@
         }
       }
     },
+    "/v2/ai/prompts/{prompt_id}": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Start Prompt V2",
+        "description": "Run a saved prompt on the spine — identical pipeline to `/api/ai/prompts/{prompt_id}`.",
+        "operationId": "start_prompt_v2_v2_ai_prompts__prompt_id__post",
+        "parameters": [
+          {
+            "name": "prompt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Prompt Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/utilities/pdf/compress": {
       "post": {
         "tags": [
@@ -10990,6 +11041,52 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExecutionEventsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/runtime/system-costs": {
+      "get": {
+        "tags": [
+          "Admin / Runtime Spine"
+        ],
+        "summary": "System Costs",
+        "description": "Every Matrx-System-org execution carrying cost — spend no user is paying for.\nArman's rule (2026-07-13): system-owned work cannot bill quietly; this is the\ndedicated admin read (the watchdog red-banners every NEW dollar; the dashboard\nsystem-costs page consumes this endpoint).",
+        "operationId": "system_costs_admin_runtime_system_costs_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemCostsResponse"
                 }
               }
             }
@@ -81727,6 +81824,106 @@
           "scope"
         ],
         "title": "SynthesisRequest"
+      },
+      "SystemCostEntry": {
+        "properties": {
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "cost": {
+            "type": "string",
+            "title": "Cost"
+          },
+          "meters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Meters"
+          },
+          "link_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Kind"
+          },
+          "link_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "execution_id",
+          "request_id",
+          "type",
+          "status",
+          "cost",
+          "meters"
+        ],
+        "title": "SystemCostEntry"
+      },
+      "SystemCostsResponse": {
+        "properties": {
+          "total_cost": {
+            "type": "string",
+            "title": "Total Cost"
+          },
+          "entry_count": {
+            "type": "integer",
+            "title": "Entry Count"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/SystemCostEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_cost",
+          "entry_count",
+          "entries"
+        ],
+        "title": "SystemCostsResponse"
       },
       "SystemErrorDetail": {
         "properties": {

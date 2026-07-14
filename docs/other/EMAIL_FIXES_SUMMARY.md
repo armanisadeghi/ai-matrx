@@ -1,5 +1,8 @@
 # Email System Fixes - Summary
 
+> **Canonical config:** `features/email/FEATURE.md`. App email and Supabase Auth
+> email use separate Resend credentials.
+
 ## Issues Fixed
 
 ### 1. **Organization Invitations - Email Not Sending**
@@ -81,15 +84,15 @@ sendEmail() ← FAILS - No access to EMAIL_FROM
 
 ## Environment Variables Used
 
-### Required Variables
-- `RESEND_API_KEY` - Resend API key for sending emails
-- `EMAIL_FROM` - Sender email address (e.g., "AI Matrx <noreply@aimatrx.com>")
+### Required Variables (app email — Path 1)
+- `RESEND_API_KEY` - App Resend API key (not the Supabase SMTP `ai-matrx-main` key)
+- `EMAIL_FROM` - App sender (e.g. `AI Matrx <noreply@aimatrx.com>`)
+- `EMAIL_ALLOWED_DOMAINS` - Allowed custom From domains
 - `NEXT_PUBLIC_SITE_URL` - Base URL for invitation links
 - `ADMIN_EMAIL` (optional) - Admin email for notifications
 
-### Location
-- Defined in `.env.local` (development)
-- Must be configured in production environment
+Supabase Auth email (Path 2) uses SMTP config in the Supabase dashboard only.
+See `features/email/FEATURE.md`.
 
 ## Email Services Status
 

@@ -12,6 +12,32 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireEnv } from "@/utils/supabase/env";
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const searchParams = request.nextUrl.searchParams;
+  const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
+
+  // Supabase recovery links sometimes land on Site URL (/) when redirect_to is
+  // not allowlisted — forward auth params to the routes that exchange them.
+  if (code && (pathname === "/" || pathname === "")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    if (!url.searchParams.has("redirectTo")) {
+      url.searchParams.set("redirectTo", encodeURIComponent("/reset-password"));
+    }
+    return NextResponse.redirect(url);
+  }
+
+  if (tokenHash && type === "recovery" && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/confirm";
+    if (!url.searchParams.has("redirectTo")) {
+      url.searchParams.set("redirectTo", "/reset-password");
+    }
+    return NextResponse.redirect(url);
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -100,7 +126,6 @@ export async function updateSession(request: NextRequest) {
   // Handle unauthenticated users trying to access routes that require a valid session.
   // Most routes allow guests — they render with limited functionality.
   // Only hard-block routes where unauthenticated access is genuinely harmful.
-  const pathname = request.nextUrl.pathname;
   const requiresAuth =
     pathname.startsWith("/administration") || // Admin-only tools
     pathname.startsWith("/api/admin") || // Admin API routes

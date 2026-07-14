@@ -1,190 +1,81 @@
-# Supabase Auth SMTP Configuration
+# Supabase Auth SMTP (Resend)
 
-This guide explains how to configure Supabase Auth to use Resend's SMTP for sending authentication emails (signup confirmations, password resets, etc.).
+> Canonical overview: `features/email/FEATURE.md`  
+> This doc covers **Path 2 only** — Supabase Auth email. App email uses `RESEND_API_KEY`
+> via `lib/email/client.ts` and is a **separate** Resend credential.
 
-## Why Configure Custom SMTP?
+## What this configures
 
-By default, Supabase uses its own email service for authentication emails. Configuring custom SMTP allows you to:
+Signup confirmation, password reset, and other Supabase Auth templates. Sent by
+**Supabase**, relayed through Resend SMTP. No application code changes required.
 
-- Use your own email domain for better branding
-- Have consistent email styling across all emails (auth + application)
-- Better email deliverability
-- Full control over email sending
+## Supabase Dashboard → Authentication → Emails → SMTP Settings
 
-## Prerequisites
+| Field | Value |
+|-------|-------|
+| Custom SMTP | **Enabled** |
+| Host | `smtp.resend.com` |
+| Port | `465` |
+| Username | `resend` (literal word) |
+| Password | Resend API key **`ai-matrx-main`** (dedicated; stored in Supabase only) |
+| Sender | `AI Matrx <noreply@updates.aimatrx.com>` |
+| Encryption | SSL/TLS |
 
-- Resend API key (get from https://resend.com/api-keys)
-- Verified domain in Resend
-- Admin access to Supabase Dashboard
+### Credential separation
 
-## Configuration Steps
+- **`ai-matrx-main`** — Supabase SMTP password only. Not in repo or Vercel.
+- **`RESEND_API_KEY`** — app transactional email only. Not used for auth SMTP.
+- Rotating one does **not** affect the other. If `ai-matrx-main` is rotated, update
+  only the Supabase SMTP password field.
 
-### 1. Get Your SMTP Credentials
+## DNS (Vercel — `aimatrx.com` zone)
 
-From your Resend dashboard, note down:
-- **API Key**: `re_xxxxxxxxxxxx`
+- Sending domain: `updates.aimatrx.com` (verified in Resend; DKIM/SPF/MX).
+- Click tracking: `CNAME links.updates → links1.resend-dns.com`.
+- Resend may suggest a CAA on `links.updates`; omit it (CNAME + CAA conflict).
 
-Resend SMTP details (always the same):
-- **Host**: `smtp.resend.com`
-- **Port**: `465` (SSL/TLS)
-- **Username**: `resend` (always "resend")
-- **Password**: Your Resend API key (same as above)
+## Email templates
 
-### 2. Configure SMTP in Supabase Dashboard
+Authentication → Email Templates: Confirm signup, Reset password, Magic Link, etc.
 
-1. Go to your Supabase project dashboard
-2. Navigate to **Settings** → **Authentication** → **SMTP Settings**
-3. Enable **Custom SMTP**
-4. Fill in the following details:
+Variables: `{{ .ConfirmationURL }}`, `{{ .SiteURL }}`, `{{ .RedirectTo }}`, etc.
 
-```
-Sender name: AI Matrx
-Sender email: noreply@aimatrx.com (or your verified domain)
+## URL configuration
 
-Host: smtp.resend.com
-Port: 465
-Username: resend
-Password: re_xxxxxxxxxxxx (your Resend API key)
+Authentication → URL Configuration:
 
-Encryption: SSL/TLS
-```
+- **Site URL:** `https://www.aimatrx.com` (prod) or `http://localhost:3000` (dev)
+- **Redirect URLs** (required — without these, recovery links fall back to Site URL and break):
+  ```
+  https://www.aimatrx.com/auth/callback**
+  http://localhost:3000/auth/callback**
+  ```
 
-5. Click **Save**
+Reset-password template must use `{{ .ConfirmationURL }}`, not `{{ .SiteURL }}` alone.
 
-### 3. Customize Email Templates
+## Verify
 
-Still in the Authentication settings:
-
-1. Go to **Email Templates**
-2. Customize each template:
-   - **Confirm signup**
-   - **Invite user**
-   - **Magic Link**
-   - **Change Email Address**
-   - **Reset Password**
-
-#### Template Variables
-
-Available variables in templates:
-- `{{ .ConfirmationURL }}` - Confirmation link
-- `{{ .Token }}` - Auth token
-- `{{ .TokenHash }}` - Hashed token
-- `{{ .SiteURL }}` - Your site URL
-- `{{ .RedirectTo }}` - Redirect URL after confirmation
-
-#### Example Template (Confirmation Email)
-
-```html
-<h2>Confirm your signup</h2>
-
-<p>Welcome to AI Matrx! Please confirm your email address by clicking the link below:</p>
-
-<p><a href="{{ .ConfirmationURL }}">Confirm your email</a></p>
-
-<p>If you didn't request this, you can safely ignore this email.</p>
-
-<p>Best regards,<br>The AI Matrx Team</p>
-```
-
-### 4. Update Redirect URLs
-
-In **Authentication** → **URL Configuration**:
-
-1. **Site URL**: `https://www.aimatrx.com` (production) or `http://localhost:3000` (development)
-2. **Redirect URLs**: Add allowed redirect URLs:
-   ```
-   http://localhost:3000/**
-   https://www.aimatrx.com/**
-   ```
-
-### 5. Test the Configuration
-
-1. Send a test email from Supabase Dashboard:
-   - Go to **Authentication** → **SMTP Settings**
-   - Click **Send Test Email**
-   - Check your inbox
-
-2. Test signup flow:
-   - Sign up with a new account
-   - Check that confirmation email arrives
-   - Verify email styling and links work
-
-3. Test password reset:
-   - Request password reset
-   - Check that reset email arrives
-   - Verify reset link works
+1. Supabase SMTP → Send test email.
+2. Password reset flow → confirm **Delivered** in Resend logs (sender
+   `noreply@updates.aimatrx.com`).
 
 ## Troubleshooting
 
-### Emails Not Sending
+- **"Error sending recovery email"** — check SMTP password (`ai-matrx-main`), sender
+  domain verification, and that username is exactly `resend`.
+- **Wrong links** — check Site URL / Redirect URLs and `NEXT_PUBLIC_SITE_URL` in app env.
+- **Spam** — confirm SPF/DKIM on `updates.aimatrx.com` in Resend + Vercel DNS.
 
-1. **Check SMTP credentials**: Ensure your Resend API key is correct
-2. **Verify domain**: Make sure your sending domain is verified in Resend
-3. **Check Supabase logs**: Go to Logs → Auth to see any errors
-4. **Test Resend directly**: Use Resend's dashboard to send a test email
+## App env (related, not for SMTP password)
 
-### Emails Going to Spam
-
-1. **Set up SPF record**: Add SPF record to your domain DNS
-2. **Set up DKIM**: Configure DKIM in Resend and add records to DNS
-3. **Set up DMARC**: Add DMARC policy to your domain
-4. **Warm up your domain**: Gradually increase sending volume
-
-### Wrong Redirect URLs
-
-1. **Check environment variables**: Ensure `NEXT_PUBLIC_SITE_URL` is correct
-2. **Update Supabase settings**: Make sure Site URL and Redirect URLs are correct
-3. **Clear cache**: Sometimes browser cache needs clearing
-
-## Environment Variables
-
-Make sure these are set in your `.env.local`:
+These are for **Path 1** app email only:
 
 ```bash
-# Resend API Key (used by custom SMTP)
-RESEND_API_KEY=re_xxxxxxxxxxxx
-
-# Email configuration
+RESEND_API_KEY=          # app keys — NOT ai-matrx-main
 EMAIL_FROM=AI Matrx <noreply@aimatrx.com>
-
-# Site URL (used for email links)
+EMAIL_ALLOWED_DOMAINS=aimatrx.com,updates.aimatrx.com
+ADMIN_EMAIL=admin@aimatrx.com
 NEXT_PUBLIC_SITE_URL=https://www.aimatrx.com
 ```
 
-## Vercel Configuration
-
-If deploying to Vercel, add the environment variables in:
-
-**Vercel Dashboard** → **Project** → **Settings** → **Environment Variables**
-
-Add:
-- `RESEND_API_KEY`
-- `EMAIL_FROM`
-- `EMAIL_ALLOWED_DOMAINS`
-- `ADMIN_EMAIL`
-- `NEXT_PUBLIC_SITE_URL`
-
-## Security Notes
-
-- **Never commit** your Resend API key to version control
-- **Use environment variables** for all sensitive data
-- **Rotate keys** periodically for better security
-- **Monitor usage** in Resend dashboard to detect any abuse
-
-## Support
-
-- **Resend docs**: https://resend.com/docs
-- **Supabase auth docs**: https://supabase.com/docs/guides/auth/auth-smtp
-- **Supabase SMTP guide**: https://supabase.com/docs/guides/auth/auth-smtp
-
-## Checklist
-
-- [ ] Resend account created and domain verified
-- [ ] SMTP credentials configured in Supabase Dashboard
-- [ ] Email templates customized with AI Matrx branding
-- [ ] Site URL and redirect URLs configured
-- [ ] Test email sent successfully
-- [ ] Signup confirmation email tested
-- [ ] Password reset email tested
-- [ ] SPF/DKIM/DMARC configured for production
-- [ ] Environment variables added to Vercel
+Do **not** put the Supabase SMTP key in Vercel or `.env.local`.

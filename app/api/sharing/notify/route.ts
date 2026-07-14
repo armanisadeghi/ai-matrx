@@ -1,12 +1,5 @@
 /**
- * Sharing Notification API Route
- * 
- * Handles sending email notifications when resources are shared
- * This must run on the server to access EMAIL_FROM and RESEND_API_KEY
- * 
- * Environment variables needed:
- * - RESEND_API_KEY=re_xxxxxxxxxxxx
- * - EMAIL_FROM=AI Matrx <noreply@aimatrx.com>
+ * Sharing notification email (Resend API). Server-only: RESEND_API_KEY + EMAIL_FROM.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
