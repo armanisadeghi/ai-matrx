@@ -19,6 +19,14 @@ import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import { updateMessageRecord } from "../messages/messages.slice";
+import { refetchSingleMessage } from "./refetch-single-message.thunk";
+
+// Latest-wins guard: rapid like→dislike fires two independent RPCs whose
+// responses can arrive out of order — without this, the FIRST click's
+// "authoritative" response would overwrite the second click's state (and the
+// DB serializes the updates in arbitrary order anyway). Only the most recent
+// dispatch per message is allowed to patch the slice after its RPC settles.
+const latestSeqByMessageId = new Map<string, number>();
 
 export type MessageReaction = "like" | "dislike" | null;
 
@@ -68,6 +76,10 @@ export const setMessageReaction = createAsyncThunk<
     }
     const previousMetadata = prevRecord.metadata;
 
+    const seq = (latestSeqByMessageId.get(messageId) ?? 0) + 1;
+    latestSeqByMessageId.set(messageId, seq);
+    const isStale = () => latestSeqByMessageId.get(messageId) !== seq;
+
     // Optimistic patch.
     const optimisticMeta: { [key: string]: Json | undefined } = isJsonObject(
       previousMetadata,
@@ -93,8 +105,22 @@ export const setMessageReaction = createAsyncThunk<
       p_reaction: reaction ?? "",
     });
 
+    // A newer reaction dispatch superseded this one while the RPC was in
+    // flight — that dispatch owns the slice now; touching it here would
+    // resurrect stale state.
+    if (isStale()) {
+      if (error) {
+        return rejectWithValue({
+          message: error.message || "Failed to save reaction",
+        });
+      }
+      return { conversationId, messageId, reaction };
+    }
+
     if (error) {
-      // Rollback.
+      // Rollback to the dispatch-time snapshot, then re-sync from the DB —
+      // the snapshot itself may have been optimistic (rapid-click chains),
+      // so the refetch restores true authority.
       dispatch(
         updateMessageRecord({
           conversationId,
@@ -102,6 +128,7 @@ export const setMessageReaction = createAsyncThunk<
           patch: { metadata: previousMetadata },
         }),
       );
+      void dispatch(refetchSingleMessage({ conversationId, messageId }));
       return rejectWithValue({
         message: error.message || "Failed to save reaction",
       });
