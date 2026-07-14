@@ -119,3 +119,13 @@ Avoid for the data model:
 
 Dataset naming remains valid. Use **UDT Dataset** or **Typed Dataset** when clarity is needed; the table
 family stays `udt_datasets`, `udt_dataset_fields`, and `udt_dataset_rows`.
+
+---
+
+## Full rename campaign (2026-07-14)
+
+Cross-repo system-of-record + resumable layer-by-layer tracker:
+`/Users/armanisadeghi/code/common-docs/structured-lists-rename/FEATURE.md` — read it before
+touching this feature in ANY repo. Layer 0 (data object) is done + verified; Layers 1–8 (RPC name,
+wire tokens, agent tool, cc.picklist, component/route names, aidream REST, shim removal, docs)
+each carry a 100%-verification gate and persisted-data migration steps.
