@@ -344,7 +344,7 @@ Hard rules: no JSX prop spread in `features/overlays/OverlayController.tsx`; no 
 
 ## Cross-Repo — App Config (remote runtime configuration for desktop clients)
 
-Shipped desktop apps read non-secret runtime values (server URLs, flags, min versions) from one anon-readable Supabase `app_config` row per app. This repo's role: the admin UI at `/administration/app-config` (editor, history/restore, `admin_update_app_config` RPC writes). **Spec approved 2026-07-14, not yet built.** Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/app-config/FEATURE.md` — read it before touching this feature in ANY repo.
+Shipped desktop apps read non-secret runtime values (server URLs, flags, min versions) from one anon-readable Supabase `app_config` row per app. This repo's role: the admin UI at `/administration/app-config` (editor with diff-confirmed save, history/restore — writes ONLY via the `admin_update_app_config` RPC; code in `features/admin/app-config/`). **Live since 2026-07-14.** Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/app-config/FEATURE.md` — read it before touching this feature in ANY repo.
 
 ---
 
