@@ -161,6 +161,107 @@ export function verdictFromResult(
   };
 }
 
+// ── Step-level (multi-step) grade verdict ───────────────────────────────────
+//
+// A THIN EXTENSION of the canonical `GradeVerdict` core for work that is graded
+// step-by-step — a photographed/handwritten worked math or science problem, a
+// derivation, a proof, a multi-part free response. It is the SAME verdict core
+// (correct/partial/misconception/explanation) plus two additions: `steps` (an
+// ordered per-step breakdown that pinpoints exactly where the reasoning first
+// broke) and `transcription` (what the grader READ from the image). It never
+// forks a second verdict type — every consumer that already handles
+// `GradeVerdict` reads `verdictResult()`/`.explanation`/`.misconception` here
+// unchanged, and step-aware surfaces additionally render `steps`.
+
+/** One reasoning step in a step-level grade. `status` reuses the shared `GradeResult` vocabulary. */
+export interface GradeStep {
+  /** Short human label for the step, e.g. "Step 1: Distribute the 3", "Setup", "Thesis". */
+  stepLabel: string;
+  status: GradeResult;
+  /** One plain sentence: what the learner did here and, if wrong, exactly what went wrong. */
+  note: string;
+}
+
+/**
+ * The canonical multi-step grade — the `GradeVerdict` core plus a per-step
+ * breakdown and the grader's transcription of the learner's work. Used by the
+ * vision/handwritten grading path; adopt this (never a parallel shape) for any
+ * future step-graded surface.
+ */
+export interface StepGradeVerdict extends GradeVerdict {
+  steps: GradeStep[];
+  /** What the grader read from the photo/handwriting (null when not applicable). */
+  transcription: string | null;
+}
+
+const asStepStatus = (v: unknown): GradeResult => {
+  const s = asString(v).toLowerCase();
+  return s === "correct" || s === "partial" || s === "incorrect"
+    ? (s as GradeResult)
+    : "partial";
+};
+
+/** Narrow one unknown agent-emitted element to a GradeStep (tolerant of key variants). */
+function coerceGradeStep(raw: unknown, index: number): GradeStep | null {
+  if (!isRecord(raw)) return null;
+  const stepLabel =
+    asString(raw.stepLabel ?? raw.step_label ?? raw.label ?? raw.description) ||
+    `Step ${index + 1}`;
+  const status = asStepStatus(raw.status ?? raw.result ?? raw.verdict);
+  const note = asString(raw.note ?? raw.notes ?? raw.explanation ?? raw.feedback);
+  return { stepLabel, status, note };
+}
+
+/**
+ * Narrow an unknown agent-emitted value to a StepGradeVerdict. TOLERANT by
+ * design — education graders are tuned in-system, so their key names drift
+ * (`verdict` vs `correct`/`partial`; `note` vs `notes`; `stepLabel` vs
+ * `description`). This accepts the canonical GradeVerdict booleans AND a single
+ * `verdict: 'correct'|'partial'|'incorrect'` token, and both step shapes.
+ * Returns null only when there's no gradable signal at all.
+ */
+export function coerceStepGradeVerdict(raw: unknown): StepGradeVerdict | null {
+  if (!isRecord(raw)) return null;
+  const src = isRecord(raw.grade) ? raw.grade : raw;
+
+  const hasSignal =
+    "correct" in src ||
+    "partial" in src ||
+    "verdict" in src ||
+    "explanation" in src ||
+    "steps" in src;
+  if (!hasSignal) return null;
+
+  // Result: prefer explicit booleans; fall back to a single `verdict`/`result` token.
+  const verdictToken = asString(src.verdict ?? src.result).toLowerCase();
+  const correct =
+    src.correct === true ||
+    (!("correct" in src) && verdictToken === "correct");
+  const partial =
+    !correct &&
+    (src.partial === true ||
+      (!("partial" in src) && verdictToken === "partial"));
+
+  const misconceptionRaw = asString(src.misconception);
+  const explanation = asString(src.explanation ?? src.feedback);
+  const transcription =
+    asString(src.transcription ?? src.transcript) || null;
+
+  const stepsRaw = Array.isArray(src.steps) ? src.steps : [];
+  const steps = stepsRaw
+    .map((s, i) => coerceGradeStep(s, i))
+    .filter((s): s is GradeStep => s !== null);
+
+  return {
+    correct,
+    partial,
+    misconception: misconceptionRaw ? misconceptionRaw : null,
+    explanation,
+    steps,
+    transcription,
+  };
+}
+
 // ── Verify-against-source verdict ───────────────────────────────────────────
 //
 // The "Verify against source" action re-checks a generated card/answer against

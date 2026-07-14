@@ -239,6 +239,15 @@ export const CloudFolders = {
   SYSTEM_SPOKEN_PRACTICE_RESPONSES: "system-files/spoken-practice/responses",
 
   /**
+   * Handwritten / image-answer grading — photos of worked problems a learner
+   * submits to the vision grader (assessment written-item photo answers +
+   * the standalone "Grade my handwritten work" surface). Same hidden
+   * `system-files/` class (kept out of the Files browser + Recents).
+   */
+  SYSTEM_IMAGE_GRADE: "system-files/image-grade",
+  SYSTEM_IMAGE_GRADE_RESPONSES: "system-files/image-grade/responses",
+
+  /**
    * LEGACY user-namespace FastFire paths (pre-2026-07 relocation). Kept as a
    * defensive tree + Recents guard until every row is backfilled under
    * `system-files/fastfire/`.

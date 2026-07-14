@@ -50,6 +50,7 @@ export type Capability =
   | "education.ingest_document"
   | "education.live_grade"
   | "education.spoken_practice"
+  | "education.image_grade"
   | "education.game_room_size";
 
 export interface CapabilityDefinition {
@@ -206,6 +207,18 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     enforced: false,
     upgradeMessage:
       "You've reached today's spoken practice sessions. Upgrade for unlimited oral exam, interview, and debate practice.",
+  }),
+  "education.image_grade": def({
+    id: "education.image_grade",
+    label: "Grade handwritten work",
+    description:
+      "Vision-AI grading of a PHOTOGRAPHED handwritten/typed worked answer — reads the image, grades on meaning, and returns a per-step breakdown. A compute-heavy vision path (photograph-your-work item answers + the standalone Grade My Work tool).",
+    period: "day",
+    defaultFreeLimit: null,
+    minTier: "free",
+    enforced: false,
+    upgradeMessage:
+      "You've reached today's handwritten-work gradings. Upgrade for unlimited photo grading.",
   }),
   "education.game_room_size": def({
     id: "education.game_room_size",
