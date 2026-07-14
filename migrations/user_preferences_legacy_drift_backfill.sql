@@ -110,11 +110,66 @@ end;
 $$;
 
 revoke all on function users.heal_user_preferences_drift() from public;
+-- service_role is the admin API's manual "heal now" path (revoke-from-public
+-- strips the inherited grant, so re-grant it explicitly). cron runs as postgres.
+grant execute on function users.heal_user_preferences_drift() to service_role;
 
 comment on function users.heal_user_preferences_drift() is
   'Rewrites every drifted users.user_preferences row through '
   'normalize_preferences_jsonb. Run once as a backfill and weekly by pg_cron. '
   'Not granted to authenticated (cron/admin only).';
+
+-- ─── 2b. drift report (powers the admin Preferences tab) ─────────────────────
+-- One row per drifted user_preferences row with the exact stale paths. The
+-- filter reuses the normalizer (single source of truth); the drifted_fields
+-- CASE list mirrors normalize_preferences_jsonb's rules. SECURITY DEFINER,
+-- not granted to authenticated — the admin API route calls it via the
+-- service-role client (which bypasses the revoke).
+create or replace function users.user_preferences_drift_report()
+returns table (
+  user_id uuid,
+  organization_id uuid,
+  updated_at timestamptz,
+  drifted_fields text
+)
+language sql
+security definer
+set search_path = users, public
+as $$
+  select
+    up.user_id,
+    up.organization_id,
+    up.updated_at,
+    array_to_string(array_remove(array[
+      case when up.preferences #>> '{prompts,defaultModel}'
+                = '548126f2-714a-4562-9001-0c31cbeea375'
+           then 'prompts.defaultModel' end,
+      case when up.preferences #>> '{aiModels,defaultModel}'
+                = '548126f2-714a-4562-9001-0c31cbeea375'
+           then 'aiModels.defaultModel' end,
+      case when up.preferences #>> '{textGeneration,defaultModel}' = 'GPT-4o'
+           then 'textGeneration.defaultModel' end,
+      case when up.preferences #>> '{imageGeneration,defaultModel}' = 'standard'
+           then 'imageGeneration.defaultModel' end,
+      case when jsonb_typeof(up.preferences #> '{videoConference}') = 'object'
+                and (up.preferences #> '{videoConference}') ? 'defaultMicrophone'
+           then 'videoConference.defaultMicrophone' end,
+      case when jsonb_typeof(up.preferences #> '{videoConference}') = 'object'
+                and (up.preferences #> '{videoConference}') ? 'defaultSpeaker'
+           then 'videoConference.defaultSpeaker' end
+    ], null), ', ')
+  from users.user_preferences up
+  where up.deleted_at is null
+    and up.preferences is distinct from users.normalize_preferences_jsonb(up.preferences)
+  order by up.updated_at desc;
+$$;
+
+revoke all on function users.user_preferences_drift_report() from public;
+grant execute on function users.user_preferences_drift_report() to service_role;
+
+comment on function users.user_preferences_drift_report() is
+  'Per-user legacy preferences drift for the admin Users > Preferences tab. '
+  'Filter reuses normalize_preferences_jsonb; SECURITY DEFINER, service-role only.';
 
 -- ─── 3. one-time backfill (runs now, as part of this migration) ──────────────
 select users.heal_user_preferences_drift();

@@ -659,7 +659,67 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "User Feedback & Announcements",
+    name: "Users & Access",
+    iconName: "Users",
+    iconColor: "text-sky-600",
+    features: [
+      {
+        title: "Users & Access Hub",
+        description:
+          "Consolidated control plane for everything about a user — accounts, preferences health, admin privileges, invitations, entitlements, per-user usage & cost, and email — each a tab. Also the Accounts list: view every account and flip the onboarding flag.",
+        iconName: "Users",
+        link: "/administration/users",
+        isNew: true,
+      },
+      {
+        title: "Preferences Drift",
+        description:
+          "Accounts whose stored preferences still carry a retired shape. Proves the drift-healing system is at zero across all users, with a manual 'Heal now' lever.",
+        iconName: "SlidersHorizontal",
+        link: "/administration/users/preferences",
+        isNew: true,
+      },
+      {
+        title: "Admins & Levels",
+        description:
+          "Promote, demote, and revoke admin access. Super Admin only — guarded at the database, not just the UI.",
+        iconName: "ShieldCheck",
+        link: "/administration/users/admins",
+      },
+      {
+        title: "Invitations",
+        description:
+          "Review and manage access requests. Approve or reject applicants and send invitation codes via email.",
+        iconName: "MailPlus",
+        link: "/administration/users/invitations",
+      },
+      {
+        title: "Entitlements & Usage",
+        description:
+          "Capability registry with live enforcement flags and free-tier limits, plus a 30-day usage rollup across the platform.",
+        iconName: "Gauge",
+        link: "/administration/users/entitlements",
+        isNew: true,
+      },
+      {
+        title: "Usage & Cost",
+        description:
+          "Per-user AI spend and token usage — the CX usage analytics surfaced inside user management.",
+        iconName: "DollarSign",
+        link: "/administration/users/usage",
+        isNew: true,
+      },
+      {
+        title: "Email Users",
+        description:
+          "Send emails to users directly from the admin portal using custom or template-based messages.",
+        iconName: "Send",
+        link: "/administration/users/email",
+      },
+    ],
+  },
+  {
+    name: "Feedback & Announcements",
     iconName: "MessageSquare",
     iconColor: "text-orange-600",
     features: [
@@ -669,42 +729,6 @@ export const adminCategoriesData: AdminCategory[] = [
           "View and manage user feedback, bug reports, and feature requests. Create and manage system announcements.",
         iconName: "MessageSquare",
         link: "/administration/feedback",
-      },
-      {
-        title: "Invitation Requests",
-        description:
-          "Review and manage access requests. Approve or reject applicants and send invitation codes via email.",
-        iconName: "Users",
-        link: "/administration/invitation-requests",
-      },
-      {
-        title: "Email Users",
-        description:
-          "Send emails to users directly from the admin portal using custom or template-based messages.",
-        iconName: "Send",
-        link: "/administration/email",
-      },
-      {
-        title: "Admins & Levels",
-        description:
-          "Promote, demote, and revoke admin access. Super Admin only — guarded at the database, not just the UI.",
-        iconName: "Users",
-        link: "/administration/admins",
-      },
-      {
-        title: "Users",
-        description:
-          "View every account and flip the onboarding flag. New users are routed to /welcome instead of the dashboard on login.",
-        iconName: "Users",
-        link: "/administration/users",
-      },
-      {
-        title: "Entitlements & Usage",
-        description:
-          "Capability registry with live enforcement flags and free-tier limits, plus a 30-day usage rollup across the platform.",
-        iconName: "Gauge",
-        link: "/administration/entitlements",
-        isNew: true,
       },
     ],
   },

@@ -45,7 +45,7 @@ import { idMatchesQuery } from "@/utils/search-scoring";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 const PAGE_LOCATION =
-  "AI Matrx Admin — Invitation Requests (/administration/invitation-requests)";
+  "AI Matrx Admin — Invitations (/administration/users/invitations)";
 
 interface InvitationRequest {
   id: string;
@@ -166,7 +166,7 @@ export default function InvitationRequestsPage() {
     ].join("\n");
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-3">

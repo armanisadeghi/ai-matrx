@@ -1284,7 +1284,7 @@ export const adminNavItems: ShellNavItem[] = [
   },
   {
     label: "Admins & Levels",
-    href: "/administration/admins",
+    href: "/administration/users/admins",
     iconName: "Shield",
     section: "admin",
     category: "primary",

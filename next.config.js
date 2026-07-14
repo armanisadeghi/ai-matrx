@@ -166,6 +166,13 @@ const nextConfig = {
             // route-tabbed hub at /administration/relationships/*.
             { source: '/administration/sharing', destination: '/administration/relationships/sharing', permanent: false },
             { source: '/administration/action-catalog', destination: '/administration/relationships/actions', permanent: false },
+            // 2026-07-13: Users & Access hub consolidation. Admin user/access
+            // management moved into the route-tabbed hub at
+            // /administration/users/*.
+            { source: '/administration/admins', destination: '/administration/users/admins', permanent: false },
+            { source: '/administration/invitation-requests', destination: '/administration/users/invitations', permanent: false },
+            { source: '/administration/entitlements', destination: '/administration/users/entitlements', permanent: false },
+            { source: '/administration/email', destination: '/administration/users/email', permanent: false },
             // 2026-06-08: Transcripts consolidation. Renamed `/transcription/*`
             // route group to `/transcripts/*` so the feature has ONE canonical
             // URL with slash-versioned sub-routes (studio, scribe, admin).

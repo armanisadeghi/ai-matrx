@@ -24,7 +24,8 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { Database } from "@/types/database.types";
 
-const PAGE_LOCATION = "AI Matrx Admin — Admins & Levels (/administration/admins)";
+const PAGE_LOCATION =
+  "AI Matrx Admin — Admins & Levels (/administration/users/admins)";
 
 type AdminLevel = Database["public"]["Enums"]["admin_level"];
 
@@ -236,7 +237,7 @@ export default function AdminsManagementPage() {
   }
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <header className="flex items-start justify-between gap-4">
           <div>

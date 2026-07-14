@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { fetchUsageAnalytics } from "@/features/cx-dashboard/service";
 import { filtersFromSearchParams } from "@/features/cx-dashboard/utils/filters";
-import { UsageContent } from "./usage-content";
+import { UsageContent } from "@/features/cx-dashboard/components/UsageContent";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

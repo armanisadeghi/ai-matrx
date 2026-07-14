@@ -97,7 +97,7 @@ export async function submitInvitationRequestStep1(
 
     // Send admin notification email (non-blocking)
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@aimatrx.com';
-    const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.aimatrx.com'}/administration/invitation-requests`;
+    const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.aimatrx.com'}/administration/users/invitations`;
     const adminTemplate = emailTemplates.invitationRequestAdminNotification(
       data.full_name,
       data.email,
