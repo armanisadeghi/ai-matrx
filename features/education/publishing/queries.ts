@@ -60,6 +60,23 @@ export async function getPublishedLearnDoc(
 }
 
 /**
+ * Published learn docs curated for one exam — any doc whose `keywords` contain
+ * the exam slug (e.g. "sat", "ap-biology", "gre"). Powers the exam-prep hub's
+ * curated study-guide block. Derives from the cached published list (one tagged
+ * entry busted by every authoring mutation), so it adds no round-trip and stays
+ * consistent with `/education/learn`. Matching is case-insensitive.
+ */
+export async function getExamLearnDocs(
+  examSlug: string,
+): Promise<LearnDocRecord[]> {
+  const slug = examSlug.toLowerCase();
+  const docs = await listPublishedLearnDocs();
+  return docs.filter((d) =>
+    (d.keywords ?? []).some((k) => k.toLowerCase() === slug),
+  );
+}
+
+/**
  * slug → title for every published doc — used to label `related.content`
  * cross-links on axis pages without N round-trips. Cached + tagged.
  */

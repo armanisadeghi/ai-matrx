@@ -26,7 +26,7 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 
 | File | Role |
 |---|---|
-| `queries.ts` | Public server reads (anon cookie-free client, `unstable_cache` tagged `education-learn-docs`, ISR). `listPublishedLearnDocs` / `getPublishedLearnDoc` (**derived from the list — a per-slug `unstable_cache` collapses on static keyParts**) / `getPublishedLearnDocTitles`. |
+| `queries.ts` | Public server reads (anon cookie-free client, `unstable_cache` tagged `education-learn-docs`, ISR). `listPublishedLearnDocs` / `getPublishedLearnDoc` (**derived from the list — a per-slug `unstable_cache` collapses on static keyParts**) / `getPublishedLearnDocTitles` / `getExamLearnDocs(examSlug)` (docs keyworded with an exam slug — powers the exam-prep hub's curated study-guide block, derived from the cached list). |
 | `actions.ts` | `"use server"` admin mutations → RPC → `updateTag('education-learn-docs')` (read-your-own-writes) → public surfaces update without a deploy. |
 | `sitemap.ts` | Every axis index/entry + published learn doc + live tool → `app/sitemap.xml/route.ts`. |
 | `ogImage.tsx` | Shared branded OG renderer; thin `opengraph-image.tsx` routes for axis families; learn docs use `/education/learn/og/[...slug]` route handler (catch-all can't host file-based OG). |
@@ -54,6 +54,7 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 - Phase B (exam hub, consumes P1) and Phase C (community library, consumes P7) — see `docs/proposals/education-projects/P6-content-publishing.md`.
 
 ## Change log
+- **2026-07-14** — Published 3 exam study guides (`exam/sat-math-guide`, `exam/ap-biology-big-ideas`, `exam/gre-verbal-guide`), keyworded with their exam slug; added `getExamLearnDocs(examSlug)` so the exam-prep hub surfaces them beside the certified decks.
 
 - **2026-07-07** — Learn OG images moved from invalid `[...slug]/opengraph-image.tsx` to `/education/learn/og/[...slug]` route handler (Next.js catch-all constraint); page metadata sets `ogImage` explicitly.
 - **2026-07-07** — Phase A shipped: `education.learn_doc` + RPCs + RLS, 8 seed docs migrated off the deleted registry, DB-backed `/learn` (ISR + static params), dynamic sitemap, per-doc/per-axis OG images, FAQPage/Course JSON-LD, super-admin authoring UI.

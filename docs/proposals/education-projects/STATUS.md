@@ -67,7 +67,7 @@ monetization) and B (the connected study loop) are done.
 ### Tier 2 — vision "Coming Soon" not yet built
 - 🔲 Study songs / musical mnemonics (audio) — *may need a music model; decision pending.*
 - 🔲 Pronunciation / language-fluency assessment.
-- 🔲 Standardized exam content libraries (curated SAT·ACT·AP·MCAT·LSAT·GRE decks).
+- 🟡 Standardized exam content libraries (curated SAT·ACT·AP·MCAT·LSAT·GRE decks). **Starter seed live (2026-07-14):** 9 certified curated decks (SAT Math·AP Biology·GRE Verbal, 128 cards) + 3 study guides, generated via the real flashcards agent, marked Certified, surfaced on each exam-prep page (`ExamCuratedLibrary`) + the community library. AI-generated starters pending human verification; ACT/IB/MCAT/LSAT/GMAT follow the same recipe.
 - 🔲 Parent / guardian dashboard (K–8).
 
 ### Tier 3 — Convergence C (institutional frontier, largely un-started)

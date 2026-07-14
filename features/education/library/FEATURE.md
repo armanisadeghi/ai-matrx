@@ -15,12 +15,12 @@
 | `education.deck_suggestion` | Suggest-edit rows: `(resource, owner_id, suggested_by, body, status)`. | RLS read = contributor \| deck owner \| super-admin. Writes via RPCs. |
 
 RPCs (all `public.`, SECURITY DEFINER):
-- `edu_public_decks(search, certified_only, limit)` — the listing read (public deck + card count via `platform.associations` member edges + certified status), anon-executable, **exposes only `visibility='public'`**. One round-trip, no N+1.
+- `edu_public_decks(search, certified_only, limit, exam_slug)` — the listing read (public deck + card count via `platform.associations` member edges + certified status), anon-executable, **exposes only `visibility='public'`**. One round-trip, no N+1. **`exam_slug` filters on `fc_set.metadata->>'exam_slug'`** so the exam-prep hub reuses this exact RPC for its curated block (`fetchExamCertifiedDecks`). Card count counts `a.role='member'` — the column `fcService` writes (an earlier version counted `a.label`, always NULL → every deck showed 0 cards; fixed in `migrations/education_public_decks_exam_filter.sql`).
 - `edu_certify_content` / `edu_uncertify_content` — super-admin only (protected-style admin grant).
 - `edu_suggest_edit` — any authenticated user; resolves + denormalizes the deck owner, rejects self-suggestions.
 - `edu_resolve_suggestion` — deck owner (or super-admin) accepts/declines.
 
-Migrations: `education_content_certification.sql`, `education_deck_suggestion.sql`, `education_public_decks_rpc.sql`.
+Migrations: `education_content_certification.sql`, `education_deck_suggestion.sql`, `education_public_decks_rpc.sql`, `education_public_decks_exam_filter.sql` (card-count fix + `exam_slug` filter).
 
 ## Entry points
 
@@ -42,12 +42,17 @@ Migrations: `education_content_certification.sql`, `education_deck_suggestion.sq
 - **Suggest-edit is contribution, not editing.** It routes to the owner's inbox; it NEVER mutates the deck. Explicitly not an answer marketplace.
 - **One `CertifiedBadge`** across library + study surfaces.
 
+## Curated exam libraries (starter seed)
+
+The **standardized exam content library** vision surface is live. A seeded set of **9 certified, curated decks** (128 cards) — SAT Math (3), AP Biology (3), GRE Verbal (3) — is public + certified, tagged `metadata.exam_slug` + `metadata.curated`, each card carrying a `TrustEnvelope` (`confidence: "inferred"`, labelled honestly as an AI-generated starter pending human verification — the certify note says so). Generated via the real flashcards agent (`FC_AGENTS.generateCards`) and persisted into the canonical `fc_set`/`fc_card` tables + `role='member'` association edges + `content_certification`. Surfaced on each exam-prep page by `features/education/components/ExamCuratedLibrary.tsx` (server component: `fetchExamCertifiedDecks(examSlug)` decks + `getExamLearnDocs(examSlug)` guides), and in this library filtered to **Certified**.
+
 ## Open / next
 
 - Certification currently covers `fc_set`; extend `resource_type` to quizzes/assessments when P1 decks land in the library.
 - More facets (subject) once decks carry a subject dimension; popularity signal (study counts) once wired.
-- Only 1 public deck exists in the DB today — the surface is data-ready; seed/publish more to populate.
+- The 9 seed decks are AI-generated starters — the certify flow exists for later **human** verification; more exams (ACT, IB, MCAT, LSAT, GMAT) follow the same seed recipe.
 
 ## Change log
+- **2026-07-14** — Seeded the first curated exam libraries: 9 certified public decks (SAT/AP Bio/GRE, 128 cards) via the real generation agent, tagged `exam_slug`; `edu_public_decks` gained an `exam_slug` filter and a card-count fix (`role` not `label`); new `ExamCuratedLibrary` surfaces certified decks + guides on each exam-prep page.
 
 - **2026-07-07** — Phase C shipped: `content_certification` + `deck_suggestion` + `edu_public_decks` (migrations ledger-recorded), `/education/library` browse (search + certified facet + certify toggle), suggest-edit flywheel + owner inbox, `CertifiedBadge`, hub discovery link. Reuses P7's public viewer + duplicate-to-edit.

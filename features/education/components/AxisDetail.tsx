@@ -14,6 +14,7 @@ import { getAxisEntry } from "../data/registry";
 import { EDU_TOOL_BY_SLUG } from "../data/tools";
 import { getPublishedLearnDocTitles } from "../publishing/queries";
 import { ExamHubActions } from "./ExamHubActions";
+import { ExamCuratedLibrary } from "./ExamCuratedLibrary";
 import { siteConfig } from "@/config/extras/site";
 import type { AxisEntry, EduAxisId, EduSection } from "../types";
 
@@ -155,6 +156,13 @@ export async function AxisDetail({ axisId, entry }: AxisDetailProps) {
       {/* Exam hub: marketing → product entry points (mock exam, quiz, guides,
           community decks). Only for exam-prep entries. */}
       {axisId === "exam-prep" ? <ExamHubActions entry={entry} /> : null}
+
+      {/* Curated, certified study library for this exam (decks + guides). The
+          "standardized exam content libraries" vision surface — renders only
+          when this exam has curated content. Exam-prep entries only. */}
+      {axisId === "exam-prep" ? (
+        <ExamCuratedLibrary examSlug={entry.slug} examName={entry.name} />
+      ) : null}
 
       <SectionRenderer sections={sections} />
 

@@ -27595,6 +27595,7 @@ export type Database = {
       edu_public_decks: {
         Args: {
           p_certified_only?: boolean
+          p_exam_slug?: string
           p_limit?: number
           p_search?: string
         }
