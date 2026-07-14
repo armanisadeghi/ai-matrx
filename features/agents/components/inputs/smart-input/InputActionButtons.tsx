@@ -42,6 +42,7 @@ import {
   selectShouldShowAutoClearToggle,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useSurfaceExecution } from "@/features/agents/hooks/useSurfaceExecution";
+import { DesktopPresenceIndicator } from "./DesktopPresenceIndicator";
 import {
   smartExecute,
   cancelExecution,
@@ -195,6 +196,10 @@ export function InputActionButtons({
         {/* Quick toggles + links for the working document / scratchpad and
             active context — the fast path that complements the `+` menu. */}
         <ContextDocsMenu conversationId={conversationId} />
+
+        {/* Shown only while a matrx-local desktop engine is online — this
+            turn will declare the `desktop-native` capability. */}
+        <DesktopPresenceIndicator />
 
         {shouldShowVariables && showVariableIcon && (
           <InputButton

@@ -20,6 +20,7 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { RunControlsMenu } from "./RunControlsMenu";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
+import { DesktopPresenceIndicator } from "./DesktopPresenceIndicator";
 import {
   selectShowVariablePanel,
   selectShowAttachments,
@@ -115,6 +116,10 @@ export function SingleRowActionButtons({
         variant="plus"
         includeAttach={showAttachments}
       />
+
+      {/* Shown only while a matrx-local desktop engine is online — this
+          turn will declare the `desktop-native` capability. */}
+      <DesktopPresenceIndicator />
 
       {shouldShowVariables && showVariableIcon && (
         <InputButton

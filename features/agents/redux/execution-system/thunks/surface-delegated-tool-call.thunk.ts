@@ -16,6 +16,13 @@
  *     handle resolves or posts not_found).
  *   - ui-first tools  → `dispatchUiFirstTool` (validates, runs the handler —
  *     which may await the user — then POSTs the result).
+ *   - desktop tools (`local_*`, matrx-local executor) → NOT ours to answer.
+ *     While a desktop is online we leave the ledger row in `delegated` — the
+ *     matrx-local engine polls `GET /ai/user/pending_calls`, executes, POSTs
+ *     the result, and resumes the loop itself (its FEATURE.md invariant:
+ *     "foreign calls are left for their owner"; the same rule applies to us
+ *     in reverse). Posting an error here would steal the call from the
+ *     desktop and kill the turn.
  *   - anything else   → flip the instance to `paused` and POST an
  *     `unsupported_client_tool` error so the hard-suspended loop never wedges.
  *
@@ -47,6 +54,19 @@ import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools
 import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
 import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
 import { dispatchScribeTool } from "@/features/agents/scribe-tools/dispatcher/dispatch-scribe-tool.thunk";
+import { getLiveDesktopInstance } from "../client-capabilities/desktop-presence";
+
+/**
+ * Desktop mega-tools bound to the `matrx-local` executor (tool.definition
+ * rows in the desktop bundle taxonomy — 19 `local_*` tools as of 2026-07-14,
+ * loaded on demand by the server-side `load_desktop_tools`). The
+ * `tool_delegated` event carries no executor field, so the name family IS the
+ * client-side contract — the same one matrx-local's own engine uses to claim
+ * calls (`get_by_cloud_name(tool_name)` over its `local_*` catalog).
+ */
+function isDesktopDelegatedToolName(toolName: string): boolean {
+  return toolName.startsWith("local_");
+}
 
 export interface SurfaceDelegatedToolCallArgs {
   conversationId: string;
@@ -183,40 +203,69 @@ export const surfaceDelegatedToolCall = (
       return;
     }
 
+    const postUnsupportedError = () => {
+      dispatch(
+        upsertToolLifecycle({
+          requestId,
+          callId,
+          toolName,
+          status: "error",
+          isDelegated: true,
+          errorType: "unsupported_client_tool",
+          errorMessage: `Client has no handler for tool '${toolName}'.`,
+        }),
+      );
+      void import("@/features/agents/api/submit-tool-results").then(
+        ({ submitToolResult }) => {
+          dispatch(
+            submitToolResult({
+              conversationId,
+              call_id: callId,
+              tool_name: toolName,
+              is_error: true,
+              output: {
+                ok: false,
+                reason: "unsupported_client_tool",
+                message: `Client has no handler for tool '${toolName}'.`,
+              },
+              error_message: `Client has no handler for tool '${toolName}'.`,
+            }),
+          );
+        },
+      );
+    };
+
+    // Desktop-executor tools (`local_*` mega-tools bound to matrx-local).
+    // The web has no handler by design — the DESKTOP is the executor. While a
+    // desktop is online, leave the durable `delegated` row alone: the
+    // matrx-local engine polls the same ledger, executes, POSTs the result,
+    // and resumes the loop headlessly. Answering here with an error would
+    // steal the call from its owner. Presence is re-checked (not just assumed
+    // from the capability declaration) so a desktop that vanished mid-turn
+    // falls through to the loud unsupported error instead of wedging forever.
+    if (isDesktopDelegatedToolName(toolName)) {
+      dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+      void getLiveDesktopInstance().then((desktop) => {
+        if (desktop) {
+          console.info(
+            `[desktop-native] '${toolName}' (call ${callId}) left pending for desktop "${desktop.instanceName}" — the matrx-local engine executes and resumes it.`,
+          );
+          return;
+        }
+        console.error(
+          `[desktop-native] '${toolName}' was delegated but no desktop is online — posting unsupported_client_tool so the turn doesn't wedge.`,
+        );
+        postUnsupportedError();
+      });
+      return;
+    }
+
     // Unknown delegated tool — neither a widget nor a ui-first tool. The
     // backend hard-suspended the loop awaiting a result; sitting on `paused`
     // would silently wedge it. Flip to `paused` for a truthful state during the
     // microtask window, then POST an error result through the funnel so the
     // server can recover or surface the failure.
     dispatch(setInstanceStatus({ conversationId, status: "paused" }));
-    dispatch(
-      upsertToolLifecycle({
-        requestId,
-        callId,
-        toolName,
-        status: "error",
-        isDelegated: true,
-        errorType: "unsupported_client_tool",
-        errorMessage: `Client has no handler for tool '${toolName}'.`,
-      }),
-    );
-    void import("@/features/agents/api/submit-tool-results").then(
-      ({ submitToolResult }) => {
-        dispatch(
-          submitToolResult({
-            conversationId,
-            call_id: callId,
-            tool_name: toolName,
-            is_error: true,
-            output: {
-              ok: false,
-              reason: "unsupported_client_tool",
-              message: `Client has no handler for tool '${toolName}'.`,
-            },
-            error_message: `Client has no handler for tool '${toolName}'.`,
-          }),
-        );
-      },
-    );
+    postUnsupportedError();
   };
 };

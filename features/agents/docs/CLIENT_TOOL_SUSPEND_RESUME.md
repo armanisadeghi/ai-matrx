@@ -228,6 +228,18 @@ POST /tool_results       ← reads response.data.continuation_needed
 dispatch(resumeInstance({ conversationId, userRequestId }))
 ```
 
+**Desktop tools are NOT answered by the web.** `surfaceDelegatedToolCall`
+routes delegated calls by ownership: `local_*` tools belong to the
+matrx-local desktop executor. While a desktop is online
+(`client-capabilities/desktop-presence.ts`), the web leaves the `delegated`
+ledger row alone — the desktop engine polls `GET /ai/user/pending_calls`,
+executes, POSTs the result, and opens the resume itself (headless; see
+matrx-local `app/services/delegation/FEATURE.md`). Posting a result from the
+web would steal the call from its owner. Only when NO desktop is online does
+the web post the loud `unsupported_client_tool` error so the turn doesn't
+wedge. The `desktop-native` capability is declared (turn start + resume, via
+`buildToolInjection`'s provider registry) ONLY while presence is live.
+
 This is enforced structurally: an ESLint `no-restricted-syntax` rule bans
 any literal or template containing `/tool_results` outside
 `features/agents/api/submit-tool-results.ts`. See
@@ -446,6 +458,11 @@ class of failure this document exists to kill.
    state and send it (§2.3).
 10. **Rendering a 409-on-resume as a stream error.** All three codes are
     benign protocol states (§2.5); surface nothing to the user.
+11. **Answering a delegated call that belongs to another executor.** A
+    `local_*` call is the desktop's; a browser tool is the extension's. Each
+    client answers only tools it owns and leaves the rest in the ledger —
+    an error POSTed for a foreign tool consumes the call and kills the turn
+    for the real owner (§3.1 "Desktop tools").
 
 ---
 
@@ -548,6 +565,7 @@ Problem 15.
 
 | Date | Change |
 |---|---|
+| 2026-07-14 | Desktop ownership routing: `surfaceDelegatedToolCall` leaves `local_*` delegated calls in the ledger for the matrx-local engine while a desktop is online (presence via `app_instances`); the `desktop-native` capability rides turn start + resume through the `buildToolInjection` provider registry. Anti-pattern 11 added. |
 | 2026-05-25 | Initial — captures the suspend → submit → resume protocol; supersedes `DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md` and clarifies the boundary against `PYTHON_RESUME_SPEC.md` and the extension's cursor-replay scaffold. Both clients ship the wiring; ESLint chokepoint protects the frontend funnel. |
 | 2026-06-15 | Cold-resume shipped in both clients — reopening a `paused` conversation re-surfaces its outstanding delegated prompt(s) via `GET …/pending_calls` → the shared `surfaceDelegatedToolCall` path. The frontend live `tool_delegated` handler was extracted into that one shared thunk (zero drift). See the "Cold-resume" section above and `DELEGATION_LOOP_BUGS.md` Problem 15. |
 | 2026-06-09 | Concurrent-resume incident fixes (aidream `65fa0d4`, matrx-extend `c04ccf8`, frontend this change): structured 409 codes on `/resume` (`resume_conflict` retryable / `not_resumable` terminal), client single-flight per `user_request_id` (§2.6, `resume-claims.ts`), `context`/`writable_variables`/`allow_context_create` on `ResumeRequest` (re-sent by both clients), `duration_ms` on `ClientToolResult`. |

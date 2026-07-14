@@ -66,9 +66,45 @@ export type ToolSpec = ToolSpecRegistered | ToolSpecInline | ToolSpecAgent;
  *                     default-OFF, per-conversation toggle — see the `agent-fs`
  *                     provider and the "Chat Options → Settings" toggle.
  *
+ * - `desktop-native`: payload is `DesktopNativeState` (platform / engine
+ *                     version / instance id of the user's matrx-local desktop).
+ *                     Declared only while a desktop is actually online
+ *                     (app_instances presence) — a declared-but-dead executor
+ *                     would delegate calls into a void. Brings
+ *                     `load_desktop_tools` online; the desktop mega-tools load
+ *                     per-category on demand and delegate to the desktop.
+ *
  * Unknown capability names cause the backend to return 422.
  */
-export type ClientCapabilityName = "editor-state" | "sandbox-fs" | "agent-fs";
+export type ClientCapabilityName =
+  | "editor-state"
+  | "sandbox-fs"
+  | "agent-fs"
+  | "desktop-native";
+
+/**
+ * Wire payload for `client.state["desktop-native"]`. Mirrors aidream's
+ * `DesktopNativePayload` (packages/matrx-ai/matrx_ai/capabilities/desktop_native.py)
+ * — NOT in the generated OpenAPI types because capability payloads ride the
+ * envelope as schema-validated dicts, not request-model fields. Every field
+ * defaults server-side; send what the `app_instances` row knows.
+ */
+export interface DesktopNativeState {
+  /** The desktop's `sys.platform` value (darwin / win32 / linux). */
+  platform: string;
+  /** matrx-local engine version; "" = unknown (informational). */
+  engine_version: string;
+  /** Desktop instance id (cloud_sync identity) for multi-device users. */
+  instance_id: string;
+  /** Reachability over the public tunnel — routing hint only. */
+  tunnel_state?: "none" | "active" | "error";
+  /**
+   * OpenAPI `ClientContext.state` values are open dicts
+   * (`{[key: string]: unknown}`); payload types must be index-signature
+   * compatible to splat into the envelope (same as the generated shapes).
+   */
+  [key: string]: unknown;
+}
 
 /**
  * Per-capability payload shape. Keep this in sync with the backend's
@@ -82,6 +118,7 @@ export interface ClientCapabilityPayloads {
   // object as an "active" sentinel and is marked `stateless`, so the builder
   // declares it in `capabilities[]` without writing a `state` entry.
   "agent-fs": Record<string, never>;
+  "desktop-native": DesktopNativeState;
 }
 
 /**
