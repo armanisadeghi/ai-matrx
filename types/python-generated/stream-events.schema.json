@@ -859,6 +859,46 @@
         "default": null,
         "description": "When emitted from a sub-agent, the ``operation_id`` of the init/completion pair so the FE can attribute the event.",
         "title": "Operation Id"
+      },
+      "kind": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Canonical content_ir.kind_definition slug for this output.",
+        "title": "Kind"
+      },
+      "kind_version": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Kind version used for the validation verdict.",
+        "title": "Kind Version"
+      },
+      "kind_checked": {
+        "default": false,
+        "description": "True when kind/schema validation actually ran; false is skipped, not pass.",
+        "title": "Kind Checked",
+        "type": "boolean"
+      },
+      "kind_errors": {
+        "description": "Per-contract validation errors; empty only means pass when kind_checked is true.",
+        "items": {
+          "type": "string"
+        },
+        "title": "Kind Errors",
+        "type": "array"
       }
     },
     "required": [
@@ -990,7 +1030,7 @@
                 "type": "null"
               }
             ],
-            "default": 0,
+            "default": 0.0,
             "title": "Cost"
           }
         },
@@ -1328,7 +1368,7 @@
             "type": "null"
           }
         ],
-        "default": 0,
+        "default": 0.0,
         "title": "Cost"
       }
     },
@@ -1825,7 +1865,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0,
+        "default": 0.0,
         "title": "Progress",
         "type": "number"
       },
@@ -4137,7 +4177,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0,
+        "default": 0.0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5249,7 +5289,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -5309,7 +5349,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -6277,7 +6317,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0,
+        "default": 0.0,
         "title": "Confidence",
         "type": "number"
       },

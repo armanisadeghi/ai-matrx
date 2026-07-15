@@ -238,6 +238,10 @@ export interface StructuredOutputPayload {
   match_count?: number;
   agent_name?: string | null;
   operation_id?: string | null;
+  kind?: string | null;
+  kind_version?: number | null;
+  kind_checked?: boolean;
+  kind_errors?: string[];
 }
 
 export interface ConsumedInjection {
