@@ -105,6 +105,21 @@ export const EXEMPTIBLE_COLUMNS: ReadonlySet<AssetColumn> = new Set<AssetColumn>
 export const WORKFLOW_IO_FAMILY = "workflow_io";
 
 /**
+ * The four generated framed-contract families published by aidream's
+ * `scripts/sync_content_ir_contracts.py`. All are DATA-ONLY contracts —
+ * values passed through framed protocols (tool calls, workflow edges, action
+ * I/O, structured agent outputs), never emitted as display content — so their
+ * render-asset cells (component / surface / skill / content_block) are `n/a`.
+ * `definition` / `example` / `gate_structural` stay fully enforced.
+ */
+export const GENERATED_CONTRACT_FAMILIES: ReadonlySet<string> = new Set([
+  "action_io",
+  "tool_io",
+  WORKFLOW_IO_FAMILY,
+  "agent_io",
+]);
+
+/**
  * XML tags that are protocol/control machinery, NOT Shapes — code-owned per
  * SHAPE_SYSTEM.md R2. The detector census must exclude them (they will never
  * get a `kind_surface` row). Exported so the CLI's extraction and any future
@@ -203,6 +218,12 @@ export interface DoctorCodeRenderPaths {
   artifactKinds: string[];
 }
 
+/** One aidream generated-contract manifest entry (slim view the doctor needs). */
+export interface DoctorContractManifestEntry {
+  kind: string;
+  family: string;
+}
+
 export interface ShapeDoctorInput {
   kinds: DoctorKindDefinition[];
   examples: DoctorKindExample[];
@@ -213,6 +234,22 @@ export interface ShapeDoctorInput {
   contentBlocks: DoctorContentBlock[];
   detectorTokens: DoctorDetectorToken[];
   codeRenderPaths: DoctorCodeRenderPaths;
+  /**
+   * All classified names from the generated content-vocab crosswalk
+   * (scripts/shape/content-vocab-crosswalk.json). When provided, every kind
+   * slug, non-control detector token, and surface token the doctor sees MUST
+   * appear here — a miss is a RED `vocab-unclassified` finding. Omit only in
+   * legacy callers that cannot load the crosswalk (they lose the gate).
+   */
+  crosswalkNames?: ReadonlySet<string>;
+  /**
+   * The aidream generated-contract inventory snapshot
+   * (scripts/shape/content-ir-contract-manifest.json). When provided, the
+   * doctor cross-checks it against the live catalog: a manifest contract with
+   * no ACTIVE live kind row, or an ACTIVE live generated-family kind absent
+   * from the manifest, is a RED `contract-gap` finding.
+   */
+  contractManifest?: DoctorContractManifestEntry[];
 }
 
 // ─── Report shape ───────────────────────────────────────────────────────────
@@ -238,6 +275,8 @@ export interface ShapeKindRow {
   kind: string;
   label: string;
   isActive: boolean;
+  /** kind_definition.metadata.family (null when absent) — drives report grouping. */
+  family: string | null;
   assets: Record<AssetColumn, AssetCell>;
   /** Non-null when this kind's exemptible cells are structurally `n/a`. */
   exemption: KindExemption | null;
@@ -252,6 +291,9 @@ export type FindingCode =
   | "component-without-schema"
   | "detector-extract-failed" // emitted by the CLI when a frozen literal vanished
   | "snapshot-drift" // emitted by the CLI on committed-vs-live drift
+  | "vocab-unclassified" // a kind/detector/surface name missing from the crosswalk
+  | "contract-gap" // manifest ↔ live catalog mismatch for a generated contract family
+  | "coverage-input-missing" // emitted by the CLI when crosswalk/manifest snapshot is unreadable
   // yellow
   | "no-example"
   | "no-skill"
@@ -373,10 +415,11 @@ export interface ExemptionEvidence {
 export function classifyExemption(evidence: ExemptionEvidence): KindExemption | null {
   const { kind, parentKinds, componentCount, surfaceCount, codeRenderPathCount } = evidence;
 
-  if (kindFamily(kind.metadata) === WORKFLOW_IO_FAMILY) {
+  const family = kindFamily(kind.metadata);
+  if (family !== null && GENERATED_CONTRACT_FAMILIES.has(family)) {
     return {
       class: "data_only",
-      subject: `workflow I/O contract (metadata.family=${WORKFLOW_IO_FAMILY})`,
+      subject: `generated ${family} contract (metadata.family=${family})`,
       parents: [],
     };
   }
@@ -401,7 +444,7 @@ export function classifyExemption(evidence: ExemptionEvidence): KindExemption | 
 /** Why THIS cell is inapplicable — the `n/a` detail string. */
 const EXEMPT_CELL_REASON: Record<ExemptionClass, Record<string, string>> = {
   data_only: {
-    component: "node data, never rendered",
+    component: "framed contract data, never rendered",
     surface: "never arrives on a content surface",
     skill: "agents never emit it as content",
     content_block: "never delivered as content",
@@ -419,6 +462,52 @@ function naCell(exemption: KindExemption, column: AssetColumn): AssetCell {
     status: "n/a",
     detail: `${exemption.subject} — ${EXEMPT_CELL_REASON[exemption.class][column]}`,
   };
+}
+
+// ─── Schema-side `__kind` strip ─────────────────────────────────────────────
+
+const KIND_KEY = "__kind";
+
+/**
+ * Deep-remove the `__kind` identity key from a JSON Schema — every
+ * `properties.__kind` member and every `"__kind"` entry in a `required` array,
+ * at any depth ($defs, items, nested objects).
+ *
+ * Why: `validateStructuralLeg` deep-strips `__kind` from the SAMPLE (schemas
+ * historically describe source data; `__kind` is injected at emit time). The
+ * generated agent_io contracts flipped that — their provider response_format
+ * schemas REQUIRE `__kind` so the model emits it — which made every such kind
+ * fail the recomputed gate on the identity key alone. Stripping the key from
+ * BOTH sides keeps the gate checking the substance of the contract while
+ * staying indifferent to where the identity key travels.
+ *
+ * (A field literally named "properties"/"required" nested inside another
+ * `properties` map could theoretically be over-stripped; generated Pydantic
+ * schemas never produce that shape.)
+ */
+export function stripKindFromJsonSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(stripKindFromJsonSchema);
+  if (schema && typeof schema === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(schema as Record<string, unknown>)) {
+      if (key === "properties" && value && typeof value === "object" && !Array.isArray(value)) {
+        const props: Record<string, unknown> = {};
+        for (const [prop, propSchema] of Object.entries(value as Record<string, unknown>)) {
+          if (prop === KIND_KEY) continue;
+          props[prop] = stripKindFromJsonSchema(propSchema);
+        }
+        out[key] = props;
+        continue;
+      }
+      if (key === "required" && Array.isArray(value)) {
+        out[key] = value.filter((entry) => entry !== KIND_KEY);
+        continue;
+      }
+      out[key] = stripKindFromJsonSchema(value);
+    }
+    return out;
+  }
+  return schema;
 }
 
 // ─── Internals ──────────────────────────────────────────────────────────────
@@ -579,7 +668,10 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
     } else if (!gateSample) {
       gate = { status: "missing", detail: "nothing to validate (no example or sample_data)" };
     } else {
-      const leg = validateStructuralLeg(gateSample.data, kind.emittedJsonSchema);
+      const leg = validateStructuralLeg(
+        gateSample.data,
+        stripKindFromJsonSchema(kind.emittedJsonSchema),
+      );
       if (leg.ok) {
         gate = {
           status: "ok",
@@ -714,6 +806,7 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
       kind: kind.kind,
       label: kind.label,
       isActive: kind.isActive,
+      family: kindFamily(kind.metadata),
       exemption,
       assets: {
         definition,
@@ -746,6 +839,61 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
       code: "detector-token-unregistered",
       message: `detector token "${t.token}" (${t.surfaceType}; ${t.sources.join(", ")}) has no kind_surface row — expected until Stage 5`,
     });
+  }
+
+  // Crosswalk coverage — with the generated crosswalk supplied, EVERY name the
+  // doctor observes (kind slug, non-control detector token, surface token) must
+  // be classified. A miss is RED: the vocabulary grew without classification.
+  if (input.crosswalkNames) {
+    const names = input.crosswalkNames;
+    const missing = new Map<string, string>();
+    for (const kind of kinds) {
+      if (!names.has(kind.kind)) missing.set(kind.kind, "kind_definition slug");
+    }
+    for (const t of input.detectorTokens) {
+      if (CONTROL_TAGS.has(t.token)) continue;
+      if (!names.has(t.token)) missing.set(t.token, `detector token (${t.source})`);
+    }
+    for (const s of input.surfaces) {
+      if (!names.has(s.token)) missing.set(s.token, `kind_surface token (${s.surfaceType})`);
+    }
+    for (const [name, what] of [...missing.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      reds.push({
+        severity: "red",
+        code: "vocab-unclassified",
+        message: `${what} "${name}" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)`,
+      });
+    }
+  }
+
+  // Contract-family gap — the aidream manifest is the runtime inventory; the
+  // live catalog must carry exactly its ACTIVE generated rows, both directions.
+  if (input.contractManifest) {
+    const liveActiveBySlug = new Map(
+      kinds.filter((k) => k.isActive).map((k) => [k.kind, k]),
+    );
+    for (const c of [...input.contractManifest].sort((a, b) => a.kind.localeCompare(b.kind))) {
+      if (!liveActiveBySlug.has(c.kind)) {
+        reds.push({
+          severity: "red",
+          code: "contract-gap",
+          message: `manifest contract "${c.kind}" (${c.family}) has no ACTIVE live kind_definition row — publisher and catalog have diverged`,
+        });
+      }
+    }
+    const manifestSlugs = new Set(input.contractManifest.map((c) => c.kind));
+    for (const kind of kinds) {
+      const family = kindFamily(kind.metadata);
+      if (!kind.isActive || family === null || !GENERATED_CONTRACT_FAMILIES.has(family)) continue;
+      if (!manifestSlugs.has(kind.kind)) {
+        reds.push({
+          severity: "red",
+          code: "contract-gap",
+          kind: kind.kind,
+          message: `ACTIVE generated kind "${kind.kind}" (${family}) is not in the contract manifest — stale catalog row or stale snapshot (pnpm check:shapes:manifest:refresh)`,
+        });
+      }
+    }
   }
 
   reds.sort(byKindThenMessage);

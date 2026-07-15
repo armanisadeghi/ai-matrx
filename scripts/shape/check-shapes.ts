@@ -29,9 +29,11 @@ import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import {
   ASSET_COLUMNS,
+  GENERATED_CONTRACT_FAMILIES,
   runShapeDoctor,
   type AssetColumn,
   type AssetStatus,
+  type DoctorContractManifestEntry,
   type DoctorContentBlock,
   type DoctorDetectorToken,
   type DoctorKindComponent,
@@ -49,6 +51,7 @@ import {
   extractDetectorTokensFromTexts,
   type DetectorExtractFailure,
 } from "../../features/content-ir/registry/shape-doctor-extract";
+import { parseContractManifestSnapshot } from "./contract-manifest-format";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SYSTEM_KINDS_PATH = resolve(
@@ -112,6 +115,85 @@ function compiledKindSlugs(): string[] {
 
 function artifactRegistryKindSlugs(): string[] {
   return artifactKindSlugsFromText(readFileSync(ARTIFACT_REGISTRY_PATH, "utf8"));
+}
+
+// ─── Coverage-gate inputs (generated crosswalk + aidream contract manifest) ─
+
+const CROSSWALK_PATH = resolve(ROOT, "scripts/shape/content-vocab-crosswalk.json");
+const CONTRACT_MANIFEST_PATH = resolve(
+  ROOT,
+  "scripts/shape/content-ir-contract-manifest.json",
+);
+
+interface CoverageInputFailure {
+  what: string;
+  detail: string;
+}
+
+/** Every classified name from the generated content-vocab crosswalk. */
+function loadCrosswalkNames(): { names: ReadonlySet<string> | undefined; failure: CoverageInputFailure | null } {
+  if (!existsSync(CROSSWALK_PATH)) {
+    return {
+      names: undefined,
+      failure: {
+        what: "content-vocab crosswalk",
+        detail: `${CROSSWALK_PATH} missing — run pnpm check:shapes:crosswalk:refresh and commit`,
+      },
+    };
+  }
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(CROSSWALK_PATH, "utf8"));
+    if (typeof parsed !== "object" || parsed === null || !Array.isArray((parsed as { rows?: unknown }).rows)) {
+      throw new Error(`no "rows" array`);
+    }
+    const names = new Set<string>();
+    for (const row of (parsed as { rows: unknown[] }).rows) {
+      const name = (row as { name?: unknown }).name;
+      if (typeof name !== "string") throw new Error("row without string name");
+      names.add(name);
+    }
+    if (names.size === 0) throw new Error("zero rows");
+    return { names, failure: null };
+  } catch (err) {
+    return {
+      names: undefined,
+      failure: {
+        what: "content-vocab crosswalk",
+        detail: `${CROSSWALK_PATH} unreadable (${err instanceof Error ? err.message : String(err)}) — regenerate with pnpm check:shapes:crosswalk:refresh`,
+      },
+    };
+  }
+}
+
+/** The slim aidream generated-contract inventory snapshot. */
+function loadContractManifest(): {
+  contracts: DoctorContractManifestEntry[] | undefined;
+  failure: CoverageInputFailure | null;
+} {
+  if (!existsSync(CONTRACT_MANIFEST_PATH)) {
+    return {
+      contracts: undefined,
+      failure: {
+        what: "contract manifest snapshot",
+        detail: `${CONTRACT_MANIFEST_PATH} missing — run pnpm check:shapes:manifest:refresh (requires aidream) and commit`,
+      },
+    };
+  }
+  try {
+    const snapshot = parseContractManifestSnapshot(readFileSync(CONTRACT_MANIFEST_PATH, "utf8"));
+    return {
+      contracts: snapshot.contracts.map((c) => ({ kind: c.kind, family: c.family })),
+      failure: null,
+    };
+  } catch (err) {
+    return {
+      contracts: undefined,
+      failure: {
+        what: "contract manifest snapshot",
+        detail: `${CONTRACT_MANIFEST_PATH} unreadable (${err instanceof Error ? err.message : String(err)}) — regenerate with pnpm check:shapes:manifest:refresh`,
+      },
+    };
+  }
 }
 
 // ─── DB reads (service key, read-only) ──────────────────────────────────────
@@ -302,6 +384,7 @@ interface SnapshotCore {
   rows: Array<{
     kind: string;
     is_active: boolean;
+    family: string | null;
     assets: Record<AssetColumn, AssetStatus>;
   }>;
   findings: Array<{ severity: string; code: string; kind?: string; message: string }>;
@@ -317,7 +400,7 @@ function buildSnapshotCore(report: ShapeDoctorReport): SnapshotCore {
     rows: report.rows.map((row) => {
       const assets = {} as Record<AssetColumn, AssetStatus>;
       for (const col of ASSET_COLUMNS) assets[col] = row.assets[col].status;
-      return { kind: row.kind, is_active: row.isActive, assets };
+      return { kind: row.kind, is_active: row.isActive, family: row.family, assets };
     }),
     findings: report.findings.map((f) => ({
       severity: f.severity,
@@ -350,6 +433,12 @@ const COLUMN_HEADING: Record<AssetColumn, string> = {
   surface: "Surface",
 };
 
+/** Generated contract-family rows are aggregated in reports (634+ rows would
+ * drown the display board); the snapshot keeps every row for exact drift. */
+function isGeneratedFamilyRow(row: { family: string | null }): boolean {
+  return row.family !== null && GENERATED_CONTRACT_FAMILIES.has(row.family);
+}
+
 function buildMarkdown(report: ShapeDoctorReport, stamp: string): string {
   const lines: string[] = [];
   lines.push("# Shape System status");
@@ -366,13 +455,58 @@ function buildMarkdown(report: ShapeDoctorReport, stamp: string): string {
     "Legend: ✅ ok · ⚠️ warn · ❌ missing (a real, closeable gap) · — n/a (structurally inapplicable — see \"Not applicable\" below).",
   );
   lines.push("");
+  const displayRows = report.rows.filter((r) => !isGeneratedFamilyRow(r));
+  const generatedRows = report.rows.filter(isGeneratedFamilyRow);
   lines.push(`| Kind | Active | ${ASSET_COLUMNS.map((c) => COLUMN_HEADING[c]).join(" | ")} |`);
   lines.push(`|---|---|${ASSET_COLUMNS.map(() => "---").join("|")}|`);
-  for (const row of report.rows) {
+  for (const row of displayRows) {
     const marks = ASSET_COLUMNS.map((c) => STATUS_MARK[row.assets[c].status]).join(" | ");
     lines.push(`| \`${row.kind}\` | ${row.isActive ? "yes" : "no"} | ${marks} |`);
   }
   lines.push("");
+
+  if (generatedRows.length > 0) {
+    lines.push(`## Generated contract families (${generatedRows.length} data-only kinds, aggregated)`);
+    lines.push("");
+    lines.push(
+      "Published by aidream's contract publisher; render assets are structurally `n/a`, while definition / example / structural gate stay fully enforced per kind (full rows live in `scripts/shape/shapes-status.json`). Kinds with a non-ok enforced cell are listed.",
+    );
+    lines.push("");
+    lines.push("| Family | Kinds | Active | Def ✅ | Example ✅ | Gate ✅ |");
+    lines.push("|---|---|---|---|---|---|");
+    const byFamily = new Map<string, typeof generatedRows>();
+    for (const row of generatedRows) {
+      const key = row.family ?? "";
+      const list = byFamily.get(key) ?? [];
+      list.push(row);
+      byFamily.set(key, list);
+    }
+    for (const [family, rows] of [...byFamily.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      const okCount = (col: AssetColumn): number =>
+        rows.filter((r) => r.assets[col].status === "ok").length;
+      lines.push(
+        `| \`${family}\` | ${rows.length} | ${rows.filter((r) => r.isActive).length} | ${okCount("definition")} | ${okCount("example")} | ${okCount("gate_structural")} |`,
+      );
+    }
+    const enforcedGaps = generatedRows.filter((r) =>
+      (["definition", "example", "gate_structural"] as const).some(
+        (c) => r.assets[c].status === "warn" || r.assets[c].status === "missing",
+      ),
+    );
+    if (enforcedGaps.length > 0) {
+      lines.push("");
+      lines.push(`Non-ok enforced cells (${enforcedGaps.length} kinds):`);
+      lines.push("");
+      for (const row of enforcedGaps) {
+        const cells = (["definition", "example", "gate_structural"] as const)
+          .filter((c) => row.assets[c].status !== "ok")
+          .map((c) => `${COLUMN_HEADING[c]}: ${STATUS_MARK[row.assets[c].status]}`)
+          .join(", ");
+        lines.push(`- \`${row.kind}\` (${row.family}${row.isActive ? "" : ", inactive"}) — ${cells}`);
+      }
+    }
+    lines.push("");
+  }
 
   lines.push("## Findings");
   lines.push("");
@@ -391,7 +525,7 @@ function buildMarkdown(report: ShapeDoctorReport, stamp: string): string {
 
   // Not-applicable roster — one line per exempted kind, so the reader can audit
   // WHY a cell went quiet instead of taking `—` on faith.
-  const exempted = report.rows.filter((r) => r.exemption !== null);
+  const exempted = displayRows.filter((r) => r.exemption !== null);
   if (exempted.length > 0) {
     lines.push(`## Not applicable (${exempted.length} kinds)`);
     lines.push("");
@@ -411,7 +545,7 @@ function buildMarkdown(report: ShapeDoctorReport, stamp: string): string {
   }
 
   const notes: string[] = [];
-  for (const row of report.rows) {
+  for (const row of displayRows) {
     for (const col of ASSET_COLUMNS) {
       const cell = row.assets[col];
       if ((cell.status === "warn" || cell.status === "missing") && cell.detail) {
@@ -447,13 +581,31 @@ const SHORT_HEAD: Record<AssetColumn, string> = {
 };
 
 function printMatrix(report: ShapeDoctorReport): void {
-  const kindWidth = Math.max(...report.rows.map((r) => r.kind.length), 4) + 2;
+  const displayRows = report.rows.filter((r) => !isGeneratedFamilyRow(r));
+  const generatedRows = report.rows.filter(isGeneratedFamilyRow);
+  const kindWidth = Math.max(...displayRows.map((r) => r.kind.length), 4) + 2;
   const head = ASSET_COLUMNS.map((c) => SHORT_HEAD[c].padEnd(5)).join("");
   console.log(`\n${C.bold}${"kind".padEnd(kindWidth)}act  ${head}${C.reset}`);
-  for (const row of report.rows) {
+  for (const row of displayRows) {
     const marks = ASSET_COLUMNS.map((c) => `${CONSOLE_MARK[row.assets[c].status]}    `).join("");
     const active = row.isActive ? `${C.green}on ${C.reset}` : `${C.dim}off${C.reset}`;
     console.log(`${row.kind.padEnd(kindWidth)}${active}  ${marks}`);
+  }
+  if (generatedRows.length > 0) {
+    const byFamily = new Map<string, { total: number; gateOk: number }>();
+    for (const row of generatedRows) {
+      const entry = byFamily.get(row.family ?? "") ?? { total: 0, gateOk: 0 };
+      entry.total += 1;
+      if (row.assets.gate_structural.status === "ok") entry.gateOk += 1;
+      byFamily.set(row.family ?? "", entry);
+    }
+    const summary = [...byFamily.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([family, s]) => `${family} ${s.gateOk}/${s.total} gate-ok`)
+      .join(" · ");
+    console.log(
+      `${C.dim}+ ${generatedRows.length} generated data-only contract kinds (aggregated): ${summary}${C.reset}`,
+    );
   }
 }
 
@@ -499,6 +651,8 @@ async function main(): Promise<number> {
 
   const db = await fetchDbInputs();
   const { tokens: detectorTokens, failures: extractFailures } = extractDetectorTokens();
+  const crosswalk = loadCrosswalkNames();
+  const manifest = loadContractManifest();
 
   const report = runShapeDoctor({
     ...db,
@@ -507,7 +661,21 @@ async function main(): Promise<number> {
       compiledKinds: compiledKindSlugs(),
       artifactKinds: artifactRegistryKindSlugs(),
     },
+    crosswalkNames: crosswalk.names,
+    contractManifest: manifest.contracts,
   });
+
+  // Coverage inputs are load-bearing for the strict gate — a missing/corrupt
+  // crosswalk or manifest snapshot means the gate is BLIND, which is itself red.
+  for (const failure of [crosswalk.failure, manifest.failure]) {
+    if (!failure) continue;
+    report.findings.unshift({
+      severity: "red",
+      code: "coverage-input-missing",
+      message: `${failure.what} unavailable — the coverage gate is blind: ${failure.detail}`,
+    });
+    report.totals.red += 1;
+  }
 
   // Detector-literal drift is a CLI-level red: the frozen list the census
   // depends on moved/renamed — the census itself is now blind.

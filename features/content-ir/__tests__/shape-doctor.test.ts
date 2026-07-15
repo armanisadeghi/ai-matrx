@@ -16,6 +16,7 @@ import {
   runShapeDoctor,
   attributeSkillsToKinds,
   classifyExemption,
+  stripKindFromJsonSchema,
   type DoctorKindDefinition,
   type ShapeDoctorInput,
 } from "../registry/shape-doctor";
@@ -317,7 +318,7 @@ describe("shape doctor — n/a classification", () => {
     expect(row.exemption?.class).toBe("data_only");
     for (const col of ["component", "surface", "skill", "content_block"] as const) {
       expect(row.assets[col].status).toBe("n/a");
-      expect(row.assets[col].detail).toContain("workflow I/O contract");
+      expect(row.assets[col].detail).toContain("generated workflow_io contract");
     }
     // Definition / example / gate stay REAL — a data-only kind still has a
     // schema that must validate against its sample.
@@ -624,5 +625,222 @@ describe("shape doctor — n/a classification", () => {
         codeRenderPathCount: 0,
       }),
     ).toBeNull();
+  });
+});
+
+// ─── Coverage gates (crosswalk + contract manifest) ─────────────────────────
+
+describe("shape doctor — coverage gates", () => {
+  it("exempts ALL four generated contract families as data_only", () => {
+    for (const family of ["action_io", "tool_io", "workflow_io", "agent_io"]) {
+      const report = runShapeDoctor(
+        baseInput({
+          kinds: [
+            makeKind({
+              id: "k1",
+              kind: `${family}_thing_input`,
+              emittedJsonSchema: { type: "object" },
+              metadata: { family },
+            }),
+          ],
+          examples: [
+            { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: {}, updatedAt: T0 },
+          ],
+        }),
+      );
+      expect(report.rows[0].exemption?.class).toBe("data_only");
+      expect(report.rows[0].family).toBe(family);
+      expect(report.findings).toHaveLength(0);
+    }
+  });
+
+  it("reds vocab-unclassified for kind slugs / detector tokens / surface tokens missing from the crosswalk", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "k1", kind: "known_kind" }),
+          makeKind({ id: "k2", kind: "mystery_kind" }),
+        ],
+        detectorTokens: [
+          { token: "mystery_tag", surfaceType: "xml_tag", source: "test#SET" },
+          // Control tags are code-owned protocol — never crosswalk-gated here.
+          { token: "thinking", surfaceType: "xml_tag", source: "test#SET" },
+        ],
+        surfaces: [
+          { id: "s1", kindDefinitionId: "k1", surfaceType: "fence_lang", token: "mystery_fence" },
+        ],
+        crosswalkNames: new Set(["known_kind"]),
+      }),
+    );
+    const codes = report.findings.filter((f) => f.code === "vocab-unclassified");
+    expect(codes).toHaveLength(3);
+    const joined = codes.map((f) => f.message).join("\n");
+    expect(joined).toContain('"mystery_fence"');
+    expect(joined).toContain('"mystery_kind"');
+    expect(joined).toContain('"mystery_tag"');
+    expect(joined).not.toContain('"thinking"');
+    expect(codes.every((f) => f.severity === "red")).toBe(true);
+  });
+
+  it("stays quiet when the crosswalk covers everything", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [makeKind({ id: "k1", kind: "known_kind" })],
+        detectorTokens: [{ token: "known_kind", surfaceType: "xml_tag", source: "test#SET" }],
+        crosswalkNames: new Set(["known_kind"]),
+      }),
+    );
+    expect(report.findings.filter((f) => f.code === "vocab-unclassified")).toHaveLength(0);
+  });
+
+  it("reds contract-gap in both directions (manifest↔live)", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          // Live ACTIVE generated kind absent from the manifest → stale.
+          makeKind({
+            id: "k1",
+            kind: "tool_io_orphan_input",
+            isActive: true,
+            emittedJsonSchema: { type: "object" },
+            metadata: { family: "tool_io" },
+          }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: {}, updatedAt: T0 },
+        ],
+        contractManifest: [
+          // Manifest contract with no active live row → missing.
+          { kind: "action_io_missing_output", family: "action_io" },
+        ],
+      }),
+    );
+    const gaps = report.findings.filter((f) => f.code === "contract-gap");
+    expect(gaps).toHaveLength(2);
+    expect(gaps.map((f) => f.message).join("\n")).toContain("action_io_missing_output");
+    expect(gaps.map((f) => f.message).join("\n")).toContain("tool_io_orphan_input");
+    expect(gaps.every((f) => f.severity === "red")).toBe(true);
+  });
+
+  it("does not gap-check INACTIVE generated kinds (deliberate deactivations)", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "workflow_io_user_input_output",
+            isActive: false,
+            emittedJsonSchema: { type: "object" },
+            metadata: { family: "workflow_io" },
+          }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: {}, updatedAt: T0 },
+        ],
+        contractManifest: [],
+      }),
+    );
+    expect(report.findings.filter((f) => f.code === "contract-gap")).toHaveLength(0);
+  });
+});
+
+// ─── Schema-side `__kind` strip (agent_io response_format schemas) ──────────
+
+describe("shape doctor — schema-side __kind strip", () => {
+  it("passes the gate when schema REQUIRES __kind (agent_io) and the sample carries it", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "agent_io_x_output",
+            isActive: true,
+            metadata: { family: "agent_io" },
+            emittedJsonSchema: {
+              type: "object",
+              properties: {
+                __kind: { const: "flashcard_set" },
+                title: { type: "string" },
+                nested: {
+                  type: "object",
+                  properties: { __kind: { const: "memory_palace" }, v: { type: "number" } },
+                  required: ["__kind", "v"],
+                  additionalProperties: false,
+                },
+              },
+              required: ["__kind", "title", "nested"],
+              additionalProperties: false,
+            },
+          }),
+        ],
+        examples: [
+          {
+            id: "e1",
+            kindDefinitionId: "k1",
+            isCanonical: true,
+            // The deep sample-side strip removes BOTH __kind keys; the deep
+            // schema-side strip removes both requirements — substance matches.
+            data: {
+              __kind: "flashcard_set",
+              title: "t",
+              nested: { __kind: "memory_palace", v: 1 },
+            },
+            updatedAt: T0,
+          },
+        ],
+      }),
+    );
+    expect(report.rows[0].assets.gate_structural.status).toBe("ok");
+    expect(report.findings.filter((f) => f.code === "active-gate-fail")).toHaveLength(0);
+  });
+
+  it("still fails the gate on REAL substance drift under a __kind-bearing schema", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "agent_io_y_output",
+            isActive: true,
+            metadata: { family: "agent_io" },
+            emittedJsonSchema: {
+              type: "object",
+              properties: { __kind: { const: "x" }, title: { type: "string" } },
+              required: ["__kind", "title"],
+              additionalProperties: false,
+            },
+          }),
+        ],
+        examples: [
+          {
+            id: "e1",
+            kindDefinitionId: "k1",
+            isCanonical: true,
+            data: { __kind: "x" }, // missing required `title` — a real gap
+            updatedAt: T0,
+          },
+        ],
+      }),
+    );
+    expect(report.rows[0].assets.gate_structural.status).toBe("warn");
+    expect(report.findings.some((f) => f.code === "active-gate-fail")).toBe(true);
+  });
+
+  it("stripKindFromJsonSchema removes __kind from properties/required at every depth", () => {
+    const stripped = stripKindFromJsonSchema({
+      properties: { __kind: { const: "a" }, keep: { type: "string" } },
+      required: ["__kind", "keep"],
+      $defs: {
+        Inner: {
+          properties: { __kind: { const: "b" } },
+          required: ["__kind"],
+        },
+      },
+    }) as Record<string, unknown>;
+    expect(stripped).toEqual({
+      properties: { keep: { type: "string" } },
+      required: ["keep"],
+      $defs: { Inner: { properties: {}, required: [] } },
+    });
   });
 });

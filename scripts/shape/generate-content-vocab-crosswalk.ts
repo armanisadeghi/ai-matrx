@@ -41,7 +41,10 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
-import { CONTROL_TAGS } from "../../features/content-ir/registry/shape-doctor";
+import {
+  CONTROL_TAGS,
+  GENERATED_CONTRACT_FAMILIES,
+} from "../../features/content-ir/registry/shape-doctor";
 import { extractDetectorTokensFromTexts } from "../../features/content-ir/registry/shape-doctor-extract";
 import {
   parseContractManifestSnapshot,
@@ -221,14 +224,6 @@ const KIND_ALIASES: ReadonlyMap<string, string> = new Map([
   ["tasks", "task_list"],
   ["task", "task_list"], // artifact-registry alias only; the XML <task> control tag wins protocol first
   ["display_questionnaire", "questionnaire"],
-]);
-
-/** The four generated framed-contract families (data-only shapes). */
-export const GENERATED_CONTRACT_FAMILIES: ReadonlySet<string> = new Set([
-  "action_io",
-  "tool_io",
-  "workflow_io",
-  "agent_io",
 ]);
 
 // ─── Source collection ──────────────────────────────────────────────────────
