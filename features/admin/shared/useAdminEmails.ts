@@ -1,12 +1,12 @@
 "use client";
 
-// features/admin/app-config/useAdminEmails.ts
+// features/admin/shared/useAdminEmails.ts
 //
 // user_id → admin email map for provenance columns (app_config.updated_by,
-// app_config_history.changed_by). Loaded once per page via the existing
-// admin_list SECURITY DEFINER RPC (the caller is already a super admin —
-// this surface is super-admin gated). Module-scoped in-flight dedup so the
-// list view and the history panel share one request.
+// catalog_entries.updated_by, *_history.changed_by). Loaded once per page via
+// the existing admin_list SECURITY DEFINER RPC (the caller is already a super
+// admin — these surfaces are super-admin gated). Module-scoped in-flight
+// dedup so every list view and history panel shares one request.
 
 import { useEffect, useState } from "react";
 
@@ -50,7 +50,7 @@ export function useAdminEmails(): Record<string, string> {
       })
       .catch((error: unknown) => {
         console.warn(
-          "[app-config] admin_list email lookup failed — provenance falls back to raw UUIDs",
+          "[admin] admin_list email lookup failed — provenance falls back to raw UUIDs",
           error,
         );
       });

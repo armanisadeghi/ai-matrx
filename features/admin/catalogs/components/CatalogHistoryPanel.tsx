@@ -1,57 +1,75 @@
 "use client";
 
-// features/admin/app-config/components/AppConfigHistoryPanel.tsx
+// features/admin/catalogs/components/CatalogHistoryPanel.tsx
 //
-// Version history for one app_config row. Reads public.app_config_history
-// (admin-read RLS) directly via supabase-js, renders each snapshot with an
-// expandable diff against the CURRENT row, and offers "Restore this version"
-// — which goes through the same admin_update_app_config RPC (creating a new
-// history entry), never a direct table write.
+// Version history for one catalog entry (app, kind, key). Reads
+// public.catalog_entries_history (admin-read RLS) directly via supabase-js,
+// renders each snapshot with an expandable diff against the CURRENT row, and
+// offers "Restore this version" — which goes through the same
+// admin_upsert_catalog_entry RPC (creating a new history entry), never a
+// direct table write. Mirrors AppConfigHistoryPanel.
 
 import { useEffect, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
-import { ChevronDown, ChevronRight, History, Loader2, Undo2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  History,
+  Loader2,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DiffViewer } from "@/components/diff/DiffViewer";
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
-import { configSnapshotJson } from "@/features/admin/app-config/schema";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
+import {
+  entrySnapshotJson,
+  rowSnapshotJson,
+} from "@/features/admin/catalogs/schemas";
 import type {
-  AppConfigHistoryRow,
-  AppConfigRow,
-} from "@/features/admin/app-config/types";
+  CatalogEntryHistoryRow,
+  CatalogEntryRow,
+} from "@/features/admin/catalogs/types";
 
-interface AppConfigHistoryPanelProps {
+interface CatalogHistoryPanelProps {
   app: string;
-  currentRow: AppConfigRow;
+  kind: string;
+  entryKey: string;
+  currentRow: CatalogEntryRow;
   /** Applies the snapshot via the RPC; the parent owns the write path.
    *  Resolves true on success, false on failure — never rejects. */
-  onRestore: (entry: AppConfigHistoryRow) => Promise<boolean>;
+  onRestore: (entry: CatalogEntryHistoryRow) => Promise<boolean>;
   /** Bumped by the parent after every successful save to refetch history. */
   refreshKey: number;
 }
 
-export function AppConfigHistoryPanel({
+function historySnapshotJson(entry: CatalogEntryHistoryRow): string {
+  return entrySnapshotJson(entry);
+}
+
+export function CatalogHistoryPanel({
   app,
+  kind,
+  entryKey,
   currentRow,
   onRestore,
   refreshKey,
-}: AppConfigHistoryPanelProps) {
+}: CatalogHistoryPanelProps) {
   const { toast } = useToast();
   const adminEmails = useAdminEmails();
-  // Keyed by (app, refreshKey) so a key change shows the loading state
-  // without a synchronous reset inside the effect.
-  const loadKey = `${app}:${refreshKey}`;
+  const loadKey = `${app}:${kind}:${entryKey}:${refreshKey}`;
   const [loaded, setLoaded] = useState<{
     key: string;
-    entries: AppConfigHistoryRow[];
+    entries: CatalogEntryHistoryRow[];
   } | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [restoreTarget, setRestoreTarget] =
-    useState<AppConfigHistoryRow | null>(null);
+    useState<CatalogEntryHistoryRow | null>(null);
   const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
@@ -59,9 +77,11 @@ export function AppConfigHistoryPanel({
     const supabase = createClient();
     void (async () => {
       const { data, error } = await supabase
-        .from("app_config_history")
+        .from("catalog_entries_history")
         .select("*")
         .eq("app", app)
+        .eq("kind", kind)
+        .eq("key", entryKey)
         .order("changed_at", { ascending: false });
       if (cancelled) return;
       if (error) {
@@ -78,11 +98,11 @@ export function AppConfigHistoryPanel({
     return () => {
       cancelled = true;
     };
-  }, [app, loadKey, toast]);
+  }, [app, kind, entryKey, loadKey, toast]);
 
   const entries = loaded && loaded.key === loadKey ? loaded.entries : null;
 
-  const currentJson = configSnapshotJson(currentRow);
+  const currentJson = rowSnapshotJson(currentRow);
 
   if (entries === null) {
     return (
@@ -96,7 +116,7 @@ export function AppConfigHistoryPanel({
     return (
       <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
         <History className="h-4 w-4" /> No history yet — snapshots are written
-        on every save.
+        on every save and delete.
       </div>
     );
   }
@@ -105,7 +125,7 @@ export function AppConfigHistoryPanel({
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
         {entries.length} snapshot{entries.length === 1 ? "" : "s"} — each diff
-        compares the snapshot against the CURRENT live row.
+        compares the snapshot against the CURRENT live entry.
       </p>
 
       {entries.map((entry) => {
@@ -130,12 +150,20 @@ export function AppConfigHistoryPanel({
                 <span className="text-sm font-medium">
                   {formatDistanceToNow(changedAt, { addSuffix: true })}
                 </span>
+                {entry.op === "delete" ? (
+                  <Badge
+                    variant="outline"
+                    className="border-destructive/50 text-destructive"
+                  >
+                    <Trash2 className="mr-1 h-3 w-3" /> delete
+                  </Badge>
+                ) : null}
                 <span className="hidden text-xs text-muted-foreground sm:inline">
                   {format(changedAt, "yyyy-MM-dd HH:mm:ss")}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  schema v{entry.schema_version} · min{" "}
-                  {entry.min_supported_app_version}
+                  schema v{entry.schema_version} ·{" "}
+                  {entry.is_active ? "active" : "inactive"}
                 </span>
                 {entry.changed_by ? (
                   adminEmails[entry.changed_by] ? (
@@ -169,7 +197,7 @@ export function AppConfigHistoryPanel({
             {expanded ? (
               <div className="border-t border-border p-2">
                 <DiffViewer
-                  original={configSnapshotJson(entry)}
+                  original={historySnapshotJson(entry)}
                   modified={currentJson}
                   engine="light"
                   language="json"
@@ -191,10 +219,10 @@ export function AppConfigHistoryPanel({
         title="Restore this version?"
         description={
           restoreTarget
-            ? `This overwrites the live "${app}" config with the snapshot from ${format(
+            ? `This overwrites the live ${app}/${kind}/${entryKey} entry with the snapshot from ${format(
                 new Date(restoreTarget.changed_at),
                 "yyyy-MM-dd HH:mm:ss",
-              )}. Every installed client in the field picks it up on its next refresh. The current row is snapshotted to history first.`
+              )}. Every installed client picks it up on its next catalog refresh. The current entry is snapshotted to history first.`
             : undefined
         }
         contentClassName="sm:max-w-4xl"
@@ -203,7 +231,7 @@ export function AppConfigHistoryPanel({
             <div className="max-h-[55vh] overflow-y-auto rounded-md border border-border">
               <DiffViewer
                 original={currentJson}
-                modified={configSnapshotJson(restoreTarget)}
+                modified={historySnapshotJson(restoreTarget)}
                 engine="light"
                 language="json"
                 view="split"

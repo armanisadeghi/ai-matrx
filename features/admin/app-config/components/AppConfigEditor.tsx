@@ -26,7 +26,11 @@ import JsonFieldEditor from "@/features/ai-models/components/JsonFieldEditor";
 import { AppConfigHistoryPanel } from "@/features/admin/app-config/components/AppConfigHistoryPanel";
 import { FlagsEditor } from "@/features/admin/app-config/components/FlagsEditor";
 import { NoticeEditor } from "@/features/admin/app-config/components/NoticeEditor";
-import { UrlProbeField } from "@/features/admin/app-config/components/UrlProbeField";
+import {
+  isConflictError,
+  rpcErrorMessage,
+} from "@/features/admin/shared/admin-rpc-errors";
+import { UrlProbeField } from "@/features/admin/shared/UrlProbeField";
 import {
   APP_SLUG_REGEX,
   SEMVER_REGEX,
@@ -57,19 +61,6 @@ interface PendingSave {
   schemaVersion: number;
   minVersion: string;
   config: Record<string, unknown>;
-}
-
-function rpcErrorMessage(error: { code?: string; message: string }): string {
-  if (error.code === "42501") {
-    return "Super Admin required — your account cannot modify app config.";
-  }
-  return error.message;
-}
-
-/** ERRCODE 40001 ("Conflict: …") raised by admin_update_app_config when the
- *  row changed since it was loaded (optimistic-concurrency check). */
-function isConflictError(error: { code?: string; message: string }): boolean {
-  return error.code === "40001" || error.message.startsWith("Conflict:");
 }
 
 export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) {

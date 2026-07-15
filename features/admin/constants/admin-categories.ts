@@ -573,6 +573,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Remote Catalogs",
+        description:
+          "DB-backed catalogs for shipped clients (public.catalog_entries) — local LLMs, LoRAs, image/video/TTS models, presets, prompts. Kind-aware editors, dual-gate activation with artifact probes, HuggingFace/Civitai link resolver, diff-confirmed saves, history/restore.",
+        iconName: "LibraryBig",
+        link: "/administration/catalogs",
+        isNew: true,
+      },
+      {
         title: "CMS Agent Activity",
         description:
           "Fleet-wide CMS visibility — agent/human write activity, per-site page tree with preview/live links, agent write-policy editor, and validation-exception approvals.",

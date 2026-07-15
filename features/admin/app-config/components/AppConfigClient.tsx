@@ -9,15 +9,16 @@
 // Cross-repo system-of-record: common-docs/app-config/FEATURE.md
 
 import { useState } from "react";
+import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
-import { MonitorCog, Plus } from "lucide-react";
+import { LibraryBig, MonitorCog, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import { AppConfigEditor } from "@/features/admin/app-config/components/AppConfigEditor";
-import { useAdminEmails } from "@/features/admin/app-config/useAdminEmails";
+import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import type { AppConfigRow } from "@/features/admin/app-config/types";
 
 interface AppConfigClientProps {
@@ -91,9 +92,18 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
             </p>
           </div>
         </div>
-        <Button type="button" size="sm" onClick={() => setView({ mode: "new" })}>
-          <Plus className="mr-1.5 h-4 w-4" /> New app
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild type="button" variant="ghost" size="sm">
+            {/* Sibling system: catalog-shaped data (models, LoRAs, presets)
+                lives in Remote Catalogs — app_config stays config-shaped. */}
+            <Link href="/administration/catalogs">
+              <LibraryBig className="mr-1.5 h-4 w-4" /> Remote Catalogs
+            </Link>
+          </Button>
+          <Button type="button" size="sm" onClick={() => setView({ mode: "new" })}>
+            <Plus className="mr-1.5 h-4 w-4" /> New app
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-md border border-border">
