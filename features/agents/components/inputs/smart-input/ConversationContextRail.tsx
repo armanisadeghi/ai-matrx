@@ -42,6 +42,7 @@ import {
   MoreHorizontal,
   NotebookPen,
   Code2,
+  Eye,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -104,6 +105,7 @@ import { TaskPanel } from "@/features/agents/ui-first-tools/ui/lists/TaskPanel";
 import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
 import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
+import { AgentSeesSheet } from "@/features/agents/components/context-slots-display/AgentSeesSheet";
 
 interface ConversationContextRailProps {
   conversationId: string;
@@ -219,6 +221,8 @@ export function ConversationContextRail({
   } | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [listsOpen, setListsOpen] = useState(false);
+  // "What the agent sees" — the plain-language readout of the real payload.
+  const [seesOpen, setSeesOpen] = useState(false);
   const layerDrawer = useContextItemDrawer();
 
   const closeOtherSurfaces = () => {
@@ -499,9 +503,19 @@ export function ConversationContextRail({
     <div
       className={cn("flex min-w-0 items-center gap-1.5 px-0.5 pb-1", className)}
     >
-      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+      <button
+        type="button"
+        onClick={() => setSeesOpen(true)}
+        title="See exactly what the agent receives this turn"
+        className={cn(
+          "group/ctx flex shrink-0 items-center gap-1 rounded px-1 py-0.5",
+          "text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70",
+          "transition-colors hover:bg-muted/60 hover:text-foreground",
+        )}
+      >
+        <Eye className="h-3 w-3 opacity-70 transition-opacity group-hover/ctx:opacity-100" />
         Context
-      </span>
+      </button>
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
         {inline.map((item) => (
           <RailPill key={item.id} item={item} />
@@ -571,6 +585,11 @@ export function ConversationContextRail({
         listsOpen={listsOpen}
         setListsOpen={setListsOpen}
         layerDrawer={layerDrawer}
+      />
+      <AgentSeesSheet
+        conversationId={conversationId}
+        open={seesOpen}
+        onOpenChange={setSeesOpen}
       />
     </div>
   );
