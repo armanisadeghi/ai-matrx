@@ -75,17 +75,38 @@ item **definition**, and a **dimension** set per scope (or dynamically):
 
 ## Remaining work
 
-Ordered. Each item names its surface.
+Ordered. Each item names its surface. The DB + FE data layer for `reference_source`
+is DONE (see Done); everything below is authoring UI, resolution, and writeback.
 
-1. **Item-definition "bound source" config.** Decide storage (see Decisions) and add: `container_type` (dataset|structured_list), `container_id` (fixed table/list id), `dimension` (whole|row|column|cell|group), plus a `filter` predicate `{column, op, value}` for the dynamic case (value may be a `$scope.id`-style token). Whichever store, add to the item editor.
-2. **Frontend authoring — static.** Add table/list dimensions to `CONTEXT_REFERENCE_TYPE_OPTIONS`; build the sub-pickers in `ReferenceValuePicker`: a **table picker** + **row / column / cell** selector, and a **list picker** + **group** selector. Container is fixed on the definition, so the value picker only chooses the sub-element. Emit the canonical fence (`table_row {table_id,row_id}`, etc.).
-3. **Dynamic filter (net-new).** Definition-level `{container_id, filter:{column, op, value:"$scope.id"}}`. No per-scope value. A resolver substitutes the token and resolves the matching row/cell **wherever the value is shown or needed** — UI display component + `resolve_full_context`. Backend: likely a new reference type (e.g. `table_query`/`dataset_filter`) or a feed-config resolver reusing `datasets_service.filter_rows`.
-4. **Structured-list parallel.** Whole-list-as-value + group-as-dimension (grouped list; group name is the filter), reusing the same authoring/resolution built for datasets. Keep the existing dropdown ("picklist") trick working.
-5. **Agent writeback.** Extend `context_writeback.py` so an agent can write each dimension (set a row_id, a cell, a group) — validate against the bound container + dimension.
-6. **Reconcile `feed_type='dataset'`.** Today it points at a RAG **data-store**, not a udt **table** — confusing given this feature. Decide whether the new table binding absorbs/renames it or they coexist with distinct names.
-7. **Naming sweep (independent, low-risk):** UI "picklist" → "Structured List" wording (`PicklistBindingEditor`, labels). Product renamed User Lists → Structured Lists.
+1. **Authoring UI — the bound source.** In `ContextItemSettingsForm` (and `ContextItemAddForm` — its create path uses the `create_context_item` RPC, which needs a `p_reference_source` param added, unlike the edit path's direct `.update()`): when reference mode, let the author pick `container_type` (dataset/structured_list), pick the specific container (a **dataset/table picker** — see `features/data-tables/**`; a **structured-list picker** — `features/user-lists/**`), pick `dimension`, and for `column`/`cell` pick the column, for dynamic build the `filter`. Write `reference_source` via `updateContextItem` (already wired).
+2. **Per-scope value picker — static.** In `ReferenceValuePicker` (or a new sibling), when the item's `reference_source` fixes a container + dimension, show ONLY the sub-element chooser (a **row picker** / **column picker** / **cell picker** for datasets, a **group picker** for grouped lists) scoped to the bound container. Emit the canonical fence: `table_row {table_id,row_id}`, `table_cell {table_id,row_id,column_name}`, `table_column`, `structured_list_group`. `ScopeContextRow.reference_source` already carries the binding to the field.
+3. **Dynamic filter (net-new).** `reference_source.filter = {column, op, value:"$scope.id"}` → no per-scope value. A resolver substitutes the token and resolves the matching row/cell **wherever the value is shown or needed** — UI display (`ContextValueDisplay`) AND `resolve_full_context`. Backend likely a new reference type (`table_query`/`dataset_filter`) or a resolver reusing aidream `datasets_service.filter_rows` (`services/datasets/service.py:537`).
+4. **Whole-container + structured-list parallel.** `dimension:"whole"` → the whole table/list is the value (emit a `table` / `structured_list` fence). Structured-list `group` dimension (grouped lists only; group name is the value/filter). Keep the existing list→read-only-dropdown ("picklist") trick working (`PicklistBindingEditor` path).
+5. **Agent writeback.** Extend `aidream/services/conversation_context/context_writeback.py` so an agent can write each dimension (set a row_id, a cell, a group), validated against the item's `reference_source` container + dimension.
+6. **Reconcile `feed_type='dataset'`.** Today it points at a RAG **data-store**, not a udt **table** — confusing given this feature. Decide whether the new `reference_source` dataset binding absorbs/renames it or they coexist with distinct names.
+7. **Permanent model (Arman's caveat).** The `reference_source` JSONB is interim to ship fast. Revisit for the ideal permanent design — likely one or more dedicated tables — once the shape is proven in use.
+8. **Naming sweep (independent, low-risk):** UI "picklist" → "Structured List" wording (`PicklistBindingEditor`, labels). Deprioritized by Arman ("has little to do with this").
 
-## Decisions needed
+## Done
 
-**Situation.** Reference *values* are stored as `matrx` fences in `value_text` (the envelope system, where `table_row` etc. already live). But this feature needs a *definition-level* binding — a fixed container id + dimension + (for dynamic) a filter predicate — that isn't a per-scope value. Two homes exist: the reference-config columns on the item (`allowed_reference_types`/`max_items`/`allowed_scope_type_ids`, extend with a new `reference_source` JSONB), OR the existing `feed_type`/`feed_config` columns (already carry a `'dataset'` feed type, but currently meaning a RAG data-store).
-**Decide.** Store the bound-source config as (a) a new `reference_source` JSONB in the reference-config family (keeps values + binding in the envelope system; recommended), or (b) an extension of `feed_type='dataset'` + `feed_config` (requires resolving the RAG-store meaning first). This choice sets the DB + resolver shape for the whole feature.
+- `reference_source` JSONB binding — DB column + read-RPC emission (`list_scope_type_items`, `get_scope_context`) + generated types + FE data layer (`ReferenceSource` type & helpers in `features/scopes/utils/referenceSource.ts`; threaded through `ContextItem`, `updateContextItem`, `ScopeContextRow`, cache patch). See `migrations/ctx_reference_source.sql`.
+
+## Storage decision (Arman, 2026-07-13) — INTERIM
+
+Bound-source config lives in a new **`context_items.reference_source` JSONB** (the
+reference-config family). **Arman's caveat, verbatim:**
+
+> "I would prefer that we do it as the reference source jsonb, but then I need you to put in the handoff document that this was done in order to get through this quickly and have it set up and functional in the ui and with agents, but we need to look more closely to see the most ideal permanent solution, which is likely one or more tables. But for now, let's do it."
+
+So: JSONB is the **ship-fast** representation to get this functional in the UI + with
+agents. **Permanent model is unresolved — revisit for a proper table-based design
+(one or more tables)** once the shape is proven. Do not treat the JSONB as final.
+
+`reference_source` shape:
+```
+{ container_type: "dataset" | "structured_list",
+  container_id:   "<table_id | list_id>",   // fixed on the definition
+  dimension:      "whole" | "row" | "column" | "cell" | "group",
+  filter:         { column, op, value: "$scope.id" }  // dynamic case only
+}
+```
