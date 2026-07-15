@@ -1,5 +1,7 @@
 # The Shape System — operating doc
 
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md` — this file owns frontend operating detail; current platform-wide status and gaps live there.
+
 > **Naming rule:** "Shape" is the product name of the system; **"kind"** is the technical noun (`content_ir.kind_definition.kind`). CLI namespace is `shape:*`; DB and code vocabulary stays `kind`.
 >
 > Companion concept doc: [`content-ir-kind-full-system.md`](./content-ir-kind-full-system.md). Program plan of record: `~/.claude/plans/please-review-this-plan-serialized-parrot.md` (this doc is the durable extract).
@@ -10,11 +12,11 @@
 
 **1 atom** — the **Shape**: a named, versioned structure. Home: `content_ir.kind_definition` + `kind_edge`, read via `kind_definition_version`.
 
-**7 assets per Shape:** schema · skill(s) · content block · output component · input component · samples (`kind_example`) · pydantic mirror.
+**Target: 7 assets per independently usable Shape:** schema · skill(s) · content block · output component · input component · samples (`kind_example`) · Pydantic mirror. Nested-only and data-only kinds have explicit structural exemptions; current coverage is generated in `SHAPES_STATUS.md` and summarized cross-repo in the system-of-record.
 
-**3 machines:** detection (`kind_surface` — every input surface normalizes to canonical `__kind` JSON at the boundary) · registry/resolver (`kind_component`: (kind, platform, role) → component) · artifact + state.
+**Target: 3 machines:** detection (`kind_surface` should drive every Shape surface and normalize it to canonical `__kind` JSON at the boundary) · registry/resolver (`kind_component`: (kind, platform, role) → component) · artifact + state. Detector generation and full artifact adoption remain incomplete.
 
-**4 consumers:** agent outputs · **workflow node I/O (live since 2026-07-05)** · tool results · custom apps.
+**Target: 4 consumer families:** agent outputs · workflow node I/O · tool inputs/results · custom apps. Workflow kind primitives are live; adoption across nodes/actions and the other families is incomplete.
 
 **THE KEYSTONE — convergence at detection.** A Shape arrives on many surfaces (`__kind` JSON, XML tags, fences, tool results, markdown). The instant a detector recognizes Shape X it emits the canonical `__kind` JSON; the arrival format is discarded. Below the boundary everything is format-agnostic **by construction**. Split-per-format assets (skill, content block, detection) sit ABOVE the boundary; shared assets (schema, components, samples, pydantic, artifact/state) sit BELOW.
 
@@ -39,14 +41,16 @@
 | R9 | Skill-paired content blocks live under the **Agent Skills** category tree, linked via `platform.associations`, **two per skill (one simple, one complex)**. Skills: one per kind per syntax — `kind_<slug>` (JSON) / `kind_<slug>_xml`. Coexist-not-clobber (`-kind` suffix) during transition. |
 | R10 | Status is **GENERATED** (`shape-doctor` → `check:shapes` → `SHAPES_STATUS.md` + admin board), never hand-maintained. Per-kind prose lives in `kind_definition.description`. |
 
-## Workflow I/O as kinds (LIVE — the first mission-critical consumer)
+## Workflow I/O as kinds (engine primitives live; rollout incomplete)
 
-- `NodeSpec.input_kind/output_kind`; per-node authored overrides `data.input_kind`/`data.output_kind`; all built-ins kind-typed (structural kinds for stable shapes, generic `json`/`text`/… for pass-through; `io.user_input` = inline anonymous shape).
-- Scheduler: input kind gates pre-execute (fatal, per-field); output drift logs loudly, never fails a run; `output_kind` on every `NodeOutcome`, `node_completed` event, and `workflow.node_outcome.output_kind`.
+- `NodeSpec.input_kind/output_kind` and per-node authored overrides `data.input_kind`/`data.output_kind` exist. As of 2026-07-15: 0/126 registered node types declare an input kind, 37/126 declare an output kind, 0/88 actions declare either, and no live workflow node has an authored override.
+- Scheduler behavior is implemented for declarations that exist: input kind gates pre-execute (fatal, per-field); output drift logs loudly and is non-fatal; kind and verdict fields are carried on completion events/outcomes. An undeclared or skipped check remains null, not passed.
 - Catalog runtime: `matrx_graph.kinds` (`get_kind`/`validate_against_kind`/`invalidate_kind_catalog_cache`, loud-fail-open). LLM binding: `matrx_ai.kinds.response_format_for_kind(slug)` (portable strict schema via the lint gate).
 - Authoring rule: **read `packages/matrx-graph/docs/node-authoring.md` §"Declare your I/O as platform kinds" before adding a node.**
 
-## Roadmap (stages; W = done 2026-07-05)
+## Historical stage roadmap (retained for implementation context)
+
+Current merge-ordered projects live in `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`; the line below records the earlier frontend-led sequencing and is not a current completion ledger.
 
 **W ✅** workflow I/O · **0** this doc + skill + doctor (`check:shapes`) + envelope collision guard · **1** flashcards vertical incl. keystone (`<flashcards>` XML → kind → same component), minimal resolver + `is_active` gate, `[kind]` preview route, `shape:sample` CLI, Python fingerprint parity starts · **2** `kind_example` at scale + capture windows + `shape:new`/`shape:skill` generators + `sample_data` DROP · **3** resolver sweep (all kinds' web components registered; skl annihilation) · **4** input bridge (`kindFieldsToVariableDefinitions`) · **5a** full surface seeding + generated bootstraps swap into accumulator/splitter/`block_detector` · **5b** `__ir` emission (fingerprint-gated) + pydantic binding · **6** per-kind sweep (doctor-arbitrated) · **7** tools `output_kind` (LAST) + React Native maps (first external platform) + user/org render preferences.
 

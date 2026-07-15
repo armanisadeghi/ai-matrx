@@ -1,5 +1,5 @@
 {
-  "generated_for": "71-kinds+01f9a321699b",
+  "generated_for": "79-kinds+c1174790cfd7",
   "columns": [
     "definition",
     "example",
@@ -38,6 +38,19 @@
     },
     {
       "kind": "branch_result",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "bulk_result",
       "is_active": false,
       "assets": {
         "definition": "ok",
@@ -232,6 +245,19 @@
       }
     },
     {
+      "kind": "items",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
       "kind": "json",
       "is_active": false,
       "assets": {
@@ -311,6 +337,71 @@
     },
     {
       "kind": "number",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "office_document",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "office_presentation",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "office_spreadsheet",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "operation_result",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "page",
       "is_active": false,
       "assets": {
         "definition": "ok",
@@ -921,6 +1012,19 @@
       }
     },
     {
+      "kind": "value",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
       "kind": "workflow_run_result",
       "is_active": false,
       "assets": {
@@ -999,6 +1103,24 @@
       "severity": "yellow",
       "code": "detector-token-unregistered",
       "message": "detector token \"schema_proposal\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "office_document",
+      "message": "kind \"office_document\" has no content block referencing \"__kind\": \"office_document\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "office_presentation",
+      "message": "kind \"office_presentation\" has no content block referencing \"__kind\": \"office_presentation\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "office_spreadsheet",
+      "message": "kind \"office_spreadsheet\" has no content block referencing \"__kind\": \"office_spreadsheet\""
     },
     {
       "severity": "yellow",
@@ -1213,6 +1335,24 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "office_document",
+      "message": "kind \"office_document\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "office_presentation",
+      "message": "kind \"office_presentation\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "office_spreadsheet",
+      "message": "kind \"office_spreadsheet\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "q_and_a_set",
       "message": "kind \"q_and_a_set\" has no render_block skill teaching it"
     },
@@ -1227,6 +1367,12 @@
       "code": "no-skill",
       "kind": "study_pack_set",
       "message": "kind \"study_pack_set\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "map_result",
+      "message": "kind \"map_result\" example is older than the kind definition (example 2026-07-05T21:41:27.610783+00:00 < kind 2026-07-09T19:54:05.804284+00:00) — revalidate/recapture"
     }
   ]
 }

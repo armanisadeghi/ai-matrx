@@ -1,8 +1,10 @@
 # content-ir — the canonical structured-content system
 
+Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md` — read it before using this frontend implementation document as a platform-wide status source.
+
 **Status:** Phases 0–5 live, ALWAYS ON — no env flag (repo rule: features are never guarded behind environment variables). One library parses every JSON region — live agent streams, DB reloads, any source — into one IR that all layers pass through without reprocessing.
 
-**The Shape System** — this feature is the home of the platform-wide Shape registry: every kind carries schema + skills + content block + components + samples (`content_ir.kind_example`) + pydantic mirror; `kind_surface` is the one detection list; `kind_component` the (kind, platform, role) → component resolver; workflow node I/O already speaks kinds. **Read [`docs/SHAPE_SYSTEM.md`](./docs/SHAPE_SYSTEM.md) before any Shape-system work** (rulings, posture, roadmap, definition of done).
+**The Shape System** — this feature is the frontend home of the platform-wide Shape registry. The target kit is schema + skills + content block + components + samples (`content_ir.kind_example`) + Pydantic mirror; `kind_surface` is the designed detection authority and `kind_component` the (kind, platform, role) → component resolver. Coverage is incomplete: use the cross-repo system-of-record above for verified counts. **Read [`docs/SHAPE_SYSTEM.md`](./docs/SHAPE_SYSTEM.md) before frontend Shape-system work** (rulings, posture, and local operating detail).
 
 **Read this BEFORE touching:** stream/DB block parsing (`stream-block-accumulator.ts`, `content-splitter-v2.ts`), anything reading or writing `__kind`, kind schemas in `flexible_data`, or `metadata.__ir` on render blocks.
 
@@ -46,7 +48,7 @@
 
 ## Roadmap (strangler-fig — see plan `~/.claude/plans/your-task-is-to-rippling-wind.md`)
 
-**Full handoff / remaining-work ledger + vision scorecard:** [`docs/UNIFICATION_STATUS.md`](./docs/UNIFICATION_STATUS.md).
+**Full cross-repository status, gap analysis, and remaining-work decomposition:** `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`. The old local `docs/UNIFICATION_STATUS.md` is retained only as a supersession pointer.
 
 Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator shadow · 3 splitter parity · 4 flashcards render flip · **Track 2 A/B artifacts generalization** (any-surface `(source_system, source_id)` identity + structured kind persistence — see `features/artifacts/FEATURE.md` Materialization) · **the 8 `JSON_BLOCK_PATTERNS` successor kinds registered** (quiz_set, presentation_deck, decision_tree, comparison_set, diagram_spec, math_problem, item_presentation, schema_proposal — `kinds/*.ts` bridges + flexible_data rows; legacy root-key detection stays for OLD payloads only) · **5 persistence spine** (part-level `IrEnvelopeCache` + inbound `engine:"py-block-detector"` envelopes — `docs/PYTHON_ENVELOPE_CONTRACT.md`). Next: XML fold-in via `discriminator.ts` (Phase 6) → delete the mirrored brace/fence state machines, parser becomes end oracle (Phase 7). Agent `__kind` injection (C2) tracked in the same plan.
 

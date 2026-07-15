@@ -1,5 +1,7 @@
 # The Shape System — Core
 
+> **Vision source, not current status.** The durable vision here informed the implemented system, but its early table names and open decisions are historical. Current code/DB truth, reconciled vision, and gaps: `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`.
+
 > The team, assembled by position first, players later. This captures *what roles exist and how they relate* — not which implementation "wins." Where a canonical decision is settled, it's marked **[settled]**; where it's yours to guide, it's marked **[open]**.
 
 ---
@@ -10,7 +12,7 @@ Everything in the system reduces to one thing: **the Shape** — a named, versio
 
 A workflow node, a tool, an agent, a custom app — none are special. Each one *produces or consumes a Shape*. So the whole system is **schema in → schema out**, and the Shape is the unit that flows through all of it.
 
-**Canonical home [settled]:** `content_ir.kind_definitions` + `kind_edge`, read through the `content_ir.kind_definition_versions` view. This is the schema of record. Python, React, React Native, Vite, and JS all validate and render against it.
+**Canonical home [settled]:** `content_ir.kind_definition` + `kind_edge`, with version history exposed through `content_ir.kind_definition_version`. This is the shared schema catalog. Not every named runtime currently validates and renders every kind; rollout status lives in the cross-repository system-of-record above.
 
 ---
 
@@ -130,7 +132,7 @@ The single most important structural fact: **the split assets (skill, content bl
 ## 7. Fixed vs. open — kept separate on purpose
 
 **Settled**
-- Schema home = `content_ir.kind_definitions` + `kind_edge` via `kind_definition_versions`.
+- Schema home = `content_ir.kind_definition` + `kind_edge` via `kind_definition_version`.
 - Convergence happens at **detection**; there is exactly one internal representation (the kind's JSON) past that point.
 - XML and all other surfaces are **input surfaces**, not internal formats.
 - Already-hard-coded components: leave them; all user components are dynamic + in the DB.
