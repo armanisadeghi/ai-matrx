@@ -31,6 +31,12 @@ let channel: RealtimeChannel | null = null;
 let subscribedUserId: string | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempt = 0;
+// Backoff resets only after the channel stays healthy for this long. Resetting
+// on SUBSCRIBED alone let a flapping channel (SUBSCRIBED → CHANNEL_ERROR →
+// SUBSCRIBED …) cycle at the 1s backoff floor forever — each cycle firing a
+// full-list catch-up fetch, a self-sustaining fetch storm.
+const BACKOFF_RESET_AFTER_MS = 30_000;
+let backoffResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 type StoreWithSync = {
   getState: () => unknown;
@@ -44,6 +50,33 @@ function isOwnEcho(
   newRecord?: Record<string, unknown>,
 ): boolean {
   const state = storeApi.getState() as RootState;
+  const local = state.notes.notes[noteId];
+
+  // ── Monotonic updated_at guard — runs UNCONDITIONALLY ─────────────────
+  // Our own UPDATE's realtime echo lands 50–500ms AFTER the REST response
+  // already delivered the fresh `updated_at` via markNoteSaved — so by the
+  // time the echo arrives, `_savingNoteIds` is empty and any saving-gated
+  // check misses it. THE 2026-07 /notes BROWSER-FREEZE REGRESSION was
+  // exactly this: unsuppressed self-echoes flagged false conflicts on every
+  // autosave while typing (see FEATURE.md § Realtime echo doctrine).
+  // The timestamp is the reliable key: a payload that is not strictly newer
+  // than the state we already hold carries zero new information.
+  //  - strictly older  → stale out-of-order echo, drop.
+  //  - equal timestamp → drop only when content+label also match (a
+  //    same-millisecond collaborator write must still land).
+  if (local && newRecord) {
+    const remoteTs = Date.parse(String(newRecord.updated_at ?? ""));
+    const localTs = Date.parse(local.updated_at ?? "");
+    const contentMatches =
+      newRecord.content === undefined || newRecord.content === local.content;
+    const labelMatches =
+      newRecord.label === undefined || newRecord.label === local.label;
+    if (Number.isFinite(remoteTs) && Number.isFinite(localTs)) {
+      if (remoteTs < localTs) return true;
+      if (remoteTs === localTs && contentMatches && labelMatches) return true;
+    }
+  }
+
   const saving = state.notes._savingNoteIds.includes(noteId);
   const engineApi = storeApi._sync?.engineApi?.() ?? null;
   const syncPending = engineApi?.isPendingEcho?.("notes", noteId) ?? false;
@@ -54,7 +87,6 @@ function isOwnEcho(
   // live local content (true echo). A collaborator's divergent write must
   // reach upsertNoteFromServer so dirty locals surface as conflict.
   if (newRecord) {
-    const local = state.notes.notes[noteId];
     if (!local) return true;
     const remoteContent = newRecord.content;
     const remoteLabel = newRecord.label;
@@ -92,6 +124,12 @@ export const notesRealtimeMiddleware: Middleware<
 
   function scheduleReconnect(userId: string, reason: string) {
     clearReconnectTimer();
+    // A failure within the healthy window cancels the pending backoff reset —
+    // this is a flap, so the attempt counter must keep climbing.
+    if (backoffResetTimer) {
+      clearTimeout(backoffResetTimer);
+      backoffResetTimer = null;
+    }
     const attempt = reconnectAttempt++;
     const delayMs = Math.min(30_000, 1_000 * 2 ** Math.min(attempt, 5));
     console.warn(
@@ -232,7 +270,11 @@ export const notesRealtimeMiddleware: Middleware<
       .subscribe((status, err) => {
         if (status === "SUBSCRIBED") {
           console.log("[Notes RT] Connected");
-          reconnectAttempt = 0;
+          if (backoffResetTimer) clearTimeout(backoffResetTimer);
+          backoffResetTimer = setTimeout(() => {
+            backoffResetTimer = null;
+            reconnectAttempt = 0;
+          }, BACKOFF_RESET_AFTER_MS);
           storeApi.dispatch(setRealtimeConnected(true));
           if (opts.catchUp) {
             // Missed events while disconnected — refresh lists loudly.
@@ -257,6 +299,10 @@ export const notesRealtimeMiddleware: Middleware<
 
   function unsubscribe() {
     clearReconnectTimer();
+    if (backoffResetTimer) {
+      clearTimeout(backoffResetTimer);
+      backoffResetTimer = null;
+    }
     subscribedUserId = null;
     reconnectAttempt = 0;
     if (channel) {

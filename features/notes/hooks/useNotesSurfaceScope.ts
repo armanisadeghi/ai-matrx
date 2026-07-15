@@ -17,7 +17,7 @@
  *   });
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type { RefObject } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -73,6 +73,27 @@ export function useNotesSurfaceScope(
   const allFolders = useAppSelector(selectAllFolders);
   const notesMap = useAppSelector(selectNotesMap);
 
+  // Projected once per notesMap change (a debounced Redux sync), NOT once per
+  // builder call — callers invoke the builder per render/keystroke, and an
+  // O(all-notes) rebuild on that cadence was a main-thread cost amplifier in
+  // the 2026-07 /notes freeze.
+  const notesMapProjection = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(notesMap).map(([id, rec]) => [
+          id,
+          {
+            id: rec.id,
+            label: rec.label,
+            folder_name: rec.folder_name ?? undefined,
+            updated_at: rec.updated_at ?? undefined,
+            deleted_at: rec.deleted_at,
+          },
+        ]),
+      ),
+    [notesMap],
+  );
+
   return useCallback(() => {
     const ta = textareaRef.current;
     const text = ta?.value ?? content ?? "";
@@ -98,18 +119,7 @@ export function useNotesSurfaceScope(
       openTabs: openTabs ?? [],
       splitNoteId,
       allFolders,
-      notesMap: Object.fromEntries(
-        Object.entries(notesMap).map(([id, rec]) => [
-          id,
-          {
-            id: rec.id,
-            label: rec.label,
-            folder_name: rec.folder_name ?? undefined,
-            updated_at: rec.updated_at ?? undefined,
-            deleted_at: rec.deleted_at,
-          },
-        ]),
-      ),
+      notesMap: notesMapProjection,
     }) as SurfaceScopePayload;
   }, [
     textareaRef,
@@ -122,6 +132,6 @@ export function useNotesSurfaceScope(
     openTabs,
     splitNoteId,
     allFolders,
-    notesMap,
+    notesMapProjection,
   ]);
 }

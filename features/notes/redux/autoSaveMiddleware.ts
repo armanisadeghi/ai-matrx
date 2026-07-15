@@ -20,7 +20,6 @@ import {
   markNoteSaveError,
   materializeNote,
   updateNoteLabel,
-  removePendingDispatchId,
 } from "./slice";
 import { getAutoSaveDelay } from "./notes.types";
 import type { NoteRecord } from "./notes.types";
@@ -272,7 +271,6 @@ export const autoSaveMiddleware: Middleware =
               savedSnapshot,
             }),
           );
-          storeApi.dispatch(removePendingDispatchId(noteId));
         }
 
         // Notify sidebar of label changes

@@ -99,6 +99,13 @@ export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
   useEffect(() => {
     if (!syncUrl) return;
     if (!hydratedRef.current) return;
+    // Child effects run before parent effects: on a fresh mount this writer
+    // fires BEFORE NotesView's registerInstance, sees `openTabs === undefined`
+    // (instance not in the store yet), and would transiently wipe
+    // `?tabs=&active=` from the URL — a reload in that window loses the whole
+    // workspace. An empty ARRAY (all tabs closed) is a real state and must
+    // still sync; only the not-yet-registered undefined is skipped.
+    if (openTabs === undefined) return;
 
     const params = new URLSearchParams(window.location.search);
     const orderedTabs = orderTabsActiveFirst(openTabs ?? [], activeTabId);

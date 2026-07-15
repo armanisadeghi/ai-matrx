@@ -38,6 +38,21 @@ export function useAutoSave({
   const isSavingRef = useRef(false);
   const saveNowRef = useRef<() => Promise<void>>(async () => {});
 
+  // Callbacks are held in refs so `saveNow` (and everything derived from it:
+  // scheduleSave / updateWithAutoSave / forceSave) keeps a STABLE identity.
+  // Callers pass inline arrows for onSaveSuccess/onSaveError; with them in
+  // saveNow's deps, every render minted new callbacks, which re-ran the
+  // consumer's note-switch effect whose CLEANUP calls forceSave() — one save
+  // attempt per render, and on a failing save (RLS viewer, offline) an
+  // unbounded save→error→setState→render→forceSave retry loop with a toast
+  // per iteration (2026-07 /notes freeze class).
+  const onSaveSuccessRef = useRef(onSaveSuccess);
+  const onSaveErrorRef = useRef(onSaveError);
+  useEffect(() => {
+    onSaveSuccessRef.current = onSaveSuccess;
+    onSaveErrorRef.current = onSaveError;
+  }, [onSaveSuccess, onSaveError]);
+
   /**
    * Mark the note as dirty (has unsaved changes)
    */
@@ -81,7 +96,7 @@ export function useAutoSave({
       setIsSaving(true);
       await updateNote(noteId, updatesSnapshot);
       setLastSaved(new Date());
-      onSaveSuccess?.();
+      onSaveSuccessRef.current?.();
       const hasMore = Object.keys(pendingUpdatesRef.current).length > 0;
       setIsDirty(hasMore);
       // Mid-save keystrokes: schedule a follow-up without waiting for
@@ -107,12 +122,12 @@ export function useAutoSave({
         noteId,
         noteSaveErrorMessage(error as { code?: string; message?: string }),
       );
-      onSaveError?.(error as Error);
+      onSaveErrorRef.current?.(error as Error);
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
     }
-  }, [noteId, onSaveSuccess, onSaveError, debounceMs]);
+  }, [noteId, debounceMs]);
 
   useEffect(() => {
     saveNowRef.current = saveNow;

@@ -230,10 +230,6 @@ export interface NotesSliceState {
 
   // ── Realtime ───────────────────────────────────────────────
   realtimeConnected: boolean;
-  /** Echo suppression: note IDs where we have a pending DB write.
-   *  Producer-consumer: each save adds, each echo consumes. */
-  _pendingDispatchIds: Set<string>;
-
   // ── Presence ───────────────────────────────────────────────
   /** Another user has the notes system open and made changes in last 60s */
   otherUsersActive: boolean;

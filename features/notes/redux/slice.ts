@@ -235,6 +235,134 @@ function applyFetchStatus(record: NoteRecord, status: NoteFetchStatus): void {
   }
 }
 
+// ── Server upsert (shared by single + batch reducers) ───────────────────────
+
+export interface ServerNoteUpsert {
+  note: Partial<Note> & { id: string };
+  fetchStatus: NoteFetchStatus;
+  /** Present when this upsert came from the shared-with-me list —
+   *  flags the record so owner-list selectors exclude it. */
+  sharedMeta?: SharedNoteMeta;
+}
+
+function applyServerNoteUpsert(
+  notes: Record<string, NoteRecord>,
+  { note, fetchStatus, sharedMeta }: ServerNoteUpsert,
+): void {
+  const existing = notes[note.id];
+
+  if (!existing) {
+    // `workbench.notes.organization_id` is NOT NULL. A first-time record
+    // MUST carry a real org id — building one with a fabricated ""-value
+    // would write an invalid row into the store and hide the real bug: an
+    // incomplete server payload reaching this reducer. Scream and skip
+    // rather than persisting garbage. (Loud recovery: this firing means a
+    // `Partial<Note>` without `organization_id` got past its producer.)
+    if (!note.organization_id) {
+      captureError({
+        source: "supabase-postgrest",
+        operation: "upsert",
+        schema: "workbench",
+        relation: "notes",
+        message:
+          "upsertNoteFromServer: server note is missing organization_id (NOT NULL) — skipped creating the record to avoid storing an invalid org id",
+        details: `note id: ${note.id}, fetchStatus: ${fetchStatus}`,
+        raw: note,
+      });
+      return;
+    }
+    const record = createBlankNoteRecordFromPartial(
+      { ...note, organization_id: note.organization_id },
+      fetchStatus,
+    );
+    if (sharedMeta) {
+      record._sharedWithMe = true;
+      record._sharedMeta = sharedMeta;
+    }
+    notes[note.id] = record;
+    return;
+  }
+
+  // ── Monotonic updated_at guard ─────────────────────────────────────
+  // Realtime echoes and list-fetch races can deliver payloads OLDER than
+  // the state we already hold (our own save's echo lands after
+  // markNoteSaved stored the fresh updated_at; two in-flight saves can
+  // land out of order). Merging a stale payload reverts content and
+  // regresses updated_at — which then fails the next save's optimistic
+  // lock and produces a sticky false conflict (part of the 2026-07 /notes
+  // freeze class — see FEATURE.md § Realtime echo doctrine).
+  {
+    const incomingTs = Date.parse(note.updated_at ?? "");
+    const heldTs = Date.parse(existing.updated_at ?? "");
+    if (
+      Number.isFinite(incomingTs) &&
+      Number.isFinite(heldTs) &&
+      incomingTs < heldTs
+    ) {
+      return;
+    }
+  }
+
+  // Never downgrade fetch status
+  applyFetchStatus(existing, fetchStatus);
+
+  // Refresh shared-with-me metadata (a re-fetch may carry a changed grant
+  // level). Never CLEAR the flag from an unrelated upsert — only the
+  // shared list sets or updates it.
+  if (sharedMeta) {
+    existing._sharedWithMe = true;
+    existing._sharedMeta = sharedMeta;
+  }
+
+  // If user has local edits, don't overwrite — mark conflict if content changed
+  if (existing._dirty) {
+    const serverContentChanged =
+      note.content !== undefined && note.content !== existing.content;
+    const serverLabelChanged =
+      note.label !== undefined && note.label !== existing.label;
+    if (serverContentChanged || serverLabelChanged) {
+      // Store server data but keep local edits — saveState handled by consumers
+      existing._error = "conflict";
+    }
+  }
+
+  // Merge server fields (don't overwrite undoable fields if dirty).
+  // `note` is `Partial<Note> & { id }`, so every key really is `keyof Note`
+  // and every value really is `Note[typeof key]` — Object.entries just
+  // can't express that correlation, hence the one key cast (not a value
+  // cast) before handing both to the correlated writer above.
+  for (const [key, value] of Object.entries(note)) {
+    if (key.startsWith("_")) continue;
+    const field = key as keyof Note;
+    if (
+      existing._dirty &&
+      existing._dirtyFields.has(field as NoteUndoableField)
+    ) {
+      continue; // Preserve local edit
+    }
+    // `metadata.lastEditorMode` is written locally by setNoteEditorMode
+    // WITHOUT dirtying metadata (a UI preference, not a content edit). A
+    // server merge whose metadata lacks the key must not wipe it — the
+    // wipe re-armed the editor's default-mode effect on every realtime
+    // event and remounted the heavy split editor mid-typing (2026-07
+    // /notes freeze class).
+    if (field === "metadata" && value && typeof value === "object") {
+      const localMode = (
+        existing.metadata as Record<string, unknown> | null
+      )?.lastEditorMode;
+      const incoming = value as Record<string, unknown>;
+      if (localMode !== undefined && incoming.lastEditorMode === undefined) {
+        writeNoteField(existing, field, {
+          ...incoming,
+          lastEditorMode: localMode,
+        } as Note[typeof field]);
+        continue;
+      }
+    }
+    writeNoteField(existing, field, value as Note[typeof field]);
+  }
+}
+
 // ── Initial state ───────────────────────────────────────────────────────────
 
 const initialState: NotesSliceState & {
@@ -250,7 +378,6 @@ const initialState: NotesSliceState & {
   listError: null,
   instances: {},
   realtimeConnected: false,
-  _pendingDispatchIds: new Set(),
   otherUsersActive: false,
   activeNoteEditedByOthers: false,
   noteScopeAssignments: [],
@@ -360,91 +487,27 @@ const notesSlice = createSlice({
 
     // ── Note lifecycle ──────────────────────────────────────────────────
 
-    /** Upsert a note from server data (list fetch or realtime event).
-     *  Respects fetch status hierarchy and preserves local edits. */
+    /** Upsert a note from server data (realtime event or single fetch).
+     *  Respects fetch status hierarchy and preserves local edits.
+     *  For LIST payloads use `upsertNotesFromServer` — one dispatch for the
+     *  whole page. Dispatching this reducer in a loop re-notified every
+     *  subscriber (and re-ran every sorted list selector) once PER NOTE,
+     *  which froze /notes on large collections. */
     upsertNoteFromServer(
       state,
-      action: PayloadAction<{
-        note: Partial<Note> & { id: string };
-        fetchStatus: NoteFetchStatus;
-        /** Present when this upsert came from the shared-with-me list —
-         *  flags the record so owner-list selectors exclude it. */
-        sharedMeta?: SharedNoteMeta;
-      }>,
+      action: PayloadAction<ServerNoteUpsert>,
     ) {
-      const { note, fetchStatus, sharedMeta } = action.payload;
-      const existing = state.notes[note.id];
+      applyServerNoteUpsert(state.notes, action.payload);
+    },
 
-      if (!existing) {
-        // `workbench.notes.organization_id` is NOT NULL. A first-time record
-        // MUST carry a real org id — building one with a fabricated ""-value
-        // would write an invalid row into the store and hide the real bug: an
-        // incomplete server payload reaching this reducer. Scream and skip
-        // rather than persisting garbage. (Loud recovery: this firing means a
-        // `Partial<Note>` without `organization_id` got past its producer.)
-        if (!note.organization_id) {
-          captureError({
-            source: "supabase-postgrest",
-            operation: "upsert",
-            schema: "workbench",
-            relation: "notes",
-            message:
-              "upsertNoteFromServer: server note is missing organization_id (NOT NULL) — skipped creating the record to avoid storing an invalid org id",
-            details: `note id: ${note.id}, fetchStatus: ${fetchStatus}`,
-            raw: note,
-          });
-          return;
-        }
-        const record = createBlankNoteRecordFromPartial(
-          { ...note, organization_id: note.organization_id },
-          fetchStatus,
-        );
-        if (sharedMeta) {
-          record._sharedWithMe = true;
-          record._sharedMeta = sharedMeta;
-        }
-        state.notes[note.id] = record;
-        return;
-      }
-
-      // Never downgrade fetch status
-      applyFetchStatus(existing, fetchStatus);
-
-      // Refresh shared-with-me metadata (a re-fetch may carry a changed grant
-      // level). Never CLEAR the flag from an unrelated upsert — only the
-      // shared list sets or updates it.
-      if (sharedMeta) {
-        existing._sharedWithMe = true;
-        existing._sharedMeta = sharedMeta;
-      }
-
-      // If user has local edits, don't overwrite — mark conflict if content changed
-      if (existing._dirty) {
-        const serverContentChanged =
-          note.content !== undefined && note.content !== existing.content;
-        const serverLabelChanged =
-          note.label !== undefined && note.label !== existing.label;
-        if (serverContentChanged || serverLabelChanged) {
-          // Store server data but keep local edits — saveState handled by consumers
-          existing._error = "conflict";
-        }
-      }
-
-      // Merge server fields (don't overwrite undoable fields if dirty).
-      // `note` is `Partial<Note> & { id }`, so every key really is `keyof Note`
-      // and every value really is `Note[typeof key]` — Object.entries just
-      // can't express that correlation, hence the one key cast (not a value
-      // cast) before handing both to the correlated writer above.
-      for (const [key, value] of Object.entries(note)) {
-        if (key.startsWith("_")) continue;
-        const field = key as keyof Note;
-        if (
-          existing._dirty &&
-          existing._dirtyFields.has(field as NoteUndoableField)
-        ) {
-          continue; // Preserve local edit
-        }
-        writeNoteField(existing, field, value as Note[typeof field]);
+    /** Batch upsert for list fetches — one dispatch, one store notification,
+     *  regardless of how many notes arrived. */
+    upsertNotesFromServer(
+      state,
+      action: PayloadAction<{ upserts: ServerNoteUpsert[] }>,
+    ) {
+      for (const payload of action.payload.upserts) {
+        applyServerNoteUpsert(state.notes, payload);
       }
     },
 
@@ -523,6 +586,26 @@ const notesSlice = createSlice({
       state._savingNoteIds = state._savingNoteIds.filter(
         (id) => id !== action.payload.id,
       );
+    },
+
+    /** Resolve a save conflict without touching dirty state.
+     *  - Keep-mine: pass the server's `updatedAt` so the record adopts it and
+     *    the next autosave's optimistic lock (`WHERE updated_at =`) passes —
+     *    consciously overwriting the remote version. Local edits stay dirty
+     *    and flow through the normal autosave pipeline.
+     *  - Never use markNoteSaved for this: with no snapshot it wipes ALL dirty
+     *    fields, so the queued save bails on `!_dirty` and nothing is written
+     *    (the old "Keep mine is a silent no-op" bug). */
+    resolveNoteConflict(
+      state,
+      action: PayloadAction<{ id: string; updatedAt?: string }>,
+    ) {
+      const record = state.notes[action.payload.id];
+      if (!record) return;
+      if (record._error === "conflict") record._error = null;
+      if (action.payload.updatedAt) {
+        record.updated_at = action.payload.updatedAt;
+      }
     },
 
     clearSavingNoteId(state, action: PayloadAction<string>) {
@@ -768,16 +851,6 @@ const notesSlice = createSlice({
     materializeNote(state, action: PayloadAction<string>) {
       const record = state.notes[action.payload];
       if (record) record._isAutogenerated = false;
-    },
-
-    // ── Echo suppression (producer-consumer pattern) ─────────────────
-
-    addPendingDispatchId(state, action: PayloadAction<string>) {
-      state._pendingDispatchIds.add(action.payload);
-    },
-
-    removePendingDispatchId(state, action: PayloadAction<string>) {
-      state._pendingDispatchIds.delete(action.payload);
     },
 
     // ── Presence ────────────────────────────────────────────────────
@@ -1056,6 +1129,8 @@ export const {
   redoNoteEdit,
   clearNoteUndoHistory,
   upsertNoteFromServer,
+  upsertNotesFromServer,
+  resolveNoteConflict,
   removeNote,
   markNoteSaving,
   markNoteSaved,
@@ -1086,8 +1161,6 @@ export const {
   createAutogeneratedNote,
   materializeNote,
   // Echo suppression
-  addPendingDispatchId,
-  removePendingDispatchId,
   // Presence
   setOtherUsersActive,
   setActiveNoteEditedByOthers,

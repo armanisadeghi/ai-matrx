@@ -38,6 +38,7 @@ import type {
 } from "./notes.types";
 import {
   upsertNoteFromServer,
+  upsertNotesFromServer,
   removeNote,
   markNoteSaving,
   markNoteSaved,
@@ -100,14 +101,19 @@ export const fetchNotesList = createAsyncThunk<void, void>(
 
     const notes = data ?? [];
 
-    for (const note of notes) {
-      dispatch(
-        upsertNoteFromServer({
+    // ONE dispatch for the whole page. A per-note dispatch loop notified
+    // every store subscriber (and re-ran every sorted list selector) once
+    // per note — O(N²·log N) on /notes entry, a main-thread freeze on large
+    // collections (2026-07 freeze class — see FEATURE.md § Realtime echo
+    // doctrine).
+    dispatch(
+      upsertNotesFromServer({
+        upserts: notes.map((note) => ({
           note: { ...note, created_by: userId },
-          fetchStatus: "list",
-        }),
-      );
-    }
+          fetchStatus: "list" as const,
+        })),
+      }),
+    );
 
     console.log("[Track Quick Notes] 6c, thunks.ts — fetchNotesList complete", {
       notesCount: notes.length,
@@ -729,9 +735,11 @@ export const fetchSharedNotesList = createAsyncThunk<void, void>(
 
     const incomingIds = new Set((data ?? []).map((row) => row.id as string));
 
-    for (const row of data ?? []) {
-      dispatch(
-        upsertNoteFromServer({
+    // Single batched dispatch — see fetchNotesList for why a per-note loop
+    // is forbidden here.
+    dispatch(
+      upsertNotesFromServer({
+        upserts: (data ?? []).map((row) => ({
           note: {
             id: row.id,
             label: row.label ?? "Untitled",
@@ -746,15 +754,15 @@ export const fetchSharedNotesList = createAsyncThunk<void, void>(
             version: row.version,
             created_by: row.created_by,
           },
-          fetchStatus: "list",
+          fetchStatus: "list" as const,
           sharedMeta: {
             permissionLevel: (row.permission_level ??
               "viewer") as SharedNotePermissionLevel,
             ownerEmail: row.owner_email,
           },
-        }),
-      );
-    }
+        })),
+      }),
+    );
 
     if (seq !== sharedListFetchSeq) return;
 

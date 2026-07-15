@@ -22,6 +22,8 @@ import {
   markNoteSaved,
   markTabInteraction,
   setNoteEditorMode,
+  resolveNoteConflict,
+  upsertNoteFromServer,
 } from "../redux/slice";
 import { getReduxSyncDelay } from "../redux/notes.types";
 import {
@@ -40,7 +42,6 @@ import {
   copyNote,
   deleteNote,
   moveNoteToFolder,
-  fetchNoteContent,
 } from "../redux/thunks";
 import { useNotesInstanceId } from "../context/NotesInstanceContext";
 import { useNoteAccess } from "../hooks/useNoteAccess";
@@ -145,7 +146,13 @@ export function NoteContentEditor({
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   // ── Conflict state ────────────────────────────────────────────────
-  const [conflictRemote, setConflictRemote] = useState<string | null>(null);
+  // `updatedAt` rides along so resolution can adopt the server's timestamp —
+  // without it the next save's optimistic lock (`WHERE updated_at =`) fails
+  // again and the conflict is sticky/infinite.
+  const [conflictRemote, setConflictRemote] = useState<{
+    content: string;
+    updatedAt: string | null;
+  } | null>(null);
 
   // When Redux detects a conflict, fetch the remote version to show diff
   useEffect(() => {
@@ -157,12 +164,15 @@ export function NoteContentEditor({
     supabase
       .schema("workbench")
       .from("notes")
-      .select("content")
+      .select("content, updated_at")
       .eq("id", noteId)
       .maybeSingle()
       .then(({ data }) => {
         if (data?.content != null) {
-          setConflictRemote(data.content);
+          setConflictRemote({
+            content: data.content,
+            updatedAt: data.updated_at ?? null,
+          });
         }
       });
   }, [saveState, noteId]);
@@ -354,6 +364,14 @@ export function NoteContentEditor({
     editorMode,
   });
 
+  // Memoized snapshot for the context menu's `contextData` prop. Calling
+  // `buildSurfaceScope()` inline in JSX rebuilt an O(all-notes) map on every
+  // render — i.e. every keystroke (2026-07 freeze class, cost amplifier).
+  const surfaceContextData = useMemo(
+    () => buildSurfaceScope() as Record<string, unknown>,
+    [buildSurfaceScope],
+  );
+
   const getApplicationScope = useCallback(() => {
     const el = textareaRef.current;
     const start = el?.selectionStart ?? 0;
@@ -518,31 +536,51 @@ export function NoteContentEditor({
   });
 
   // ── Conflict resolution handlers ──────────────────────────────────
+  // NEVER resolve a conflict with `markNoteSaved({id})` (no snapshot): it
+  // wipes ALL dirty fields, so the queued save bails on `!_dirty` and nothing
+  // is written — "Keep mine" was a silent no-op and, with the stale
+  // updated_at still in place, the conflict re-fired on the next keystroke
+  // forever (2026-07 freeze class).
   const handleKeepMine = useCallback(
     (editedContent: string) => {
-      // User chose their version (possibly edited in the conflict window)
+      // User chose their version (possibly edited in the conflict window).
       setLocalContent(editedContent);
       lastReduxRef.current = editedContent;
+      // Adopt the server's updated_at + clear the conflict error, WITHOUT
+      // touching dirty state — then let the normal autosave pipeline persist
+      // the (still-dirty) local content. Its optimistic lock now passes, so
+      // this consciously overwrites the remote version.
+      dispatch(
+        resolveNoteConflict({
+          id: noteId,
+          updatedAt: conflictRemote?.updatedAt ?? undefined,
+        }),
+      );
       dispatch(updateNoteContent({ id: noteId, content: editedContent }));
-      // Clear the conflict error and force a save
-      dispatch(markNoteSaved({ id: noteId }));
       setConflictRemote(null);
-      // Re-save with the user's content
-      setTimeout(() => dispatch(saveNote(noteId)), 100);
     },
-    [dispatch, noteId],
+    [dispatch, noteId, conflictRemote],
   );
 
   const handleAcceptRemote = useCallback(() => {
     if (conflictRemote == null) return;
-    // Accept the remote version — overwrite local
-    setLocalContent(conflictRemote);
-    lastReduxRef.current = conflictRemote;
-    dispatch(updateNoteContent({ id: noteId, content: conflictRemote }));
-    // Clear conflict and mark clean (remote is already saved)
+    // Accept the remote version — overwrite local.
+    setLocalContent(conflictRemote.content);
+    lastReduxRef.current = conflictRemote.content;
+    // Remote is already saved: drop local dirt, then write the server's
+    // content + updated_at into the store (upsert is a no-op merge for a
+    // clean record). No autosave gets armed — there is nothing to save.
     dispatch(markNoteSaved({ id: noteId }));
-    // Re-fetch to get full fresh state
-    dispatch(fetchNoteContent(noteId));
+    dispatch(
+      upsertNoteFromServer({
+        note: {
+          id: noteId,
+          content: conflictRemote.content,
+          updated_at: conflictRemote.updatedAt ?? undefined,
+        },
+        fetchStatus: "full",
+      }),
+    );
     setConflictRemote(null);
   }, [dispatch, noteId, conflictRemote]);
 
@@ -550,6 +588,18 @@ export function NoteContentEditor({
     // Dismiss conflict window — keep local edits as dirty
     setConflictRemote(null);
   }, []);
+
+  // Memoized — analyzeDiff builds an O(lines²) LCS matrix. Computing it
+  // inline in JSX re-ran it on EVERY render (i.e. every keystroke while a
+  // conflict was open), which alone could saturate the main thread on a
+  // large note (2026-07 freeze class).
+  const conflictAnalysis = useMemo(
+    () =>
+      conflictRemote != null
+        ? analyzeDiff(localContent, conflictRemote.content)
+        : null,
+    [localContent, conflictRemote],
+  );
 
   // ── Guard: note deleted or not found ───────────────────────────────
   if (!noteExists) {
@@ -597,12 +647,12 @@ export function NoteContentEditor({
       isEditable={!readOnly}
     >
       {/* Conflict resolution window */}
-      {conflictRemote != null && (
+      {conflictRemote != null && conflictAnalysis != null && (
         <NoteConflictWindow
           noteTitle={noteLabel}
           localContent={localContent}
-          remoteContent={conflictRemote}
-          analysis={analyzeDiff(localContent, conflictRemote)}
+          remoteContent={conflictRemote.content}
+          analysis={conflictAnalysis}
           onKeepMine={handleKeepMine}
           onAcceptChanges={handleAcceptRemote}
           onCancel={handleCancelConflict}
@@ -624,7 +674,7 @@ export function NoteContentEditor({
             ? undefined
             : ({ type: "note", noteId } satisfies ContentSource)
         }
-        contextData={buildSurfaceScope() as Record<string, unknown>}
+        contextData={surfaceContextData}
         onTextReplace={handleChangeFlush}
         onTextInsertBefore={(t) => insertAtCursor(t, "before")}
         onTextInsertAfter={(t) => insertAtCursor(t, "after")}

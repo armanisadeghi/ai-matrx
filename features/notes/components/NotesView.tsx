@@ -263,11 +263,20 @@ export function NotesView({
   }, [dispatch, userId]);
 
   // Share grants/revokes live in iam.permissions — refresh the shared list
-  // whenever the tab becomes visible so revoked notes leave the sidebar.
+  // when the tab becomes visible so revoked notes leave the sidebar.
+  // Min-interval gated: `focus` + `visibilitychange` both fire on every tab
+  // switch, and each refetch is a full-list hydration — unthrottled, rapid
+  // alt-tabbing (or a user returning to an already-struggling tab) re-fired
+  // the storm and made the 2026-07 freeze look unrecoverable.
+  const lastSharedRefreshRef = useRef(0);
   useEffect(() => {
     if (!userId) return undefined;
+    const MIN_REFRESH_INTERVAL_MS = 30_000;
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastSharedRefreshRef.current < MIN_REFRESH_INTERVAL_MS) return;
+      lastSharedRefreshRef.current = now;
       void dispatch(fetchSharedNotesList());
     };
     document.addEventListener("visibilitychange", onVisible);
@@ -300,29 +309,39 @@ export function NotesView({
   // Ensure the path id is open as a tab. Do NOT steal focus from `?active=`
   // on first paint — that was wiping the focused tab on every reload.
   // Client-side navigations that change [id] still make the new path active.
+  //
+  // `urlActive` is read via ref, NOT a dep: NoteTabBar rewrites `?active=`
+  // via history.replaceState on every tab action, which Next syncs back into
+  // useSearchParams. With urlActive in the deps this effect re-ran per tab
+  // action, re-adding the route note's tab after the user closed it and
+  // re-dispatching a fetch — a per-action dispatch cascade (2026-07 freeze
+  // class amplifier).
+  const urlActiveRef = useRef(urlActive);
+  useEffect(() => {
+    urlActiveRef.current = urlActive;
+  }, [urlActive]);
   const prevRouteNoteIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (!syncUrl || singleNote || !routeNoteId) return;
 
+    const prev = prevRouteNoteIdRef.current;
+    if (prev === routeNoteId) return;
+    prevRouteNoteIdRef.current = routeNoteId;
+
     dispatch(addInstanceTab({ instanceId, noteId: routeNoteId }));
     dispatch(fetchNoteContent(routeNoteId));
 
-    const prev = prevRouteNoteIdRef.current;
-    prevRouteNoteIdRef.current = routeNoteId;
-
     // First mount: only activate the path id when there is no ?active=
     if (prev === undefined) {
-      if (!urlActive) {
+      if (!urlActiveRef.current) {
         dispatch(setInstanceActiveTab({ instanceId, noteId: routeNoteId }));
       }
       return;
     }
 
     // Client-side /notes/A → /notes/B: path is the intentional focus change
-    if (prev !== routeNoteId) {
-      dispatch(setInstanceActiveTab({ instanceId, noteId: routeNoteId }));
-    }
-  }, [dispatch, instanceId, routeNoteId, singleNote, syncUrl, urlActive]);
+    dispatch(setInstanceActiveTab({ instanceId, noteId: routeNoteId }));
+  }, [dispatch, instanceId, routeNoteId, singleNote, syncUrl]);
 
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
