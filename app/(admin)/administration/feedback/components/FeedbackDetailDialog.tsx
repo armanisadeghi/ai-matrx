@@ -835,11 +835,7 @@ export default function FeedbackDetailDialog({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              feedback_id: item.id,
               message_id: result.data.id,
-              message_content: userReviewMessage.trim(),
-              sender_type: "admin",
-              sender_name: "Admin",
             }),
           });
         } catch (emailError) {
@@ -881,11 +877,7 @@ export default function FeedbackDetailDialog({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              feedback_id: item.id,
               message_id: result.data.id,
-              message_content: userReplyText.trim(),
-              sender_type: "admin",
-              sender_name: "Admin",
             }),
           });
         } catch (emailError) {

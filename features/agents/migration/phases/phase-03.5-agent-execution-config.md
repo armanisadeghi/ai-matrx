@@ -74,18 +74,18 @@ This phase reshapes the shortcut table, introduces a single canonical **`AgentEx
 
 ## Decisions locked with user
 
-| # | Decision | Answer |
-|---|---|---|
-| D1 | `apply_variables` column fate | **Drop.** Always apply; visibility controlled by `show_variable_panel`. |
-| D2 | `apiEndpointMode` on shortcut? | **No.** Runtime-only. Shortcuts are always `agent` mode. |
-| D3 | `isEphemeral` on shortcut? | **No.** Runtime-only. |
-| D4 | `contextOverrides` semantics | **Augment + seed.** Can add new slots AND provide defaults for existing slots. |
-| D5 | `defaultUserInput` semantics | **Designer-owned extra instructions appended to the template.** Not user-editable. Not visible. Runtime `userInput` is what the user types at the gate / in chat. |
-| D6 | Precedence of `defaultVariables` vs `scopeMappings` | **Defaults first, scope second, user edits third.** |
-| D7 | Legacy data | **Destructive drop is fine.** User will re-seed via admin UI. |
-| D8 | `variables_panel_style` column | **Open `text`, not CHECK constraint.** App validates; default handles unknowns. |
-| D9 | UI layout for shortcut form | **Accordion or creator-panel-inspired dense sections.** Keep visible, not hidden. |
-| D10 | Test target | Agent `acc3b900-e4b2-4000-b0a5-4889d8d33757` v `da091c09-...` via shortcut `863b28c4-bb94-400f-8e23-b6cf50486537` (`Quick Code Explanation`). |
+| #   | Decision                                            | Answer                                                                                                                                                            |
+| --- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | `apply_variables` column fate                       | **Drop.** Always apply; visibility controlled by `show_variable_panel`.                                                                                           |
+| D2  | `apiEndpointMode` on shortcut?                      | **No.** Runtime-only. Shortcuts are always `agent` mode.                                                                                                          |
+| D3  | `isEphemeral` on shortcut?                          | **No.** Runtime-only.                                                                                                                                             |
+| D4  | `contextOverrides` semantics                        | **Augment + seed.** Can add new slots AND provide defaults for existing slots.                                                                                    |
+| D5  | `defaultUserInput` semantics                        | **Designer-owned extra instructions appended to the template.** Not user-editable. Not visible. Runtime `userInput` is what the user types at the gate / in chat. |
+| D6  | Precedence of `defaultVariables` vs `scopeMappings` | **Defaults first, scope second, user edits third.**                                                                                                               |
+| D7  | Legacy data                                         | **Destructive drop is fine.** User will re-seed via admin UI.                                                                                                     |
+| D8  | `variables_panel_style` column                      | **Open `text`, not CHECK constraint.** App validates; default handles unknowns.                                                                                   |
+| D9  | UI layout for shortcut form                         | **Accordion or creator-panel-inspired dense sections.** Keep visible, not hidden.                                                                                 |
+| D10 | Test target                                         | Agent `acc3b900-e4b2-4000-b0a5-4889d8d33757` v `da091c09-...` via shortcut `863b28c4-bb94-400f-8e23-b6cf50486537` (`Quick Code Explanation`).                     |
 
 ---
 
@@ -103,20 +103,20 @@ This phase reshapes the shortcut table, introduces a single canonical **`AgentEx
 
 ### Add
 
-| Column | Type | Default | Purpose |
-|---|---|---|---|
-| `show_variable_panel` | `boolean` | `false` | Should the user see the variable panel? |
-| `variables_panel_style` | `text` | `'inline'` | `inline/wizard/form/compact/guided/cards` — validated in app |
-| `show_definition_messages` | `boolean` | `false` | Reveal agent-definition messages to the user |
-| `show_definition_message_content` | `boolean` | `false` | Reveal interpolated content (secret-sensitive) |
-| `hide_reasoning` | `boolean` | `false` | Hide reasoning/thinking blocks from output |
-| `hide_tool_results` | `boolean` | `false` | Hide tool-result blocks from output |
-| `pre_execution_message` | `text` | `null` | Custom message shown at the gate |
-| `bypass_gate_seconds` | `integer` | `3` | Auto-execute after N seconds. `0` = wait for user. |
-| `default_user_input` | `text` | `null` | Designer's extra instructions appended to template |
-| `default_variables` | `jsonb` | `null` | Per-shortcut variable defaults, keyed by variable name |
-| `context_overrides` | `jsonb` | `null` | Per-shortcut context-slot values / new slots, keyed by slot key |
-| `llm_overrides` | `jsonb` | `null` | Partial LLM params (temperature, model, etc.) |
+| Column                            | Type      | Default    | Purpose                                                         |
+| --------------------------------- | --------- | ---------- | --------------------------------------------------------------- |
+| `show_variable_panel`             | `boolean` | `false`    | Should the user see the variable panel?                         |
+| `variables_panel_style`           | `text`    | `'inline'` | `inline/wizard/form/compact/guided/cards` — validated in app    |
+| `show_definition_messages`        | `boolean` | `false`    | Reveal agent-definition messages to the user                    |
+| `show_definition_message_content` | `boolean` | `false`    | Reveal interpolated content (secret-sensitive)                  |
+| `hide_reasoning`                  | `boolean` | `false`    | Hide reasoning/thinking blocks from output                      |
+| `hide_tool_results`               | `boolean` | `false`    | Hide tool-result blocks from output                             |
+| `pre_execution_message`           | `text`    | `null`     | Custom message shown at the gate                                |
+| `bypass_gate_seconds`             | `integer` | `3`        | Auto-execute after N seconds. `0` = wait for user.              |
+| `default_user_input`              | `text`    | `null`     | Designer's extra instructions appended to template              |
+| `default_variables`               | `jsonb`   | `null`     | Per-shortcut variable defaults, keyed by variable name          |
+| `context_overrides`               | `jsonb`   | `null`     | Per-shortcut context-slot values / new slots, keyed by slot key |
+| `llm_overrides`                   | `jsonb`   | `null`     | Partial LLM params (temperature, model, etc.)                   |
 
 ### Keep unchanged
 
@@ -236,6 +236,7 @@ Requires MCP authentication. Main agent will prompt user to authenticate, then a
 ### Step 4 — Update TS types + converters
 
 Files:
+
 - **New:** `features/agents/types/agent-execution-config.types.ts`
 - **Modified:** `features/agents/types/instance.types.ts` — `ManagedAgentOptions` refactored
 - **Modified:** `features/agents/redux/agent-shortcuts/types.ts` — shortcut shape reflects new columns
@@ -250,6 +251,7 @@ Files:
 ### Step 5 — Update CRUD UI
 
 Files:
+
 - **Modified:** `features/agent-shortcuts/components/ShortcutForm.tsx` — accordion layout, all new fields with proper inputs:
   - Basics: label, description, icon, keyboard shortcut, sort order, active
   - Binding: agent, version or use_latest, category
@@ -326,7 +328,8 @@ If any of these fail, the phase isn't done. This is the pass/fail criterion.
 
 ## Change log
 
-| Date | Who | Change |
-|---|---|---|
-| 2026-04-21 | main agent | Phase created. All 10 design questions answered by user with the Code Explainer example. Schema diff locked. TS types sketched. Migration SQL drafted. Awaiting user green-light to run migration. |
+| Date       | Who        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-04-21 | main agent | Phase created. All 10 design questions answered by user with the Code Explainer example. Schema diff locked. TS types sketched. Migration SQL drafted. Awaiting user green-light to run migration.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 2026-07-15 | codex      | Closed the cold-registry extraction-model bypass in the shared launcher: direct agents and pinned shortcut versions now resolve authoritative model capabilities before conversation creation and fail closed when verification is unavailable.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | 2026-04-21 | main agent | User said GO. Code-side phase shipped under commits f49d5e3d2 + follow-up. New: `features/agents/types/agent-execution-config.types.ts` (AgentExecutionConfig, AgentExecutionRuntime, DEFAULT_AGENT_EXECUTION_CONFIG, resolveExecutionConfig). Modified: `instance.types.ts` (ManagedAgentOptions adds nested config/runtime; flat fields kept @deprecated). New: `utils/normalize-managed-options.ts`. Updated: `agent-shortcuts/{types,slice,converters,thunks}.ts` against the v2 column set with loose-row tolerance for pre-types-regen builds. **Bug-fix**: `createInstanceFromShortcut` now applies shortcut.defaultVariables → scope-mapped vars → user edits in correct precedence order, applies shortcut.contextOverrides + scope-mapped context entries, applies shortcut.llmOverrides, seeds shortcut.defaultUserInput. Removed broken `apply_variables` conditional. Updated callers: `launch-agent-execution.thunk` (shortcut.displayMode), `useAgentLauncher.launchShortcut` (forwards nested config + runtime), `UnifiedAgentContextMenu` (uses nested form), `ShortcutForm` (full rebuild with all 12 new fields + JSON editors for default_variables / context_overrides / llm_overrides), `ShortcutList`, `LinkAgentToShortcutModal`. **Pending user step**: apply `migrations/agx_shortcut_execution_config_v2.sql` + `npm run types`. **Known follow-up**: DB RPCs `agx_get_shortcuts_initial`, `agx_build_shortcut_menu`, `agx_get_user_shortcuts` reference old column names and need updating before management-page paths work — context menu uses the rebuilt view and will work immediately. |

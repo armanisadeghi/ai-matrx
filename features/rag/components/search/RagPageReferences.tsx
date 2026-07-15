@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import {
   AlignLeft,
   BookOpenText,
@@ -15,7 +16,11 @@ import {
   Table2,
 } from "lucide-react";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { InlineMediaRef } from "@/features/files";
+import {
+  InlineMediaRef,
+  selectPdfPages,
+  type PdfPageSelectionResult,
+} from "@/features/files";
 import {
   fetchDerivativeChunks,
   fetchDerivations,
@@ -27,6 +32,11 @@ import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePrevie
 import { listResultsForFilePage } from "@/features/page-extraction/api/runs";
 import type { PageExtractionResult } from "@/features/page-extraction/types";
 import { cn } from "@/lib/utils";
+import type {
+  RagReferenceAvailability,
+  RagReferenceKind,
+  RagReferenceRequest,
+} from "@/features/rag/components/hit-card/referenceTypes";
 
 interface DerivativePageGroup {
   key: string;
@@ -44,6 +54,18 @@ interface LoadedReferences {
 }
 
 const referenceCache = new Map<string, Promise<LoadedReferences>>();
+const selectedPdfCache = new Map<string, Promise<PdfPageSelectionResult>>();
+const SelectedPdfPreview = dynamic(
+  () => import("@/features/pdf/components/viewer/PdfPreview"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  },
+);
 
 const DERIVATION_META: Record<string, { label: string; description: string }> =
   {
@@ -95,6 +117,7 @@ const DERIVATION_META: Record<string, { label: string; description: string }> =
  * Clean text intentionally precedes generic enrichments as the final fallback.
  */
 export const REFERENCE_PREVIEW_PRIORITY = [
+  "physical_pdf",
   "table_row",
   "page_image",
   "page_image_caption",
@@ -111,6 +134,35 @@ export const REFERENCE_PREVIEW_PRIORITY = [
   "raw",
   "verification",
 ] as const;
+
+const HEADER_REFERENCE_PREVIEW_KEYS: Record<
+  RagReferenceKind,
+  readonly string[]
+> = {
+  document: ["physical_pdf"],
+  clean: ["clean"],
+  image: ["page_image", "page_image_caption"],
+  table: ["table_row"],
+  custom: [
+    "custom-extractions",
+    "agent_extract",
+    "agent_structured_json",
+    "agent_summary",
+    "synthetic_qa",
+    "section_summary",
+  ],
+};
+
+function previewKeyForHeaderRequest(
+  kind: RagReferenceKind,
+  options: readonly PreviewOption[],
+): string | null {
+  const available = new Set(options.map((option) => option.key));
+  return (
+    HEADER_REFERENCE_PREVIEW_KEYS[kind].find((key) => available.has(key)) ??
+    null
+  );
+}
 
 interface PreviewOption {
   key: string;
@@ -234,13 +286,19 @@ export function RagPageReferences({
   sourceKind,
   sourceId,
   pageNumber,
+  pageNumbers,
   onOpenPdf,
+  resourceRequest,
+  onAvailabilityChange,
   children,
 }: {
   sourceKind: string;
   sourceId: string;
   pageNumber: number | null;
+  pageNumbers: number[] | null;
   onOpenPdf: () => void;
+  resourceRequest?: RagReferenceRequest | null;
+  onAvailabilityChange?: (availability: RagReferenceAvailability) => void;
   children: ReactNode;
 }) {
   const isCldFile = sourceKind === "cld_file";
@@ -273,6 +331,19 @@ export function RagPageReferences({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requestedPreview, setRequestedPreview] = useState<string | null>(null);
+  const [observedRequestNonce, setObservedRequestNonce] = useState(0);
+  const selectedSourcePages = Array.from(
+    new Set(
+      (pageNumbers?.length
+        ? pageNumbers
+        : pageNumber != null
+          ? [pageNumber]
+          : []
+      )
+        .filter((value) => Number.isInteger(value) && value > 0)
+        .slice(0, 10),
+    ),
+  );
 
   useEffect(() => {
     const processedDocumentId = ids.processedDocumentId;
@@ -312,6 +383,19 @@ export function RagPageReferences({
     groups.length > 0 ||
     Boolean(loaded?.extractionTotal);
   const previewOptions: PreviewOption[] = [
+    ...(ids.fileId && selectedSourcePages.length
+      ? [
+          {
+            key: "physical_pdf",
+            label:
+              selectedSourcePages.length === 1
+                ? "Physical PDF page"
+                : "Physical PDF pages",
+            detail: selectedSourcePages.join(", "),
+            icon: FileScan,
+          },
+        ]
+      : []),
     ...(page?.imageCldFileId
       ? [
           {
@@ -415,8 +499,10 @@ export function RagPageReferences({
         ) : null}
         <div className="ml-auto flex flex-wrap justify-end gap-1.5">
           <ResourceButton
-            label={pageNumber != null ? "PDF page" : "PDF source"}
-            detail="Open on demand"
+            label="Full PDF"
+            detail={
+              pageNumber != null ? `Open at page ${pageNumber}` : "Open source"
+            }
             icon={FileText}
             onClick={handleOpenPdf}
           />
@@ -463,6 +549,12 @@ export function RagPageReferences({
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Choosing the best page reference…
               </div>
+            ) : null}
+            {selectedPreview?.key === "physical_pdf" && ids.fileId ? (
+              <SelectedPdfPagesPreview
+                fileId={ids.fileId}
+                sourcePages={selectedSourcePages}
+              />
             ) : null}
             {selectedPreview?.key === "page_image" && pageImageId ? (
               <PageImagePreview fileId={pageImageId} pageNumber={pageNumber} />
@@ -537,6 +629,93 @@ function PageImagePreview({
         rounded="md"
         border="subtle"
       />
+    </div>
+  );
+}
+
+function selectedPdf(
+  fileId: string,
+  sourcePages: number[],
+): Promise<PdfPageSelectionResult> {
+  const key = `${fileId}|${sourcePages.join(",")}`;
+  let pending = selectedPdfCache.get(key);
+  if (!pending) {
+    pending = selectPdfPages(fileId, { pages: sourcePages }).then(
+      ({ data }) => data,
+    );
+    selectedPdfCache.set(key, pending);
+    void pending.catch(() => selectedPdfCache.delete(key));
+  }
+  return pending;
+}
+
+function SelectedPdfPagesPreview({
+  fileId,
+  sourcePages,
+}: {
+  fileId: string;
+  sourcePages: number[];
+}) {
+  const pageKey = sourcePages.join(",");
+  const selectionKey = `${fileId}|${pageKey}`;
+  const [loadState, setLoadState] = useState<{
+    key: string;
+    selection: PdfPageSelectionResult | null;
+    error: string | null;
+  }>({ key: "", selection: null, error: null });
+  const current = loadState.key === selectionKey ? loadState : null;
+
+  useEffect(() => {
+    if (!pageKey) return undefined;
+    let cancelled = false;
+    const pages = pageKey.split(",").map((value) => Number.parseInt(value, 10));
+    void selectedPdf(fileId, pages)
+      .then((value) => {
+        if (!cancelled) {
+          setLoadState({ key: selectionKey, selection: value, error: null });
+        }
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setLoadState({
+            key: selectionKey,
+            selection: null,
+            error:
+              reason instanceof Error
+                ? reason.message
+                : "Could not build the selected-page PDF",
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileId, pageKey, selectionKey]);
+
+  if (current?.error) {
+    return <p className="text-xs text-destructive">{current.error}</p>;
+  }
+  if (!current?.selection) {
+    return (
+      <div className="flex h-48 items-center justify-center gap-2 text-xs text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Extracting physical page{sourcePages.length === 1 ? "" : "s"}…
+      </div>
+    );
+  }
+  const selection = current.selection;
+
+  return (
+    <div className="space-y-2">
+      <div className="h-[32rem] overflow-hidden rounded-lg border border-border bg-muted/20">
+        <SelectedPdfPreview fileId={selection.file.file_id} />
+      </div>
+      <p className="text-[10px] text-muted-foreground">
+        This {selection.output_page_map.length}-page derivative contains source
+        page{selection.output_page_map.length === 1 ? "" : "s"}{" "}
+        {selection.source_pages.join(", ")} only
+        {selection.cache_hit ? " · cached" : " · newly extracted"}.
+      </p>
     </div>
   );
 }

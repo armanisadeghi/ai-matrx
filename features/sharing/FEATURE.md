@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1` — foundation for every collaborative surface
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-07-15`
 
 > Single source of truth for the sharing and permissions system. For hands-on usage patterns (copy-paste snippets for wiring sharing into a new feature), see [`README.md`](./README.md). This doc covers the architecture, invariants, and agent-relevant internals.
 
@@ -123,7 +123,7 @@ Aliases live in the registry's `resource_type` column. Canonical table names liv
 1. Owner opens `ShareButton` → `ShareModal` mounts → `useSharing(resourceType, resourceId, isOpen)` fires `listPermissions()` via `get_resource_permissions` RPC.
 2. Owner submits `ShareWithUserTab` form → `shareWithUser({ resourceType, resourceId, userId, permissionLevel })`.
 3. `service.shareWithUser` calls `share_resource_with_user` RPC — RPC validates auth, ownership, level, duplicate.
-4. On success, a fire-and-forget `fetch('/api/sharing/notify', ...)` kicks off the email. Notification failure does **not** fail the grant.
+4. On success, a fire-and-forget `fetch('/api/sharing/notify', ...)` sends only the recipient/resource identifiers. The route derives the sharer identity from the authenticated session, proves a matching active `iam.permissions` row created by that caller, then uses its server client to resolve recipient preferences/email. Notification failure does **not** fail the grant.
 5. `useSharing.refresh()` re-fetches permissions; modal UI updates.
 
 ### 2. Making a resource public (or private)
@@ -242,6 +242,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- `2026-07-15` — **Share-notification identity hardening.** `/api/sharing/notify` no longer trusts caller-supplied sharer names or treats an arbitrary recipient UUID as authorization. It validates UUID/resource-type input, resolves the canonical registry token, requires the matching non-rejected `iam.permissions` grant created by the authenticated caller, derives the sharer from the session, and resolves recipient preferences/email only after that proof. `get_user_emails_by_ids` is now platform-admin/service-only.
 - `2026-07-13` — **Standalone `/administration/sharing` page deleted** — absorbed into the Relationships hub at `/administration/relationships/sharing` (redirect in `next.config.js`). Same two RPCs (`admin_list_share_policies` / `admin_set_share_policy`) now drive the per-row **Link policy** side panel (`SharePolicyColumnEditor` in `features/admin/relationships/`) on the registry table that already owns full row CRUD. See `features/admin/relationships/FEATURE.md`.
 - `2026-07-10` — **Registry snapshot re-synced to live DB + live-drift guard.** The parity test only diffs the TS mirror against the *committed* `registry.db-snapshot.json`, never the live DB — how the `assessment` enum row shipped un-mirrored. Regenerated the snapshot from live (picked up `assessment`, `learn_doc`, `wf_node_data_slot`), synced `utils/permissions/registry.ts` (3 rows added; `learn_doc.isPublicColumn='visibility'` mirrored faithfully — flagged as a likely DB-registry defect, see FOUND_DEFECTS), parity test green (62/62). Added `pnpm check:shareable-registry` (`regen-…--check`) — pulls the live registry and screams on drift vs the committed snapshot; documented as mandatory on any registry migration (Key flow #6 step 4).
 - `2026-07-10` — **P7 SECURITY FIX: `fork_shared_*` authorized link-forks without a token (`migrations/fork_shared_token_authorization_fix.sql`).** The `fork_shared_flashcard_set` / `fork_shared_conversation` / `fork_shared_quiz` RPCs authorized a link-based fork with a **caller-independent** `EXISTS(active share_link for this resource)` clause — it took no token and validated nothing about the caller, so ANY authenticated stranger could fork a **private** resource the instant its owner had ever minted one viewer link (`get_resource_access='none'`, no token). Live-reproduced on `fc_set` (stranger → full owned copy). Fix: added `p_token` to all three RPCs and replaced the caller-independent branch with `public.share_link_authorizes(token,type,id)` — the single validity predicate mirroring `resolve_share_token` (active + unexpired + not-exhausted + resource-match). `visibility IN ('public','link')` (owner-set broad-read) and `iam.has_access` (grant/owner) stay token-less; the token is required only to fork a private link-shared resource. FE: `forkSharedResource(type,id,shareToken?)` + `DuplicateToEditButton.shareToken` — `/s/[token]` passes it, all other surfaces omit it. Verified live: (a) stranger + no token + private-with-link → REJECTED; (b) token holder → success; (c) public + no token → success; (d) owner → success; (e) wrong token → REJECTED; (f) revoked token → REJECTED. See "Fork authorization" above.

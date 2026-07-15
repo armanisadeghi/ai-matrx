@@ -13,6 +13,9 @@ export interface RagHitView {
    *  transcript → session id; scraped → the page URL; else opaque. */
   sourceId: string;
   chunkId: string;
+  fieldId: string | null;
+  parentChunkId: string | null;
+  chunkKind: string | null;
   /** Display name — best-effort from the hit; a caller with a Redux-resolved
    *  name passes it as the adapter's `name` override. */
   title: string | null;
@@ -25,6 +28,9 @@ export interface RagHitView {
   rerankScore: number | null;
   entityRank: number | null;
   entities: string[];
+  /** Original retrieval metadata. Copy-for-AI filters content-bearing fields
+   *  before serialization, while retaining identifying/provenance facts. */
+  metadata: Record<string, unknown>;
   /** Curated-library short code (e.g. "AMA5"), when the hit is a library doc. */
   libraryShortCode: string | null;
 }

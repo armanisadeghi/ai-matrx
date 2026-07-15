@@ -359,31 +359,12 @@ export const hierarchyService = {
     slug: string;
     description?: string;
   }): Promise<HierarchyOrg> {
-    const userId = requireUserId();
-
-    const { data: org, error } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .insert({ ...data, created_by: userId })
-      .select()
-      .single();
-    if (error) throw error;
-
-    // Owner membership via the canonical mbr_* RPC (iam.memberships); the client
-    // has no direct grant on the table.
-    // NOTE: bootstrapping the FIRST owner of a just-created org requires mbr_add
-    // to accept the org's `created_by` as access (pending DB follow-up); until
-    // that lands this throws (42501) and org creation fails here loudly.
-    const ownerResult = await membershipsService.add({
-      containerType: "organization",
-      containerId: org.id,
-      userId,
-      organizationId: org.id,
-      role: "owner",
+    const { data: org, error } = await supabase.rpc("org_create", {
+      p_name: data.name,
+      p_slug: data.slug,
+      p_description: data.description,
     });
-    if (isScopesRpcErr(ownerResult)) {
-      throw new Error(ownerResult.error.message);
-    }
+    if (error) throw error;
 
     return { ...org, role: "owner" } as HierarchyOrg;
   },

@@ -641,11 +641,6 @@ export async function inviteToProject(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           invitationId: invitation.id,
-          projectId,
-          email: normalizedEmail,
-          role,
-          token: invitation.token,
-          expiresAt: invitation.expiresAt,
         }),
       });
     } catch (emailError) {
@@ -695,7 +690,7 @@ export async function cancelProjectInvitation(
  */
 export async function resendProjectInvitation(
   invitationId: string,
-  context?: { projectId: string; email: string },
+  _context?: { projectId: string; email: string },
 ): Promise<OperationResult> {
   try {
     const resendResult = await invitationsService.resend(invitationId);
@@ -707,9 +702,7 @@ export async function resendProjectInvitation(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        token: resendResult.data.token,
-        projectId: context?.projectId,
-        email: context?.email,
+        invitationId,
       }),
     });
 
@@ -866,9 +859,7 @@ function transformProjectFromDb(dbRecord: Record<string, unknown>): Project {
   // longer stores it. If the caller joined `organizations(is_personal)` we read
   // it; otherwise we default to false (callers that need it must join the org).
   const org = dbRecord.organizations as
-    | { is_personal?: boolean | null }
-    | null
-    | undefined;
+    { is_personal?: boolean | null } | null | undefined;
   return {
     id: dbRecord.id as string,
     name: dbRecord.name as string,

@@ -34,6 +34,12 @@ export interface RagSearchHit {
   /** Entity names this chunk mentions (KG), for the per-hit "why" display. */
   entities: string[];
   metadata: Record<string, unknown>;
+  /** Canonical retrieval lineage for exact processed-text/page follow-up. */
+  processed_document_id?: string | null;
+  primary_page_id?: string | null;
+  page_numbers?: number[];
+  /** Renderable source reference for cloud-file-backed hits. */
+  source_ref?: { file_id: string } | null;
 }
 
 export interface RagSearchResponse {

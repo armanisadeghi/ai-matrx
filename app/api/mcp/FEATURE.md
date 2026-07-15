@@ -2,7 +2,7 @@
 
 **Status:** `active` — cross-project infrastructure
 **Tier:** `2`
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-07-15`
 
 ---
 
@@ -77,6 +77,7 @@ The API key is the **entire** security boundary. The service layer deliberately 
 
 **RLS posture**
 - Service layer uses `createAdminClient()` (service role) for every call. RLS is **intentionally bypassed**. The API key check is what gates access. Do not switch to a user-scoped client without redesigning auth.
+- Feedback workflow RPCs used by external agents (`triage`, queues, resolve/testing, decisions, email-state marking) are service-role-only. Browser-facing comment/review RPCs have explicit platform-admin or feedback-owner guards, and direct authenticated writes to workflow-sensitive feedback/message/comment tables are revoked.
 
 **Key TS types** (from `types/feedback.types.ts`)
 - `FeedbackStatus`: `new | triaged | in_progress | awaiting_review | user_review | resolved | closed | wont_fix | split | deferred`
@@ -154,6 +155,7 @@ MCP tool registration is in `app/api/mcp/[transport]/route.ts`; REST dispatch ta
 
 ## Change log
 
+- `2026-07-15` — **Feedback RPC/table boundary hardened.** External-agent pipeline RPCs are service-role-only; browser comment/review/message paths enforce platform-admin or feedback-owner identity; redundant messaging overloads were removed; direct authenticated workflow-state/message/comment writes were revoked. Server actions now authorize the web user before switching to the admin client, and the review-email route loads/authorizes the canonical stored message instead of trusting caller-supplied sender/content fields.
 - `2026-04-22` — claude: initial doc expanded from CLAUDE.md "Agent Feedback API" section.
 
 ---

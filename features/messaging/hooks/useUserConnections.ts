@@ -186,25 +186,14 @@ export function useUserConnections(): UseUserConnectionsReturn {
               invitedUserId !== currentUserId &&
               !usersMap.has(invitedUserId)
             ) {
-              // Get full user info
-              const { data: userInfo } = await supabase.rpc(
-                "get_dm_user_info",
-                {
-                  p_user_id: invitedUserId,
-                },
-              );
-
-              const dmRows = userInfo as unknown as UserBasicInfo[];
-              if (dmRows && dmRows[0]) {
-                usersMap.set(invitedUserId, {
-                  user_id: invitedUserId,
-                  email: dmRows[0].email,
-                  display_name: dmRows[0].display_name,
-                  avatar_url: dmRows[0].avatar_url,
-                  source: "invitation",
-                  sourceDetails: `Invited to ${org.name}`,
-                });
-              }
+              usersMap.set(invitedUserId, {
+                user_id: invitedUserId,
+                email: invite.email,
+                display_name: invite.email.split("@", 1)[0],
+                avatar_url: null,
+                source: "invitation",
+                sourceDetails: `Invited to ${org.name}`,
+              });
             }
           }
         }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { createElement, useState } from "react";
 import * as icons from "lucide-react";
 import {
   Plus,
@@ -81,7 +81,6 @@ export function ScopeInstancePanel({
   );
   const [deleteTarget, setDeleteTarget] = useState<Scope | null>(null);
 
-  const Icon = resolveIcon(scopeType.icon);
   const totalCount = countNodes(tree);
 
   const handleAdd = (parentId?: string) => {
@@ -114,10 +113,10 @@ export function ScopeInstancePanel({
                 : undefined,
             }}
           >
-            <Icon
-              className="h-4 w-4"
-              style={{ color: scopeType.color || undefined }}
-            />
+            {createElement(resolveIcon(scopeType.icon), {
+              className: "h-4 w-4",
+              style: { color: scopeType.color || undefined },
+            })}
           </div>
           <div>
             <h2 className="text-sm font-semibold">{scopeType.label_plural}</h2>
@@ -149,10 +148,10 @@ export function ScopeInstancePanel({
                   : undefined,
               }}
             >
-              <Icon
-                className="h-6 w-6 text-muted-foreground"
-                style={{ color: scopeType.color || undefined }}
-              />
+              {createElement(resolveIcon(scopeType.icon), {
+                className: "h-6 w-6 text-muted-foreground",
+                style: { color: scopeType.color || undefined },
+              })}
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               No {scopeType.label_plural.toLowerCase()} yet
@@ -198,9 +197,8 @@ export function ScopeInstancePanel({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Scope</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete &quot;{deleteTarget?.name}&quot; and
-              any child scopes. All entity assignments to this scope will be
-              removed.
+              This will archive &quot;{deleteTarget?.name}&quot; and any child
+              scopes. Assignments and stored values are retained for recovery.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

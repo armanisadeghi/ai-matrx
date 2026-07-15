@@ -321,11 +321,7 @@ function FeedbackItem({ item, onUpdate }: { item: UserFeedback; onUpdate: () => 
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            feedback_id: item.id,
                             message_id: result.data.id,
-                            message_content: replyText.trim(),
-                            sender_type: 'user',
-                            sender_name: item.username || 'User',
                         }),
                     });
                 } catch {

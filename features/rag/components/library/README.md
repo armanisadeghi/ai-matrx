@@ -191,6 +191,20 @@ When auto-poll discovers a doc whose `status` changed (e.g.
 `pulsedRows` set; `DocRow` renders a fading emerald wash via
 `AnimatePresence` for ~1.6 seconds so the user notices the transition.
 
+## Document detail interaction contract
+
+- Text in every detail tab is selectable. The shared `MatrxDynamicPanel`
+  limits `user-select: none` to its resize handle; never reapply it to the
+  panel group or content body.
+- The header copies either a readable document summary or the complete
+  XML-ish `Copy for AI` payload. Page text and segment bodies provide the same
+  pair at their own scope.
+- UUIDs render with `MatrxUuidCell`: shortened head/tail, full value on hover,
+  and an adjacent full-ID copy action.
+- Referenced cloud files provide both navigation paths: File Preview window
+  for in-app continuity and a real `/files/f/<id>` new-tab link. Right-clicking
+  the source identity opens the shared file actions menu.
+
 ## Files
 
 Paths are relative to `features/rag/`.

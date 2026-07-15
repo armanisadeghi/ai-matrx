@@ -27,7 +27,11 @@ import { cn } from "@/lib/utils";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
-import { hitViewFromSearchHit } from "@/features/rag/components/hit-card/adapters";
+import {
+  canonicalSourceNameForHit,
+  hitViewFromSearchHit,
+  normalizeSourceName,
+} from "@/features/rag/components/hit-card/adapters";
 
 export interface RagSearchHitsProps {
   hits: RagSearchHit[];
@@ -103,7 +107,7 @@ export function RagSearchHits({
             key={`${hit.chunk_id}-${i}`}
             hit={hit}
             origin={origin}
-            label={resolveSourceLabel(hit, filesById)}
+            label={resolveSourceLabel(hit, hits, filesById)}
             query={query}
             topScore={hits[0]?.score}
             onClick={onHitClick}
@@ -133,7 +137,7 @@ function RagSearchHitRow({
 }: {
   hit: RagSearchHit;
   origin: "files" | "chat" | "admin";
-  label: string;
+  label: string | null;
   query?: string;
   topScore?: number;
   onClick?: (hit: RagSearchHit) => void;
@@ -178,26 +182,22 @@ function RagSearchHitRow({
 // ---------------------------------------------------------------------------
 
 /**
- * Friendly label for a hit. Cloud-files reads from the Redux map (the
- * tree is loaded once, so most hits have a name immediately). Notes and
- * code-files don't have their slices loaded by default; we fall back to
- * the source id truncated. The metadata dict often carries a
- * `source_label` set during ingest — prefer that when present.
+ * Friendly label for a hit. Cloud-files reads from the Redux map (the tree is
+ * loaded once, so most hits have a name immediately); otherwise a real name
+ * carried by any sibling hit hydrates every result from the same source. We
+ * intentionally return null instead of presenting an ID fragment as a name.
  */
 function resolveSourceLabel(
   hit: RagSearchHit,
+  siblings: readonly RagSearchHit[],
   filesById: Record<string, { fileName: string }>,
-): string {
-  const fromMeta = hit.metadata?.["source_label"];
-  if (typeof fromMeta === "string" && fromMeta) return fromMeta;
-
+): string | null {
   if (hit.source_kind === "cld_file") {
     const f = filesById[hit.source_id];
-    if (f?.fileName) return f.fileName;
+    const reduxName = normalizeSourceName(f?.fileName, hit.source_id);
+    if (reduxName) return reduxName;
   }
-  // Generic fallback — first 8 chars of the id is usually unique enough
-  // to disambiguate when the row hasn't been hydrated client-side.
-  return `${hit.source_kind} · ${hit.source_id.slice(0, 8)}`;
+  return canonicalSourceNameForHit(hit, siblings);
 }
 
 export default RagSearchHits;

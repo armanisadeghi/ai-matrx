@@ -25,6 +25,7 @@ import { useImageSource } from "../shared/use-image-source";
 import { saveEditedImage } from "../shared/save-edited-image";
 import type { ModeShellProps } from "../shared/types";
 import { detectFaces } from "../../api/python";
+import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "../../constants/backend-capabilities";
 
 const ANNOTATE_FOLDER = "Images/Annotated";
 
@@ -46,24 +47,6 @@ export function AnnotateModeShell({
   const markerAreaRef = useRef<unknown>(null);
   const [saving, setSaving] = useState(false);
   const [aiBusy, setAiBusy] = useState<null | "redact" | "faces">(null);
-
-  const startEditor = useCallback(async () => {
-    if (!imgRef.current || !containerRef.current) return;
-    if (markerAreaRef.current) return; // already open
-    const { MarkerArea } = await import("markerjs2");
-    const ma = new MarkerArea(imgRef.current);
-    ma.targetRoot = containerRef.current;
-    ma.settings.displayMode = "inline";
-    ma.uiStyleSettings.zIndex = "30";
-    ma.addEventListener("render", (event: RenderEvent) => {
-      void persist(event.dataUrl);
-    });
-    ma.addEventListener("close", () => {
-      markerAreaRef.current = null;
-    });
-    ma.show();
-    markerAreaRef.current = ma;
-  }, []);
 
   const persist = useCallback(
     async (dataUrl: string) => {
@@ -88,6 +71,24 @@ export function AnnotateModeShell({
     },
     [defaultFolder, filename, onSave],
   );
+
+  const startEditor = useCallback(async () => {
+    if (!imgRef.current || !containerRef.current) return;
+    if (markerAreaRef.current) return; // already open
+    const { MarkerArea } = await import("markerjs2");
+    const ma = new MarkerArea(imgRef.current);
+    ma.targetRoot = containerRef.current;
+    ma.settings.displayMode = "inline";
+    ma.uiStyleSettings.zIndex = "30";
+    ma.addEventListener("render", (event: RenderEvent) => {
+      void persist(event.dataUrl);
+    });
+    ma.addEventListener("close", () => {
+      markerAreaRef.current = null;
+    });
+    ma.show();
+    markerAreaRef.current = ma;
+  }, [persist]);
 
   // Auto-open the editor as soon as the image is decoded — annotation flows
   // assume immediate engagement; there's no "preview before edit" step.
@@ -115,6 +116,10 @@ export function AnnotateModeShell({
   };
 
   const handleBlurFaces = async () => {
+    if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection) {
+      toast.info("Face detection is coming soon.");
+      return;
+    }
     if (source?.kind !== "cloudFileId") {
       toast.info(
         "Face blur needs the image to be saved first — upload, then re-open.",
@@ -184,20 +189,22 @@ export function AnnotateModeShell({
           Redact PII
         </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 shrink-0"
-          onClick={handleBlurFaces}
-          disabled={aiBusy !== null}
-        >
-          {aiBusy === "faces" ? (
-            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
-          )}
-          Detect faces
-        </Button>
+        {IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 shrink-0"
+            onClick={handleBlurFaces}
+            disabled={aiBusy !== null}
+          >
+            {aiBusy === "faces" ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            Detect faces
+          </Button>
+        )}
 
         <div className="flex-1" />
 
@@ -229,7 +236,7 @@ export function AnnotateModeShell({
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-50">
             <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-card border border-border shadow">
               <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Saving annotated image...</span>
+              <span className="text-sm">Saving annotated image...</span>
             </div>
           </div>
         )}

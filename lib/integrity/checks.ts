@@ -39,24 +39,10 @@ const DEFINER_GRANT_ALLOWLIST: ReadonlyArray<{
   reason: string;
 }> = [
   {
-    functionName: "check_upload_quota",
-    reason: "Guest (no-JWT) upload flow must read quota before auth exists.",
-  },
-  {
-    functionName: "get_usage_status",
-    reason: "Guest (no-JWT) usage flow — read-only status for guest users.",
-  },
-  {
-    functionName: "get_user_limits",
-    reason: "Guest (no-JWT) limits read — read-only, no sensitive payload.",
-  },
-  {
     functionName: "check_rate_limit",
-    reason: "Guest (no-JWT) rate limiting — must run pre-auth by design.",
-  },
-  {
-    functionName: "accept_organization_invitation",
-    reason: "Invite acceptance flow runs before the user has a session.",
+    reason:
+      "Public-app no-JWT rate-limit preflight; p_user_id is null for anon and " +
+      "the function rejects caller ids that do not match auth.uid().",
   },
   {
     functionName: "can_read_processed_document",
@@ -74,6 +60,25 @@ const DEFINER_GRANT_ALLOWLIST_VALUES = DEFINER_GRANT_ALLOWLIST.map(
   (e) =>
     `('${e.functionName}', '${e.reason.replace(/'/g, "''")}')`,
 ).join(",\n          ");
+
+const AUTHENTICATED_DEFINER_IDENTITY_ALLOWLIST: ReadonlyArray<{
+  functionName: string;
+  reason: string;
+}> = [
+  {
+    functionName: "lookup_user_by_email",
+    reason:
+      "Authenticated exact-email directory lookup used to start a new DM and " +
+      "resolve an invited organization member; returns only id and the exact " +
+      "email the caller already supplied.",
+  },
+];
+
+const AUTHENTICATED_DEFINER_IDENTITY_ALLOWLIST_VALUES =
+  AUTHENTICATED_DEFINER_IDENTITY_ALLOWLIST.map(
+    (e) =>
+      `('${e.functionName}', '${e.reason.replace(/'/g, "''")}')`,
+  ).join(",\n          ");
 
 // ── Repo gates: the console-only check:* family, surfaced in the same UI ────
 //
@@ -378,14 +383,13 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
   {
     id: "definer-grant-anon-identity",
     kind: "sql",
-    title: "SECURITY DEFINER functions anon can call with a caller-supplied identity",
+    title: "SECURITY DEFINER functions anon can call without a proven caller boundary",
     category: "Security",
     severity: "error",
     description:
       "The D31 class: a SECURITY DEFINER function EXECUTE-granted to anon (or " +
-      "PUBLIC, which anon inherits), taking a caller-supplied identity param " +
-      "(p_user_id / p_actor / p_org_id / *_email / …), with no auth.uid() / " +
-      "auth.role() / is_super_admin / service_role check in its body. Any " +
+      "PUBLIC, which anon inherits), taking caller-selected identity, org, or " +
+      "scope-resource parameters without a matching authorization predicate. Any " +
       "unauthenticated caller can impersonate any user — this exact pattern " +
       "leaked decrypted MCP OAuth tokens. Scans EVERY PostgREST-exposed " +
       "schema (read live from the authenticator role's pgrst.db_schemas " +
@@ -435,13 +439,103 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       join pg_catalog.pg_namespace n on n.oid = p.pronamespace
       join exposed e on e.schema_name = n.nspname
       join pg_catalog.pg_language l on l.oid = p.prolang
+      cross join lateral (
+        select regexp_replace(coalesce(p.prosrc, ''), '[[:space:]]+', ' ', 'g') as body
+      ) source
       where p.prosecdef
         and p.prokind = 'f'
         and l.lanname in ('sql', 'plpgsql')
         and has_function_privilege('anon', p.oid, 'EXECUTE')
-        and pg_get_function_identity_arguments(p.oid)
-          ~* '\\m(p_user|p_uid|p_actor|p_actor_id|p_target_user|p_created_by|[a-z_]*user_id|[a-z_]*org_id|[a-z_]*organization_id|[a-z_]*owner_id|[a-z_]*account_id|[a-z_]*member_id|[a-z_]*email[a-z_]*)\\M'
-        and coalesce(p.prosrc, '') !~* '(auth\\.uid|auth\\.role|auth\\.jwt|is_super_admin|service_role)'
+        and (
+          (
+            pg_get_function_identity_arguments(p.oid)
+              ~* '\\m(p_user|p_uid|p_actor|p_actor_id|p_target_user|p_created_by|[a-z_]*user_id|[a-z_]*org_id|[a-z_]*organization_id|[a-z_]*owner_id|[a-z_]*account_id|[a-z_]*member_id|[a-z_]*email[a-z_]*)\\M'
+            and source.body !~* '(auth\\.uid|auth\\.role|auth\\.jwt|is_super_admin|service_role)'
+          )
+          or (
+            p.proname ~* '(scope|context_(item|value))'
+            and pg_get_function_identity_arguments(p.oid)
+              ~* '\\mp_[a-z_]*id(s)?\\M'
+            and source.body !~* '(has_org_access|has_access|is_super_admin|service_role|is_org_(admin|member|owner)|auth_is_org|organization_member|memberships|can_read|can_write|permission|(created_by|user_id)[[:space:]]*=[[:space:]]*auth[.]uid)'
+          )
+          or (
+            pg_get_function_identity_arguments(p.oid)
+              ~* '\\m(p_org_id|p_organization_id|p_[a-z_]*organization_id)\\M'
+            and source.body ~* '\\m(insert|update|delete|merge)\\M'
+            and source.body !~* '(has_org_access|is_org_(admin|member|owner)|auth_is_org|organization_member|memberships|is_super_admin|service_role)'
+          )
+        )
+        and not exists (
+          select 1 from allowlist a where a.function_name = p.proname
+        )
+      order by n.nspname, p.proname
+      limit ${SAMPLE_LIMIT}
+    `,
+  },
+  {
+    id: "definer-authenticated-identity",
+    kind: "sql",
+    title:
+      "SECURITY DEFINER functions authenticated users can call with an unproven identity",
+    category: "Security",
+    severity: "error",
+    description:
+      "The authenticated half of the D31 class: scans every PostgREST-exposed " +
+      "schema for SECURITY DEFINER functions that accept caller-selected user, " +
+      "organization, or scope-resource IDs without a visible self/org/access/admin " +
+      "boundary. Known intentional directory primitives are allowlisted with a reason.",
+    remediation:
+      "Derive identity from auth.uid(), prove self/org/resource/admin access in " +
+      "the function body, or revoke authenticated EXECUTE and route through a " +
+      "service-authorized server path.",
+    sql: `
+      with exposed as (
+        select distinct trim(both ' "' from schema_name) as schema_name
+        from pg_catalog.pg_db_role_setting rs
+        join pg_catalog.pg_roles r on r.oid = rs.setrole
+        cross join lateral unnest(rs.setconfig) as cfg
+        cross join lateral regexp_split_to_table(split_part(cfg, '=', 2), ',') as schema_name
+        where r.rolname = 'authenticator'
+          and cfg like 'pgrst.db_schemas=%'
+      ),
+      allowlist(function_name, reason) as (
+        values
+          ${AUTHENTICATED_DEFINER_IDENTITY_ALLOWLIST_VALUES}
+      )
+      select n.nspname as schema,
+             p.proname as function,
+             pg_get_function_identity_arguments(p.oid) as params,
+             count(*) over() as _total
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+      join exposed e on e.schema_name = n.nspname
+      join pg_catalog.pg_language l on l.oid = p.prolang
+      cross join lateral (
+        select regexp_replace(coalesce(p.prosrc, ''), '[[:space:]]+', ' ', 'g') as body
+      ) source
+      where p.prosecdef
+        and p.prokind = 'f'
+        and l.lanname in ('sql', 'plpgsql')
+        and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+        and (
+          (
+            pg_get_function_identity_arguments(p.oid)
+              ~* '\\m(p_user|p_uid|p_actor|p_actor_id|p_target_user|p_created_by|[a-z_]*user_id|[a-z_]*org_id|[a-z_]*organization_id|[a-z_]*owner_id|[a-z_]*account_id|[a-z_]*member_id|[a-z_]*email[a-z_]*)\\M'
+            and source.body !~* '(auth\\.uid|auth\\.role|auth\\.jwt|is_super_admin|is_platform_admin|is_admin\\(|service_role|has_org_access|has_access|is_org_(admin|member|owner)|auth_is_org|organization_member)'
+          )
+          or (
+            p.proname ~* '(scope|context_(item|value))'
+            and pg_get_function_identity_arguments(p.oid)
+              ~* '\\mp_[a-z_]*id(s)?\\M'
+            and source.body !~* '(has_org_access|has_access|is_super_admin|is_platform_admin|service_role|is_org_(admin|member|owner)|auth_is_org|organization_member|memberships|can_read|can_write|permission|(created_by|user_id)[[:space:]]*=[[:space:]]*auth[.]uid)'
+          )
+          or (
+            pg_get_function_identity_arguments(p.oid)
+              ~* '\\m(p_org_id|p_organization_id|p_[a-z_]*organization_id)\\M'
+            and source.body ~* '\\m(insert|update|delete|merge)\\M'
+            and source.body !~* '(auth\\.uid|auth\\.role|has_org_access|is_org_(admin|member|owner)|auth_is_org|organization_member|memberships|is_super_admin|is_platform_admin|service_role)'
+          )
+        )
         and not exists (
           select 1 from allowlist a where a.function_name = p.proname
         )

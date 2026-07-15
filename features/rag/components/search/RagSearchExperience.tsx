@@ -81,7 +81,10 @@ import { useDataStores } from "@/features/rag/hooks/useDataStores";
 import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
-import { hitViewFromSearchHit } from "@/features/rag/components/hit-card/adapters";
+import {
+  canonicalSourceNameForHit,
+  hitViewFromSearchHit,
+} from "@/features/rag/components/hit-card/adapters";
 import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
 import { RagPageReferences } from "@/features/rag/components/search/RagPageReferences";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
@@ -126,8 +129,11 @@ const RAG_AGENT_ID = DEFAULT_NEW_CHAT_AGENT_ID;
  * additively on the conversation via `addedTools` so the agent can actually
  * search the user's indexed content, list/inspect data stores, fetch chunks,
  * and verify answers — even when the base chat agent doesn't ship these tools
- * by default. The conversation also receives the page's retrieval scope via
- * `runtime.applicationScope` (see `createRagSearchScope`).
+ * by default. The server tool-merge funnel adds `document_content` whenever
+ * one of the RAG search tools is present, so every agent surface receives the
+ * physical-page validation companion consistently. The conversation also
+ * receives the page's retrieval scope via `runtime.applicationScope` (see
+ * `createRagSearchScope`).
  */
 const RAG_AGENT_TOOL_IDS = [
   "3921fc69-0763-4538-9e36-5a29a088a5bd", // rag_search
@@ -230,6 +236,7 @@ function RichHitCard({
   defaultExpanded,
   expanded,
   onExpandedChange,
+  sourceName,
 }: {
   rank: number;
   hit: RagSearchHit | DiagnoseHit;
@@ -238,12 +245,13 @@ function RichHitCard({
   defaultExpanded?: boolean;
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  sourceName?: string | null;
   /** Retained for call-site compatibility; the expanded canonical card always
    *  shows the full chunk + breakdown. */
   showFullText?: boolean;
   showBreakdown?: boolean;
 }) {
-  const view = hitViewFromSearchHit(hit);
+  const view = hitViewFromSearchHit(hit, { name: sourceName });
   const href = citationHrefFor(
     hit.source_kind,
     hit.source_id,
@@ -277,11 +285,12 @@ function RichHitCard({
       expanded={expanded}
       onExpandedChange={onExpandedChange}
       expandedContent={(snippet) =>
-        (hit.source_kind === "cld_file" || hit.source_kind === "library_doc") ? (
+        hit.source_kind === "cld_file" || hit.source_kind === "library_doc" ? (
           <RagPageReferences
             sourceKind={hit.source_kind}
             sourceId={hit.source_id}
             pageNumber={view.pageNumber}
+            pageNumbers={view.pageNumbers}
             onOpenPdf={openHit}
           >
             {snippet}
@@ -776,7 +785,9 @@ function SearchTab({ scope }: { scope: Scope }) {
       if (seq !== seqRef.current) return; // superseded by a newer search
       setResponse(r);
       setExpandedHits(
-        Object.fromEntries(r.hits.map((hit, index) => [hit.chunk_id, index === 0])),
+        Object.fromEntries(
+          r.hits.map((hit, index) => [hit.chunk_id, index === 0]),
+        ),
       );
 
       const next = new URLSearchParams();
@@ -918,7 +929,9 @@ function SearchTab({ scope }: { scope: Scope }) {
           <SearchScopeSummary
             scope={scope}
             storeName={storeName}
-            scopeIds={searchContext.scope_ids ?? searchContext.filters?.scope_ids}
+            scopeIds={
+              searchContext.scope_ids ?? searchContext.filters?.scope_ids
+            }
             organizationId={searchContext.filters?.organization_id}
           />
           {response?.hits.length ? (
@@ -1057,6 +1070,7 @@ function SearchTab({ scope }: { scope: Scope }) {
                     <RichHitCard
                       rank={i + 1}
                       hit={h}
+                      sourceName={canonicalSourceNameForHit(h, response.hits)}
                       topScore={response.hits[0]?.score}
                       highlightQuery={response.query}
                       defaultExpanded={i === 0}
@@ -1901,6 +1915,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                         <RichHitCard
                           rank={i + 1}
                           hit={h}
+                          sourceName={canonicalSourceNameForHit(h, diag.hits)}
                           topScore={diag.hits[0]?.score}
                           highlightQuery={query}
                           defaultExpanded={i === 0}
@@ -2341,80 +2356,80 @@ export function RagSearchExperience() {
     <>
       <RagHubHeader />
       <div className="flex h-full flex-col overflow-hidden bg-background md:flex-row">
-      {/* Desktop persistent sidebar — collapses out on mobile in favour of the Drawer */}
-      {!isMobile && <ScopeSidebar scope={scope} />}
+        {/* Desktop persistent sidebar — collapses out on mobile in favour of the Drawer */}
+        {!isMobile && <ScopeSidebar scope={scope} />}
 
-      <Tabs
-        defaultValue={initialTab}
-        className="flex-1 flex flex-col overflow-hidden min-h-0"
-      >
-        <div className="border-b px-2 pt-[calc(var(--shell-header-h)+0.5rem)] pb-1 flex items-center gap-2 md:px-4 md:gap-3">
-          {/* Mobile-only: scope drawer trigger sits where the sidebar would be */}
-          {isMobile && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 shrink-0"
-              aria-label="Open scope picker"
-              onClick={() => setScopeOpen(true)}
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </Button>
-          )}
-          <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
-            <TabsList className="h-9 inline-flex">
-              <TabsTrigger value="search" className="gap-1.5 shrink-0">
-                <SearchIcon className="h-3.5 w-3.5" /> Search
-              </TabsTrigger>
-              <TabsTrigger value="agent-sim" className="gap-1.5 shrink-0">
-                <Brain className="h-3.5 w-3.5" /> Agent Simulation
-              </TabsTrigger>
-              <TabsTrigger value="agent-chat" className="gap-1.5 shrink-0">
-                <MessageSquare className="h-3.5 w-3.5" /> Agent Chat
-              </TabsTrigger>
-              <TabsTrigger value="diagnostics" className="gap-1.5 shrink-0">
-                <Stethoscope className="h-3.5 w-3.5" /> Diagnostics
-              </TabsTrigger>
-            </TabsList>
+        <Tabs
+          defaultValue={initialTab}
+          className="flex-1 flex flex-col overflow-hidden min-h-0"
+        >
+          <div className="border-b px-2 pt-[calc(var(--shell-header-h)+0.5rem)] pb-1 flex items-center gap-2 md:px-4 md:gap-3">
+            {/* Mobile-only: scope drawer trigger sits where the sidebar would be */}
+            {isMobile && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                aria-label="Open scope picker"
+                onClick={() => setScopeOpen(true)}
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </Button>
+            )}
+            <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
+              <TabsList className="h-9 inline-flex">
+                <TabsTrigger value="search" className="gap-1.5 shrink-0">
+                  <SearchIcon className="h-3.5 w-3.5" /> Search
+                </TabsTrigger>
+                <TabsTrigger value="agent-sim" className="gap-1.5 shrink-0">
+                  <Brain className="h-3.5 w-3.5" /> Agent Simulation
+                </TabsTrigger>
+                <TabsTrigger value="agent-chat" className="gap-1.5 shrink-0">
+                  <MessageSquare className="h-3.5 w-3.5" /> Agent Chat
+                </TabsTrigger>
+                <TabsTrigger value="diagnostics" className="gap-1.5 shrink-0">
+                  <Stethoscope className="h-3.5 w-3.5" /> Diagnostics
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <div className="hidden lg:flex min-w-0 max-w-[min(42rem,40vw)] items-center overflow-hidden">
+              <ActiveScopeChips className="min-w-0" />
+            </div>
+            <div className="hidden md:block ml-auto text-[11px] text-muted-foreground shrink-0">
+              RAG Search Lab · hybrid retrieval + Claude agent
+            </div>
           </div>
-          <div className="hidden lg:flex min-w-0 max-w-[min(42rem,40vw)] items-center overflow-hidden">
-            <ActiveScopeChips className="min-w-0" />
-          </div>
-          <div className="hidden md:block ml-auto text-[11px] text-muted-foreground shrink-0">
-            RAG Search Lab · hybrid retrieval + Claude agent
-          </div>
-        </div>
 
-        <div className="flex-1 overflow-hidden min-h-0">
-          <TabsContent value="search" className="h-full mt-0">
-            <SearchTab scope={scope} />
-          </TabsContent>
-          <TabsContent value="agent-sim" className="h-full mt-0">
-            <AgentSimulationTab scope={scope} />
-          </TabsContent>
-          <TabsContent value="agent-chat" className="h-full mt-0">
-            <AgentChatTab scope={scope} />
-          </TabsContent>
-          <TabsContent value="diagnostics" className="h-full mt-0">
-            <DiagnosticsTab scope={scope} />
-          </TabsContent>
-        </div>
-      </Tabs>
+          <div className="flex-1 overflow-hidden min-h-0">
+            <TabsContent value="search" className="h-full mt-0">
+              <SearchTab scope={scope} />
+            </TabsContent>
+            <TabsContent value="agent-sim" className="h-full mt-0">
+              <AgentSimulationTab scope={scope} />
+            </TabsContent>
+            <TabsContent value="agent-chat" className="h-full mt-0">
+              <AgentChatTab scope={scope} />
+            </TabsContent>
+            <TabsContent value="diagnostics" className="h-full mt-0">
+              <DiagnosticsTab scope={scope} />
+            </TabsContent>
+          </div>
+        </Tabs>
 
-      {/* Mobile-only Drawer holds the SAME ScopeSidebar component — same
+        {/* Mobile-only Drawer holds the SAME ScopeSidebar component — same
           interactions and same Redux/local state — never a redesigned
           shrunk-down variant. */}
-      {isMobile && (
-        <Drawer open={scopeOpen} onOpenChange={setScopeOpen}>
-          <DrawerContent className="max-h-[85dvh]">
-            <DrawerTitle className="sr-only">Scope</DrawerTitle>
-            <div className="flex-1 overflow-y-auto overscroll-contain pb-safe">
-              <ScopeSidebar scope={scope} variant="drawer" />
-            </div>
-          </DrawerContent>
-        </Drawer>
-      )}
+        {isMobile && (
+          <Drawer open={scopeOpen} onOpenChange={setScopeOpen}>
+            <DrawerContent className="max-h-[85dvh]">
+              <DrawerTitle className="sr-only">Scope</DrawerTitle>
+              <div className="flex-1 overflow-y-auto overscroll-contain pb-safe">
+                <ScopeSidebar scope={scope} variant="drawer" />
+              </div>
+            </DrawerContent>
+          </Drawer>
+        )}
       </div>
     </>
   );

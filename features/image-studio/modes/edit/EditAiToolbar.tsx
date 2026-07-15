@@ -49,7 +49,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { fileHandler } from "@/features/files/handler/handler";
+import { fileHandler } from "@/features/files";
+import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
 import {
   adjust,
   autoColor,
@@ -118,11 +119,9 @@ export function EditAiToolbar({
       if (!mask.hasPixels) return null;
       const blob = await mask.exportPng();
       if (!blob) return null;
-      const file = new File(
-        [blob],
-        `mask-${sourceFileId}-${Date.now()}.png`,
-        { type: "image/png" },
-      );
+      const file = new File([blob], `mask-${sourceFileId}-${Date.now()}.png`, {
+        type: "image/png",
+      });
       const normalized = await fileHandler.upload(
         { kind: "file", file },
         {
@@ -145,11 +144,9 @@ export function EditAiToolbar({
     (response: unknown, fallbackName: string) => {
       const r = response as Record<string, unknown> | null | undefined;
       const variants = r?.variants as
-        | Record<string, { url?: string | null }>
-        | undefined;
+        Record<string, { url?: string | null }> | undefined;
       const asset = r?.asset as
-        | { primary_url?: string; file_id?: string }
-        | undefined;
+        { primary_url?: string; file_id?: string } | undefined;
       const url =
         (r?.primary_url as string | undefined) ??
         variants?.original?.url ??
@@ -222,8 +219,10 @@ export function EditAiToolbar({
     const id = ensureId("Adjust");
     if (!id) return;
     setBusy("adjust");
-    const asset = await runOp("Adjust", { source_id: id, ...adjustValues }, () =>
-      adjust(id, adjustValues),
+    const asset = await runOp(
+      "Adjust",
+      { source_id: id, ...adjustValues },
+      () => adjust(id, adjustValues),
     );
     setBusy(null);
     if (asset) {
@@ -327,11 +326,17 @@ export function EditAiToolbar({
   // ── AI features (Wave 2 — endpoints live, UI ready) ─────────────────────
 
   const handleSuggest = async () => {
+    if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.editSuggestions) {
+      toast.info("AI edit suggestions are coming soon.");
+      return;
+    }
     const id = ensureId("Suggest edits");
     if (!id) return;
     setBusy("suggest");
     const body = { source_id: id };
-    const response = await runOp("Suggest edits", body, () => suggestEdits(body));
+    const response = await runOp("Suggest edits", body, () =>
+      suggestEdits(body),
+    );
     setBusy(null);
     if (response) {
       if (!response.suggestions?.length) {
@@ -344,6 +349,10 @@ export function EditAiToolbar({
   };
 
   const handlePrompt = async () => {
+    if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.promptEdit) {
+      toast.info("Prompt-based image editing is coming soon.");
+      return;
+    }
     const id = ensureId("AI edit by prompt");
     if (!id) return;
     if (!promptText.trim()) {
@@ -574,90 +583,94 @@ export function EditAiToolbar({
 
       {/* AI features — endpoints live in Wave 2; UI is ready so they light
           up the moment the backend ships. */}
-      <ToolbarOpButton
-        label="Suggest"
-        icon={Lightbulb}
-        running={busy === "suggest"}
-        disabled={anyBusy || idMissing}
-        onClick={handleSuggest}
-        tooltip="Ask AI what edits this image needs"
-      />
+      {IMAGE_STUDIO_BACKEND_CAPABILITIES.editSuggestions && (
+        <ToolbarOpButton
+          label="Suggest"
+          icon={Lightbulb}
+          running={busy === "suggest"}
+          disabled={anyBusy || idMissing}
+          onClick={handleSuggest}
+          tooltip="Ask AI what edits this image needs"
+        />
+      )}
 
       {/* AI prompt input lives in a popover so the toolbar never reflows.
           Constraining the toolbar to a stable layout is critical for the
           editor — every layout shift is a usability papercut. */}
-      <Popover open={promptOpen} onOpenChange={setPromptOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
-            disabled={anyBusy || idMissing}
-          >
-            {busy === "prompt" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Zap className="h-3.5 w-3.5" />
-            )}
-            AI edit
-            {mask.hasPixels ? (
-              <span className="text-[9px] uppercase tracking-wide text-primary/80 ml-0.5">
-                masked
-              </span>
-            ) : null}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-80">
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs text-foreground/80">
-                Describe the edit
-              </Label>
-              <p className="text-[11px] text-muted-foreground">
-                {mask.hasPixels
-                  ? "Constrained to the painted mask region."
-                  : "Applied to the entire image."}
-              </p>
+      {IMAGE_STUDIO_BACKEND_CAPABILITIES.promptEdit && (
+        <Popover open={promptOpen} onOpenChange={setPromptOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+              disabled={anyBusy || idMissing}
+            >
+              {busy === "prompt" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Zap className="h-3.5 w-3.5" />
+              )}
+              AI edit
+              {mask.hasPixels ? (
+                <span className="text-[9px] uppercase tracking-wide text-primary/80 ml-0.5">
+                  masked
+                </span>
+              ) : null}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-foreground/80">
+                  Describe the edit
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {mask.hasPixels
+                    ? "Constrained to the painted mask region."
+                    : "Applied to the entire image."}
+                </p>
+              </div>
+              <input
+                autoFocus
+                value={promptText}
+                onChange={(e) => setPromptText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handlePrompt();
+                  if (e.key === "Escape") setPromptOpen(false);
+                }}
+                placeholder='"make it sunset", "change shirt to blue"…'
+                className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+                style={{ fontSize: "16px" }}
+                disabled={anyBusy}
+              />
+              <div className="flex justify-between items-center pt-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setPromptText("")}
+                  disabled={anyBusy || !promptText}
+                >
+                  Clear
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={handlePrompt}
+                  disabled={anyBusy || !promptText.trim()}
+                >
+                  {busy === "prompt" ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    "Apply"
+                  )}
+                </Button>
+              </div>
             </div>
-            <input
-              autoFocus
-              value={promptText}
-              onChange={(e) => setPromptText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handlePrompt();
-                if (e.key === "Escape") setPromptOpen(false);
-              }}
-              placeholder='"make it sunset", "change shirt to blue"…'
-              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
-              style={{ fontSize: "16px" }}
-              disabled={anyBusy}
-            />
-            <div className="flex justify-between items-center pt-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setPromptText("")}
-                disabled={anyBusy || !promptText}
-              >
-                Clear
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handlePrompt}
-                disabled={anyBusy || !promptText.trim()}
-              >
-                {busy === "prompt" ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  "Apply"
-                )}
-              </Button>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 }
@@ -751,14 +764,19 @@ function describeError(err: unknown): { message: string; duration?: number } {
   const raw = err instanceof Error ? err.message : String(err ?? "");
   const lower = raw.toLowerCase();
 
-  if (/\b404\b|not.?found|not.?implement/.test(lower) || lower.includes("unavailable")) {
+  if (
+    /\b404\b|not.?found|not.?implement/.test(lower) ||
+    lower.includes("unavailable")
+  ) {
     return { message: "This op isn't implemented yet — ships next wave." };
   }
 
   // matrx-utils' optional-backend 503: "pip install matrx-utils[...]"
   const installMatch = raw.match(/pip install[^\n"]*/i);
   if (/\b503\b/.test(raw) || installMatch) {
-    const cmd = installMatch?.[0]?.trim() ?? "pip install matrx-utils[image-segmentation]";
+    const cmd =
+      installMatch?.[0]?.trim() ??
+      "pip install matrx-utils[image-segmentation]";
     return {
       message: `Backend isn't installed on the server. Have ops run: ${cmd}`,
       duration: 12_000,
@@ -767,13 +785,17 @@ function describeError(err: unknown): { message: string; duration?: number } {
 
   if (/network|fetch failed|failed to fetch|ECONN/i.test(raw)) {
     return {
-      message: "Network error — can't reach the image-ops backend. Check connection or VPN.",
+      message:
+        "Network error — can't reach the image-ops backend. Check connection or VPN.",
       duration: 8_000,
     };
   }
 
   if (/\b401\b|unauthor/i.test(raw)) {
-    return { message: "Not authorised — try refreshing the page to renew your session." };
+    return {
+      message:
+        "Not authorised — try refreshing the page to renew your session.",
+    };
   }
 
   if (/\b403\b|forbid/i.test(raw)) {
@@ -787,7 +809,9 @@ function describeError(err: unknown): { message: string; duration?: number } {
     };
   }
 
-  return { message: raw || "Unknown error — check the console for the full payload." };
+  return {
+    message: raw || "Unknown error — check the console for the full payload.",
+  };
 }
 
 function deriveName(url: string, fallback: string): string {

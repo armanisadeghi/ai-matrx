@@ -19,14 +19,20 @@
 
 import { useId, useState } from "react";
 import {
+  BookOpenText,
   ChevronDown,
   ExternalLink,
+  FileText,
+  ImageIcon,
   PanelRight,
-  Copy,
+  Sparkles,
+  Table2,
   TriangleAlert,
 } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
+import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import type { ToolAccent } from "@/features/tool-call-visualization/types";
 import { ToolGlyph } from "@/features/tool-call-visualization/renderers/_shared-entity/ToolGlyph";
 import { PartPeekPopover } from "@/features/tool-call-visualization/renderers/_shared-entity/PartPeekPopover";
@@ -34,6 +40,13 @@ import { scoreTier, relativeStrength, type RelevanceTier } from "./scoreTier";
 import { kindGlyph } from "./kindGlyph";
 import { type RagHitView, isEntityOnly } from "./types";
 import { getQueryHighlightSegments } from "./query-highlighting";
+import { factsOnlyMetadata } from "./copyMetadata";
+import {
+  EMPTY_RAG_REFERENCE_AVAILABILITY,
+  type RagReferenceAvailability,
+  type RagReferenceKind,
+  type RagReferenceRequest,
+} from "./referenceTypes";
 
 /** A subtle per-kind wash for the compact popover header strip. */
 const HEADER_WASH: Record<ToolAccent, string> = {
@@ -48,6 +61,128 @@ const HEADER_WASH: Record<ToolAccent, string> = {
 };
 
 const DOC_KINDS = new Set(["cld_file", "library_doc"]);
+const CUSTOM_REFERENCE_KINDS = new Set([
+  "agent_extract",
+  "agent_summary",
+  "agent_structured_json",
+  "custom",
+  "custom_extraction",
+  "synthetic_qa",
+  "section_summary",
+]);
+
+const REFERENCE_ICONS = [
+  { kind: "document", label: "Document", icon: FileText },
+  { kind: "clean", label: "Clean text", icon: BookOpenText },
+  { kind: "image", label: "Image", icon: ImageIcon },
+  { kind: "table", label: "Table", icon: Table2 },
+  { kind: "custom", label: "Custom content", icon: Sparkles },
+] as const;
+
+const CHUNK_KIND_LABELS: Record<string, string> = {
+  chunked_coarse: "Coarse passage",
+  chunked_fine: "Fine passage",
+  table: "Table",
+  image: "Image",
+  page: "Page",
+};
+
+function chunkKindLabel(kind: string | null): string | null {
+  if (!kind) return null;
+  return (
+    CHUNK_KIND_LABELS[kind] ??
+    kind.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
+}
+
+function inferredReferenceAvailability(
+  view: RagHitView,
+): RagReferenceAvailability {
+  const chunkKind = view.chunkKind?.toLowerCase() ?? "";
+  const derivationKind =
+    typeof view.metadata["derivation_kind"] === "string"
+      ? view.metadata["derivation_kind"].toLowerCase()
+      : "";
+  const identity = `${chunkKind} ${derivationKind}`;
+  const isDocument = DOC_KINDS.has(view.sourceKind);
+
+  return {
+    document: isDocument,
+    clean: isDocument && view.pageNumber != null,
+    image: /(^|\s|_)(image|page_image|page_image_caption)(\s|_|$)/.test(identity),
+    table:
+      /(^|\s|_)table(_row)?(\s|_|$)/.test(identity) ||
+      typeof view.metadata["table_rows"] === "number" ||
+      Array.isArray(view.metadata["table_header"]),
+    custom:
+      CUSTOM_REFERENCE_KINDS.has(chunkKind) ||
+      CUSTOM_REFERENCE_KINDS.has(derivationKind),
+  };
+}
+
+export interface RagHitResourceControls {
+  request: RagReferenceRequest | null;
+  onAvailabilityChange: (availability: RagReferenceAvailability) => void;
+}
+
+function sourceAgentPayload(
+  view: RagHitView,
+  title: string,
+  typeLabel: string,
+  href: string,
+) {
+  const resultType = chunkKindLabel(view.chunkKind);
+  return {
+    kind: "rag-result-reference",
+    location: "AI Matrx — RAG search results",
+    description:
+      "Identifying and retrieval facts for one RAG result; document content is intentionally excluded.",
+    attributes: {
+      source_kind: view.sourceKind,
+      page_number: view.pageNumber,
+    },
+    context: {
+      source_id: view.sourceId,
+      chunk_id: view.chunkId,
+      field_id: view.fieldId,
+      parent_chunk_id: view.parentChunkId,
+    },
+    summary: `Source: ${title}\nType: ${typeLabel}${
+      resultType ? `\nResult type: ${resultType}` : ""
+    }${view.pageNumber != null ? `\nPage: ${view.pageNumber}` : ""}`,
+    data: {
+      source: {
+        name: title,
+        kind: view.sourceKind,
+        type_label: typeLabel,
+        id: view.sourceId,
+        file_id: view.sourceKind === "cld_file" ? view.sourceId : null,
+        processed_document_id:
+          view.sourceKind === "library_doc" ? view.sourceId : null,
+        library_short_code: view.libraryShortCode,
+        href,
+      },
+      retrieval: {
+        chunk_id: view.chunkId,
+        field_id: view.fieldId,
+        parent_chunk_id: view.parentChunkId,
+        chunk_kind: view.chunkKind,
+        type_label: resultType,
+        page_number: view.pageNumber,
+        page_numbers: view.pageNumbers,
+      },
+      ranking: {
+        score: view.score,
+        vector_rank: view.vectorRank,
+        lexical_rank: view.lexicalRank,
+        rerank_score: view.rerankScore,
+        entity_rank: view.entityRank,
+        entities: view.entities,
+      },
+      metadata: factsOnlyMetadata(view.metadata),
+    },
+  };
+}
 
 export interface RagHitCardProps {
   view: RagHitView;
@@ -69,7 +204,10 @@ export interface RagHitCardProps {
   /** Notifies controlled callers and individual-card toggles. */
   onExpandedChange?: (expanded: boolean) => void;
   /** Replaces the default snippet body while preserving its highlighted node. */
-  expandedContent?: (snippet: React.ReactNode) => React.ReactNode;
+  expandedContent?: (
+    snippet: React.ReactNode,
+    resources: RagHitResourceControls,
+  ) => React.ReactNode;
 }
 
 // ── Shared pieces ────────────────────────────────────────────────────────────
@@ -103,8 +241,7 @@ function EntityOnlyBadge() {
 function RankChip({ label, value }: { label: string; value: string | number }) {
   return (
     <span>
-      {label}{" "}
-      <span className="font-semibold text-foreground">{value}</span>
+      {label} <span className="font-semibold text-foreground">{value}</span>
     </span>
   );
 }
@@ -168,23 +305,15 @@ function HitBreakdown({
         </div>
       ) : null}
 
-      {/* chunk_id (lab) */}
+      {/* Result identity stays at the bottom of the expanded card. */}
       {showChunkId ? (
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span className="font-mono">chunk_id</span>
-          <code className="min-w-0 flex-1 truncate font-mono">{view.chunkId}</code>
-          <button
-            type="button"
-            className="shrink-0 rounded p-0.5 hover:bg-muted hover:text-foreground"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigator.clipboard.writeText(view.chunkId);
-              toast.success("chunk_id copied");
-            }}
-            aria-label="Copy chunk id"
-          >
-            <Copy className="h-3 w-3" />
-          </button>
+        <div className="flex items-center gap-2 border-t border-border/70 pt-2 text-[10px] text-muted-foreground">
+          <span className="font-medium text-foreground/80">Result:</span>
+          <MatrxUuidCell
+            value={view.chunkId}
+            label="RAG result chunk ID"
+            className="min-w-0"
+          />
         </div>
       ) : null}
     </div>
@@ -221,6 +350,145 @@ function OpenButton({
     >
       <PanelRight className="h-4 w-4" />
     </button>
+  );
+}
+
+function SourceIdentity({
+  view,
+  title,
+  typeLabel,
+  href,
+  compact = false,
+}: {
+  view: RagHitView;
+  title: string;
+  typeLabel: string;
+  href: string;
+  compact?: boolean;
+}) {
+  const resultType = chunkKindLabel(view.chunkKind);
+  return (
+    <div
+      className={cn(
+        "min-w-0 select-none",
+        compact ? "space-y-0.5" : "space-y-1",
+      )}
+    >
+      <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        <span className="shrink-0 text-xs font-medium text-muted-foreground">
+          Source:
+        </span>
+        <span
+          className={cn(
+            "min-w-0 truncate font-medium text-foreground",
+            compact ? "max-w-52 text-xs" : "max-w-[min(36rem,55vw)] text-sm",
+          )}
+          title={title}
+        >
+          {title}
+        </span>
+        <MatrxUuidCell
+          value={view.sourceId}
+          label={`${typeLabel} source ID`}
+          trailing={
+            <CopyForAiButton
+              label={`${title} result reference`}
+              agent={() => sourceAgentPayload(view, title, typeLabel, href)}
+              icon={CopyForAiIcon}
+              compact
+              className="h-4 w-4"
+            />
+          }
+        />
+      </div>
+      <div className="flex flex-wrap items-center gap-x-1.5 text-xs leading-tight text-muted-foreground">
+        <span>
+          <span className="font-medium text-foreground/80">Type:</span>{" "}
+          {typeLabel}
+        </span>
+        {resultType ? (
+          <>
+            <span aria-hidden="true">|</span>
+            <span>
+              <span className="font-medium text-foreground/80">
+                Result type:
+              </span>{" "}
+              {resultType}
+            </span>
+          </>
+        ) : null}
+        {view.pageNumber != null ? (
+          <>
+            <span aria-hidden="true">|</span>
+            <span>
+              <span className="font-medium text-foreground/80">Page:</span>{" "}
+              {view.pageNumber}
+            </span>
+          </>
+        ) : null}
+        {view.libraryShortCode ? (
+          <>
+            <span aria-hidden="true">|</span>
+            <span>
+              <span className="font-medium text-foreground/80">Library:</span>{" "}
+              {view.libraryShortCode}
+            </span>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ReferenceIconStrip({
+  availability,
+  requested,
+  onSelect,
+}: {
+  availability: RagReferenceAvailability;
+  requested: RagReferenceRequest | null;
+  onSelect: (kind: RagReferenceKind) => void;
+}) {
+  return (
+    <div
+      className="grid shrink-0 grid-cols-5 gap-0.5"
+      aria-label="Available result representations"
+    >
+      {REFERENCE_ICONS.map(({ kind, label, icon: ResourceIcon }) => {
+        const available = availability[kind];
+        const active = available && requested?.kind === kind;
+        return (
+          <button
+            key={kind}
+            type="button"
+            disabled={!available}
+            aria-label={
+              available ? `Show ${label}` : `${label} is not available`
+            }
+            aria-pressed={active || undefined}
+            title={
+              available
+                ? `Show ${label.toLowerCase()}`
+                : `${label} is not available for this result`
+            }
+            onClick={(event) => {
+              event.stopPropagation();
+              if (available) onSelect(kind);
+            }}
+            className={cn(
+              "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors",
+              available
+                ? "border-primary/15 bg-primary/[0.045] text-primary/65 hover:border-primary/30 hover:bg-primary/10 hover:text-primary dark:text-primary/70"
+                : "cursor-default border-transparent bg-muted/25 text-muted-foreground/25",
+              active &&
+                "border-primary/35 bg-primary/12 text-primary ring-1 ring-primary/15",
+            )}
+          >
+            <ResourceIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -268,6 +536,10 @@ export function RagHitCard({
   expandedContent,
 }: RagHitCardProps) {
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
+  const [resolvedAvailability, setResolvedAvailability] =
+    useState<RagReferenceAvailability>(EMPTY_RAG_REFERENCE_AVAILABILITY);
+  const [referenceRequest, setReferenceRequest] =
+    useState<RagReferenceRequest | null>(null);
   const expanded = controlledExpanded ?? internalExpanded;
   const contentId = useId();
   const kg = kindGlyph(view.sourceKind);
@@ -276,69 +548,98 @@ export function RagHitCard({
   const top = topScore ?? view.score;
   const isDoc = DOC_KINDS.has(view.sourceKind);
   const entityOnly = isEntityOnly(view);
-  const title = view.title ?? `#${view.sourceId.slice(0, 8)}`;
-  const subtitle =
-    (view.pageNumber != null ? `${kg.label} · Page ${view.pageNumber}` : kg.label) +
-    (view.libraryShortCode ? ` · ${view.libraryShortCode}` : "");
+  const title =
+    view.title ?? (isDoc ? "Filename unavailable" : `${kg.label} source`);
+  const inferredAvailability = inferredReferenceAvailability(view);
+  const referenceAvailability: RagReferenceAvailability = {
+    document:
+      inferredAvailability.document || resolvedAvailability.document,
+    clean: inferredAvailability.clean || resolvedAvailability.clean,
+    image: inferredAvailability.image || resolvedAvailability.image,
+    table: inferredAvailability.table || resolvedAvailability.table,
+    custom: inferredAvailability.custom || resolvedAvailability.custom,
+  };
   const setExpanded = (next: boolean) => {
     if (controlledExpanded == null) setInternalExpanded(next);
     onExpandedChange?.(next);
+  };
+  const selectReference = (kind: RagReferenceKind) => {
+    if (kind === "document") {
+      onOpen();
+      return;
+    }
+    setReferenceRequest((current) => ({
+      kind,
+      nonce: (current?.nonce ?? 0) + 1,
+    }));
+    setExpanded(true);
   };
 
   // ── expanded (search lab) ──────────────────────────────────────────────────
   if (variant === "expanded") {
     return (
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="relative flex items-center gap-3 border-b border-border px-3 py-2.5 transition-colors hover:bg-muted/30">
-          <button
-            type="button"
-            className="absolute inset-0 z-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-            aria-expanded={expanded}
-            aria-controls={contentId}
-            aria-label={`${expanded ? "Collapse" : "Expand"} result ${rank ?? ""}: ${title}`}
-            onClick={() => setExpanded(!expanded)}
-          />
-          <div className="pointer-events-none contents">
-            {rank != null ? (
-              <span className="w-6 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
-                {rank}
-              </span>
-            ) : null}
-            <ToolGlyph icon={Icon} accent={kg.accent} size="md" />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium leading-tight text-foreground">
-                {title}
-              </div>
-              <div className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">
-                {subtitle}
-              </div>
-            </div>
-            {entityOnly ? <EntityOnlyBadge /> : null}
-            <ScoreBadge view={view} tier={tier} />
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-                expanded && "rotate-180",
-              )}
-              aria-hidden="true"
+      <div
+        className="overflow-hidden rounded-xl border border-border bg-card"
+        data-rag-source-id={view.sourceId}
+        data-rag-chunk-id={view.chunkId}
+      >
+        <div
+          className="flex cursor-pointer items-center gap-3 border-b border-border px-3 py-2.5 transition-colors hover:bg-muted/30"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {rank != null ? (
+            <span className="w-6 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
+              {rank}
+            </span>
+          ) : null}
+          <ToolGlyph icon={Icon} accent={kg.accent} size="md" />
+          <div className="min-w-0 flex-1">
+            <SourceIdentity
+              view={view}
+              title={title}
+              typeLabel={kg.label}
+              href={href}
             />
           </div>
+          {entityOnly ? <EntityOnlyBadge /> : null}
+          <ScoreBadge view={view} tier={tier} />
+          <ReferenceIconStrip
+            availability={referenceAvailability}
+            requested={referenceRequest}
+            onSelect={selectReference}
+          />
+          <OpenButton view={view} onOpen={onOpen} />
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
             title="Open source in a new tab"
             aria-label="Open source in a new tab"
-            className="relative z-10 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <ExternalLink className="h-4 w-4" />
           </a>
-          <OpenButton
-            view={view}
-            onOpen={onOpen}
-            className="relative z-10"
-          />
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-expanded={expanded}
+            aria-controls={contentId}
+            aria-label={`${expanded ? "Collapse" : "Expand"} result ${rank ?? ""}: ${title}`}
+            title={expanded ? "Collapse result" : "Expand result"}
+            onClick={(event) => {
+              event.stopPropagation();
+              setExpanded(!expanded);
+            }}
+          >
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform",
+                expanded && "rotate-180",
+              )}
+              aria-hidden="true"
+            />
+          </button>
         </div>
 
         {expanded ? (
@@ -346,17 +647,32 @@ export function RagHitCard({
             {expandedContent ? (
               expandedContent(
                 <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
-                  <HighlightedSnippet text={view.snippet} query={highlightQuery} />
+                  <HighlightedSnippet
+                    text={view.snippet}
+                    query={highlightQuery}
+                  />
                 </div>,
+                {
+                  request: referenceRequest,
+                  onAvailabilityChange: setResolvedAvailability,
+                },
               )
             ) : (
               <div className="whitespace-pre-wrap break-words px-3 py-2.5 text-sm leading-relaxed text-foreground">
-                <HighlightedSnippet text={view.snippet} query={highlightQuery} />
+                <HighlightedSnippet
+                  text={view.snippet}
+                  query={highlightQuery}
+                />
               </div>
             )}
 
             <div className="border-t border-border bg-muted/20 px-3 py-2">
-              <HitBreakdown view={view} topScore={top} tier={tier} showChunkId />
+              <HitBreakdown
+                view={view}
+                topScore={top}
+                tier={tier}
+                showChunkId
+              />
             </div>
           </div>
         ) : null}
@@ -377,6 +693,14 @@ export function RagHitCard({
       }
       body={
         <div className="space-y-2.5">
+          <SourceIdentity
+            view={view}
+            title={title}
+            typeLabel={kg.label}
+            href={href}
+            compact
+          />
+          <div className="border-t border-border" />
           <div className="max-h-56 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-foreground">
             {view.snippet}
           </div>
@@ -407,15 +731,20 @@ export function RagHitCard({
         </div>
       }
     >
-      <div className="group/row flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:bg-muted/40">
+      <div
+        className="group/row flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:bg-muted/40"
+        data-rag-source-id={view.sourceId}
+        data-rag-chunk-id={view.chunkId}
+      >
         <ToolGlyph icon={Icon} accent={kg.accent} size="md" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium leading-tight text-foreground">
-            {title}
-          </div>
-          <div className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">
-            {subtitle}
-          </div>
+          <SourceIdentity
+            view={view}
+            title={title}
+            typeLabel={kg.label}
+            href={href}
+            compact
+          />
         </div>
         {entityOnly ? <EntityOnlyBadge /> : null}
         <ScoreBadge view={view} tier={tier} />

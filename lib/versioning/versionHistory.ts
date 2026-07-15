@@ -6,9 +6,9 @@
 // version history + restore through THIS one primitive — no per-feature copy of
 // the RPC wiring. Reads/writes go direct via supabase-js (RLS-gated by the RPCs).
 //
-//   listVersions(type, id)          → get_version_history  → VersionEntry[]
-//   getVersionSnapshot(type, id, n) → get_version_snapshot → the row jsonb
-//   restoreVersion(type, id, n)     → restore_version      → new version number
+//   listVersions(type, id)          → version_list     → VersionEntry[]
+//   getVersionSnapshot(type, id, n) → version_snapshot → the row jsonb
+//   restoreVersion(type, id, n)     → version_restore  → new version number
 //
 // Never throws — every call returns a `VersionResult<T>` (supabase-service style).
 
@@ -58,19 +58,19 @@ export async function listVersions(
   opts: { limit?: number; offset?: number } = {},
 ): Promise<VersionResult<VersionEntry[]>> {
   try {
-    const { data, error } = await supabase.rpc("get_version_history", {
-      p_entity_type: entityType,
-      p_entity_id: entityId,
+    const { data, error } = await supabase.rpc("version_list", {
+      p_token: entityType,
+      p_id: entityId,
       ...(opts.limit != null ? { p_limit: opts.limit } : {}),
       ...(opts.offset != null ? { p_offset: opts.offset } : {}),
     });
     if (error) return fail("listVersions", error);
     const rows = (data ?? []).map((r) => ({
-      versionId: r.version_id,
-      versionNumber: r.version_number,
-      name: r.name ?? "",
-      changeNote: r.change_note ?? "",
-      changedAt: r.changed_at,
+      versionId: `${entityType}:${entityId}:${r.version}`,
+      versionNumber: r.version,
+      name: "",
+      changeNote: r.operation,
+      changedAt: r.occurred_at,
     }));
     return { data: rows, error: null };
   } catch (e) {
@@ -85,9 +85,9 @@ export async function getVersionSnapshot(
   version: number,
 ): Promise<VersionResult<Json>> {
   try {
-    const { data, error } = await supabase.rpc("get_version_snapshot", {
-      p_entity_type: entityType,
-      p_entity_id: entityId,
+    const { data, error } = await supabase.rpc("version_snapshot", {
+      p_token: entityType,
+      p_id: entityId,
       p_version: version,
     });
     if (error) return fail("getVersionSnapshot", error);
@@ -108,9 +108,9 @@ export async function restoreVersion(
   version: number,
 ): Promise<VersionResult<number>> {
   try {
-    const { data, error } = await supabase.rpc("restore_version", {
-      p_entity_type: entityType,
-      p_entity_id: entityId,
+    const { data, error } = await supabase.rpc("version_restore", {
+      p_token: entityType,
+      p_id: entityId,
       p_version: version,
     });
     if (error) return fail("restoreVersion", error);

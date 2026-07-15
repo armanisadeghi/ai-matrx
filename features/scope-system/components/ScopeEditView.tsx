@@ -92,6 +92,7 @@ export function ScopeEditView({
 
   useEffect(() => {
     if (scope) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- selecting a different scope intentionally resets the controlled form.
       setName(scope.name);
       setDescription(scope.description ?? "");
     }
@@ -153,7 +154,7 @@ export function ScopeEditView({
     if (!scope || !scopeType) return;
     const ok = await confirm({
       title: `Delete ${scope.name}?`,
-      description: `This permanently deletes “${scope.name}” and all its values. This cannot be undone.`,
+      description: `This archives “${scope.name}” and its child scopes. Stored context values are retained for recovery.`,
       confirmLabel: "Delete",
       variant: "destructive",
     });

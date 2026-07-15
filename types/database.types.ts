@@ -5889,6 +5889,7 @@ export type Database = {
           error_count: number | null
           finish_reason: string | null
           id: string | null
+          iterations: number | null
           known_cost_subtotal: number | null
           last_activity_at: string | null
           last_request_at: string | null
@@ -19292,6 +19293,19 @@ export type Database = {
       }
     }
     Functions: {
+      _container_authz: {
+        Args: {
+          p_actor: string
+          p_container_id: string
+          p_container_type: string
+        }
+        Returns: {
+          actor_role: string
+          resource_creator: string
+          resource_is_personal: boolean
+          resource_org_id: string
+        }[]
+      }
       _fk_check13: {
         Args: never
         Returns: {
@@ -19325,6 +19339,35 @@ export type Database = {
           tbl: unknown
           tgt: string
         }[]
+      }
+      _managed_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          email: string | null
+          expires_at: string | null
+          id: string
+          invited_user_id: string | null
+          metadata: Json
+          organization_id: string
+          role: string
+          status: string
+          target_id: string
+          target_type: string
+          token: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       _org_audit: {
         Args: {
@@ -25421,6 +25464,155 @@ export type Database = {
             }[]
           }
       _count_super_admins: { Args: never; Returns: number }
+      _d31_impl_add_data_row_to_user_table: {
+        Args: { p_data: Json; p_table_id: string }
+        Returns: Json
+      }
+      _d31_impl_add_feedback_comment: {
+        Args: {
+          p_author_name: string
+          p_author_type: string
+          p_content: string
+          p_feedback_id: string
+        }
+        Returns: {
+          author_name: string | null
+          author_type: string
+          content: string
+          created_at: string
+          feedback_id: string
+          id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "feedback_comments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _d31_impl_admin_reply_user_review: {
+        Args: {
+          p_feedback_id: string
+          p_image_urls?: string[]
+          p_message: string
+          p_sender_name?: string
+        }
+        Returns: Json
+      }
+      _d31_impl_check_file_rate_limit: {
+        Args: { p_actor_id: string; p_kind: string; p_limit: number }
+        Returns: Json
+      }
+      _d31_impl_close_feedback_item: {
+        Args: { p_admin_notes?: string; p_id: string; p_status: string }
+        Returns: Database["users"]["Tables"]["user_feedback"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "user_feedback"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _d31_impl_ensure_personal_organization: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
+      _d31_impl_get_feedback_comments: {
+        Args: { p_feedback_id: string }
+        Returns: {
+          author_name: string | null
+          author_type: string
+          content: string
+          created_at: string
+          feedback_id: string
+          id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "feedback_comments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      _d31_impl_get_user_list_with_items: {
+        Args: { p_list_id: string }
+        Returns: Json
+      }
+      _d31_impl_get_user_messages: {
+        Args: { p_feedback_id: string }
+        Returns: {
+          content: string
+          created_at: string
+          email_sent: boolean
+          feedback_id: string
+          id: string
+          image_urls: string[] | null
+          sender_name: string | null
+          sender_type: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "feedback_user_messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      _d31_impl_get_user_table_complete: {
+        Args: {
+          p_sort_direction?: string
+          p_sort_field?: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      _d31_impl_reply_to_user_review: {
+        Args: {
+          p_feedback_id: string
+          p_image_urls?: string[]
+          p_message: string
+          p_sender_name?: string
+        }
+        Returns: Json
+      }
+      _d31_impl_send_user_review_message: {
+        Args: {
+          p_feedback_id: string
+          p_image_urls?: string[]
+          p_message: string
+          p_sender_name?: string
+        }
+        Returns: Json
+      }
+      _d31_impl_update_user_list: {
+        Args: {
+          p_authenticated_read?: boolean
+          p_description?: string
+          p_is_public?: boolean
+          p_items?: Json
+          p_list_id: string
+          p_list_name?: string
+          p_public_read?: boolean
+        }
+        Returns: Json
+      }
+      _d31_impl_update_user_table_config: {
+        Args: {
+          p_field_updates?: Json
+          p_table_id: string
+          p_table_updates?: Json
+        }
+        Returns: Json
+      }
+      _d31_impl_update_user_table_metadata: {
+        Args: {
+          p_authenticated_read?: boolean
+          p_description?: string
+          p_is_public?: boolean
+          p_table_id: string
+          p_table_name?: string
+        }
+        Returns: Json
+      }
       _edu_access_mode: {
         Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
         Returns: string
@@ -26001,24 +26193,15 @@ export type Database = {
           unregistered_pairs: number
         }[]
       }
-      admin_reply_user_review:
-        | {
-            Args: {
-              p_feedback_id: string
-              p_message: string
-              p_sender_name?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_feedback_id: string
-              p_image_urls?: string[]
-              p_message: string
-              p_sender_name?: string
-            }
-            Returns: Json
-          }
+      admin_reply_user_review: {
+        Args: {
+          p_feedback_id: string
+          p_image_urls?: string[]
+          p_message: string
+          p_sender_name?: string
+        }
+        Returns: Json
+      }
       admin_revoke: {
         Args: { target_user_id: string }
         Returns: Database["admin"]["Tables"]["admins"]["Row"]
@@ -29940,6 +30123,16 @@ export type Database = {
           target_type: string
         }[]
       }
+      inv_get_managed: {
+        Args: { p_invitation_id: string }
+        Returns: Database["iam"]["Tables"]["invitations"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       inv_list: {
         Args: { p_target_id: string; p_target_type: string }
         Returns: {
@@ -30324,6 +30517,24 @@ export type Database = {
         }
         Returns: Json
       }
+      org_create: {
+        Args: {
+          p_description?: string
+          p_logo_file_id?: string
+          p_logo_url?: string
+          p_name: string
+          p_settings?: Json
+          p_slug: string
+          p_website?: string
+        }
+        Returns: Database["iam"]["Tables"]["organizations"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "organizations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       page_extraction_clear_job_results: {
         Args: { p_job_id: string }
         Returns: undefined
@@ -30707,24 +30918,15 @@ export type Database = {
         Args: { p_keyword_ids: string[]; p_topic_id: string }
         Returns: undefined
       }
-      reply_to_user_review:
-        | {
-            Args: {
-              p_feedback_id: string
-              p_message: string
-              p_sender_name?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_feedback_id: string
-              p_image_urls?: string[]
-              p_message: string
-              p_sender_name?: string
-            }
-            Returns: Json
-          }
+      reply_to_user_review: {
+        Args: {
+          p_feedback_id: string
+          p_image_urls?: string[]
+          p_message: string
+          p_sender_name?: string
+        }
+        Returns: Json
+      }
       reset_daily_guest_counters: { Args: never; Returns: undefined }
       resolve_feedback_item: {
         Args: {
@@ -30862,24 +31064,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      send_user_review_message:
-        | {
-            Args: {
-              p_feedback_id: string
-              p_message: string
-              p_sender_name?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_feedback_id: string
-              p_image_urls?: string[]
-              p_message: string
-              p_sender_name?: string
-            }
-            Returns: Json
-          }
+      send_user_review_message: {
+        Args: {
+          p_feedback_id: string
+          p_image_urls?: string[]
+          p_message: string
+          p_sender_name?: string
+        }
+        Returns: Json
+      }
       set_admin_decision: {
         Args: {
           p_decision: string
@@ -31316,6 +31509,14 @@ export type Database = {
           p_list_id: string
           p_list_name?: string
           p_public_read?: boolean
+        }
+        Returns: Json
+      }
+      update_user_own_feedback: {
+        Args: {
+          p_description?: string
+          p_feedback_id: string
+          p_feedback_type?: string
         }
         Returns: Json
       }

@@ -56,11 +56,13 @@ function normalizeHit(raw: RawHit, index: number): NormalizedHit {
     (metaSource.path as string | undefined) ??
     null;
   const pageFromMeta = (() => {
-    const pn = meta["page_number"];
-    if (typeof pn === "number") return pn;
-    if (typeof pn === "string") {
-      const n = Number.parseInt(pn, 10);
-      return Number.isFinite(n) ? n : null;
+    for (const key of ["page_number", "first_page"] as const) {
+      const value = meta[key];
+      if (typeof value === "number" && Number.isFinite(value)) return value;
+      if (typeof value === "string") {
+        const parsed = Number.parseInt(value, 10);
+        if (Number.isFinite(parsed)) return parsed;
+      }
     }
     return null;
   })();

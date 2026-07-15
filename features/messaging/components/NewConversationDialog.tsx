@@ -157,14 +157,12 @@ export function NewConversationDialog({
             const results: SearchResult[] = [];
             for (const row of fallbackRows) {
               if (row.user_id !== currentUserId) {
-                const { data: userInfo } = await supabase.rpc(
-                  "get_dm_user_info",
-                  { p_user_id: row.user_id },
-                );
-                const userRows = userInfo as unknown as UserBasicInfo[];
-                if (userRows && userRows[0]) {
-                  results.push(userRows[0]);
-                }
+                results.push({
+                  user_id: row.user_id,
+                  email: row.user_email,
+                  display_name: row.user_email.split("@", 1)[0],
+                  avatar_url: null,
+                });
               }
             }
             setSearchResults(results);

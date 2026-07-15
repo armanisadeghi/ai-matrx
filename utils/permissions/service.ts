@@ -259,11 +259,6 @@ export async function shareWithUser(
     // Fire-and-forget notifications — failure doesn't affect the grant.
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      const sharerName =
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email ||
-        "Someone";
       const resourceLabel = getResourceTypeLabel(resourceType);
 
       // (1) Email (respects the recipient's preferences server-side).
@@ -274,7 +269,6 @@ export async function shareWithUser(
           recipientUserId: userId,
           resourceType,
           resourceId,
-          sharerName,
         }),
       }).catch((err) => console.error("Sharing notification failed:", err));
 
@@ -285,7 +279,7 @@ export async function shareWithUser(
           sendDirectActionMessage({
             currentUserId: user.id,
             recipientId: userId,
-            content: `${sharerName} shared a ${resourceLabel} with you`,
+            content: `${user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Someone"} shared a ${resourceLabel} with you`,
             actionData: {
               kind: "resource_shared",
               version: 1,
@@ -295,7 +289,11 @@ export async function shareWithUser(
                 resource_title: resourceName || resourceLabel,
                 resource_label: resourceLabel,
                 permission_level: permissionLevel,
-                sharer_name: sharerName,
+                sharer_name:
+                  user.user_metadata?.full_name ||
+                  user.user_metadata?.name ||
+                  user.email ||
+                  "Someone",
               },
             },
           }),

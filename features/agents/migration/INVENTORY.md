@@ -92,6 +92,7 @@
 
 - `prompts`, `prompt_versions`, `prompt_templates`
 - `prompt_apps`, `prompt_app_executions`, `prompt_app_errors`, `prompt_app_rate_limits`, `prompt_app_versions`, `prompt_app_categories`
+- Legacy-named RPCs retained over canonical agent-app tables: `get_prompt_app_execution_payload(uuid)` and `pin_prompt_app_to_version(uuid,uuid)`. Both are ACL-hardened (2026-07-15); delete/rename with the prompt-app compatibility layer in Phase 19.
 - `prompt_builtins`, `prompt_builtin_versions`, `prompt_shortcuts`
 - `system_prompts`, `system_prompt_executions`
 - `prompt_actions`
@@ -180,6 +181,7 @@ Prompt-adjacent surfaces discovered during later phases that are **out of the cu
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-15 | codex | D31 audit found two surviving legacy-named prompt-app RPCs backed by canonical `app.definition`/`agent.definition`; added them to the Phase-19 inventory and hardened their visibility/editor boundaries without extending the legacy system. |
 | 2026-07-14 | codex | D47 Notes integration follow-up: removed the orphaned rich-document remote-surface ID from `NotesView`; preview/split actions are inline again. No prompt/agent surface inventory or Phase 5 boundary changed. |
 | 2026-07-15 | codex | D50 type-safety sweep repaired legacy `features/applet/` and its transitional/dev consumers without changing the Phase 10 migration boundary or adding new legacy surfaces. Full raw TypeScript compilation is green. |
 | 2026-04-20 | initial audit | Created inventory from Explore-agent sweep |

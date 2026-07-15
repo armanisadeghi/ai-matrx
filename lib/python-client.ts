@@ -34,7 +34,7 @@ import { getCachedFingerprint } from "@/lib/services/fingerprint-service";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import {
   configuredFilesServiceUrl,
-  isStandaloneFileServiceRoute,
+  shouldRouteBrowserRequestToStandaloneFiles,
 } from "@/lib/api/service-routing";
 import {
   capturePythonClientError,
@@ -133,7 +133,9 @@ export function resolveBaseUrlForPath(
   method?: string,
 ): string {
   if (override) return override.replace(/\/$/, "");
-  if (isStandaloneFileServiceRoute(path, method)) return resolveFilesBaseUrl();
+  if (shouldRouteBrowserRequestToStandaloneFiles(path, method)) {
+    return resolveFilesBaseUrl();
+  }
   return resolveBaseUrl();
 }
 

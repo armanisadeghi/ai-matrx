@@ -123,6 +123,7 @@ export function EditScopeTypeSheet({
 
   useEffect(() => {
     if (!open || !scopeType) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- opening on a different entity intentionally resets the controlled editor fields.
     setLabelSingular(scopeType.label_singular);
     setLabelPlural(scopeType.label_plural);
     setIcon(scopeType.icon || "Folder");
@@ -141,6 +142,7 @@ export function EditScopeTypeSheet({
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- server-backed item changes intentionally reset this controlled row editor.
     setItems(
       existingItems.map((i) => ({
         id: i.id,
@@ -301,7 +303,7 @@ export function EditScopeTypeSheet({
     if (!scopeType) return;
     const ok = await confirm({
       title: `Delete ${scopeType.label_singular}?`,
-      description: `This permanently deletes the "${scopeType.label_plural}" scope, all its scopes, context items, and stored values. This cannot be undone.`,
+      description: `This archives the "${scopeType.label_plural}" scope type and hides its scopes and context items. Stored values are retained for recovery.`,
       confirmLabel: "Delete",
       variant: "destructive",
     });

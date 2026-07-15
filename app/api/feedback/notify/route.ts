@@ -5,13 +5,13 @@
  * Follows the same pattern as /api/sharing/notify
  *
  * POST /api/feedback/notify
- * Body: { feedback_id: string, status: string }
+ * Body: { feedback_id: string }
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminClient } from '@/utils/supabase/adminClient';
 import { createClient } from '@/utils/supabase/server';
 import { sendEmail, emailTemplates } from '@/lib/email/client';
-import type { FeedbackStatus } from '@/types/feedback.types';
 
 /**
  * Check if user has feedback email notifications enabled
@@ -54,11 +54,14 @@ export async function POST(request: NextRequest) {
 
         // Parse request body
         const body = await request.json();
-        const { feedback_id, status } = body as { feedback_id: string; status: FeedbackStatus };
+        const { feedback_id } = body as { feedback_id?: unknown };
 
-        if (!feedback_id || !status) {
+        if (
+            typeof feedback_id !== 'string' ||
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(feedback_id)
+        ) {
             return NextResponse.json(
-                { success: false, error: 'Missing required fields: feedback_id, status' },
+                { success: false, error: 'A valid feedback_id is required' },
                 { status: 400 }
             );
         }
@@ -77,8 +80,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if user wants feedback notifications
-        const shouldSendEmail = await checkFeedbackEmailPreferences(supabase, feedback.user_id);
+        const admin = createAdminClient();
+
+        // Check if user wants feedback notifications after RLS has established
+        // that the caller may view this feedback item.
+        const shouldSendEmail = await checkFeedbackEmailPreferences(admin, feedback.user_id);
         if (!shouldSendEmail) {
             return NextResponse.json({
                 success: true,
@@ -87,11 +93,11 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Get recipient email using RPC function
-        const { data: usersData, error: rpcError } = await supabase
-            .rpc('get_user_emails_by_ids', { user_ids: [feedback.user_id] });
+        const { data: recipient, error: recipientError } =
+            await admin.auth.admin.getUserById(feedback.user_id);
+        const recipientEmail = recipient.user?.email;
 
-        if (rpcError || !usersData || usersData.length === 0 || !usersData[0]?.email) {
+        if (recipientError || !recipientEmail) {
             console.warn('No email found for user:', feedback.user_id);
             return NextResponse.json(
                 { success: false, error: 'User email not found' },
@@ -99,7 +105,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const recipientEmail = usersData[0].email;
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aimatrx.com';
         const portalUrl = `${siteUrl}/settings/feedback`;
 
@@ -108,7 +113,7 @@ export async function POST(request: NextRequest) {
             feedback.username || recipientEmail,
             feedback.feedback_type,
             feedback.description,
-            status,
+            feedback.status,
             feedback.resolution_notes || undefined,
             portalUrl
         );

@@ -216,7 +216,7 @@ export function ScopesRouteHeader() {
     if (!scope || !scopeType) return;
     const ok = await confirm({
       title: `Delete ${scope.name}?`,
-      description: `This permanently deletes “${scope.name}” and all its values. This cannot be undone.`,
+      description: `This archives “${scope.name}” and its child scopes. Stored context values are retained for recovery.`,
       confirmLabel: "Delete",
       variant: "destructive",
     });

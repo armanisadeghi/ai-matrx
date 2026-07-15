@@ -3,9 +3,8 @@
  *
  * The invitation ROW is created on the client via the canonical `inv_create`
  * RPC (`invitationsService.create`, client → Supabase per repo doctrine). This
- * route exists ONLY to send the invitation email — it receives the
- * already-created token + email + organizationId and renders/sends the message.
- * It NEVER touches any invitation table.
+ * route accepts only an invitation id. The caller-scoped `inv_get_managed`
+ * RPC proves manager access and supplies the stored recipient/token/target.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -27,17 +26,41 @@ export async function POST(request: NextRequest) {
         { status: 401 },
       );
     }
-
     const body = await request.json();
-    const { email, organizationId, token, expiresAt } = body;
+    const { invitationId } = body;
+    const isUuid =
+      typeof invitationId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        invitationId,
+      );
 
-    if (!email || !organizationId || !token) {
+    if (!isUuid) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Missing required fields: email, organizationId, token",
-        },
+        { success: false, error: "A valid invitationId is required" },
         { status: 400 },
+      );
+    }
+
+    const { data: invitation, error: invitationError } = await supabase.rpc(
+      "inv_get_managed",
+      { p_invitation_id: invitationId },
+    );
+    if (
+      invitationError ||
+      !invitation ||
+      invitation.target_type !== "organization"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Invitation not found or not manageable" },
+        { status: 403 },
+      );
+    }
+    const recipientEmail = invitation.email;
+    const invitationToken = invitation.token;
+    if (!recipientEmail || !invitationToken) {
+      return NextResponse.json(
+        { success: false, error: "Invitation recipient or token is missing" },
+        { status: 500 },
       );
     }
 
@@ -45,7 +68,7 @@ export async function POST(request: NextRequest) {
       .schema("iam")
       .from("organizations")
       .select("name")
-      .eq("id", organizationId)
+      .eq("id", invitation.target_id)
       .single();
 
     if (!orgData) {
@@ -63,9 +86,9 @@ export async function POST(request: NextRequest) {
 
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/organization/accept/${token}`;
-    const expiry = expiresAt
-      ? new Date(expiresAt)
+    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitationToken}`;
+    const expiry = invitation.expires_at
+      ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const emailTemplate = emailTemplates.organizationInvitation(
@@ -76,7 +99,7 @@ export async function POST(request: NextRequest) {
     );
 
     const emailResult = await sendEmail({
-      to: email,
+      to: recipientEmail,
       subject: emailTemplate.subject,
       html: emailTemplate.html,
     });

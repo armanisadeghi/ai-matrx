@@ -130,9 +130,7 @@ export function CopyButtons({
         {copied === "agent" ? (
           <Check className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
         ) : (
-          <CopyForAiIcon
-            className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"}
-          />
+          <CopyForAiIcon className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
         )}
         {!isIcon && <span className="ml-1">Copy for AI</span>}
       </Button>

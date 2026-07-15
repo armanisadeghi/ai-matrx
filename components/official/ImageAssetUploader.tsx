@@ -41,7 +41,7 @@ import {
   Trash2,
   Upload,
   X,
-  type LucideIcon
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -73,6 +73,7 @@ import {
   generateImage,
   type ImageResult,
 } from "@/features/image-studio/api/python";
+import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -626,6 +627,11 @@ function GenerateTabContent({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleGenerate = useCallback(async () => {
+    if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.generate) {
+      setErrorMsg("Image generation is coming soon.");
+      setGenState("error");
+      return;
+    }
     const trimmed = prompt.trim();
     if (!trimmed) return;
     setGenState("generating");
@@ -723,7 +729,9 @@ function GenerateTabContent({
         type="button"
         size="sm"
         onClick={() => void handleGenerate()}
-        disabled={!prompt.trim() || busy}
+        disabled={
+          !IMAGE_STUDIO_BACKEND_CAPABILITIES.generate || !prompt.trim() || busy
+        }
         className="h-8 text-xs w-full"
       >
         {genState === "generating" ? (
@@ -738,6 +746,12 @@ function GenerateTabContent({
           </>
         )}
       </Button>
+
+      {!IMAGE_STUDIO_BACKEND_CAPABILITIES.generate && (
+        <p className="text-xs text-muted-foreground">
+          Image generation is coming soon. Use Upload, Library, or URL instead.
+        </p>
+      )}
 
       {results.length > 0 && (
         <div className="flex flex-col gap-1.5">
@@ -831,6 +845,7 @@ export function ImageAssetUploader({
   const [activeTab, setActiveTab] = useState<SourceTab>(defaultTab);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- external source props intentionally reset this controlled upload surface.
     setVariants({
       image_url: currentUrl ?? currentVariants?.image_url ?? null,
       og_image_url: currentVariants?.og_image_url ?? null,

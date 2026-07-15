@@ -5,7 +5,7 @@ import { Search, Maximize2, AlertCircle } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { isTerminal } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
-import { RagSourceCard } from "./RagSourceCard";
+import { canonicalNormalizedSourceName, RagSourceCard } from "./RagSourceCard";
 import { parseRag } from "./parseRag";
 
 /**
@@ -80,6 +80,7 @@ export function RagSearchInline({
             <RagSourceCard
               key={`${h.chunk_id}-${i}`}
               hit={h}
+              sourceName={canonicalNormalizedSourceName(h, data.hits)}
               topScore={topScore}
               query={data.query}
             />

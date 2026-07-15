@@ -3,9 +3,8 @@
  *
  * The invitation row is refreshed (new expiry + fresh token) on the client via
  * the canonical `inv_resend` RPC (`invitationsService.resend`). This route
- * exists ONLY to re-send the reminder email — it receives the fresh token +
- * recipient email + organizationId and renders/sends the message. It NEVER
- * touches any invitation table.
+ * accepts only an invitation id; `inv_get_managed` derives the fresh token,
+ * recipient, and organization after proving the caller is a manager.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -27,17 +26,41 @@ export async function POST(request: NextRequest) {
         { status: 401 },
       );
     }
-
     const body = await request.json();
-    const { token, organizationId, email } = body;
+    const { invitationId } = body;
+    const isUuid =
+      typeof invitationId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        invitationId,
+      );
 
-    if (!token || !organizationId || !email) {
+    if (!isUuid) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Missing required fields: token, organizationId, email",
-        },
+        { success: false, error: "A valid invitationId is required" },
         { status: 400 },
+      );
+    }
+
+    const { data: invitation, error: invitationError } = await supabase.rpc(
+      "inv_get_managed",
+      { p_invitation_id: invitationId },
+    );
+    if (
+      invitationError ||
+      !invitation ||
+      invitation.target_type !== "organization"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Invitation not found or not manageable" },
+        { status: 403 },
+      );
+    }
+    const recipientEmail = invitation.email;
+    const invitationToken = invitation.token;
+    if (!recipientEmail || !invitationToken) {
+      return NextResponse.json(
+        { success: false, error: "Invitation recipient or token is missing" },
+        { status: 500 },
       );
     }
 
@@ -45,7 +68,7 @@ export async function POST(request: NextRequest) {
       .schema("iam")
       .from("organizations")
       .select("name")
-      .eq("id", organizationId)
+      .eq("id", invitation.target_id)
       .maybeSingle();
 
     const inviterName =
@@ -56,8 +79,10 @@ export async function POST(request: NextRequest) {
 
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/organization/accept/${token}`;
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitationToken}`;
+    const expiresAt = invitation.expires_at
+      ? new Date(invitation.expires_at)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const orgName = orgData?.name || "the organization";
     const emailTemplate = emailTemplates.organizationInvitationReminder(
@@ -68,7 +93,7 @@ export async function POST(request: NextRequest) {
     );
 
     const emailResult = await sendEmail({
-      to: email,
+      to: recipientEmail,
       subject: emailTemplate.subject,
       html: emailTemplate.html,
     });

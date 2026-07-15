@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Search } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
-import { RagSourceCard } from "./RagSourceCard";
+import { canonicalNormalizedSourceName, RagSourceCard } from "./RagSourceCard";
 import { parseRag } from "./parseRag";
 
 /**
@@ -47,6 +47,7 @@ export function RagSearchOverlay({ entry }: ToolRendererProps) {
           <RagSourceCard
             key={`${h.chunk_id}-${i}`}
             hit={h}
+            sourceName={canonicalNormalizedSourceName(h, data.hits)}
             topScore={topScore}
             query={data.query}
           />

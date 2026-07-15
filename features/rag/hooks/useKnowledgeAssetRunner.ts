@@ -31,11 +31,7 @@ import {
 } from "@/features/rag/api/derivations";
 
 export type OpStatus =
-  | "idle"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled";
+  "idle" | "running" | "completed" | "failed" | "cancelled";
 
 export interface OpState {
   kind: DeriveKind;
@@ -90,8 +86,11 @@ export interface UseKnowledgeAssetRunner {
   anyRunning: boolean;
   /** True while runAll() is walking the sequence. */
   buildingAll: boolean;
-  run: (kind: DeriveKind, opts?: { reset?: boolean }) => Promise<OpStatus>;
-  runAll: () => Promise<void>;
+  run: (
+    kind: DeriveKind,
+    opts?: { reset?: boolean; rebuildConfirmationToken?: string },
+  ) => Promise<OpStatus>;
+  runAll: (kinds?: readonly DeriveKind[]) => Promise<void>;
   cancel: (kind: DeriveKind) => void;
   refresh: () => Promise<void>;
 }
@@ -101,9 +100,8 @@ export function useKnowledgeAssetRunner(
 ): UseKnowledgeAssetRunner {
   const [derivations, setDerivations] = useState<DerivationRollup[]>([]);
   const [runs, setRuns] = useState<DerivationRun[]>([]);
-  const [operations, setOperations] = useState<Record<DeriveKind, OpState>>(
-    initialOps,
-  );
+  const [operations, setOperations] =
+    useState<Record<DeriveKind, OpState>>(initialOps);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [buildingAll, setBuildingAll] = useState(false);
@@ -111,6 +109,60 @@ export function useKnowledgeAssetRunner(
   const abortMap = useRef<Map<DeriveKind, AbortController>>(new Map());
   const runIdMap = useRef<Map<DeriveKind, string>>(new Map());
   const mountedRef = useRef(true);
+
+  const applyServerRuns = useCallback((serverRuns: DerivationRun[]) => {
+    const latest = new Map<DeriveKind, DerivationRun>();
+    for (const serverRun of serverRuns) {
+      if (
+        !latest.has(serverRun.derivation_kind as DeriveKind) &&
+        (DERIVE_KINDS as readonly string[]).includes(serverRun.derivation_kind)
+      ) {
+        latest.set(serverRun.derivation_kind as DeriveKind, serverRun);
+      }
+    }
+    for (const [kind, serverRun] of latest) {
+      if (abortMap.current.has(kind)) continue;
+      if (serverRun.status === "running") {
+        runIdMap.current.set(kind, serverRun.run_id);
+      } else {
+        runIdMap.current.delete(kind);
+      }
+    }
+    setOperations((prev) => {
+      const next = { ...prev };
+      for (const [kind, serverRun] of latest) {
+        // The connected stream is more current than a concurrently fetched DB
+        // snapshot. Never overwrite it while this tab owns the live request.
+        if (abortMap.current.has(kind)) continue;
+        next[kind] = {
+          ...prev[kind],
+          status: serverRun.status,
+          current: serverRun.current,
+          total: serverRun.total,
+          chunksWritten: serverRun.chunks_written,
+          runId: serverRun.status === "running" ? serverRun.run_id : null,
+          error: serverRun.error,
+          message:
+            serverRun.status === "running"
+              ? "Processing on the server…"
+              : serverRun.status === "failed"
+                ? "Interrupted — resume available"
+                : serverRun.status === "cancelled"
+                  ? "Cancelled — resume available"
+                  : serverRun.status === "completed"
+                    ? "Done"
+                    : prev[kind].message,
+          startedAt: serverRun.started_at
+            ? Date.parse(serverRun.started_at)
+            : prev[kind].startedAt,
+          endedAt: serverRun.finished_at
+            ? Date.parse(serverRun.finished_at)
+            : null,
+        };
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -121,15 +173,12 @@ export function useKnowledgeAssetRunner(
     };
   }, []);
 
-  const patchOp = useCallback(
-    (kind: DeriveKind, patch: Partial<OpState>) => {
-      setOperations((prev) => ({
-        ...prev,
-        [kind]: { ...prev[kind], ...patch },
-      }));
-    },
-    [],
-  );
+  const patchOp = useCallback((kind: DeriveKind, patch: Partial<OpState>) => {
+    setOperations((prev) => ({
+      ...prev,
+      [kind]: { ...prev[kind], ...patch },
+    }));
+  }, []);
 
   // ----- rollup load -----------------------------------------------------
 
@@ -140,12 +189,13 @@ export function useKnowledgeAssetRunner(
       if (!mountedRef.current) return;
       setDerivations(res.derivations);
       setRuns(res.runs);
+      applyServerRuns(res.runs);
       setLoadError(null);
     } catch (err) {
       if (!mountedRef.current) return;
       setLoadError(err instanceof Error ? err.message : "Failed to load");
     }
-  }, [processedDocumentId]);
+  }, [processedDocumentId, applyServerRuns]);
 
   // Initial load + reset when the doc changes.
   useEffect(() => {
@@ -166,6 +216,7 @@ export function useKnowledgeAssetRunner(
         if (cancelled) return;
         setDerivations(res.derivations);
         setRuns(res.runs);
+        applyServerRuns(res.runs);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -177,18 +228,20 @@ export function useKnowledgeAssetRunner(
     return () => {
       cancelled = true;
     };
-  }, [processedDocumentId]);
+  }, [processedDocumentId, applyServerRuns]);
 
   // ----- run one op ------------------------------------------------------
 
   const run = useCallback(
     async (
       kind: DeriveKind,
-      opts: { reset?: boolean } = {},
+      opts: { reset?: boolean; rebuildConfirmationToken?: string } = {},
     ): Promise<OpStatus> => {
       if (!processedDocumentId) return "idle";
       // Guard: don't double-run the same op.
-      if (abortMap.current.has(kind)) return "running";
+      if (abortMap.current.has(kind) || runIdMap.current.has(kind)) {
+        return "running";
+      }
 
       const ac = new AbortController();
       abortMap.current.set(kind, ac);
@@ -215,6 +268,7 @@ export function useKnowledgeAssetRunner(
         for await (const ev of runDeriveStream(processedDocumentId, kind, {
           signal: ac.signal,
           reset: opts.reset,
+          rebuildConfirmationToken: opts.rebuildConfirmationToken,
         })) {
           if (ac.signal.aborted && ev.event !== "derive.cancelled") break;
           switch (ev.event) {
@@ -302,50 +356,61 @@ export function useKnowledgeAssetRunner(
 
   // ----- run all (sequential, canonical order) ---------------------------
 
-  const runAll = useCallback(async () => {
-    if (!processedDocumentId || buildingAll) return;
-    setBuildingAll(true);
-    try {
-      for (const kind of DERIVE_KINDS) {
-        if (!mountedRef.current) break;
-        const result = await run(kind);
-        // If the user cancelled this op, stop the whole sequence — they
-        // asked it to stop, not just to skip one step.
-        if (result === "cancelled") break;
+  const runAll = useCallback(
+    async (kinds: readonly DeriveKind[] = DERIVE_KINDS) => {
+      if (!processedDocumentId || buildingAll) return;
+      setBuildingAll(true);
+      try {
+        for (const kind of kinds) {
+          if (!mountedRef.current) break;
+          const result = await run(kind);
+          // If the user cancelled this op, stop the whole sequence — they
+          // asked it to stop, not just to skip one step.
+          if (result === "cancelled") break;
+        }
+      } finally {
+        if (mountedRef.current) setBuildingAll(false);
       }
-    } finally {
-      if (mountedRef.current) setBuildingAll(false);
-    }
-  }, [processedDocumentId, buildingAll, run]);
+    },
+    [processedDocumentId, buildingAll, run],
+  );
 
   // ----- cancel ----------------------------------------------------------
 
-  const cancel = useCallback((kind: DeriveKind) => {
-    const ac = abortMap.current.get(kind);
-    // Abort the local fetch immediately.
-    if (ac) ac.abort();
-    // POST the cancel endpoint so the server stops the work too (it may have
-    // queued chunks the abort alone won't halt). Best-effort.
-    const runId = runIdMap.current.get(kind);
-    if (runId) {
-      void cancelDeriveRun(runId).catch(() => {
-        /* idempotent on the server; nothing to surface */
-      });
-    }
-    setOperations((prev) =>
-      prev[kind]?.status === "running"
-        ? {
-            ...prev,
-            [kind]: {
-              ...prev[kind],
-              status: "cancelled",
-              message: "Cancelling…",
-              endedAt: Date.now(),
-            },
-          }
-        : prev,
-    );
-  }, []);
+  const cancel = useCallback(
+    (kind: DeriveKind) => {
+      const ac = abortMap.current.get(kind);
+      // Abort the local fetch immediately.
+      if (ac) ac.abort();
+      // POST the cancel endpoint so the server stops the work too (it may have
+      // queued chunks the abort alone won't halt). Best-effort.
+      const runId = runIdMap.current.get(kind);
+      if (runId) {
+        void cancelDeriveRun(runId)
+          .then(() => {
+            runIdMap.current.delete(kind);
+            void refresh();
+          })
+          .catch(() => {
+            /* idempotent on the server; nothing to surface */
+          });
+      }
+      setOperations((prev) =>
+        prev[kind]?.status === "running"
+          ? {
+              ...prev,
+              [kind]: {
+                ...prev[kind],
+                status: "cancelled",
+                message: "Cancelling…",
+                endedAt: Date.now(),
+              },
+            }
+          : prev,
+      );
+    },
+    [refresh],
+  );
 
   const anyRunning = Object.values(operations).some(
     (op) => op.status === "running",

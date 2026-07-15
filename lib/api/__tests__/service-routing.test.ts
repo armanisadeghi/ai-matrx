@@ -1,4 +1,7 @@
-import { isStandaloneFileServiceRoute } from "@/lib/api/service-routing";
+import {
+  isStandaloneFileServiceRoute,
+  shouldRouteBrowserRequestToStandaloneFiles,
+} from "@/lib/api/service-routing";
 
 const FILE_ID = "3e031c3f-b1e3-425c-ac49-217ad074b1d5";
 
@@ -36,5 +39,45 @@ describe("isStandaloneFileServiceRoute", () => {
     ["GET", "/files/upload"],
   ])("keeps unsupported %s %s on aidream", (method, path) => {
     expect(isStandaloneFileServiceRoute(path, method)).toBe(false);
+  });
+});
+
+describe("shouldRouteBrowserRequestToStandaloneFiles", () => {
+  const originalCutover = process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
+
+  afterEach(() => {
+    if (originalCutover === undefined) {
+      delete process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
+    } else {
+      process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER = originalCutover;
+    }
+  });
+
+  it("keeps browser file uploads on aidream before cutover", () => {
+    delete process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER;
+
+    expect(
+      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST"),
+    ).toBe(false);
+  });
+
+  it("routes owned file endpoints after the explicit browser cutover", () => {
+    process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER = "true";
+
+    expect(
+      shouldRouteBrowserRequestToStandaloneFiles("/files/upload", "POST"),
+    ).toBe(true);
+    expect(
+      shouldRouteBrowserRequestToStandaloneFiles(
+        `/files/${FILE_ID}/pdf-pages`,
+        "POST",
+      ),
+    ).toBe(true);
+    expect(
+      shouldRouteBrowserRequestToStandaloneFiles(
+        `/files/${FILE_ID}/ingest`,
+        "POST",
+      ),
+    ).toBe(false);
   });
 });

@@ -106,6 +106,8 @@ A message can carry a generic **`action_data`** envelope `{ kind, version, paylo
 - `find_dm_direct_conversation(user1_id, user2_id)` - Find existing direct chat (read-only)
 - `dm_get_or_create_direct_conversation(user1_id, user2_id, org_id?)` - **Canonical atomic** find-or-create for a 1:1 DM. Advisory-locks the unordered pair so concurrent callers (two tabs / double-click / batched system notifications) can't mint duplicate conversations — the old client-side `find_dm` → insert-conversation → insert-participants raced and silently did. All 4 DM find-or-create callsites route through this (browser + service-role). SECURITY DEFINER; guards that an `authenticated` caller can only pass themselves as user1. `2026-07-04`.
 
+Identity rules (`2026-07-15`): `get_dm_unread_count` accepts only the signed-in user (or service role) and requires that user to be an active participant. `get_dm_user_info` exposes another user's profile only for self, platform admins, shared active DM participants, or shared active organization members. Global new-conversation search uses the guarded search/lookup response directly; it must not turn a discovered UUID into an unrestricted `auth.users` lookup.
+
 ### Real-time Architecture
 
 ```
@@ -347,6 +349,7 @@ Uses Supabase Presence API to track who's currently viewing a conversation.
 
 - **RLS Policies**: All operations require user to be conversation participant
 - **SECURITY DEFINER functions**: Prevent RLS recursion issues
+- **Caller identity**: SECURITY DEFINER RPCs derive/verify `auth.uid()`; caller-supplied user IDs never grant cross-user access
 - **Soft Delete**: Messages are marked deleted, not removed
 - **UUID References**: Uses `auth.users(id)` for all user references
 

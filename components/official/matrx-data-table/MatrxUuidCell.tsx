@@ -4,7 +4,7 @@
  * MatrxUuidCell — canonical UUID / FK display for dense tables.
  *
  * Port of aidream `UuidDisplay` + AI Models `UuidCell` + tool-call `ShortId`:
- * short prefix (8 chars), full value on hover, always-visible copy of the full
+ * short head/tail (8…4 chars), full value on hover, always-visible copy of the full
  * id. Optional FK open: in-app WindowPanel (`onOpen`) and/or route (`href`).
  * Forbidden targets stay copyable but are not navigable.
  */
@@ -35,8 +35,8 @@ export function isUuidValue(value: unknown): value is string {
 }
 
 export function shortUuid(id: string, len = SHORT_LEN): string {
-  if (id.length <= len) return id;
-  return id.slice(0, len);
+  if (id.length <= len + 5) return id;
+  return `${id.slice(0, len)}…${id.slice(-4)}`;
 }
 
 async function copyText(text: string): Promise<boolean> {

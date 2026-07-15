@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { createElement, useState } from "react";
 import * as icons from "lucide-react";
 import {
   Plus,
@@ -142,9 +142,10 @@ export function ScopeTypeList({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Scope Type</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete &quot;{deleteTarget?.label_singular}
+              This will archive &quot;{deleteTarget?.label_singular}
               &quot; and all its scope instances. Any entities assigned to these
-              scopes will lose their assignments. This cannot be undone.
+              scopes will be hidden. Stored values remain available for
+              recovery.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -178,8 +179,6 @@ function ScopeTypeItem({
   const scopeCount = useAppSelector((state) =>
     selectScopesByType(state, type.id),
   ).length;
-  const Icon = resolveIcon(type.icon);
-
   return (
     <div
       className={cn(
@@ -205,10 +204,10 @@ function ScopeTypeItem({
               : undefined,
           }}
         >
-          <Icon
-            className="h-4 w-4"
-            style={{ color: type.color || undefined }}
-          />
+          {createElement(resolveIcon(type.icon), {
+            className: "h-4 w-4",
+            style: { color: type.color || undefined },
+          })}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">

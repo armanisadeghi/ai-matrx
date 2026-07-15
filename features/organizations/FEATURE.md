@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-07-08`
+**Last updated:** `2026-07-15`
 
 > Combined doc for `features/organizations/` and `features/invitations/`. Orgs are the multi-tenant primitive; invitations are the flow that admits users to orgs (and, in mirrored form, to projects). Architecture mirrors `features/projects/`.
 
@@ -17,6 +17,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 ## Entry points
 
 **Routes** — all under `/organizations/` with a single `[orgId]` dynamic segment that accepts either UUID or slug
+
 - `app/(core)/organizations/page.tsx` — the **launcher**: rich cards for the personal workspace + team orgs (logo, role accent, members, created), search, create. The parent surface to the workspace; matches the OrgWorkspace aesthetic.
 - `app/(authenticated)/organizations/[orgId]/page.tsx` — org overview (any authenticated member can view); `[orgId]` resolves via `getOrganizationBySlugOrId()`
 - `app/(core)/organizations/[orgId]/org-2/page.tsx` — **reimagined org workspace (experimental, parallel to the overview).** Same data, reorganized around the knowledge-system model: a stats hero, the Context & Scopes plane (reuses `OrgHomeScopeSection`), a Knowledge-graph deep-link (`/knowledge-graph?org=<slug>`), Resources grouped by **content role** (Utilities / Sources / Outputs / Workspaces), a Contribute (share-your-own) sheet, and an admin Member-contributions moderation queue. Drives its resource grid + counts from the **org resource catalogue** (below), not a hardcoded list.
@@ -29,10 +30,12 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `app/(authenticated)/invitations/project/accept/[token]/page.tsx` — accept project invitation
 
 **Redirects** (in `next.config.js`)
+
 - `/org/:orgId/**` → `/organizations/:orgId/**` (permanent) — old slug-only path
 - `/org` → `/organizations` (permanent)
 
 **Hooks** (`features/organizations/hooks.ts`)
+
 - `useUserOrganizations()` — current user's orgs with role + member counts; sorted personal-first
 - `useActiveOrganizationPicker()` — canonical hook for global active-org switchers (user menu, header reminder); reads `appContextSlice`, lists orgs from the scope tree, writes via `chooseActiveOrganization`
 - `useOrganization(orgId)` — single org by id
@@ -46,11 +49,13 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `useSlugAvailability(slug, debounceMs)` — debounced uniqueness check
 
 **Services**
+
 - `features/organizations/service.ts` — full CRUD: orgs, members, invitations. Uses `supabase` client; invitation create/resend proxy to API routes (email needs server env)
 - `features/organizations/userSearch.ts` — `searchUserByEmail()` via the `lookup_user_by_email` RPC (never reads `profiles.email` directly)
-- `features/invitations/emailService.ts` — sends approval/rejection emails for the *invitation-request* admin flow (separate from org invitations; see Gotchas)
+- `features/invitations/emailService.ts` — sends approval/rejection emails for the _invitation-request_ admin flow (separate from org invitations; see Gotchas)
 
 **Org workspace v2 — resources-by-role primitives** (powering the `org-2` route)
+
 - `features/organizations/resource-catalogue.ts` — **DEPRECATED for display/association** (banner in-file). The canonical token→presentation/query resolver is now `features/scopes/registry/entityRegistry.ts` (`getEntityInfo`), generated from `platform.entity_types` and used by the association cards. This catalogue drifted (e.g. bare `public.workflow`, `agent_app` vs canonical `app`) — read display/query metadata from `getEntityInfo` instead. It survives ONLY for the `iam.permissions` sharing surface (`shareKey`, `contributableEntries`, `getEntryByShareKey`, `moduleKey`, `CONTENT_ROLES`), still consumed by `/resources/[kind]`, the Contribute sheet, and `OrgShareReviewCard`. Delete it when that sharing UI migrates.
 - `features/organizations/hooks/useOrgResourceInventory.ts` — generic owned (`organization_id`) + shared (`permissions`) counts per catalogue entry. **Retired from the org home** (replaced by `useContainerLinks` over `platform.associations`); still used by the per-kind `/resources/[kind]` detail surface pending migration.
 - `features/organizations/components/OrgResourceRoleSection.tsx` — one content-role bucket as a labelled grid of count tiles. **No longer used by `OrgWorkspace`** (the card grid replaced it); remaining consumers tracked in the canonical-associations `WORK-QUEUE.md`.
@@ -69,13 +74,15 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `utils/permissions/orgModeration.ts` — `listOrgShareGrants`, `listOrgSharedIdsForTable`, `reviewOrgShare` (see `features/sharing/FEATURE.md` for the DB side).
 
 **API endpoints**
-- `POST /api/organizations/invite` — **email-only**. Row is created client-side via `invitationsService.create` (`inv_create`). Route receives `token` + `email` + `organizationId` and sends via Resend. Never touches `iam.invitations`.
+
+- `POST /api/organizations/invite` — **email-only**. Row is created client-side via `invitationsService.create` (`inv_create`). Route receives only `invitationId`; caller-scoped `inv_get_managed` proves owner/admin access and derives the stored recipient, token, target, and expiry before Resend.
 - `POST /api/organizations/invitations/resend` — **email-only**. Row refresh via `invitationsService.resend` (`inv_resend`) on the client; route receives fresh `token` + `email` + `organizationId`.
 - `POST /api/projects/invite` — same email-only pattern for projects
 - `POST /api/projects/invitations/resend` — same email-only pattern for projects
 - `GET/PATCH /api/admin/invitation-requests[/id]` — admin triage of signup-access requests (separate "request an invite" flow, not org-member invites)
 
 **Redux**
+
 - No dedicated org slice. Active org is tracked in `lib/redux/slices/appContextSlice.ts` (`organization_id`, `organization_name`). All other org data is fetched per-hook via service calls — no cached Redux state.
 - **Active-org enforcement (soft).** `appContextSlice` also holds `personal_organization_id` (the user's `is_personal` org, set once at hydration; never reset by `setOrganization`) and `orgBootstrapResolved` (true once bootstrap finishes). Selectors: `selectEffectiveOrganizationId` (= explicit org ?? personal — read by the API/scope layer so every request carries a valid org), `selectHasExplicitOrganization`, and `selectShouldPromptForOrganization` (= resolved **and** no org — the single gate for every "no org" UI cue, so none flash during boot). The **default org is the single durable source of truth** for cross-session restore: stored in user preferences (`organization.defaultOrganizationId`, synced to `user_preferences`) and accessed via `features/organizations/hooks/useDefaultOrganization.ts`. There is **no `localStorage` last-org mechanism.** The sanctioned switcher lives in `lib/redux/thunks/activeOrgBootstrap.ts`: `chooseActiveOrganization` is the Surface-A switcher write; `bootstrapActiveOrganization()` is now only a thin back-compat imperative wrapper over the shared resolver (new code should not call it). UI: the in-menu switcher (`UserMenuOrgSection.tsx`) is always available, with a "Set as default" switch + Default-star badges; `HeaderOrgReminder.tsx` drops a one-time peek under the header while none is chosen (auto-dismiss + click-to-dismiss, opens the picker); the avatar (`UserMenuTrigger`) rings red while `selectShouldPromptForOrganization`. Canonical reusable pieces: `features/organizations/components/{OrganizationPickerPanel,DefaultOrgSwitch}.tsx`.
 - **Active org HYDRATION is owned by the unified sync engine** (`lib/sync`), not an island. `appContextPolicy` (defined in `appContextSlice.ts`, registered in `lib/sync/registry.ts`) is a `warm-cache` policy that persists the org identity fields (`organization_id` / `organization_name` / `personal_organization_id`) to IndexedDB→localStorage keyed by identity, so on a hard refresh the active org **rehydrates before first paint** — it is structurally impossible for it to be missing once boot completes. On cold-boot (and after `staleAfter`) the policy's `remote.fetch` runs the pure resolver `lib/organizations/resolveActiveOrgContext.ts` (default org → only org → null), and org switches broadcast across tabs. The old `ActiveOrgBootstrap` island + per-launch multi-round-trip bootstrap are **retired**. The durable cross-device "which org" truth remains the **default-org preference** (owned by `userPreferences`), not a column on this slice — switching orgs durably = set your default.
@@ -86,13 +93,15 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 ## Data model
 
 **Database tables** (Supabase)
+
 - `iam.organizations` — `id, name, slug (unique), description, logo_url, website, created_by, is_personal, settings, created_at, updated_at`. RLS: members can SELECT; owners/admins can UPDATE; only owners DELETE.
 - `iam.memberships` — canonical membership for orgs + projects (`container_type` / `container_id`). Sole chokepoint: `membershipsService` → `mbr_*` RPCs. **No direct client grant.**
-- `iam.invitations` — canonical invitations for orgs + projects (`target_type` / `target_id`). Sole chokepoint: `invitationsService` → `inv_*` RPCs. **No direct client grant** — every read/write goes through `inv_list` / `inv_create` / `inv_accept` / `inv_revoke` / `inv_resend` / `inv_for_me` / `inv_get_by_token`.
+- `iam.invitations` — canonical invitations for orgs + projects (`target_type` / `target_id`). Sole chokepoint: `invitationsService` → `inv_*` RPCs. **No direct client grant** — every read/write goes through `inv_list` / `inv_create` / `inv_accept` / `inv_revoke` / `inv_resend` / `inv_for_me` / `inv_get_by_token`; server email routes use manager-guarded `inv_get_managed`.
 - `workspace.projects` — project rows, scoped by `organization_id`
 - `admin.invitation_requests` — signup-access requests, admin-approved, triggers `features/invitations/emailService.ts` (separate from org/project member invites)
 
 **Key types** (`features/organizations/types.ts`)
+
 - `OrgRole = 'owner' | 'admin' | 'member'` — three roles, no `viewer`
 - `Organization`, `OrganizationWithRole` (adds `role`, `memberCount`)
 - `OrganizationMember`, `OrganizationMemberWithUser`
@@ -100,6 +109,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `CreateOrganizationOptions`, `UpdateOrganizationOptions`, `InviteMemberOptions`
 
 **Permission helpers** (pure, in `types.ts`)
+
 - `canManageMembers(role)` — true for `owner` | `admin`
 - `canManageSettings(role)` — true for `owner` | `admin`
 - `canDeleteOrg(role)` — true for `owner` only
@@ -114,16 +124,16 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 1. UI: `CreateOrgModal` collects name + slug. `validateOrgName`, `validateOrgSlug` run client-side; `useSlugAvailability` debounces server check.
 2. `createOrganization()` in `service.ts`:
    - Validates + checks `isSlugAvailable(slug)`.
-   - `requireUserId()` from `@/utils/auth/getUserId`.
-   - `INSERT INTO organizations` with `is_personal: false`, `created_by: userId`.
-   - `INSERT INTO organization_members` with `role: 'owner'`.
+   - Calls `org_create`, which derives `created_by` from `auth.uid()`.
+   - The RPC inserts the non-personal `iam.organizations` row and canonical
+     `iam.memberships` owner row in one transaction.
 3. Returns `OrganizationResult`. Caller refreshes `useUserOrganizations`.
 
 ### (b) Invite a user by email
 
 1. UI: `InvitationManager` → `useInvitationOperations(orgId).invite({ email, role })`.
 2. Client `inviteToOrganization()` → `invitationsService.create({ targetType: "organization", … })` (`inv_create` RPC). Dedups/refreshes pending invites for the same target+email.
-3. Client then POSTs `/api/organizations/invite` with `{ token, email, organizationId, expiresAt }` — **email-only**; route never touches `iam.invitations`.
+3. Client then POSTs `/api/organizations/invite` with `{ invitationId }` — the route derives the stored delivery fields through manager-guarded `inv_get_managed`.
 4. Recipient opens email → `/invitations/organization/accept/[token]`:
    - Loads invite via `invitationsService.getByToken` (`inv_get_by_token`).
    - On Accept → `acceptInvitation(token)` → `invitationsService.accept` (`inv_accept`) — **atomic**: creates membership AND marks invite accepted.
@@ -139,19 +149,19 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 
 ### (d) Role hierarchy — who can do what
 
-| Action | owner | admin | member |
-|---|:-:|:-:|:-:|
-| View org + members | yes | yes | yes |
-| Invite members | yes | yes | no |
-| Cancel/resend invitations | yes | yes | no |
-| Update other members' roles | yes | yes | no |
-| Remove members | yes | yes | no |
-| Edit org settings (name, logo, website) | yes | yes | no |
-| Delete organization | yes | no | no |
-| Transfer ownership | yes | no | no |
-| Leave organization | yes (unless last owner) | yes | yes |
+| Action                                  |          owner          | admin | member |
+| --------------------------------------- | :---------------------: | :---: | :----: |
+| View org + members                      |           yes           |  yes  |  yes   |
+| Invite members                          |           yes           |  yes  |   no   |
+| Cancel/resend invitations               |           yes           |  yes  |   no   |
+| Update other members' roles             |           yes           |  yes  |   no   |
+| Remove members                          |           yes           |  yes  |   no   |
+| Edit org settings (name, logo, website) |           yes           |  yes  |   no   |
+| Delete organization                     |           yes           |  no   |   no   |
+| Transfer ownership                      |           yes           |  no   |   no   |
+| Leave organization                      | yes (unless last owner) |  yes  |  yes   |
 
-RLS enforces these at the database layer. Service functions (`updateMemberRole`, `removeMember`) use `.select()` after mutating and treat zero returned rows as "RLS blocked, not permitted" — they do NOT fail hard on RLS; they fail gracefully with `"You may not have permission..."`.
+The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer against the authenticated actor's exact container role. Mutations serialize per container, preserve the last owner, bind project memberships to the project's authoritative organization, allow only the narrow zero-member creator bootstrap, and reject personal-org membership changes.
 
 ### (e) Switching active org in the UI
 
@@ -178,13 +188,14 @@ RLS enforces these at the database layer. Service functions (`updateMemberRole`,
 - **Every org must have at least one owner.** `updateMemberRole` and `removeMember` block the last-owner case explicitly (pre-check + select-count of `role = 'owner'`). `leaveOrganization` just calls `removeMember(self)` so the same guard applies — a sole owner cannot leave their own org.
 - **Personal orgs (`is_personal = true`) cannot be deleted.** `deleteOrganization` pre-checks and returns `error: 'Cannot delete personal organization'`. Every user gets a personal org at signup via the `on_auth_user_created` trigger on `auth.users`, which calls `public.create_personal_organization()`, which delegates to the idempotent `public.ensure_personal_organization(uuid)` RPC. The trigger does NOT block user creation on failure — failures land in `public.system_personal_org_failures` (super-admin readable) for detection + repair. The `ensure_personal_organization(uuid)` RPC is callable by `authenticated` and `service_role`; the frontend may call it defensively if a missing personal org is ever detected.
 - **Invitation tokens expire in 7 days.** Minted by `inv_create` / refreshed by `inv_resend`. Expiry is enforced in the accept RPC and checked client-side on the accept page.
-- **`iam.invitations` has NO direct client grant.** Every read/write goes through `invitationsService` → `inv_*` RPCs. Direct `.from("invitations")` is a bug (42501). Same rule for API routes — invite/resend routes are email-only.
+- **`iam.invitations` has NO direct client grant.** Every read/write goes through `invitationsService` → `inv_*` RPCs. Direct `.from("invitations")` is a bug (42501). Invite/resend routes accept only `invitationId` and derive stored delivery data through `inv_get_managed`.
 - **Invitation uniqueness is per target + email.** `inv_create` refreshes an existing pending invite rather than duplicating. Use `resendInvitation` to bump expiry + token.
 - **Invitation email must match the authenticated user's email on accept.** Enforced inside `inv_accept`. A user signed in with a different email sees a mismatch error.
 - **`/api/organizations/invite` and `/api/projects/invite` MUST run server-side and are email-only.** `RESEND_API_KEY` and `EMAIL_FROM` are server env only. Row create/resend happens on the client via `invitationsService`.
 - **Accepting a project invitation does NOT add the user to the parent org.** Orgs and projects have independent memberships in `iam.memberships`. If the user is not in the org, they may or may not be able to use the project depending on RLS — verify with `features/scopes/FEATURE.md` before assuming access.
 - **`features/invitations/emailService.ts` is a different flow.** It handles the "request access to sign up" admin approval/rejection emails (see `/api/admin/invitation-requests`), not org-member invitations. Do not wire it into org flows.
 - **`iam.memberships` mutations go through `membershipsService` only.** Never direct table writes; last-owner guards live in the service layer.
+- **Team organization creation goes through `org_create` only.** Authenticated direct INSERT on `iam.organizations` is revoked; the RPC atomically creates the row and its first owner. Personal-org provisioning remains the separate service/trigger flow.
 - **No Redux cache for org data.** Each hook refetches from Supabase. `refresh()` is exposed on every list hook — call it after any mutation (the operation hooks in `hooks.ts` already do this internally; external callers of `service.ts` directly must do it themselves).
 - **`lookup_user_by_email` is an RPC, not a table read.** Never query `profiles.email` directly — email lives in `auth.users` which is not directly selectable from the client.
 
@@ -210,13 +221,13 @@ Org + project invitations share one canonical system: `invitationsService` → `
 
 Per-module rules live in `org_module_settings` (set in Manage → Modules). Enforcement status:
 
-| Rule | Status | Where enforced |
-|---|---|---|
-| `members_can_add` | **Live** | `share_resource_with_org` blocks non-admin members |
-| `requires_approval` | **Live** | `share_resource_with_org` → grant `status = 'pending'`; surfaced in `OrgShareReviewCard` (Approve/Reject) |
-| `default_permission` | **Live** | `share_resource_with_org` uses it when the caller omits the level (the Contribute flow does); pickers still pass explicit levels |
-| `is_scopeable` | **Live (FE)** | `EntityScopeTagger` (Surface B write mode) blocks tagging a kind when off — disabled note + guarded `applyNext`. It's a governance preference (not access control), so a UI gate is the boundary; harden server-side in the assignment thunk if ever needed. |
-| `auto_ingest` | **Live (backend)** | aidream `aidream/services/auto_ingest/router.py` `_module_auto_ingest_enabled` skips ingestion when off. Default ON (missing org/kind/row → enabled). |
+| Rule                 | Status             | Where enforced                                                                                                                                                                                                                                               |
+| -------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `members_can_add`    | **Live**           | `share_resource_with_org` blocks non-admin members                                                                                                                                                                                                           |
+| `requires_approval`  | **Live**           | `share_resource_with_org` → grant `status = 'pending'`; surfaced in `OrgShareReviewCard` (Approve/Reject)                                                                                                                                                    |
+| `default_permission` | **Live**           | `share_resource_with_org` uses it when the caller omits the level (the Contribute flow does); pickers still pass explicit levels                                                                                                                             |
+| `is_scopeable`       | **Live (FE)**      | `EntityScopeTagger` (Surface B write mode) blocks tagging a kind when off — disabled note + guarded `applyNext`. It's a governance preference (not access control), so a UI gate is the boundary; harden server-side in the assignment thunk if ever needed. |
+| `auto_ingest`        | **Live (backend)** | aidream `aidream/services/auto_ingest/router.py` `_module_auto_ingest_enabled` skips ingestion when off. Default ON (missing org/kind/row → enabled).                                                                                                        |
 
 **`is_scopeable` integration** (done): `EntityScopeTagger` calls `getOrgModuleSetting(orgId, moduleKey(getEntry(entityType)))` and checks `.isScopeable`. Controlled (filter) mode and unknown kinds (`agent_surface_binding`, `project_resource`) are never gated.
 
@@ -226,6 +237,8 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-07-15` — **Organization creation is atomic.** Added authenticated-only `org_create` to create a team organization and its caller-bound owner membership in one transaction, revoked direct authenticated/anon organization INSERT, and moved both frontend creation paths to the RPC. Live rolled-back verification confirmed the owner row and ACLs. (`supabase/migrations/20260715060000_atomic_organization_creation.sql`)
+- `2026-07-15` — **Closed D2 membership/invitation privilege escalation.** Ordinary members can no longer self-promote, remove owners, add/reactivate arbitrary members, enumerate/manage invitations, mint owner invitations, or spoof ownership transfer. Owner/admin rules now match the org/project UI; self-leave remains supported; last-owner checks serialize in the database; one stale project membership org id was repaired; invitation email routes accept only `invitationId` and derive stored delivery data via `inv_get_managed`. (`supabase/migrations/20260715053000_*`, `20260715053100_*`)
 - `2026-07-10` — **Org industries: org owner/admin can assign/unassign** (was Matrx super-admin only). UI + `industry_assign_org` / `industry_unassign_org` RPCs. See [`features/industries/FEATURE.md`](../industries/FEATURE.md).
 - `2026-07-08` — **Org invitations cut over to canonical `invitationsService`.** Org settings was still hitting `iam.invitations` directly (42501 — no client grant). `getOrganizationInvitations` / `cancel` / `invite` / `resend` / `accept` / `getUserInvitations` now go through `inv_*` RPCs; invite/resend API routes are email-only (mirror projects). Org accept page load switched from legacy `get_org_invitation_by_token` to `invitationsService.getByToken`. Extended `inv_get_by_token` with `target_name` so invitees can render the accept page without RLS on `iam.organizations`. Also fixed messaging realtime remount crash (`uniqueChannelTopic` on `dm_conversations` / `dm_global`).
 - `2026-07-06` — **Fixed header user-menu org switcher Redux wiring.** New `useActiveOrganizationPicker` hook consolidates reads (`selectOrganizationId` / `selectShouldPromptForOrganization`) and writes (`chooseActiveOrganization`) with org list data from the canonical scope tree (`useScopeTree` + `ensureScopeTree`) instead of the standalone `useUserOrganizations` fetch. `UserMenuOrgSection` and `OrganizationPickerPanel` share this hook; the menu list stays expanded with a check + accent highlight on the active row (no org name in the accordion header). `useUserOrganizations` now waits for `authReady` before fetching so early-mount callers don't permanently cache an empty list.
@@ -240,7 +253,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 - `2026-06-06` — **Shell nav: "My Orgs".** Added `/organizations` to `primaryNavItems` in `features/shell/constants/nav-data.ts` (label "My Orgs", `Building2` icon, dock order 3 — directly below Chat). Propagates to sidebar, mobile dock, mobile sheet, profile menu, dashboard grid, and legacy `appSidebarLinks`. Active-state CSS + favicon route entry included; guests hidden (`guestHidden: true`).
 - `2026-06-06` — **Round 5: peek fan-out complete + default_permission enforcement.** 19/21 catalogue kinds now have a live Peek (added shortcut/list/workbook/quiz/sandbox/project; research + website remain). `share_resource_with_org` now resolves the grant level from the org module's `default_permission` when the caller omits it (the Contribute flow omits it; ShareModal/ShareNoteDialog still pass explicit levels). Added `getOrgModuleSetting(orgId, moduleKey)` as the single-key integration point for the remaining `is_scopeable` enforcement (scopes pickers). Documented `is_scopeable` + `auto_ingest` remaining wiring above.
 - `2026-06-06` — **Round 4: bug fix + launcher cards + DB-backed module settings + Peek.** (1) Fixed the context-menu Root (orphaned Trigger) → resource pages work for all kinds. (2) Launcher cards rebuilt large, with org stats + embedded Context scope tree. (3) **Module settings are live** — DB-backed `org_module_settings` (members-can-add + needs-approval enforced in `share_resource_with_org`; pending shares surface in the moderation card with Approve/Reject); `shareable_resource_registry` gained `content_role` + `is_scopeable`. (4) Pluggable **Peek** system (`features/organizations/peek/`) with 13 live kinds (3 hand-built examples + 10 fanned out to subagents). All typecheck-clean; agent/file/note/conversation peeks verified live.
-- `2026-06-06` — **Round 3: launcher + sharing UX + Manage depth.** (1) Rebuilt `/organizations` as a polished launcher (rich role-accented cards, search, stats) — the parent to the workspace. (2) Resource catalogue: added the **dual-role** "Sources & Outputs" bucket (Notes, Datasets, Workbooks) and `hideRowIcon` (drops the repetitive agent glyph in list rows). (3) Manage: fixed the dual-scroll (settings layout → passthrough; `OrgManage` owns one scroller), deleted the redundant org-switcher sidebar (`OrgSidebar`), added an inline **scope tree** (`OrgScopeTree`) and a per-module **settings matrix** (`OrgModuleSettings`, placeholder/tasklist). (4) Resource detail sharing UX: who-shared avatars, open-in-new-tab, right-click **context menu** (Open / New tab / Peek / Share|Unshare) via new `components/ui/context-menu.tsx`, agent **Peek** (`AgentSneakPeekModal`) + "coming soon" for other kinds; `useOrgSharedItems` carries `sharedBy`/`permissionId`; `orgModeration` adds `revokeOrgShare` + `listOrgSharedIdsForTable`. *Note: verified via typecheck + design render; full data-populated verification pending a dev-server restart (a local env issue left client-side supabase fetches stalled app-wide during the session).*
+- `2026-06-06` — **Round 3: launcher + sharing UX + Manage depth.** (1) Rebuilt `/organizations` as a polished launcher (rich role-accented cards, search, stats) — the parent to the workspace. (2) Resource catalogue: added the **dual-role** "Sources & Outputs" bucket (Notes, Datasets, Workbooks) and `hideRowIcon` (drops the repetitive agent glyph in list rows). (3) Manage: fixed the dual-scroll (settings layout → passthrough; `OrgManage` owns one scroller), deleted the redundant org-switcher sidebar (`OrgSidebar`), added an inline **scope tree** (`OrgScopeTree`) and a per-module **settings matrix** (`OrgModuleSettings`, placeholder/tasklist). (4) Resource detail sharing UX: who-shared avatars, open-in-new-tab, right-click **context menu** (Open / New tab / Peek / Share|Unshare) via new `components/ui/context-menu.tsx`, agent **Peek** (`AgentSneakPeekModal`) + "coming soon" for other kinds; `useOrgSharedItems` carries `sharedBy`/`permissionId`; `orgModeration` adds `revokeOrgShare` + `listOrgSharedIdsForTable`. _Note: verified via typecheck + design render; full data-populated verification pending a dev-server restart (a local env issue left client-side supabase fetches stalled app-wide during the session)._
 - `2026-06-06` — **Promoted the workspace to the primary org page**, added per-resource pages, and redesigned Manage. (1) `/organizations/[orgId]` now renders `OrgWorkspace` (extracted shared component); `/org-2` kept as a thin alias. (2) New catalogue-driven `/organizations/[orgId]/resources/[kind]` page (`OrgResourceDetail`) with a "Shared with org" team view + a "Yours to share" one-click panel — every scopeable kind now has a consistent org page; workspace tiles route here. Extracted `useOrgContributableItems` + `useOrgSharedItems`; `ContributeResourceSheet` reuses the shared hook. (3) Replaced the tabbed `OrgSettings` with `OrgManage` — a single scrollable, sectioned Manage page (identity header + sticky jump-nav, no tabs) reusing all existing settings sub-components; deleted `OrgSettings.tsx`.
 - `2026-06-06` — Added the **reimagined org workspace** at `app/(core)/organizations/[orgId]/org-2/page.tsx` (experimental, parallel to the existing overview). It reorganizes the org around the knowledge-system model: stats hero, Context & Scopes plane, a `/knowledge-graph?org=<slug>` deep-link, **Resources grouped by content role** (Utilities / Sources / Outputs / Workspaces), a Contribute (share-your-own) sheet, and an admin Member-contributions moderation queue. New platform primitives: `resource-catalogue.ts` (entity → content-role catalogue, keyed on canonical table names so it's independent of the partial TS shareable-registry mirror), `hooks/useOrgResourceInventory.ts` (generic owned+shared counts), `components/OrgResourceRoleSection.tsx`, `components/ContributeResourceSheet.tsx`, `components/OrgShareReviewCard.tsx`, and `utils/permissions/orgModeration.ts`. DB side: org-share moderation columns + `review_org_share` RPC on `permissions` (see `features/sharing/FEATURE.md`). Also made `/knowledge-graph` accept `?org=<slug|id>` (resolves slug→id, falls back to active context). **Follow-ups to discuss:** entities with no dedicated org sub-route (skills, conversations, flashcards, quizzes, canvases, transcripts, lists, workbooks, websites) currently tile as informational + feed Contribute — they need real org list routes; add `content_role` / `is_scopeable` to `shareable_resource_registry` and generate the catalogue from it; optional org-level "require approval before a contribution is visible" preference (the `pending` status already exists in the DB).
 - `2026-05-27` — Fixed silent personal-org provisioning failures. Audit found 9 users (out of 70) with no personal org, spanning Oct 2024 → May 2026. Root causes: (a) the trigger predates the earliest affected users and didn't exist for them; (b) the function silently swallowed every failure via an outer `EXCEPTION WHEN OTHERS`; (c) for anonymous Supabase users (`email IS NULL`), `LENGTH(SPLIT_PART(NULL, '@', 1)) < 3` evaluates to NULL, not TRUE, so the username fallback never ran and the slug ended up NULL, violating the NOT NULL check. Migration `fix_create_personal_organization_null_email_and_audit` (1) extracted the work into an idempotent `public.ensure_personal_organization(uuid)` RPC with robust NULL-handling and a UUID-suffix slug fallback that cannot structurally collide; (2) rewrote the trigger to delegate to it and capture failures in a new `public.system_personal_org_failures` audit table instead of swallowing them; (3) backfilled the 9 orphaned users. Follow-up migration `lock_down_personal_org_functions` revoked EXECUTE from anon/PUBLIC on both functions (kept `authenticated` + `service_role` on `ensure_personal_organization` so the frontend can self-heal if needed). All 70 users now have exactly one personal org each.

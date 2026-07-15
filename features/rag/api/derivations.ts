@@ -7,6 +7,7 @@
  * section summaries, synthetic Q&A).
  *
  *   GET  /rag/library/{id}/derivations        — rollup + recent runs
+ *   POST /rag/library/{id}/derive/{kind}/rebuild-preview — destructive impact + confirmation token
  *   POST /rag/library/{id}/derive/{kind}       — NDJSON progress stream
  *   POST /rag/library/derive-runs/{id}/cancel  — cancel an in-flight run
  *
@@ -55,11 +56,7 @@ export function isDeriveKind(value: string): value is DeriveKind {
 // Rollup read (GET /derivations)
 // ---------------------------------------------------------------------------
 
-export type DeriveRunStatus =
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type DeriveRunStatus = "running" | "completed" | "failed" | "cancelled";
 
 export interface DerivationRollup {
   /** May be one of DeriveKind, but the backend can also surface other
@@ -67,6 +64,9 @@ export interface DerivationRollup {
   derivation_kind: string;
   derivative_id: string;
   chunk_count: number;
+  /** Durable resume keys completed (section indexes/page numbers). Unlike
+   * chunk_count, this stays one-per-scope-item for synthetic Q&A. */
+  completed_items?: number;
   updated_at: string | null;
 }
 
@@ -174,6 +174,46 @@ export async function fetchEstimate(
 }
 
 // ---------------------------------------------------------------------------
+// Destructive rebuild handshake
+// ---------------------------------------------------------------------------
+
+export interface RebuildPreview {
+  confirmation_token: string;
+  expires_at: string;
+  processed_document_id: string;
+  derivation_kind: DeriveKind;
+  /** Persisted retrievable chunks/pages that reset will discard. */
+  existing_output_units: number;
+  /** Paid/deterministic scope items already durably completed. */
+  completed_items: number;
+  total_items: number;
+  remaining_items: number;
+  unit: string;
+  full_rebuild_cost_usd: number;
+  resume_cost_usd: number;
+  latest_run: {
+    status: DeriveRunStatus;
+    current: number;
+    total: number;
+    finished_at: string | null;
+  } | null;
+}
+
+export async function prepareRebuild(
+  processedDocumentId: string,
+  kind: DeriveKind,
+  signal?: AbortSignal,
+): Promise<RebuildPreview> {
+  const { data } = await postJson<RebuildPreview>(
+    `/rag/library/${encodeURIComponent(processedDocumentId)}/derive/${encodeURIComponent(kind)}/rebuild-preview`,
+    {},
+    // The server performs the same authoritative PDF scan used by estimates.
+    { signal, timeoutMs: 120_000 },
+  );
+  return data;
+}
+
+// ---------------------------------------------------------------------------
 // Derivative chunks read (GET /chunks on the derivative's own id)
 //
 // A derivation set IS a processed_document (a child of the source doc), so the
@@ -228,8 +268,8 @@ export async function fetchDerivativeChunks(
   return {
     chunks: Array.isArray(data?.chunks) ? data.chunks : [],
     total: typeof data?.total === "number" ? data.total : 0,
-    limit: typeof data?.limit === "number" ? data.limit : opts.limit ?? 50,
-    offset: typeof data?.offset === "number" ? data.offset : opts.offset ?? 0,
+    limit: typeof data?.limit === "number" ? data.limit : (opts.limit ?? 50),
+    offset: typeof data?.offset === "number" ? data.offset : (opts.offset ?? 0),
   };
 }
 
@@ -237,7 +277,8 @@ export async function fetchDerivativeChunks(
 // Streaming runner (POST /derive/{kind})
 // ---------------------------------------------------------------------------
 
-export type DerivePhase = "started" | "progress" | "heartbeat" | "done" | "error";
+export type DerivePhase =
+  "started" | "progress" | "heartbeat" | "done" | "error";
 
 export interface DeriveStartedEvent {
   event: "derive.started";
@@ -300,7 +341,11 @@ export type DeriveStreamEvent =
 export async function* runDeriveStream(
   processedDocumentId: string,
   kind: DeriveKind,
-  opts: { signal?: AbortSignal; reset?: boolean } = {},
+  opts: {
+    signal?: AbortSignal;
+    reset?: boolean;
+    rebuildConfirmationToken?: string;
+  } = {},
 ): AsyncGenerator<DeriveStreamEvent, void, void> {
   // reset=true forces a clean rebuild (clears the set, then rebuilds). Omitted
   // (the default) RESUMES — already-done sections are skipped server-side, so a
@@ -314,6 +359,9 @@ export async function* runDeriveStream(
   const response = await fetch(url, {
     method: "POST",
     headers,
+    body: JSON.stringify({
+      rebuild_confirmation_token: opts.rebuildConfirmationToken ?? null,
+    }),
     signal: opts.signal,
   });
   if (!response.ok || !response.body) {
@@ -375,8 +423,7 @@ function parseLine(line: string, kind: DeriveKind): DeriveStreamEvent | null {
     const dataKind = asString(data.kind);
     const stageKind = (asString(data.stage) as DeriveKind) || kind;
     const extra = (data.extra as Record<string, unknown>) ?? {};
-    const runId =
-      typeof extra.run_id === "string" ? extra.run_id : null;
+    const runId = typeof extra.run_id === "string" ? extra.run_id : null;
 
     if (dataKind === "rag.stage.progress") {
       const phase = (asString(data.phase) || "progress") as DerivePhase;

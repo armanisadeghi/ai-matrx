@@ -47,6 +47,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { AnimatedKpiCard, type KpiTone } from "./AnimatedKpiCard";
@@ -54,8 +55,10 @@ import { DerivativeResultsDialog } from "./DerivativeResultsDialog";
 import {
   DERIVE_KINDS,
   fetchEstimate,
+  prepareRebuild,
   type DeriveKind,
   type DerivationRollup,
+  type DerivationRun,
   type DerivationsEstimate,
   type DeriveEstimate,
 } from "@/features/rag/api/derivations";
@@ -74,6 +77,10 @@ import {
   VERIFICATION_REASON_SHORT,
   type PageVerificationSummary,
 } from "@/features/rag/hooks/usePageVerificationSummary";
+import {
+  getRepresentationState,
+  type RepresentationState,
+} from "./knowledgeAssetStatus";
 
 // ---------------------------------------------------------------------------
 // Per-kind presentation metadata
@@ -167,6 +174,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
   const runner = useKnowledgeAssetRunner(doc.id);
   const {
     derivations,
+    runs,
     operations,
     loading,
     loadError,
@@ -175,6 +183,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
     run,
     runAll,
     cancel,
+    refresh,
   } = runner;
 
   // Reality estimate — how many runs + what it costs, scanned live from the
@@ -185,6 +194,9 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
   // honest "N verified / M flagged" count that the kg_chunks rollup cannot give
   // (verification persists flags on the page rows, it writes no chunks).
   const verification = usePageVerificationSummary(doc.id);
+  const [rebuildChecking, setRebuildChecking] = useState<DeriveKind | null>(
+    null,
+  );
 
   // Map rollup rows by kind for quick lookup of live chunk counts.
   const countByKind = useMemo(() => {
@@ -201,6 +213,9 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
         derivation_kind: "multigranularity",
         derivative_id: coarse?.derivative_id ?? fine?.derivative_id ?? "",
         chunk_count: (coarse?.chunk_count ?? 0) + (fine?.chunk_count ?? 0),
+        completed_items:
+          Number((coarse?.chunk_count ?? 0) > 0) +
+          Number((fine?.chunk_count ?? 0) > 0),
         updated_at: coarse?.updated_at ?? fine?.updated_at ?? null,
       });
     }
@@ -216,9 +231,46 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
     [operations],
   );
 
-  const builtCount = derivations.filter((d) =>
-    (DERIVE_KINDS as readonly string[]).includes(d.derivation_kind),
-  ).length;
+  const latestRunByKind = useMemo(() => {
+    const map = new Map<DeriveKind, DerivationRun>();
+    for (const deriveRun of runs) {
+      const kind = deriveRun.derivation_kind;
+      if (
+        (DERIVE_KINDS as readonly string[]).includes(kind) &&
+        !map.has(kind as DeriveKind)
+      ) {
+        map.set(kind as DeriveKind, deriveRun);
+      }
+    }
+    return map;
+  }, [runs]);
+
+  const representationState = useMemo(() => {
+    const map = new Map<DeriveKind, RepresentationState>();
+    for (const kind of DERIVE_KINDS) {
+      map.set(
+        kind,
+        getRepresentationState({
+          kind,
+          rollup: countByKind.get(kind),
+          op: operations[kind],
+          estimate: estimate.data?.estimates?.[kind],
+          verification: kind === "page_verification" ? verification : undefined,
+          latestRun: latestRunByKind.get(kind),
+        }),
+      );
+    }
+    return map;
+  }, [countByKind, operations, estimate.data, verification, latestRunByKind]);
+
+  const incompleteKinds = DERIVE_KINDS.filter(
+    (kind) => !representationState.get(kind)?.complete,
+  );
+  const hasPriorProgress = DERIVE_KINDS.some(
+    (kind) => representationState.get(kind)?.started,
+  );
+  const allComplete = incompleteKinds.length === 0;
+  const builtCount = DERIVE_KINDS.length - incompleteKinds.length;
 
   // Total Processing Units to build everything — the pre-flight cost shown
   // before "Build all" so nothing expensive is ever triggered blind.
@@ -231,14 +283,80 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
   const handleRunAll = async () => {
     const costNote =
       totalBuildUnits && totalBuildUnits > 0
-        ? ` Estimated cost: about ${formatUnits(totalBuildUnits)}.`
+        ? hasPriorProgress
+          ? ` Full-build upper bound: ${formatUnits(totalBuildUnits)}; resume skips persisted paid work.`
+          : ` Estimated cost: about ${formatUnits(totalBuildUnits)}.`
         : "";
     const ok = await confirm({
-      title: "Build all knowledge assets?",
-      description: `Runs page verification, tables, multi-granularity, figure captions, section summaries, and synthetic Q&A in sequence.${costNote} Each is idempotent — existing output is replaced.`,
-      confirmLabel: "Build all",
+      title: hasPriorProgress
+        ? "Resume unfinished knowledge assets?"
+        : "Build all knowledge assets?",
+      description: hasPriorProgress
+        ? `Runs only unfinished representations. Persisted work is retained, and paid sections/pages already completed are skipped.${costNote}`
+        : `Runs page verification, tables, multi-granularity, figure captions, section summaries, and synthetic Q&A in sequence.${costNote}`,
+      confirmLabel: hasPriorProgress ? "Resume unfinished" : "Build all",
     });
-    if (ok) void runAll();
+    if (ok) void runAll(incompleteKinds);
+  };
+
+  const handleRebuild = async (kind: DeriveKind) => {
+    if (rebuildChecking) return;
+    setRebuildChecking(kind);
+    try {
+      // Request 1 is an authoritative, non-mutating server impact check.
+      const preview = await prepareRebuild(doc.id, kind);
+      const meta = KIND_META[kind];
+      const fullUnits = costToUnits(preview.full_rebuild_cost_usd);
+      const resumeUnits = costToUnits(preview.resume_cost_usd);
+      const ok = await confirm({
+        title: `Discard and rebuild ${meta.label.toLowerCase()}?`,
+        description: (
+          <div className="space-y-2 text-left">
+            <p>
+              The server found{" "}
+              <strong>
+                {preview.completed_items.toLocaleString()} completed{" "}
+                {preview.unit}
+              </strong>{" "}
+              and {preview.existing_output_units.toLocaleString()} persisted
+              output units. Rebuild deletes that work and starts all{" "}
+              {preview.total_items.toLocaleString()} {preview.unit} again.
+            </p>
+            {preview.remaining_items > 0 && (
+              <p className="font-medium text-amber-700 dark:text-amber-400">
+                Resume would keep completed work and process only{" "}
+                {preview.remaining_items.toLocaleString()} remaining{" "}
+                {preview.unit}.
+              </p>
+            )}
+            {fullUnits > 0 && (
+              <p>
+                Estimated rebuild: {formatUnits(fullUnits)}. Estimated resume:{" "}
+                {formatUnits(resumeUnits)}.
+              </p>
+            )}
+          </div>
+        ),
+        confirmLabel: "Discard and rebuild",
+        variant: "destructive",
+      });
+      if (!ok) return;
+
+      // Request 2 carries the fresh user/doc/kind/snapshot-bound token. The
+      // backend rejects reset=true without it or if output changed meanwhile.
+      void run(kind, {
+        reset: true,
+        rebuildConfirmationToken: preview.confirmation_token,
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not verify rebuild impact. Nothing was changed.",
+      );
+    } finally {
+      setRebuildChecking(null);
+    }
   };
 
   return (
@@ -269,7 +387,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
             <div className="mt-1 flex items-center gap-1.5">
               <ProcessingUnitsBadge units={totalBuildUnits} />
               <span className="text-[10px] text-muted-foreground">
-                to build everything
+                full build estimate
               </span>
             </div>
           )}
@@ -277,7 +395,9 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
         <Button
           size="sm"
           onClick={handleRunAll}
-          disabled={buildingAll || anyRunning || loading}
+          disabled={
+            buildingAll || anyRunning || loading || allComplete || !!loadError
+          }
           className="h-8 shrink-0"
         >
           {buildingAll ? (
@@ -285,7 +405,13 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           ) : (
             <Sparkles className="h-3.5 w-3.5 mr-1" />
           )}
-          {buildingAll ? "Building…" : "Build all"}
+          {buildingAll
+            ? "Building…"
+            : allComplete
+              ? "All built"
+              : hasPriorProgress
+                ? "Resume remaining"
+                : "Build all"}
         </Button>
       </div>
 
@@ -294,12 +420,20 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
 
       {/* Load error (non-blocking) */}
       {loadError && (
-        <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-[11px]">
+        <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-[11px]">
           <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <span className="text-amber-700 dark:text-amber-400">
-            Couldn&apos;t load existing representations ({loadError}). You can
-            still build — counts refresh after each run.
+          <span className="flex-1 text-amber-700 dark:text-amber-400">
+            Couldn&apos;t verify existing work ({loadError}). Processing actions
+            are paused so nothing is accidentally reprocessed.
           </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void refresh()}
+            className="h-7 shrink-0 text-[10px]"
+          >
+            Retry status
+          </Button>
         </div>
       )}
 
@@ -323,11 +457,14 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
                 op={operations[kind]}
                 estimate={estimate.data?.estimates?.[kind]}
                 estimating={estimate.loading}
+                state={representationState.get(kind)}
+                rebuildChecking={rebuildChecking === kind}
+                statusUnavailable={!!loadError}
                 verification={
                   kind === "page_verification" ? verification : undefined
                 }
                 onRun={() => void run(kind)}
-                onRebuild={() => void handleRebuild(kind, run)}
+                onRebuild={() => void handleRebuild(kind)}
                 onCancel={() => cancel(kind)}
               />
             ))}
@@ -362,21 +499,6 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
   );
 }
 
-async function handleRebuild(
-  kind: DeriveKind,
-  run: (k: DeriveKind, opts?: { reset?: boolean }) => Promise<unknown>,
-) {
-  const meta = KIND_META[kind];
-  const ok = await confirm({
-    title: `Rebuild ${meta.label.toLowerCase()}?`,
-    description: meta.costly
-      ? "This CLEARS the existing output and re-runs AI over the entire document — it re-spends Processing Units on every section. (If a run was interrupted, use Build instead: it resumes and only fills in what's missing, for free on the parts already done.)"
-      : "This clears and rebuilds the existing output. Idempotent.",
-    confirmLabel: "Rebuild",
-  });
-  if (ok) void run(kind, { reset: true });
-}
-
 // ---------------------------------------------------------------------------
 // Representation card — one per derivation kind
 // ---------------------------------------------------------------------------
@@ -387,6 +509,9 @@ function RepresentationCard({
   op,
   estimate,
   estimating,
+  state,
+  rebuildChecking,
+  statusUnavailable,
   verification,
   onRun,
   onRebuild,
@@ -397,6 +522,9 @@ function RepresentationCard({
   op: OpState;
   estimate: DeriveEstimate | undefined;
   estimating: boolean;
+  state: RepresentationState | undefined;
+  rebuildChecking: boolean;
+  statusUnavailable: boolean;
   verification?: PageVerificationSummary;
   onRun: () => void;
   onRebuild: () => void;
@@ -410,6 +538,11 @@ function RepresentationCard({
   const isVerif = kind === "page_verification" && verification != null;
   const displayCount = isVerif ? verification.verified : chunkCount;
   const built = isVerif ? verification.hasRun : chunkCount > 0;
+  const status = state ?? {
+    started: built,
+    complete: false,
+    resumable: built,
+  };
   const running = op.status === "running";
   const failed = op.status === "failed";
   const derivativeId = rollup?.derivative_id ?? null;
@@ -424,20 +557,38 @@ function RepresentationCard({
   const estUnits = estimate ? costToUnits(estimate.cost_usd) : 0;
   const costLabel = estUnits > 0 ? ` · ${formatUnits(estUnits)}` : "";
 
-  const handleBuild = async () => {
+  const handleBuild = async (resume = false) => {
     if (isCostly) {
       const items = estimate?.items ?? 0;
-      const scope = items
-        ? `over ${items.toLocaleString()} ${estimate?.unit ?? meta.unit} `
-        : "";
+      const remaining =
+        resume && items > 0 && displayCount > 0
+          ? Math.max(0, items - displayCount)
+          : items;
+      const scope = remaining
+        ? resume
+          ? `for the ~${remaining.toLocaleString()} remaining ${estimate?.unit ?? meta.unit} `
+          : `over ${remaining.toLocaleString()} ${estimate?.unit ?? meta.unit} `
+        : items
+          ? `over ${items.toLocaleString()} ${estimate?.unit ?? meta.unit} `
+          : "";
       const costPhrase =
         estUnits > 0
-          ? `about ${formatUnits(estUnits)}`
+          ? resume
+            ? "only on the missing parts (already-done work is skipped for free)"
+            : `about ${formatUnits(estUnits)}`
           : "Processing Units — we couldn't compute an exact estimate right now";
       const ok = await confirm({
-        title: `Build ${meta.label.toLowerCase()}?`,
-        description: `This runs AI ${scope}and will cost ${costPhrase}. (Processing Units, not money.)`,
-        confirmLabel: estUnits > 0 ? `Build${costLabel}` : "Build anyway",
+        title: resume
+          ? `Resume ${meta.label.toLowerCase()}?`
+          : `Build ${meta.label.toLowerCase()}?`,
+        description: resume
+          ? `This resumes where the last run stopped — ${costPhrase}. Persisted output is retained.`
+          : `This runs AI ${scope}and will cost ${costPhrase}. (Processing Units, not money.)`,
+        confirmLabel: resume
+          ? "Resume"
+          : estUnits > 0
+            ? `Build${costLabel}`
+            : "Build anyway",
       });
       if (!ok) return;
     }
@@ -478,9 +629,7 @@ function RepresentationCard({
             <span
               className={cn(
                 "text-[11px] font-medium leading-tight truncate",
-                built || running
-                  ? "text-foreground"
-                  : "text-muted-foreground",
+                built || running ? "text-foreground" : "text-muted-foreground",
               )}
               title={meta.label}
             >
@@ -496,7 +645,7 @@ function RepresentationCard({
         {running
           ? op.message || "Working…"
           : failed
-            ? op.error || "Failed — try again."
+            ? "Interrupted — completed work is safe. Resume to continue."
             : isVerif && built
               ? `${verification.verified.toLocaleString()} of ${verification.total.toLocaleString()} pages verified`
               : meta.blurb}
@@ -528,7 +677,11 @@ function RepresentationCard({
           user sees what Build will actually do BEFORE clicking. Hidden while
           running (the live progress takes over). */}
       {!running && (
-        <RealityLine estimate={estimate} loading={estimating} unit={meta.unit} />
+        <RealityLine
+          estimate={estimate}
+          loading={estimating}
+          unit={meta.unit}
+        />
       )}
 
       {/* Live progress (only while running) */}
@@ -558,21 +711,67 @@ function RepresentationCard({
             <XIcon className="h-3 w-3 mr-1" />
             Cancel
           </Button>
-        ) : built ? (
+        ) : status.complete ? (
           <Button
             size="sm"
             variant="outline"
             onClick={onRebuild}
+            disabled={rebuildChecking || statusUnavailable}
             className="h-7 flex-1 text-[10px]"
           >
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Rebuild
+            {rebuildChecking ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3 mr-1" />
+            )}
+            {rebuildChecking ? "Checking impact…" : "Rebuild"}
           </Button>
+        ) : status.resumable ? (
+          <>
+            <Button
+              size="sm"
+              onClick={() => void handleBuild(true)}
+              disabled={statusUnavailable}
+              className="h-7 flex-1 text-[10px]"
+            >
+              <Play className="h-3 w-3 mr-1" />
+              Resume
+            </Button>
+            {built && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onRebuild}
+                disabled={rebuildChecking || statusUnavailable}
+                className="h-7 w-7 shrink-0 text-muted-foreground"
+                aria-label="Start over from scratch"
+                title="Start over from scratch (destructive)"
+              >
+                {rebuildChecking ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3 w-3" />
+                )}
+              </Button>
+            )}
+          </>
+        ) : built ? (
+          <>
+            <Button
+              size="sm"
+              onClick={() => void handleBuild(true)}
+              disabled={statusUnavailable}
+              className="h-7 flex-1 text-[10px]"
+            >
+              <Play className="h-3 w-3 mr-1" />
+              Resume
+            </Button>
+          </>
         ) : (
           <Button
             size="sm"
-            onClick={handleBuild}
-            disabled={estimateLoading}
+            onClick={() => void handleBuild(false)}
+            disabled={estimateLoading || statusUnavailable}
             className="h-7 flex-1 text-[10px]"
           >
             <Play className="h-3 w-3 mr-1" />

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { notifyFeedbackAssigned } from "@/lib/services/feedback-assignment-notifier";
@@ -35,6 +36,23 @@ import {
 type UserFeedbackUpdate =
   Database["users"]["Tables"]["user_feedback"]["Update"];
 
+async function requireAdminServiceAccess() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  if (!(await checkIsUserAdmin(supabase, user.id))) {
+    throw new Error("Admin access required");
+  }
+
+  return { admin: createAdminClient(), supabase, user };
+}
+
 // ============= USER FEEDBACK ACTIONS =============
 
 /**
@@ -66,8 +84,10 @@ export async function submitFeedback(
     const categoryId = isAdmin && input.category_id ? input.category_id : null;
     const assignedTo = isAdmin && input.assigned_to ? input.assigned_to : null;
 
-    const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .schema("users")
+      .from("user_feedback")
       .insert({
         organization_id: await ensureOrgIdServer(supabase, undefined),
         user_id: user.id,
@@ -138,7 +158,8 @@ export async function getUserFeedback(): Promise<{
     }
 
     const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+      .schema("users")
+      .from("user_feedback")
       .select("*")
       .is("deleted_at", null)
       .eq("user_id", user.id)
@@ -182,7 +203,8 @@ export async function updateUserOwnFeedback(
 
     // First verify ownership and status
     const { data: existing, error: fetchError } = await supabase
-      .schema("users").from("user_feedback")
+      .schema("users")
+      .from("user_feedback")
       .select("id, user_id, status")
       .is("deleted_at", null)
       .eq("id", feedbackId)
@@ -203,13 +225,16 @@ export async function updateUserOwnFeedback(
       };
     }
 
-    const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .schema("users")
+      .from("user_feedback")
       .update({
         ...updates,
       })
       .eq("id", feedbackId)
       .eq("user_id", user.id)
+      .eq("status", "new")
       .select()
       .single();
 
@@ -242,8 +267,8 @@ export async function triageFeedbackItem(
   },
 ): Promise<{ success: boolean; error?: string; data?: UserFeedback }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("triage_feedback_item", {
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("triage_feedback_item", {
       p_id: feedbackId,
       p_ai_solution_proposal: triage.ai_solution_proposal ?? undefined,
       p_ai_suggested_priority: triage.ai_suggested_priority ?? undefined,
@@ -268,8 +293,8 @@ export async function getAgentWorkQueue(): Promise<{
   data?: UserFeedback[];
 }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("get_agent_work_queue");
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("get_agent_work_queue");
     if (error) return { success: false, error: error.message };
     return { success: true, data: mapUserFeedbackRows(data || []) };
   } catch (error: unknown) {
@@ -286,8 +311,8 @@ export async function getUntriagedFeedback(): Promise<{
   data?: UserFeedback[];
 }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("get_untriaged_feedback");
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("get_untriaged_feedback");
     if (error) return { success: false, error: error.message };
     return { success: true, data: mapUserFeedbackRows(data || []) };
   } catch (error: unknown) {
@@ -304,8 +329,8 @@ export async function getTriageBatch(batchSize: number = 3): Promise<{
   data?: TriageBatchData;
 }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("get_triage_batch", {
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("get_triage_batch", {
       p_batch_size: batchSize,
     });
     if (error) return { success: false, error: error.message };
@@ -332,8 +357,8 @@ export async function setAdminDecision(
   workPriority?: number,
 ): Promise<{ success: boolean; error?: string; data?: UserFeedback }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("set_admin_decision", {
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("set_admin_decision", {
       p_id: feedbackId,
       p_decision: decision,
       p_direction: direction ?? undefined,
@@ -357,8 +382,8 @@ export async function splitFeedbackItem(
   descriptions: string[],
 ): Promise<{ success: boolean; error?: string; data?: UserFeedback[] }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("split_feedback_item", {
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("split_feedback_item", {
       p_parent_id: parentId,
       p_descriptions: descriptions,
     });
@@ -379,15 +404,12 @@ export async function addFeedbackComment(
   authorName?: string,
 ): Promise<{ success: boolean; error?: string; data?: FeedbackComment }> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { admin, user } = await requireAdminServiceAccess();
     const name =
       authorName ||
-      user?.email ||
+      user.email ||
       (authorType === "ai_agent" ? "AI Agent" : "Unknown");
-    const { data, error } = await supabase.rpc("add_feedback_comment", {
+    const { data, error } = await admin.rpc("add_feedback_comment", {
       p_feedback_id: feedbackId,
       p_author_type: authorType,
       p_author_name: name,
@@ -410,8 +432,8 @@ export async function getFeedbackComments(
   feedbackId: string,
 ): Promise<{ success: boolean; error?: string; data?: FeedbackComment[] }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("get_feedback_comments", {
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("get_feedback_comments", {
       p_feedback_id: feedbackId,
     });
     if (error) return { success: false, error: error.message };
@@ -431,8 +453,8 @@ export async function resolveWithTesting(
   testingUrl?: string,
 ): Promise<{ success: boolean; error?: string; data?: UserFeedback }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("resolve_with_testing", {
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("resolve_with_testing", {
       p_id: feedbackId,
       p_resolution_notes: resolutionNotes,
       p_testing_instructions: testingInstructions ?? undefined,
@@ -460,18 +482,14 @@ export async function sendUserReviewMessage(
   imageUrls?: string[],
 ): Promise<{ success: boolean; error?: string; data?: FeedbackUserMessage }> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "User not authenticated" };
+    const { supabase, user } = await requireAdminServiceAccess();
 
     const name = senderName || user.email || "Admin";
     const { data, error } = await supabase.rpc("send_user_review_message", {
       p_feedback_id: feedbackId,
       p_message: message,
       p_sender_name: name,
-      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : null,
+      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : undefined,
     });
     if (error) return { success: false, error: error.message };
     if (data === null) {
@@ -503,18 +521,14 @@ export async function adminReplyUserReview(
   imageUrls?: string[],
 ): Promise<{ success: boolean; error?: string; data?: FeedbackUserMessage }> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "User not authenticated" };
+    const { supabase, user } = await requireAdminServiceAccess();
 
     const name = senderName || user.email || "Admin";
     const { data, error } = await supabase.rpc("admin_reply_user_review", {
       p_feedback_id: feedbackId,
       p_message: message,
       p_sender_name: name,
-      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : null,
+      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : undefined,
     });
     if (error) return { success: false, error: error.message };
     if (data === null) {
@@ -558,7 +572,7 @@ export async function replyToUserReview(
       p_feedback_id: feedbackId,
       p_message: message,
       p_sender_name: name,
-      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : null,
+      p_image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : undefined,
     });
     if (error) return { success: false, error: error.message };
     if (data === null) {
@@ -605,8 +619,8 @@ export async function markUserMessageEmailed(
   messageId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient();
-    const { error } = await supabase.rpc("mark_user_message_emailed", {
+    const { admin } = await requireAdminServiceAccess();
+    const { error } = await admin.rpc("mark_user_message_emailed", {
       p_message_id: messageId,
     });
     if (error) return { success: false, error: error.message };
@@ -638,8 +652,13 @@ export async function getAllFeedback(): Promise<{
       return { success: false, error: "User not authenticated" };
     }
 
+    if (!(await checkIsUserAdmin(supabase, user.id))) {
+      return { success: false, error: "Admin access required" };
+    }
+
     const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+      .schema("users")
+      .from("user_feedback")
       .select("*")
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -689,8 +708,10 @@ export async function updateFeedback(
     // Capture prior assigned_to so we only notify on a real change.
     let previousAssignedTo: string | null = null;
     if (Object.prototype.hasOwnProperty.call(updates, "assigned_to")) {
-      const { data: priorRow } = await supabase
-        .schema("users").from("user_feedback")
+      const admin = createAdminClient();
+      const { data: priorRow } = await admin
+        .schema("users")
+        .from("user_feedback")
         .select("assigned_to")
         .is("deleted_at", null)
         .eq("id", feedbackId)
@@ -711,8 +732,10 @@ export async function updateFeedback(
       updateData.user_confirmed_at = new Date().toISOString();
     }
 
-    const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .schema("users")
+      .from("user_feedback")
       .update(updateData)
       .eq("id", feedbackId)
       .select()
@@ -776,8 +799,13 @@ export async function getFeedbackById(
     } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "User not authenticated" };
 
+    if (!(await checkIsUserAdmin(supabase, user.id))) {
+      return { success: false, error: "Admin access required" };
+    }
+
     const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+      .schema("users")
+      .from("user_feedback")
       .select("*")
       .is("deleted_at", null)
       .eq("id", feedbackId)
@@ -802,16 +830,8 @@ export async function getFeedbackByStatus(
   status: FeedbackStatus,
 ): Promise<{ success: boolean; error?: string; data?: UserFeedback[] }> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { success: false, error: "User not authenticated" };
-    }
-
-    const { data, error } = await supabase.rpc("get_feedback_by_status", {
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("get_feedback_by_status", {
       p_status: status,
     });
 
@@ -838,16 +858,8 @@ export async function getFeedbackSummary(): Promise<{
   data?: FeedbackSummaryData;
 }> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { success: false, error: "User not authenticated" };
-    }
-
-    const { data, error } = await supabase.rpc("get_feedback_summary");
+    const { admin } = await requireAdminServiceAccess();
+    const { data, error } = await admin.rpc("get_feedback_summary");
 
     if (error) {
       console.error("Error fetching feedback summary:", error);
@@ -894,6 +906,11 @@ export async function forceCloseFeedback(
       return { success: false, error: "User not authenticated" };
     }
 
+    const isAdmin = await checkIsUserAdmin(supabase, user.id);
+    if (!isAdmin) {
+      return { success: false, error: "Admin access required" };
+    }
+
     const now = new Date().toISOString();
     const updateData: UserFeedbackUpdate = {
       status: targetStatus,
@@ -905,8 +922,10 @@ export async function forceCloseFeedback(
       admin_decision: targetStatus === "wont_fix" ? "rejected" : "approved",
     };
 
-    const { data, error } = await supabase
-      .schema("users").from("user_feedback")
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .schema("users")
+      .from("user_feedback")
       .update(updateData)
       .eq("id", feedbackId)
       .select()

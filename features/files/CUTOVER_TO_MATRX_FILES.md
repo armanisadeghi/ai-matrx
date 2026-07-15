@@ -1,12 +1,14 @@
 # TASK: route file traffic to the matrx-files microservice
 
-**Status:** frontend browser + server routing is implemented. Service is LIVE at
-`https://files.matrxserver.com` (us-east-1, identical wire contract).
+**Status:** server routing is implemented. Direct authenticated browser routing is implemented
+behind `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=false` and is currently blocked: the live service returns
+HTTP 405 to browser CORS preflight for `/files/upload`.
 
-`lib/python-client.ts` performs the browser split at the final shared URL-construction boundary,
-while `server-client.ts` handles server-side calls and the service worker recognizes both origins.
-The route matcher is deliberately exact: aidream-only `/files/{id}/ingest`, RAG, annotation, and
-media routes remain on the general backend until parity lands.
+`lib/python-client.ts` owns the browser split at the final shared URL-construction boundary, but it
+only activates when `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true`. `server-client.ts` handles server-side
+calls and the service worker recognizes both origins. The route matcher is deliberately exact:
+aidream-only `/files/{id}/ingest`, RAG, annotation, and media routes remain on the general backend
+until parity lands.
 
 ## The change (surgical, no rewrite)
 
@@ -29,6 +31,9 @@ media routes remain on the general backend until parity lands.
 ## Cut over + verify
 
 - Set `NEXT_PUBLIC_FILES_URL=https://files.matrxserver.com` in Vercel.
+- Verify authenticated `OPTIONS /files/upload` returns 2xx with the deployed frontend origin,
+  `Authorization`, `X-Request-Id`, and `X-Idempotency-Key` allowed. A 405 blocks cutover.
+- Only after that check passes, set `NEXT_PUBLIC_FILES_BROWSER_CUTOVER=true` and redeploy.
 - Verify on the aidream dashboard `/logs` → feature `file-cutover-shadow`: your origin's **`ready`
   tier must go silent**. That's the proof the FE is fully cut over. `needs_parity` routes (image
   studio, pdf, media) stay on the backend until the service grows those routers — they're expected

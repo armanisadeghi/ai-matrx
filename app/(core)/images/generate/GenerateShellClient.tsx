@@ -22,7 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { generateImage, type ImageResult } from "@/features/image-studio/api/python";
+import {
+  generateImage,
+  type ImageResult,
+} from "@/features/image-studio/api/python";
+import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
 import { InlineMediaRef } from "@/features/files";
 
 type Size = "square" | "portrait" | "landscape" | "wide" | "tall";
@@ -36,6 +40,10 @@ export default function GenerateShellClient() {
   const [results, setResults] = useState<ImageResult[]>([]);
 
   const handleGenerate = async () => {
+    if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.generate) {
+      toast.info("Image generation is coming soon.");
+      return;
+    }
     if (!prompt.trim()) {
       toast.info("Type a prompt to generate.");
       return;
@@ -49,7 +57,9 @@ export default function GenerateShellClient() {
         count,
       });
       setResults(res.files);
-      toast.success(`Generated ${res.files.length} image${res.files.length === 1 ? "" : "s"}.`);
+      toast.success(
+        `Generated ${res.files.length} image${res.files.length === 1 ? "" : "s"}.`,
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Generate failed";
       const notImpl = /404|not.*found|not.*implement/i.test(msg);
@@ -71,7 +81,7 @@ export default function GenerateShellClient() {
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder='A cozy reading nook by a rainy window, warm lamp light, photorealistic'
+            placeholder="A cozy reading nook by a rainy window, warm lamp light, photorealistic"
             className="min-h-[140px] md:min-h-[120px] resize-y rounded-md border border-border bg-background px-3 py-2 text-sm"
             style={{ fontSize: "16px" }}
           />
@@ -119,14 +129,18 @@ export default function GenerateShellClient() {
             value={style}
             onChange={(e) => setStyle(e.target.value)}
             placeholder='e.g. "editorial illustration", "minimalist vector"'
-          className="h-10 md:h-9 rounded-md border border-border bg-background px-3 text-sm"
-          style={{ fontSize: "16px" }}
-        />
+            className="h-10 md:h-9 rounded-md border border-border bg-background px-3 text-sm"
+            style={{ fontSize: "16px" }}
+          />
         </div>
 
         <Button
           onClick={handleGenerate}
-          disabled={busy || !prompt.trim()}
+          disabled={
+            !IMAGE_STUDIO_BACKEND_CAPABILITIES.generate ||
+            busy ||
+            !prompt.trim()
+          }
           className="min-h-[44px] md:min-h-0"
         >
           {busy ? (
@@ -136,6 +150,13 @@ export default function GenerateShellClient() {
           )}
           Generate
         </Button>
+
+        {!IMAGE_STUDIO_BACKEND_CAPABILITIES.generate && (
+          <p className="text-xs text-muted-foreground">
+            Image generation is coming soon. Upload or select an existing image
+            to use the available editing tools.
+          </p>
+        )}
 
         <div className="hidden md:block rounded-md border border-border bg-card/30 p-3 text-xs text-muted-foreground space-y-1.5">
           <div className="flex items-center gap-1.5 font-medium text-foreground">

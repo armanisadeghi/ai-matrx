@@ -61,7 +61,7 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import {
-  assertModelInteractionLaunchable,
+  assertExecutionTargetLaunchable,
   resolveAgentRuntime,
 } from "@/features/agents/runtime/runtime-resolver";
 import { launchRealtimeSession } from "@/features/agents/runtime/realtime/launchRealtimeSession.thunk";
@@ -531,9 +531,10 @@ export const launchAgentExecution = createAsyncThunk<
     // gate above (`if (agentId)`) does not cover them — refuse here, before
     // any conversation is minted.
     if (shortcut.agentId) {
-      const launchable = assertModelInteractionLaunchable(
+      const launchable = await assertExecutionTargetLaunchable(
         () => getState() as RootState,
-        shortcut.agentId,
+        shortcut.resolvedId ?? shortcut.agentId,
+        shortcut.isVersion,
       );
       if ("error" in launchable) {
         throw new Error(launchable.error);

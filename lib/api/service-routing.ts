@@ -33,6 +33,10 @@ const STANDALONE_FILE_ROUTE_RULES: readonly ServiceRouteRule[] = [
     methods: methods("GET"),
   },
   {
+    pattern: new RegExp(`^/files/${UUID_SEGMENT}/pdf-pages/?$`, "i"),
+    methods: methods("POST"),
+  },
+  {
     pattern: new RegExp(`^/files/${UUID_SEGMENT}/url/?$`, "i"),
     methods: methods("GET"),
   },
@@ -76,6 +80,27 @@ export function isStandaloneFileServiceRoute(
     (rule) =>
       rule.pattern.test(pathname) &&
       (!normalizedMethod || rule.methods.has(normalizedMethod)),
+  );
+}
+
+/**
+ * Direct browser traffic to the standalone service is a separate rollout
+ * decision from configuring its URL for server-side callers and public share
+ * links. Keep it opt-in until the service passes authenticated CORS preflight
+ * from every deployed frontend origin.
+ */
+export function isStandaloneFilesBrowserCutoverEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_FILES_BROWSER_CUTOVER === "true";
+}
+
+/** Route a browser request to matrx-files only after the explicit cutover gate. */
+export function shouldRouteBrowserRequestToStandaloneFiles(
+  path: string,
+  method?: string,
+): boolean {
+  return (
+    isStandaloneFilesBrowserCutoverEnabled() &&
+    isStandaloneFileServiceRoute(path, method)
   );
 }
 

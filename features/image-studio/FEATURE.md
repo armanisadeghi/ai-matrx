@@ -2,23 +2,23 @@
 
 Four modes, one feature: **Convert** (resize to platform presets), **Edit** (full-featured editor with filters/text/shapes/AI assists), **Annotate** (screenshot markup), **Avatar** (dedicated circular crop), and **Generate** (text → image). Plus the historical landing/library/presets/from-base64 surfaces.
 
-> **AI integrations.** Every AI assist surface in the modes (suggest edits, smart crop, redact PII, suggest annotations, generate from prompt, BG remove, upscale, inpaint, …) is enumerated in `features/image-studio/AI-AGENTS.md`. That doc is the source of truth for both the LLM agent shortcuts (Section A) and the deterministic Python endpoints (Section B). When an AI feature is wired but the underlying agent/endpoint isn't implemented yet, the UI surfaces a "ships next wave" toast — never a generic error.
+> **AI integrations.** Every AI assist surface in the modes (suggest edits, smart crop, redact PII, suggest annotations, generate from prompt, BG remove, upscale, inpaint, …) is enumerated in `features/image-studio/AI-AGENTS.md`. That doc is the source of truth for both the LLM agent shortcuts (Section A) and the deterministic Python endpoints (Section B). REST-backed controls are exposed only when `constants/backend-capabilities.ts` marks their deployed contract available; unavailable controls never make speculative requests.
 
 ## Routes
 
 > **Migration note (2026-05-06):** Routes moved from `/image-studio/*` to flat siblings under `/images/*`. The `(tools)` route group and the in-route `<ImageStudioHeader>` are gone — chrome is now a single shared sidebar at `app/(a)/images/_components/ImagesSidebar.tsx` driven by `usePathname()`. Tool internals (`page.tsx` + `<Tool>ShellClient.tsx` + dynamic mode shell) are unchanged.
 
-| Route | Type | Purpose |
-|---|---|---|
-| `/images/studio` | Landing (pure Server Component) | Hero, stat row, feature grid, preset legend, workflow steps, CTAs. Zero client JS. |
-| `/images/convert` | Interactive tool | Multi-file drop zone + preset catalog + per-variant tile grid + export panel. The original Image Studio UX. |
-| `/images/edit` | Interactive tool | Full-featured editor (Filerobot 5.0). Crop, rotate, resize, filters, fine-tune, shapes, text, freehand pen, watermark. Layered AI toolbar adds Suggest edits, Remove BG, Upscale 2×/4×, AI edit by prompt. |
-| `/images/annotate` | Interactive tool | Screenshot markup (marker.js 2). Arrows, callouts, boxes, freehand, text, frames, blur/redact regions. AI toolbar: Suggest annotations, Redact PII, Detect faces. |
-| `/images/avatar` | Interactive tool | Dedicated circular-crop UX (react-easy-crop with `cropShape="round"`). 1:1 lock, zoom + rotation, Smart Crop button. Outputs canonical 512² PNG into `Images/Avatars/`. |
-| `/images/generate` | Interactive tool | Text → image via the Python `/images/generate` endpoint. Prompt + size + count + style. Result tiles deep-link into Edit / Annotate / Avatar. |
-| `/images/presets` | Cached catalog | Browsable reference for every preset (pure server-rendered). |
-| `/images/library` | Per-user Supabase data | Variants the user has saved — grouped by session, public URLs. |
-| `/images/from-base64` | Interactive tool | Paste a base64 string (raw or `data:` URL) → preview + metadata + save to cloud. Pure browser decode (no API hop), uploads via the cloud-files share-link primitive. |
+| Route                 | Type                            | Purpose                                                                                                                                                                                                    |
+| --------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/images/studio`      | Landing (pure Server Component) | Hero, stat row, feature grid, preset legend, workflow steps, CTAs. Zero client JS.                                                                                                                         |
+| `/images/convert`     | Interactive tool                | Multi-file drop zone + preset catalog + per-variant tile grid + export panel. The original Image Studio UX.                                                                                                |
+| `/images/edit`        | Interactive tool                | Full-featured editor (Filerobot 5.0). Crop, rotate, resize, filters, fine-tune, shapes, text, freehand pen, watermark. Layered AI toolbar adds Suggest edits, Remove BG, Upscale 2×/4×, AI edit by prompt. |
+| `/images/annotate`    | Interactive tool                | Screenshot markup (marker.js 2). Arrows, callouts, boxes, freehand, text, frames, blur/redact regions. AI toolbar: Suggest annotations, Redact PII, Detect faces.                                          |
+| `/images/avatar`      | Interactive tool                | Dedicated circular-crop UX (react-easy-crop with `cropShape="round"`). 1:1 lock, zoom + rotation, Smart Crop button. Outputs canonical 512² PNG into `Images/Avatars/`.                                    |
+| `/images/generate`    | Gated interactive tool          | Prompt UI is retained, but submission stays disabled until the Python `/images/generate` contract is deployed.                                                                                             |
+| `/images/presets`     | Cached catalog                  | Browsable reference for every preset (pure server-rendered).                                                                                                                                               |
+| `/images/library`     | Per-user Supabase data          | Variants the user has saved — grouped by session, public URLs.                                                                                                                                             |
+| `/images/from-base64` | Interactive tool                | Paste a base64 string (raw or `data:` URL) → preview + metadata + save to cloud. Pure browser decode (no API hop), uploads via the cloud-files share-link primitive.                                       |
 
 Edit / Annotate / Avatar use a shared `app/(a)/images/_shared/ModeImagePicker` landing when no source is provided via `?url=` or `?cloudFileId=`. Each tool fills the layout's main column directly — height is fully owned by `app/(a)/images/layout.tsx`.
 
@@ -134,6 +134,7 @@ Every preset declares: `id`, `name`, `usage` (where it's used), `width`, `height
 ## Processing pipeline
 
 `app/api/images/studio/process/route.ts` accepts multipart `file + spec`.
+
 - Sharp pipeline: `.rotate()` (EXIF) → `.resize(cover, center)` → `.flatten(bg)` if non-alpha format → encode.
 - JPEG: `mozjpeg: true, progressive: true, quality`
 - WebP: `quality`
@@ -158,8 +159,8 @@ shape so any one of them can be mounted from a route OR a modal dialog
 
 ```ts
 interface ModeShellProps {
-  source: ImageSource | null;       // File | URL | cloudFileId
-  defaultFolder?: string;           // where saves land in Cloud Files
+  source: ImageSource | null; // File | URL | cloudFileId
+  defaultFolder?: string; // where saves land in Cloud Files
   presentation?: "page" | "modal";
   onSave?: (result: SaveResult) => void;
   onCancel?: () => void;
@@ -183,6 +184,7 @@ watermark. Filerobot runs entirely in the browser via Konva — the route
 `window`/`document` on first paint, so SSR mounting is forbidden.
 
 Sibling **AI assist toolbar** (above Filerobot's native UI) hosts:
+
 - ✨ Suggest edits — `image-suggest-edits` agent (next wave)
 - Remove BG — `bg-remove` Python endpoint
 - Upscale 2× / 4× — `upscale` Python endpoint
@@ -210,9 +212,11 @@ the 400/128/48 variants.
 
 ### Generate mode
 
-Text → image via the Python `/images/generate` endpoint. Result tiles deep-
-link into Edit / Annotate / Avatar via `?cloudFileId=` query params, so the
-flow is generate → keep editing without an upload round-trip.
+Text → image is planned through the Python `/images/generate` endpoint. The
+prompt surface and typed client are retained, but the submit path is gated by
+`IMAGE_STUDIO_BACKEND_CAPABILITIES.generate` until that endpoint is verified
+deployed. Once enabled, result tiles deep-link into Edit / Annotate / Avatar
+via `?cloudFileId=` query params.
 
 ## How to extend
 
@@ -248,6 +252,7 @@ flow is generate → keep editing without an upload round-trip.
 
 ## Change Log
 
+- **2026-07-15** — Closed D47 by adding a single verified-backend capability registry. Text generation is visibly disabled on `/images/generate` and in `ImageAssetUploader`; undeployed face-detection, prompt-edit, and edit-suggestion controls are removed from the toolbars. Defensive handler guards remain, so none of the four missing routes can be reached by a real user click.
 - **2026-07-12** — **Killed the S3-signed-URL leak + state-destroying navigation in the variant tiles; routed download/share/view through canonical file primitives.** The preview API returns large variants as an ephemeral 5-minute `signed_url` (S3), which landed verbatim in `ProcessedVariant.dataUrl` → leaked into the tile `<img src>`, and a download `<a href={s3url} download>` is cross-origin so the browser ignored `download` and **navigated the tab to S3**, wiping the studio's in-memory state (back-button → blank studio). Fixes:
   - **Source boundary** — `useImageStudio.generate` now materializes any `signed_url` into a same-origin `blob:` URL before it enters state (`data:` passes through). No raw S3 URL ever reaches the DOM, download, or ZIP. Verified: a 1920×1005 variant that returns `signed_url` renders as `blob:`; `s3Anywhere === false` across `<img>`/anchors/DOM/clipboard.
   - **Download** (`utils/download-bundle.ts`) — always fetches to a same-origin blob and saves via a `blob:` anchor; never an href to a remote URL, so it never navigates (verified: `location` unchanged after Download, studio state intact). ZIP bundler now fetches `data:`/`blob:`/signed forms (large variants no longer silently dropped).
@@ -257,7 +262,7 @@ flow is generate → keep editing without an upload round-trip.
 - **2026-07-12** — **`ImageStudioShell` is now container-query responsive — fixes the collapsed center column.** The three columns keyed their show/hide off **viewport** `md`/`lg`, which ignored the width the app sidebar (+ images sub-nav) consumes. With the sidebar open, both side panels claimed their fixed widths at viewport ≥ `lg` and crushed the center work-column to ~0 (measured: file card **2px** wide, content overflowing / "text popping out"). The root flex is now `@container/studio` and the panels dock on the container's own width: PresetCatalog at `@3xl`, ExportPanel at `@5xl`; the toggle bar shows below `@5xl` with the Presets button dropping at `@3xl` (so `@3xl–@5xl` shows only Export — also closing a pre-existing gap where Export was unreachable in that band). Same pattern as `research/PipelineOrchestra`. Defense-in-depth: `StudioFileCard` header/meta-row/actions now `flex-wrap` so the actions drop to a second row instead of overflowing at genuinely narrow card widths. Verified 375/1040/1300/1680px — card width recovered to 616/588/488px with zero horizontal overflow at every width.
 
 - **2026-07-12** — **Two upload/metadata paper cuts on `/images/convert` (the `ImageStudioShell`).**
-  - **The original upload now persists on add and shows in Recents.** Before, nothing was saved until "Save all to library", and even then only the *variants* went to `Images/Generated/…` (hidden from Recents by `isExcludedFromRecents`) — so a just-uploaded image never appeared in "my files". `useImageStudio.addFiles` now fires `persistSourceFile` per file: the original is saved to `Images/Edited/Sources` (a real user-namespace folder, NOT excluded from Recents) with `source: "image-studio-source"`. New `StudioSourceFile` fields `sourceFileId` / `sourceUploadStatus` / `sourceUploadError`; the `SourceSaveIndicator` on the card shows Saving/**Saved**/Not saved. Loud on failure — it checks `uploadFiles`' `result.uploaded`/`result.failed` (resolved unwrap ≠ bytes landed). This cleanly separates the **real user upload** (user namespace) from the **auto-generated variants** (hidden). Verified end-to-end: DB row confirmed at `Images/Edited/Sources/…`, derived og/thumb/tiny correctly under hidden `system-files/`.
+  - **The original upload now persists on add and shows in Recents.** Before, nothing was saved until "Save all to library", and even then only the _variants_ went to `Images/Generated/…` (hidden from Recents by `isExcludedFromRecents`) — so a just-uploaded image never appeared in "my files". `useImageStudio.addFiles` now fires `persistSourceFile` per file: the original is saved to `Images/Edited/Sources` (a real user-namespace folder, NOT excluded from Recents) with `source: "image-studio-source"`. New `StudioSourceFile` fields `sourceFileId` / `sourceUploadStatus` / `sourceUploadError`; the `SourceSaveIndicator` on the card shows Saving/**Saved**/Not saved. Loud on failure — it checks `uploadFiles`' `result.uploaded`/`result.failed` (resolved unwrap ≠ bytes landed). This cleanly separates the **real user upload** (user namespace) from the **auto-generated variants** (hidden). Verified end-to-end: DB row confirmed at `Images/Edited/Sources/…`, derived og/thumb/tiny correctly under hidden `system-files/`.
   - **AI describe now shows it's applied and is reversible.** The describe result was auto-adopted into `filenameBase` with no snapshot and only a "Clear" that wiped metadata while leaving the renamed slug orphaned. Now `describeFile` snapshots the pre-AI `filenameBase` + `imageMetadata` (`previousFilenameBase` / `previousImageMetadata`), the `MetadataPanel` banner reads **"AI metadata applied"** with a "Renamed from …" hint, and **Revert** (`revertImageMetadata`) restores the exact prior name + metadata (or clears + restores the original name on a first describe). Replaced the old `clearImageMetadata`/`onMetadataClear` chain entirely (no shim). Verified: real describe applied accurate copy, Revert restored the pre-AI name.
 
 - **2026-05-16** — **`EditModeShell` now mountable from the file-viewer Edit tab.** Added an optional `cloudFileId?: string | null` prop to [`ModeShellProps`](modes/shared/types.ts) so callers that pre-resolve a cloud-file id into a `kind: "url"` source can still keep the AI toolbar functional. The toolbar's `sourceCloudFileId` is now `cloudFileId ?? (source?.kind === "cloudFileId" ? source.cloudFileId : null)`. Before this, mounting `EditModeShell` with a URL-kind source (the natural pattern when you already have `useFileSrc({ kind: "file_id", fileId })` resolving the URL) would render Filerobot correctly but silently disable Remove BG / Upscale / AI edit because the toolbar had no `source_id` for Python. The new prop is the cleanest way to tell the shell "the source has a renderable URL **and** lives at this cld_files row." Backwards-compatible: existing callers (full-page routes, modal variants) pass nothing and the shell falls back to the original `source.kind === "cloudFileId"` lookup. First consumer: the new `ImageEditTab` in `features/files/components/surfaces/single-file/` — mounted inside the Edit tab of `/files/f/{id}` (see [features/files/FEATURE.md](../files/FEATURE.md) Change Log for the wiring details). Save default folder: the source file's parent folder (so edits live next to originals), falling back to `Images/Edited/` for files at root.

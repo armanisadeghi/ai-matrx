@@ -3,6 +3,7 @@
 import { useFileNode } from "@/features/files";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
+import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";
 import type { RagHitView } from "@/features/rag/components/hit-card/types";
 import { hrefForNormalized, type NormalizedHit } from "./parseRag";
 
@@ -22,6 +23,9 @@ function viewFromNormalized(
     sourceKind: hit.source_kind,
     sourceId: hit.source_id,
     chunkId: hit.chunk_id,
+    fieldId: null,
+    parentChunkId: null,
+    chunkKind: null,
     title: name ?? hit.file_name ?? null,
     pageNumber: hit.page_number,
     pageNumbers: hit.page_number != null ? [hit.page_number] : null,
@@ -32,6 +36,7 @@ function viewFromNormalized(
     rerankScore: hit.rerank_score,
     entityRank: hit.entity_rank,
     entities: hit.entities,
+    metadata: hit.metadata,
     libraryShortCode: null,
   };
 }
@@ -40,12 +45,14 @@ export function RagSourceCard({
   hit,
   topScore,
   query,
+  sourceName,
 }: {
   hit: NormalizedHit;
   /** Top score in the result set, for the relative relevance bar. */
   topScore: number;
   /** The originating search query — threaded into the source inspector. */
   query?: string | null;
+  sourceName?: string | null;
 }) {
   const href = hrefForNormalized(hit);
   const isFile = hit.source_kind === "cld_file";
@@ -53,7 +60,10 @@ export function RagSourceCard({
   // Resolve a friendly name from the eagerly-loaded cloud-files record (so
   // "File · e9868104" becomes the real filename). No-op read for non-file ids.
   const { file } = useFileNode(hit.source_id);
-  const resolvedName = hit.file_name ?? (isFile ? file?.fileName ?? null : null);
+  const resolvedName =
+    normalizeSourceName(sourceName, hit.source_id) ??
+    normalizeSourceName(hit.file_name, hit.source_id) ??
+    (isFile ? normalizeSourceName(file?.fileName, hit.source_id) : null);
 
   const openCitation = useOpenCitation();
   const open = () =>
@@ -79,4 +89,20 @@ export function RagSourceCard({
       onOpen={open}
     />
   );
+}
+
+export function canonicalNormalizedSourceName(
+  hit: NormalizedHit,
+  siblings: readonly NormalizedHit[],
+): string | null {
+  for (const sibling of siblings) {
+    if (
+      sibling.source_kind === hit.source_kind &&
+      sibling.source_id === hit.source_id
+    ) {
+      const name = normalizeSourceName(sibling.file_name, hit.source_id);
+      if (name) return name;
+    }
+  }
+  return null;
 }

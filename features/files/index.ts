@@ -156,6 +156,7 @@ export {
 } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 export { PermissionsDialog } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
 export { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
+export { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 export { FolderContextMenu } from "@/features/files/components/core/FolderContextMenu/FolderContextMenu";
 
 // File / folder action hook bundles — used by context menus, browser tables,
@@ -345,6 +346,13 @@ export {
 // (+ server-supplied filename). For click-to-download flows; reactive
 // previewers should keep using `useFileBlob` / `useFileSrc`.
 export { downloadFile } from "@/features/files/api/files";
+export {
+  selectPdfPages,
+  type PdfPageSelectionRequest,
+  type PdfPageSelectionResult,
+  type PdfOutputPageMap,
+  type SelectedPdfFileRef,
+} from "@/features/files/api/pdf-pages";
 
 export {
   pythonBaseUrl,

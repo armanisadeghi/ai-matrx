@@ -75,26 +75,18 @@ export async function createOrganization(
       return { success: false, error: "Slug is already taken" };
     }
 
-    // Get current user
-    const currentUserId = requireUserId();
-
-    // Create organization
-    const { data: org, error: orgError } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .insert({
-        name,
-        slug,
-        description,
-        logo_url: logoUrl,
-        logo_file_id: logoFileId,
-        website,
-        created_by: currentUserId,
-        is_personal: false,
-        settings: settings || {},
-      })
-      .select()
-      .single();
+    // The organization and first owner membership are created in one database
+    // transaction. The RPC derives the owner from auth.uid(); callers cannot
+    // create an ownerless organization or name a different initial owner.
+    const { data: org, error: orgError } = await supabase.rpc("org_create", {
+      p_name: name,
+      p_slug: slug,
+      p_description: description,
+      p_logo_url: logoUrl,
+      p_logo_file_id: logoFileId,
+      p_website: website,
+      p_settings: settings || {},
+    });
 
     if (orgError) {
       console.error("Error creating organization:", orgError.message);
@@ -120,27 +112,6 @@ export async function createOrganization(
       return {
         success: false,
         error: "Organization created but no data returned",
-      };
-    }
-
-    // Add creator as owner. Canonical membership write via the `mbr_*` RPCs
-    // (iam.memberships) — the client has no direct grant on the table.
-    // NOTE: bootstrapping the FIRST owner of a just-created org requires mbr_add
-    // to accept the org's `created_by` as access (pending DB follow-up); until
-    // that lands this raises 42501 and org creation fails here loudly.
-    const ownerResult = await membershipsService.add({
-      containerType: "organization",
-      containerId: org.id,
-      userId: currentUserId,
-      organizationId: org.id,
-      role: "owner",
-    });
-
-    if (isScopesRpcErr(ownerResult)) {
-      console.error("Error adding owner membership:", ownerResult.error);
-      return {
-        success: false,
-        error: "Failed to add you as organization owner",
       };
     }
 
@@ -693,11 +664,6 @@ export async function inviteToOrganization(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           invitationId: invitation.id,
-          organizationId,
-          email: normalizedEmail,
-          role,
-          token: invitation.token,
-          expiresAt: invitation.expiresAt,
         }),
       });
     } catch (emailError) {
@@ -757,7 +723,7 @@ export async function cancelInvitation(
  */
 export async function resendInvitation(
   invitationId: string,
-  context?: { organizationId: string; email: string },
+  _context?: { organizationId: string; email: string },
 ): Promise<OperationResult> {
   try {
     const resendResult = await invitationsService.resend(invitationId);
@@ -769,9 +735,7 @@ export async function resendInvitation(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        token: resendResult.data.token,
-        organizationId: context?.organizationId,
-        email: context?.email,
+        invitationId,
       }),
     });
 

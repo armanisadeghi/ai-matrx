@@ -210,7 +210,7 @@ export function ScopesList({
     if (
       !(await confirm({
         title: `Delete ${name}?`,
-        description: `This permanently removes this ${singular} and all of its context values. This cannot be undone.`,
+        description: `This archives this ${singular} and its child scopes. Stored context values are retained for recovery.`,
         confirmLabel: "Delete",
         variant: "destructive",
       }))

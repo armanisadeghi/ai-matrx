@@ -28,6 +28,7 @@ import { Slider } from "@/components/ui/slider";
 import { Loader2, RotateCw, Save, X, Zap, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import { detectFaces } from "../../api/python";
+import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "../../constants/backend-capabilities";
 import { cropFileToFile } from "../../utils/crop-file";
 
 const AVATAR_OUTPUT_PX = 512;
@@ -63,6 +64,10 @@ export function AvatarModeShell({
   );
 
   const handleSmartCrop = useCallback(async () => {
+    if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection) {
+      toast.info("Smart crop is coming soon.");
+      return;
+    }
     // The "smart-crop" LLM agent and `face-detect` Python endpoint are both
     // wired here. Order: try Python face-detect first (deterministic, fast),
     // fall back to the agent for non-face images.
@@ -197,20 +202,22 @@ export function AvatarModeShell({
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSmartCrop}
-            disabled={smartCropping || !url}
-            className="min-h-[40px]"
-          >
-            {smartCropping ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Zap className="h-3.5 w-3.5 mr-1.5" />
-            )}
-            Smart crop
-          </Button>
+          {IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSmartCrop}
+              disabled={smartCropping || !url}
+              className="min-h-[40px]"
+            >
+              {smartCropping ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Zap className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              Smart crop
+            </Button>
+          )}
           <div className="flex items-center gap-2">
             {presentation === "modal" && (
               <Button
