@@ -5908,6 +5908,20 @@ export type Database = {
     }
     Functions: {
       _message_tool_call_ids: { Args: { p_content: Json }; Returns: string[] }
+      admin_user_usage_rollup: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: {
+          distinct_models: number
+          email: string
+          input_tokens: number
+          last_activity: string
+          output_tokens: number
+          total_cost: number
+          total_requests: number
+          total_tokens: number
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -25402,6 +25416,10 @@ export type Database = {
         Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
         Returns: string
       }
+      _edu_can_read_via_assignment: {
+        Args: { p_id: string; p_type: string }
+        Returns: boolean
+      }
       _edu_class: {
         Args: { p_class: string }
         Returns: Database["context"]["Tables"]["scopes"]["Row"]
@@ -36022,6 +36040,7 @@ export type Database = {
         Row: {
           clicks: number
           ctr: number
+          error_code: string | null
           error_message: string | null
           fetched_at: string
           id: string
@@ -36038,6 +36057,7 @@ export type Database = {
         Insert: {
           clicks?: number
           ctr?: number
+          error_code?: string | null
           error_message?: string | null
           fetched_at?: string
           id?: string
@@ -36054,6 +36074,7 @@ export type Database = {
         Update: {
           clicks?: number
           ctr?: number
+          error_code?: string | null
           error_message?: string | null
           fetched_at?: string
           id?: string

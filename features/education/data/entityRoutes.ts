@@ -27,6 +27,13 @@ export interface EducationEntityRoute {
   Icon: LucideIcon;
   /** Build the /education href for an entity of this token, or null if it has no route. */
   href: (id: string) => string | null;
+  /**
+   * Build the href that DOES/STUDIES the resource (vs `href`, which VIEWS it) —
+   * e.g. a deck deep-links to its study session, not its detail page. Omit when
+   * "study" and "view" are the same URL; callers fall back to `href` (use the
+   * `educationEntityStudyHref` convenience, never this field, to get that fallback).
+   */
+  studyHref?: (id: string) => string | null;
 }
 
 const ROUTES: Record<string, EducationEntityRoute> = {
@@ -35,6 +42,8 @@ const ROUTES: Record<string, EducationEntityRoute> = {
     label: "Flashcard deck",
     Icon: Layers,
     href: (id) => `/education/flashcards/${id}`,
+    // Studying a deck deep-links straight into the classic-flip study session.
+    studyHref: (id) => `/education/flashcards/${id}/study`,
   },
   assessment: {
     group: "Quizzes & Tests",
@@ -78,4 +87,17 @@ export function educationEntityRoute(token: string): EducationEntityRoute {
 /** Convenience: the /education href for a token+id, or null. */
 export function educationEntityHref(token: string, id: string): string | null {
   return educationEntityRoute(token).href(id);
+}
+
+/**
+ * Convenience: the href that STUDIES/DOES a token+id (deck → study session,
+ * quiz → the quiz page), falling back to the plain view `href` when a token has
+ * no distinct study route. Null when the token has no route at all.
+ */
+export function educationEntityStudyHref(
+  token: string,
+  id: string,
+): string | null {
+  const route = educationEntityRoute(token);
+  return (route.studyHref ?? route.href)(id);
 }

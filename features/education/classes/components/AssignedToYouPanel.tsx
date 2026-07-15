@@ -77,10 +77,12 @@ export function AssignedToYouPanel({ classId }: { classId: string }) {
                     {p && p.scorePct != null && <ScorePill scorePct={p.scorePct} />}
                   </div>
                 </div>
-                {a.href && (
+                {a.studyHref && (
                   <button
                     type="button"
-                    onClick={() => a.href && router.push(a.href)}
+                    onClick={() =>
+                      a.studyHref && router.push(a.studyHref)
+                    }
                     className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
                   >
                     {status === "completed" ? "Review" : "Study"}

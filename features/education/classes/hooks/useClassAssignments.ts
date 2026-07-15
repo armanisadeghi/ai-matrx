@@ -12,7 +12,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import { educationEntityRoute } from "@/features/education/data/entityRoutes";
+import {
+  educationEntityRoute,
+  educationEntityStudyHref,
+} from "@/features/education/data/entityRoutes";
 import type { LucideIcon } from "lucide-react";
 import {
   getClassAssignments,
@@ -24,7 +27,10 @@ import type { AssignableToken, ClassAssignment } from "../types";
 /** An assignment enriched with its resolved title, route, icon, and group. */
 export interface ClassAssignmentItem extends ClassAssignment {
   title: string;
+  /** The VIEW href (deck detail page / quiz page). */
   href: string | null;
+  /** The STUDY/DO href (deck → study session; quiz → quiz page). Deep-link for a member. */
+  studyHref: string | null;
   Icon: LucideIcon;
   group: string;
 }
@@ -90,6 +96,7 @@ export function useClassAssignments(
       ...a,
       title: titleFor({ token: a.token, id: a.resourceId }),
       href: route.href(a.resourceId),
+      studyHref: educationEntityStudyHref(a.token, a.resourceId),
       Icon: route.Icon,
       group: route.group,
     };
