@@ -9,6 +9,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import type { ContextValueType, ContextItem } from "./contextItemsSlice";
 import { updateContextItem, deleteContextItem } from "./contextItemsSlice";
+import type { ReferenceSource } from "@/features/scopes/utils/referenceSource";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 
 /**
@@ -43,6 +44,8 @@ export interface ScopeContextRow {
   allowed_reference_types?: string[] | null;
   max_items?: number;
   allowed_scope_type_ids?: string[] | null;
+  /** Dimensional reference binding (INTERIM jsonb) — see features/scopes/utils/referenceSource.ts. */
+  reference_source?: ReferenceSource | null;
 }
 
 interface ScopeValuesState {
@@ -245,6 +248,7 @@ const slice = createSlice({
                   allowed_reference_types: item.allowed_reference_types ?? null,
                   max_items: item.max_items,
                   allowed_scope_type_ids: item.allowed_scope_type_ids ?? null,
+                  reference_source: item.reference_source ?? null,
                 }
               : row,
           );

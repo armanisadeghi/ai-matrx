@@ -12,6 +12,7 @@ import { contextDb } from "@/utils/supabase/contextDb";
 import type { TablesUpdate } from "@/types/database.types";
 import { isUuid } from "@/features/scope-system/utils/slugify";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { ReferenceSource } from "@/features/scopes/utils/referenceSource";
 import type {
   ContextValueType,
   ContextFetchHint,
@@ -58,6 +59,12 @@ export interface ContextItem {
   allowed_reference_types?: string[] | null;
   max_items?: number;
   allowed_scope_type_ids?: string[] | null;
+  /**
+   * Dimensional reference binding (INTERIM jsonb) — a fixed dataset/structured-list
+   * container + the dimension set per scope (or a dynamic filter). See
+   * features/scopes/utils/referenceSource.ts.
+   */
+  reference_source?: ReferenceSource | null;
 }
 
 const adapter = createEntityAdapter<ContextItem>({
@@ -117,6 +124,7 @@ export const updateContextItem = createAsyncThunk(
     allowed_reference_types?: string[] | null;
     max_items?: number;
     allowed_scope_type_ids?: string[] | null;
+    reference_source?: ReferenceSource | null;
   }) => {
     const patch: TablesUpdate<{ schema: "context" }, "context_items"> = {};
     if (params.display_name !== undefined)
@@ -143,6 +151,11 @@ export const updateContextItem = createAsyncThunk(
     if (params.max_items !== undefined) patch.max_items = params.max_items;
     if (params.allowed_scope_type_ids !== undefined)
       patch.allowed_scope_type_ids = params.allowed_scope_type_ids;
+    if (params.reference_source !== undefined)
+      patch.reference_source = params.reference_source as TablesUpdate<
+        { schema: "context" },
+        "context_items"
+      >["reference_source"];
     const { data, error } = await contextDb(supabase)
       .from("context_items")
       .update(patch)

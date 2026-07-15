@@ -5841,6 +5841,7 @@ export type Database = {
     Views: {
       conversation_summary: {
         Row: {
+          cost_complete: boolean | null
           created_at: string | null
           description: string | null
           error_count: number | null
@@ -5850,6 +5851,7 @@ export type Database = {
           is_ephemeral: boolean | null
           is_favorite: boolean | null
           is_public: boolean | null
+          known_cost_subtotal: number | null
           last_model_id: string | null
           last_model_name: string | null
           last_model_provider: string | null
@@ -5869,6 +5871,7 @@ export type Database = {
           total_cost: number | null
           total_duration_ms: number | null
           total_tokens: number | null
+          unknown_cost_calls: number | null
           updated_at: string | null
           user_id: string | null
         }
@@ -5881,10 +5884,12 @@ export type Database = {
           api_duration_ms: number | null
           completed_at: string | null
           conversation_count: number | null
+          cost_complete: boolean | null
           created_at: string | null
           error_count: number | null
           finish_reason: string | null
           id: string | null
+          known_cost_subtotal: number | null
           last_activity_at: string | null
           last_request_at: string | null
           request_count: number | null
@@ -5901,6 +5906,7 @@ export type Database = {
           total_output_tokens: number | null
           total_tokens: number | null
           total_tool_calls: number | null
+          unknown_cost_calls: number | null
           user_id: string | null
         }
         Relationships: []
@@ -7663,6 +7669,7 @@ export type Database = {
           max_items: number
           metadata: Json
           next_review_at: string | null
+          reference_source: Json | null
           refresh_task_id: string | null
           review_interval_days: number | null
           scope_type_id: string
@@ -7705,6 +7712,7 @@ export type Database = {
           max_items?: number
           metadata?: Json
           next_review_at?: string | null
+          reference_source?: Json | null
           refresh_task_id?: string | null
           review_interval_days?: number | null
           scope_type_id: string
@@ -7747,6 +7755,7 @@ export type Database = {
           max_items?: number
           metadata?: Json
           next_review_at?: string | null
+          reference_source?: Json | null
           refresh_task_id?: string | null
           review_interval_days?: number | null
           scope_type_id?: string
