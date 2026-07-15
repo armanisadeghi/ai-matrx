@@ -27713,6 +27713,45 @@
         }
       }
     },
+    "/media/youtube/transcript": {
+      "post": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "Youtube Transcript",
+        "operationId": "youtube_transcript_media_youtube_transcript_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YouTubeTranscriptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/upload": {
       "post": {
         "tags": [
@@ -89222,6 +89261,32 @@
           "content"
         ],
         "title": "WriteArgs"
+      },
+      "YouTubeTranscriptRequest": {
+        "properties": {
+          "youtube_url": {
+            "type": "string",
+            "title": "Youtube Url",
+            "description": "A full YouTube URL or a bare 11-char video id."
+          },
+          "timestamp_instruction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp Instruction",
+            "description": "Optional override for the agent's timestamp behaviour. Omit to keep the agent default (timestamps included)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "youtube_url"
+        ],
+        "title": "YouTubeTranscriptRequest"
       },
       "aidream__api__routers__admin_app_logs__DeletedResponse": {
         "properties": {

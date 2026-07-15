@@ -57,7 +57,9 @@ interface ChatRoomClientProps {
    * `AgentConversationColumn`. Used by `/chat/new` to show the greeting +
    * quick-action chips before the user submits their first message.
    */
-  landingContent?: React.ReactNode;
+  landingContent?:
+    | React.ReactNode
+    | ((conversationId: string) => React.ReactNode);
 }
 
 const SOURCE_FEATURE = "chat-route";
@@ -394,7 +396,10 @@ export function ChatRoomClient({
   // <PageHeader> on the route page); conversation history is the shell
   // sidebar's route menu (ChatSidebarMenu). This component renders only the
   // conversation column — exactly like AgentRunnerPage.
-  if (isInitializing || !conversationId) {
+  const canRenderLandingDuringInit =
+    !!landingContent && !conversationIdProp && !!conversationId;
+
+  if ((isInitializing || !conversationId) && !canRenderLandingDuringInit) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-textured">
         <ChatRoomSkeleton />
@@ -497,7 +502,11 @@ export function ChatRoomClient({
               // Lives in the Chat Options (+) → Preferences tab now.
               showSubmitOnEnterToggle: false,
             }}
-            landingContent={landingContent}
+            landingContent={
+              typeof landingContent === "function"
+                ? landingContent(conversationId)
+                : landingContent
+            }
           />
         </div>
       </div>

@@ -10425,6 +10425,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media/youtube/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Youtube Transcript */
+        post: operations["youtube_transcript_media_youtube_transcript_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/upload": {
         parameters: {
             query?: never;
@@ -32423,6 +32440,19 @@ export interface components {
             /** Expected Updated At */
             expected_updated_at?: string | null;
         };
+        /** YouTubeTranscriptRequest */
+        YouTubeTranscriptRequest: {
+            /**
+             * Youtube Url
+             * @description A full YouTube URL or a bare 11-char video id.
+             */
+            youtube_url: string;
+            /**
+             * Timestamp Instruction
+             * @description Optional override for the agent's timestamp behaviour. Omit to keep the agent default (timestamps included).
+             */
+            timestamp_instruction?: string | null;
+        };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
             /** Deleted */
@@ -51006,6 +51036,39 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    youtube_transcript_media_youtube_transcript_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeTranscriptRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

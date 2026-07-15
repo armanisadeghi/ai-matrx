@@ -33,6 +33,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { getCachedFingerprint } from "@/lib/services/fingerprint-service";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import {
+  configuredFilesServiceUrl,
+  isStandaloneFileServiceRoute,
+} from "@/lib/api/service-routing";
+import {
   capturePythonClientError,
   relationPathFromUrl,
 } from "@/lib/diagnostics/capturePythonClientError";
@@ -112,6 +116,28 @@ export function resolveBaseUrl(override?: string): string {
 }
 
 /**
+ * Resolve the standalone file-service origin, falling back to the active
+ * aidream origin when the cutover env var is absent. URL builders in the file
+ * handler use this because they create a URL before a concrete request path is
+ * handed to the HTTP client.
+ */
+export function resolveFilesBaseUrl(override?: string): string {
+  if (override) return override.replace(/\/$/, "");
+  return configuredFilesServiceUrl() ?? resolveBaseUrl();
+}
+
+/** Route each request to the service that owns its exact API path. */
+export function resolveBaseUrlForPath(
+  path: string,
+  override?: string,
+  method?: string,
+): string {
+  if (override) return override.replace(/\/$/, "");
+  if (isStandaloneFileServiceRoute(path, method)) return resolveFilesBaseUrl();
+  return resolveBaseUrl();
+}
+
+/**
  * Resolve the base URL, join the path, and log the final target at the last
  * moment before the request fires. Every method in this client routes its
  * URL construction through here so no backend call escapes the target log.
@@ -122,7 +148,7 @@ function buildAndLogTargetUrl(
   source: string,
   method: string,
 ): string {
-  const url = `${resolveBaseUrl(override)}${path}`;
+  const url = `${resolveBaseUrlForPath(path, override, method)}${path}`;
   logApiTarget(url, {
     source: `python-client.${source}`,
     method,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserName } from "@/lib/redux/selectors/userSelectors";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -107,6 +107,11 @@ export function NewChatGreeting({
             />
           </div>
         )}
+        {!sourceConversationId && (
+          <div className="w-full">
+            <NewChatLandingInputShell />
+          </div>
+        )}
 
         {/* 4 secondary chips — smaller/lighter, centered under the input */}
         <section
@@ -132,6 +137,37 @@ export function NewChatGreeting({
             </button>
           ))}
         </section>
+      </div>
+    </div>
+  );
+}
+
+function NewChatLandingInputShell() {
+  return (
+    <div
+      data-chat-new-input-shell="true"
+      className={cn(
+        "w-full rounded-[28px] border border-border bg-card",
+        "shadow-[0_2px_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+        "p-2.5 flex flex-col",
+      )}
+      aria-hidden
+    >
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-1.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground/70">
+          <Plus className="h-5 w-5" />
+        </div>
+        <div className="min-h-9 px-2 py-1 text-base leading-7 text-muted-foreground/60">
+          Ask anything
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground/70">
+            <Mic className="h-4 w-4" />
+          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground/20 text-background">
+            <ArrowUp className="h-5 w-5" />
+          </div>
+        </div>
       </div>
     </div>
   );

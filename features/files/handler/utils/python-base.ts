@@ -21,10 +21,10 @@
  *   in new code.
  */
 
-import { resolveBaseUrl } from "@/lib/python-client";
+import { resolveFilesBaseUrl } from "@/lib/python-client";
 
 export function pythonBaseUrl(): string {
-  return resolveBaseUrl();
+  return resolveFilesBaseUrl();
 }
 
 // ---------------------------------------------------------------------------

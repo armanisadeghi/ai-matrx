@@ -31,12 +31,15 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
+import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { AlertTriangle, Loader2, RotateCw, TestTube2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AgentRunHeader } from "./AgentRunHeader";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
+
+const RUN_INITIAL_MESSAGE_LIMIT = 12;
 
 interface AgentRunnerPageProps {
   agentId: string;
@@ -105,6 +108,9 @@ export function AgentRunnerPage({
   );
 
   const [isInitializing, setIsInitializing] = useState(true);
+  const [coldLoadingConversationId, setColdLoadingConversationId] = useState<
+    string | null
+  >(null);
   const [initError, setInitError] = useState<string | null>(null);
   const [initAttempt, setInitAttempt] = useState(0);
 
@@ -141,7 +147,6 @@ export function AgentRunnerPage({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId, initAttempt]);
 
   // Register this page as a `page` surface so action bars and shared
@@ -207,10 +212,17 @@ export function AgentRunnerPage({
   useEffect(() => {
     if (!conversationIdFromUrl || isInitializing || !authReady) return;
     if (conversationIdFromUrl === lastSyncedUrl.current) return;
-    if (conversationIdFromUrl === conversationId) return;
     lastSyncedUrl.current = conversationIdFromUrl;
+    setColdLoadingConversationId(conversationIdFromUrl);
 
     (async () => {
+      const alreadyLoadedCount =
+        store.getState().messages?.byConversationId?.[conversationIdFromUrl]
+          ?.orderedIds?.length ?? 0;
+      if (alreadyLoadedCount > 0) {
+        setColdLoadingConversationId(null);
+        return;
+      }
       const exists =
         !!store.getState().conversations?.byConversationId[
           conversationIdFromUrl
@@ -227,7 +239,7 @@ export function AgentRunnerPage({
             }),
           ).unwrap();
         } catch (err) {
-          // eslint-disable-next-line no-console
+          setColdLoadingConversationId(null);
           console.error("[AgentRunnerPage] createManualInstance failed", err);
           return;
         }
@@ -237,15 +249,25 @@ export function AgentRunnerPage({
           loadConversation({
             conversationId: conversationIdFromUrl,
             surfaceKey,
+            messageLimit: RUN_INITIAL_MESSAGE_LIMIT,
           }),
         ).unwrap();
+        setColdLoadingConversationId(null);
       } catch (err) {
-        // eslint-disable-next-line no-console
+        setColdLoadingConversationId(null);
         console.error("[AgentRunnerPage] loadConversation failed", err);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationIdFromUrl, isInitializing, conversationId, authReady]);
+  }, [
+    conversationIdFromUrl,
+    isInitializing,
+    authReady,
+    store,
+    agentId,
+    dispatch,
+    sourceFeature,
+    surfaceKey,
+  ]);
 
   if (initError && !isInitializing) {
     return (
@@ -277,11 +299,24 @@ export function AgentRunnerPage({
     );
   }
 
-  if (isInitializing || !conversationId) {
+  const activeConversationId = conversationIdFromUrl ?? conversationId;
+  const isColdLoadingConversation =
+    !!conversationIdFromUrl &&
+    coldLoadingConversationId === conversationIdFromUrl;
+
+  if (isInitializing || !activeConversationId) {
     return (
       <div className="flex items-center justify-center h-full gap-3 text-muted-foreground">
         <Loader2 className="w-5 h-5 animate-spin text-primary" />
         <span className="text-sm">Loading agent...</span>
+      </div>
+    );
+  }
+
+  if (conversationIdFromUrl && isColdLoadingConversation) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
+        <ChatRoomSkeleton />
       </div>
     );
   }
@@ -300,10 +335,11 @@ export function AgentRunnerPage({
       {/* Main conversation area */}
       <div className="flex-1 overflow-hidden flex justify-center min-w-0">
         <AgentConversationColumn
-          conversationId={conversationId}
+          conversationId={activeConversationId}
           surfaceKey={surfaceKey}
           constrainWidth
           edgeToEdgeScroll
+          deferColdMarkdown={!!conversationIdFromUrl}
           smartInputProps={{
             sendButtonVariant: "blue",
             showSubmitOnEnterToggle: true,

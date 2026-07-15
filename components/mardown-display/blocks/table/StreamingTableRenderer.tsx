@@ -402,7 +402,9 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
         copyTableToClipboard();
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to copy markdown");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to copy markdown",
+      );
     }
   };
 
@@ -434,7 +436,9 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
         },
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to download CSV");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to download CSV",
+      );
     }
   };
 
@@ -471,7 +475,9 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
         },
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to download Markdown");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to download Markdown",
+      );
     }
   };
 
@@ -1008,7 +1014,6 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
                       className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
                     >
                       <Columns3 className="h-4 w-4" />
-                      Columns
                       {hiddenCols.size > 0 && (
                         <span className="text-xs text-muted-foreground">
                           ({headers.length - hiddenCols.size}/{headers.length})
@@ -1062,7 +1067,7 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
                   className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
                 >
                   <Maximize2 className="h-4 w-4" />
-                  Open in window
+                  Window
                 </Button>
               )}
               {tableData.normalizedData && (

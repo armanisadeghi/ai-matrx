@@ -105,6 +105,7 @@ interface AgentConversationDisplayProps {
   scrollRef?: RefObject<HTMLDivElement | null>;
   deferColdMarkdown?: boolean;
   fallbackVisibleGroupLimit?: number | null;
+  bottomPinned?: boolean;
 }
 
 export function AgentConversationDisplay({
@@ -114,6 +115,7 @@ export function AgentConversationDisplay({
   scrollRef,
   deferColdMarkdown = false,
   fallbackVisibleGroupLimit = null,
+  bottomPinned = false,
 }: AgentConversationDisplayProps) {
   const messages = useAppSelector(selectConversationMessages(conversationId));
   const phase = useAppSelector(selectStreamPhase(conversationId));
@@ -200,6 +202,10 @@ export function AgentConversationDisplay({
   }, [conversationId]);
 
   useLayoutEffect(() => {
+    if (bottomPinned) {
+      scrollSnapshotRef.current = null;
+      return;
+    }
     const scrollEl = scrollRef?.current;
     const firstKey = displayGroups[0]?.key;
     const previous = scrollSnapshotRef.current;
@@ -218,9 +224,10 @@ export function AgentConversationDisplay({
       firstKey,
       scrollHeight: scrollEl?.scrollHeight ?? 0,
     };
-  }, [displayGroups, scrollRef]);
+  }, [bottomPinned, displayGroups, scrollRef]);
 
   useEffect(() => {
+    if (bottomPinned) return undefined;
     if (!deferColdMarkdown) return undefined;
     if (didAnchorColdRevealRef.current) return undefined;
     if (
@@ -261,7 +268,7 @@ export function AgentConversationDisplay({
       window.clearTimeout(timer);
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
     };
-  }, [deferColdMarkdown, effectiveVisibleGroupLimit, lastUserKey]);
+  }, [bottomPinned, deferColdMarkdown, effectiveVisibleGroupLimit, lastUserKey]);
 
   const assistantGroupCount = displayGroups.filter(
     (g) => g.kind === "assistant" || g.kind === "assistant-failed",
@@ -324,7 +331,11 @@ export function AgentConversationDisplay({
       contextData={{ conversationId }}
       resolveContextOnOpen={resolveMenuContext}
     >
-      <div className={`${spacingClass} p-2 scrollbar-hide`}>
+      <div
+        className={`${spacingClass} p-2 scrollbar-hide ${
+          bottomPinned ? "min-h-full flex flex-col justify-end" : ""
+        }`}
+      >
         {displayGroups.map((group) => {
           if (group.kind === "user") {
             const isLastUser = group.key === lastUserKey;

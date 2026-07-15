@@ -75,6 +75,8 @@ export function OlderMessagesSentinel({
   const visibleGroupLimit = useAppSelector(
     selectVisibleMessageGroupLimit(conversationId),
   );
+  const effectiveVisibleGroupLimit =
+    visibleGroupLimitOverride ?? visibleGroupLimit;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -178,16 +180,18 @@ export function OlderMessagesSentinel({
   useLayoutEffect(() => {
     const anchor = pendingAnchor.current;
     if (!anchor) return;
-    if (anchor.prevFirstId === firstMessageId) return; // prepend hasn't landed yet
     const scrollEl = scrollRef.current;
     if (scrollEl) {
       const delta = scrollEl.scrollHeight - anchor.prevScrollHeight;
+      if (anchor.prevFirstId === firstMessageId && delta === 0) {
+        return; // neither a hidden-group reveal nor a DB prepend has landed yet
+      }
       if (delta > 0) {
         scrollEl.scrollTop = scrollEl.scrollTop + delta;
       }
     }
     pendingAnchor.current = null;
-  }, [firstMessageId, scrollRef]);
+  }, [effectiveVisibleGroupLimit, firstMessageId, scrollRef]);
 
   return <div ref={sentinelRef} aria-hidden className="h-px w-full" />;
 }

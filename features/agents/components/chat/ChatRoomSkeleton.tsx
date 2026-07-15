@@ -13,15 +13,20 @@ export function ChatRoomSkeleton() {
     <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
       <div className="w-full max-w-3xl flex flex-col h-full px-4 py-3">
         <div className="flex-1 min-h-0 overflow-hidden pt-12">
-          <div className="space-y-7 pb-[35dvh]">
+          <div className="min-h-full flex flex-col justify-end space-y-7 pb-[35dvh]">
+            <SkeletonMessage
+              align="left"
+              widths={[82, 94, 74, 88, 56]}
+              className="opacity-35"
+            />
             <SkeletonMessage
               align="right"
-              widths={[42, 30]}
+              widths={[54, 38, 26]}
               className="max-w-[78%] ml-auto"
             />
             <SkeletonMessage
               align="left"
-              widths={[96, 88, 92, 74, 90, 66, 84, 38]}
+              widths={[96, 88, 92, 74, 90, 66, 84, 62, 38]}
             />
           </div>
         </div>

@@ -1,8 +1,12 @@
 # TASK: route file traffic to the matrx-files microservice
 
-**Status:** service is LIVE at `https://files.matrxserver.com` (us-east-1, identical wire contract).
-**Not blocked — the service serves EVERY route `server-client.ts` calls** (share-links landed in
-v0.1.3, live + verified). Do the FE change below and set the env; you're cut over.
+**Status:** frontend browser + server routing is implemented. Service is LIVE at
+`https://files.matrxserver.com` (us-east-1, identical wire contract).
+
+`lib/python-client.ts` performs the browser split at the final shared URL-construction boundary,
+while `server-client.ts` handles server-side calls and the service worker recognizes both origins.
+The route matcher is deliberately exact: aidream-only `/files/{id}/ingest`, RAG, annotation, and
+media routes remain on the general backend until parity lands.
 
 ## The change (surgical, no rewrite)
 
@@ -11,7 +15,7 @@ v0.1.3, live + verified). Do the FE change below and set the env; you're cut ove
    ```ts
    const configured =
      ctx.baseUrl ??
-     (process.env.NEXT_PUBLIC_FILES_URL as string | undefined) ??   // NEW — files service
+     (process.env.NEXT_PUBLIC_FILES_URL as string | undefined) ?? // NEW — files service
      (BACKEND_URLS.production as string | undefined) ??
      (process.env.NEXT_PUBLIC_BACKEND_URL_PROD as string | undefined) ??
      (process.env.NEXT_PUBLIC_BACKEND_URL as string | undefined);

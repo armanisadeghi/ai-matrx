@@ -1,6 +1,5 @@
 "use client";
 
-import { useAppSelector } from "@/lib/redux/hooks";
 import { ChatRoomClient } from "./ChatRoomClient";
 import { NewChatGreeting } from "./NewChatGreeting";
 import { DEFAULT_NEW_CHAT_AGENT_ID } from "./chat-quick-actions.config";
@@ -31,22 +30,15 @@ export function ChatNewClient() {
   // subscribe to that surface's `input` focus so the greeting always has the
   // current target — including the brief autoclear-split window.
   const surfaceKey = `chat-route:${DEFAULT_NEW_CHAT_AGENT_ID}`;
-  const sourceConversationId = useAppSelector(
-    (state) =>
-      state.conversationFocus.bySurface[surfaceKey]?.input ??
-      state.conversationFocus.bySurface[surfaceKey]?.display ??
-      null,
-  );
-
   return (
     <ChatRoomClient
       agentId={DEFAULT_NEW_CHAT_AGENT_ID}
-      landingContent={
+      landingContent={(conversationId) => (
         <NewChatGreeting
-          sourceConversationId={sourceConversationId}
+          sourceConversationId={conversationId}
           surfaceKey={surfaceKey}
         />
-      }
+      )}
     />
   );
 }

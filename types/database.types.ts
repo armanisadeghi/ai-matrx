@@ -5333,6 +5333,9 @@ export type Database = {
         Row: {
           arguments: Json
           call_id: string
+          claim_expires_at: string | null
+          claimed_at: string | null
+          claimed_by_instance_id: string | null
           completed_at: string
           conversation_id: string
           cost_usd: number | null
@@ -5369,6 +5372,7 @@ export type Database = {
           started_at: string
           status: string
           success: boolean
+          target_instance_id: string | null
           tool_name: string
           tool_name_as_called: string | null
           tool_type: string
@@ -5383,6 +5387,9 @@ export type Database = {
         Insert: {
           arguments?: Json
           call_id: string
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          claimed_by_instance_id?: string | null
           completed_at?: string
           conversation_id: string
           cost_usd?: number | null
@@ -5419,6 +5426,7 @@ export type Database = {
           started_at?: string
           status?: string
           success?: boolean
+          target_instance_id?: string | null
           tool_name: string
           tool_name_as_called?: string | null
           tool_type?: string
@@ -5433,6 +5441,9 @@ export type Database = {
         Update: {
           arguments?: Json
           call_id?: string
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          claimed_by_instance_id?: string | null
           completed_at?: string
           conversation_id?: string
           cost_usd?: number | null
@@ -5469,6 +5480,7 @@ export type Database = {
           started_at?: string
           status?: string
           success?: boolean
+          target_instance_id?: string | null
           tool_name?: string
           tool_name_as_called?: string | null
           tool_type?: string

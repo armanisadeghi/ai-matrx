@@ -12,9 +12,9 @@
  *   • You want to test an individual endpoint without going through Redux.
  *   • You need to confirm the X-Request-Id correlation works.
  *
- * Everything is fired against the same `resolveBaseUrl()` that the production
- * client uses, so what you see here is exactly what the rest of the app
- * sees. There is no mocking.
+ * Everything is fired against the same path-aware resolver that the production
+ * client uses, so standalone file-service routes and aidream-owned routes can
+ * be tested from one screen without bypassing the real service split.
  */
 
 import React, {
@@ -60,7 +60,7 @@ import {
   setCustomUrl,
   type ServerEnvironment,
 } from "@/lib/redux/slices/apiConfigSlice";
-import { resolveBaseUrl, newRequestId } from "@/lib/python-client";
+import { resolveBaseUrlForPath, newRequestId } from "@/lib/python-client";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -129,12 +129,12 @@ export function CloudFilesDebugClient() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [running, setRunning] = useState<Record<string, boolean>>({});
-  const [customUrlDraft, setCustomUrlDraft] = useState<string>(
-    customUrl ?? "",
-  );
+  const [customUrlDraft, setCustomUrlDraft] = useState<string>(customUrl ?? "");
 
   // Raw tester
-  const [rawMethod, setRawMethod] = useState<"GET" | "POST" | "PATCH" | "DELETE">("GET");
+  const [rawMethod, setRawMethod] = useState<
+    "GET" | "POST" | "PATCH" | "DELETE"
+  >("GET");
   const [rawPath, setRawPath] = useState<string>("/health");
   const [rawBody, setRawBody] = useState<string>("");
 
@@ -189,7 +189,7 @@ export function CloudFilesDebugClient() {
       try {
         url = args.skipBaseUrl
           ? args.path
-          : `${resolveBaseUrl()}${args.path}`;
+          : `${resolveBaseUrlForPath(args.path, undefined, args.method)}${args.path}`;
       } catch (err) {
         const entry: LogEntry = {
           id,
@@ -348,13 +348,16 @@ export function CloudFilesDebugClient() {
           status: error ? "error" : "success",
           httpStatus: null,
           ok: !error,
-          requestHeaders: { "via": "supabase-js" },
+          requestHeaders: { via: "supabase-js" },
           requestBody: JSON.stringify({ p_user_id: userId }, null, 2),
           responseHeaders: null,
           responseBody: JSON.stringify(
             error
               ? { error }
-              : { rowCount: Array.isArray(data) ? data.length : 0, sample: Array.isArray(data) ? data.slice(0, 3) : data },
+              : {
+                  rowCount: Array.isArray(data) ? data.length : 0,
+                  sample: Array.isArray(data) ? data.slice(0, 3) : data,
+                },
             null,
             2,
           ),
@@ -375,7 +378,10 @@ export function CloudFilesDebugClient() {
     async (file: File) => {
       const form = new FormData();
       form.append("file", file);
-      form.append("file_path", `${uploadFolder.replace(/\/$/, "")}/${file.name}`);
+      form.append(
+        "file_path",
+        `${uploadFolder.replace(/\/$/, "")}/${file.name}`,
+      );
       form.append("visibility", uploadVisibility);
       await runFetch("upload", {
         method: "POST",
@@ -422,7 +428,8 @@ export function CloudFilesDebugClient() {
 
   const onRawSend = useCallback(() => {
     const trimmedPath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
-    const hasBody = rawMethod !== "GET" && rawMethod !== "DELETE" && rawBody.trim();
+    const hasBody =
+      rawMethod !== "GET" && rawMethod !== "DELETE" && rawBody.trim();
     void runFetch("raw", {
       method: rawMethod,
       path: trimmedPath,
@@ -443,7 +450,9 @@ export function CloudFilesDebugClient() {
   const onApplyCustomUrl = useCallback(() => {
     if (!customUrlDraft.trim()) return;
     dispatch(setCustomUrl(customUrlDraft.trim()));
-    void dispatch(switchServer({ env: "custom", customUrl: customUrlDraft.trim() }));
+    void dispatch(
+      switchServer({ env: "custom", customUrl: customUrlDraft.trim() }),
+    );
   }, [customUrlDraft, dispatch]);
 
   // ─── Derived state ───────────────────────────────────────────────────────
@@ -471,7 +480,8 @@ export function CloudFilesDebugClient() {
             <div>
               <h1 className="text-xl font-semibold">Cloud Files Debug</h1>
               <p className="text-xs text-muted-foreground">
-                Diagnose every step of the cloud-files request pipeline. No mocks.
+                Diagnose every step of the cloud-files request pipeline. No
+                mocks.
               </p>
             </div>
           </div>
@@ -767,9 +777,7 @@ export function CloudFilesDebugClient() {
           <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-medium">
-                Event log ({logs.length})
-              </h2>
+              <h2 className="text-sm font-medium">Event log ({logs.length})</h2>
             </div>
             {logs.length > 0 && (
               <Button
@@ -832,11 +840,7 @@ function FieldBlock({
         <span>{label}</span>
       </div>
       <div
-        className={cn(
-          "truncate text-xs",
-          mono && "font-mono",
-          toneClass,
-        )}
+        className={cn("truncate text-xs", mono && "font-mono", toneClass)}
         title={value}
       >
         {value}
@@ -887,11 +891,7 @@ function TestButton({
           : "border-border hover:bg-accent",
       )}
     >
-      {running ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        icon
-      )}
+      {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : icon}
       <span className="font-mono">{label}</span>
     </button>
   );
@@ -952,11 +952,11 @@ function LogRow({
 
       {expanded && (
         <div className="bg-muted/30 border-t border-border px-3 py-2 space-y-2 font-mono text-[11px]">
-          <DetailBlock label="Request URL" value={`${entry.method} ${entry.url}`} />
           <DetailBlock
-            label="X-Request-Id"
-            value={entry.requestId}
+            label="Request URL"
+            value={`${entry.method} ${entry.url}`}
           />
+          <DetailBlock label="X-Request-Id" value={entry.requestId} />
           <DetailBlock
             label="Request headers"
             value={JSON.stringify(entry.requestHeaders, null, 2)}
@@ -1004,7 +1004,8 @@ function DetailBlock({
   preformatted?: boolean;
   tone?: "default" | "destructive";
 }) {
-  const toneClass = tone === "destructive" ? "text-destructive" : "text-foreground";
+  const toneClass =
+    tone === "destructive" ? "text-destructive" : "text-foreground";
   return (
     <div>
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">

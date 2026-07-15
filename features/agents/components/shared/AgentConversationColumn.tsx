@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+} from "react";
 import dynamic from "next/dynamic";
 import { ArrowDown } from "lucide-react";
 import { motion } from "motion/react";
@@ -145,6 +151,7 @@ export function AgentConversationColumn({
   const dispatch = useAppDispatch();
   const displayId = displayConversationId ?? conversationId;
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const didAutoRevealRef = useRef(false);
   const autoRevealDisplayRef = useRef<string | null>(null);
   const [chatVisibleGroupWindow, setChatVisibleGroupWindow] =
@@ -167,6 +174,16 @@ export function AgentConversationColumn({
       : null;
   const isColdHistoryRevealLocked =
     deferColdMarkdown && coldHistoryUnlockedDisplayId !== displayId;
+  const isColdBottomSurface =
+    deferColdMarkdown && messageCount > 0 && !showLanding;
+  const shouldPinColdScroll =
+    isColdBottomSurface && isColdHistoryRevealLocked;
+
+  const pinColdTranscriptToBottom = useCallback(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+    scrollEl.scrollTo({ top: scrollEl.scrollHeight });
+  }, []);
 
   useEffect(() => {
     if (!deferColdMarkdown || messageCount === 0) return undefined;
@@ -224,6 +241,27 @@ export function AgentConversationColumn({
     hasMoreOlder,
     isLoadingOlder,
     messageCount,
+  ]);
+
+  useLayoutEffect(() => {
+    if (!shouldPinColdScroll) return undefined;
+    pinColdTranscriptToBottom();
+    const scrollEl = scrollRef.current;
+    const contentEl = contentRef.current;
+    if (!scrollEl || !contentEl) return undefined;
+
+    const observer = new ResizeObserver(() => {
+      pinColdTranscriptToBottom();
+    });
+    observer.observe(scrollEl);
+    observer.observe(contentEl);
+    return () => observer.disconnect();
+  }, [
+    chatVisibleGroupLimit,
+    displayId,
+    messageCount,
+    pinColdTranscriptToBottom,
+    shouldPinColdScroll,
   ]);
 
   useEffect(() => {
@@ -313,7 +351,10 @@ export function AgentConversationColumn({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2, delay: 0.05 }}
           >
-            <div className={centerWrap}>
+            <div
+              ref={contentRef}
+              className={cn(centerWrap, isColdBottomSurface && "min-h-full")}
+            >
               {/* Older-history pagination trigger. Isolated component — */}
               {/* subscribes only to the older-page flags so its re-renders */}
               {/* never reach the message tree below. */}
@@ -339,6 +380,7 @@ export function AgentConversationColumn({
                 surfaceKey={surfaceKey}
                 scrollRef={scrollRef}
                 deferColdMarkdown={deferColdMarkdown}
+                bottomPinned={isColdBottomSurface}
                 fallbackVisibleGroupLimit={
                   deferColdMarkdown
                     ? (chatVisibleGroupLimit ?? CHAT_INITIAL_VISIBLE_GROUPS)
