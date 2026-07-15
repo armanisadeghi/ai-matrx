@@ -96,7 +96,30 @@ function isOwnEcho(
     }
   }
 
+  // ── Own-user guard (`updated_by`, stamped by the DB `_stamp_actor`
+  // trigger) ───────────────────────────────────────────────────────────
+  // While THIS tab is mid-edit (dirty) or mid-save, an echo of the current
+  // user's OWN write is never news: the REST response is the authority for
+  // updated_at, and the user's live buffer is the authority for content.
+  // Without this, a big paste produced the freeze-class false conflict —
+  // the save is slow, the user keeps typing/naming, the echo lands with
+  // in-flight (stale) content that no longer matches local → treated as a
+  // collaborator write → conflict. Same-user cross-TAB races are still
+  // caught by the save's optimistic `updated_at` lock, and a clean record
+  // still receives own-user echoes (cross-tab sync).
   const saving = state.notes._savingNoteIds.includes(noteId);
+
+  if (local && newRecord) {
+    const selfId = state.userAuth?.id;
+    if (
+      selfId &&
+      newRecord.updated_by === selfId &&
+      (saving || local._dirty)
+    ) {
+      return true;
+    }
+  }
+
   const engineApi = storeApi._sync?.engineApi?.() ?? null;
   const syncPending = engineApi?.isPendingEcho?.("notes", noteId) ?? false;
 

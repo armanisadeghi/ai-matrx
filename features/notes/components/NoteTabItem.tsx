@@ -35,6 +35,7 @@ import {
   updateNoteContent,
   markTabInteraction,
 } from "../redux/slice";
+import { setNoteLabelEditing } from "../utils/labelEditing";
 import {
   selectNoteLabel,
   selectNoteIsDirtyById,
@@ -112,10 +113,14 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Sync Redux label → local
-  const lastLabelRef = useRef(label);
-  if (label !== lastLabelRef.current) {
-    lastLabelRef.current = label;
+  // Sync Redux label → local — NEVER while the user is typing the title.
+  // Auto-label (autoSaveMiddleware) and realtime merges land in Redux; if
+  // this sync runs mid-typing it clobbers the user's in-progress name (the
+  // "system freaks out about naming" bug). While focused, the input buffer
+  // is authoritative; blur commits it (handleTitleBlur).
+  const [lastSyncedLabel, setLastSyncedLabel] = useState(label);
+  if (!titleFocused && label !== lastSyncedLabel) {
+    setLastSyncedLabel(label);
     setLocalLabel(label);
   }
 
@@ -161,12 +166,53 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       bumpTabInteraction();
       if (labelTimerRef.current) clearTimeout(labelTimerRef.current);
       labelTimerRef.current = setTimeout(() => {
-        lastLabelRef.current = value;
+        labelTimerRef.current = null;
+        // Never push an empty label mid-typing — a cleared input commits
+        // (or reverts) on blur, not on the debounce.
+        if (!value.trim()) return;
+        setLastSyncedLabel(value);
         dispatch(updateNoteLabel({ id: noteId, label: value }));
       }, 500);
     },
     [bumpTabInteraction, dispatch, noteId],
   );
+
+  // Unmount while focused (tab closed mid-rename) must not leave the
+  // editing flag stuck — a stuck flag permanently disables auto-label.
+  useEffect(() => {
+    return () => setNoteLabelEditing(noteId, false);
+  }, [noteId]);
+
+  const handleTitleFocus = useCallback(() => {
+    setTitleFocused(true);
+    setNoteLabelEditing(noteId, true);
+    bumpTabInteraction();
+  }, [bumpTabInteraction, noteId]);
+
+  // Blur commits the naming rule: a non-empty entry is saved immediately
+  // (flushing the debounce); an emptied input means "changed my mind" —
+  // revert to the label already assigned in Redux. Either way, the
+  // Redux→local sync re-arms.
+  const handleTitleBlur = useCallback(() => {
+    setTitleFocused(false);
+    setNoteLabelEditing(noteId, false);
+    if (labelTimerRef.current) {
+      clearTimeout(labelTimerRef.current);
+      labelTimerRef.current = null;
+    }
+    const trimmed = localLabel.trim();
+    if (trimmed) {
+      setLastSyncedLabel(trimmed);
+      if (trimmed !== label) {
+        dispatch(updateNoteLabel({ id: noteId, label: trimmed }));
+      }
+      if (trimmed !== localLabel) setLocalLabel(trimmed);
+    } else {
+      // Empty on blur → keep the existing (possibly auto-generated) label.
+      setLastSyncedLabel(label);
+      setLocalLabel(label);
+    }
+  }, [dispatch, noteId, localLabel, label]);
 
   const {
     confirmOpen: deleteConfirmOpen,
@@ -373,11 +419,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
               e.stopPropagation();
               bumpTabInteraction();
             }}
-            onFocus={() => {
-              setTitleFocused(true);
-              bumpTabInteraction();
-            }}
-            onBlur={() => setTitleFocused(false)}
+            onFocus={handleTitleFocus}
+            onBlur={handleTitleBlur}
             aria-label="Note title"
             spellCheck={false}
           />

@@ -65,7 +65,76 @@ function lcsMatrix(a: string[], b: string[]): number[][] {
   return dp;
 }
 
+// LCS is O(m·n) in time AND memory. Unbounded, a large pasted document
+// (thousands of lines on both sides) allocates a multi-million-cell matrix —
+// enough to hang the main thread for seconds or OOM the tab (2026-07 /notes
+// freeze class: a single conflict on a big paste "nearly crashed" the tab).
+// Guard: trim the common prefix/suffix first (typical edits touch one
+// region, collapsing the matrix to the changed window), then hard-cap the
+// remaining product and fall back to a coarse removed/added pair.
+const LCS_MAX_CELLS = 250_000;
+
 function buildDiffSegments(local: string[], remote: string[]): DiffSegment[] {
+  const segments: DiffSegment[] = [];
+
+  // Trim common prefix/suffix — O(n), shrinks the LCS window dramatically.
+  let prefix = 0;
+  const maxPrefix = Math.min(local.length, remote.length);
+  while (prefix < maxPrefix && local[prefix] === remote[prefix]) prefix++;
+  let suffix = 0;
+  const maxSuffix = maxPrefix - prefix;
+  while (
+    suffix < maxSuffix &&
+    local[local.length - 1 - suffix] === remote[remote.length - 1 - suffix]
+  ) {
+    suffix++;
+  }
+
+  const localMid = local.slice(prefix, local.length - suffix);
+  const remoteMid = remote.slice(prefix, remote.length - suffix);
+
+  if (prefix > 0) {
+    segments.push({
+      type: "unchanged",
+      content: local.slice(0, prefix).join("\n"),
+    });
+  }
+
+  if (localMid.length * remoteMid.length > LCS_MAX_CELLS) {
+    // Too large for exact LCS — coarse fallback: one removed + one added
+    // block. Counts and data-loss flags stay correct; only intra-region
+    // line alignment is lost.
+    if (localMid.length > 0) {
+      segments.push({ type: "removed", content: localMid.join("\n") });
+    }
+    if (remoteMid.length > 0) {
+      segments.push({ type: "added", content: remoteMid.join("\n") });
+    }
+  } else if (localMid.length > 0 || remoteMid.length > 0) {
+    for (const seg of lcsSegments(localMid, remoteMid)) {
+      const last = segments[segments.length - 1];
+      if (last && last.type === seg.type) {
+        last.content += "\n" + seg.content;
+      } else {
+        segments.push(seg);
+      }
+    }
+  }
+
+  if (suffix > 0) {
+    const tail = local.slice(local.length - suffix).join("\n");
+    const last = segments[segments.length - 1];
+    if (last && last.type === "unchanged") {
+      last.content += "\n" + tail;
+    } else {
+      segments.push({ type: "unchanged", content: tail });
+    }
+  }
+
+  return segments;
+}
+
+function lcsSegments(local: string[], remote: string[]): DiffSegment[] {
   const dp = lcsMatrix(local, remote);
   const segments: DiffSegment[] = [];
   let i = local.length;

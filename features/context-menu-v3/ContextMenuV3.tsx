@@ -18,7 +18,7 @@
 // needs is dispatched through the OverlayController, so the shell carries zero
 // modal code. See `FEATURE.md` and the `code-splitting` skill.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   ContextMenu,
@@ -136,6 +136,13 @@ export function ContextMenuV3({
   const capturedSelection = useRef<CapturedSelection | null>(null);
   const selectionLocked = useRef(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
+  // The DOM element this instance wraps (the asChild trigger child on
+  // desktop, the display:contents wrapper on mobile). Selection tracking is
+  // scoped to it — see handleSelection.
+  const selectionOwnerRef = useRef<HTMLElement | null>(null);
+  const setSelectionOwner = useCallback((node: HTMLElement | null) => {
+    selectionOwnerRef.current = node;
+  }, []);
   // Mobile long-press → bottom sheet (no right-click on touch).
   const longPressTimer = useRef<number | null>(null);
   const touchStart = useRef<{
@@ -162,11 +169,43 @@ export function ContextMenuV3({
     return resolvedContext ? { ...base, ...resolvedContext } : base;
   };
 
-  // ── Selection tracking (lightweight; the only always-on work) ────────────
+  // ── Selection tracking — SCOPED to this instance's wrapped subtree ───────
+  // The listener is document-global (that's the only selectionchange there
+  // is), but ALL work is gated on ownership: the selection's anchor node —
+  // or, for textarea/input selections (where the DOM Range stays parked on
+  // the host), the focused element — must live inside our wrapped children.
+  // Without this gate every mounted instance on the page (on /notes: the
+  // editor + EVERY sidebar row + folder headers) serialized the full
+  // selected text via `selection.toString()` (O(document) on a triple-click
+  // of a large paste), stored it in its own state, and rendered its own
+  // FloatingSelectionIcon at the same coordinates — dozens of stacked
+  // translucent buttons compounding into a black-shadowed blob, and N×
+  // O(document) main-thread work per selection event: a browser-freeze
+  // amplifier (2026-07 /notes freeze class).
   useEffect(() => {
     const handleSelection = () => {
       if (selectionLocked.current) return;
+      const owner = selectionOwnerRef.current;
       const selection = window.getSelection();
+
+      const anchor = selection?.anchorNode ?? null;
+      const active = document.activeElement;
+      const ownsSelection =
+        owner != null &&
+        ((anchor != null && owner.contains(anchor)) ||
+          ((active instanceof HTMLTextAreaElement ||
+            active instanceof HTMLInputElement) &&
+            owner.contains(active)));
+
+      if (!ownsSelection) {
+        // Not ours — clear cheaply, WITHOUT serializing the selection.
+        // (setState with an unchanged value bails out, so non-owning
+        // instances do zero re-renders after the first clear.)
+        setSelectedText("");
+        setSelectionRect(null);
+        return;
+      }
+
       const text = selection?.toString().trim() || "";
       setSelectedText(text);
       if (text && selection && selection.rangeCount > 0) {
@@ -484,6 +523,7 @@ export function ContextMenuV3({
         {/* display:contents → no layout box, but still receives bubbled touch
             events from the wrapped children (preserves the surface's layout). */}
         <div
+          ref={setSelectionOwner}
           style={{ display: "contents" }}
           onContextMenu={(e) => {
             e.preventDefault();
@@ -543,6 +583,7 @@ export function ContextMenuV3({
       >
         <ContextMenuTrigger
           asChild
+          ref={setSelectionOwner}
           onMouseDown={handleMouseDown}
           onContextMenu={handleContextMenu}
         >

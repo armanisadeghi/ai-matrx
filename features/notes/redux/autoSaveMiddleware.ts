@@ -24,6 +24,7 @@ import {
 import { getAutoSaveDelay } from "./notes.types";
 import type { NoteRecord } from "./notes.types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
+import { isNoteLabelEditing } from "../utils/labelEditing";
 import {
   noteSaveErrorMessage,
   toastNoteWriteBlocked,
@@ -99,10 +100,17 @@ export const autoSaveMiddleware: Middleware =
       if (!currentRecord || !currentRecord._dirty) return;
 
       // ── Auto-label: generate label from content if still "New Note" ──
+      // NEVER while the user is typing the title (labelEditing signal) or
+      // after they typed one (label field dirty): the generated label would
+      // land in Redux mid-keystroke and clobber their in-progress name —
+      // the naming rule is "if the user starts naming, hold their value and
+      // commit it on blur; no freaking out".
       const shouldAutoLabel =
-        !currentRecord.label ||
-        currentRecord.label.trim() === "" ||
-        currentRecord.label.toLowerCase() === "new note";
+        (!currentRecord.label ||
+          currentRecord.label.trim() === "" ||
+          currentRecord.label.toLowerCase() === "new note") &&
+        !isNoteLabelEditing(noteId) &&
+        !currentRecord._dirtyFields.has("label");
 
       if (
         shouldAutoLabel &&
