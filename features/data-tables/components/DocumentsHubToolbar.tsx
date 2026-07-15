@@ -6,8 +6,6 @@ import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import {
   LayoutGridTapButton,
   ListTapButton,
-  LoadingTapButton,
-  PlusTapButton,
   XTapButton,
 } from "@/components/icons/tap-buttons";
 import { DocumentsSortMenu } from "@/features/data-tables/components/DocumentsSortMenu";
@@ -22,8 +20,6 @@ interface DocumentsHubToolbarProps {
   onViewChange: (view: HubViewMode) => void;
   sortKey: DocumentSortKey;
   onSortChange: (key: DocumentSortKey) => void;
-  creating: boolean;
-  onCreate: () => void;
 }
 
 export function DocumentsHubToolbar({
@@ -33,8 +29,6 @@ export function DocumentsHubToolbar({
   onViewChange,
   sortKey,
   onSortChange,
-  creating,
-  onCreate,
 }: DocumentsHubToolbarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -106,15 +100,6 @@ export function DocumentsHubToolbar({
           </TapTargetButtonGroup>
         </div>
       </div>
-      {creating ? (
-        <LoadingTapButton ariaLabel="Creating document" disabled />
-      ) : (
-        <PlusTapButton
-          ariaLabel="New document"
-          tooltip="New document"
-          onClick={onCreate}
-        />
-      )}
     </div>
   );
 }

@@ -25,27 +25,19 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 import { LibraryCatalogPane } from "@/features/rag/components/data-stores/LibraryCatalogPane";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 
 export function RagHomePage() {
   const { summary, loading, error } = useLibrarySummary();
 
   return (
-    <div className="flex-1 bg-background overflow-auto">
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* Header */}
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Knowledge</h1>
-          <p className="text-muted-foreground max-w-2xl">
-            Your processed documents, data stores, and retrieval surface. Upload
-            a document, bind it to a data store, and any agent scoped to that
-            store can search it.
-          </p>
-        </header>
-
+    <>
+      <RagHubHeader />
+      <div className="h-full overflow-auto bg-background">
+        <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Live numbers */}
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -186,8 +178,9 @@ export function RagHomePage() {
         <section className="space-y-3">
           <LibraryCatalogPane />
         </section>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -396,12 +396,8 @@ export function WebhooksManager() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <WebhookIcon className="size-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Webhooks</h1>
-        </div>
+    <div className="mx-auto max-w-3xl p-4 pt-[calc(var(--shell-header-h)+1rem)]">
+      <div className="mb-4 flex items-center justify-end">
         <Button size="sm" onClick={() => setCreating((c) => !c)}>
           <Plus className="size-4" /> New webhook
         </Button>

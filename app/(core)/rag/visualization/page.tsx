@@ -9,11 +9,24 @@
  * sizes and configurations.
  */
 
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { RagFlowVisualization } from "@/features/rag/components/visualization/RagFlowVisualization";
 
 export default function Page() {
   return (
-    <div className="flex-1 bg-background overflow-auto">
+    <>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton href="/rag" ariaLabel="Back to Knowledge" />
+            <span className="ml-2 text-sm font-medium text-foreground truncate">
+              Visualization
+            </span>
+          </>
+        }
+      />
+      <div className="h-full overflow-auto bg-background">
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
         <header className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -67,6 +80,7 @@ export default function Page() {
           </div>
         </section>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -3,7 +3,6 @@
   "features/files/api/assets.ts",
   "features/files/api/files.ts",
   "features/files/api/folders.ts",
-  "features/files/api/permissions.ts",
   "features/files/api/share-links.ts",
   "features/files/api/versions.ts",
   "features/image-studio/api/python.ts",
@@ -17,6 +16,5 @@
   "features/rag/api/search-lab.ts",
   "features/rag/api/search.ts",
   "features/rag/api/stages.ts",
-  "features/rag/components/RepositoriesPage.tsx",
-  "features/rag/hooks/useLibraryCatalog.ts"
+  "features/rag/components/RepositoriesPage.tsx"
 ]

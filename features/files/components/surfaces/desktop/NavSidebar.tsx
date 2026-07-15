@@ -101,7 +101,7 @@ export function NavSidebar({ section, onCollapse }: NavSidebarProps) {
       aria-label="Cloud files secondary"
       className="flex h-full flex-col overflow-hidden bg-muted/30"
     >
-      <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-3 shrink-0">
+      <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-[calc(var(--shell-header-h)+0.5rem)] shrink-0">
         <h2 className="text-base font-semibold tracking-tight">Home</h2>
         <div className="flex items-center gap-1.5">
           <SidebarModeToggle />

@@ -137,7 +137,7 @@ function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden bg-card",
+        "flex h-full min-h-0 flex-col overflow-hidden bg-card pt-[var(--shell-header-h)]",
         className,
       )}
     >

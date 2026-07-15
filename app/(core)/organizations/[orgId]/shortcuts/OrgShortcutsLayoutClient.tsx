@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useTransition } from "react";
-import Link from "next/link";
+import React from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -17,7 +16,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import {
   getOrganizationBySlugOrId,
   getUserRole,
@@ -31,32 +32,26 @@ import {
 function getNavItems(orgId: string) {
   return [
     {
-      label: "Dashboard",
+      name: "Dashboard",
       href: `/organizations/${orgId}/shortcuts`,
       icon: LayoutDashboard,
-      exact: true,
     },
     {
-      label: "Shortcuts",
+      name: "Shortcuts",
       href: `/organizations/${orgId}/shortcuts/shortcuts`,
       icon: Zap,
     },
     {
-      label: "Categories",
+      name: "Categories",
       href: `/organizations/${orgId}/shortcuts/categories`,
       icon: Folder,
     },
     {
-      label: "Content Blocks",
+      name: "Content Blocks",
       href: `/organizations/${orgId}/shortcuts/content-blocks`,
       icon: FileText,
     },
   ];
-}
-
-function isActive(pathname: string, href: string, exact?: boolean): boolean {
-  if (exact) return pathname === href;
-  return pathname.startsWith(href);
 }
 
 function roleCanWrite(role: OrgRole | null): boolean {
@@ -72,8 +67,6 @@ export function OrgShortcutsLayoutClient({
   const urlOrgId = params.orgId as string;
   const pathname = usePathname();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [pendingHref, setPendingHref] = React.useState<string | null>(null);
 
   const [organization, setOrganization] = React.useState<Organization | null>(
     null,

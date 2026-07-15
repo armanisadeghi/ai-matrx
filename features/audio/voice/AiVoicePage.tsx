@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { aiAudioInitialState } from "./aiVoiceModuleConfig";
+import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VoicesList from "./VoicesList";
 import VoiceActions from "./VoiceActions";
@@ -76,17 +77,22 @@ const AiVoicePage: React.FC = () => {
     }, [initiated, data, configs, userPreferences]);
 
     if (loading) {
-        console.log("AiVoicePage is loading");
-        return <div>Loading...</div>;
+        return (
+            <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+        );
     }
     if (error) {
-        console.log("AiVoicePage encountered an error:", error);
-        return <div>Error: {error}</div>;
+        return (
+            <div className="flex h-full items-center justify-center p-6 text-center text-sm text-destructive">
+                {error}
+            </div>
+        );
     }
 
     return (
-        <div className="container mx-auto py-8 bg-background text-foreground">
-            <h1 className="text-4xl font-bold mb-6">Matrx Voice Testing</h1>
+        <div className="h-full overflow-y-auto p-6 bg-background text-foreground">
             <Tabs defaultValue="playground" className="w-full">
                 <TabsList className="mb-6">
                     <TabsTrigger value="playground">Voice Playground</TabsTrigger>

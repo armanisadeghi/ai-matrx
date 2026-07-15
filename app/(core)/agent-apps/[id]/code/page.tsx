@@ -14,10 +14,18 @@ export default async function AgentAppCodePage({ params }: CodePageProps) {
 
   return (
     <>
-      {/* <PageHeader>
+      <PageHeader>
         <AgentAppHeader appId={app.id} appName={app.name} active="code" />
-      </PageHeader> */}
-      <AgentAppEditPageClient app={app} />
+      </PageHeader>
+      {/* Whole-surface editor (activity bar, file tabs, chat) is static
+          chrome, not scrolling content — it must start below the glass
+          header rather than sliding behind it (same pattern as /code). */}
+      <div
+        className="h-full overflow-hidden"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        <AgentAppEditPageClient app={app} />
+      </div>
     </>
   );
 }

@@ -39,7 +39,7 @@ export function ScraperKeywordSearchPageBody({
 
   return (
     <>
-      <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
+      <div className="flex-shrink-0 px-3 py-2 border-b border-border/50">
         <div className="max-w-5xl mx-auto flex gap-2 items-end flex-wrap">
           <div className="flex-1 min-w-[200px]">
             <Label

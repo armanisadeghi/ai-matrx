@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowUpDown,
   ArrowUpRight,
   Building2,
@@ -97,7 +96,6 @@ const PERSONAL_PROJECTS_ORG_ID = "00000000-0000-0000-0000-000000000001";
  */
 export function AllContextItemsHub() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const orgs = useAppSelector(selectFullContextOrganizations);
   const status = useAppSelector(selectFullContextStatus);
 
@@ -110,36 +108,11 @@ export function AllContextItemsHub() {
   );
 
   return (
-    <div className="space-y-6 pr-14">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => router.back()}
-        className="h-7 px-2 -ml-2 text-muted-foreground"
-      >
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        Back
-      </Button>
-
-      <Card className="p-6">
-        <div className="flex items-start gap-3">
-          <div className="w-11 h-11 rounded-lg bg-muted text-muted-foreground flex items-center justify-center shrink-0">
-            <ListChecks className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              All organizations
-            </p>
-            <h1 className="text-2xl font-bold text-foreground leading-tight">
-              All context items
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Every field across all your organizations, grouped by org and
-              scope type.
-            </p>
-          </div>
-        </div>
-      </Card>
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Every field across all your organizations, grouped by org and scope
+        type.
+      </p>
 
       {status === "loading" && realOrgs.length === 0 ? (
         <CenteredSpinner />

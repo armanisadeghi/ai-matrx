@@ -332,7 +332,7 @@ export default function MobileNotesView({
       )}
 
       {/* ── Page container ── */}
-      <div className="h-[calc(100dvh-var(--header-height))] w-full bg-background overflow-hidden relative">
+      <div className="h-full w-full bg-background overflow-hidden relative">
         {/* List view */}
         <div
           className={`absolute inset-0 transition-transform duration-300 ease-in-out ${

@@ -142,8 +142,11 @@ export default function Page() {
   // ── Results view ──────────────────────────────────────────────────────────
   if (result) {
     return (
-      <div className="h-dvh flex flex-col overflow-hidden bg-textured">
-        <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
+      <div
+        className="h-full flex flex-col overflow-hidden bg-textured"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        <div className="flex-shrink-0 px-3 py-2 border-b border-border/50">
           <div className="max-w-5xl mx-auto flex gap-2 items-center">
             <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <Input
@@ -217,17 +220,14 @@ export default function Page() {
 
   // ── Landing view ──────────────────────────────────────────────────────────
   return (
-    <div className="h-dvh overflow-y-auto flex flex-col items-center justify-start pt-[20dvh] pb-safe bg-textured px-4">
+    <div
+      className="h-full overflow-y-auto flex flex-col items-center justify-start pb-safe bg-textured px-4"
+      style={{ paddingTop: "calc(var(--shell-header-h) + 12dvh)" }}
+    >
       <div className="w-full max-w-2xl flex flex-col items-center gap-6">
         {/* Brand */}
         <div className="flex flex-col items-center gap-2">
-          <Globe className="w-12 h-12 sm:w-14 sm:h-14 text-primary opacity-80" />
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            Web Scraper
-          </h1>
-          <p className="text-sm text-muted-foreground text-center hidden sm:block">
-            Extract, search, and analyze content from any web page
-          </p>
+          <Globe className="w-10 h-10 text-primary opacity-80" />
         </div>
 
         {/* URL input */}

@@ -35,6 +35,8 @@ import {
   X,
   ListFilter,
 } from "lucide-react";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -329,15 +331,35 @@ export function ProjectsHub({
     ? `Projects in ${orgMap.get(orgFilterId)?.name ?? "this organization"}`
     : scopeParam
       ? "Projects tagged to this scope"
-      : "Longer-running containers for your tasks, resources, and scopes";
+      : null;
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured pt-3">
-      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
+    <>
+      <RouteHeader
+        left={
+          <span className="flex items-center gap-1.5 px-1.5 min-w-0">
+            <FolderKanban className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm font-medium text-foreground truncate">
+              Projects
+            </span>
+          </span>
+        }
+        right={
+          <TapTargetButtonSolid
+            icon={<Plus className="h-4 w-4" />}
+            label="New project"
+            ariaLabel="New project"
+            onClick={handleCreate}
+          />
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+        <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Projects</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+            {subtitle && (
+              <p className="text-sm text-muted-foreground">{subtitle}</p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -372,10 +394,6 @@ export function ProjectsHub({
                 toastLabel={`${filtered.length} project${filtered.length === 1 ? "" : "s"}`}
               />
             )}
-            <Button size="sm" onClick={handleCreate}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              New project
-            </Button>
           </div>
         </div>
 
@@ -498,8 +516,9 @@ export function ProjectsHub({
             )}
           </>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

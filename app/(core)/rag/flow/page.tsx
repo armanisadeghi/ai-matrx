@@ -7,35 +7,38 @@
  * chunks emerging into the agent's response. Aimed at users who want
  * to understand "what is actually happening" without reading docs.
  */
-import Link from "next/link";
-import { ArrowLeft, Database, FileText, Search } from "lucide-react";
+import { Database, FileText, Search } from "lucide-react";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { RagFlowVisualization } from "@/features/rag/components/visualization/RagFlowVisualization";
 
 export default function Page() {
   return (
-    <div className="flex-1 bg-background overflow-auto">
+    <>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton href="/rag" ariaLabel="Back to Knowledge" />
+            <span className="ml-2 text-sm font-medium text-foreground truncate">
+              Flow
+            </span>
+          </>
+        }
+      />
+      <div className="h-full overflow-auto bg-background">
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-5">
         <header className="space-y-2">
-          <Link
-            href="/rag"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-3 w-3" />
-            Back to Knowledge
-          </Link>
-          <div className="flex items-end justify-between gap-4 flex-wrap">
-            <div className="space-y-1.5">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                How Matrx vector data stores work
-              </h1>
-              <p className="text-sm text-muted-foreground max-w-2xl">
-                Two paths run in parallel. On the right, your documents are
-                turned into searchable vectors. On the left, your agents'
-                questions are turned into searchable vectors too. They meet in
-                the data store, and the closest matches come back as grounding
-                context.
-              </p>
-            </div>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              How Matrx vector data stores work
+            </h1>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Two paths run in parallel. On the right, your documents are
+              turned into searchable vectors. On the left, your agents'
+              questions are turned into searchable vectors too. They meet in
+              the data store, and the closest matches come back as grounding
+              context.
+            </p>
           </div>
         </header>
         <RagFlowVisualization />
@@ -81,7 +84,8 @@ export default function Page() {
           />
         </section>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

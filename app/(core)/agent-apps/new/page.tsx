@@ -1,4 +1,6 @@
 import { CreateAgentAppFormWrapper } from "@/features/agent-apps/components/CreateAgentAppFormWrapper";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
 interface NewAgentAppPageProps {
   searchParams: Promise<{ agent_id?: string }>;
@@ -19,13 +21,23 @@ export default async function NewAgentAppPage({
   const preselectedAgentId = params.agent_id ?? null;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-textured">
-      <div className="flex-1 overflow-y-auto">
-        {/* Width is managed inside the wrapper now — the 6-card grid
-            centers itself with `max-w-7xl`; Live Builder uses the full
-            viewport so the preview pane can breathe. */}
-        <CreateAgentAppFormWrapper preselectedAgentId={preselectedAgentId} />
+    <>
+      <PageHeader>
+        <div className="flex items-center w-full min-w-0 gap-0 p-0">
+          <ChevronLeftTapButton href="/agent-apps" ariaLabel="Back to Agent Apps" />
+          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
+            New App
+          </h1>
+        </div>
+      </PageHeader>
+      <div className="h-full flex flex-col overflow-hidden bg-textured">
+        <div className="flex-1 overflow-y-auto">
+          {/* Width is managed inside the wrapper now — the 6-card grid
+              centers itself with `max-w-7xl`; Live Builder uses the full
+              viewport so the preview pane can breathe. */}
+          <CreateAgentAppFormWrapper preselectedAgentId={preselectedAgentId} />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -55,6 +55,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 
 import {
   ragSearch,
@@ -377,7 +378,12 @@ function ScopeSidebar({
         variant === "drawer" && "w-full h-full",
       )}
     >
-      <div className="px-3 py-2 border-b flex items-center gap-2">
+      <div
+        className={cn(
+          "px-3 py-2 border-b flex items-center gap-2",
+          variant === "desktop" && "pt-[var(--shell-header-h)]",
+        )}
+      >
         <Database className="h-4 w-4 text-muted-foreground" />
         <h2 className="text-sm font-semibold flex-1">Search scope</h2>
       </div>
@@ -2248,7 +2254,9 @@ export function RagSearchExperience() {
   const [scopeOpen, setScopeOpen] = useState(false);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background md:h-page md:flex-row">
+    <>
+      <RagHubHeader />
+      <div className="flex h-full flex-col overflow-hidden bg-background md:flex-row">
       {/* Desktop persistent sidebar — collapses out on mobile in favour of the Drawer */}
       {!isMobile && <ScopeSidebar scope={scope} />}
 
@@ -2256,7 +2264,7 @@ export function RagSearchExperience() {
         defaultValue={initialTab}
         className="flex-1 flex flex-col overflow-hidden min-h-0"
       >
-        <div className="border-b px-2 pt-2 pb-1 flex items-center gap-2 md:px-4 md:gap-3">
+        <div className="border-b px-2 pt-[calc(var(--shell-header-h)+0.5rem)] pb-1 flex items-center gap-2 md:px-4 md:gap-3">
           {/* Mobile-only: scope drawer trigger sits where the sidebar would be */}
           {isMobile && (
             <Button
@@ -2323,6 +2331,7 @@ export function RagSearchExperience() {
           </DrawerContent>
         </Drawer>
       )}
-    </div>
+      </div>
+    </>
   );
 }

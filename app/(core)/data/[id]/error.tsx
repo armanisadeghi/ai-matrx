@@ -19,7 +19,7 @@ export default function Error({
   }, [error]);
   
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-8 rounded-lg">
+    <div className="w-full h-full overflow-hidden flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-8 pt-[var(--shell-header-h)] rounded-lg">
       <div className="text-center max-w-md">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Something went wrong</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">

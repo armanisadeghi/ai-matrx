@@ -2,12 +2,16 @@
 
 /**
  * Messages Layout Client
- * 
+ *
  * Provides shared layout for messaging routes:
  * - Desktop: Persistent sidebar with conversation list
  * - Mobile: Full-screen routes (sidebar hidden)
- * 
+ *
  * The main authenticated layout already includes MessagingInitializer.
+ * Each page injects its own shell header via <PageHeader> (see
+ * features/messaging/components/shell/); the sidebar carries no title of
+ * its own and gets `pt-[var(--shell-header-h)]` so its search/"New" toolbar
+ * clears the transparent glass header.
  */
 
 import React from "react";
@@ -25,12 +29,9 @@ export default function MessagesLayoutClient({
   const userId = user?.id ?? undefined;
 
   return (
-    <div className="h-[calc(100dvh-var(--shell-header-h))] flex overflow-hidden bg-background">
+    <div className="h-full flex overflow-hidden bg-background">
       {/* Desktop Sidebar - Persistent Conversation List */}
-      <div className="hidden md:flex md:w-80 flex-col border-r border-zinc-200 dark:border-zinc-800 shrink-0">
-        <div className="p-3 border-b border-zinc-200 dark:border-zinc-800">
-          <h1 className="text-lg font-semibold">Messages</h1>
-        </div>
+      <div className="hidden md:flex md:w-80 flex-col border-r border-border shrink-0 pt-[var(--shell-header-h)]">
         <ConversationList userId={userId} className="flex-1" />
       </div>
 

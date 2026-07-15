@@ -118,6 +118,7 @@ export function MobileStack({
         "relative h-full w-full overflow-hidden bg-background",
         className,
       )}
+      style={{ paddingTop: "var(--shell-header-h)" }}
     >
       {stack.map((frame, idx) => {
         const isTop = idx === stack.length - 1;

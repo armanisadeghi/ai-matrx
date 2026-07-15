@@ -77,7 +77,7 @@ interface RowOrderingConfig {
   };
 }
 
-interface TableInfo {
+export interface TableInfo {
   table_name: string;
   description?: string;
   user_id?: string;
@@ -172,6 +172,12 @@ interface UserTableViewerProps {
   hideHeader?: boolean;
   /** Trailing controls in the data-table toolbar row. */
   toolbarTrailing?: React.ReactNode;
+  /**
+   * Fires whenever the loaded table's identity changes — lets an outer
+   * route header (e.g. the `/data/[id]` shell header) show the table's
+   * name without a second fetch of the same RPC.
+   */
+  onTableInfoChange?: (info: TableInfo | null) => void;
 }
 
 const UserTableViewer = ({
@@ -180,6 +186,7 @@ const UserTableViewer = ({
   renderCellMarkdown = false,
   hideHeader = false,
   toolbarTrailing,
+  onTableInfoChange,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
@@ -391,6 +398,12 @@ const UserTableViewer = ({
       setTablesLoading(false);
     }
   };
+
+  // Surface the loaded table's identity to an outer route header, if any.
+  useEffect(() => {
+    onTableInfoChange?.(tableInfo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableInfo]);
 
   // Handle table selection change
   const handleTableChange = (value: string) => {

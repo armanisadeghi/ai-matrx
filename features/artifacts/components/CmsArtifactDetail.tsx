@@ -13,7 +13,6 @@ import type { ArtifactStatus } from "@/features/artifacts/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   ExternalLink,
   Globe,
@@ -34,6 +33,9 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { LucideIcon } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { ArtifactRender, hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-renderers";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
 // ── CanvasItemPreview ─────────────────────────────────────────────────────────
 
@@ -173,28 +175,38 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
 
   if (isRefreshing) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-sm">Loading artifact…</p>
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/artifacts" ariaLabel="Content Library" />}
+        />
+        <div className="flex items-center justify-center py-24">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="text-sm">Loading artifact…</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!artifact) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-3 text-destructive">
-          <AlertCircle className="h-8 w-8" />
-          <p className="text-sm font-medium">Artifact not found</p>
-          <Link href="/cms">
-            <Button variant="outline" size="sm">
-              Back to Library
-            </Button>
-          </Link>
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/artifacts" ariaLabel="Content Library" />}
+        />
+        <div className="flex items-center justify-center py-24">
+          <div className="flex flex-col items-center gap-3 text-destructive">
+            <AlertCircle className="h-8 w-8" />
+            <p className="text-sm font-medium">Artifact not found</p>
+            <Link href="/artifacts">
+              <Button variant="outline" size="sm">
+                Back to Library
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -204,95 +216,60 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
     ARTIFACT_STATUS_LABELS[artifact.status] ?? artifact.status;
   const statusVariant = STATUS_VARIANT[artifact.status] ?? "outline";
 
+  const headerActions = [
+    artifact.externalUrl
+      ? {
+          label: "View Live",
+          icon: ExternalLink,
+          href: artifact.externalUrl,
+        }
+      : null,
+    artifact.artifactType === "html_page"
+      ? {
+          label: "Open HTML Editor",
+          icon: Globe,
+          onPress: handleOpenEditor,
+        }
+      : null,
+    {
+      label: "Refresh",
+      icon: RefreshCw,
+      onPress: () => {
+        setIsRefreshing(true);
+        dispatch(fetchUserArtifactsThunk(undefined)).finally(() =>
+          setIsRefreshing(false),
+        );
+      },
+      disabled: isRefreshing,
+    },
+    {
+      label: "Delete",
+      icon: Trash2,
+      onPress: () => void handleDelete(),
+      destructive: true,
+      disabled: isDeleting,
+    },
+  ].filter((a): a is NonNullable<typeof a> => a !== null);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <>
+      <EntityModeHeader
+        backHref="/artifacts"
+        entityLabel={artifact.title ?? "Untitled"}
+        actions={headerActions}
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main content */}
       <div className="lg:col-span-2 space-y-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-xl font-bold text-foreground truncate">
-                  {artifact.title ?? "Untitled"}
-                </CardTitle>
-                {artifact.description && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {artifact.description}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge variant="outline">{typeLabel}</Badge>
-                <Badge variant={statusVariant}>{statusLabel}</Badge>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="pt-0">
-            <Separator className="mb-4" />
-
-            {/* Primary action buttons */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {artifact.externalUrl && (
-                <Button variant="default" size="sm" className="gap-1.5" asChild>
-                  <a
-                    href={artifact.externalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    View Live
-                  </a>
-                </Button>
-              )}
-
-              {artifact.artifactType === "html_page" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={handleOpenEditor}
-                >
-                  <Globe className="h-3.5 w-3.5" />
-                  Open HTML Editor
-                </Button>
-              )}
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => {
-                  setIsRefreshing(true);
-                  dispatch(fetchUserArtifactsThunk(undefined)).finally(() =>
-                    setIsRefreshing(false),
-                  );
-                }}
-                disabled={isRefreshing}
-              >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-                Refresh
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
-                Delete
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {artifact.description && (
+          <p className="text-sm text-muted-foreground">
+            {artifact.description}
+          </p>
+        )}
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">{typeLabel}</Badge>
+          <Badge variant={statusVariant}>{statusLabel}</Badge>
+        </div>
 
         {/* Canvas content preview — rendered for materialized artifacts */}
         {artifact.canvasItemId && (
@@ -455,6 +432,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
           </Card>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

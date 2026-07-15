@@ -7,6 +7,8 @@ import {
   Calculator,
 } from "lucide-react";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 
 const UTILITIES = [
   {
@@ -34,9 +36,21 @@ const UTILITIES = [
 
 export default function UtilitiesHubPage() {
   return (
-    <MarketingPageShell className="bg-background">
-      <header className="border-b border-border bg-gradient-to-b from-primary/5 via-background to-background">
-        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-10">
+    <>
+      <PageHeader>
+        <CrumbTrailHeader
+          trail={[
+            { label: "Legal", href: "/legal" },
+            { label: "CA WC", href: "/legal/ca-wc" },
+            { label: "Utilities" },
+          ]}
+        />
+      </PageHeader>
+      <MarketingPageShell className="bg-background">
+        <div
+          className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8"
+          style={{ paddingTop: "calc(var(--shell-header-h) + 1.5rem)" }}
+        >
           <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary mb-4">
             <Calculator className="h-3.5 w-3.5" />
             Settlement utilities
@@ -49,7 +63,6 @@ export default function UtilitiesHubPage() {
             projections. Use these alongside a rating from the PD calculator.
           </p>
         </div>
-      </header>
 
       <main className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -98,6 +111,7 @@ export default function UtilitiesHubPage() {
           </div>
         </div>
       </main>
-    </MarketingPageShell>
+      </MarketingPageShell>
+    </>
   );
 }

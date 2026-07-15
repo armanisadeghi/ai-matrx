@@ -47,7 +47,6 @@ import {
   Activity,
   Clock,
   FileInput,
-  FileStack,
   Image as ImageIcon,
   Share2,
   Star,
@@ -146,6 +145,7 @@ import type { CloudFilesSection } from "./desktop/section";
 // Universal v3 context menu — lightweight shell, imported statically;
 // MenuContent lazy-loads on first open.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 
 export interface PageShellProps {
   /** Initial selection (for deep-linked routes). */
@@ -729,6 +729,13 @@ function PageShellDesktop({
       getScope={getFilesApplicationScope}
       isEditable={false}
     >
+      <RouteHeader
+        left={
+          <span className="truncate px-1.5 text-sm font-medium text-foreground">
+            Files
+          </span>
+        }
+      />
       <DndContext
         sensors={dndSensors}
         collisionDetection={closestCenter}
@@ -741,9 +748,14 @@ function PageShellDesktop({
         >
           {/* Collapsed sidebar = slim icon rail. Expanding swaps it back for the
            * full NavSidebar. Hidden during preview-maximize so it doesn't eat
-           * width from the full-bleed preview. */}
+           * width from the full-bleed preview. Top-padded to clear the glass
+           * shell header — its buttons are static, not scrolling content. */}
           {sidebarCollapsed && !previewMaximized && (
-            <IconRail section={section} onExpand={expandSidebar} />
+            <IconRail
+              section={section}
+              onExpand={expandSidebar}
+              className="pt-[var(--shell-header-h)]"
+            />
           )}
 
           <ResizablePanelGroup
@@ -785,7 +797,7 @@ function PageShellDesktop({
               collapsible
               collapsedSize="0%"
             >
-              <div className="flex h-full flex-col overflow-hidden">
+              <div className="flex h-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
                 <TopBar
                   parentFolderId={activeFolderId}
                   searchQuery={searchQuery}
@@ -928,7 +940,7 @@ function PageShellDesktop({
                     getApplicationScope={getFilesApplicationScope}
                     contextData={filesContextData}
                   >
-                    <div className="flex h-full min-h-0 flex-col">
+                    <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
                       <PreviewPane
                         key={activeFile.id}
                         fileId={activeFile.id}
@@ -1088,10 +1100,6 @@ interface FolderExplorerProps {
 function FolderExplorer({ onSelectFolder, onSelectFile }: FolderExplorerProps) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex items-center gap-2 border-b px-4 py-3 shrink-0">
-        <FileStack className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-lg font-semibold tracking-tight">Folders</h1>
-      </div>
       <div className="flex-1 overflow-hidden">
         <FileTree
           onSelectFile={onSelectFile}

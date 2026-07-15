@@ -23,14 +23,22 @@ import {
   Database,
   FolderKanban,
   ExternalLink,
+  Eye,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { getProject } from "@/features/projects/service";
-import { useProjectUserRole } from "@/features/projects/hooks";
+import {
+  useProjectUserRole,
+  useUserProjects,
+} from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { ProjectContextSection } from "./ProjectContextSection";
 import type { Project } from "@/features/projects/types";
 import { GeneralSettings } from "./GeneralSettings";
@@ -86,73 +94,88 @@ export function ProjectManage() {
 
   const { role, isOwner, canManageMembers, canManageSettings, canDelete } =
     useProjectUserRole(project?.id);
+  const { projects: siblingProjects } = useUserProjects();
 
   const applyPatch = (patch: Partial<Project>) =>
     setProject((prev) => (prev ? { ...prev, ...patch } : prev));
 
   if (resolving) {
     return (
-      <Center>
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
-      </Center>
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/projects" ariaLabel="Back" />}
+        />
+        <Center>
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+        </Center>
+      </>
     );
   }
 
   if (!project || !role) {
     return (
-      <Center>
-        <Card className="max-w-md w-full p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-            <FolderKanban className="h-7 w-7 text-muted-foreground" />
-          </div>
-          <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            This project doesn&apos;t exist or you don&apos;t have access.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/projects")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> All projects
-          </Button>
-        </Card>
-      </Center>
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/projects" ariaLabel="Back" />}
+        />
+        <Center>
+          <Card className="max-w-md w-full p-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <FolderKanban className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Project not found</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              This project doesn&apos;t exist or you don&apos;t have access.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/projects")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" /> All projects
+            </Button>
+          </Card>
+        </Center>
+      </>
     );
   }
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-x-hidden overflow-y-auto bg-textured">
-      <div className="mx-auto min-w-0 max-w-5xl space-y-5 p-4 pr-14 md:p-6 md:pr-6">
-        {/* Top actions */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="text-muted-foreground -ml-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
-          </Button>
-          <div className="flex items-center gap-2">
-            <ProjectCopyForAiButton
-              projectId={project.id}
-              projectName={project.name}
-              location="Projects — project settings"
-            />
-            <Button asChild variant="outline" size="sm">
-              <Link
-                href={`/projects/${project.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                Open workspace
-              </Link>
-            </Button>
-          </div>
-        </div>
-
+    <>
+      <EntityModeHeader
+        backHref="/projects"
+        entityLabel={project.name}
+        entityOptions={siblingProjects.map((p) => ({
+          label: p.name,
+          href: `/projects/${p.id}/settings`,
+          active: p.id === project.id,
+        }))}
+        modes={[
+          { name: "Workspace", href: `/projects/${project.id}`, icon: Eye },
+          {
+            name: "Settings",
+            href: `/projects/${project.id}/settings`,
+            icon: SettingsIcon,
+          },
+        ]}
+        actions={[
+          {
+            label: "Open workspace",
+            icon: ExternalLink,
+            href: `/projects/${project.id}`,
+          },
+        ]}
+        right={
+          <ProjectCopyForAiButton
+            projectId={project.id}
+            projectName={project.name}
+            location="Projects — project settings"
+            size="icon"
+          />
+        }
+      />
+      <div className="h-full overflow-x-hidden overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+        <div className="mx-auto min-w-0 max-w-5xl space-y-5 p-4 md:p-6">
         {/* Identity header */}
         <Card className="p-5 relative overflow-hidden">
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
@@ -263,8 +286,9 @@ export function ProjectManage() {
             <DangerZone project={project} orgSlug={orgSlug} />
           </ManageSection>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -315,7 +339,7 @@ function ManageSection({
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured p-4">
+    <div className="h-full flex items-center justify-center bg-textured p-4">
       {children}
     </div>
   );

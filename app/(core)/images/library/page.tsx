@@ -20,55 +20,49 @@ import { CloudFolders } from "@/features/files";
  * there and explains the folder convention.
  *
  * Pure Server Component. No client JS ships from this route.
+ *
+ * Route chrome (title, back-to-Studio, cross-links) lives in the shared
+ * `/images` shell (`ImagesListHeader` in the header, `ImagesSidebar` for
+ * navigation) — no in-body header bar here.
  */
 export default function LibraryPage() {
   const libraryPath = CloudFolders.IMAGES_GENERATED;
 
   return (
     <main className="h-full overflow-y-auto overscroll-contain bg-background">
-      <header className="border-b border-border bg-card/40 sticky top-0 z-10 backdrop-blur">
-        <div className="container mx-auto px-3 sm:px-6 md:px-10 py-2 md:py-3 max-w-[1400px] flex items-center justify-between gap-2 md:gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link
-              href="/images/studio"
-              className="h-9 w-9 md:h-8 md:w-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              title="Back to Studio"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-            <div className="min-w-0">
-              <h1 className="text-sm font-semibold flex items-center gap-1.5 truncate">
-                <Library className="h-3.5 w-3.5 text-primary" />
-                Image Studio — Library
-              </h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Link
-              href="/images/presets"
-              className="hidden sm:flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              <Layers className="h-3.5 w-3.5" />
-              Presets
-            </Link>
-            <Link
-              href="/images/convert"
-              className="flex min-h-[36px] items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Zap className="h-3.5 w-3.5" />
-              Convert
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <div className="container mx-auto px-3 sm:px-6 md:px-10 py-4 md:py-10 max-w-[1100px] space-y-4 md:space-y-8">
+        <div className="flex items-center gap-1.5">
+          <Link
+            href="/images/studio"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Studio
+          </Link>
+          <span className="text-muted-foreground/40">/</span>
+          <Link
+            href="/images/presets"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            Presets
+          </Link>
+          <Link
+            href="/images/convert"
+            className="ml-auto inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-2.5 py-1 text-xs font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            Convert
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+
         {/* Hero explainer */}
         <section className="space-y-2">
-          <h2 className="text-xl md:text-3xl font-semibold tracking-tight">
+          <h1 className="text-xl md:text-3xl font-semibold tracking-tight flex items-center gap-2">
+            <Library className="h-5 w-5 text-primary" />
             Your saves live in Cloud Files
-          </h2>
+          </h1>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
             Every variant you save from the Studio lands in your{" "}
             <code className="font-mono text-foreground">{libraryPath}</code>{" "}

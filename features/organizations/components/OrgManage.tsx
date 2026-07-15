@@ -24,7 +24,6 @@ import {
   ShieldCheck,
   ChevronRight,
   ExternalLink,
-  ArrowLeft,
   Crown,
   Shield,
   SlidersHorizontal,
@@ -35,6 +34,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@/features/files";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import type { Organization, OrgRole } from "../types";
 import { GeneralSettings } from "./GeneralSettings";
 import { OrgIndustriesSection } from "@/features/industries/components/OrgIndustriesSection";
@@ -133,20 +133,16 @@ export function OrgManage({
   }
 
   return (
-    <div className="bg-textured pb-6">
-      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground -ml-2"
-        >
-          <Link href={`/organizations/${slug}`}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {displayOrganization.name}
-          </Link>
-        </Button>
-
+    <>
+      <CrumbTrailHeader
+        backHref={`/organizations/${slug}`}
+        trail={[
+          { label: displayOrganization.name, href: `/organizations/${slug}` },
+          { label: "Settings" },
+        ]}
+      />
+      <div className="bg-textured pb-6">
+      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5">
         {/* Identity header */}
         <Card className="p-5 relative overflow-hidden">
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
@@ -383,7 +379,8 @@ export function OrgManage({
           </section>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

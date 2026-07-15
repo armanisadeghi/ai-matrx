@@ -1,9 +1,13 @@
-// app/(authenticated)/demo/aiAudio/hold-hold-page.tsx
-
 import AiVoicePage from "@/features/audio/voice/AiVoicePage";
+import { VoiceHubHeader } from "@/features/tts/components/VoiceHubHeader";
 
-const AiVoiceDemo = () => {
-  return <AiVoicePage />;
-};
-
-export default AiVoiceDemo;
+export default function VoicePlaygroundPage() {
+  return (
+    <>
+      <VoiceHubHeader />
+      <div className="h-full overflow-hidden">
+        <AiVoicePage />
+      </div>
+    </>
+  );
+}

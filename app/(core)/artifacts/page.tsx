@@ -1,25 +1,20 @@
 "use client";
 
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
-import { LayoutGrid } from "lucide-react";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { CmsArtifactList } from "@/features/artifacts/components/CmsArtifactList";
 
-export default function CmsPage() {
+export default function ArtifactsPage() {
   return (
     <>
-      <PageSpecificHeader>
-        <div className="flex items-center justify-center w-full">
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-primary flex-shrink-0" />
-            <h1 className="text-base font-bold text-foreground">
-              Content Library
-            </h1>
-          </div>
-        </div>
-      </PageSpecificHeader>
-
-      <div className="h-[calc(100dvh-var(--header-height)*2)] w-full overflow-auto bg-textured">
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 py-6 max-w-[1600px]">
+      <RouteHeader
+        left={
+          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
+            Content Library
+          </h1>
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+0.75rem)]">
+        <div className="max-w-[1600px] mx-auto">
           <CmsArtifactList />
         </div>
       </div>

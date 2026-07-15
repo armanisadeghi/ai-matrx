@@ -50,7 +50,7 @@ export function TtsTesterBench() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="flex h-dvh items-center justify-center p-6 text-center">
+      <div className="flex h-full items-center justify-center p-6 text-center">
         <p className="text-sm text-muted-foreground">
           The Voice Tester is restricted to administrators.
         </p>
@@ -59,18 +59,14 @@ export function TtsTesterBench() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh max-w-5xl flex-col overflow-hidden bg-textured">
-      <header className="shrink-0 border-b border-border bg-card/95 px-4 py-3 backdrop-blur">
-        <h1 className="text-base font-semibold text-foreground">Voice Tester</h1>
-        <p className="text-xs text-muted-foreground">
+    <div className="mx-auto flex h-full max-w-5xl flex-col overflow-hidden bg-textured">
+      <div className="flex-1 overflow-y-auto p-4">
+        <p className="mb-4 text-xs text-muted-foreground">
           Side-by-side Cartesia comparison on Sonic 3.5 (latest format:
           generation_config speed/volume/emotion). The default A/B compares the
           two system voices — Skylar (reading) vs Daniel (assistant) — at the
           production buffer. Tune speed, buffer, and server buffering from there.
         </p>
-      </header>
-
-      <div className="flex-1 overflow-y-auto p-4">
         {/* Shared transcript */}
         <div className="mb-4">
           <div className="mb-2 flex flex-wrap items-center gap-1.5">

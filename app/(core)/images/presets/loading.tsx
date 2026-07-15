@@ -2,12 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PresetsLoading() {
     return (
-        <div className="min-h-[calc(100dvh-2.5rem)] bg-background">
-            <div className="border-b border-border bg-card/40 h-12">
-                <div className="container mx-auto px-4 sm:px-6 md:px-10 h-full max-w-[1400px] flex items-center">
-                    <Skeleton className="h-6 w-48" />
-                </div>
-            </div>
+        <div className="h-full overflow-y-auto bg-background">
             <div className="container mx-auto px-4 sm:px-6 md:px-10 py-8 max-w-[1400px] space-y-10">
                 <div className="space-y-2">
                     <Skeleton className="h-9 w-80" />

@@ -19,6 +19,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { InlineMediaRef } from "@/features/files";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
@@ -79,36 +81,44 @@ export function StudioRunView({ runId }: { runId: string }) {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-10">
-        <Skeleton className="mb-4 h-8 w-64" />
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-          <div className="space-y-4">
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
+      <>
+        <PageHeader>
+          <span className="ml-2 text-sm font-medium text-foreground truncate">Studio run</span>
+        </PageHeader>
+        <div className="mx-auto max-w-5xl px-4 py-10">
+          <Skeleton className="mb-4 h-8 w-64" />
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            <div className="space-y-4">
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-40 w-full rounded-2xl" />
+            </div>
+            <Skeleton className="h-48 w-full rounded-2xl" />
           </div>
-          <Skeleton className="h-48 w-full rounded-2xl" />
         </div>
-      </div>
+      </>
     );
   }
 
   if (notFound) {
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-          <Podcast className="h-7 w-7" />
-        </span>
-        <h1 className="text-xl font-semibold text-foreground">Run not found</h1>
-        <p className="text-sm text-muted-foreground">
-          This studio run doesn&apos;t exist or isn&apos;t yours.
-        </p>
-        <Button asChild variant="outline" className="gap-2">
-          <Link href="/podcast/studio">
-            <ArrowLeft className="h-4 w-4" />
-            Back to studio
-          </Link>
-        </Button>
-      </div>
+      <>
+        <EntityModeHeader backHref="/podcast/studio" entityLabel="Run not found" />
+        <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+            <Podcast className="h-7 w-7" />
+          </span>
+          <h1 className="text-xl font-semibold text-foreground">Run not found</h1>
+          <p className="text-sm text-muted-foreground">
+            This studio run doesn&apos;t exist or isn&apos;t yours.
+          </p>
+          <Button asChild variant="outline" className="gap-2">
+            <Link href="/podcast/studio">
+              <ArrowLeft className="h-4 w-4" />
+              Back to studio
+            </Link>
+          </Button>
+        </div>
+      </>
     );
   }
 
@@ -135,44 +145,16 @@ export function StudioRunView({ runId }: { runId: string }) {
   const mergedVideoMissing = isDone && !mergedVideoUrl && doneMediaCount >= 2;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <div>
-          <Link
-            href="/podcast/studio"
-            className="mb-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Studio
-          </Link>
-          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-sm">
-              <Podcast className="h-5 w-5" />
-            </span>
-            {isRunning && !streaming ? "Studio run" : "Episode"}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={refresh}
-            className="gap-1.5 text-muted-foreground"
-            title="Re-sync this run from the server"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-          <Button asChild variant="outline" className="gap-2">
-            <Link href="/podcast/studio/create">
-              <Plus className="h-4 w-4" />
-              New episode
-            </Link>
-          </Button>
-        </div>
-      </div>
-
+    <>
+      <EntityModeHeader
+        backHref="/podcast/studio"
+        entityLabel={isRunning && !streaming ? "Studio run" : "Episode"}
+        actions={[
+          { label: "Refresh", icon: RefreshCw, onPress: refresh },
+          { label: "New episode", icon: Plus, href: "/podcast/studio/create", primary: true },
+        ]}
+      />
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         {/* LEFT — the episode: title, description, audio, then the visual options. */}
         <div className="order-1 min-w-0 space-y-6">
@@ -329,6 +311,7 @@ export function StudioRunView({ runId }: { runId: string }) {
           episodeId={state.episodeId}
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

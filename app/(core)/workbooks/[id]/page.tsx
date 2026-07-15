@@ -2,13 +2,15 @@
 
 import { useEffect, useState, use } from "react";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/utils/supabase/client";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
 import {
   getWorkbook,
@@ -101,82 +103,81 @@ export default function WorkbookPage({
 
   if (error) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 text-sm">
-        <div className="text-destructive">Could not load workbook.</div>
-        <div className="text-muted-foreground">{error}</div>
-        <Button variant="outline" size="sm" asChild>
-          <a href="/workbooks">Back to workbooks</a>
-        </Button>
-      </div>
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/workbooks" ariaLabel="Back" />}
+        />
+        <div className="flex h-full flex-col items-center justify-center gap-2 text-sm">
+          <div className="text-destructive">Could not load workbook.</div>
+          <div className="text-muted-foreground">{error}</div>
+          <Button variant="outline" size="sm" asChild>
+            <a href="/workbooks">Back to workbooks</a>
+          </Button>
+        </div>
+      </>
     );
   }
 
-  // Title + share now ride inside the editor's own toolbar via slots — one
-  // row total at the top instead of two. `pr-10` on desktop clears the
-  // global avatar; mobile reclaims every pixel (no padding at all).
-  const titleSlot = (
-    <>
-      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
-        <a href="/workbooks" aria-label="Back to workbooks">
-          <ArrowLeft className="size-4" />
-        </a>
-      </Button>
-      <Input
-        value={renameDraft}
-        onChange={(e) => setRenameDraft(e.target.value)}
-        onBlur={commitRename}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          if (e.key === "Escape" && workbook) {
-            setRenameDraft(workbook.workbook_name);
-            (e.target as HTMLInputElement).blur();
-          }
-        }}
-        className="h-7 min-w-0 max-w-xs text-sm font-semibold border-0 bg-transparent shadow-none focus-visible:ring-1 px-1"
-        disabled={!workbook || !canEdit}
-        placeholder="Workbook name"
-      />
-      {renameSaving && (
-        <Loader2 className="size-3 animate-spin text-muted-foreground shrink-0" />
-      )}
-    </>
-  );
-  const shareSlot = workbook ? (
-    <div className="flex items-center gap-0.5">
-      <ReferenceCopyButton
-        referenceType="workbook"
-        id={workbook.id}
-        label={workbook.workbook_name}
-        toastLabel={workbook.workbook_name}
-        size="sm"
-      />
-      <ShareButton
-        resourceType="udt_workbooks"
-        resourceId={workbook.id}
-        resourceName={workbook.workbook_name}
-        isOwner={isOwner}
-        variant="ghost"
-        size="sm"
-      />
-    </div>
-  ) : null;
-
   return (
-    <div className="flex h-page w-full flex-col p-0 sm:p-3 sm:pr-12">
-      <div className="min-h-0 flex-1 overflow-hidden sm:rounded-md sm:border sm:border-border">
+    <>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton href="/workbooks" ariaLabel="Back" />
+            <Input
+              value={renameDraft}
+              onChange={(e) => setRenameDraft(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                if (e.key === "Escape" && workbook) {
+                  setRenameDraft(workbook.workbook_name);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className="h-7 min-w-0 max-w-[45vw] sm:max-w-xs text-sm font-medium border-0 bg-transparent shadow-none focus-visible:ring-1 px-1.5"
+              disabled={!workbook || !canEdit}
+              placeholder="Workbook name"
+            />
+            {renameSaving && (
+              <Loader2 className="size-3 animate-spin text-muted-foreground shrink-0" />
+            )}
+          </>
+        }
+        right={
+          workbook ? (
+            <div className="flex items-center gap-0.5">
+              <ReferenceCopyButton
+                referenceType="workbook"
+                id={workbook.id}
+                label={workbook.workbook_name}
+                toastLabel={workbook.workbook_name}
+                size="sm"
+              />
+              <ShareButton
+                resourceType="udt_workbooks"
+                resourceId={workbook.id}
+                resourceName={workbook.workbook_name}
+                isOwner={isOwner}
+                variant="ghost"
+                size="sm"
+              />
+            </div>
+          ) : undefined
+        }
+      />
+      <div className="h-full w-full overflow-hidden">
         {permsResolved && workbook ? (
           <WorkbookEditor
             workbookId={id}
             workbookName={workbook.workbook_name}
             editable={canEdit}
             collab
-            toolbarLeftSlot={titleSlot}
-            toolbarRightSlot={shareSlot}
           />
         ) : (
           <EditorBootSpinner />
         )}
       </div>
-    </div>
+    </>
   );
 }

@@ -27621,6 +27621,48 @@
         }
       }
     },
+    "/office/generate": {
+      "post": {
+        "tags": [
+          "Office"
+        ],
+        "summary": "Generate Office",
+        "description": "Render a DocumentSpec / PresentationSpec / SpreadsheetSpec to a real\n.docx / .pptx / .xlsx stored as a private asset, returned as a FileRef.",
+        "operationId": "generate_office_office_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeGenerationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeGenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/media/upload": {
       "post": {
         "tags": [
@@ -55360,6 +55402,54 @@
         ],
         "title": "DistinctValuesResponse"
       },
+      "DocBlock": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "heading",
+              "paragraph",
+              "bullet",
+              "numbered",
+              "table",
+              "page_break",
+              "quote"
+            ],
+            "title": "Type"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level",
+            "default": 1
+          },
+          "rows": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "header": {
+            "type": "boolean",
+            "title": "Header",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "DocBlock",
+        "description": "One block of a generated Word document."
+      },
       "DocumentDetail": {
         "properties": {
           "id": {
@@ -55659,6 +55749,31 @@
           "updated_at"
         ],
         "title": "DocumentRecord"
+      },
+      "DocumentSpec": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/DocBlock"
+            },
+            "type": "array",
+            "title": "Blocks"
+          }
+        },
+        "type": "object",
+        "title": "DocumentSpec",
+        "description": "Canonical AI-authorable shape for a Word document (.docx)."
       },
       "DomainUpsertRequest": {
         "properties": {
@@ -70064,6 +70179,154 @@
         "title": "OccupationalCodesResponse",
         "description": "Wrapper around the bundled California job-codes config.\n\nThe shape of `codes` is:\n    Record<JobCode, Record<JobTitle, IndustryCategory>>\ne.g. `{\"230\": {\"Carpenter\": \"Construction\", ...}, ...}`"
       },
+      "OfficeGenerationRequest": {
+        "properties": {
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentSpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "presentation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationSpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "spreadsheet": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpreadsheetSpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility"
+          }
+        },
+        "type": "object",
+        "title": "OfficeGenerationRequest",
+        "description": "One of the three specs plus how to store the result. Exactly one of\n``document`` / ``presentation`` / ``spreadsheet`` must be set."
+      },
+      "OfficeGenerationResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "office_kind": {
+            "type": "string",
+            "title": "Office Kind"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "byte_size": {
+            "type": "integer",
+            "title": "Byte Size"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "signed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url"
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url"
+          },
+          "cdn_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdn Url"
+          },
+          "visibility": {
+            "type": "string",
+            "title": "Visibility",
+            "default": "private"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "office_kind",
+          "mime_type",
+          "byte_size"
+        ],
+        "title": "OfficeGenerationResponse",
+        "description": "FileRef-shaped result the client binds to directly."
+      },
       "OnSignInResponse": {
         "properties": {
           "ok": {
@@ -72624,6 +72887,42 @@
           "status"
         ],
         "title": "PreferencesWriteResponse"
+      },
+      "PresentationSpec": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle"
+          },
+          "slides": {
+            "items": {
+              "$ref": "#/components/schemas/SlideSpec"
+            },
+            "type": "array",
+            "title": "Slides"
+          }
+        },
+        "type": "object",
+        "title": "PresentationSpec",
+        "description": "Canonical AI-authorable shape for a PowerPoint deck (.pptx)."
       },
       "PresetSummary": {
         "properties": {
@@ -79329,6 +79628,56 @@
         ],
         "title": "ShareLinkResolveResponse"
       },
+      "SheetSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": "Sheet1"
+          },
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "rows": {
+            "items": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "freeze_header": {
+            "type": "boolean",
+            "title": "Freeze Header",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "SheetSpec",
+        "description": "One sheet of a generated workbook."
+      },
       "SignedUrlResponse": {
         "properties": {
           "url": {
@@ -80283,6 +80632,52 @@
         "title": "SkipProposal",
         "description": "Synthesize a (possibly empty) output and continue."
       },
+      "SlideSpec": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "bullets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Bullets"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body",
+            "default": ""
+          },
+          "notes": {
+            "type": "string",
+            "title": "Notes",
+            "default": ""
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "title",
+              "title_content",
+              "section",
+              "blank"
+            ],
+            "title": "Layout",
+            "default": "title_content"
+          }
+        },
+        "type": "object",
+        "title": "SlideSpec",
+        "description": "One slide of a generated presentation."
+      },
       "SnapBboxBody": {
         "properties": {
           "page_number": {
@@ -80707,6 +81102,20 @@
         },
         "type": "object",
         "title": "SplitPdfRequest"
+      },
+      "SpreadsheetSpec": {
+        "properties": {
+          "sheets": {
+            "items": {
+              "$ref": "#/components/schemas/SheetSpec"
+            },
+            "type": "array",
+            "title": "Sheets"
+          }
+        },
+        "type": "object",
+        "title": "SpreadsheetSpec",
+        "description": "Canonical AI-authorable shape for an Excel workbook (.xlsx)."
       },
       "StageStatus": {
         "properties": {

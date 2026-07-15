@@ -6,8 +6,10 @@ import { TranscriptsSidebar } from "./TranscriptsSidebar";
 import { TranscriptViewer } from "./TranscriptViewer";
 import { CreateTranscriptModal } from "./CreateTranscriptModal";
 import { DeleteTranscriptDialog } from "./DeleteTranscriptDialog";
-import { TranscriptsHeaderPortal } from "@/components/layout/new-layout/PageSpecificHeader";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { TranscriptsProcessorHeader } from "./TranscriptsProcessorHeader";
 import { useTranscriptsContext } from "../context/TranscriptsContext";
+import { useToastManager } from "@/hooks/useToastManager";
 import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,10 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
     transcripts,
     setActiveTranscript,
     initialize,
+    copyTranscript,
+    refreshTranscripts,
   } = useTranscriptsContext();
+  const toast = useToastManager("transcripts");
 
   useEffect(() => {
     initialize();
@@ -52,9 +57,48 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleCopy = async () => {
+    if (!activeTranscript) return;
+    try {
+      await copyTranscript(activeTranscript.id);
+      toast.success("Transcript copied");
+    } catch (error) {
+      console.error("Error copying transcript:", error);
+      toast.error("Failed to copy transcript");
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await refreshTranscripts();
+      toast.success("Transcripts refreshed");
+    } catch (error) {
+      console.error("Error refreshing transcripts:", error);
+      toast.error("Failed to refresh");
+    }
+  };
+
+  const handleExport = () => {
+    if (!activeTranscript) return;
+    const text = activeTranscript.segments
+      .map(
+        (seg) =>
+          `[${seg.timecode}]${seg.speaker ? ` ${seg.speaker}:` : ""} ${seg.text}`,
+      )
+      .join("\n\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${activeTranscript.title}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Transcript exported");
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-page">
+      <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -62,13 +106,18 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
 
   return (
     <>
-      {/* Header Portal Injection */}
-      <TranscriptsHeaderPortal
-        onCreateNew={handleCreateNew}
-        onDeleteTranscript={handleDeleteClick}
-      />
+      <PageHeader>
+        <TranscriptsProcessorHeader
+          hasActiveTranscript={activeTranscript !== null}
+          onCreateNew={handleCreateNew}
+          onRefresh={() => void handleRefresh()}
+          onCopy={() => void handleCopy()}
+          onExport={handleExport}
+          onDelete={handleDeleteClick}
+        />
+      </PageHeader>
 
-      <div className={cn("flex h-page overflow-hidden", className)}>
+      <div className={cn("flex h-full overflow-hidden", className)}>
         {/* Desktop Sidebar */}
         <div className="w-80 shrink-0 hidden md:block">
           <TranscriptsSidebar onCreateTranscript={handleCreateNew} />

@@ -126,50 +126,52 @@ export function WelcomeClient({ firstName }: { firstName: string | null }) {
   }
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto bg-textured">
-      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center px-5 py-10">
-        <header className="text-center">
-          <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
-            {firstName ? `Welcome, ${firstName}` : "Welcome to AI Matrx"}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-            Pick a place to start. You can explore everything else later.
-          </p>
-        </header>
+    <div className="h-full overflow-hidden bg-textured">
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center px-5 py-10">
+          <header className="text-center">
+            <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
+              {firstName ? `Welcome, ${firstName}` : "Welcome to AI Matrx"}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+              Pick a place to start. You can explore everything else later.
+            </p>
+          </header>
 
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const isTarget = navigatingTo === option.href && isNavPending;
-            return (
-              <button
-                key={option.href}
-                type="button"
-                onClick={() => go(option.href)}
-                disabled={busy}
-                className="group relative flex cursor-pointer items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <span
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[22%] bg-gradient-to-br ${option.gradient} text-white shadow-sm ring-1 ring-white/10`}
+          <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const isTarget = navigatingTo === option.href && isNavPending;
+              return (
+                <button
+                  key={option.href}
+                  type="button"
+                  onClick={() => go(option.href)}
+                  disabled={busy}
+                  className="group relative flex cursor-pointer items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isTarget ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <Icon className="h-6 w-6" strokeWidth={1.75} />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-foreground">
-                    {option.label}
+                  <span
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[22%] bg-gradient-to-br ${option.gradient} text-white shadow-sm ring-1 ring-white/10`}
+                  >
+                    {isTarget ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <Icon className="h-6 w-6" strokeWidth={1.75} />
+                    )}
                   </span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {option.description}
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-foreground">
+                      {option.label}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {option.description}
+                    </span>
                   </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-              </button>
-            );
-          })}
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

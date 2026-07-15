@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import HeaderIconTitle from "@/features/shell/components/header/variants/variants/HeaderIconTitle";
 import { WelcomeClient } from "./WelcomeClient";
 
 export const metadata: Metadata = {
@@ -23,5 +25,12 @@ export default async function WelcomePage() {
       : null) ||
     null;
 
-  return <WelcomeClient firstName={firstName} />;
+  return (
+    <>
+      <PageHeader>
+        <HeaderIconTitle icon="Sparkles" title="Welcome" />
+      </PageHeader>
+      <WelcomeClient firstName={firstName} />
+    </>
+  );
 }

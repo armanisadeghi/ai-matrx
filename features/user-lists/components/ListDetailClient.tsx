@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil, Share2, Trash2 } from "lucide-react";
 import type { UserListWithItems, GroupedItem } from "../types";
 import { ListDetail } from "./ListDetail";
 import { EditListDialog } from "./EditListDialog";
@@ -10,16 +11,29 @@ import { EditItemDialog } from "./EditItemDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { deleteListAction, deleteItemAction } from "../actions/list-actions";
 import { useToastManager } from "@/hooks/useToastManager";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 
 interface ListDetailClientProps {
   list: UserListWithItems;
   userId: string | null;
+  /**
+   * True only for the `/lists/[id]` page route: renders the identity +
+   * actions via the shell's `EntityModeHeader` instead of the in-panel
+   * `ListMetaHeader` (floating workspace / overlay / dev-demo embeds keep
+   * the in-panel header — never both).
+   */
+  asRoute?: boolean;
 }
 
-export function ListDetailClient({ list, userId }: ListDetailClientProps) {
+export function ListDetailClient({
+  list,
+  userId,
+  asRoute = false,
+}: ListDetailClientProps) {
   const router = useRouter();
   const toast = useToastManager("user-lists");
   const [, startTransition] = useTransition();
+  const isOwner = !!userId && userId === list.user_id;
 
   const [editListOpen, setEditListOpen] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
@@ -70,8 +84,41 @@ export function ListDetailClient({ list, userId }: ListDetailClientProps) {
     }
   };
 
+  const handleCopyLink = () => {
+    const shareUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/lists/${list.list_id}`
+        : `/lists/${list.list_id}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast.success("Link copied");
+  };
+
   return (
     <>
+      {asRoute && (
+        <EntityModeHeader
+          backHref="/lists"
+          entityLabel={list.list_name || "Untitled list"}
+          actions={[
+            { label: "Copy link", icon: Share2, onPress: handleCopyLink },
+            ...(isOwner
+              ? [
+                  {
+                    label: "Edit list",
+                    icon: Pencil,
+                    onPress: () => setEditListOpen(true),
+                  },
+                  {
+                    label: "Delete list",
+                    icon: Trash2,
+                    onPress: () => setDeleteListOpen(true),
+                    destructive: true,
+                  },
+                ]
+              : []),
+          ]}
+        />
+      )}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
         <ListDetail
           list={list}
@@ -81,6 +128,7 @@ export function ListDetailClient({ list, userId }: ListDetailClientProps) {
           onEditItem={handleEditItem}
           onDeleteItem={handleDeleteItemRequest}
           onAddItem={handleAddItem}
+          showMetaHeader={!asRoute}
         />
       </div>
 

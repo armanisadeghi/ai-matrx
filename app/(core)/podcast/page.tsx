@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { Mic } from 'lucide-react';
 import type { PcShow } from '@/features/podcasts/types';
 import { PodcastGrid } from './PodcastGrid';
+import PageHeader from '@/features/shell/components/header/PageHeader';
 
 export const revalidate = 3600;
 
@@ -18,6 +19,10 @@ export default async function PodcastsIndexPage() {
     const published = (shows ?? []) as PcShow[];
 
     return (
+        <>
+        <PageHeader>
+            <span className="ml-2 text-sm font-medium text-foreground truncate">Podcasts</span>
+        </PageHeader>
         <div className="h-full w-full overflow-y-auto overscroll-contain bg-background">
             {/* Header */}
             <div className="relative overflow-hidden bg-zinc-900 px-4 pt-10 pb-12">
@@ -35,5 +40,6 @@ export default async function PodcastsIndexPage() {
                 <PodcastGrid shows={published} />
             </div>
         </div>
+        </>
     );
 }

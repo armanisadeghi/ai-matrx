@@ -31,6 +31,8 @@ import {
   Network,
 } from "lucide-react";
 import { format } from "date-fns";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -297,67 +299,61 @@ export default function OrganizationsPage() {
   const teamCount = organizations.filter((o) => !o.isPersonal).length;
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6 pr-14 md:pr-6">
-        {/* Hero */}
-        <Card className="p-5 md:p-6 relative overflow-hidden">
-          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <span className="h-12 w-12 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                <Building2 className="h-6 w-6" />
-              </span>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                  Organizations
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Your teams and shared workspaces — agents, scopes, knowledge,
-                  all in one place.
-                </p>
-              </div>
-            </div>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              New organization
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-5 flex-wrap mt-4">
-            <Stat
-              value={organizations.length}
-              label={organizations.length === 1 ? "workspace" : "workspaces"}
-            />
-            <Stat
-              value={teamCount}
-              label={teamCount === 1 ? "team" : "teams"}
-            />
-          </div>
-
-          {organizations.length > 4 && (
-            <div className="relative mt-4 flex items-center gap-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search organizations…"
-                className="pl-9 max-w-sm"
+    <>
+      <RouteHeader
+        left={
+          <span className="flex items-center gap-1.5 px-1.5 text-sm font-medium text-foreground">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            Organizations
+          </span>
+        }
+        right={
+          <TapTargetButtonSolid
+            icon={<Plus className="h-4 w-4" />}
+            label="New organization"
+            onClick={() => setCreateOpen(true)}
+          />
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured">
+        <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
+          {/* Stats + search */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-5 flex-wrap">
+              <Stat
+                value={organizations.length}
+                label={organizations.length === 1 ? "workspace" : "workspaces"}
               />
-              {filtered.length > 0 && (
-                <ReferencesBulkCopyButton
-                  referenceType="organization"
-                  records={filtered.map((o) => ({
-                    id: o.id,
-                    label: o.name,
-                  }))}
-                  toastLabel={`${filtered.length} organization${filtered.length === 1 ? "" : "s"}`}
-                />
-              )}
+              <Stat
+                value={teamCount}
+                label={teamCount === 1 ? "team" : "teams"}
+              />
             </div>
-          )}
-        </Card>
 
-        {loading ? (
+            {organizations.length > 4 && (
+              <div className="relative flex items-center gap-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search organizations…"
+                  className="pl-9 max-w-sm"
+                />
+                {filtered.length > 0 && (
+                  <ReferencesBulkCopyButton
+                    referenceType="organization"
+                    records={filtered.map((o) => ({
+                      id: o.id,
+                      label: o.name,
+                    }))}
+                    toastLabel={`${filtered.length} organization${filtered.length === 1 ? "" : "s"}`}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <Loader2 className="h-7 w-7 animate-spin text-primary mx-auto mb-3" />
@@ -416,6 +412,7 @@ export default function OrganizationsPage() {
             )}
           </>
         )}
+        </div>
       </div>
 
       <CreateOrgModal
@@ -423,7 +420,7 @@ export default function OrganizationsPage() {
         onClose={() => setCreateOpen(false)}
         onSuccess={() => refresh()}
       />
-    </div>
+    </>
   );
 }
 

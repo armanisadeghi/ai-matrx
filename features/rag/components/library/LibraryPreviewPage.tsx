@@ -20,11 +20,9 @@
  *   data + Tailwind.
  */
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
@@ -39,6 +37,8 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -138,65 +138,45 @@ export function LibraryPreviewPage({
   };
 
   return (
-    <div
-      className={
-        "relative flex flex-col bg-background " +
-        (embedded ? "h-full" : "h-[calc(100dvh-3rem)]")
-      }
-    >
+    <div className="relative flex flex-col bg-background h-full">
       {!embedded && (
-        <header className="border-b px-4 py-3 flex items-center gap-3">
-          <Link href="/rag/library">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Library
-            </Button>
-          </Link>
-          <div className="min-w-0 flex-1">
-            {docLoading || !doc ? (
-              <Skeleton className="h-5 w-64" />
-            ) : (
-              <div className="flex items-center gap-2 min-w-0">
-                <h1 className="text-sm font-semibold break-words">
-                  {doc.name}
-                </h1>
-                <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {doc.pagesPersisted} pages · {doc.chunks}{" "}
-                  {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}
-                  embeds
-                </span>
-              </div>
-            )}
-          </div>
-          {doc && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAssetsOpen(true)}
-                title="Build premium knowledge representations (table rows, figure captions, summaries, Q&A) from this document"
-              >
-                <Sparkles className="h-4 w-4 mr-1 text-primary" />
-                Knowledge Assets
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleFork}
-                disabled={forking}
-                title="Fork this shared document into your own editable copy you can re-process with your own agents"
-              >
-                {forking ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <GitFork className="h-4 w-4 mr-1" />
-                )}
-                Make my copy
-              </Button>
-            </>
-          )}
-        </header>
+        <EntityModeHeader
+          backHref="/rag/library"
+          entityLabel={docLoading || !doc ? "Loading…" : doc.name}
+          actions={
+            doc
+              ? [
+                  {
+                    label: "Knowledge Assets",
+                    icon: Sparkles,
+                    onPress: () => setAssetsOpen(true),
+                  },
+                  {
+                    label: "Make my copy",
+                    icon: GitFork,
+                    onPress: () => void handleFork(),
+                    disabled: forking,
+                  },
+                ]
+              : []
+          }
+        />
+      )}
+      <div
+        className={cn(
+          "flex-1 min-h-0 flex flex-col",
+          !embedded && "pt-[var(--shell-header-h)]",
+        )}
+      >
+      {!embedded && doc && (
+        <div className="border-b px-4 py-1.5 flex items-center gap-2 min-w-0 shrink-0">
+          <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
+          <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
+            {doc.pagesPersisted} pages · {doc.chunks}{" "}
+            {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}
+            embeds
+          </span>
+        </div>
       )}
 
       {/* In-document search — present in both modes. In embedded surfaces (the
@@ -287,6 +267,7 @@ export function LibraryPreviewPage({
           />
         </div>
       )}
+      </div>
 
       {/* Knowledge Asset Builder — resizable right drawer. The doc stays fully
           visible behind it (the panel sits alongside, not over), so the user

@@ -26,13 +26,6 @@ export function ScopesSettingsPanel() {
 
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Scope settings</h1>
-        <p className="text-xs text-muted-foreground">
-          Diagnostics and entry points for managing scopes at the org level.
-        </p>
-      </header>
-
       <Card className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div>

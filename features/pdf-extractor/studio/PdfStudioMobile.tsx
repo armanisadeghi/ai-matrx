@@ -40,10 +40,11 @@ import {
   X,
   Plus,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { PdfAiContent } from "../components/PdfAiContent";
@@ -270,73 +271,65 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
   const total = activeDoc?.totalPages ?? pages.length;
 
   return (
-    // pt clears the fixed transparent shell header — without it the studio's
-    // own header renders UNDERNEATH the shell chrome (hamburger over the doc
-    // title, avatar over the inspector button, which made the inspector
-    // untappable on mobile).
-    <div className="flex h-full min-h-0 flex-col bg-background pt-[var(--shell-header-h)]">
-      {/* Header — pr-12 keeps the last button clear of the fixed avatar */}
-      <header className="shrink-0 border-b border-border bg-card/40 px-2 py-1.5 pr-12 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setDrawer("docs")}
-          className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground"
-          title="Documents"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div className="min-w-0 flex-1">
-          {activeDoc ? (
-            <div className="min-w-0">
-              <p className="text-xs font-semibold truncate">{activeDoc.name}</p>
-              <p className="text-[10px] text-muted-foreground truncate">
-                {(activeDoc.totalPages ?? pages.length).toLocaleString()} pages
-                · {activeDoc.derivationKind}
-              </p>
+    <>
+      {/* Route chrome lives in the shell header center zone — never an
+          in-body bar (that duplicates the shell row and collides with the
+          fixed avatar). Doc identity + actions as glass tap targets. */}
+      <RouteHeader
+        left={
+          <>
+            <TapTargetButton
+              icon={<ArrowLeft className="h-4 w-4" />}
+              ariaLabel="Documents"
+              onClick={() => setDrawer("docs")}
+            />
+            <div className="min-w-0 ml-1">
+              {activeDoc ? (
+                <span className="truncate max-w-[38vw] block text-sm font-medium text-foreground">
+                  {activeDoc.name}
+                </span>
+              ) : (
+                <span className="text-sm font-medium text-muted-foreground">
+                  PDF Studio
+                </span>
+              )}
             </div>
-          ) : (
-            <p className="text-xs font-semibold text-muted-foreground">
-              PDF Studio
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setUploadOpen(true)}
-          className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground"
-          title="Add documents"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-        {/* AI Clean — mobile parity with desktop toolbar. Disabled while
-            any run is in flight; the spinner doubles as the "is running"
-            signal so we don't need a second status pill in the header. */}
-        {activeDoc && (
-          <button
-            type="button"
-            onClick={handleRunAiClean}
-            disabled={aiCleanRunning || pipelineRunning}
-            className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground disabled:opacity-50"
-            title="AI Clean"
-          >
-            {aiCleanRunning ? (
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
+          </>
+        }
+        right={
+          <>
+            <TapTargetButton
+              icon={<Plus className="h-4 w-4" />}
+              ariaLabel="Add documents"
+              onClick={() => setUploadOpen(true)}
+            />
+            {/* AI Clean — mobile parity with desktop toolbar. Disabled while
+                any run is in flight; the spinner doubles as the "is running"
+                signal so we don't need a second status pill in the header. */}
+            {activeDoc && (
+              <TapTargetButton
+                icon={
+                  aiCleanRunning ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )
+                }
+                ariaLabel="AI Clean"
+                onClick={handleRunAiClean}
+                disabled={aiCleanRunning || pipelineRunning}
+              />
             )}
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setDrawer("inspector")}
-          disabled={!activeDoc}
-          className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground disabled:opacity-50"
-          title="Inspector"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
-      </header>
-
+            <TapTargetButton
+              icon={<MoreVertical className="h-4 w-4" />}
+              ariaLabel="Inspector"
+              onClick={() => setDrawer("inspector")}
+              disabled={!activeDoc}
+            />
+          </>
+        }
+      />
+    <div className="flex h-full min-h-0 flex-col bg-background pt-[var(--shell-header-h)]">
       {/* Live status strip — visible only while a run is streaming. Mirrors
           the desktop toolbar pattern so the user has a steady "the model
           is working" signal that doesn't depend on the toast lifecycle. */}
@@ -545,6 +538,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
         </DrawerContent>
       </Drawer>
     </div>
+    </>
   );
 }
 

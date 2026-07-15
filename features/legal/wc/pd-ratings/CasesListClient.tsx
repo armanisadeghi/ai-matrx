@@ -25,6 +25,35 @@ import {
   useDeleteClaim,
   type SavedClaimRow,
 } from "./api/claims";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
+import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+
+const CASES_TRAIL = [
+  { label: "Legal", href: "/legal" },
+  { label: "CA WC", href: "/legal/ca-wc" },
+  { label: "Cases" },
+];
+
+function CasesHeader({ showNewCase }: { showNewCase: boolean }) {
+  return (
+    <PageHeader>
+      <CrumbTrailHeader
+        backHref="/legal/ca-wc"
+        trail={CASES_TRAIL}
+        right={
+          showNewCase ? (
+            <TapTargetButtonSolid
+              icon={<Plus className="h-4 w-4" />}
+              label="New case"
+              href="/legal/ca-wc/pd-ratings-calculator"
+            />
+          ) : undefined
+        }
+      />
+    </PageHeader>
+  );
+}
 
 export function CasesListClient() {
   const router = useRouter();
@@ -42,87 +71,76 @@ export function CasesListClient() {
 
   if (!isAuthed) {
     return (
-      <CenteredCard
-        icon={LogIn}
-        title="Sign in to see your saved cases"
-        description="Your saved cases live with your account. Sign in or create an account to start saving."
-        actions={
-          <Button asChild>
-            <Link
-              href={`/login?redirectTo=${encodeURIComponent("/legal/ca-wc/cases")}`}
-            >
-              Sign in
-            </Link>
-          </Button>
-        }
-      />
+      <>
+        <CasesHeader showNewCase={false} />
+        <CenteredCard
+          icon={LogIn}
+          title="Sign in to see your saved cases"
+          description="Your saved cases live with your account. Sign in or create an account to start saving."
+          actions={
+            <Button asChild>
+              <Link
+                href={`/login?redirectTo=${encodeURIComponent("/legal/ca-wc/cases")}`}
+              >
+                Sign in
+              </Link>
+            </Button>
+          }
+        />
+      </>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-dvh">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">Loading your cases…</span>
+      <>
+        <CasesHeader showNewCase={false} />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm">Loading your cases…</span>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <CenteredCard
-        icon={AlertCircle}
-        title="Couldn't load your cases"
-        description={(error as Error).message ?? "Try refreshing."}
-      />
+      <>
+        <CasesHeader showNewCase={false} />
+        <CenteredCard
+          icon={AlertCircle}
+          title="Couldn't load your cases"
+          description={(error as Error).message ?? "Try refreshing."}
+        />
+      </>
     );
   }
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="border-b border-border bg-gradient-to-b from-primary/5 via-background to-background">
-        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary mb-4">
-                <FolderOpen className="h-3.5 w-3.5" />
-                Your cases
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-                Saved CA PD rating cases
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm sm:text-base text-muted-foreground">
-                Click a case to open it, or start a new rating from a blank
-                workspace.
-              </p>
-            </div>
-            <Button asChild size="sm" className="gap-1.5 shrink-0">
-              <Link href="/legal/ca-wc/pd-ratings-calculator">
-                <Plus className="h-3.5 w-3.5" />
-                New case
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        {!claims || claims.length === 0 ? (
-          <EmptyCases />
-        ) : (
-          <ul className="space-y-2.5">
-            {claims.map((c) => (
-              <CaseRow
-                key={c.id}
-                claim={c}
-                onDelete={() => setConfirmTarget(c)}
-              />
-            ))}
-          </ul>
-        )}
-      </main>
+    <>
+      <CasesHeader showNewCase />
+      <div className="bg-background">
+        <main
+          className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 pb-8 sm:pb-10"
+          style={{ paddingTop: "calc(var(--shell-header-h) + 1.5rem)" }}
+        >
+          {!claims || claims.length === 0 ? (
+            <EmptyCases />
+          ) : (
+            <ul className="space-y-2.5">
+              {claims.map((c) => (
+                <CaseRow
+                  key={c.id}
+                  claim={c}
+                  onDelete={() => setConfirmTarget(c)}
+                />
+              ))}
+            </ul>
+          )}
+        </main>
+      </div>
 
       <ConfirmDialog
         open={!!confirmTarget}
@@ -160,7 +178,7 @@ export function CasesListClient() {
           }
         }}
       />
-    </div>
+    </>
   );
 }
 
@@ -244,7 +262,7 @@ function CenteredCard({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-center min-h-dvh px-4">
+    <div className="flex items-center justify-center min-h-[60vh] px-4">
       <div className="text-center max-w-md">
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
           <Icon className="h-6 w-6" />

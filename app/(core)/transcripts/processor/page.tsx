@@ -25,7 +25,7 @@ export default async function TranscriptsProcessorPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-page items-center justify-center">
+        <div className="flex h-full items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       }

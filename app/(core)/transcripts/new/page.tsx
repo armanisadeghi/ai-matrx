@@ -5,11 +5,14 @@
 // Server component — no client state needed.
 
 import Link from "next/link";
-import { ArrowLeft, Columns2, FileUp, Import, Mic, Eraser } from "lucide-react";
+import { Columns2, FileUp, Import, Mic, Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { redirect } from "next/navigation";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { TranscriptsListHeader } from "@/features/transcripts/components/TranscriptsListHeader";
+
 interface CreationOption {
   href: string;
   title: string;
@@ -61,83 +64,78 @@ export default async function NewTranscriptPage() {
   if (!isAuthenticated) redirect("/transcripts");
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height,2.5rem))] w-full overflow-y-auto bg-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center gap-2 mb-5">
-          <Link
-            href="/transcripts"
-            className={cn(
-              "inline-flex h-8 w-8 items-center justify-center rounded-md",
-              "text-muted-foreground hover:text-foreground hover:bg-muted",
-            )}
-            aria-label="Back to all transcripts"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <h1 className="text-lg font-semibold tracking-tight">
-            New transcript
-          </h1>
-          <span className="text-sm text-muted-foreground">
-            · pick how to start
-          </span>
-        </div>
+    <>
+      <PageHeader>
+        <TranscriptsListHeader />
+      </PageHeader>
+      <div className="h-full w-full overflow-y-auto bg-background pt-[var(--shell-header-h)]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+          <div className="mb-5">
+            <h1 className="text-lg font-semibold tracking-tight">
+              New transcript
+            </h1>
+            <span className="text-sm text-muted-foreground">
+              Pick how to start
+            </span>
+          </div>
 
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const disabled = opt.status === "Coming soon";
-            const inner = (
-              <div
-                className={cn(
-                  "h-full rounded-lg border border-border bg-card p-4",
-                  "transition-all",
-                  !disabled &&
-                    "hover:border-primary/40 hover:bg-muted/30 cursor-pointer",
-                  disabled && "opacity-60 cursor-not-allowed",
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold">{opt.title}</h3>
-                      {opt.status === "Coming soon" && (
-                        <span className="text-[10px] uppercase tracking-wider px-1.5 py-0 rounded bg-muted text-muted-foreground ring-1 ring-border">
-                          soon
-                        </span>
-                      )}
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {OPTIONS.map((opt) => {
+              const Icon = opt.icon;
+              const disabled = opt.status === "Coming soon";
+              const inner = (
+                <div
+                  className={cn(
+                    "h-full rounded-lg border border-border bg-card p-4",
+                    "transition-all",
+                    !disabled &&
+                      "hover:border-primary/40 hover:bg-muted/30 cursor-pointer",
+                    disabled && "opacity-60 cursor-not-allowed",
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                      <Icon className="h-4 w-4" />
                     </div>
-                    <p className="text-xs text-muted-foreground leading-snug">
-                      {opt.description}
-                    </p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold">{opt.title}</h3>
+                        {opt.status === "Coming soon" && (
+                          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0 rounded bg-muted text-muted-foreground ring-1 ring-border">
+                            soon
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-snug">
+                        {opt.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
+              );
 
-            if (disabled) {
-              return <li key={opt.title}>{inner}</li>;
-            }
-            return (
-              <li key={opt.title}>
-                <Link href={opt.href} className="block h-full">
-                  {inner}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+              if (disabled) {
+                return <li key={opt.title}>{inner}</li>;
+              }
+              return (
+                <li key={opt.title}>
+                  <Link href={opt.href} className="block h-full">
+                    {inner}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-        <p className="mt-6 text-xs text-muted-foreground">
-          Already have a transcript?{" "}
-          <Link href="/transcripts" className="text-primary hover:underline">
-            See all transcripts
-          </Link>
-          .
-        </p>
+          <p className="mt-6 text-xs text-muted-foreground">
+            Already have a transcript?{" "}
+            <Link href="/transcripts" className="text-primary hover:underline">
+              See all transcripts
+            </Link>
+            .
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

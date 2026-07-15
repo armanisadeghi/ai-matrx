@@ -37,7 +37,7 @@ export const CodeWorkspaceRoute: React.FC<CodeWorkspaceRouteProps> = ({
     farRightSlot ?? (hideHistory ? undefined : <ChatHistorySlot />);
 
   return (
-    <div className="h-[calc(100dvh-var(--shell-offset,0px))] w-full">
+    <div className="h-full w-full overflow-hidden">
       <CodeWorkspace
         {...props}
         showActivityBar={showActivityBar}

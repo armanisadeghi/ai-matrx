@@ -10378,6 +10378,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/office/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Office
+         * @description Render a DocumentSpec / PresentationSpec / SpreadsheetSpec to a real
+         *     .docx / .pptx / .xlsx stored as a private asset, returned as a FileRef.
+         */
+        post: operations["generate_office_office_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media/upload": {
         parameters: {
             query?: never;
@@ -19986,6 +20007,34 @@ export interface components {
             /** Count */
             count: number;
         };
+        /**
+         * DocBlock
+         * @description One block of a generated Word document.
+         */
+        DocBlock: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "heading" | "paragraph" | "bullet" | "numbered" | "table" | "page_break" | "quote";
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
+            /**
+             * Level
+             * @default 1
+             */
+            level?: number;
+            /** Rows */
+            rows?: string[][];
+            /**
+             * Header
+             * @default true
+             */
+            header?: boolean;
+        };
         /** DocumentDetail */
         DocumentDetail: {
             /** Id */
@@ -20088,6 +20137,16 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string;
+        };
+        /**
+         * DocumentSpec
+         * @description Canonical AI-authorable shape for a Word document (.docx).
+         */
+        DocumentSpec: {
+            /** Title */
+            title?: string | null;
+            /** Blocks */
+            blocks?: components["schemas"]["DocBlock"][];
         };
         /** DomainUpsertRequest */
         DomainUpsertRequest: {
@@ -25293,6 +25352,49 @@ export interface components {
             };
         };
         /**
+         * OfficeGenerationRequest
+         * @description One of the three specs plus how to store the result. Exactly one of
+         *     ``document`` / ``presentation`` / ``spreadsheet`` must be set.
+         */
+        OfficeGenerationRequest: {
+            document?: components["schemas"]["DocumentSpec"] | null;
+            presentation?: components["schemas"]["PresentationSpec"] | null;
+            spreadsheet?: components["schemas"]["SpreadsheetSpec"] | null;
+            /** File Name */
+            file_name?: string | null;
+            /** Visibility */
+            visibility?: string | null;
+        };
+        /**
+         * OfficeGenerationResponse
+         * @description FileRef-shaped result the client binds to directly.
+         */
+        OfficeGenerationResponse: {
+            /** File Id */
+            file_id: string;
+            /** Office Kind */
+            office_kind: string;
+            /** Mime Type */
+            mime_type: string;
+            /** File Name */
+            file_name?: string | null;
+            /** Byte Size */
+            byte_size: number;
+            /** Url */
+            url?: string | null;
+            /** Signed Url */
+            signed_url?: string | null;
+            /** Download Url */
+            download_url?: string | null;
+            /** Cdn Url */
+            cdn_url?: string | null;
+            /**
+             * Visibility
+             * @default private
+             */
+            visibility?: string;
+        };
+        /**
          * OnSignInResponse
          * @description Response from the on-sign-in hook — used for operator observability.
          */
@@ -26222,6 +26324,18 @@ export interface components {
         PreferencesWriteResponse: {
             /** Status */
             status: string;
+        };
+        /**
+         * PresentationSpec
+         * @description Canonical AI-authorable shape for a PowerPoint deck (.pptx).
+         */
+        PresentationSpec: {
+            /** Title */
+            title?: string | null;
+            /** Subtitle */
+            subtitle?: string | null;
+            /** Slides */
+            slides?: components["schemas"]["SlideSpec"][];
         };
         /**
          * PresetSummary
@@ -28962,6 +29076,26 @@ export interface components {
              */
             use_count?: number;
         };
+        /**
+         * SheetSpec
+         * @description One sheet of a generated workbook.
+         */
+        SheetSpec: {
+            /**
+             * Name
+             * @default Sheet1
+             */
+            name?: string;
+            /** Columns */
+            columns?: string[];
+            /** Rows */
+            rows?: (string | number | boolean | null)[][];
+            /**
+             * Freeze Header
+             * @default true
+             */
+            freeze_header?: boolean;
+        };
         /** SignedUrlResponse */
         SignedUrlResponse: {
             /** Url */
@@ -29294,6 +29428,32 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * SlideSpec
+         * @description One slide of a generated presentation.
+         */
+        SlideSpec: {
+            /** Title */
+            title?: string | null;
+            /** Bullets */
+            bullets?: string[];
+            /**
+             * Body
+             * @default
+             */
+            body?: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes?: string;
+            /**
+             * Layout
+             * @default title_content
+             * @enum {string}
+             */
+            layout?: "title" | "title_content" | "section" | "blank";
+        };
         /** SnapBboxBody */
         SnapBboxBody: {
             /** Page Number */
@@ -29431,6 +29591,14 @@ export interface components {
             parts?: components["schemas"]["SplitPartRequest"][] | null;
             /** Max Pages Per Part */
             max_pages_per_part?: number | null;
+        };
+        /**
+         * SpreadsheetSpec
+         * @description Canonical AI-authorable shape for an Excel workbook (.xlsx).
+         */
+        SpreadsheetSpec: {
+            /** Sheets */
+            sheets?: components["schemas"]["SheetSpec"][];
         };
         /** StageStatus */
         StageStatus: {
@@ -50979,6 +51147,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssetPdfCompressResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_office_office_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfficeGenerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficeGenerationResponse"];
                 };
             };
             /** @description Validation Error */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Field } from "@/components/official/Field";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -55,6 +55,9 @@ const PRIMITIVE_VALUE_TYPES = (
   Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]
 ).filter((k) => k !== "reference");
 
+/** Dense form control height — matches `Button size="sm"` / `SelectTrigger size="sm"` / EntryModeToggle. */
+const CONTROL_CLASS = "h-7 px-2 text-xs";
+
 interface ContextItemAddFormProps {
   scopeTypeId: string;
   labelPlural: string;
@@ -73,6 +76,9 @@ interface ContextItemAddFormProps {
  * always visible (the whole point is to encourage filling them in); Advanced
  * holds sort order, fetch hint, and sensitivity. "Add & next" keeps the form
  * open and refocuses for rapid entry.
+ *
+ * Density: every control is `h-7` / `text-xs` (Button/Select/ToggleGroup sm).
+ * Labels come from canonical `Field` — no mixed `text-[10px]` / giant toggles.
  */
 export function ContextItemAddForm({
   scopeTypeId,
@@ -84,6 +90,7 @@ export function ContextItemAddForm({
 }: ContextItemAddFormProps) {
   const dispatch = useAppDispatch();
   const nameRef = useRef<HTMLInputElement>(null);
+  const uid = useId();
 
   const [name, setName] = useState("");
   const [entryMode, setEntryMode] = useState<EntryMode>(
@@ -115,6 +122,19 @@ export function ContextItemAddForm({
 
   const isReference = entryMode === "reference";
   const valueType: ContextValueType = isReference ? "reference" : primitiveType;
+
+  const ids = {
+    name: `${uid}-name`,
+    entryMode: `${uid}-entry-mode`,
+    primitive: `${uid}-primitive`,
+    description: `${uid}-description`,
+    category: `${uid}-category`,
+    tags: `${uid}-tags`,
+    value: `${uid}-value`,
+    sort: `${uid}-sort`,
+    fetch: `${uid}-fetch`,
+    sensitivity: `${uid}-sensitivity`,
+  };
 
   function toggleReferenceType(t: string) {
     setAllowedReferenceTypes((prev) =>
@@ -237,16 +257,15 @@ export function ContextItemAddForm({
   }
 
   return (
-    <div className="rounded-lg border border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 p-4 space-y-3">
-      <p className="text-[11px] text-amber-700 dark:text-amber-300">
+    <div className="rounded-lg border border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 p-3 space-y-3">
+      <p className="text-xs text-amber-700 dark:text-amber-300">
         New field is added to <strong>all {labelPlural}</strong> — define once,
         fill values per {labelPlural.replace(/s$/, "").toLowerCase()}.
       </p>
 
-      {/* Name */}
-      <div>
-        <Label className="text-[10px] text-muted-foreground">Name</Label>
+      <Field label="Name" htmlFor={ids.name} required>
         <Input
+          id={ids.name}
           ref={nameRef}
           autoFocus
           placeholder="e.g. Website URL"
@@ -254,7 +273,7 @@ export function ContextItemAddForm({
           onChange={(e) => setName(e.target.value)}
           style={{ fontSize: "16px" }}
           disabled={busy}
-          className="mt-0.5"
+          className={CONTROL_CLASS}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -263,73 +282,76 @@ export function ContextItemAddForm({
             if (e.key === "Escape") onClose();
           }}
         />
-      </div>
+      </Field>
 
-      {/* Value type — Direct Entry vs. Reference, the first decision */}
-      <div className="space-y-2">
-        <Label className="text-[10px] text-muted-foreground">Value type</Label>
-        <EntryModeToggle
-          value={entryMode}
-          onChange={setEntryMode}
-          disabled={busy}
-        />
+      <Field
+        label="Value type"
+        htmlFor={ids.entryMode}
+        help="Direct holds a typed-in value. Reference points at a Matrx entity (file, scope, note, …)."
+      >
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <EntryModeToggle
+              id={ids.entryMode}
+              value={entryMode}
+              onChange={setEntryMode}
+              disabled={busy}
+            />
+            {!isReference && (
+              <Select
+                value={primitiveType}
+                onValueChange={(v) => setPrimitiveType(v as ContextValueType)}
+                disabled={busy}
+              >
+                <SelectTrigger id={ids.primitive} size="sm" className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIMITIVE_VALUE_TYPES.map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {VALUE_TYPE_CONFIG[k].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          {isReference && (
+            <ReferenceConfigFields
+              allowedReferenceTypes={allowedReferenceTypes}
+              onToggleReferenceType={toggleReferenceType}
+              maxItems={maxItems}
+              onMaxItemsChange={setMaxItems}
+              allowedScopeTypeIds={allowedScopeTypeIds}
+              onToggleAllowedScopeType={toggleAllowedScopeType}
+              orgScopeTypes={orgScopeTypes}
+              disabled={busy}
+              className="space-y-3"
+            />
+          )}
+        </div>
+      </Field>
 
-        {isReference ? (
-          <ReferenceConfigFields
-            allowedReferenceTypes={allowedReferenceTypes}
-            onToggleReferenceType={toggleReferenceType}
-            maxItems={maxItems}
-            onMaxItemsChange={setMaxItems}
-            allowedScopeTypeIds={allowedScopeTypeIds}
-            onToggleAllowedScopeType={toggleAllowedScopeType}
-            orgScopeTypes={orgScopeTypes}
-            disabled={busy}
-            className="space-y-2 rounded-md border border-border bg-background/60 p-2.5"
-            labelClassName="text-[10px] text-muted-foreground"
-          />
-        ) : (
-          <Select
-            value={primitiveType}
-            onValueChange={(v) => setPrimitiveType(v as ContextValueType)}
-            disabled={busy}
-          >
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PRIMITIVE_VALUE_TYPES.map((k) => (
-                <SelectItem key={k} value={k}>
-                  {VALUE_TYPE_CONFIG[k].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
-
-      {/* Description */}
-      <div>
-        <Label className="text-[10px] text-muted-foreground">Description</Label>
+      <Field label="Description" htmlFor={ids.description} optional>
         <Input
-          placeholder="What is this field for? (optional)"
+          id={ids.description}
+          placeholder="What is this field for?"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           style={{ fontSize: "16px" }}
           disabled={busy}
-          className="mt-0.5"
+          className={CONTROL_CLASS}
         />
-      </div>
+      </Field>
 
-      {/* Category + Tags */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Category</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="Category" htmlFor={ids.category} optional>
           <Select
             value={category || NO_CATEGORY}
             onValueChange={(v) => setCategory(v === NO_CATEGORY ? "" : v)}
             disabled={busy}
           >
-            <SelectTrigger className="mt-0.5">
+            <SelectTrigger id={ids.category} size="sm">
               <SelectValue placeholder="None" />
             </SelectTrigger>
             <SelectContent>
@@ -341,10 +363,13 @@ export function ContextItemAddForm({
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div>
-          <Label className="text-[10px] text-muted-foreground">Tags</Label>
-          <div className="mt-0.5 flex flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1 min-h-9">
+        </Field>
+
+        <Field label="Tags" htmlFor={ids.tags} optional>
+          <div
+            id={ids.tags}
+            className="flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-0.5"
+          >
             {tags.map((t) => (
               <span
                 key={t}
@@ -376,38 +401,34 @@ export function ContextItemAddForm({
               placeholder={tags.length ? "" : "Type and press Enter"}
               disabled={busy}
               style={{ fontSize: "16px" }}
-              className="flex-1 min-w-[6rem] bg-transparent outline-none text-sm"
+              className="min-w-[6rem] flex-1 bg-transparent text-xs outline-none"
             />
           </div>
-        </div>
+        </Field>
       </div>
 
       {scopeId && valueType === "reference" && (
-        <p className="text-[11px] text-muted-foreground">
-          Reference fields are configured and set from the item's own page once
-          it's created.
+        <p className="text-xs text-muted-foreground">
+          Reference fields are configured and set from the item&apos;s own page
+          once it&apos;s created.
         </p>
       )}
       {scopeId && valueType !== "reference" && (
-        <div>
-          <Label className="text-[10px] text-muted-foreground">
-            Value for this one (optional)
-          </Label>
+        <Field label="Value for this one" htmlFor={ids.value} optional>
           <ContextValueInput
+            id={ids.value}
             valueType={valueType}
             value={value}
             onChange={setValue}
             placeholder="Leave blank to fill later"
             disabled={busy}
             compact
-            minHeight={40}
-            maxHeight={300}
-            className="mt-0.5"
+            minHeight={28}
+            maxHeight={200}
           />
-        </div>
+        </Field>
       )}
 
-      {/* Advanced: sort order, fetch hint, sensitivity */}
       <button
         type="button"
         onClick={() => setAdvancedOpen((v) => !v)}
@@ -424,31 +445,26 @@ export function ContextItemAddForm({
       </button>
 
       {advancedOpen && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div>
-            <Label className="text-[10px] text-muted-foreground">
-              Sort order
-            </Label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Field label="Sort order" htmlFor={ids.sort} optional>
             <Input
+              id={ids.sort}
               type="number"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
               placeholder="Auto (end)"
               style={{ fontSize: "16px" }}
               disabled={busy}
-              className="mt-0.5"
+              className={CONTROL_CLASS}
             />
-          </div>
-          <div>
-            <Label className="text-[10px] text-muted-foreground">
-              Fetch hint
-            </Label>
+          </Field>
+          <Field label="Fetch hint" htmlFor={ids.fetch}>
             <Select
               value={fetchHint}
               onValueChange={(v) => setFetchHint(v as ContextFetchHint)}
               disabled={busy}
             >
-              <SelectTrigger className="mt-0.5">
+              <SelectTrigger id={ids.fetch} size="sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -461,17 +477,14 @@ export function ContextItemAddForm({
                 )}
               </SelectContent>
             </Select>
-          </div>
-          <div>
-            <Label className="text-[10px] text-muted-foreground">
-              Sensitivity
-            </Label>
+          </Field>
+          <Field label="Sensitivity" htmlFor={ids.sensitivity}>
             <Select
               value={sensitivity}
               onValueChange={(v) => setSensitivity(v as ContextSensitivity)}
               disabled={busy}
             >
-              <SelectTrigger className="mt-0.5">
+              <SelectTrigger id={ids.sensitivity} size="sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -484,11 +497,11 @@ export function ContextItemAddForm({
                 )}
               </SelectContent>
             </Select>
-          </div>
+          </Field>
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2 pt-1">
+      <div className="flex items-center justify-end gap-1.5 pt-0.5">
         <Button
           type="button"
           variant="ghost"

@@ -10,7 +10,7 @@
 import "./notes.css";
 import { cookies } from "next/headers";
 import type { Layout } from "react-resizable-panels";
-import { NotesView } from "@/features/notes/components/NotesView";
+import { NotesRouteBody } from "@/features/notes/components/NotesRouteBody";
 import NotesLanding from "@/features/auth/components/module-landing/landings/NotesLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -72,8 +72,7 @@ export default async function NotesV2Layout({
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
       <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
-      <NotesView className="h-full" sidebarLayout={sidebarLayout} />
-      <div style={{ display: "none" }}>{children}</div>
+      <NotesRouteBody sidebarLayout={sidebarLayout}>{children}</NotesRouteBody>
     </div>
   );
 }

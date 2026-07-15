@@ -3,8 +3,17 @@
 // body is a client component; this server wrapper just keeps the route a Server
 // Component by default. Guests are redirected off /dashboard by the proxy, and
 // new users are funneled to /welcome by the sibling layout.
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import HeaderIconTitle from "@/features/shell/components/header/variants/variants/HeaderIconTitle";
 import { DashboardClient } from "@/features/dashboard/components/DashboardClient";
 
 export default function DashboardPage() {
-  return <DashboardClient />;
+  return (
+    <>
+      <PageHeader>
+        <HeaderIconTitle icon="LayoutDashboard" title="Dashboard" />
+      </PageHeader>
+      <DashboardClient />
+    </>
+  );
 }

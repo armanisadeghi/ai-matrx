@@ -11,7 +11,7 @@ import { KnowledgeGraphClient } from "./KnowledgeGraphClient";
 import KnowledgeGraphLanding from "@/features/auth/components/module-landing/landings/KnowledgeGraphLanding";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-
+import PageHeader from "@/features/shell/components/header/PageHeader";
 
 export default async function KnowledgeGraphPage({
   searchParams,
@@ -24,28 +24,30 @@ export default async function KnowledgeGraphPage({
   const { org, scope, scopeType } = await searchParams;
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-2.5 pr-14">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
+    <>
+      <PageHeader>
+        <div className="flex items-center w-full min-w-0 gap-0 p-0">
+          <h1 className="text-sm font-medium text-foreground truncate">
             Knowledge graph
           </h1>
-          <p className="text-xs text-muted-foreground">
-            Entities and relationships across your organization&apos;s content.
-            Click a node to inspect its source mentions.
-          </p>
+          <div className="ml-auto shrink-0 flex items-center">
+            {/* Working context — filtering today; direct scope↔node assignment
+                is the next (and biggest) step for this surface. */}
+            <ActiveContextButton
+              size="sm"
+              align="end"
+              triggerClassName="max-w-[200px] sm:max-w-[360px]"
+            />
+          </div>
         </div>
-        {/* Working context — filtering today; direct scope↔node assignment is
-            the next (and biggest) step for this surface. */}
-        <ActiveContextButton size="sm" align="end" triggerClassName="max-w-[360px]" />
-      </div>
-      <div className="min-h-0 flex-1">
+      </PageHeader>
+      <div className="h-full overflow-hidden bg-textured">
         <KnowledgeGraphClient
           orgParam={org ?? null}
           scopeParam={scope ?? null}
           scopeTypeParam={scopeType ?? null}
         />
       </div>
-    </div>
+    </>
   );
 }

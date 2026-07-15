@@ -13,6 +13,8 @@ import Link from "next/link";
 import { ArrowRight, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
+import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
 import {
   MODULE_LANDING_DIRECTORY,
   MODULE_LANDING_GROUPS,
@@ -20,7 +22,8 @@ import {
 
 export default function FeaturesIndexPage() {
   return (
-    <div className="min-h-dvh">
+    <MarketingPageShell>
+      <AuthedWorkspaceCTA workspaceHref="/dashboard" workspaceLabel="Workspace" />
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
@@ -143,6 +146,6 @@ export default function FeaturesIndexPage() {
           </Button>
         </div>
       </section>
-    </div>
+    </MarketingPageShell>
   );
 }

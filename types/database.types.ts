@@ -23892,6 +23892,39 @@ export type Database = {
         }
         Relationships: []
       }
+      infra_status: {
+        Row: {
+          component: string
+          detail: Json
+          last_ok_at: string | null
+          last_run_at: string
+          message: string | null
+          stale_after_seconds: number
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          component: string
+          detail?: Json
+          last_ok_at?: string | null
+          last_run_at?: string
+          message?: string | null
+          stale_after_seconds?: number
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          component?: string
+          detail?: Json
+          last_ok_at?: string | null
+          last_run_at?: string
+          message?: string | null
+          stale_after_seconds?: number
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       library_audit_log: {
         Row: {
           action: string

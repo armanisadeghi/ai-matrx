@@ -49,6 +49,10 @@ import {
   getEffectiveStatus,
 } from "@/lib/sandbox/status";
 import type { SandboxInstance, SandboxExecResponse } from "@/types/sandbox";
+import {
+  EntityModeHeader,
+  type EntityHeaderAction,
+} from "@/features/shell/components/header/templates/EntityModeHeader";
 
 const DEFAULT_CWD = "/home/agent";
 
@@ -300,23 +304,9 @@ export default function SandboxDetailPage() {
 
   if (loading) {
     return (
-      <div className="h-page flex flex-col bg-textured overflow-hidden">
-        <div className="shrink-0 p-4 border-b border-border bg-textured">
-          <div className="flex items-center justify-between max-w-6xl mx-auto">
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-8 w-8 rounded" />
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-48" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-8 w-16 rounded" />
-              <Skeleton className="h-8 w-16 rounded" />
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
+      <>
+        <EntityModeHeader backHref="/sandbox" entityLabel="Loading…" />
+        <div className="h-full overflow-y-auto bg-textured px-4 pt-[calc(var(--shell-header-h)+1rem)] pb-8">
           <div className="max-w-6xl mx-auto space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
@@ -340,27 +330,30 @@ export default function SandboxDetailPage() {
             </Card>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!instance) {
     return (
-      <div className="h-page bg-textured flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="p-8 text-center">
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
-            <h3 className="text-lg font-medium mb-2">Sandbox Not Found</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {error || "This sandbox does not exist."}
-            </p>
-            <Button onClick={() => router.push("/sandbox")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Sandboxes
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <EntityModeHeader backHref="/sandbox" entityLabel="Sandbox" />
+        <div className="h-full overflow-hidden bg-textured flex items-center justify-center pt-[var(--shell-header-h)]">
+          <Card className="max-w-md">
+            <CardContent className="p-8 text-center">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
+              <h3 className="text-lg font-medium mb-2">Sandbox Not Found</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {error || "This sandbox does not exist."}
+              </p>
+              <Button onClick={() => router.push("/sandbox")}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Sandboxes
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </>
     );
   }
 
@@ -371,33 +364,40 @@ export default function SandboxDetailPage() {
   const initialTtlHours = Math.floor(instance.ttl_seconds / 3600);
   const initialTtlMins = Math.floor((instance.ttl_seconds % 3600) / 60);
 
+  const detailActions: EntityHeaderAction[] = [
+    ...(isActive
+      ? [
+          {
+            label: "+1h",
+            icon: Clock,
+            onPress: () => handleExtend(3600),
+          },
+          {
+            label: "Stop",
+            icon: Square,
+            onPress: () => void handleStop(),
+          },
+        ]
+      : []),
+    {
+      label: "Delete",
+      icon: Trash2,
+      onPress: () => setDeleteOpen(true),
+      destructive: true,
+    },
+  ];
+
   return (
-    <div className="h-page flex flex-col bg-textured overflow-hidden">
-      <div className="shrink-0 p-4 border-b border-border bg-textured">
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/sandbox")}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold font-mono">
-                  {instance.sandbox_id}
-                </h1>
-                <Badge variant={statusVariant}>{statusLabel}</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Created {new Date(instance.created_at).toLocaleString()}
-              </p>
-            </div>
-          </div>
+    <>
+      <EntityModeHeader
+        backHref="/sandbox"
+        entityLabel={instance.sandbox_id}
+        actions={detailActions}
+        right={
           <div className="flex items-center gap-2">
+            <Badge variant={statusVariant}>{statusLabel}</Badge>
             <CopyButtons
-              size="sm"
+              size="icon"
               label={`Sandbox ${instance.sandbox_id}`}
               human={() => sandboxInstanceSummary(instance)}
               agent={() => ({
@@ -414,36 +414,16 @@ export default function SandboxDetailPage() {
                 },
               })}
             />
-            {isActive && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExtend(3600)}
-                >
-                  <Clock className="w-4 h-4 mr-1" />
-                  +1h
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleStop}>
-                  <Square className="w-4 h-4 mr-1" />
-                  Stop
-                </Button>
-              </>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDeleteOpen(true)}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-8">
+      <div className="h-full flex flex-col overflow-hidden bg-textured">
+        <div className="flex-1 overflow-y-auto px-4 pt-[calc(var(--shell-header-h)+1rem)] pb-8">
         <div className="max-w-6xl mx-auto space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Created {new Date(instance.created_at).toLocaleString()}
+          </p>
           {error && !instance && (
             <Card className="border-destructive">
               <CardContent className="flex items-center gap-2 p-4">
@@ -1006,6 +986,7 @@ export default function SandboxDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 }

@@ -30,6 +30,10 @@ import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import { getBlockTypeStyle } from "./block-type-colors";
 import type { UserMarkdownSample } from "./user-samples-service";
 
+// Note: the trigger lives in the route header (a `HeaderAction`), so this
+// component is fully controlled from outside — no internal open state or
+// trigger button of its own.
+
 function formatRelativeTime(iso: string): string {
   const ts = new Date(iso).getTime();
   if (Number.isNaN(ts)) return iso;
@@ -45,17 +49,20 @@ function formatRelativeTime(iso: string): string {
 }
 
 interface SampleLibrarySheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   loadedSampleId: string | null;
   onLoad: (sample: UserMarkdownSample) => void;
 }
 
 export function SampleLibrarySheet({
+  open,
+  onOpenChange,
   loadedSampleId,
   onLoad,
 }: SampleLibrarySheetProps) {
   const { samples, isLoading, error, update, remove } =
     useUserMarkdownSamples();
-  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [renaming, setRenaming] = useState<UserMarkdownSample | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,7 +80,7 @@ export function SampleLibrarySheet({
 
   const handleLoad = (sample: UserMarkdownSample) => {
     onLoad(sample);
-    setOpen(false);
+    onOpenChange(false);
   };
 
   const handleDelete = async (sample: UserMarkdownSample) => {
@@ -112,23 +119,9 @@ export function SampleLibrarySheet({
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8 gap-1.5 text-xs font-medium"
-        onClick={() => setOpen(true)}
-      >
-        <BookOpen className="h-3.5 w-3.5" />
-        Library
-        {samples.length > 0 && (
-          <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px]">
-            {samples.length}
-          </Badge>
-        )}
-      </Button>
       <MatrxDynamicPanelHost
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={onOpenChange}
         title={
           <span className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-primary" />

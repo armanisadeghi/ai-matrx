@@ -96,9 +96,12 @@ export default function ScraperSearchAndScrapePage() {
   };
 
   return (
-    <div className="h-page flex flex-col overflow-hidden bg-textured">
-      {/* Header bar */}
-      <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-white/50 dark:bg-gray-900/50">
+    <div
+      className="h-full flex flex-col overflow-hidden bg-textured"
+      style={{ paddingTop: "var(--shell-header-h)" }}
+    >
+      {/* Search toolbar */}
+      <div className="flex-shrink-0 px-3 py-2 border-b border-border/50">
         <div className="max-w-full mx-auto flex gap-2 items-end flex-wrap">
           <div className="flex-1 min-w-[200px]">
             <Label

@@ -10,7 +10,7 @@ export async function generateMetadata({
   return createDynamicRouteMetadata("/schedules", {
     title: shortId,
     description: "View and manage a scheduled task.",
-    letter: "Sh",
+    letter: "Sc",
   });
 }
 

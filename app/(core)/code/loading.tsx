@@ -1,6 +1,9 @@
 export default function CodeLoading() {
   return (
-    <div className="flex h-[calc(100dvh-var(--shell-offset,0px))] w-full bg-neutral-50 dark:bg-neutral-950">
+    <div
+      className="flex h-full w-full overflow-hidden bg-neutral-50 dark:bg-neutral-950"
+      style={{ paddingTop: "var(--shell-header-h)" }}
+    >
       <div className="w-[18%] shrink-0 border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-[#181818]">
         <div className="h-9 border-b border-neutral-200 dark:border-neutral-800" />
       </div>

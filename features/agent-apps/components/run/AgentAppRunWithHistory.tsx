@@ -34,12 +34,16 @@ export function AgentAppRunWithHistory({
 
   return (
     <div className="h-full flex flex-row">
-      <div className="flex-1 min-w-0 relative pt-10">
+      <div
+        className="flex-1 min-w-0 relative"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
         {!sidebarOpen && (
           <Button
             variant="ghost"
             size="icon"
-            className="hidden lg:flex absolute top-2 left-2 z-10 h-7 w-7"
+            className="hidden lg:flex absolute left-2 z-10 h-7 w-7"
+            style={{ top: "calc(var(--shell-header-h) + 0.5rem)" }}
             onClick={() => setSidebarOpen(true)}
             title="Show history"
           >

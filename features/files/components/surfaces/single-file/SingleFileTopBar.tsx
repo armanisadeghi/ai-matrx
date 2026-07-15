@@ -1,17 +1,20 @@
 /**
  * features/files/components/surfaces/single-file/SingleFileTopBar.tsx
  *
- * Top bar for the dedicated `/files/f/{fileId}` shell. Three regions:
+ * Route header for the dedicated `/files/f/{fileId}` shell — injected into
+ * the shell's glass header center zone via `RouteHeader`, not rendered as an
+ * in-body bar. Three regions:
  *
  *   left   — Back to /files, then folder breadcrumb (with last segment
  *            being the file's parent folder, not the file itself)
- *   center — File icon + filename (with lineage chip for real files)
+ *   center — File icon + filename (with lineage chip for real files) —
+ *            the bounded `1fr` cell so long names truncate instead of
+ *            pushing the actions off-screen.
  *   right  — Show files (sheet drawer), Download, Copy link, More menu,
  *            Open in new tab
  *
- * Deliberately thinner than the PreviewPane header — this is page chrome,
- * not panel chrome. Buttons are sized to align with the tabs underneath
- * so the eye doesn't pinball.
+ * Desktop-only: `SingleFileShell` renders `MobileStack` on mobile instead,
+ * so this component never needs a phone-width fallback.
  */
 
 "use client";
@@ -20,7 +23,6 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Check,
   ChevronRight,
   Copy,
@@ -52,6 +54,9 @@ import { FileRightClickMenu } from "@/features/files/components/core/FileContext
 import { FileLineageChip } from "../FileLineageChip";
 import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import { NavSidebar } from "../desktop/NavSidebar";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { TapTargetButton } from "@/components/icons/TapTargetButton";
 
 export interface SingleFileTopBarProps {
   fileId: string;
@@ -117,193 +122,158 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
   }, [actions, copying]);
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 border-b border-border bg-card px-3 py-2 shrink-0",
-        className,
-      )}
-    >
-      {/* Back to /files */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
+    <RouteHeader
+      left={
+        <>
+          <ChevronLeftTapButton
             onClick={() => router.push("/files/all")}
-            aria-label="Back to all files"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            ariaLabel="Back to all files"
+          />
+          {/* Breadcrumb — Home → ancestor folders. Truncates with "…" when long. */}
+          <nav
+            aria-label="Folder path"
+            className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground px-1"
           >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" sideOffset={6}>
-          Back to all files
-        </TooltipContent>
-      </Tooltip>
-
-      {/* Breadcrumb — Home → ancestor folders. Truncates with "…" when long. */}
-      <nav
-        aria-label="Folder path"
-        className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
-      >
-        <Link
-          href="/files/all"
-          className="inline-flex items-center rounded p-1 hover:bg-accent hover:text-foreground"
-          title="Home"
-        >
-          <Home className="h-3 w-3" aria-hidden="true" />
-        </Link>
-        {ancestors.length > 3 ? (
-          <>
-            <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="px-1 text-muted-foreground/60">…</span>
-            {ancestors.slice(-2).map((folder, idx) => {
-              const realIdx = ancestors.length - 2 + idx;
-              return (
+            <Link
+              href="/files/all"
+              className="inline-flex items-center rounded p-1 hover:bg-accent hover:text-foreground"
+              title="Home"
+            >
+              <Home className="h-3 w-3" aria-hidden="true" />
+            </Link>
+            {ancestors.length > 3 ? (
+              <>
+                <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <span className="px-1 text-muted-foreground/60">…</span>
+                {ancestors.slice(-2).map((folder, idx) => {
+                  const realIdx = ancestors.length - 2 + idx;
+                  return (
+                    <BreadcrumbSegment
+                      key={folder.id}
+                      href={ancestorHrefs[realIdx]}
+                      label={folder.folderName}
+                    />
+                  );
+                })}
+              </>
+            ) : (
+              ancestors.map((folder, idx) => (
                 <BreadcrumbSegment
                   key={folder.id}
-                  href={ancestorHrefs[realIdx]}
+                  href={ancestorHrefs[idx]}
                   label={folder.folderName}
                 />
-              );
-            })}
-          </>
-        ) : (
-          ancestors.map((folder, idx) => (
-            <BreadcrumbSegment
-              key={folder.id}
-              href={ancestorHrefs[idx]}
-              label={folder.folderName}
-            />
-          ))
-        )}
-      </nav>
-
-      {/* File name + lineage — center. The right-click menu wraps it so a
-       * right-click anywhere here gives the full action set. */}
-      <FileRightClickMenu fileId={fileId}>
-        <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
-          <ChevronRight
-            className="h-3 w-3 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          {file ? (
-            <FileIcon fileName={file.fileName} size={16} className="shrink-0" />
-          ) : null}
-          <span
-            className="truncate text-sm font-semibold text-foreground"
-            title={file?.fileName ?? ""}
-          >
-            {file?.fileName ?? "Loading…"}
-          </span>
-          {file?.source.kind === "real" ? (
-            <FileLineageChip fileId={fileId} className="shrink-0" />
-          ) : null}
-        </div>
-      </FileRightClickMenu>
-
-      {/* Right-side actions */}
-      <div className="flex items-center gap-0.5 shrink-0 mr-2">
-        {file?.mimeType === "application/pdf" && (
-          <PdfSurfaceSwitcher
-            current="file-viewer"
-            fileId={fileId}
-            size="sm"
-            className="mr-1"
-          />
-        )}
-        {/* Show files — opens NavSidebar in a slide-out Sheet so the user
-         * can hop between files without leaving the single-file shell. */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="Show all files"
-              onClick={() => setShowFiles(true)}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent"
+              ))
+            )}
+          </nav>
+        </>
+      }
+      center={
+        /* File name + lineage — the bounded 1fr cell, so long names
+         * truncate instead of pushing the actions off-screen. The
+         * right-click menu wraps it so a right-click anywhere here gives
+         * the full action set. */
+        <FileRightClickMenu fileId={fileId}>
+          <div className="flex min-w-0 items-center gap-2 px-2">
+            {file ? (
+              <FileIcon fileName={file.fileName} size={16} className="shrink-0" />
+            ) : null}
+            <span
+              className="truncate text-sm font-medium text-foreground"
+              title={file?.fileName ?? ""}
             >
-              <FolderTree className="h-3.5 w-3.5" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={6}>
-            Show all files
-          </TooltipContent>
-        </Tooltip>
-        <MatrxDynamicPanelHost
-          open={showFiles}
-          onOpenChange={setShowFiles}
-          title="All files"
-          expandButtonLabel="All files"
-          position="left"
-          defaultSize={22}
-          maxSize={40}
-          contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-        >
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <NavSidebar section="all" />
+              {file?.fileName ?? "Loading…"}
+            </span>
+            {file?.source.kind === "real" ? (
+              <FileLineageChip fileId={fileId} className="shrink-0" />
+            ) : null}
           </div>
-        </MatrxDynamicPanelHost>
+        </FileRightClickMenu>
+      }
+      right={
+        <div className={cn("flex items-center", className)}>
+          {file?.mimeType === "application/pdf" && (
+            <PdfSurfaceSwitcher
+              current="file-viewer"
+              fileId={fileId}
+              size="sm"
+              className="mr-1"
+            />
+          )}
+          {/* Show files — opens NavSidebar in a slide-out Sheet so the user
+           * can hop between files without leaving the single-file shell. */}
+          <TapTargetButton
+            icon={<FolderTree className="h-4 w-4" />}
+            ariaLabel="Show all files"
+            onClick={() => setShowFiles(true)}
+          />
+          <MatrxDynamicPanelHost
+            open={showFiles}
+            onOpenChange={setShowFiles}
+            title="All files"
+            expandButtonLabel="All files"
+            position="left"
+            defaultSize={22}
+            maxSize={40}
+            contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+          >
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <NavSidebar section="all" />
+            </div>
+          </MatrxDynamicPanelHost>
 
-        <ActionButton
-          onClick={handleCopyLink}
-          disabled={!file || copying}
-          title="Copy share link"
-          ariaLabel="Copy share link"
-        >
-          {copying ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : copied ? (
-            <Check className="h-3.5 w-3.5 text-success" />
-          ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
-        </ActionButton>
-        <ActionButton
-          onClick={handleDownload}
-          disabled={!file || downloading}
-          title="Download"
-          ariaLabel="Download"
-        >
-          {downloading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="h-3.5 w-3.5" />
-          )}
-        </ActionButton>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a
-              href={`/files/f/${fileId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Open in new tab"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={6}>
-            Open in new tab
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <FileContextMenu fileId={fileId}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="More actions"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!file}
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </button>
-            </TooltipTrigger>
-          </FileContextMenu>
-          <TooltipContent side="bottom" sideOffset={6}>
-            More actions
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
+          <TapTargetButton
+            icon={
+              copying ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : copied ? (
+                <Check className="h-4 w-4 text-success" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )
+            }
+            ariaLabel="Copy share link"
+            onClick={handleCopyLink}
+            disabled={!file || copying}
+          />
+          <TapTargetButton
+            icon={
+              downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )
+            }
+            ariaLabel="Download"
+            onClick={handleDownload}
+            disabled={!file || downloading}
+          />
+          <TapTargetButton
+            icon={<ExternalLink className="h-4 w-4" />}
+            ariaLabel="Open in new tab"
+            href={`/files/f/${fileId}`}
+            target="_blank"
+          />
+          <Tooltip>
+            <FileContextMenu fileId={fileId}>
+              <TooltipTrigger asChild>
+                <span>
+                  <TapTargetButton
+                    icon={<MoreHorizontal className="h-4 w-4" />}
+                    ariaLabel="More actions"
+                    disabled={!file}
+                    tooltip={false}
+                  />
+                </span>
+              </TooltipTrigger>
+            </FileContextMenu>
+            <TooltipContent side="bottom" sideOffset={6}>
+              More actions
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      }
+    />
   );
 }
 
@@ -324,35 +294,3 @@ function BreadcrumbSegment({ href, label }: { href: string; label: string }) {
   );
 }
 
-function ActionButton({
-  children,
-  title,
-  ariaLabel,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode;
-  title: string;
-  ariaLabel: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={onClick}
-          disabled={disabled}
-          aria-label={ariaLabel}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {children}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" sideOffset={6}>
-        {title}
-      </TooltipContent>
-    </Tooltip>
-  );
-}

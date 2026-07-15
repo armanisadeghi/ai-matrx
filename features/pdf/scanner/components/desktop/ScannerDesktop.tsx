@@ -39,6 +39,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import HeaderBack from "@/features/shell/components/header/variants/shared/HeaderBack";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 
 import { MediaThumbnail } from "@/features/files";
@@ -183,7 +185,15 @@ export default function ScannerDesktop() {
   const itemCount = session.items.length;
 
   return (
-    <div className="flex h-full min-h-0 bg-muted/30">
+    <>
+      {/* Route chrome — back to the extractor studio. Portals into the
+          shell header row; the sidebar identity below carries the rest. */}
+      <PageHeader>
+        <div className="flex w-full min-w-0 items-center">
+          <HeaderBack onClick={() => router.push("/tools/pdf-extractor")} />
+        </div>
+      </PageHeader>
+      <div className="flex h-full min-h-0 bg-muted/30">
       {/* ── Sidebar ─────────────────────────────────────────────────── */}
       <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-card px-4 pb-4 pt-5">
         <div className="mb-5 flex items-center gap-2.5 px-1.5">
@@ -549,6 +559,7 @@ export default function ScannerDesktop() {
           setView("home");
         }}
       />
-    </div>
+      </div>
+    </>
   );
 }

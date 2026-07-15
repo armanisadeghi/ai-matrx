@@ -2,9 +2,9 @@
  * features/files/components/surfaces/dropbox/TopBar.tsx
  *
  * Top app bar for the Dropbox shell. Holds the "+ New" button and a wide
- * search input. Intentionally minimal — the app's global header still
- * renders outside this surface, so we don't duplicate brand or user menu
- * here.
+ * search input. Sits below the shell's glass header (the parent gives this
+ * row `pt-[var(--shell-header-h)]` clearance), so it never competes with the
+ * shell's hamburger/avatar — no manual edge padding needed here.
  *
  * The search box is a `ProInput` (the canonical full-feature single-line
  * input): voice dictation, copy, and a clear (×) control come for free.
@@ -33,7 +33,7 @@ export function TopBar({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 bg-background px-4 py-2 pr-16 shrink-0",
+        "flex items-center gap-3 bg-background px-4 py-2 shrink-0",
         className,
       )}
     >

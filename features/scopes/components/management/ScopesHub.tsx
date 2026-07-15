@@ -8,23 +8,12 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import {
-  AlertTriangle,
-  Building,
-  FileText,
-  FolderKanban,
-  Lightbulb,
-  ListChecks,
-  Network,
-  Settings as SettingsIcon,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, Building, FileText, FolderKanban } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
-import { KgSuggestionsNavButton } from "@/features/kg-suggestions/components/KgSuggestionsNavButton";
 import { HeavyHitterSuggestionsInbox } from "@/features/kg-suggestions/components/HeavyHitterSuggestionsInbox";
 import { cn } from "@/utils/cn";
 
@@ -87,35 +76,6 @@ export function ScopesHub() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Scopes</h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Scopes are the dimensions your work happens in — clients, products,
-            teams, repos, anything. Pick an organization to manage its scope
-            types and the data they carry into every agent run.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <KgSuggestionsNavButton variant="outline" />
-          <QuickLink href="/suggestions" icon={Lightbulb}>
-            Suggestions
-          </QuickLink>
-          <QuickLink href="/context-items" icon={ListChecks}>
-            Context items
-          </QuickLink>
-          <QuickLink href="/knowledge/graph" icon={Network}>
-            Graph
-          </QuickLink>
-          <QuickLink href="/scopes/templates" icon={Zap}>
-            Templates
-          </QuickLink>
-          <QuickLink href="/scopes/settings" icon={SettingsIcon}>
-            Settings
-          </QuickLink>
-        </div>
-      </div>
-
       {/* Heavy-hitter "Suggest a scope" inbox — recurring unaffiliated
           entities the KG proposes promoting to scopes (Phase F.4). */}
       <HeavyHitterSuggestionsInbox />
@@ -210,33 +170,9 @@ export function ScopesHub() {
   );
 }
 
-function QuickLink({
-  href,
-  icon: Icon,
-  children,
-}: {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-md px-2 py-1 transition-colors"
-    >
-      <Icon className="h-3 w-3" />
-      {children}
-    </Link>
-  );
-}
-
 function HubSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-        <div className="h-4 w-96 bg-muted animate-pulse rounded" />
-      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="p-4 space-y-3">

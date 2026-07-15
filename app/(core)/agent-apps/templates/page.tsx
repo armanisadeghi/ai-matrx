@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { DISPLAY_MODE_OPTIONS } from "@/features/agent-apps/sample-code/templates";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
 
 const MODE_ICONS: Record<string, string> = {
@@ -14,18 +16,24 @@ const MODE_ICONS: Record<string, string> = {
 
 export default function TemplatesIndexPage() {
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-6 py-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-foreground">
-              Display Mode Templates
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Preview each UI pattern for agent apps. Click a template to see
-              it in action with mock data.
-            </p>
-          </div>
+    <>
+      <PageHeader>
+        <div className="flex items-center w-full min-w-0 gap-0 p-0">
+          <ChevronLeftTapButton
+            href="/agent-apps"
+            ariaLabel="Back to Agent Apps"
+          />
+          <h1 className="ml-2 text-sm font-medium text-foreground truncate">
+            Display Mode Templates
+          </h1>
+        </div>
+      </PageHeader>
+      <div className="h-full overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-6 py-6">
+          <p className="text-sm text-muted-foreground mb-6">
+            Preview each UI pattern for agent apps. Click a template to see
+            it in action with mock data.
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {DISPLAY_MODE_OPTIONS.map((mode) => (
@@ -81,6 +89,6 @@ export default function TemplatesIndexPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

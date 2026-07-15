@@ -169,9 +169,12 @@ export default function QuickScrapePage() {
   const activeStatus = statusMessage || fullScrapeApi.statusMessage;
 
   return (
-    <div className="h-page flex flex-col overflow-hidden bg-textured">
-      {/* Header bar */}
-      <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
+    <div
+      className="h-full flex flex-col overflow-hidden bg-textured"
+      style={{ paddingTop: "var(--shell-header-h)" }}
+    >
+      {/* Search toolbar */}
+      <div className="flex-shrink-0 px-3 py-2 border-b border-border/50">
         <div className="max-w-5xl mx-auto flex gap-2 items-center">
           <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <Input

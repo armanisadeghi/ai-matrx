@@ -9,7 +9,7 @@ import {
   selectTotalUnreadCount,
 } from "@/features/messaging/redux/messagingSlice";
 import { ConversationList } from "@/features/messaging/components/ConversationList";
-import { MessagesHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import { MessagesListHeader } from "@/features/messaging/components/shell/MessagesListHeader";
 import { MessageSquare } from "lucide-react";
 import { createMessagesScope } from "@/features/surfaces/manifests/messages.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -49,18 +49,15 @@ export default function MessagesPageClient() {
       getScope={getScope}
       isEditable={false}
     >
-      <MessagesHeader title="Messages" />
+      <MessagesListHeader />
 
-      {/* Mobile: Full-screen conversation list */}
-      <div className="md:hidden flex flex-col h-full">
-        <div className="p-3 border-b border-zinc-200 dark:border-zinc-800">
-          <h1 className="text-lg font-semibold">Messages</h1>
-        </div>
+      {/* Mobile: Full-screen conversation list (desktop sidebar is hidden) */}
+      <div className="md:hidden flex flex-col h-full pt-[var(--shell-header-h)]">
         <ConversationList userId={userId} className="flex-1" />
       </div>
 
       {/* Desktop: Empty state (sidebar shows list, this is the default content) */}
-      <div className="hidden md:flex flex-1 flex-col items-center justify-center text-center p-8">
+      <div className="hidden md:flex flex-1 h-full flex-col items-center justify-center text-center p-8">
         <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
           <MessageSquare className="w-8 h-8 text-zinc-400" />
         </div>

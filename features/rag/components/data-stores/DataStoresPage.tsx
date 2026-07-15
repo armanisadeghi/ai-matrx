@@ -20,6 +20,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import {
   AlertCircle,
   CloudUpload,
@@ -85,15 +87,16 @@ export function DataStoresPage() {
   );
 
   return (
-    <div className="flex h-[calc(100dvh-3rem)] bg-background">
-      <aside className="w-80 border-r flex flex-col overflow-hidden shrink-0">
-        <div className="px-3 py-2 border-b flex items-center gap-2">
-          <Database className="h-4 w-4 text-muted-foreground" />
-          <h1 className="text-sm font-semibold flex-1">Data stores</h1>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {list.stores.length}
+    <>
+      <RagHubHeader
+        right={
+          <span className="text-xs text-muted-foreground tabular-nums px-2">
+            {list.stores.length} stores
           </span>
-        </div>
+        }
+      />
+      <div className="flex h-full overflow-hidden bg-background">
+      <aside className="w-80 border-r flex flex-col overflow-hidden shrink-0 pt-[var(--shell-header-h)]">
         {/* Working context — what scoped retrieval acts within. */}
         <div className="border-b px-3 py-1.5">
           <ActiveContextButton size="sm" triggerClassName="max-w-full" />
@@ -126,7 +129,7 @@ export function DataStoresPage() {
         </div>
       </aside>
 
-      <section className="flex-1 overflow-hidden">
+      <section className="flex-1 overflow-hidden pt-[var(--shell-header-h)]">
         {!storeId ? (
           <div className="m-6 rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground max-w-2xl">
             <p className="font-medium text-foreground mb-2">
@@ -154,7 +157,8 @@ export function DataStoresPage() {
           />
         )}
       </section>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -550,14 +554,15 @@ function StoreDetailPanel({
                   variant="ghost"
                   className="text-destructive"
                   onClick={async () => {
-                    if (
-                      !confirm(
-                        `Permanently delete data store "${s.name}"? Members will be removed but the underlying documents are not affected.`,
-                      )
-                    )
-                      return;
-                    const ok = await detail.deleteStore();
-                    if (ok) onDeleted();
+                    const ok = await confirm({
+                      title: "Delete data store",
+                      description: `Permanently delete data store "${s.name}"? Members will be removed but the underlying documents are not affected.`,
+                      confirmLabel: "Delete",
+                      variant: "destructive",
+                    });
+                    if (!ok) return;
+                    const deleted = await detail.deleteStore();
+                    if (deleted) onDeleted();
                   }}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -781,14 +786,14 @@ function MemberTable({
                   size="sm"
                   variant="ghost"
                   className="h-7 w-7 p-0 text-destructive"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `Remove ${m.sourceKind}/${m.sourceId.slice(0, 8)}… from this store?`,
-                      )
-                    ) {
-                      void onRemove(m);
-                    }
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: "Remove member",
+                      description: `Remove ${m.sourceKind}/${m.sourceId.slice(0, 8)}… from this store?`,
+                      confirmLabel: "Remove",
+                      variant: "destructive",
+                    });
+                    if (ok) void onRemove(m);
                   }}
                 >
                   <Trash2 className="h-3.5 w-3.5" />

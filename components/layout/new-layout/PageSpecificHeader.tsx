@@ -76,39 +76,6 @@ export function RecipeEditHeader(props: RecipeEditHeaderProps) {
   );
 }
 
-interface TranscriptsHeaderProps {
-  onCreateNew: () => void;
-  onDeleteTranscript: () => void;
-  className?: string;
-}
-
-export function TranscriptsHeaderPortal(props: TranscriptsHeaderProps) {
-  const pathname = usePathname();
-  const [TranscriptsHeader, setTranscriptsHeader] = useState<any>(null);
-
-  useEffect(() => {
-    // Match the canonical processor workspace only — `/transcripts` exact,
-    // NOT the sub-routes `/transcripts/studio` or `/transcripts/scribe`
-    // which have their own headers.
-    if (pathname !== "/transcripts") return;
-    import("@/features/transcripts/components/TranscriptsHeader").then(
-      (module) => {
-        setTranscriptsHeader(() => module.TranscriptsHeader);
-      },
-    );
-  }, [pathname]);
-
-  if (pathname !== "/transcripts" || !TranscriptsHeader) {
-    return null;
-  }
-
-  return (
-    <PageSpecificHeader>
-      <TranscriptsHeader {...props} />
-    </PageSpecificHeader>
-  );
-}
-
 interface AppletHeaderProps {
   appId?: string;
   isDemo?: boolean;
@@ -135,42 +102,6 @@ export function AppletHeader(props: AppletHeaderProps) {
   return (
     <PageSpecificHeader>
       <AppletHeaderCompact {...props} />
-    </PageSpecificHeader>
-  );
-}
-
-/** Props for MessagesHeader component */
-interface MessagesHeaderProps {
-  title?: string;
-  showBack?: boolean;
-  backHref?: string;
-  onBack?: () => void;
-  /** URL for the avatar image */
-  avatarUrl?: string | null;
-  /** Whether the other user is online */
-  isOnline?: boolean;
-}
-
-export function MessagesHeader(props: MessagesHeaderProps) {
-  const pathname = usePathname();
-  const [MessagesHeaderCompact, setMessagesHeaderCompact] = useState<any>(null);
-
-  useEffect(() => {
-    if (!pathname?.includes("/messages")) return;
-    import("@/features/messaging/components/MessagesHeaderCompact").then(
-      (module) => {
-        setMessagesHeaderCompact(() => module.MessagesHeaderCompact);
-      },
-    );
-  }, [pathname]);
-
-  if (!pathname?.includes("/messages") || !MessagesHeaderCompact) {
-    return null;
-  }
-
-  return (
-    <PageSpecificHeader>
-      <MessagesHeaderCompact {...props} />
     </PageSpecificHeader>
   );
 }

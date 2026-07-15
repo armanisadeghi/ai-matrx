@@ -84,4 +84,4 @@ export { TypingIndicator } from './components/TypingIndicator';
 export { OnlineIndicator } from './components/OnlineIndicator';
 export { NewConversationDialog } from './components/NewConversationDialog';
 export { MessageIcon } from './components/MessageIcon';
-export { MessagesHeaderCompact } from './components/MessagesHeaderCompact';
+

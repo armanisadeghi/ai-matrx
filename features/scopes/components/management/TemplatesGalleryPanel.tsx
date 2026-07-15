@@ -86,14 +86,6 @@ export function TemplatesGalleryPanel() {
 
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Templates</h1>
-        <p className="text-xs text-muted-foreground">
-          Reusable scope-type bundles. Apply one to seed an org with the right
-          dimensions and context items in a single step.
-        </p>
-      </header>
-
       {Object.entries(grouped).map(([category, list]) => (
         <section key={category} className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase">

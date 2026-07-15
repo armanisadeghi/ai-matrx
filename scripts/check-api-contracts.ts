@@ -42,7 +42,14 @@ const ALLOWED = [
 // (getJson/postJson/… — they take a path + body/response shape that can drift).
 // Pure utilities carry no wire shape, so importing ONLY them is not an offense.
 // Fail-safe: anything NOT in this allowlist (incl. a newly-added verb) flags.
-const UTILITY_ONLY = new Set(["buildHeaders", "newRequestId", "resolveBaseUrl"]);
+const UTILITY_ONLY = new Set([
+  "buildHeaders",
+  "newRequestId",
+  "resolveBaseUrl",
+  // Path-aware / files URL resolvers — pure string construction, no wire shape.
+  "resolveBaseUrlForPath",
+  "resolveFilesBaseUrl",
+]);
 // `[^;]*?` (not `[\s\S]`) so the clause can't cross the `;` into a PRIOR
 // import statement and capture its symbols. Multi-line imports have no
 // interior `;`, so this still spans a `{ … }` block correctly.
@@ -150,9 +157,7 @@ function run(): number {
   }
 
   if (added.length > 0) {
-    console.log(
-      `\n${RED}${BOLD}╔══ check:api-contracts FAILED ══╗${RESET}`,
-    );
+    console.log(`\n${RED}${BOLD}╔══ check:api-contracts FAILED ══╗${RESET}`);
     console.log(
       `${RED}${added.length} NEW file(s) import the raw @/lib/python-client instead of the${RESET}`,
     );

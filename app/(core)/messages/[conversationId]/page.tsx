@@ -12,7 +12,7 @@ import {
   selectTotalUnreadCount,
 } from "@/features/messaging/redux/messagingSlice";
 import { ChatThread } from "@/features/messaging/components/ChatThread";
-import { MessagesHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import { MessagesThreadHeader } from "@/features/messaging/components/shell/MessagesThreadHeader";
 import { useOnlinePresence } from "@/hooks/useSupabaseMessaging";
 import { getMessagingService } from "@/lib/supabase/messaging";
 import { createMessagesScope } from "@/features/surfaces/manifests/messages.manifest";
@@ -116,11 +116,9 @@ export default function ConversationPage() {
       getScope={getScope}
       isEditable={false}
     >
-      {/* Header injected into main layout */}
-      <MessagesHeader
+      {/* Header injected into the shell's header center zone */}
+      <MessagesThreadHeader
         title={currentConversation?.display_name || "Chat"}
-        showBack
-        backHref="/messages"
         avatarUrl={currentConversation?.display_image}
         isOnline={
           currentConversation?.type === "direct" ? isOtherUserOnline : undefined

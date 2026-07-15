@@ -72,7 +72,7 @@ export function ImagesSidebar() {
     <TooltipProvider delayDuration={300}>
       <aside
         className={cn(
-          "flex-shrink-0 border-r border-border bg-card/40 flex flex-col transition-[width] duration-200 h-full",
+          "flex-shrink-0 border-r border-border bg-card/40 flex flex-col transition-[width] duration-200 h-full pt-[var(--shell-header-h)]",
           collapsed ? "w-11" : "w-44",
         )}
       >

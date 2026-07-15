@@ -45,7 +45,7 @@ import {
   Search,
   X,
   AlertCircle,
-  Plus,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,8 +58,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAppDispatch as useDispatch } from "@/lib/redux/hooks";
-
 // ── Icon map ──────────────────────────────────────────────────────────────────
 
 const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
@@ -142,7 +140,7 @@ function ArtifactCard({
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("[data-no-nav]")) return;
     if (e.metaKey || e.ctrlKey) {
-      window.open(`/cms/${artifact.id}`, "_blank");
+      window.open(`/artifacts/${artifact.id}`, "_blank");
       return;
     }
     if (!isDisabled) {
@@ -280,7 +278,7 @@ function ArtifactCard({
             </Link>
           )}
           <Link
-            href={`/cms/${artifact.id}`}
+            href={`/artifacts/${artifact.id}`}
             tabIndex={-1}
             onClick={(e) => {
               e.stopPropagation();
@@ -346,7 +344,7 @@ export function CmsArtifactList() {
   const handleNavigate = (id: string) => {
     if (navigatingId) return;
     setNavigatingId(id);
-    startTransition(() => router.push(`/cms/${id}`));
+    startTransition(() => router.push(`/artifacts/${id}`));
   };
 
   const handleDelete = (id: string) => {
@@ -360,7 +358,7 @@ export function CmsArtifactList() {
   const handleOpenEditor = (artifact: CxArtifactRecord) => {
     if (artifact.artifactType === "html_page" && artifact.externalId) {
       // We don't have the original markdown here — open the detail page instead
-      router.push(`/cms/${artifact.id}`);
+      router.push(`/artifacts/${artifact.id}`);
     }
   };
 
@@ -368,43 +366,36 @@ export function CmsArtifactList() {
 
   return (
     <div className="space-y-6">
-      {/* Header + actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Your Content</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            All AI-generated content across your conversations
-          </p>
+      {/* Type filter tabs + refresh */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none flex-1">
+          {TYPE_FILTERS.map((f) => (
+            <Button
+              key={f.value}
+              variant={filters.type === f.value ? "default" : "outline"}
+              size="sm"
+              className="flex-shrink-0 h-8 text-xs"
+              onClick={() => setFilters((prev) => ({ ...prev, type: f.value }))}
+            >
+              {f.label}
+            </Button>
+          ))}
         </div>
         <Button
-          variant="outline"
-          size="sm"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 flex-shrink-0"
           onClick={() => dispatch(fetchUserArtifactsThunk(undefined))}
           disabled={isLoading}
-          className="gap-1.5"
+          title="Refresh"
         >
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <Plus className="h-3.5 w-3.5" />
+            <RefreshCw className="h-3.5 w-3.5" />
           )}
-          Refresh
+          <span className="sr-only">Refresh</span>
         </Button>
-      </div>
-
-      {/* Type filter tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {TYPE_FILTERS.map((f) => (
-          <Button
-            key={f.value}
-            variant={filters.type === f.value ? "default" : "outline"}
-            size="sm"
-            className="flex-shrink-0 h-8 text-xs"
-            onClick={() => setFilters((prev) => ({ ...prev, type: f.value }))}
-          >
-            {f.label}
-          </Button>
-        ))}
       </div>
 
       {/* Search + status filter */}

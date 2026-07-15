@@ -142,9 +142,11 @@ export function StudioShell({ fileId }: StudioShellProps) {
   );
 
   return (
-    <div className="flex h-full w-full flex-col bg-background">
-      {/* Top bar */}
-      <div className="flex shrink-0 items-center gap-2 matrx-glass-thin-border px-3 py-2 pr-12">
+    <div className="flex h-full w-full flex-col bg-background pt-[var(--shell-header-h)]">
+      {/* Top bar — a tool row, not a page header (that's the "Back to file"
+       * link + shell chrome above). Cleared below the glass shell header by
+       * the wrapper's top padding, so no manual edge padding is needed. */}
+      <div className="flex shrink-0 items-center gap-2 matrx-glass-thin-border px-3 py-2">
         <Button
           variant="ghost"
           size="sm"

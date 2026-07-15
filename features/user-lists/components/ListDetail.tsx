@@ -15,6 +15,14 @@ interface ListDetailProps {
   onEditItem?: (item: GroupedItem) => void;
   onDeleteItem?: (itemId: string) => void;
   onAddItem?: (groupName?: string) => void;
+  /**
+   * Render the in-panel `ListMetaHeader` (title/description/actions bar).
+   * Defaults to true for embedded contexts (floating workspace, overlay,
+   * dev demos). The `/lists/[id]` page route sets this to false because it
+   * renders the same identity + actions via the shell's `EntityModeHeader`
+   * instead — never both.
+   */
+  showMetaHeader?: boolean;
 }
 
 export function ListDetail({
@@ -25,6 +33,7 @@ export function ListDetail({
   onEditItem,
   onDeleteItem,
   onAddItem,
+  showMetaHeader = true,
 }: ListDetailProps) {
   const isOwner = !!userId && userId === list.user_id;
 
@@ -38,14 +47,16 @@ export function ListDetail({
   if (groups.length === 0) {
     return (
       <div className="flex flex-col h-full">
-        <ListMetaHeader
-          list={list}
-          isOwner={isOwner}
-          itemCount={0}
-          groupCount={0}
-          onEdit={onEditList}
-          onDelete={onDeleteList}
-        />
+        {showMetaHeader && (
+          <ListMetaHeader
+            list={list}
+            isOwner={isOwner}
+            itemCount={0}
+            groupCount={0}
+            onEdit={onEditList}
+            onDelete={onDeleteList}
+          />
+        )}
         <div className="flex-1 flex flex-col items-center justify-center gap-3 py-20 px-6 text-center">
           <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
             <PackageOpen className="h-7 w-7 text-muted-foreground" />
@@ -69,14 +80,16 @@ export function ListDetail({
 
   return (
     <div className="flex flex-col h-full @container">
-      <ListMetaHeader
-        list={list}
-        isOwner={isOwner}
-        itemCount={itemCount}
-        groupCount={groupCount}
-        onEdit={onEditList}
-        onDelete={onDeleteList}
-      />
+      {showMetaHeader && (
+        <ListMetaHeader
+          list={list}
+          isOwner={isOwner}
+          itemCount={itemCount}
+          groupCount={groupCount}
+          onEdit={onEditList}
+          onDelete={onDeleteList}
+        />
+      )}
 
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto">

@@ -15,19 +15,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import {
-  Bookmark,
-  Eye,
-  FlaskConical,
-  GitCompare,
-  Loader2,
-  Save,
-  SaveAll,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useMarkdownAutosave } from "@/components/admin/markdown-tester/useMarkdownAutosave";
@@ -40,6 +30,8 @@ import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import type { UserMarkdownSample } from "./user-samples-service";
 import type { StudioTemplate } from "./templates";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import HeaderToggle from "@/features/shell/components/header/variants/variants/HeaderToggle";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 
 type StudioMode = "studio" | "analysis";
 
@@ -56,6 +48,8 @@ export function MarkdownStudio() {
     intent: "save" | "fork";
   }>({ open: false, intent: "save" });
   const [saving, setSaving] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
@@ -190,92 +184,87 @@ export function MarkdownStudio() {
   const contentLabel =
     loadedSampleName ?? (content.trim() ? "Untitled" : "Empty");
 
+  const handlePrimaryAction = useCallback(() => {
+    if (saving) return;
+    if (loadedSample) {
+      if (!isDirty) {
+        toast.info("Already saved");
+        return;
+      }
+      void handleQuickUpdate();
+    } else {
+      if (!content.trim()) {
+        toast.info("Nothing to save yet");
+        return;
+      }
+      openSaveDialog("save");
+    }
+  }, [saving, loadedSample, isDirty, content, handleQuickUpdate]);
+
+  const handleForkAction = useCallback(() => {
+    if (!loadedSample || saving) return;
+    if (!content.trim()) {
+      toast.info("Nothing to fork yet");
+      return;
+    }
+    openSaveDialog("fork");
+  }, [loadedSample, saving, content]);
+
+  const headerActions: HeaderAction[] = useMemo(() => {
+    const actions: HeaderAction[] = [
+      {
+        icon: "BookOpen",
+        label:
+          samples.length > 0 ? `Library (${samples.length})` : "Library",
+        onPress: () => setLibraryOpen(true),
+      },
+      {
+        icon: "Layers",
+        label: "Templates",
+        onPress: () => setTemplatesOpen(true),
+      },
+      {
+        icon: loadedSample ? "SaveAll" : "Save",
+        label: loadedSample ? (isDirty ? "Update" : "Saved") : "Save",
+        onPress: handlePrimaryAction,
+      },
+    ];
+    if (loadedSample) {
+      actions.push({
+        icon: "GitFork",
+        label: "Fork",
+        onPress: handleForkAction,
+      });
+    }
+    return actions;
+  }, [
+    samples.length,
+    loadedSample,
+    isDirty,
+    handlePrimaryAction,
+    handleForkAction,
+  ]);
+
   return (
     <div className="flex h-full w-full flex-col bg-textured">
-      {/* ── Header ──────────────────────────────────────────────────── */}
-      <header className="border-b border-border/70 bg-background/70 backdrop-blur pr-10">
-        <div className="flex items-center gap-3 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 via-primary/10 to-transparent text-primary">
-              <FlaskConical className="h-4 w-4" />
-            </div>
-            <div className="leading-tight">
-              <h1 className="text-sm font-semibold tracking-tight">
-                Markdown Studio
-              </h1>
-              <p className="text-[10px] text-muted-foreground">
-                Live block detection · parser drift analysis
-              </p>
-            </div>
-          </div>
+      <PageHeader>
+        <HeaderToggle
+          options={[
+            { icon: "Eye", label: "Studio", value: "studio" },
+            { icon: "GitCompare", label: "Analysis", value: "analysis" },
+          ]}
+          active={mode}
+          onChange={setMode}
+          actions={headerActions}
+        />
+      </PageHeader>
 
-          <div className="ml-3 flex items-center gap-1 rounded-lg border border-border bg-background/40 p-0.5">
-            <ModeTab
-              icon={<Eye className="h-3.5 w-3.5" />}
-              label="Studio"
-              active={mode === "studio"}
-              onClick={() => setMode("studio")}
-            />
-            <ModeTab
-              icon={<GitCompare className="h-3.5 w-3.5" />}
-              label="Analysis"
-              active={mode === "analysis"}
-              onClick={() => setMode("analysis")}
-            />
-          </div>
-
-          <div className="ml-auto flex items-center gap-1.5">
-            <SampleLibrarySheet
-              loadedSampleId={loadedSampleId}
-              onLoad={handleLoadSample}
-            />
-            <TemplatesPalette onSelect={handleLoadTemplate} />
-            {loadedSample ? (
-              <Button
-                variant={isDirty ? "default" : "secondary"}
-                size="sm"
-                onClick={handleQuickUpdate}
-                disabled={!isDirty || saving}
-                className="h-8 gap-1.5 text-xs font-medium"
-                title="Update the loaded sample (⌘S)"
-              >
-                {saving ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <SaveAll className="h-3.5 w-3.5" />
-                )}
-                {isDirty ? "Update" : "Saved"}
-              </Button>
-            ) : (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => openSaveDialog("save")}
-                disabled={!content.trim() || saving}
-                className="h-8 gap-1.5 text-xs font-medium"
-                title="Save to your library (⌘S)"
-              >
-                <Save className="h-3.5 w-3.5" />
-                Save
-              </Button>
-            )}
-            {loadedSample && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => openSaveDialog("fork")}
-                disabled={!content.trim() || saving}
-                className="h-8 px-2 text-xs"
-                title="Save as a new sample (⇧⌘S)"
-              >
-                Fork
-              </Button>
-            )}
-          </div>
-        </div>
-
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
         {/* Status strip — current sample name, dirty indicator */}
-        <div className="flex items-center gap-2 border-t border-border/50 bg-muted/20 px-4 py-1.5 text-[11px]">
+        <div className="flex items-center gap-2 border-b border-border/50 bg-muted/20 px-4 py-1.5 text-[11px]">
           <Bookmark className="h-3 w-3 text-muted-foreground" />
           <span className="text-muted-foreground">Loaded:</span>
           <span className="font-medium">{contentLabel}</span>
@@ -295,29 +284,42 @@ export function MarkdownStudio() {
               unsaved changes
             </Badge>
           )}
-          <span className="ml-auto text-muted-foreground font-mono">
+          <span className="ml-auto hidden text-muted-foreground font-mono sm:inline">
             ⌘S save · ⇧⌘S fork · ⌘. switch view
           </span>
         </div>
-      </header>
 
-      {/* ── Body ───────────────────────────────────────────────────── */}
-      <main className="flex-1 min-h-0 overflow-hidden">
-        {mode === "studio" ? (
-          <div className="grid h-full grid-cols-1 gap-3 p-3 lg:grid-cols-2">
-            <EditorPanel
-              content={content}
-              onChange={handleChange}
-              onClear={handleClear}
-              onScroll={handleEditorScroll}
-              textareaRef={textareaRef}
-            />
-            <PreviewPanel content={content} ref={previewScrollRef} />
-          </div>
-        ) : (
-          <AnalysisView content={content} contentLabel={contentLabel} />
-        )}
-      </main>
+        {/* ── Body ─────────────────────────────────────────────────── */}
+        <main className="flex-1 min-h-0 overflow-hidden">
+          {mode === "studio" ? (
+            <div className="grid h-full grid-cols-1 gap-3 p-3 lg:grid-cols-2">
+              <EditorPanel
+                content={content}
+                onChange={handleChange}
+                onClear={handleClear}
+                onScroll={handleEditorScroll}
+                textareaRef={textareaRef}
+              />
+              <PreviewPanel content={content} ref={previewScrollRef} />
+            </div>
+          ) : (
+            <AnalysisView content={content} contentLabel={contentLabel} />
+          )}
+        </main>
+      </div>
+
+      {/* ── Library + templates panels ──────────────────────────────── */}
+      <SampleLibrarySheet
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
+        loadedSampleId={loadedSampleId}
+        onLoad={handleLoadSample}
+      />
+      <TemplatesPalette
+        open={templatesOpen}
+        onOpenChange={setTemplatesOpen}
+        onSelect={handleLoadTemplate}
+      />
 
       {/* ── Save dialog ─────────────────────────────────────────────── */}
       <TextInputDialog
@@ -346,32 +348,5 @@ export function MarkdownStudio() {
         onConfirm={handleSaveAs}
       />
     </div>
-  );
-}
-
-function ModeTab({
-  icon,
-  label,
-  active,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
-        active
-          ? "bg-foreground text-background shadow-sm"
-          : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }

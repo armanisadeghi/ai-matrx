@@ -13,6 +13,8 @@ import { isScopesRpcErr } from '@/features/scopes/types';
 import { supabase } from '@/utils/supabase/client';
 import type { ProjectInvitation, Project } from '@/features/projects/types';
 import type { ProjectRole } from '@/features/projects/types';
+import PageHeader from '@/features/shell/components/header/PageHeader';
+import { ChevronLeftTapButton } from '@/components/icons/tap-buttons';
 
 type InvitationWithProject = ProjectInvitation & { project: Project };
 
@@ -135,41 +137,58 @@ export default function AcceptProjectInvitationPage() {
     }, 1000);
   };
 
+  const header = (
+    <PageHeader>
+      <div className="flex items-center w-full min-w-0 gap-0 p-0">
+        <ChevronLeftTapButton onClick={() => router.back()} variant="transparent" ariaLabel="Back" />
+        <h1 className="ml-2 text-sm font-medium text-foreground truncate">Project Invite</h1>
+      </div>
+    </PageHeader>
+  );
+
   if (loading) {
     return (
-      <div className="min-h-[calc(100dvh-var(--header-height))] bg-textured flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-indigo-500 mx-auto mb-4" />
-          <p className="text-lg text-muted-foreground">Loading invitation...</p>
+      <>
+        {header}
+        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-indigo-500 mx-auto mb-4" />
+            <p className="text-lg text-muted-foreground">Loading invitation...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (error || !invitation) {
     return (
-      <div className="min-h-[calc(100dvh-var(--header-height))] bg-textured flex items-center justify-center p-4">
-        <Card className="max-w-lg w-full p-8 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800 mb-2">
-              <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-300" />
+      <>
+        {header}
+        <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full p-8 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800 mb-2">
+                <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-300" />
+              </div>
+              <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">Invalid Invitation</h2>
+              <p className="text-red-700 dark:text-red-300">{error}</p>
+              <div className="flex gap-3 justify-center pt-4">
+                <Button onClick={() => router.push('/settings/projects')} variant="outline">
+                  My Projects
+                </Button>
+                <Button onClick={() => router.push('/dashboard')}>Dashboard</Button>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">Invalid Invitation</h2>
-            <p className="text-red-700 dark:text-red-300">{error}</p>
-            <div className="flex gap-3 justify-center pt-4">
-              <Button onClick={() => router.push('/settings/projects')} variant="outline">
-                My Projects
-              </Button>
-              <Button onClick={() => router.push('/dashboard')}>Dashboard</Button>
-            </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-[calc(100dvh-var(--header-height))] bg-textured flex items-center justify-center p-4">
+    <>
+      {header}
+      <div className="h-full overflow-y-auto bg-textured flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full p-8">
         <div className="text-center space-y-6">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 mb-4">
@@ -256,6 +275,7 @@ export default function AcceptProjectInvitationPage() {
           </p>
         </div>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }

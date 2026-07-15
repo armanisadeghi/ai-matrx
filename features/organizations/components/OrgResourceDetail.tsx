@@ -36,6 +36,7 @@ import { idMatchesQuery } from "@/utils/search-scoring";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -167,18 +168,34 @@ export function OrgResourceDetail() {
   );
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push(`/organizations/${org.slug}`)}
-          className="text-muted-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {org.name}
-        </Button>
-
+    <>
+      <CrumbTrailHeader
+        backHref={`/organizations/${org.slug}`}
+        trail={[
+          { label: org.name, href: `/organizations/${org.slug}` },
+          { label: entry.labelPlural },
+        ]}
+        right={
+          entry.orgRoute ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                window.open(
+                  `/organizations/${org.slug}/${entry.orgRoute}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+            >
+              Full view
+              <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+            </Button>
+          ) : undefined
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured">
+      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
         {/* Header */}
         <Card className="p-5 md:p-6 relative overflow-hidden">
           <span className={`absolute inset-x-0 top-0 h-1 ${role.accentBar}`} />
@@ -195,17 +212,6 @@ export function OrgResourceDetail() {
               </div>
               <p className="text-sm text-muted-foreground mt-1">{entry.description}</p>
             </div>
-            {entry.orgRoute && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(`/organizations/${org.slug}/${entry.orgRoute}`, "_blank", "noopener,noreferrer")}
-                className="shrink-0"
-              >
-                Full view
-                <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-              </Button>
-            )}
           </div>
         </Card>
 
@@ -315,7 +321,8 @@ export function OrgResourceDetail() {
         id={peekId}
         onClose={() => setPeekId(null)}
       />
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -530,7 +537,7 @@ function itemHref(entry: OrgResourceEntry, id: string): string | null {
 
 function CenterState({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured p-4">
+    <div className="h-full flex items-center justify-center bg-textured p-4">
       {children}
     </div>
   );

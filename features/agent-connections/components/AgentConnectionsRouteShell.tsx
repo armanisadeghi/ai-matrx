@@ -6,7 +6,9 @@ import { ClientGroup } from "@/app/(dev)/demos/resizables/_lib/ClientGroup";
 import { Handle } from "@/app/(dev)/demos/resizables/_lib/Handle";
 import { RegisteredPanel } from "@/app/(dev)/demos/resizables/_lib/RegisteredPanel";
 import { PanelControlProvider } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentConnectionsSidebar } from "./AgentConnectionsSidebar";
+import { AgentConnectionsHeaderControls } from "./AgentConnectionsHeaderControls";
 import { AgentConnectionsNavProvider } from "./AgentConnectionsNavContext";
 import { AGENT_CONNECTIONS_BASE } from "../routing";
 
@@ -37,6 +39,9 @@ export function AgentConnectionsRouteShell({
 }: Props) {
   return (
     <PanelControlProvider>
+      <PageHeader>
+        <AgentConnectionsHeaderControls />
+      </PageHeader>
       <AgentConnectionsNavProvider mode="route">
         <ClientGroup
           id={GROUP_ID}

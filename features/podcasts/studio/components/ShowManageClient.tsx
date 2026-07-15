@@ -15,8 +15,7 @@
 //                    the computed feed URL with copy + directory-submit helpers.
 //   3. Episodes    — list + an "Upload an episode" entry point (UploadEpisodeDialog).
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -52,6 +51,8 @@ import {
 } from "@/components/ui/select";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { InlineMediaRef } from "@/features/files";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { AssetUploader, type AssetUrls } from "@/features/podcasts/components/admin/AssetUploader";
 import { podcastService } from "@/features/podcasts/service";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
@@ -126,8 +127,6 @@ function SectionCard({
 }
 
 export function ShowManageClient({ showId }: { showId: string }) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
 
   const [show, setShow] = useState<PcShow | null>(null);
   const [episodes, setEpisodes] = useState<PcEpisodeWithShow[]>([]);
@@ -275,49 +274,60 @@ export function ShowManageClient({ showId }: { showId: string }) {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <Skeleton className="mb-6 h-10 w-48" />
-        <div className="space-y-4">
-          <Skeleton className="h-48 w-full rounded-2xl" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
+      <>
+        <PageHeader>
+          <span className="ml-2 text-sm font-medium text-foreground truncate">Manage podcast</span>
+        </PageHeader>
+        <div className="mx-auto max-w-4xl px-4 py-8">
+          <Skeleton className="mb-6 h-10 w-48" />
+          <div className="space-y-4">
+            <Skeleton className="h-48 w-full rounded-2xl" />
+            <Skeleton className="h-64 w-full rounded-2xl" />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (notFound || !show) {
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-          <Radio className="h-7 w-7" />
-        </span>
-        <h1 className="text-lg font-semibold text-foreground">Podcast not found</h1>
-        <p className="text-sm text-muted-foreground">
-          This podcast doesn&apos;t exist or you don&apos;t have access to it.
-        </p>
-        <Button asChild variant="outline" className="gap-2">
-          <Link href="/podcast/studio">
-            <ArrowLeft className="h-4 w-4" />
-            Back to studio
-          </Link>
-        </Button>
-      </div>
+      <>
+        <EntityModeHeader backHref="/podcast/studio" entityLabel="Podcast not found" />
+        <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+            <Radio className="h-7 w-7" />
+          </span>
+          <h1 className="text-lg font-semibold text-foreground">Podcast not found</h1>
+          <p className="text-sm text-muted-foreground">
+            This podcast doesn&apos;t exist or you don&apos;t have access to it.
+          </p>
+          <Button asChild variant="outline" className="gap-2">
+            <Link href="/podcast/studio">
+              <ArrowLeft className="h-4 w-4" />
+              Back to studio
+            </Link>
+          </Button>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-10">
-      {/* Header */}
+    <>
+      <EntityModeHeader
+        backHref="/podcast/studio"
+        entityLabel={show.title}
+        actions={[
+          {
+            label: "View public page",
+            icon: ExternalLink,
+            onPress: () => window.open(`/podcast/${show.slug}`, "_blank", "noopener,noreferrer"),
+          },
+        ]}
+      />
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:py-10">
+      {/* Cover + slug context */}
       <div className="mb-6 flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => startTransition(() => router.back())}
-          title="Back"
-          className="shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
         <span className="relative flex h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-muted">
           <InlineMediaRef
             ref={podcastMediaRef(imageUrl ?? thumbnailUrl)}
@@ -327,18 +337,9 @@ export function ShowManageClient({ showId }: { showId: string }) {
             fallbackIcon={<Radio className="h-5 w-5 text-primary/50" />}
           />
         </span>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-semibold text-foreground">{show.title}</h1>
-          <p className="truncate font-mono text-xs text-muted-foreground">
-            /podcast/{show.slug}
-          </p>
-        </div>
-        <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link href={`/podcast/${show.slug}`} target="_blank">
-            <ExternalLink className="h-3.5 w-3.5" />
-            View public page
-          </Link>
-        </Button>
+        <p className="truncate font-mono text-xs text-muted-foreground">
+          /podcast/{show.slug}
+        </p>
       </div>
 
       <div className="space-y-5">
@@ -638,6 +639,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
         defaultShowId={show.id}
         onCreated={(ep) => setEpisodes((prev) => [ep, ...prev])}
       />
-    </div>
+      </div>
+    </>
   );
 }

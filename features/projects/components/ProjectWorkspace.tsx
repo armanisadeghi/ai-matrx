@@ -29,6 +29,7 @@ import {
   Boxes,
   ChevronRight,
   FolderKanban,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -39,7 +40,11 @@ import { getProject } from "@/features/projects/service";
 import {
   useProjectMembers,
   useProjectUserRole,
+  useUserProjects,
 } from "@/features/projects/hooks";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { ProjectReferencesPanel } from "@/features/projects/components/ProjectReferencesPanel";
 import { ProjectDetails } from "@/features/projects/components/ProjectDetails";
 import type { Project } from "@/features/projects/types";
@@ -156,6 +161,7 @@ export function ProjectWorkspace() {
 
   const { members } = useProjectMembers(project?.id);
   const { role, canManageSettings } = useProjectUserRole(project?.id);
+  const { projects: siblingProjects } = useUserProjects();
 
   // Inline edits (name/description/status/priority/dates/org) patch local state
   // so the workspace IS the edit surface — no trip to a separate page.
@@ -183,33 +189,43 @@ export function ProjectWorkspace() {
 
   if (resolving) {
     return (
-      <CenterState>
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
-      </CenterState>
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/projects" ariaLabel="Back" />}
+        />
+        <CenterState>
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+        </CenterState>
+      </>
     );
   }
 
   if (!project) {
     return (
-      <CenterState>
-        <Card className="max-w-md w-full p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-            <FolderKanban className="h-7 w-7 text-muted-foreground" />
-          </div>
-          <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            This project doesn&apos;t exist or you don&apos;t have access.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/projects")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            All projects
-          </Button>
-        </Card>
-      </CenterState>
+      <>
+        <RouteHeader
+          left={<ChevronLeftTapButton href="/projects" ariaLabel="Back" />}
+        />
+        <CenterState>
+          <Card className="max-w-md w-full p-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <FolderKanban className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Project not found</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              This project doesn&apos;t exist or you don&apos;t have access.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/projects")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              All projects
+            </Button>
+          </Card>
+        </CenterState>
+      </>
     );
   }
 
@@ -250,18 +266,54 @@ export function ProjectWorkspace() {
       getScope={getApplicationScope}
       isEditable={false}
     >
-      <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-        <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/projects")}
-            className="text-muted-foreground"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            All projects
-          </Button>
-
+      <EntityModeHeader
+        backHref="/projects"
+        entityLabel={project.name}
+        entityOptions={siblingProjects.map((p) => ({
+          label: p.name,
+          href: `/projects/${p.id}`,
+          active: p.id === project.id,
+        }))}
+        modes={[
+          { name: "Workspace", href: `/projects/${project.id}`, icon: Eye },
+          ...(role
+            ? [
+                {
+                  name: "Settings",
+                  href: `/projects/${project.id}/settings`,
+                  icon: Settings,
+                },
+              ]
+            : []),
+        ]}
+        actions={[
+          {
+            label: "Knowledge graph",
+            icon: Network,
+            href: kgHref,
+          },
+        ]}
+        right={
+          <>
+            <ReferenceCopyButton
+              referenceType="project"
+              id={project.id}
+              label={project.name}
+              toastLabel={project.name}
+              size="md"
+              className="h-8 w-8"
+            />
+            <ProjectCopyForAiButton
+              projectId={project.id}
+              projectName={project.name}
+              location="Projects — project workspace"
+              size="icon"
+            />
+          </>
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+        <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
           {/* Hero */}
           <Card className="p-5 md:p-6 relative overflow-hidden">
             <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500" />
@@ -352,38 +404,6 @@ export function ProjectWorkspace() {
                   </div>
                 </div>
               </NonEditableContextMenu>
-
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <div className="flex items-center gap-2">
-                  <ReferenceCopyButton
-                    referenceType="project"
-                    id={project.id}
-                    label={project.name}
-                    toastLabel={project.name}
-                    size="md"
-                    className="h-8 w-8"
-                  />
-                  <ProjectCopyForAiButton
-                    projectId={project.id}
-                    projectName={project.name}
-                    location="Projects — project workspace"
-                  />
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={kgHref}>
-                      <Network className="h-4 w-4 mr-1.5" />
-                      Graph
-                    </Link>
-                  </Button>
-                  {role && (
-                    <Button asChild size="sm">
-                      <Link href={`/projects/${project.id}/settings`}>
-                        <Settings className="h-4 w-4 mr-1.5" />
-                        Manage
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
             </div>
           </Card>
 
@@ -512,7 +532,7 @@ function Stat({
 
 function CenterState({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured p-4">
+    <div className="h-full flex items-center justify-center bg-textured p-4">
       {children}
     </div>
   );

@@ -4,7 +4,7 @@ import { ShieldAlert, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="h-page flex items-center justify-center bg-textured">
+    <div className="h-full flex items-center justify-center bg-textured">
       <div className="text-center space-y-4 max-w-md">
         <div className="flex justify-center">
           <div className="p-3 bg-destructive/10 rounded-full">

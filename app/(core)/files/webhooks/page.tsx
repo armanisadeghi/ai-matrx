@@ -8,13 +8,27 @@
 
 import type { Metadata } from "next";
 import { WebhooksManager } from "@/features/files/webhooks/components/WebhooksManager";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
 export const metadata: Metadata = { title: "Webhooks | Files" };
 
 export default function FilesWebhooksPage() {
   return (
-    <div className="h-full overflow-y-auto bg-textured">
-      <WebhooksManager />
-    </div>
+    <>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton href="/files" ariaLabel="Back to Files" />
+            <span className="ml-2 truncate text-sm font-medium text-foreground">
+              Webhooks
+            </span>
+          </>
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured">
+        <WebhooksManager />
+      </div>
+    </>
   );
 }

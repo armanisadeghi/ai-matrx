@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { TapTargetButton, TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 
 import {
   createWorkbook,
@@ -282,147 +284,146 @@ export default function WorkbooksLandingPage() {
   );
 
   return (
-    <div className="w-full h-page p-4 space-y-4 overflow-y-auto scrollbar-none">
-      {/* Mobile: title row stacks above a single button row that wraps
-          cleanly. The wide `pr-10` reservation existed for a desktop side
-          drawer hit-area; on small screens it crushed the button row. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:pr-10">
-        <h1 className="text-2xl font-bold">Workbooks</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          {/*
-            No `accept` filter — Drive / Google Sheets shortcuts and many
-            mobile pickers grey out everything when an accept whitelist is
-            set. We validate by extension/parse after the user picks so the
-            error message is friendly + actionable.
-          */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handleImportXlsx(f);
-            }}
-          />
-          <input
-            ref={smartFileInputRef}
-            type="file"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handleSmartImport(f);
-            }}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={importing || creating || smartCommitting}
-            onClick={() => smartFileInputRef.current?.click()}
-            title="Auto-detect whether your file is a typed dataset or a workbook"
-          >
-            <Sparkles className="h-4 w-4 sm:mr-2" />
-            {/* Hide labels on phones; keep icons + tooltips. */}
-            <span className="hidden sm:inline">Smart import</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={importing || creating || smartCommitting}
-            onClick={() => fileInputRef.current?.click()}
-            title="Import XLSX or CSV"
-          >
-            {importing ? (
-              <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 sm:mr-2" />
-            )}
-            <span className="hidden sm:inline">Import XLSX / CSV</span>
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleCreate}
-            disabled={creating || importing || smartCommitting}
-            title="New workbook"
-          >
-            {creating ? (
-              <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4 sm:mr-2" />
-            )}
-            <span className="hidden sm:inline">New workbook</span>
-          </Button>
-        </div>
-      </div>
-
-      {loading && (
-        <div className="flex h-40 items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          Loading…
-        </div>
-      )}
-
-      {error && !loading && (
-        <Card>
-          <CardContent className="p-4 text-sm text-destructive">
-            {error}
-          </CardContent>
-        </Card>
-      )}
-
-      {!loading && !error && workbooks.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 p-10 text-center text-muted-foreground">
-            <FileSpreadsheet className="size-8" />
-            <div className="text-sm">No workbooks yet.</div>
-            <div className="text-xs">
-              Click <span className="font-medium">New workbook</span> to create
-              one.
+    <>
+      {/*
+        No `accept` filter — Drive / Google Sheets shortcuts and many
+        mobile pickers grey out everything when an accept whitelist is
+        set. We validate by extension/parse after the user picks so the
+        error message is friendly + actionable.
+      */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleImportXlsx(f);
+        }}
+      />
+      <input
+        ref={smartFileInputRef}
+        type="file"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleSmartImport(f);
+        }}
+      />
+      <RouteHeader
+        left={
+          <span className="px-1.5 text-sm font-medium text-foreground">
+            Workbooks
+          </span>
+        }
+        right={
+          <div className="flex items-center gap-0.5">
+            <TapTargetButton
+              icon={<Sparkles className="h-4 w-4" />}
+              ariaLabel="Smart import"
+              tooltip="Auto-detect whether your file is a typed dataset or a workbook"
+              disabled={importing || creating || smartCommitting}
+              onClick={() => smartFileInputRef.current?.click()}
+            />
+            <TapTargetButton
+              icon={
+                importing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )
+              }
+              ariaLabel="Import XLSX / CSV"
+              disabled={importing || creating || smartCommitting}
+              onClick={() => fileInputRef.current?.click()}
+            />
+            <TapTargetButtonSolid
+              icon={
+                creating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )
+              }
+              label="New workbook"
+              disabled={creating || importing || smartCommitting}
+              onClick={handleCreate}
+            />
+          </div>
+        }
+      />
+      <div className="h-full overflow-y-auto scrollbar-none">
+        <div className="w-full space-y-4 p-4">
+          {loading && (
+            <div className="flex h-40 items-center justify-center text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Loading…
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
 
-      {!loading && workbooks.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {workbooks.map((wb) => (
-            <Card key={wb.id} className="group">
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <button
-                    type="button"
-                    className="flex flex-1 items-start gap-2 text-left"
-                    onClick={() => router.push(`/workbooks/${wb.id}`)}
-                  >
-                    <FileSpreadsheet className="size-5 mt-0.5 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">
-                        {wb.workbook_name}
-                      </div>
-                      {wb.description && (
-                        <div className="text-xs text-muted-foreground truncate">
-                          {wb.description}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
-                    onClick={() => handleDelete(wb)}
-                    title="Delete workbook"
-                  >
-                    <Trash className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Updated {new Date(wb.updated_at).toLocaleString()}
+          {error && !loading && (
+            <Card>
+              <CardContent className="p-4 text-sm text-destructive">
+                {error}
+              </CardContent>
+            </Card>
+          )}
+
+          {!loading && !error && workbooks.length === 0 && (
+            <Card>
+              <CardContent className="flex flex-col items-center gap-2 p-10 text-center text-muted-foreground">
+                <FileSpreadsheet className="size-8" />
+                <div className="text-sm">No workbooks yet.</div>
+                <div className="text-xs">
+                  Tap <span className="font-medium">New workbook</span> to
+                  create one.
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )}
+
+          {!loading && workbooks.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {workbooks.map((wb) => (
+                <Card key={wb.id} className="group">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        type="button"
+                        className="flex flex-1 items-start gap-2 text-left"
+                        onClick={() => router.push(`/workbooks/${wb.id}`)}
+                      >
+                        <FileSpreadsheet className="size-5 mt-0.5 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            {wb.workbook_name}
+                          </div>
+                          {wb.description && (
+                            <div className="text-xs text-muted-foreground truncate">
+                              {wb.description}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
+                        onClick={() => handleDelete(wb)}
+                        title="Delete workbook"
+                      >
+                        <Trash className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Updated {new Date(wb.updated_at).toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <ImportRouteDialog
         isOpen={smartDialogOpen}
@@ -438,6 +439,6 @@ export default function WorkbooksLandingPage() {
         onCommit={handleSmartCommit}
         isCommitting={smartCommitting}
       />
-    </div>
+    </>
   );
 }

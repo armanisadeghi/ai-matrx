@@ -26,6 +26,8 @@ import { toast } from "sonner";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -132,38 +134,25 @@ export function RepositoriesPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-3rem)] bg-background">
-      <header className="border-b px-6 py-4 space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold flex items-center gap-2">
-              <Code2 className="h-6 w-6" />
-              Repositories
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Code repositories you can index for RAG. Each repo's files become
-              chunks and embeddings, retrievable by any agent scoped to a data
-              store containing them.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
+    <>
+      <RagHubHeader
+        right={
+          <TapTargetButton
+            icon={<RefreshCw className="h-4 w-4" />}
+            ariaLabel="Refresh"
             onClick={() => setRefreshKey((n) => n + 1)}
-          >
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
-          </Button>
-        </div>
+          />
+        }
+      />
+      <div className="flex flex-col h-full overflow-hidden bg-background pt-[var(--shell-header-h)]">
         {unattached > 0 && (
-          <div className="text-xs text-muted-foreground">
+          <div className="px-6 pb-2 text-xs text-muted-foreground shrink-0">
             <Badge variant="warning" className="mr-2">
               {unattached}
             </Badge>
             code files exist that aren't bound to any repository yet.
           </div>
         )}
-      </header>
 
       <div className="flex-1 min-h-0 overflow-auto">
         {error && (
@@ -280,7 +269,8 @@ export function RepositoriesPage() {
           </Table>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

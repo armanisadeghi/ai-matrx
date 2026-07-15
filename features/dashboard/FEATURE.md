@@ -15,7 +15,7 @@
 ## Entry points
 
 **Routes**
-- `app/(core)/dashboard/page.tsx` — Server Component wrapper; renders `<DashboardClient>`. Lives in `(core)` so it shares the slim modern shell (sidebar + header). The proxy redirects guests off `/dashboard`.
+- `app/(core)/dashboard/page.tsx` — Server Component wrapper; injects the shell header via `<PageHeader><HeaderIconTitle icon="LayoutDashboard" title="Dashboard" /></PageHeader>`, then renders `<DashboardClient>`. Lives in `(core)` so it shares the slim modern shell (sidebar + header). The proxy redirects guests off `/dashboard`.
 - `app/(core)/dashboard/layout.tsx` — funnels new users (`isNewUser`) to `/welcome`; sets route metadata.
 
 **Components** (`features/dashboard/components/`)
@@ -106,6 +106,7 @@
 
 ## Change log
 
+- `2026-07-14` — Claude: Header-conformance fix. `/dashboard` had no injected shell header (empty center zone); added `<PageHeader><HeaderIconTitle icon="LayoutDashboard" title="Dashboard" /></PageHeader>` in `page.tsx` (the exact pattern documented in `features/shell/components/header/variants/USAGE.md`). `DashboardClient`'s root wrapper now uses `h-full overflow-y-auto` (was unconstrained `overflow-y-auto`) with `pt-[calc(var(--shell-header-h)+1.5rem)]` clearance on the inner content column so the greeting/metrics/quick-actions don't render behind the glass header on first paint. Verified desktop + mobile (375×812) via browser.
 - `2026-06-24` — Claude: **Favorites now persist to the canonical `platform.user_entity_state` ledger** via the new **`favoritesService`** chokepoint (`ues_*` RPCs); the `user_preferences` blob is now the presentation cache + transition-continuity read (every toggle dual-writes). `FavoriteKind` folded onto canonical `EntityType | "nav"` (`features/scopes/types.ts`) — parallel union deleted. `nav` favorites key by `uuidv5(href)` under entity_type `"nav"`. `usePinned` / `PinButton` / `FavoritesNavGroup` public APIs unchanged. Verified live: toggle on `/dashboard` → `ues_set` 204 → row read back from `user_entity_state` via `ues_list`.
 - `2026-06-24` — Claude: Added the **Manage Favorites** window (`favoritesManagerWindow` overlay + `FavoritesManagerPanel`) — a check-to-include picker reachable from the sidebar Favorites flyout ("Manage favorites" action). Extracted `flattenNavDestinations()` into the nav registry (shared by the manager + Discover).
 - `2026-06-24` — Claude: Added 3 KPIs (research reports `rs_topic`, podcasts `pc_episodes`, messages `dm_messages`). Registered `Star` in `shellIconMap` (fixes empty collapsed Favorites entry). Consolidated all curation into `dashboard.config.ts` (Discover hide/order/extra + Start-something).

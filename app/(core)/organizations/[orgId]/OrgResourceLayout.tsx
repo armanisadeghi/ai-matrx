@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import {
   getOrganizationBySlugOrId,
   getUserRole,
@@ -73,7 +74,7 @@ export function OrgResourceLayout({
 
   if (loading) {
     return (
-      <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured">
+      <div className="h-full flex items-center justify-center bg-textured">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Loading…</p>
@@ -85,7 +86,7 @@ export function OrgResourceLayout({
   if (error || !organization || !userRole) {
     const backHref = `/organizations/${orgId}`;
     return (
-      <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured p-4">
+      <div className="h-full flex items-center justify-center bg-textured p-4">
         <Card className="max-w-lg w-full p-8 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -126,54 +127,22 @@ export function OrgResourceLayout({
   const orgHref = `/organizations/${organization.slug}`;
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-textured">
-      {/* Header with Breadcrumbs */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 min-w-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push(orgHref)}
-                className="flex-shrink-0"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm text-muted-foreground">/</span>
-                <button
-                  onClick={() => router.push(orgHref)}
-                  className="text-sm font-medium hover:text-primary transition-colors truncate"
-                >
-                  {organization.name}
-                </button>
-                <span className="text-sm text-muted-foreground">/</span>
-                <div className="flex items-center gap-2">
-                  {icon && (
-                    <span className="text-primary flex-shrink-0">{icon}</span>
-                  )}
-                  <span className="text-sm font-medium truncate">
-                    {resourceName}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <Badge
-              variant="secondary"
-              className="text-xs flex-shrink-0 capitalize"
-            >
-              {userRole}
-            </Badge>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+    <>
+      <CrumbTrailHeader
+        backHref={orgHref}
+        trail={[
+          { label: organization.name, href: orgHref },
+          { label: resourceName },
+        ]}
+        right={
+          <Badge variant="secondary" className="text-xs capitalize">
+            {userRole}
+          </Badge>
+        }
+      />
+      <div className="h-full overflow-y-auto bg-textured">
         <div className="max-w-7xl mx-auto p-4 md:p-6">{children}</div>
       </div>
-    </div>
+    </>
   );
 }

@@ -7,9 +7,11 @@ import { ClientGroup } from "@/app/(dev)/demos/resizables/_lib/ClientGroup";
 import { Handle } from "@/app/(dev)/demos/resizables/_lib/Handle";
 import { RegisteredPanel } from "@/app/(dev)/demos/resizables/_lib/RegisteredPanel";
 import { PanelControlProvider } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { SettingsRouteSidebar } from "./SettingsRouteSidebar";
+import { SettingsHeaderControls } from "./SettingsHeaderControls";
 import { SETTINGS_BASE } from "./routing";
 
 const GROUP_ID = "settings";
@@ -40,6 +42,9 @@ export function SettingsRouteShell({
 }: Props) {
   return (
     <PanelControlProvider>
+      <PageHeader>
+        <SettingsHeaderControls />
+      </PageHeader>
       <ClientGroup
         id={GROUP_ID}
         groupKey={GROUP_KEY}

@@ -1,8 +1,10 @@
 "use client";
 
+import { useId } from "react";
 import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field } from "@/components/official/Field";
 import {
   CONTEXT_REFERENCE_TYPE_OPTIONS,
   referenceTypeLabel,
@@ -23,8 +25,6 @@ export interface ReferenceConfigFieldsProps {
   orgScopeTypes: ReferenceConfigOrgScopeType[];
   disabled?: boolean;
   className?: string;
-  /** Match the host form's own label convention (defaults to the `text-xs` used by `ContextItemSettingsForm`). */
-  labelClassName?: string;
   /**
    * Override the allowed-type choices. Defaults to every option
    * (`CONTEXT_REFERENCE_TYPE_OPTIONS`). A host that can't support a subtype in
@@ -41,6 +41,9 @@ export interface ReferenceConfigFieldsProps {
  * on `EntryModeToggle` — never gated behind a second toggle. Shared by
  * `ContextItemAddForm` and `ContextItemSettingsForm`; do not re-implement
  * this block a third time.
+ *
+ * Chips use canonical `Button size="sm"` so they match `EntryModeToggle`
+ * (`h-7 text-xs`). Labels use canonical `Field`.
  */
 export function ReferenceConfigFields({
   allowedReferenceTypes,
@@ -52,92 +55,101 @@ export function ReferenceConfigFields({
   orgScopeTypes,
   disabled,
   className,
-  labelClassName = "text-xs",
   typeOptions,
 }: ReferenceConfigFieldsProps) {
+  const uid = useId();
   const options = typeOptions ?? CONTEXT_REFERENCE_TYPE_OPTIONS;
+  const typesId = `${uid}-types`;
+  const maxId = `${uid}-max`;
+  const scopesId = `${uid}-scopes`;
+
   return (
     <div className={className ? className : "space-y-3"}>
-      <div className="space-y-1.5">
-        <Label className={labelClassName}>Allowed types</Label>
-        <div className="flex flex-wrap gap-1.5">
+      <Field label="Allowed types" htmlFor={typesId}>
+        <div id={typesId} className="flex flex-wrap gap-1.5" role="group">
           {options.map((t) => {
             const active = allowedReferenceTypes.includes(t);
             return (
-              <button
+              <Button
                 key={t}
                 type="button"
+                size="sm"
+                variant="outline"
                 disabled={disabled}
                 onClick={() => onToggleReferenceType(t)}
-                className={`rounded-md border px-2 py-1 text-xs transition-colors ${
+                aria-pressed={active}
+                className={
                   active
-                    ? "border-primary/50 bg-primary/10 text-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground hover:bg-accent"
-                }`}
+                    ? "border-primary/50 bg-primary/10 text-foreground hover:bg-primary/15 hover:text-foreground"
+                    : "text-muted-foreground"
+                }
               >
                 {referenceTypeLabel(t)}
-              </button>
+              </Button>
             );
           })}
         </div>
         {allowedReferenceTypes.length === 0 && (
-          <p className="text-[10px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
+          <p className="text-xs text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
             <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
             Select at least one type.
           </p>
         )}
-      </div>
+      </Field>
 
-      <div className="space-y-1.5">
-        <Label className={labelClassName}>Max items</Label>
+      <Field
+        label="Max items"
+        htmlFor={maxId}
+        description="1 = a single value. Higher allows a list (e.g. several files)."
+      >
         <Input
+          id={maxId}
           type="number"
           min={1}
           value={maxItems}
           onChange={(e) => onMaxItemsChange(e.target.value)}
           style={{ fontSize: "16px" }}
           disabled={disabled}
-          className="w-28"
+          className="h-7 w-28 px-2 text-xs"
         />
-        <p className="text-[10px] text-muted-foreground">
-          1 = a single value. Higher allows a list (e.g. a report that can carry
-          several files).
-        </p>
-      </div>
+      </Field>
 
       {allowedReferenceTypes.includes("scope") && (
-        <div className="space-y-1.5">
-          <Label className={labelClassName}>Allowed scope types</Label>
+        <Field
+          label="Allowed scope types"
+          htmlFor={scopesId}
+          description="Leave all unselected to allow any scope type in the org."
+        >
           {orgScopeTypes.length === 0 ? (
-            <p className="text-[10px] text-muted-foreground">
+            <p id={scopesId} className="text-xs text-muted-foreground">
               Loading scope types…
             </p>
           ) : (
-            <div className="flex flex-wrap gap-1.5">
+            <div id={scopesId} className="flex flex-wrap gap-1.5" role="group">
               {orgScopeTypes.map((st) => {
                 const active = allowedScopeTypeIds.includes(st.id);
                 return (
-                  <button
+                  <Button
                     key={st.id}
                     type="button"
+                    size="sm"
+                    variant="outline"
                     disabled={disabled}
                     onClick={() => onToggleAllowedScopeType(st.id)}
-                    className={`rounded-md border px-2 py-1 text-xs transition-colors ${
+                    aria-pressed={active}
+                    className={
                       active
-                        ? "border-primary/50 bg-primary/10 text-foreground"
-                        : "border-border text-muted-foreground hover:text-foreground hover:bg-accent"
-                    }`}
+                        ? "border-primary/50 bg-primary/10 text-foreground hover:bg-primary/15 hover:text-foreground"
+                        : "text-muted-foreground"
+                    }
                   >
                     {st.label_singular}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground">
-            Leave all unselected to allow any scope type in the org.
-          </p>
-        </div>
+        </Field>
       )}
     </div>
   );

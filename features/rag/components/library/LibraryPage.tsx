@@ -82,6 +82,8 @@ import { ragDb } from "@/utils/supabase/ragDb";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { TapTargetButton, TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import type {
   DocStatus,
   LibraryDocSummary,
@@ -388,102 +390,68 @@ export function LibraryPage() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-3rem)] bg-textured">
-      {/* Header — stays put while the table area scrolls */}
-      <header className="border-b bg-background/60 backdrop-blur-sm">
-        <div className="px-6 py-4 space-y-4">
-          {/* Title + actions */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold flex items-center gap-2 tracking-tight">
-                <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-primary/15 to-primary/5">
-                  <FileText className="h-4 w-4 text-primary" />
-                </span>
-                Document Library
-                {pollMs > 0 && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] gap-1 px-1.5 py-0 h-5 border-primary/40"
-                  >
-                    <span className="relative inline-flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                    </span>
-                    Live
-                  </Badge>
-                )}
-              </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Every document you've processed for RAG. Status, page counts, $
-                {RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and
-                data-store bindings — all in one place.
-              </p>
-            </div>
-            <div className="flex gap-1.5 shrink-0">
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept="application/pdf,image/*,text/*,.md,.txt"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleFilePicked(f);
-                }}
-              />
-              <Button
-                size="sm"
-                onClick={handleOpenPicker}
-                disabled={uploading}
-                className="gap-1.5"
+    <>
+      <RagHubHeader
+        right={
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="application/pdf,image/*,text/*,.md,.txt"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFilePicked(f);
+              }}
+            />
+            {pollMs > 0 && (
+              <Badge
+                variant="outline"
+                className="text-[10px] gap-1 px-1.5 py-0 h-5 border-primary/40 mr-1"
               >
-                <Upload className="h-3.5 w-3.5" />
-                {uploading ? "Uploading…" : "Upload & process"}
-              </Button>
-              {runner.jobs.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
+                <span className="relative inline-flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                Live
+              </Badge>
+            )}
+            {runner.jobs.length > 0 && (
+              <div className="relative">
+                <TapTargetButton
+                  icon={<Activity className="h-4 w-4" />}
+                  ariaLabel="Jobs"
+                  label={String(
+                    runner.activeJobs.length > 0
+                      ? runner.activeJobs.length
+                      : runner.jobs.length,
+                  )}
                   onClick={() => {
                     setFocusJobId(null);
                     setSheetOpen(true);
                   }}
-                  className="gap-1.5"
-                >
-                  <Activity className="h-3.5 w-3.5" />
-                  Jobs
-                  <Badge
-                    variant={
-                      runner.activeJobs.length > 0 ? "info" : "secondary"
-                    }
-                    className="ml-0.5 text-[10px] px-1 py-0 h-4"
-                  >
-                    {runner.activeJobs.length > 0
-                      ? runner.activeJobs.length
-                      : runner.jobs.length}
-                  </Badge>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRefreshKey((n) => n + 1)}
-                title="Refresh"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open("/rag/data-stores", "_blank")}
-                className="gap-1.5"
-              >
-                <Database className="h-3.5 w-3.5" />
-                Data Stores
-                <ExternalLink className="h-3 w-3 opacity-60" />
-              </Button>
-            </div>
-          </div>
-
+                />
+              </div>
+            )}
+            <TapTargetButton
+              icon={<RefreshCw className="h-4 w-4" />}
+              ariaLabel="Refresh"
+              onClick={() => setRefreshKey((n) => n + 1)}
+            />
+            <TapTargetButtonSolid
+              icon={<Upload className="h-4 w-4" />}
+              ariaLabel="Upload & process"
+              label={uploading ? "Uploading…" : "Upload"}
+              onClick={handleOpenPicker}
+              disabled={uploading}
+            />
+          </>
+        }
+      />
+      <div className="flex flex-col h-full overflow-hidden bg-textured">
+      {/* Header — stays put while the table area scrolls */}
+      <header className="border-b bg-background/60 backdrop-blur-sm pt-[var(--shell-header-h)]">
+        <div className="px-6 py-4 space-y-4">
           {/* Animated KPI rollup */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
             <AnimatedKpiCard
@@ -786,7 +754,8 @@ export function LibraryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 }
 

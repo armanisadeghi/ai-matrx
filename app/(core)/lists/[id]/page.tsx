@@ -61,8 +61,8 @@ export default async function ListDetailPage({ params }: PageProps) {
   if (!list) notFound();
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
-      <ListDetailClient list={list} userId={user?.id ?? null} />
+    <div className="h-full flex flex-col overflow-hidden">
+      <ListDetailClient list={list} userId={user?.id ?? null} asRoute />
     </div>
   );
 }
