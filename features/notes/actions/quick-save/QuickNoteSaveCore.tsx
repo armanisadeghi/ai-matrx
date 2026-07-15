@@ -12,6 +12,7 @@ import {
   Check,
   X,
   GitCompareArrows,
+  FolderPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/ButtonMine";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -44,6 +46,8 @@ import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindo
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import type { Note } from "@/features/notes/types";
 import { useQuickNoteSave } from "./useQuickNoteSave";
+import { CreateFolderDialog } from "@/features/notes/components/CreateFolderDialog";
+import { createFolder } from "@/features/notes/service/notesService";
 
 export type PostSaveAction = "newTab" | "navigate" | "openWindow" | "none";
 
@@ -121,7 +125,16 @@ export function QuickNoteSaveCore({
   });
 
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const openDiff = useOpenDiffViewerWindow();
+
+  const handleCreateFolder = useCallback(
+    async (folderName: string) => {
+      await createFolder(folderName);
+      setFolder(folderName);
+    },
+    [setFolder],
+  );
 
   // Compare-before-apply: the existing note content is the baseline (old); the
   // content about to overwrite it is the incoming version (new), so the diff
@@ -317,7 +330,16 @@ export function QuickNoteSaveCore({
               <Label htmlFor="qns-folder" className="text-xs">
                 Folder
               </Label>
-              <Select value={folder} onValueChange={setFolder}>
+              <Select
+                value={folder}
+                onValueChange={(value) => {
+                  if (value === "__create_folder__") {
+                    setCreateFolderOpen(true);
+                    return;
+                  }
+                  setFolder(value);
+                }}
+              >
                 <SelectTrigger
                   id="qns-folder"
                   className="h-8 text-xs rounded-md w-full"
@@ -325,6 +347,15 @@ export function QuickNoteSaveCore({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="max-w-[min(90vw,360px)]">
+                  <SelectItem
+                    value="__create_folder__"
+                    className="text-primary"
+                  >
+                    <span className="flex items-center gap-2 font-medium">
+                      <FolderPlus className="h-3.5 w-3.5" /> New folder…
+                    </span>
+                  </SelectItem>
+                  <SelectSeparator />
                   {allFolders.map((f) => (
                     <SelectItem key={f} value={f}>
                       <span className="truncate">{f}</span>
@@ -441,6 +472,15 @@ export function QuickNoteSaveCore({
           {footerActions}
         </div>
       )}
+
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        onConfirm={handleCreateFolder}
+        existingFolders={allFolders}
+        description="Create a folder and use it as this note's destination."
+        confirmLabel="Create & Select"
+      />
 
       {/* Overwrite confirm — raised above WindowPanel */}
       <AlertDialog

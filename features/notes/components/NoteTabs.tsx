@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import AdvancedMenu, { MenuItem } from '@/components/official/AdvancedMenu';
 import type { Note } from '../types';
 import { getNoteMetadata } from '../types';
+import { MoveNoteDialog } from './MoveNoteDialog';
 
 type EditorMode = 'plain' | 'wysiwyg' | 'markdown' | 'matrx-split' | 'preview';
 
@@ -18,6 +19,7 @@ interface NoteTabsProps {
     onDeleteNote: (noteId: string) => void;
     onCopyNote: (noteId: string) => void;
     onShareNote: (noteId: string) => void;
+    onMoveNote: (noteId: string, folderName: string) => void | Promise<void>;
     onUpdateNote: (noteId: string, updates: Partial<Note>) => void;
     onSaveNote: () => void;
     isDirty: boolean;
@@ -29,6 +31,7 @@ export function NoteTabs({
     onDeleteNote, 
     onCopyNote, 
     onShareNote,
+    onMoveNote,
     onUpdateNote,
     onSaveNote,
     isDirty,
@@ -41,8 +44,12 @@ export function NoteTabs({
     const [viewMenuOpen, setViewMenuOpen] = useState(false);
     const [contextMenuOpen, setContextMenuOpen] = useState(false);
     const [contextMenuNoteId, setContextMenuNoteId] = useState<string | null>(null);
+    const [moveNoteId, setMoveNoteId] = useState<string | null>(null);
     const [localLabels, setLocalLabels] = useState<Record<string, string>>({});
     const labelSaveTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
+    const allFolders = Array.from(
+        new Set(notes.map((note) => note.folder_name || 'Draft')),
+    ).sort();
 
     // Auto-scroll to active tab when it changes
     useEffect(() => {
@@ -265,6 +272,14 @@ export function NoteTabs({
                 label: 'Share Note',
                 description: 'Share with others',
                 action: () => onShareNote(noteId),
+                category: 'Actions',
+            },
+            {
+                key: 'move-folder',
+                icon: FolderInput,
+                label: 'Move to Folder…',
+                description: 'Choose an existing folder or create a new one',
+                action: () => setMoveNoteId(noteId),
                 category: 'Actions',
             },
             {
@@ -564,7 +579,23 @@ export function NoteTabs({
                     categorizeItems={true}
                 />
             )}
+
+            {moveNoteId && (() => {
+                const note = notes.find((candidate) => candidate.id === moveNoteId);
+                if (!note) return null;
+                return (
+                    <MoveNoteDialog
+                        open
+                        onOpenChange={(open) => {
+                            if (!open) setMoveNoteId(null);
+                        }}
+                        onConfirm={(folderName) => onMoveNote(note.id, folderName)}
+                        noteName={note.label}
+                        currentFolder={note.folder_name || 'Draft'}
+                        availableFolders={allFolders}
+                    />
+                );
+            })()}
         </div>
     );
 }
-

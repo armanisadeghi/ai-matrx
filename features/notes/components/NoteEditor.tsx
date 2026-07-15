@@ -8,6 +8,7 @@ import {
   Clock,
   Loader2,
   FolderOpen,
+  FolderPlus,
   FileText,
   PilcrowRight,
   Eye,
@@ -23,6 +24,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -45,6 +47,8 @@ import {
 } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import { CreateFolderDialog } from "./CreateFolderDialog";
+import { createFolder } from "../service/notesService";
 
 // Dynamic imports for heavy components (only load when needed)
 const TuiEditorContent = dynamic(
@@ -121,6 +125,7 @@ export function NoteEditor({
   const [localTags, setLocalTags] = useState<string[]>(note?.tags || []);
   const [localLabel, setLocalLabel] = useState(note?.label || "");
   const [editorMode, setEditorMode] = useState<EditorMode>("plain");
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
   // Live textarea selection, mirrored into React so the surface scope reflects
   // what the user is acting on (matches NotesDemoPanel's selection sync).
   const [selectionStart, setSelectionStart] = useState(0);
@@ -476,6 +481,11 @@ export function NoteEditor({
     }
   };
 
+  const handleCreateFolder = async (folderName: string) => {
+    await createFolder(folderName);
+    handleFolderChange(folderName);
+  };
+
   const handleTagsChange = (tags: string[]) => {
     setLocalTags(tags);
     if (note) {
@@ -676,7 +686,16 @@ export function NoteEditor({
           </Select>
 
           {/* Folder Selector */}
-          <Select value={localFolder} onValueChange={handleFolderChange}>
+          <Select
+            value={localFolder}
+            onValueChange={(value) => {
+              if (value === "__create_folder__") {
+                setCreateFolderOpen(true);
+                return;
+              }
+              handleFolderChange(value);
+            }}
+          >
             <SelectTrigger className="w-[140px] h-7 text-xs">
               <div className="flex items-center gap-1.5 min-w-0 w-full">
                 <FolderOpen className="h-3 w-3 flex-shrink-0" />
@@ -686,6 +705,12 @@ export function NoteEditor({
               </div>
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__create_folder__" className="text-primary">
+                <span className="flex items-center gap-2 font-medium">
+                  <FolderPlus className="h-3.5 w-3.5" /> New folder…
+                </span>
+              </SelectItem>
+              <SelectSeparator />
               {availableFolders.map((folder) => (
                 <SelectItem key={folder} value={folder} className="text-xs">
                   {folder}
@@ -927,6 +952,14 @@ export function NoteEditor({
           </NonEditableContextMenu>
         )}
       </div>
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        onConfirm={handleCreateFolder}
+        existingFolders={availableFolders}
+        description="Create a folder and assign this note to it immediately."
+        confirmLabel="Create & Assign"
+      />
     </div>
   );
 }

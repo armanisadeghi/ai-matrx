@@ -31,6 +31,7 @@ import {
   copyNote as copyNoteThunk,
   findOrCreateEmptyNote as findOrCreateEmptyNoteThunk,
   saveNoteField,
+  moveNoteToFolder,
 } from "../redux/thunks";
 
 /**
@@ -131,21 +132,25 @@ export function useNotesRedux() {
       if (updates.label !== undefined) {
         dispatch(setNoteField({ id, field: "label", value: updates.label }));
       }
-      if (updates.folder_name !== undefined) {
-        dispatch(
-          setNoteField({
-            id,
-            field: "folder_name",
-            value: updates.folder_name,
-          }),
-        );
-      }
       if (updates.tags !== undefined) {
         dispatch(setNoteField({ id, field: "tags", value: updates.tags }));
       }
 
-      // Schedule save
-      await dispatch(saveNote(id)).unwrap();
+      // Moving a note must update both folder_name and folder_id. The move
+      // thunk resolves/materializes the folder and saves every field edited
+      // above in the same write; ordinary updates use the standard save.
+      if (updates.folder_name !== undefined) {
+        const folder = updates.folder_name?.trim();
+        if (folder) {
+          await dispatch(moveNoteToFolder({ noteId: id, folder })).unwrap();
+        } else {
+          dispatch(setNoteField({ id, field: "folder_name", value: null }));
+          dispatch(setNoteField({ id, field: "folder_id", value: null }));
+          await dispatch(saveNote(id)).unwrap();
+        }
+      } else {
+        await dispatch(saveNote(id)).unwrap();
+      }
 
       // Return current note state (approximate — the real note is in Redux)
       const note = notes.find((n) => n.id === id);

@@ -412,6 +412,13 @@ export function MessagingInitializer() {
           }),
         );
 
+        // Own-send echo: the optimistic update above already moved the
+        // conversation + last_message, and our unread count is by definition
+        // 0 for a message we just wrote. The full N+1 refresh below exists
+        // to pick up OTHER people's changes — paying it for our own echo was
+        // a per-send refetch storm (realtime-echo doctrine).
+        if (!isFromOtherUser) return;
+
         // STEP 2: Debounced background full refresh — collapses rapid message bursts
         // into a single fetchConversationDetails call per conversation to avoid
         // race conditions and wasted network traffic under high message throughput.

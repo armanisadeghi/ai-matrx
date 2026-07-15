@@ -144,16 +144,27 @@ export const selectOpenTabNotes = createSelector(
       .filter((r): r is NoteRecord => r !== undefined),
 );
 
-// ── Presence ────────────────────────────────────────────────────────────────
+// ── Presence (realtime `updated_by` attribution) ─────────────────────────────
 
-export const selectOtherUsersActive = createSelector(
+const selectNoteEditorsMap = createSelector(
   [selectNotesState],
-  (slice): boolean => slice.otherUsersActive,
+  (slice) => slice.noteEditors,
 );
 
-export const selectActiveNoteEditedByOthers = createSelector(
-  [selectNotesState],
-  (slice): boolean => slice.activeNoteEditedByOthers,
+/** Latest non-self editor of a note (from realtime `updated_by`), or
+ *  undefined. Entries are timer-cleared by the realtime middleware. */
+export const selectNoteEditor = (noteId: string) =>
+  cached(`noteEditor:${noteId}`, () =>
+    createSelector(
+      selectNoteEditorsMap,
+      (editors) => editors[noteId],
+    ),
+  );
+
+/** True when any note currently has a live non-self editor. */
+export const selectAnyNoteEditorActive = createSelector(
+  [selectNoteEditorsMap],
+  (editors): boolean => Object.keys(editors).length > 0,
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════

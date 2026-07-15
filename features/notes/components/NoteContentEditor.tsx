@@ -29,6 +29,7 @@ import { getReduxSyncDelay } from "../redux/notes.types";
 import {
   selectNoteById,
   selectNoteContent,
+  selectNoteEditor,
   selectNoteEditorMode,
   selectNoteIsDirtyById,
   selectNoteFolder,
@@ -37,6 +38,7 @@ import {
   selectInstanceTabs,
   selectNoteSaveState,
 } from "../redux/selectors";
+import { editorDisplayName } from "../utils/editorDisplayName";
 import {
   saveNote,
   copyNote,
@@ -65,6 +67,8 @@ import { FindReplaceBar } from "./FindReplaceBar";
 import { FindMatchOverlay } from "./FindMatchOverlay";
 import { RecentChangeOverlay } from "./RecentChangeOverlay";
 import { MoveNoteDialog } from "./MoveNoteDialog";
+import { CreateFolderDialog } from "./CreateFolderDialog";
+import { createFolder } from "../service/notesService";
 import { NoteShareModal } from "./NoteShareModal";
 import { selectFindReplaceState } from "../redux/selectors";
 import { computeMatches } from "../utils/findMatches";
@@ -132,6 +136,9 @@ export function NoteContentEditor({
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
 
   const saveState = useAppSelector(selectNoteSaveState(noteId));
+  // Live collaborator attribution (realtime `updated_by`) — drives the
+  // change-anchored "{name} · editing" bubble in RecentChangeOverlay.
+  const noteEditor = useAppSelector(selectNoteEditor(noteId));
 
   // ── Access gate — a viewer-level sharee gets a read-only editor ────
   // (their RLS-rejected saves would otherwise silently discard every edit).
@@ -143,6 +150,7 @@ export function NoteContentEditor({
 
   // ── Dialog state ──────────────────────────────────────────────────
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   // ── Conflict state ────────────────────────────────────────────────
@@ -277,7 +285,7 @@ export function NoteContentEditor({
     recentChangeTimerRef.current = setTimeout(() => {
       recentChangeTimerRef.current = null;
       setRecentChange(null);
-    }, 1600);
+    }, 2600); // long enough to read the "{name} · editing" bubble
   }, [reduxContent]);
 
   useEffect(() => {
@@ -434,8 +442,18 @@ export function NoteContentEditor({
   }, []);
 
   const handleMoveConfirm = useCallback(
-    (targetFolder: string) => {
-      dispatch(moveNoteToFolder({ noteId, folder: targetFolder }));
+    async (targetFolder: string) => {
+      await dispatch(
+        moveNoteToFolder({ noteId, folder: targetFolder }),
+      ).unwrap();
+    },
+    [dispatch, noteId],
+  );
+
+  const handleCreateFolder = useCallback(
+    async (folderName: string) => {
+      await createFolder(folderName);
+      await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
     },
     [dispatch, noteId],
   );
@@ -527,6 +545,7 @@ export function NoteContentEditor({
     onShareClipboard: handleShareClipboard,
     onMoveToFolder: handleMoveConfirm,
     onMoveDialog: handleMove,
+    onCreateFolder: () => setCreateFolderOpen(true),
     onCloseTab: handleCloseTab,
     onCloseOtherTabs: handleCloseOtherTabs,
     onCloseAllTabs: handleCloseAllTabs,
@@ -753,6 +772,9 @@ export function NoteContentEditor({
                       content={localContent}
                       range={recentChange.range}
                       flashKey={recentChange.flashKey}
+                      editorLabel={
+                        noteEditor ? editorDisplayName(noteEditor) : null
+                      }
                     />
                   )}
                 </>
@@ -783,6 +805,15 @@ export function NoteContentEditor({
         noteName={noteLabel}
         currentFolder={currentFolder}
         availableFolders={allFolders}
+      />
+
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        onConfirm={handleCreateFolder}
+        existingFolders={allFolders}
+        description="Create a folder and move this note into it immediately."
+        confirmLabel="Create & Move"
       />
 
       <NoteShareModal

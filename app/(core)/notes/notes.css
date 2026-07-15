@@ -496,3 +496,70 @@
   60%  { border-left-color: hsl(142 70% 45% / 0.9); }
   100% { border-left-color: hsl(142 70% 45% / 0); }
 }
+
+/* ── Live-editor bubble ("{name} · editing") ───────────────────────────── */
+/* Anchored to the changed text inside RecentChangeOverlay. Pops in, holds
+   long enough to read, then fades with the flash. Content coordinates —
+   scrolls with the mirrored overlay. */
+.notes-editing-bubble {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background-color: hsl(142 60% 32%);
+  color: hsl(0 0% 100% / 0.95);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.1rem;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px hsl(142 70% 20% / 0.35);
+  animation: notes-editing-bubble-pop 2400ms ease-out forwards;
+  z-index: 3;
+}
+.notes-editing-bubble svg {
+  width: 0.65rem;
+  height: 0.65rem;
+}
+.dark .notes-editing-bubble {
+  background-color: hsl(142 55% 38%);
+}
+@keyframes notes-editing-bubble-pop {
+  0%   { opacity: 0; transform: translateY(4px) scale(0.9); }
+  8%   { opacity: 1; transform: translateY(0) scale(1); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-2px) scale(0.98); }
+}
+
+/* Animated "typing" dots — used by the editor bubble and presence banner. */
+.notes-editing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.notes-editing-dots span {
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background-color: currentColor;
+  animation: notes-editing-dot 1.2s ease-in-out infinite;
+}
+.notes-editing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.notes-editing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes notes-editing-dot {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30%           { opacity: 1; transform: translateY(-2px); }
+}
+
+/* Gentle wiggle on the presence-banner pencil while editing is live. */
+.notes-editing-pencil {
+  animation: notes-editing-pencil 1.6s ease-in-out infinite;
+  transform-origin: bottom left;
+}
+@keyframes notes-editing-pencil {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-8deg); }
+  60%      { transform: rotate(6deg); }
+}

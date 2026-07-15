@@ -1,17 +1,23 @@
 "use client";
 
 // NotePresenceBanner — collaboration-presence chrome for a notes instance.
-// Shows "another user is editing this note" / "other users are active".
+// Shows "{name} is editing this note" (with a live typing-dots animation)
+// when a realtime UPDATE attributed another user (via `updated_by`) to the
+// active note, or a slim "editing another note" strip otherwise.
 // Takes ONLY instanceId; reads presence + the active note from Redux. Renders
 // nothing when there's no presence to show. ZERO PROP DRILLING.
 
 import React from "react";
+import { Pencil } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectInstanceActiveTab,
-  selectOtherUsersActive,
-  selectActiveNoteEditedByOthers,
+  selectNoteEditor,
+  selectAnyNoteEditorActive,
 } from "../redux/selectors";
+import { editorDisplayName } from "../utils/editorDisplayName";
+
+const NO_EDITOR = () => undefined;
 
 export interface NotePresenceBannerProps {
   instanceId: string;
@@ -19,33 +25,35 @@ export interface NotePresenceBannerProps {
 
 export function NotePresenceBanner({ instanceId }: NotePresenceBannerProps) {
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
-  const othersActive = useAppSelector(selectOtherUsersActive);
-  const activeNoteEditedByOthers = useAppSelector(
-    selectActiveNoteEditedByOthers,
+  const activeEditor = useAppSelector(
+    activeTabId ? selectNoteEditor(activeTabId) : NO_EDITOR,
   );
+  const anyEditorActive = useAppSelector(selectAnyNoteEditorActive);
 
-  if (activeTabId && activeNoteEditedByOthers) {
+  if (activeTabId && activeEditor) {
     return (
       <div className="flex shrink-0 items-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-1">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
-        </span>
+        <Pencil className="h-3 w-3 text-amber-600 dark:text-amber-400 notes-editing-pencil" />
         <span className="text-[0.6875rem] text-amber-700 dark:text-amber-300">
-          Another user is editing this note
+          {editorDisplayName(activeEditor)} is editing this note
+        </span>
+        <span className="notes-editing-dots text-amber-700 dark:text-amber-300">
+          <span />
+          <span />
+          <span />
         </span>
       </div>
     );
   }
 
-  if (othersActive && !activeNoteEditedByOthers) {
+  if (anyEditorActive) {
     return (
       <div className="flex shrink-0 items-center gap-2 border-b border-blue-500/10 bg-blue-500/5 px-4 py-0.5">
         <span className="relative flex h-1.5 w-1.5">
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-blue-500" />
         </span>
         <span className="text-[0.625rem] text-blue-600/70 dark:text-blue-400/70">
-          Other users are active in notes
+          Someone is editing another note
         </span>
       </div>
     );

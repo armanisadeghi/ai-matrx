@@ -6,6 +6,7 @@ import {
   ClipboardCopy,
   FolderInput,
   FolderClosed,
+  FolderPlus,
   X,
   Trash2,
 } from "lucide-react";
@@ -40,6 +41,8 @@ export interface NotesEditorExtraSectionsConfig {
   onMoveToFolder: (folder: string) => void;
   /** Open the full move dialog (new-folder creation, etc.). */
   onMoveDialog: () => void;
+  /** Open folder creation directly. Falls back to the full move dialog. */
+  onCreateFolder?: () => void;
   onCloseTab: () => void;
   onCloseOtherTabs: () => void;
   onCloseAllTabs: () => void;
@@ -64,6 +67,7 @@ export function createNotesEditorExtraSections(
     onShareClipboard,
     onMoveToFolder,
     onMoveDialog,
+    onCreateFolder,
     onCloseTab,
     onCloseOtherTabs,
     onCloseAllTabs,
@@ -87,6 +91,13 @@ export function createNotesEditorExtraSections(
   }
   moveChildren.push({
     kind: "item",
+    id: "move-create",
+    label: "New folder…",
+    icon: FolderPlus,
+    onSelect: onCreateFolder ?? onMoveDialog,
+  });
+  moveChildren.push({
+    kind: "item",
     id: "move-choose",
     label: "Choose folder…",
     icon: FolderInput,
@@ -95,7 +106,13 @@ export function createNotesEditorExtraSections(
 
   // Tabs submenu (notes is multi-tab; the canonical menu has no concept of it).
   const tabChildren: ContextMenuExtraItem[] = [
-    { kind: "item", id: "close-tab", label: "Close Tab", icon: X, onSelect: onCloseTab },
+    {
+      kind: "item",
+      id: "close-tab",
+      label: "Close Tab",
+      icon: X,
+      onSelect: onCloseTab,
+    },
     {
       kind: "item",
       id: "close-others",
@@ -122,7 +139,13 @@ export function createNotesEditorExtraSections(
       disabled: !isDirty,
       onSelect: onSave,
     },
-    { kind: "item", id: "duplicate", label: "Duplicate", icon: CopyPlus, onSelect: onDuplicate },
+    {
+      kind: "item",
+      id: "duplicate",
+      label: "Duplicate",
+      icon: CopyPlus,
+      onSelect: onDuplicate,
+    },
     {
       kind: "item",
       id: "export",
@@ -130,7 +153,13 @@ export function createNotesEditorExtraSections(
       icon: Download,
       onSelect: onExport,
     },
-    { kind: "item", id: "share-link", label: "Share link…", icon: Link2, onSelect: onShareLink },
+    {
+      kind: "item",
+      id: "share-link",
+      label: "Share link…",
+      icon: Link2,
+      onSelect: onShareLink,
+    },
     {
       kind: "item",
       id: "share-clipboard",
@@ -138,8 +167,20 @@ export function createNotesEditorExtraSections(
       icon: ClipboardCopy,
       onSelect: onShareClipboard,
     },
-    { kind: "submenu", id: "move", label: "Move to Folder", icon: FolderInput, children: moveChildren },
-    { kind: "submenu", id: "tabs", label: "Tabs", icon: X, children: tabChildren },
+    {
+      kind: "submenu",
+      id: "move",
+      label: "Move to Folder",
+      icon: FolderInput,
+      children: moveChildren,
+    },
+    {
+      kind: "submenu",
+      id: "tabs",
+      label: "Tabs",
+      icon: X,
+      children: tabChildren,
+    },
     { kind: "separator", id: "delete-sep" },
     {
       kind: "item",

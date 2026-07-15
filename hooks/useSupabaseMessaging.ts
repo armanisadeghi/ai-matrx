@@ -157,14 +157,34 @@ export function useMessages(
     const handleNewMessage = async (newMessage: Message) => {
       if (!mountedRef.current) return;
 
-      // Fetch sender info for the new message
+      // Fetch sender info for the new message. SKIP for our own echoes —
+      // every own send produces two realtime deliveries (manual broadcast +
+      // postgres_changes INSERT), and paying a `get_dm_user_info` RPC per
+      // echo was pure waste; the optimistic message already carries our
+      // sender info, and the merge below preserves it.
       let senderInfo: UserBasicInfo | undefined;
-      const { data: userInfo } = await supabase.rpc("get_dm_user_info", {
-        p_user_id: newMessage.sender_id,
-      });
-      if (userInfo && userInfo[0]) {
-        senderInfo = userInfo[0];
+      if (newMessage.sender_id !== userId) {
+        const { data: userInfo } = await supabase.rpc("get_dm_user_info", {
+          p_user_id: newMessage.sender_id,
+        });
+        if (userInfo && userInfo[0]) {
+          senderInfo = userInfo[0];
+        }
       }
+
+      // Realtime-echo doctrine: never let a stale/out-of-order payload
+      // overwrite newer local state — apply only if not older than held.
+      const incomingTs = Date.parse(
+        newMessage.edited_at ?? newMessage.created_at ?? "",
+      );
+      const isStale = (held: Message) => {
+        const heldTs = Date.parse(held.edited_at ?? held.created_at ?? "");
+        return (
+          Number.isFinite(incomingTs) &&
+          Number.isFinite(heldTs) &&
+          incomingTs < heldTs
+        );
+      };
 
       setMessages((prev) => {
         // Deduplication: Check by id and client_message_id
@@ -181,6 +201,7 @@ export function useMessages(
           // Update existing message (might be status change)
           return prev.map((m) => {
             if (m.id === newMessage.id) {
+              if (isStale(m)) return m; // late echo of an older version
               // Message confirmed in DB - mark as delivered
               return {
                 ...m,
@@ -721,6 +742,20 @@ export function useConversations(
       uniqueChannelTopic(`dm_conversations:${userId}`),
     );
 
+    // Debounced full reload — `loadConversations` is an N+1 waterfall (one
+    // `get_dm_user_info` RPC per participant), and this handler fires for
+    // EVERY visible dm_messages INSERT. Unthrottled, busy DM traffic (or a
+    // burst of our own sends echoing back) turned this into a reload storm —
+    // the realtime-echo doctrine's dispatch-storm class.
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleReload = () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
+        void loadConversations();
+      }, 750);
+    };
+
     // 1. Listen for NEW messages - updates last_message and unread_count
     channel.on(
       "postgres_changes",
@@ -729,8 +764,13 @@ export function useConversations(
         schema: "communication",
         table: "dm_messages",
       },
-      async () => {
-        await loadConversations();
+      (payload) => {
+        // Own sends: the thread view already updated optimistically, and
+        // markConversationAsRead's UPDATE echo handles the read state — a
+        // full N+1 reload for our own echo is pure waste.
+        const sender = (payload.new as { sender_id?: string }).sender_id;
+        if (sender === userId) return;
+        scheduleReload();
       },
     );
 
@@ -749,7 +789,7 @@ export function useConversations(
 
         // Only refresh if last_read_at changed
         if (oldData.last_read_at !== newData.last_read_at) {
-          await loadConversations();
+          scheduleReload();
         }
       },
     );
@@ -757,6 +797,7 @@ export function useConversations(
     channel.subscribe();
 
     return () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
       supabase.removeChannel(channel);
     };
   }, [userId, supabase, loadConversations]);

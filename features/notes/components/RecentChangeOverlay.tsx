@@ -9,7 +9,14 @@
 // (start === end). We render a thin 2px-wide marker at that position so
 // the user can still see "something happened here".
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Pencil } from "lucide-react";
 import type { DiffRange } from "../utils/diffRange";
 
 interface RecentChangeOverlayProps {
@@ -21,6 +28,10 @@ interface RecentChangeOverlayProps {
   /** Bumped by the parent each time a new change happens. Used as the
    *  CSS animation key so the fade restarts cleanly. */
   flashKey: number;
+  /** Who made the change (realtime `updated_by` attribution). When set, a
+   *  small "{label} · editing" bubble pops in anchored to the changed text,
+   *  so the user sees exactly WHERE the collaborator is working. */
+  editorLabel?: string | null;
 }
 
 // Typed as a Pick over the settable string properties (not
@@ -106,8 +117,17 @@ export function RecentChangeOverlay({
   content,
   range,
   flashKey,
+  editorLabel,
 }: RecentChangeOverlayProps) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  // Content-space coordinates of the changed mark, measured after layout.
+  // Absolutely-positioned children of the overlay scroll with its scrollTop
+  // (they participate in the scrollable overflow), so content coordinates
+  // keep the bubble glued to the changed text.
+  const [bubblePos, setBubblePos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
 
   // Build before / mark / after segments. Pure-deletion ranges (start ===
   // end) are rendered as a zero-width <mark> with a left border so the
@@ -157,8 +177,22 @@ export function RecentChangeOverlay({
     overlay.scrollLeft = ta.scrollLeft;
 
     if (!segments) return;
-    const mark = overlay.querySelector<HTMLElement>("mark.recent-change");
+    const mark = overlay.querySelector<HTMLElement>(
+      "mark.recent-change, mark.recent-change-caret",
+    );
     if (!mark) return;
+
+    // Anchor the editor bubble just above the changed text, clamped inside
+    // the content box so it never clips at the top or left edge.
+    if (editorLabel) {
+      setBubblePos({
+        top: Math.max(2, mark.offsetTop - 26),
+        left: Math.max(4, mark.offsetLeft),
+      });
+    } else {
+      setBubblePos(null);
+    }
+
     const markTop = mark.offsetTop;
     const markHeight = mark.offsetHeight || 20;
     const viewTop = ta.scrollTop;
@@ -171,7 +205,7 @@ export function RecentChangeOverlay({
     }
     overlay.scrollTop = ta.scrollTop;
     overlay.scrollLeft = ta.scrollLeft;
-  }, [segments, flashKey, textareaRef]);
+  }, [segments, flashKey, textareaRef, editorLabel]);
 
   if (!segments) return null;
 
@@ -183,6 +217,21 @@ export function RecentChangeOverlay({
       style={{ margin: 0, background: "transparent", zIndex: 2 }}
     >
       {segments.before}
+      {editorLabel && bubblePos && (
+        <span
+          key={`bubble-${flashKey}`}
+          className="notes-editing-bubble"
+          style={{ top: bubblePos.top, left: bubblePos.left }}
+        >
+          <Pencil aria-hidden="true" />
+          {editorLabel}
+          <span className="notes-editing-dots">
+            <span />
+            <span />
+            <span />
+          </span>
+        </span>
+      )}
       <mark
         // flashKey in the key forces a fresh DOM node so the CSS animation
         // restarts even when consecutive changes hit the same range.

@@ -186,6 +186,7 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
   }
 
   // No existing empty note found, create a new one
+  const folderId = input.folder_id ?? (await createFolder(targetFolder));
   const { data, error } = await supabase
     .schema("workbench")
     .from("notes")
@@ -197,6 +198,7 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
       label: finalLabel,
       content: content,
       folder_name: targetFolder,
+      folder_id: folderId,
       tags: input.tags || [],
       metadata: input.metadata || {},
       position: input.position || 0,
@@ -242,10 +244,23 @@ export async function updateNote(
   updates: UpdateNoteInput,
   options?: { expectedUpdatedAt?: string | null },
 ): Promise<Note> {
+  const normalizedUpdates: UpdateNoteInput = { ...updates };
+  // `folder_name` is denormalized display data; `folder_id` is the canonical
+  // relationship used for org inheritance and folder-aware queries. Legacy
+  // editors still call this service directly, so resolve both fields here
+  // instead of allowing a visually-moved note to keep its old folder_id.
+  if (updates.folder_name !== undefined && updates.folder_id === undefined) {
+    const folderName = updates.folder_name?.trim();
+    normalizedUpdates.folder_name = folderName || null;
+    normalizedUpdates.folder_id = folderName
+      ? await createFolder(folderName)
+      : null;
+  }
+
   let query = supabase
     .schema("workbench")
     .from("notes")
-    .update(updates)
+    .update(normalizedUpdates)
     .eq("id", id);
 
   if (options?.expectedUpdatedAt) {

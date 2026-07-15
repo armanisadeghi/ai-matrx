@@ -31,6 +31,10 @@ import {
 } from "@/components/official/bottom-sheet/BottomSheet";
 import MobileNoteToolbar from "./MobileNoteToolbar";
 import { NoteContextSection } from "../NoteContextSection";
+import { CreateFolderDialog } from "../CreateFolderDialog";
+import { createFolder } from "../../service/notesService";
+import { selectAllFolders } from "../../redux/selectors";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
@@ -79,10 +83,12 @@ export function NoteEditorDock({
   const toast = useToastManager("notes");
   const openKnowledge = useOpenNoteKnowledgePanel();
   const ingest = useNoteIngestStatus(noteId);
+  const availableFolders = useAppSelector(selectAllFolders);
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [pill, setPill] = useState<{
     x: number;
@@ -133,8 +139,10 @@ export function NoteEditorDock({
       tooltip: "Copy",
       Icon: Copy,
       onPress: () => {
-        navigator.clipboard.writeText(content).catch(() => {});
-        toast.success("Copied to clipboard");
+        navigator.clipboard
+          .writeText(content)
+          .then(() => toast.success("Copied to clipboard"))
+          .catch(() => toast.error("Couldn't copy the note"));
       },
     },
     {
@@ -168,7 +176,7 @@ export function NoteEditorDock({
   // Measure pill geometry — same math as MobileDock
   const measurePill = useCallback(() => {
     const nav = navRef.current;
-    const idx = activeIndex;
+    const idx = sheetOpen ? activeIndex : null;
     if (!nav || idx === null) {
       setPill(null);
       return;
@@ -194,15 +202,11 @@ export function NoteEditorDock({
     const clampedW = Math.max(0, clampedRight - clampedX);
 
     setPill({ x: clampedX, width: clampedW, height: dockH - PILL_INSET_Y * 2 });
-  }, [activeIndex]);
+  }, [activeIndex, sheetOpen]);
 
   useEffect(() => {
     measurePill();
   }, [measurePill]);
-
-  useEffect(() => {
-    if (!sheetOpen) setActiveIndex(null);
-  }, [sheetOpen]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -278,15 +282,32 @@ export function NoteEditorDock({
           <MobileNoteToolbar
             folder={folder}
             tags={tags}
+            availableFolders={availableFolders}
             onFolderChange={(f) => {
               onFolderChange(f);
               setSheetOpen(null);
             }}
             onTagsChange={onTagsChange}
+            onCreateFolder={() => {
+              setSheetOpen(null);
+              setCreateFolderOpen(true);
+            }}
             onClose={() => setSheetOpen(null)}
           />
         </BottomSheetBody>
       </BottomSheet>
+
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        existingFolders={availableFolders}
+        onConfirm={async (folderName) => {
+          await createFolder(folderName);
+          onFolderChange(folderName);
+        }}
+        description="Create a folder and move this note into it immediately."
+        confirmLabel="Create & Move"
+      />
 
       {/* Context assignment sheet */}
       <BottomSheet

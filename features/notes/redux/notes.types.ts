@@ -231,15 +231,25 @@ export interface NotesSliceState {
   // ── Realtime ───────────────────────────────────────────────
   realtimeConnected: boolean;
   // ── Presence ───────────────────────────────────────────────
-  /** Another user has the notes system open and made changes in last 60s */
-  otherUsersActive: boolean;
-  /** The currently active note is being edited by another user */
-  activeNoteEditedByOthers: boolean;
+  /** Live editor attribution per note, derived from realtime `updated_by`
+   *  (the DB `_stamp_actor` trigger stamps it — no presence channel needed).
+   *  Entries are set by the realtime middleware on non-self UPDATEs and
+   *  cleared by its idle timer. */
+  noteEditors: Record<string, NoteEditorPresence>;
 
   // ── Scope assignments (for sidebar grouping by scope) ─────
   /** Denormalized scope assignments for all notes — loaded once on mount */
   noteScopeAssignments: NoteScopeAssignment[];
   noteScopesLoaded: boolean;
+}
+
+export interface NoteEditorPresence {
+  userId: string;
+  /** Editor's email once resolved via `get_user_emails_by_ids`; null while
+   *  loading (UI falls back to "Someone"). */
+  email: string | null;
+  /** Epoch ms of the last realtime edit event from this user. */
+  lastEditAt: number;
 }
 
 export interface NoteScopeAssignment {

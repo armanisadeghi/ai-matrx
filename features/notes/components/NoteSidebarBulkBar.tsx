@@ -16,6 +16,7 @@ import {
   Database,
   Download,
   FolderInput,
+  FolderPlus,
   Loader2,
   Share2,
   Square,
@@ -27,6 +28,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -44,6 +46,8 @@ import {
 } from "../utils/exportNotesMarkdown";
 import { openNoteShareModal } from "./note-actions/noteMenuRegistry";
 import type { NoteRecord } from "../redux/notes.types";
+import { CreateFolderDialog } from "./CreateFolderDialog";
+import { createFolder } from "../service/notesService";
 
 const MAX_PARALLEL = 4;
 
@@ -76,6 +80,7 @@ export function NoteSidebarBulkBar({
   const [busyKind, setBusyKind] = useState<
     "move" | "knowledge" | "delete" | null
   >(null);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
 
   const count = selectedNotes.length;
   const hasAny = count > 0;
@@ -128,6 +133,11 @@ export function NoteSidebarBulkBar({
     } finally {
       setBusyKind(null);
     }
+  };
+
+  const handleCreateFolder = async (folderName: string) => {
+    await createFolder(folderName);
+    await handleMove(folderName);
   };
 
   const handleExport = async () => {
@@ -203,135 +213,153 @@ export function NoteSidebarBulkBar({
     "flex items-center justify-center w-6 h-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed [&_svg]:w-3.5 [&_svg]:h-3.5";
 
   return (
-    <div
-      className="shrink-0 flex items-center gap-0.5 px-2 py-1.5 border-b border-border/30 bg-accent/40"
-      role="toolbar"
-      aria-label="Bulk note actions"
-    >
-      {/* Select-all toggle */}
-      <SimpleTooltip
-        text={
-          allVisibleSelected
-            ? "Clear selection"
-            : `Select all ${selectableCount} visible`
-        }
+    <>
+      <div
+        className="shrink-0 flex items-center gap-0.5 px-2 py-1.5 border-b border-border/30 bg-accent/40"
+        role="toolbar"
+        aria-label="Bulk note actions"
       >
-        <button
-          type="button"
-          onClick={onToggleSelectAll}
-          disabled={busyKind !== null || selectableCount === 0}
-          className={cn(btn, "text-foreground/70")}
-          aria-pressed={allVisibleSelected}
+        {/* Select-all toggle */}
+        <SimpleTooltip
+          text={
+            allVisibleSelected
+              ? "Clear selection"
+              : `Select all ${selectableCount} visible`
+          }
         >
-          {allVisibleSelected ? <CheckSquare /> : <Square />}
-        </button>
-      </SimpleTooltip>
-
-      <span className="min-w-[4.5rem] px-1 text-[0.6875rem] font-medium tabular-nums text-foreground">
-        {hasAny ? `${count} selected` : "Select notes"}
-      </span>
-      <span className="h-4 w-px bg-border" />
-
-      <DropdownMenu>
-        <SimpleTooltip text="Move to folder">
-          <DropdownMenuTrigger asChild>
-            <button type="button" disabled={actionsDisabled} className={btn}>
-              {busyKind === "move" ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <FolderInput />
-              )}
-            </button>
-          </DropdownMenuTrigger>
+          <button
+            type="button"
+            onClick={onToggleSelectAll}
+            disabled={busyKind !== null || selectableCount === 0}
+            className={cn(btn, "text-foreground/70")}
+            aria-pressed={allVisibleSelected}
+          >
+            {allVisibleSelected ? <CheckSquare /> : <Square />}
+          </button>
         </SimpleTooltip>
-        <DropdownMenuContent
-          align="start"
-          className="max-h-[220px] overflow-auto"
-        >
-          {allFolders.map((folder) => (
+
+        <span className="min-w-[4.5rem] px-1 text-[0.6875rem] font-medium tabular-nums text-foreground">
+          {hasAny ? `${count} selected` : "Select notes"}
+        </span>
+        <span className="h-4 w-px bg-border" />
+
+        <DropdownMenu>
+          <SimpleTooltip text="Move to folder">
+            <DropdownMenuTrigger asChild>
+              <button type="button" disabled={actionsDisabled} className={btn}>
+                {busyKind === "move" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <FolderInput />
+                )}
+              </button>
+            </DropdownMenuTrigger>
+          </SimpleTooltip>
+          <DropdownMenuContent
+            align="start"
+            className="max-h-[220px] overflow-auto"
+          >
             <DropdownMenuItem
-              key={folder}
-              onSelect={() => void handleMove(folder)}
+              onSelect={() => setCreateFolderOpen(true)}
+              className="text-primary"
             >
-              {folder}
+              <FolderPlus className="mr-2 h-3.5 w-3.5" />
+              New folder…
             </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuSeparator />
+            {allFolders.map((folder) => (
+              <DropdownMenuItem
+                key={folder}
+                onSelect={() => void handleMove(folder)}
+              >
+                {folder}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <SimpleTooltip text="Add to knowledge base">
-        <button
-          type="button"
-          onClick={() => void handleKnowledge()}
-          disabled={actionsDisabled}
-          className={btn}
-        >
-          {busyKind === "knowledge" ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <Database />
-          )}
-        </button>
-      </SimpleTooltip>
+        <SimpleTooltip text="Add to knowledge base">
+          <button
+            type="button"
+            onClick={() => void handleKnowledge()}
+            disabled={actionsDisabled}
+            className={btn}
+          >
+            {busyKind === "knowledge" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Database />
+            )}
+          </button>
+        </SimpleTooltip>
 
-      <SimpleTooltip text="Export as Markdown">
-        <button
-          type="button"
-          onClick={() => void handleExport()}
-          disabled={actionsDisabled}
-          className={btn}
-        >
-          <Download />
-        </button>
-      </SimpleTooltip>
+        <SimpleTooltip text="Export as Markdown">
+          <button
+            type="button"
+            onClick={() => void handleExport()}
+            disabled={actionsDisabled}
+            className={btn}
+          >
+            <Download />
+          </button>
+        </SimpleTooltip>
 
-      <SimpleTooltip
-        text={
-          noneSelected
-            ? "Select a note to share"
-            : singleNote
-              ? "Share"
-              : "Select exactly one note to share"
-        }
-      >
-        <button
-          type="button"
-          onClick={handleShare}
-          disabled={busyKind !== null || !singleNote}
-          className={btn}
+        <SimpleTooltip
+          text={
+            noneSelected
+              ? "Select a note to share"
+              : singleNote
+                ? "Share"
+                : "Select exactly one note to share"
+          }
         >
-          <Share2 />
-        </button>
-      </SimpleTooltip>
+          <button
+            type="button"
+            onClick={handleShare}
+            disabled={busyKind !== null || !singleNote}
+            className={btn}
+          >
+            <Share2 />
+          </button>
+        </SimpleTooltip>
 
-      <SimpleTooltip text="Delete (move to trash)">
-        <button
-          type="button"
-          onClick={() => void handleDelete()}
-          disabled={actionsDisabled}
-          className={cn(
-            btn,
-            "text-destructive hover:bg-destructive/10 hover:text-destructive disabled:hover:bg-transparent",
-          )}
-        >
-          {busyKind === "delete" ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <Trash2 />
-          )}
-        </button>
-      </SimpleTooltip>
+        <SimpleTooltip text="Delete (move to trash)">
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            disabled={actionsDisabled}
+            className={cn(
+              btn,
+              "text-destructive hover:bg-destructive/10 hover:text-destructive disabled:hover:bg-transparent",
+            )}
+          >
+            {busyKind === "delete" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
+          </button>
+        </SimpleTooltip>
 
-      <div className="flex-1" />
-      <SimpleTooltip text="Exit selection mode">
-        <button
-          type="button"
-          onClick={onClear}
-          className={cn(btn, "text-foreground/70")}
-        >
-          <X />
-        </button>
-      </SimpleTooltip>
-    </div>
+        <div className="flex-1" />
+        <SimpleTooltip text="Exit selection mode">
+          <button
+            type="button"
+            onClick={onClear}
+            className={cn(btn, "text-foreground/70")}
+          >
+            <X />
+          </button>
+        </SimpleTooltip>
+      </div>
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        onConfirm={handleCreateFolder}
+        existingFolders={allFolders}
+        description={`Create a folder and move ${count} selected note${count === 1 ? "" : "s"} into it.`}
+        confirmLabel="Create & Move"
+      />
+    </>
   );
 }

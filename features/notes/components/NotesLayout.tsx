@@ -429,6 +429,7 @@ export function NotesLayout({
             onDeleteNote={handleDeleteNote}
             onCopyNote={handleCopyNote}
             onShareNote={handleShareNote}
+            onMoveNote={handleMoveNote}
             onUpdateNote={handleUpdateNote}
             onSaveNote={handleSaveNote}
             isDirty={isDirty}

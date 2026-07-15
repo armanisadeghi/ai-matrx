@@ -24,6 +24,7 @@ import {
   Bookmark,
   MoreHorizontal,
   Database,
+  FolderInput,
 } from "lucide-react";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -40,8 +41,10 @@ import {
   selectNoteIsSavingById,
   selectNoteContent,
   selectInstanceTabs,
+  selectAllFolders,
+  selectNoteFolder,
 } from "../redux/selectors";
-import { saveNote, copyNote, deleteNote } from "../redux/thunks";
+import { saveNote, copyNote, moveNoteToFolder } from "../redux/thunks";
 import { NoteShareModal } from "./NoteShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
@@ -70,6 +73,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { MoveNoteDialog } from "./MoveNoteDialog";
 
 interface NoteTabItemProps {
   noteId: string;
@@ -91,6 +95,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   );
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
+  const allFolders = useAppSelector(selectAllFolders);
+  const currentFolder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
 
   const openNoteInfo = useOpenNoteInfoWindow();
   const openKnowledge = useOpenNoteKnowledgePanel();
@@ -102,6 +108,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -174,7 +181,11 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // a folder, etc. — even if they linger on the dialog without
   // touching anything else.
   const anyTabUiOpen =
-    !!ctxMenu || shareOpen || deleteConfirmOpen || titleFocused;
+    !!ctxMenu ||
+    shareOpen ||
+    moveDialogOpen ||
+    deleteConfirmOpen ||
+    titleFocused;
   useEffect(() => {
     if (!anyTabUiOpen) return undefined;
     dispatch(markTabInteraction({ instanceId }));
@@ -232,6 +243,15 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       .catch(() => toast.error("Failed to copy reference"));
   }, [noteId, label]);
 
+  const handleMoveToFolder = useCallback(
+    async (folder: string) => {
+      bumpTabInteraction();
+      await dispatch(moveNoteToFolder({ noteId, folder })).unwrap();
+      toast.success(`Moved to ${folder}`);
+    },
+    [bumpTabInteraction, dispatch, noteId],
+  );
+
   // Secondary actions — the single source for BOTH the "…" dropdown and the
   // right-click menu, so they never drift. Primary actions (copy content,
   // share, context, mic) live inline on the tab.
@@ -256,6 +276,14 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       icon: <CopyPlus className="w-3.5 h-3.5" />,
       label: "Duplicate note",
       fn: () => dispatch(copyNote(noteId)),
+    },
+    {
+      icon: <FolderInput className="w-3.5 h-3.5" />,
+      label: "Move to folder…",
+      fn: () => {
+        bumpTabInteraction();
+        setMoveDialogOpen(true);
+      },
     },
     {
       icon: <Info className="w-3.5 h-3.5" />,
@@ -369,7 +397,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
             <button
               className={actionBtnClass}
               onClick={() => {
-                navigator.clipboard.writeText(content).catch(() => {});
+                navigator.clipboard
+                  .writeText(content)
+                  .catch(() => toast.error("Failed to copy note content"));
               }}
               title="Copy content"
             >
@@ -475,6 +505,15 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         onOpenChange={setShareOpen}
         noteId={noteId}
         noteLabel={label}
+      />
+
+      <MoveNoteDialog
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        onConfirm={handleMoveToFolder}
+        noteName={label}
+        currentFolder={currentFolder}
+        availableFolders={allFolders}
       />
 
       {/* Delete confirmation — overlay and content must exceed window panel z-index (~1000) */}

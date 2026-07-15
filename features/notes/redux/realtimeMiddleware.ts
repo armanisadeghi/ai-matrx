@@ -21,6 +21,8 @@ import {
   upsertNoteFromServer,
   removeNote,
   setRealtimeConnected,
+  setNoteEditor,
+  clearNoteEditor,
 } from "./slice";
 import { fetchNotesList, fetchSharedNotesList } from "./thunks";
 
@@ -37,6 +39,23 @@ let reconnectAttempt = 0;
 // full-list catch-up fetch, a self-sustaining fetch storm.
 const BACKOFF_RESET_AFTER_MS = 30_000;
 let backoffResetTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ── Live-editor attribution ─────────────────────────────────────────────
+// `workbench.notes._stamp_actor` (DB trigger) writes `updated_by` on every
+// UPDATE, so each realtime payload already identifies its editor — no
+// presence channel needed. We surface "X is editing" per note and clear it
+// after a short idle window. Emails resolve once per user via the
+// `get_user_emails_by_ids` RPC (secure auth.users accessor) into a
+// module-level cache.
+const EDITOR_IDLE_CLEAR_MS = 8_000;
+const editorEmailCache = new Map<string, string | null>();
+const editorEmailInFlight = new Set<string>();
+const editorClearTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearAllEditorTimers() {
+  for (const timer of editorClearTimers.values()) clearTimeout(timer);
+  editorClearTimers.clear();
+}
 
 type StoreWithSync = {
   getState: () => unknown;
@@ -141,6 +160,61 @@ export const notesRealtimeMiddleware: Middleware<
     }, delayMs);
   }
 
+  /** Surface "X is editing" for a non-self realtime UPDATE, resolve the
+   *  editor's email once (cached), and arm the idle-clear timer. */
+  function announceEditor(noteId: string, editorId: string) {
+    const now = Date.now();
+    storeApi.dispatch(
+      setNoteEditor({
+        noteId,
+        userId: editorId,
+        email: editorEmailCache.get(editorId) ?? null,
+        at: now,
+      }),
+    );
+
+    const existingTimer = editorClearTimers.get(noteId);
+    if (existingTimer) clearTimeout(existingTimer);
+    editorClearTimers.set(
+      noteId,
+      setTimeout(() => {
+        editorClearTimers.delete(noteId);
+        storeApi.dispatch(clearNoteEditor({ noteId, userId: editorId }));
+      }, EDITOR_IDLE_CLEAR_MS),
+    );
+
+    if (!editorEmailCache.has(editorId) && !editorEmailInFlight.has(editorId)) {
+      editorEmailInFlight.add(editorId);
+      void supabase
+        .rpc("get_user_emails_by_ids", { user_ids: [editorId] })
+        .then(({ data, error }) => {
+          editorEmailInFlight.delete(editorId);
+          if (error) {
+            console.warn("[Notes RT] editor email lookup failed:", error.message);
+            return;
+          }
+          const email = data?.[0]?.email ?? null;
+          editorEmailCache.set(editorId, email);
+          // Fill the email in-place ONLY if this user is still the note's
+          // current editor — never resurrect or extend a stale entry (a
+          // different editor may have taken over while the RPC was in flight).
+          const current = (storeApi.getState() as RootState).notes.noteEditors[
+            noteId
+          ];
+          if (email && current?.userId === editorId) {
+            storeApi.dispatch(
+              setNoteEditor({
+                noteId,
+                userId: editorId,
+                email,
+                at: current.lastEditAt,
+              }),
+            );
+          }
+        });
+    }
+  }
+
   function handlePayload(payload: {
     eventType: string;
     new: Record<string, unknown>;
@@ -161,6 +235,13 @@ export const notesRealtimeMiddleware: Middleware<
       if (newRecord.deleted_at) {
         storeApi.dispatch(removeNote(noteId));
         return;
+      }
+
+      // Live-editor attribution: `_stamp_actor` wrote the editor's id.
+      const editorId = newRecord.updated_by as string | null | undefined;
+      const selfId = (storeApi.getState() as RootState).userAuth?.id;
+      if (editorId && editorId !== selfId) {
+        announceEditor(noteId, editorId);
       }
 
       console.log("[Notes RT] UPDATE", noteId);
@@ -305,6 +386,7 @@ export const notesRealtimeMiddleware: Middleware<
     }
     subscribedUserId = null;
     reconnectAttempt = 0;
+    clearAllEditorTimers();
     if (channel) {
       supabase.removeChannel(channel);
       channel = null;

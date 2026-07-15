@@ -10,9 +10,17 @@
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FolderOpen, ChevronDown, X, Plus, Network } from "lucide-react";
+import {
+  FolderOpen,
+  FolderPlus,
+  ChevronDown,
+  X,
+  Plus,
+  Network,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { updateNoteFolder, updateNoteTags } from "../redux/slice";
+import { updateNoteTags } from "../redux/slice";
+import { moveNoteToFolder } from "../redux/thunks";
 import {
   selectNoteFolder,
   selectNoteTags,
@@ -31,6 +39,8 @@ import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsD
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import { cn } from "@/lib/utils";
 import { NoteContextSection } from "./NoteContextSection";
+import { CreateFolderDialog } from "./CreateFolderDialog";
+import { createFolder } from "../service/notesService";
 
 interface NoteMetadataBarProps {
   noteId: string;
@@ -64,6 +74,7 @@ export function NoteMetadataBar({
   const noteTaskId = note?.task_id ?? null;
 
   const [folderOpen, setFolderOpen] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [addingTag, setAddingTag] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [scopePickerOpen, setScopePickerOpen] = useState(false);
@@ -122,8 +133,16 @@ export function NoteMetadataBar({
 
   const handleFolderChange = useCallback(
     (f: string) => {
-      dispatch(updateNoteFolder({ id: noteId, folder: f }));
+      dispatch(moveNoteToFolder({ noteId, folder: f }));
       setFolderOpen(false);
+    },
+    [dispatch, noteId],
+  );
+
+  const handleCreateFolder = useCallback(
+    async (folderName: string) => {
+      await createFolder(folderName);
+      await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
     },
     [dispatch, noteId],
   );
@@ -267,6 +286,17 @@ export function NoteMetadataBar({
             className="fixed z-[10000] max-h-[240px] min-w-[120px] overflow-auto rounded-lg border border-border bg-card/95 py-1 shadow-lg backdrop-blur-2xl"
             style={{ left: folderMenuPos.left, bottom: folderMenuPos.bottom }}
           >
+            <button
+              type="button"
+              className="flex w-full cursor-pointer items-center gap-2 border-b border-border/60 px-3 py-2 text-left text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+              onClick={() => {
+                setFolderOpen(false);
+                setCreateFolderOpen(true);
+              }}
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+              New folder…
+            </button>
             {allFolders.map((f) => (
               <button
                 key={f}
@@ -285,6 +315,15 @@ export function NoteMetadataBar({
           </div>,
           document.body,
         )}
+
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        onConfirm={handleCreateFolder}
+        existingFolders={allFolders}
+        description="Create a folder and assign this note to it immediately."
+        confirmLabel="Create & Assign"
+      />
     </>
   );
 }

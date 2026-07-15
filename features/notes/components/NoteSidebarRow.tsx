@@ -41,6 +41,8 @@ interface NoteSidebarRowProps {
   selectionMode: boolean;
   isSelected: boolean;
   onToggleSelect: (noteId: string) => void;
+  /** Opens the shared create-folder flow and moves this note on success. */
+  onCreateFolder: (noteId: string) => void;
 }
 
 export function NoteSidebarRow({
@@ -60,6 +62,7 @@ export function NoteSidebarRow({
   selectionMode,
   isSelected,
   onToggleSelect,
+  onCreateFolder,
 }: NoteSidebarRowProps) {
   const dispatch = useAppDispatch();
 
@@ -71,6 +74,7 @@ export function NoteSidebarRow({
     folder: note.folder_name || "Uncategorized",
     allFolders,
     openKnowledge,
+    onCreateFolder: () => onCreateFolder(note.id),
     dispatch,
   };
 
@@ -169,9 +173,7 @@ export function NoteSidebarRow({
     <NonEditableContextMenu
       sourceFeature="notes"
       contextData={{ content: note.content ?? "" }}
-      contentSource={
-        { type: "note", noteId: note.id } satisfies ContentSource
-      }
+      contentSource={{ type: "note", noteId: note.id } satisfies ContentSource}
       entity={{
         type: "note",
         id: note.id,

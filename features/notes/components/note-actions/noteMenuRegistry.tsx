@@ -23,6 +23,7 @@ import {
   Share2,
   Download,
   FolderInput,
+  FolderPlus,
   Database,
   Trash2,
 } from "lucide-react";
@@ -57,6 +58,8 @@ export interface NoteMenuContext {
   allFolders: string[];
   /** Opens the note's knowledge-base (RAG) side panel. */
   openKnowledge: (opts: { noteId: string; title?: string }) => void;
+  /** Creates a folder, then moves this note into it. */
+  onCreateFolder: () => void;
   dispatch: AppDispatch;
 }
 
@@ -171,26 +174,36 @@ export function buildNoteContextSections(
       id: "knowledge",
       label: "Add to knowledge base",
       icon: Database,
-      onSelect: () => ctx.openKnowledge({ noteId: ctx.noteId, title: ctx.label }),
+      onSelect: () =>
+        ctx.openKnowledge({ noteId: ctx.noteId, title: ctx.label }),
     },
   ];
 
-  if (moveTargets.length > 0) {
-    items.push({
-      kind: "submenu",
-      id: "move",
-      label: "Move to Folder",
-      icon: FolderInput,
-      children: moveTargets.map((folder) => ({
-        kind: "item" as const,
-        id: `move-${folder}`,
-        label: folder,
-        onSelect: () => {
-          ctx.dispatch(moveNoteToFolder({ noteId: ctx.noteId, folder }));
-        },
-      })),
-    });
+  const moveChildren: ContextMenuExtraItem[] = moveTargets.map((folder) => ({
+    kind: "item" as const,
+    id: `move-${folder}`,
+    label: folder,
+    onSelect: () => {
+      ctx.dispatch(moveNoteToFolder({ noteId: ctx.noteId, folder }));
+    },
+  }));
+  if (moveChildren.length > 0) {
+    moveChildren.push({ kind: "separator", id: "move-new-sep" });
   }
+  moveChildren.push({
+    kind: "item",
+    id: "move-new-folder",
+    label: "New folder…",
+    icon: FolderPlus,
+    onSelect: ctx.onCreateFolder,
+  });
+  items.push({
+    kind: "submenu",
+    id: "move",
+    label: "Move to Folder",
+    icon: FolderInput,
+    children: moveChildren,
+  });
 
   items.push(
     { kind: "separator", id: "danger-sep" },
@@ -266,29 +279,35 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
               });
             },
           },
-          moveTargets.length > 0
-            ? {
-                id: "move",
-                kind: "submenu" as const,
-                label: "Move to Folder",
-                icon: FolderInput,
-                sections: [
+          {
+            id: "move",
+            kind: "submenu" as const,
+            label: "Move to Folder",
+            icon: FolderInput,
+            sections: [
+              {
+                id: "folders",
+                items: [
+                  ...moveTargets.map((folder) => ({
+                    id: `move-${folder}`,
+                    label: folder,
+                    onSelect: () => {
+                      ctx.dispatch(
+                        moveNoteToFolder({ noteId: ctx.noteId, folder }),
+                      );
+                    },
+                  })),
                   {
-                    id: "folders",
-                    items: moveTargets.map((folder) => ({
-                      id: `move-${folder}`,
-                      label: folder,
-                      onSelect: () => {
-                        ctx.dispatch(
-                          moveNoteToFolder({ noteId: ctx.noteId, folder }),
-                        );
-                      },
-                    })),
+                    id: "move-new-folder",
+                    label: "New folder…",
+                    icon: FolderPlus,
+                    onSelect: ctx.onCreateFolder,
                   },
                 ],
-              }
-            : null,
-        ].filter((item): item is NonNullable<typeof item> => item != null),
+              },
+            ],
+          },
+        ],
       },
       {
         id: "danger",

@@ -88,8 +88,6 @@ import {
 } from "../redux/thunks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  selectOtherUsersActive,
-  selectActiveNoteEditedByOthers,
   selectInstanceActiveTab,
   selectInstanceTabs,
   selectInstanceSplitNoteId,
@@ -98,6 +96,7 @@ import {
 } from "../redux/selectors";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
+import { NotePresenceBanner } from "./NotePresenceBanner";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 import { NoteMetadataBar } from "./NoteMetadataBar";
@@ -349,10 +348,6 @@ export function NotesView({
   const splitNoteLabel = useAppSelector(
     splitNoteId ? selectNoteLabel(splitNoteId) : () => null,
   );
-  const othersActive = useAppSelector(selectOtherUsersActive);
-  const activeNoteEditedByOthers = useAppSelector(
-    selectActiveNoteEditedByOthers,
-  );
   const preferredDefaultMode = usePreferredDefaultEditorMode();
   const isNarrowViewport = useMediaQuery(
     `(max-width: ${NOTES_SPLIT_MIN_WIDTH_PX - 1}px)`,
@@ -547,28 +542,8 @@ export function NotesView({
           <NoteTabBar instanceId={instanceId} syncUrl={syncUrl} />
         )}
 
-        {/* Presence indicator */}
-        {activeTabId && activeNoteEditedByOthers && (
-          <div className="flex items-center gap-2 px-4 py-1 bg-amber-500/10 border-b border-amber-500/20 shrink-0">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-            </span>
-            <span className="text-[0.6875rem] text-amber-700 dark:text-amber-300">
-              Another user is editing this note
-            </span>
-          </div>
-        )}
-        {othersActive && !activeNoteEditedByOthers && (
-          <div className="flex items-center gap-2 px-4 py-0.5 bg-blue-500/5 border-b border-blue-500/10 shrink-0">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
-            </span>
-            <span className="text-[0.625rem] text-blue-600/70 dark:text-blue-400/70">
-              Other users are active in notes
-            </span>
-          </div>
-        )}
+        {/* Presence indicator (shared with the window view) */}
+        <NotePresenceBanner instanceId={instanceId} />
 
         {/* Layer 1: Content editor (fills available space) */}
         {activeTabId ? (

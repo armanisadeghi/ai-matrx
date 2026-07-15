@@ -250,7 +250,8 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
 
   // Collapsible "Recent" section (default mode) — open by default, paginated.
   const [recentOpen, setRecentOpen] = useState(true);
-  const [recentVisibleCount, setRecentVisibleCount] = useState(RECENT_PAGE_SIZE);
+  const [recentVisibleCount, setRecentVisibleCount] =
+    useState(RECENT_PAGE_SIZE);
 
   // ── Fetch scope assignments when switching to scope mode ────────────
   useEffect(() => {
@@ -270,7 +271,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const [dropTargetFolder, setDropTargetFolder] = useState<string | null>(null);
 
   // Dialog state
-  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [createFolderIntent, setCreateFolderIntent] = useState<
+    { kind: "new-note" } | { kind: "move-note"; noteId: string } | null
+  >(null);
   const [renameFolderTarget, setRenameFolderTarget] = useState<string | null>(
     null,
   );
@@ -549,8 +552,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const toggleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
       const all =
-        selectableIds.length > 0 &&
-        selectableIds.every((id) => prev.has(id));
+        selectableIds.length > 0 && selectableIds.every((id) => prev.has(id));
       return all ? new Set<string>() : new Set(selectableIds);
     });
   }, [selectableIds]);
@@ -787,17 +789,23 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   // ── Create folder handler ──────────────────────────────────────────
   const handleCreateFolder = useCallback(
     async (folderName: string) => {
-      try {
-        // Create the note_folders record first
-        await createFolder(folderName);
-        // Then create a new note in that folder (which will resolve folder_id)
-        handleNewNote(folderName);
-      } catch {
-        // Fall back to just creating the note
+      // Create the note_folders record first, then complete the action that
+      // launched the dialog. Row-menu creation moves that exact note; the
+      // sidebar footer keeps its established create-a-note behavior.
+      await createFolder(folderName);
+      if (createFolderIntent?.kind === "move-note") {
+        await dispatch(
+          moveNoteToFolder({
+            noteId: createFolderIntent.noteId,
+            folder: folderName,
+          }),
+        ).unwrap();
+        toast.success(`Created ${folderName} and moved the note`);
+      } else {
         handleNewNote(folderName);
       }
     },
-    [handleNewNote],
+    [createFolderIntent, dispatch, handleNewNote],
   );
 
   // ── Format time ────────────────────────────────────────────────────
@@ -1068,6 +1076,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                       selectionMode={selectionMode}
                       isSelected={selectedIds.has(note.id)}
                       onToggleSelect={toggleSelect}
+                      onCreateFolder={(noteId) =>
+                        setCreateFolderIntent({ kind: "move-note", noteId })
+                      }
                     />
                   );
                 })}
@@ -1202,6 +1213,9 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                   selectionMode={selectionMode}
                   isSelected={selectedIds.has(note.id)}
                   onToggleSelect={toggleSelect}
+                  onCreateFolder={(noteId) =>
+                    setCreateFolderIntent({ kind: "move-note", noteId })
+                  }
                 />
               );
             })}
@@ -1326,6 +1340,12 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                               selectionMode={selectionMode}
                               isSelected={selectedIds.has(note.id)}
                               onToggleSelect={toggleSelect}
+                              onCreateFolder={(noteId) =>
+                                setCreateFolderIntent({
+                                  kind: "move-note",
+                                  noteId,
+                                })
+                              }
                             />
                           );
                         })
@@ -1470,27 +1490,39 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
       {/* Bottom: New Note + New Folder. Stays put in selection mode — the
           bulk-action bar lives at the top (below the toolbar) instead. */}
       <div className="shrink-0 px-2 py-1.5 border-t border-border/30 flex items-center gap-1">
-          <button
-            className="flex items-center gap-1.5 flex-1 px-2 py-1 text-[0.6875rem] text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3 [&_svg]:h-3"
-            onClick={() => handleNewNote("Draft")}
-          >
-            <Plus /> New Note
-          </button>
-          <button
-            className="flex items-center justify-center w-7 h-7 text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3.5 [&_svg]:h-3.5"
-            onClick={() => setCreateFolderOpen(true)}
-            title="New Folder"
-          >
-            <FolderPlus />
-          </button>
-        </div>
+        <button
+          className="flex items-center gap-1.5 flex-1 px-2 py-1 text-[0.6875rem] text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3 [&_svg]:h-3"
+          onClick={() => handleNewNote("Draft")}
+        >
+          <Plus /> New Note
+        </button>
+        <button
+          className="flex items-center justify-center w-7 h-7 text-muted-foreground cursor-pointer transition-colors hover:text-foreground hover:bg-accent/50 rounded-md [&_svg]:w-3.5 [&_svg]:h-3.5"
+          onClick={() => setCreateFolderIntent({ kind: "new-note" })}
+          title="New Folder"
+        >
+          <FolderPlus />
+        </button>
+      </div>
 
       {/* ── Dialogs ────────────────────────────────────────────────────── */}
       <CreateFolderDialog
-        open={createFolderOpen}
-        onOpenChange={setCreateFolderOpen}
+        open={createFolderIntent !== null}
+        onOpenChange={(open) => {
+          if (!open) setCreateFolderIntent(null);
+        }}
         onConfirm={handleCreateFolder}
         existingFolders={allFolders}
+        description={
+          createFolderIntent?.kind === "move-note"
+            ? "Create a folder and move this note into it immediately."
+            : "Create a folder and start a new note inside it."
+        }
+        confirmLabel={
+          createFolderIntent?.kind === "move-note"
+            ? "Create & Move"
+            : "Create Folder"
+        }
       />
 
       {renameFolderTarget && (

@@ -20,6 +20,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   FileText,
   FolderOpen,
+  FolderPlus,
   ChevronDown,
   Hash,
   Clock,
@@ -30,7 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { updateNoteFolder } from "../redux/slice";
+import { moveNoteToFolder } from "../redux/thunks";
 import {
   selectNoteById,
   selectNoteContent,
@@ -40,6 +41,8 @@ import {
 import { cn } from "@/lib/utils";
 import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
 import { NoteContextSection } from "./NoteContextSection";
+import { CreateFolderDialog } from "./CreateFolderDialog";
+import { createFolder } from "../service/notesService";
 
 interface NoteInfoPanelProps {
   noteId: string;
@@ -142,6 +145,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
   const allFolders = useAppSelector(selectAllFolders);
 
   const [folderOpen, setFolderOpen] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
 
   // Single memo keyed on content — only recomputes when the note text
   // changes, never on unrelated re-renders.
@@ -152,8 +156,16 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
 
   const handleFolderChange = useCallback(
     (f: string) => {
-      dispatch(updateNoteFolder({ id: noteId, folder: f }));
+      dispatch(moveNoteToFolder({ noteId, folder: f }));
       setFolderOpen(false);
+    },
+    [dispatch, noteId],
+  );
+
+  const handleCreateFolder = useCallback(
+    async (folderName: string) => {
+      await createFolder(folderName);
+      await dispatch(moveNoteToFolder({ noteId, folder: folderName })).unwrap();
     },
     [dispatch, noteId],
   );
@@ -228,6 +240,17 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
         </button>
         {folderOpen && (
           <div className="absolute left-3 right-3 top-full z-50 mt-1 max-h-[200px] overflow-auto py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg">
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 border-b border-border/60 px-3 py-2 text-left text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+              onClick={() => {
+                setFolderOpen(false);
+                setCreateFolderOpen(true);
+              }}
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+              New folder…
+            </button>
             {allFolders.map((f) => (
               <button
                 key={f}
@@ -303,6 +326,15 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
         )}
         {note.task_id && <CopyableRow label="Task ID" value={note.task_id} />}
       </div>
+
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        onConfirm={handleCreateFolder}
+        existingFolders={allFolders}
+        description="Create a folder and assign this note to it immediately."
+        confirmLabel="Create & Assign"
+      />
     </div>
   );
 }
