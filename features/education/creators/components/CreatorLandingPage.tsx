@@ -14,7 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
-import { siteConfig } from "@/config/extras/site";
+import { EDU_ORIGIN } from "../../constants";
 import type {
   CreatorPublicPage,
   FeaturedClass,
@@ -128,7 +128,7 @@ export function CreatorLandingPage({ page }: { page: CreatorPublicPage }) {
   const resources = page.featured.filter((f): f is FeaturedResource => f.kind === "resource");
   const classes = page.featured.filter((f): f is FeaturedClass => f.kind === "class");
 
-  const pageUrl = `${siteConfig.url}/c/${page.handle}`;
+  const pageUrl = `${EDU_ORIGIN}/c/${page.handle}`;
 
   // Person JSON-LD + a Course per featured class (education-rich results).
   const jsonLd = {

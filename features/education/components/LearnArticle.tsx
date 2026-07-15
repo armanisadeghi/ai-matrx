@@ -11,11 +11,11 @@ import { EDU_TOOL_BY_SLUG } from "../data/tools";
 import {
   EDU_BASE,
   EDU_LEARN_SEGMENT,
+  EDU_ORIGIN,
   EDU_WORKSPACE_HREF,
   EDU_WORKSPACE_LABEL,
   eduHref,
 } from "../constants";
-import { siteConfig } from "@/config/extras/site";
 import type { LearnDoc, EduSection } from "../types";
 
 /** Slug → Title Case, used ONLY as a fallback when no registry name exists. */
@@ -30,7 +30,7 @@ const subjectName = (s: string) => getAxisEntry("subjects", s)?.name ?? humanize
 const toolName = (s: string) => EDU_TOOL_BY_SLUG[s]?.name ?? humanize(s);
 
 export function LearnArticle({ doc }: { doc: LearnDoc }) {
-  const url = `${siteConfig.url}${eduHref(EDU_LEARN_SEGMENT, doc.slug)}`;
+  const url = `${EDU_ORIGIN}${eduHref(EDU_LEARN_SEGMENT, doc.slug)}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",

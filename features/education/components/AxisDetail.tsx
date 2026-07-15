@@ -9,13 +9,12 @@ import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/Au
 import { cn } from "@/lib/utils";
 import { EduHero } from "./sections/EduHero";
 import { SectionRenderer } from "./sections/SectionRenderer";
-import { ACCESS_TIER_META, EDU_AXIS_BY_ID, EDU_BASE, EDU_LEARN_SEGMENT, EDU_WORKSPACE_HREF, EDU_WORKSPACE_LABEL, eduHref } from "../constants";
+import { ACCESS_TIER_META, EDU_AXIS_BY_ID, EDU_BASE, EDU_LEARN_SEGMENT, EDU_ORIGIN, EDU_WORKSPACE_HREF, EDU_WORKSPACE_LABEL, eduHref } from "../constants";
 import { getAxisEntry } from "../data/registry";
 import { EDU_TOOL_BY_SLUG } from "../data/tools";
 import { getPublishedLearnDocTitles } from "../publishing/queries";
 import { ExamHubActions } from "./ExamHubActions";
 import { ExamCuratedLibrary } from "./ExamCuratedLibrary";
-import { siteConfig } from "@/config/extras/site";
 import type { AxisEntry, EduAxisId, EduSection } from "../types";
 
 /** Slug → Title Case, used ONLY as a fallback when no registry name exists. */
@@ -102,7 +101,7 @@ function buildAxisJsonLd(axisId: EduAxisId, entry: AxisEntry, url: string) {
       name: entry.name,
       description: entry.description,
       url,
-      provider: { "@type": "Organization", name: "AI Matrx", sameAs: siteConfig.url },
+      provider: { "@type": "Organization", name: "AI Matrx", sameAs: EDU_ORIGIN },
     });
   }
 
@@ -117,7 +116,7 @@ export async function AxisDetail({ axisId, entry }: AxisDetailProps) {
   const contentTitles = await getPublishedLearnDocTitles();
   const related = buildRelated(entry, contentTitles);
   const tierLabel = ACCESS_TIER_META[entry.accessTier].label;
-  const url = `${siteConfig.url}${eduHref(axisSegment, entry.slug)}`;
+  const url = `${EDU_ORIGIN}${eduHref(axisSegment, entry.slug)}`;
   const jsonLd = buildAxisJsonLd(axisId, entry, url);
 
   const heroChips = [

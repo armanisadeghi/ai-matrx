@@ -16,10 +16,29 @@ import {
   Clock,
   type LucideIcon,
 } from "lucide-react";
+import { siteConfig } from "@/config/extras/site";
 import type { AccessTier, AxisConfig } from "./types";
 
 /** Base path for the entire hub. Change here, propagates everywhere. */
 export const EDU_BASE = "/education" as const;
+
+/**
+ * Public origin for every PUBLIC education/creator URL: page canonicals, OG
+ * image URLs, JSON-LD `url`/`sameAs`, and sitemap `<loc>` entries. Defaults to
+ * the main site (`siteConfig.url`) — unset env, unchanged behavior.
+ *
+ * Set `NEXT_PUBLIC_EDU_ORIGIN=https://learn.aimatrx.com` to point every one of
+ * those URLs at the dedicated school-safe subdomain in one change, with no
+ * per-callsite edits. Pairs with the host gate in `proxy.ts` (redirects
+ * non-education app routes away from that host) — see
+ * `features/education/creators/FEATURE.md` § "Public education origin
+ * (learn.aimatrx.com)" for the full cutover (DNS, Vercel domain, cookie
+ * domain).
+ */
+export const EDU_ORIGIN = (process.env.NEXT_PUBLIC_EDU_ORIGIN?.trim() || siteConfig.url).replace(
+  /\/$/,
+  "",
+);
 
 /**
  * The discovery axes, in nav/hub order. Each is a top-level path namespace

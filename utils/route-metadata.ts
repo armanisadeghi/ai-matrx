@@ -178,9 +178,18 @@ export function createDynamicRouteMetadata(
     keywords?: string[];
     /** Self-referential canonical path; resolves against `metadataBase`. */
     canonicalPath?: string;
+    /**
+     * Override the origin that `canonicalPath` / relative `ogImage` resolve
+     * against, instead of inheriting the root layout's `metadataBase`
+     * (`siteConfig.url`). Used by surfaces with their own public origin — e.g.
+     * the Education Hub's `EDU_ORIGIN` (`features/education/constants.ts`),
+     * which defaults to the same value so omitting this is a no-op.
+     */
+    metadataBase?: string;
   },
 ): Metadata {
-  const { title, titlePrefix, description, letter, ogImage, keywords, canonicalPath } = options;
+  const { title, titlePrefix, description, letter, ogImage, keywords, canonicalPath, metadataBase } =
+    options;
 
   const composedTitle = titlePrefix ? `${titlePrefix} | ${title}` : title;
   const desc = description || siteConfig.description;
@@ -194,6 +203,7 @@ export function createDynamicRouteMetadata(
       description: desc,
       ...(keywords?.length ? { keywords } : {}),
       ...(canonicalPath ? { alternates: { canonical: canonicalPath } } : {}),
+      ...(metadataBase ? { metadataBase: new URL(metadataBase) } : {}),
       openGraph: {
         title: socialTitle,
         description: desc,

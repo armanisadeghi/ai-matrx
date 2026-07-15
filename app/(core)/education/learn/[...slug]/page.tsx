@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { LearnArticle } from "@/features/education/components/LearnArticle";
+import { EDU_ORIGIN } from "@/features/education/constants";
 import {
   getPublishedLearnDoc,
   listPublishedLearnDocs,
@@ -27,6 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: "Study guide",
       description: "AI Matrx Education",
       letter: "Lr",
+      metadataBase: EDU_ORIGIN,
     });
   }
   const slugPath = slug.join("/");
@@ -37,6 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     keywords: doc.keywords,
     canonicalPath: `/education/learn/${slugPath}`,
     ogImage: `/education/learn/og/${slugPath}`,
+    metadataBase: EDU_ORIGIN,
   });
 }
 

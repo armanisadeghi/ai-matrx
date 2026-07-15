@@ -1,4 +1,5 @@
 import { siteConfig } from '@/config/extras/site'
+import { EDU_ORIGIN } from '@/features/education/constants'
 import { getEducationSitemapPaths } from '@/features/education/publishing/sitemap'
 
 // Revalidate hourly; a learn-doc publish busts the education reads via tag.
@@ -23,9 +24,13 @@ export async function GET() {
     { loc: `${baseUrl}/free/zip-code-heatmap`, changefreq: 'monthly', priority: '0.6' },
   ]
 
-  // Education Hub — every axis index/entry + published learn doc + live tool.
+  // Education Hub — every axis index/entry + published learn doc + live tool
+  // + public creator page (/c/<handle>). Prefixed with EDU_ORIGIN (not the
+  // site's baseUrl) so these entries point at the configured public education
+  // origin — aimatrx.com by default, learn.aimatrx.com once
+  // NEXT_PUBLIC_EDU_ORIGIN is set. See features/education/constants.ts#EDU_ORIGIN.
   const educationUrls = (await getEducationSitemapPaths()).map((u) => ({
-    loc: `${baseUrl}${u.path}`,
+    loc: `${EDU_ORIGIN}${u.path}`,
     changefreq: u.changefreq,
     priority: u.priority,
   }))

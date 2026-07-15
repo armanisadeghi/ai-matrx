@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClasses } from "@/features/education/classes/hooks/useClasses";
+import { EDU_ORIGIN } from "@/features/education/constants";
 import {
   claimHandle,
   getMyCreatorProfile,
@@ -127,8 +128,8 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
         </div>
         <p className="mb-6 text-sm text-muted-foreground">
           Claim your public handle. You&apos;ll get a page at{" "}
-          <span className="font-mono text-foreground">aimatrx.com/c/your-handle</span> to feature your
-          videos, free study tools, and classes.
+          <span className="font-mono text-foreground">{new URL(EDU_ORIGIN).host}/c/your-handle</span> to
+          feature your videos, free study tools, and classes.
         </p>
 
         <div className="space-y-4">
