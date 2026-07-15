@@ -19421,6 +19421,15 @@ export type Database = {
       }
       has_org_admin: { Args: { p_org: string }; Returns: boolean }
       has_org_owner: { Args: { p_org: string }; Returns: boolean }
+      is_discoverable: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       is_org_member: {
         Args: { p_org: string; p_user: string }
         Returns: boolean
@@ -27377,6 +27386,13 @@ export type Database = {
       creator_get_mine: { Args: never; Returns: Json }
       creator_handle_available: { Args: { p_handle: string }; Returns: boolean }
       creator_normalize_handle: { Args: { p_handle: string }; Returns: string }
+      creator_public_handles: {
+        Args: never
+        Returns: {
+          handle: string
+          updated_at: string
+        }[]
+      }
       creator_public_page: { Args: { p_handle: string }; Returns: Json }
       creator_resolve_featured_resource: {
         Args: { p_id: string; p_token: string }
