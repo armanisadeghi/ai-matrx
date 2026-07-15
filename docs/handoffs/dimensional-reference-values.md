@@ -36,6 +36,15 @@ On what "$scope.id resolution time" means:
 
 > "remember that agents need to be able to write to all of these as well so we'll have to do that as well."
 
+On scope-to-scope references (Team Members reference Departments; self-reference for "Reports To"):
+> "the ability for context item values to reference other scopes and possibly scope types, but probably scopes... Departments: Sales/Accounting/Marketing/Legal. Team Members: John/Jane. team members can have an assigned department. Name | Department | pay rate | Reports To -- John | department.sales | $100,000 | employees.jane doe"
+
+**This already works in production** (see Done) — it is the existing `scope` reference
+type (`allowed_reference_types:['scope']` + `allowed_scope_type_ids` to constrain to a
+target scope type; self-reference = target type is the same type). It is another
+container-type in the model below (`scope` / `scope_type`), and it is NOT new work —
+only surfacing it as a first-class, discoverable authoring choice is.
+
 On Structured Lists (his answer — the load-bearing reframe):
 > "we are using one feature for two completely different things in this case. The way you have seen lists used is actually not the way they were originally created. A Structured list has two flavors.. a list of things such as a Grocery list or a list of employees. Alternatively, it can take on one more dimension and be a list of employees grouped by department or a list of things to buy from target and costco. It just so happens that structured lists also make good readonly dropdowns but they are not read only and before they were used for picking things, they were lists."
 
@@ -52,6 +61,8 @@ item **definition**, and a **dimension** set per scope (or dynamically):
 |---|---|---|---|
 | Dataset/table | whole table | row · column · cell | filter (`col op $token`) → row/cell |
 | Structured List | whole list | group | grouped-list, group as filter |
+| **Scope** (DONE) | a scope instance, constrained to a scope type (`allowed_scope_type_ids`); self-reference allowed; `max_items` for many | — | — |
+| Scope type | a scope type as the value (`scope_type` ref; rarely needed) | — | — |
 | (retain) | | | list → read-only dropdown ("picklist" trick) |
 
 - **Container is bound on the definition** ("we DEFINE the exact table"); the per-scope
@@ -90,6 +101,14 @@ is DONE (see Done); everything below is authoring UI, resolution, and writeback.
 ## Done
 
 - `reference_source` JSONB binding — DB column + read-RPC emission (`list_scope_type_items`, `get_scope_context`) + generated types + FE data layer (`ReferenceSource` type & helpers in `features/scopes/utils/referenceSource.ts`; threaded through `ContextItem`, `updateContextItem`, `ScopeContextRow`, cache patch). See `migrations/ctx_reference_source.sql`.
+- **Scope-to-scope references already work end-to-end** (existing `scope` reference type, no new work) — verified in production on the `Matter` scope type: "Practice Area" → a Practice-Area scope, "Client (retaining party)" → a Client scope, stored as `{kind:reference,type:scope,items:[{id}]}` fences, `allowed_scope_type_ids` constrains the target type. Arman's Department/Reports-To (incl. self-reference) is this. Remaining for scopes: surface it as a first-class authoring choice (item 1) + confirm display resolves the scope name.
+
+## Building blocks (spare the next agent a discovery pass)
+
+- Structured-list listing: `getAccessibleLists()` (`features/user-lists/service.ts:41`); items via `getListWithItems`.
+- Datasets: NO reusable picker exists — datasets are queried ad-hoc via `.from("udt_datasets")` (`app/(core)/organizations/[orgId]/tables/page.tsx:16`, `features/organizations/peek/kinds/DatasetPeek.tsx:31`). A dataset/field/row picker is net-new. Types in `features/data-tables/types.ts` (`Dataset`, `DatasetField`, `DatasetRow`).
+- Reference resolution (frontend): `features/matrx-envelope/referenceResolvers.ts` (resolves `table_cell`, dataset refs, scope refs → display) — the display side hooks in here.
+- Scope refs are authored via the existing `ReferenceConfigFields` (`allowed_reference_types:['scope']` + `allowed_scope_type_ids`) — no `reference_source` needed; keep that path.
 
 ## Storage decision (Arman, 2026-07-13) — INTERIM
 
