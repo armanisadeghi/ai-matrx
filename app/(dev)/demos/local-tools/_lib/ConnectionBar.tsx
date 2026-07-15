@@ -89,7 +89,7 @@ export function ConnectionBar({
 
   return (
     <>
-      <div className="border rounded-lg bg-card">
+      <div className="bg-transparent border-none">
         <div className="flex items-center gap-3 p-3 flex-wrap">
           {/* URL input — value is fully controlled, never reset by scan */}
           <div className="flex items-center gap-2 flex-1 min-w-[240px]">

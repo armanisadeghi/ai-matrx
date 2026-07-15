@@ -20,7 +20,7 @@ export function LocalToolsPageShell({
   toolbar,
   footer,
   hideConnectionBar = false,
-  className = "bg-textured",
+  className = "bg-transparent border-none",
 }: LocalToolsPageShellProps) {
   const local = useMatrxLocalContext();
 
@@ -31,7 +31,7 @@ export function LocalToolsPageShell({
         className={`h-full flex flex-col overflow-hidden min-h-0 ${className}`}
       >
         {!hideConnectionBar && (
-          <div className="shrink-0 border-b px-3 py-1">
+          <div className="shrink-0 p-0 pt-10">
             <ConnectionBar hook={local} />
           </div>
         )}
