@@ -29142,6 +29142,10 @@ export type Database = {
           visibility: string
         }[]
       }
+      get_org_file_list: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: Json
+      }
       get_org_invitation_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -35788,6 +35792,8 @@ export type Database = {
           pages_discovered: number
           pages_failed: number
           pages_fetched: number
+          schedule_id: string | null
+          scheduled_for: string | null
           site_id: string | null
           started_at: string | null
           status: string
@@ -35808,6 +35814,8 @@ export type Database = {
           pages_discovered?: number
           pages_failed?: number
           pages_fetched?: number
+          schedule_id?: string | null
+          scheduled_for?: string | null
           site_id?: string | null
           started_at?: string | null
           status?: string
@@ -35828,6 +35836,8 @@ export type Database = {
           pages_discovered?: number
           pages_failed?: number
           pages_fetched?: number
+          schedule_id?: string | null
+          scheduled_for?: string | null
           site_id?: string | null
           started_at?: string | null
           status?: string
@@ -35835,6 +35845,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "crawl_runs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_schedules"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crawl_runs_site_id_fkey"
             columns: ["site_id"]
@@ -35846,6 +35863,9 @@ export type Database = {
       }
       crawl_schedules: {
         Row: {
+          claim_expires_at: string | null
+          claim_token: string | null
+          consecutive_failures: number
           created_at: string
           created_by: string | null
           cron_expr: string
@@ -35853,6 +35873,7 @@ export type Database = {
           id: string
           inline_config: Json | null
           is_public: boolean
+          last_error: string | null
           last_run_at: string | null
           last_run_id: string | null
           name: string
@@ -35862,6 +35883,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          consecutive_failures?: number
           created_at?: string
           created_by?: string | null
           cron_expr: string
@@ -35869,6 +35893,7 @@ export type Database = {
           id?: string
           inline_config?: Json | null
           is_public?: boolean
+          last_error?: string | null
           last_run_at?: string | null
           last_run_id?: string | null
           name: string
@@ -35878,6 +35903,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          consecutive_failures?: number
           created_at?: string
           created_by?: string | null
           cron_expr?: string
@@ -35885,6 +35913,7 @@ export type Database = {
           id?: string
           inline_config?: Json | null
           is_public?: boolean
+          last_error?: string | null
           last_run_at?: string | null
           last_run_id?: string | null
           name?: string

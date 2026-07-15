@@ -6,20 +6,29 @@ import { FolderOpen, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
 import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
 import { supabase } from "@/utils/supabase/client";
-import { filesDb } from "@/features/files/filesDb";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 const SELECT_COLS = "id, file_name, mime_type, size_bytes, updated_at";
 
-const fetchOwned = async (orgId: string) => {
-  const res = await filesDb(supabase)
-    .from("files")
-    .select(SELECT_COLS)
-    .eq("organization_id", orgId)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
-  return (res.data ?? []) as Array<Record<string, unknown>>;
-};
+// Org file LIST must apply the enumeration predicate (iam.is_discoverable)
+// independently — a bare `.from("files")` multi-row read is authorized only by
+// the conveyance-INCLUSIVE `files.files` RLS (created_by OR has_access), which
+// leaks chat-conveyed private files into the list. Route through the SECURITY
+// DEFINER RPC (mirrors the narrowed get_user_file_tree; migration 0177 family)
+// so owner + directly-shared files still appear but chat-conveyed ones drop out.
+// Curried so the current user id is baked into the `(orgId) => rows` closure
+// that OrgResourceList expects.
+const makeFetchOwned =
+  (userId: string) => async (orgId: string) => {
+    const res = await supabase.rpc("get_org_file_list", {
+      p_user_id: userId,
+      p_org_id: orgId,
+    });
+    if (res.error) throw res.error;
+    return (res.data ?? []) as Array<Record<string, unknown>>;
+  };
 
 const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => {
   const size = row.size_bytes as number | null | undefined;
@@ -45,7 +54,9 @@ const getHref = (id: string) => `/files/f/${id}`;
 export default function OrgFilesPage() {
   const params = useParams();
   const orgIdParam = params.orgId as string;
+  const userId = useAppSelector(selectUserId);
   const [resolvedOrgId, setResolvedOrgId] = React.useState<string | null>(null);
+  const ownedQuery = userId ? makeFetchOwned(userId) : null;
 
   React.useEffect(() => {
     let cancelled = false;
@@ -71,13 +82,13 @@ export default function OrgFilesPage() {
         <OrgResourceList
           orgId={resolvedOrgId}
           // Canonical permissions key after the 2026 file-system
-          // canonicalization (was `cld_files`). Owned rows hydrate via
-          // `ownedQuery` (filesDb → files.files); `tableName` is the
-          // `permissions.resource_type` join key.
+          // canonicalization (was `cld_files`). Owned/discoverable rows hydrate
+          // via `ownedQuery` (get_org_file_list RPC → is_discoverable-gated);
+          // `tableName` is the `permissions.resource_type` join key.
           resourceType="file"
           tableName="file"
           selectColumns={SELECT_COLS}
-          ownedQuery={fetchOwned}
+          ownedQuery={ownedQuery}
           mapRow={mapRow}
           getHref={getHref}
           emptyTitle="No shared files yet"
