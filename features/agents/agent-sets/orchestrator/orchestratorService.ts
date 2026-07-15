@@ -129,6 +129,34 @@ export const orchestratorService = {
   },
 
   /**
+   * Replace the generated orchestrator's messages with the supervisor system
+   * prompt + a neutral task user template (dropping the template's planner
+   * messages) so it CALLS its member tools at run time. Keeps the
+   * `<available_agents>` marker for "Sync agent listings".
+   */
+  async setOrchestratorMessages(
+    agentId: string,
+    systemText: string,
+    userText: string,
+  ): Promise<ScopesRpcResult<null>> {
+    try {
+      const messages: AgentDefinitionMessage[] = [
+        { role: "system", content: [{ type: "text", text: systemText }] },
+        { role: "user", content: [{ type: "text", text: userText }] },
+      ];
+      const { error } = await supabase
+        .schema("agent")
+        .from("definition")
+        .update({ messages: messages as DefinitionUpdate["messages"] } as DefinitionUpdate)
+        .eq("id", agentId);
+      if (error) return err(...mapPgErrorPair(error));
+      return ok(null);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /**
    * Replace the orchestrator's <available_agents> block with `agentBlocks`. LOUD
    * failure if the marker is absent — we never write a malformed prompt.
    */

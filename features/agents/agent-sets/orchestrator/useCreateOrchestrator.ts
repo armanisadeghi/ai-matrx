@@ -16,6 +16,7 @@ import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks"
 import { createAgentSet } from "@/features/agents/redux/agent-sets/thunks";
 import type { SetAccent } from "../constants";
 import { orchestratorService } from "./orchestratorService";
+import { ORCHESTRATOR_SUPERVISOR_PROMPT, ORCHESTRATOR_USER_TEMPLATE } from "./constants";
 
 export function useCreateOrchestrator() {
   const dispatch = useAppDispatch();
@@ -36,8 +37,16 @@ export function useCreateOrchestrator() {
         }
         const orchestratorId = created.data.agentId;
 
-        // 2) Name it (non-fatal if it fails — the builder can rename via settings).
+        // 2) Name it + make it a tool-calling SUPERVISOR (the template ships a
+        //    planner prompt that never delegates; runtime delegation projects the
+        //    members as tools, so the orchestrator must be told to call them).
+        //    Both non-fatal — the builder can still rename / re-sync.
         await orchestratorService.rename(orchestratorId, args.name.trim() || "Agent Orchestrator");
+        await orchestratorService.setOrchestratorMessages(
+          orchestratorId,
+          ORCHESTRATOR_SUPERVISOR_PROMPT,
+          ORCHESTRATOR_USER_TEMPLATE,
+        );
 
         // 3) Create the (empty) set. If the marker write fails we STILL route to
         //    the created agent — the builder's "Make an orchestrator" CTA recovers.

@@ -8,7 +8,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Webhook, Network, ArrowRight, Loader2, Users } from "lucide-react";
+import { Webhook, Network, ArrowRight, Loader2, Play, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { accentClasses } from "./accents";
@@ -105,20 +105,31 @@ export function AgentSetCard({ summary }: { summary: AgentSetSummary }) {
               </>
             )}
           </div>
-          <span
-            className={cn(
-              "flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100",
-              a.text,
-            )}
-          >
-            {isNavigating ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <>
-                Open <ArrowRight className="h-3.5 w-3.5" />
-              </>
-            )}
-          </span>
+          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/agents/${summary.orchestratorId}/run`);
+              }}
+              className={cn(
+                "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium hover:bg-muted",
+                a.text,
+              )}
+              title="Run this orchestrator — it delegates to its members"
+            >
+              <Play className="h-3.5 w-3.5" /> Run
+            </button>
+            <span className={cn("flex items-center gap-1 text-xs font-medium", a.text)}>
+              {isNavigating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>
+                  Open <ArrowRight className="h-3.5 w-3.5" />
+                </>
+              )}
+            </span>
+          </div>
         </div>
       </div>
     </Card>

@@ -25,6 +25,13 @@ export interface DomCaptureOptions {
   filename?: string;
   /** Called after each page is captured, with current page / total estimate */
   onProgress?: (page: number, total: number) => void;
+  /**
+   * Color-fallback theme for unparseable (oklch/lab) computed colors.
+   * "auto" (default) follows the app's dark class — right for capturing
+   * on-screen UI. Pass "light" for always-light offscreen document renders
+   * so dark-mode fallbacks never bleed into a white-background PDF.
+   */
+  theme?: "auto" | "light";
 }
 
 const PAGE_DIMS = {
@@ -155,8 +162,10 @@ async function renderElementToPdf(
   onProgress?.(0, 1);
 
   const isDark =
-    document.documentElement.classList.contains("dark") ||
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
+    options.theme === "light"
+      ? false
+      : document.documentElement.classList.contains("dark") ||
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
 
   const bgColor = background === "#ffffff" && isDark ? "#111827" : background;
 

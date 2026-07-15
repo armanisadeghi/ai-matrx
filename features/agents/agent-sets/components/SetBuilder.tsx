@@ -17,6 +17,7 @@ import {
   Loader2,
   MousePointerClick,
   Network,
+  Play,
   RefreshCw,
   Settings2,
 } from "lucide-react";
@@ -142,6 +143,16 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">
+          {/* Run the orchestrator — it delegates to its members (member-as-tool). */}
+          <Button
+            size="sm"
+            className="gap-1.5"
+            onClick={() => router.push(`/agents/${orchestratorId}/run`)}
+            title="Run this orchestrator — it delegates the task to its member agents"
+          >
+            <Play className="h-3.5 w-3.5" />
+            Run
+          </Button>
           {/* view toggle */}
           <div className="flex items-center rounded-lg border border-border p-0.5">
             <button

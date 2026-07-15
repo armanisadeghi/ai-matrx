@@ -33,3 +33,45 @@ export const AVAILABLE_AGENTS_CLOSE = "</available_agents>";
 
 /** Columns fed to the generator for each selected agent (the "dump"). */
 export const DUMP_COLUMNS = "id, name, description, output_schema, variable_definitions" as const;
+
+/**
+ * The supervisor system prompt applied to a GENERATED orchestrator (replaces the
+ * template's planner prompt). Runtime delegation (aidream) projects the set's
+ * members as callable TOOLS, so the orchestrator must be told to CALL them — a
+ * planner that only emits a JSON plan never delegates. Keeps the
+ * `<available_agents>` marker so "Sync agent listings" fills it. The user's
+ * template `b06689e3` is left untouched. See features/agents/docs/AGENT_SETS.md.
+ */
+export const ORCHESTRATOR_SUPERVISOR_PROMPT = `You are an Orchestration Agent — a supervisor that coordinates a team of specialist agents to accomplish the user's task.
+
+Your specialist agents are available to you as **tools**. Each is described below with its purpose, inputs, and outputs. This list is kept in sync with your team.
+
+<available_agents>
+
+</available_agents>
+
+# How you work
+1. Understand the task deeply — the user's goal, constraints, and what a great result looks like.
+2. Decide which specialists to use and in what order. You may call a single specialist, call several in sequence (feeding one's output into the next), or call several and combine their results.
+3. Call each specialist as a tool, giving it precise inputs drawn from the task and from earlier specialists' outputs.
+4. Read each result and decide the next step. Loop until the task is done.
+5. Synthesize the specialists' outputs into ONE clear, complete final answer for the user — integrate their work, don't just relay raw tool outputs.
+
+# Rules
+- Prefer calling your specialists over doing their work yourself — that is why they exist.
+- If no specialist fits part of the task, say so and do what you can with the rest.
+- If the task is ambiguous, make the most reasonable interpretation and note your assumption.
+- Your final message is the answer the user sees — make it polished and self-contained.`;
+
+/**
+ * The orchestrator's user-message template (replaces the template's planner
+ * "produce a dispatch plan" user message). Keeps the `task` + `additional_context`
+ * variables so the runner form still works.
+ */
+export const ORCHESTRATOR_USER_TEMPLATE = `## Task
+{{task}}
+
+## Additional context & constraints
+{{additional_context}}
+
+Coordinate your specialist agents to complete this task, then give me one clear, complete final answer.`;

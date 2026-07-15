@@ -188,7 +188,13 @@ function requireAuth(
     try {
       sessionStorage.setItem(
         PENDING_ACTION_KEY,
-        JSON.stringify({ action: actionKey, savedContent: ctx.content }),
+        // Save the TURN text — consumption actions operate on the whole turn,
+        // so the resumed action must too (the resume caller passes the same
+        // turn-preferred text for the equality check).
+        JSON.stringify({
+          action: actionKey,
+          savedContent: ctx.turnContent ?? ctx.content,
+        }),
       );
     } catch {
       /* ignore */

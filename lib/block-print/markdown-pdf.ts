@@ -45,6 +45,9 @@ function sanitizeForCapture(html: string): DocumentFragment {
 }
 
 export async function markdownToPdfBlob(markdown: string): Promise<Blob> {
+  if (!markdown.trim()) {
+    throw new Error("Nothing to convert — the content is empty.");
+  }
   const [{ convertMarkdownToHtml }, { loadWordPressCSS }] = await Promise.all([
     import("@/features/html-pages/utils/html-preview-utils"),
     import("@/features/html-pages/css/wordpress-styles"),
@@ -65,16 +68,18 @@ export async function markdownToPdfBlob(markdown: string): Promise<Blob> {
   host.appendChild(style);
 
   const contentEl = document.createElement("div");
+  // The WP stylesheet is class-scoped (.matrx-*) and expects this container.
+  contentEl.className = "matrx-content-container";
   contentEl.style.cssText = "padding:32px;background:#ffffff;";
   contentEl.appendChild(sanitizeForCapture(bodyHtml));
   host.appendChild(contentEl);
 
   document.body.appendChild(host);
   try {
-    // "#fff" (not "#ffffff") on purpose: captureToPDF flips the default
-    // "#ffffff" to a dark background when the app is in dark mode — right for
-    // capturing on-screen UI, wrong for this always-light document render.
-    return await captureToPDFBlob(host, { background: "#fff" });
+    // Always-light document render: "#fff" (not "#ffffff") bypasses the
+    // dark-mode background flip, and theme:"light" keeps the oklch-fallback
+    // patch from substituting dark text colors while the app is in dark mode.
+    return await captureToPDFBlob(host, { background: "#fff", theme: "light" });
   } finally {
     host.remove();
   }

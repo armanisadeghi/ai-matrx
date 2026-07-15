@@ -146,6 +146,13 @@ The ⋯ menu now has this structure (same for assistant + user messages, modulo 
 - **Note quick-save on shared primitives** — QuickNoteSaveCore consumes `RefinableContentEditor` (its duplicated toolbar/TrimRow copy deleted) and portals footer actions into `QuickNoteSaveWindow`'s `footerRight` slot via `footerHost` — the same pattern as the task window. Both flagship windows now share ONE toolbar/trim/editor implementation and ONE footer pattern.
 - **Still open (needs backend):** Analyze response / Debug stream degrade after reload — `chat.message` persists no request linkage (verified live: metadata keys are just `finish_reason`; `chat.request` has no message id). Fix belongs in aidream: persist `request_id` into assistant-message metadata at finalize.
 
+### Fix wave 4 (2026-07-15) — menu twins differentiated
+
+- **Share as webpage is REAL now** — `shareMessageAsWebpage.ts` (message-options/): markdown → `convertMarkdownToHtml` → `HTMLPageService.createPage` with `sourceMessageId` (idempotent: re-share updates the same page, same stable public `/p/{id}` URL), copies the link to clipboard, toast with Open. No longer an alias of Publish HTML.
+- **PDF Document is REAL now** — `lib/block-print/markdown-pdf.ts` (`markdownToPdfBlob`): markdown → sanitized offscreen WordPress-styled render (scripts/handlers/javascript: URLs stripped) → `captureToPDFBlob` (new Blob variant of the dom-capture util, always-light background) → uploaded into Files under "Chat Saves" with an Open link. No longer an alias of Print.
+- Both are auth-gated with post-auth resume branches (resume publishes/saves without per-message idempotency — no ids at resume time).
+- **Decisions locked (2026-07-15):** reactions stay per-message (shared model accepted); viewer-gating of thumbs remains a known UX gap (no conversation-permission data in Redux; failure is graceful: rollback + toast).
+
 ### Related (not in bar/menu)
 
 | Name | Where | Notes |

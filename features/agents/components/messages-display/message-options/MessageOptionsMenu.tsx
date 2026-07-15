@@ -122,8 +122,10 @@ export function MessageOptionsMenu({
   );
 
   useEffect(() => {
-    resumePendingAuthAction(isAuthenticated, content, dispatch);
-  }, [isAuthenticated, content, dispatch]);
+    // Turn-preferred text — must mirror what requireAuth stashed, or the
+    // savedContent equality check never matches and resumes silently drop.
+    resumePendingAuthAction(isAuthenticated, turnContent ?? content, dispatch);
+  }, [isAuthenticated, content, turnContent, dispatch]);
 
   const ctx: MessageActionContext = {
     content,
