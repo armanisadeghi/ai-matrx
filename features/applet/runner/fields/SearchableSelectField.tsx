@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 
 // Define the type for isSelected option in state
 export interface SelectedOptionValue extends FieldOption {
@@ -28,6 +29,18 @@ interface FieldOption {
     iconName?: string;
 }
 
+function isSelectedOptionValue(value: unknown): value is SelectedOptionValue {
+    if (typeof value !== "object" || value === null) return false;
+    return (
+        "id" in value &&
+        typeof value.id === "string" &&
+        "label" in value &&
+        typeof value.label === "string" &&
+        "isSelected" in value &&
+        typeof value.isSelected === "boolean"
+    );
+}
+
 const SearchableSelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
     const { id, label, placeholder, options, componentProps, includeOther } = field;
 
@@ -39,7 +52,7 @@ const SearchableSelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
 
     const updateBrokerValue = useCallback(
-        (updatedValue: any) => {
+        (updatedValue: SelectedOptionValue[]) => {
             dispatch(
                 brokerActions.setValue({
                     brokerId,
@@ -52,12 +65,14 @@ const SearchableSelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no
 
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const availableOptions = processFieldOptions(options);
+    const storedOptions = Array.isArray(stateValue) ? stateValue.filter(isSelectedOptionValue) : [];
 
     // Initialize stateValue if not set
     useEffect(() => {
-        if (!stateValue && options?.length > 0) {
+        if (!stateValue && availableOptions.length > 0) {
             // Initialize with all options having isSelected: false
-            const initialOptions = options.map((option) => ({
+            const initialOptions = availableOptions.map((option) => ({
                 ...option,
                 isSelected: false,
             }));
@@ -79,7 +94,7 @@ const SearchableSelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no
     // Handler for select change
     const handleSelectChange = (selectedId: string) => {
         // Create new options array with only the isSelected option set to true
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => ({
+        const updatedOptions = storedOptions.map((option) => ({
             ...option,
             isSelected: option.id === selectedId,
         }));
@@ -94,7 +109,7 @@ const SearchableSelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no
     const handleOtherTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const otherText = e.target.value;
 
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === "other") {
                 return {
                     ...option,
@@ -108,7 +123,7 @@ const SearchableSelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no
     };
 
     // Determine the currently isSelected option
-    const selectedOption = Array.isArray(stateValue) ? stateValue.find((option: SelectedOptionValue) => option.isSelected) : null;
+    const selectedOption = storedOptions.find((option) => option.isSelected);
     const isOtherSelected = selectedOption?.id === "other";
 
     // Render custom content if provided
@@ -117,7 +132,7 @@ const SearchableSelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no
     }
 
     // Prepare options list including "Other" option if needed
-    const selectWithOptions = [...(options || [])];
+    const selectWithOptions = [...availableOptions];
     if (includeOther) {
         selectWithOptions.push({ id: "other", label: "Other" });
     }

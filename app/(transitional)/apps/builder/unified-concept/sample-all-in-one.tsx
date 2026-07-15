@@ -6,8 +6,52 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 
+type FieldComponent =
+  | "input"
+  | "textarea"
+  | "select"
+  | "multiselect"
+  | "radio"
+  | "checkbox"
+  | "slider"
+  | "number"
+  | "date";
+
+type FieldValue = string | string[] | number;
+
+interface FieldDefinition {
+  id: string;
+  label: string;
+  description: string;
+  helpText: string;
+  group: string;
+  iconName: string;
+  component: FieldComponent;
+  required: boolean;
+  disabled: boolean;
+  placeholder: string;
+  defaultValue: FieldValue;
+  options: Array<{
+    id: string;
+    label: string;
+    description: string;
+    helpText: string;
+    iconName: string;
+  }>;
+  componentProps: {
+    maxLength: number;
+    minLength: number;
+    min: number;
+    max: number;
+    step: number;
+    rows: number;
+    minDate: string;
+    maxDate: string;
+  };
+}
+
 // Initial field definition with all basic properties
-const initialFieldDefinition = {
+const initialFieldDefinition: FieldDefinition = {
   // Core field properties
   id: "occupation-field",
   label: "What is your field of work?",
@@ -77,15 +121,38 @@ const initialFieldDefinition = {
   },
 };
 
-// Component rendering based on the field type
-const DynamicField = ({ field }) => {
-  const [value, setValue] = useState(field.defaultValue);
+interface DynamicFieldProps {
+  field: FieldDefinition;
+}
 
-  const handleChange = (e) => {
-    const newValue =
-      e.target.type === "checkbox" ? e.target.checked : e.target.value;
-    setValue(newValue);
-  };
+interface FieldEditorProps {
+  field: FieldDefinition;
+  onChange: (field: FieldDefinition) => void;
+}
+
+const isFieldComponent = (value: string): value is FieldComponent =>
+  [
+    "input",
+    "textarea",
+    "select",
+    "multiselect",
+    "radio",
+    "checkbox",
+    "slider",
+    "number",
+    "date",
+  ].includes(value);
+
+// Component rendering based on the field type
+const DynamicField = ({ field }: DynamicFieldProps) => {
+  const [value, setValue] = useState<FieldValue>(field.defaultValue);
+
+  const handleChange: React.ChangeEventHandler<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  > = (event) => setValue(event.currentTarget.value);
+
+  const scalarValue =
+    typeof value === "string" || typeof value === "number" ? value : "";
 
   const renderComponent = () => {
     switch (field.component) {
@@ -94,7 +161,7 @@ const DynamicField = ({ field }) => {
           <input
             id={field.id}
             type="text"
-            value={value || ""}
+            value={scalarValue}
             onChange={handleChange}
             placeholder={field.placeholder}
             disabled={field.disabled}
@@ -109,7 +176,7 @@ const DynamicField = ({ field }) => {
         return (
           <textarea
             id={field.id}
-            value={value || ""}
+            value={scalarValue}
             onChange={handleChange}
             placeholder={field.placeholder}
             disabled={field.disabled}
@@ -123,7 +190,7 @@ const DynamicField = ({ field }) => {
         return (
           <select
             id={field.id}
-            value={value || ""}
+            value={scalarValue}
             onChange={handleChange}
             disabled={field.disabled}
             required={field.required}
@@ -166,7 +233,7 @@ const DynamicField = ({ field }) => {
       case "radio":
         return (
           <RadioGroup
-            value={value ?? ""}
+            value={typeof value === "string" ? value : ""}
             onValueChange={(v) => setValue(v)}
             disabled={field.disabled}
             className="space-y-2"
@@ -231,14 +298,21 @@ const DynamicField = ({ field }) => {
               min={field.componentProps.min}
               max={field.componentProps.max}
               step={field.componentProps.step}
-              value={[value || field.componentProps.min]}
-              onValueChange={([v]) => setValue(v)}
+              value={[
+                typeof value === "number" ? value : field.componentProps.min,
+              ]}
+              onValueChange={(values) => {
+                const nextValue = values[0];
+                if (nextValue !== undefined) setValue(nextValue);
+              }}
               disabled={field.disabled}
               className="w-full"
             />
             <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300">
               <span>{field.componentProps.min}</span>
-              <span>{value || field.componentProps.min}</span>
+              <span>
+                {typeof value === "number" ? value : field.componentProps.min}
+              </span>
               <span>{field.componentProps.max}</span>
             </div>
           </div>
@@ -252,7 +326,7 @@ const DynamicField = ({ field }) => {
             min={field.componentProps.min}
             max={field.componentProps.max}
             step={field.componentProps.step}
-            value={value || ""}
+            value={scalarValue}
             onChange={handleChange}
             placeholder={field.placeholder}
             disabled={field.disabled}
@@ -268,7 +342,7 @@ const DynamicField = ({ field }) => {
             id={field.id}
             min={field.componentProps.minDate}
             max={field.componentProps.maxDate}
-            value={value || ""}
+            value={scalarValue}
             onChange={handleChange}
             disabled={field.disabled}
             required={field.required}
@@ -281,7 +355,7 @@ const DynamicField = ({ field }) => {
           <input
             type="text"
             id={field.id}
-            value={value || ""}
+            value={scalarValue}
             onChange={handleChange}
             placeholder={field.placeholder}
             disabled={field.disabled}
@@ -324,26 +398,38 @@ const DynamicField = ({ field }) => {
 };
 
 // Editor for basic field properties
-const FieldEditor = ({ field, onChange }) => {
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const newValue = type === "checkbox" ? checked : value;
+const FieldEditor = ({ field, onChange }: FieldEditorProps) => {
+  const handleChange: React.ChangeEventHandler<
+    HTMLInputElement | HTMLSelectElement
+  > = (event) => {
+    const { name, value } = event.currentTarget;
+    if (name === "component") {
+      if (isFieldComponent(value)) onChange({ ...field, component: value });
+      return;
+    }
 
-    onChange({
-      ...field,
-      [name]: newValue,
-    });
+    onChange({ ...field, [name]: value });
   };
 
-  const handleComponentPropsChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const newValue = type === "checkbox" ? checked : value;
+  const handleComponentPropsChange: React.ChangeEventHandler<HTMLInputElement> = (
+    event,
+  ) => {
+    const { name, value, valueAsNumber } = event.currentTarget;
+    if (name === "minDate" || name === "maxDate") {
+      onChange({
+        ...field,
+        componentProps: { ...field.componentProps, [name]: value },
+      });
+      return;
+    }
+
+    if (Number.isNaN(valueAsNumber)) return;
 
     onChange({
       ...field,
       componentProps: {
         ...field.componentProps,
-        [name]: newValue,
+        [name]: valueAsNumber,
       },
     });
   };
@@ -583,10 +669,10 @@ const FieldEditor = ({ field, onChange }) => {
 
 // Demo component with split view of editor and rendered components
 const DemoComponent = () => {
-  const [fieldDefinition, setFieldDefinition] = useState(
+  const [fieldDefinition, setFieldDefinition] = useState<FieldDefinition>(
     initialFieldDefinition,
   );
-  const componentTypes = [
+  const componentTypes: FieldComponent[] = [
     "input",
     "textarea",
     "select",

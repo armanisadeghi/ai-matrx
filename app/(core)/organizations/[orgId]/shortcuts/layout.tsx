@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/organizations", {
   titlePrefix: "Shortcuts",
   title: "Organization",
   description: "Organization shortcuts, categories, and content blocks.",
-  letter: "O",
+  letter: "OR",
 });
 
 export default function OrgShortcutsLayout({

@@ -49,10 +49,10 @@ const AppEditor: React.FC<AppEditorProps> = ({ appId, isCreatingNew = false, onS
             if (onSaveSuccess) {
                 onSaveSuccess(appId);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: "Error",
-                description: error.message || `Failed to ${isCreatingNew ? "create" : "update"} app.`,
+                description: error instanceof Error ? error.message : `Failed to ${isCreatingNew ? "create" : "update"} app.`,
                 variant: "destructive",
             });
         }
@@ -111,9 +111,6 @@ const AppEditor: React.FC<AppEditorProps> = ({ appId, isCreatingNew = false, onS
         dispatch(setMainAppIcon({ id: appId, mainAppIcon: iconName }));
     };
 
-    const customBackgroundColor = COLOR_VARIANTS.background[app.primaryColor];
-    const customAccentColor = COLOR_VARIANTS.border[app.accentColor];
-
     if (!app) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -121,6 +118,9 @@ const AppEditor: React.FC<AppEditorProps> = ({ appId, isCreatingNew = false, onS
             </div>
         );
     }
+
+    const backgroundColors: Record<string, string> = COLOR_VARIANTS.background;
+    const customBackgroundColor = app.primaryColor ? backgroundColors[app.primaryColor] : undefined;
 
     return (
         <div className="space-y-8">
@@ -215,10 +215,10 @@ const AppEditor: React.FC<AppEditorProps> = ({ appId, isCreatingNew = false, onS
                                         <Label>App Icon</Label>
                                         <IconPicker
                                             iconType="appIcon"
-                                            selectedIcon={app.mainAppIcon}
+                                            selectedIcon={app.mainAppIcon ?? "LayoutTemplate"}
                                             onIconSelect={handleAppIconSelect}
-                                            primaryColor={app.primaryColor}
-                                            accentColor={app.accentColor}
+                                            primaryColor={app.primaryColor ?? "gray"}
+                                            accentColor={app.accentColor ?? "rose"}
                                         />
                                     </div>
                                 </div>

@@ -35,7 +35,7 @@ const SearchableSelectFieldConcept: React.FC<CommonFieldProps> = ({
 
     // Initialize options if not set
     useEffect(() => {
-        if (!brokerOptions && options?.length > 0) {
+        if (!brokerOptions && options && options.length > 0) {
             const initialOptions = options.map((option) => ({
                 id: option.id,
                 label: option.label,

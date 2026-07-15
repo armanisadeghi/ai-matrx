@@ -5,14 +5,12 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { brokerSelectors, brokerActions } from "@/lib/redux/brokerSlice";
 import { ensureValidWidthClass } from "@/features/applet/constants/field-constants";
 import { cn } from "@/lib/utils";
-import { FieldDefinition, FieldOption } from "@/types/customAppTypes";
+import { FieldDefinition } from "@/types/customAppTypes";
 import { Input } from "@/components/ui/input";
 import { CommonFieldProps } from "./core/types";
 
-export interface SelectedOptionValue extends FieldOption {
-    selected: boolean;
-    otherText?: string;
-}
+import { selectedOptionValues } from "./common/types";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 
 const RadioGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
     const { id, label, options, componentProps, includeOther = false, required } = field;
@@ -33,6 +31,8 @@ const RadioGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
     const dispatch = useAppDispatch();
     const brokerId = useAppSelector((state) => brokerSelectors.selectBrokerId(state, { source, mappedItemId: id }));
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
+    const storedOptions = selectedOptionValues(stateValue);
+    const availableOptions = processFieldOptions(options);
 
     const updateBrokerValue = useCallback(
         (updatedValue: any) => {
@@ -51,9 +51,9 @@ const RadioGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
 
     // Initialize stateValue if not set
     useEffect(() => {
-        if (!stateValue && options.length > 0) {
+        if (!stateValue && availableOptions.length > 0) {
             // Initialize with all options having selected: false
-            const initialOptions = options.map((option) => ({
+            const initialOptions = availableOptions.map((option) => ({
                 ...option,
                 selected: false,
             }));
@@ -71,7 +71,7 @@ const RadioGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
             updateBrokerValue(initialOptions);
         } else if (stateValue) {
             // If there's an "other" option and it's selected, initialize the otherText state
-            const otherOption = Array.isArray(stateValue) ? stateValue.find((opt: SelectedOptionValue) => opt.id === "other") : null;
+            const otherOption = storedOptions.find((option) => option.id === "other");
             if (otherOption && otherOption.selected && otherOption.description) {
                 setOtherText(otherOption.description);
             }
@@ -83,7 +83,7 @@ const RadioGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
         if (disabled) return;
 
         // Radio is single-select, so set only one to selected
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => ({
+        const updatedOptions = storedOptions.map((option) => ({
             ...option,
             selected: option.id === optionId,
         }));
@@ -96,7 +96,7 @@ const RadioGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
         const newOtherText = e.target.value;
         setOtherText(newOtherText);
 
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === "other") {
                 return {
                     ...option,
@@ -115,7 +115,7 @@ const RadioGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
     };
 
     // Get the currently selected option
-    const selectedOption = Array.isArray(stateValue) ? stateValue.find((option: SelectedOptionValue) => option.selected) : null;
+    const selectedOption = storedOptions.find((option) => option.selected);
 
     const isOtherSelected = selectedOption?.id === "other";
 
@@ -132,7 +132,7 @@ const RadioGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
     }
 
     // Prepare options list including "Other" option if needed
-    const selectWithOptions = [...options];
+    const selectWithOptions = [...availableOptions];
     if (includeOther) {
         selectWithOptions.push({ id: "other", label: "Other" });
     }

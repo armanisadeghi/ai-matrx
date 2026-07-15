@@ -26,7 +26,7 @@ import {
   recompileAllContainersInApplet,
 } from "@/lib/redux/app-builder/service/customAppletService";
 import { getAllComponentGroups } from "@/lib/redux/app-builder/service/fieldContainerService";
-import { ICON_OPTIONS } from "@/features/applet/styles/StyledComponents";
+import { getIconComponent } from "@/components/official/icons/IconResolver";
 import {
   CustomAppletConfig,
   ComponentGroup,
@@ -183,8 +183,7 @@ export const AppletBuilder = () => {
   const renderIcon = (iconName: string | undefined) => {
     if (!iconName) return <BoxIcon className="h-5 w-5" />;
 
-    const IconComponent = ICON_OPTIONS[iconName];
-    if (!IconComponent) return <BoxIcon className="h-5 w-5" />;
+    const IconComponent = getIconComponent(iconName, "Box");
 
     return <IconComponent className="h-5 w-5" />;
   };
@@ -221,7 +220,7 @@ export const AppletBuilder = () => {
       accentColor: "blue",
       layoutType: "flat",
       imageUrl: "",
-      compiledRecipeId: null,
+      compiledRecipeId: undefined,
       containers: [],
     });
     setSelectedApplet(null);
@@ -292,7 +291,7 @@ export const AppletBuilder = () => {
   };
 
   const updateApplet = async () => {
-    if (!selectedApplet?.id) return;
+    if (!selectedApplet?.id || !newApplet.slug) return;
 
     // Check slug uniqueness if it was changed
     setIsLoading(true);

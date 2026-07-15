@@ -14,6 +14,7 @@ import { selectAppletContainers, selectAppletBrokerMappings, selectAllNeededBrok
 import { selectContainerComparisonResult, selectDoContainersMatch, selectContainerComparisonDetails } from "@/lib/redux/app-builder/selectors/containerMatchSelectors";
 import ContainerComparisonModal from "./container-comparison/ContainerComparisonModal";
 import { useFieldAnalysis } from "@/features/applet/hooks/useFieldAnalysis";
+import type { Broker } from "@/types/customAppTypes";
 
 interface ContainerCardProps {
     containerId: string;
@@ -144,6 +145,8 @@ const ContainerCard: React.FC<ContainerCardProps> = ({ containerId, appletId, is
         e.preventDefault();
         e.stopPropagation();
         setIsDragOver(false);
+
+        if (!container) return;
 
         try {
             const dataTransfer = e.dataTransfer.getData("application/json");
@@ -335,7 +338,7 @@ const ContainerCard: React.FC<ContainerCardProps> = ({ containerId, appletId, is
                             
                             // Find the broker for this field
                             const brokerMapping = brokerMappings?.find(mapping => mapping.fieldId === field.id);
-                            const broker = brokerMapping ? allBrokers?.find(b => b.id === brokerMapping.brokerId) : null;
+                            const broker = brokerMapping ? allBrokers?.find((b: Broker) => b.id === brokerMapping.brokerId) : null;
                             
                             return (
                                 <div

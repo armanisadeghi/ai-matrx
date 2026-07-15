@@ -17,7 +17,7 @@ const AccordionAppletInputLayout: React.FC<AppletInputProps> = ({
     containerDescriptionLocation = "container-header",
 }) => {
     const appletContainers = useAppSelector((state) => selectAppletRuntimeContainers(state, appletId));
-    const contentRefs = useRef<Map<string, React.RefObject<HTMLDivElement>>>(new Map());
+    const contentRefs = useRef<Map<string, React.RefObject<HTMLDivElement | null>>>(new Map());
     
     // Initialize content refs for each container
     useEffect(() => {

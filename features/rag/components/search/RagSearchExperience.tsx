@@ -28,10 +28,13 @@ import {
   AlertCircle,
   Beaker,
   Brain,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Copy,
   Database,
   FileText,
   FlaskConical,
+  GitMerge,
   Loader2,
   MessageSquare,
   PanelLeftOpen,
@@ -39,7 +42,6 @@ import {
   Search as SearchIcon,
   Send,
   Settings2,
-  Sparkles,
   Stethoscope,
   Layers,
   X,
@@ -80,6 +82,8 @@ import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
 import { hitViewFromSearchHit } from "@/features/rag/components/hit-card/adapters";
+import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
+import { RagPageReferences } from "@/features/rag/components/search/RagPageReferences";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
@@ -222,10 +226,18 @@ function RichHitCard({
   rank,
   hit,
   topScore,
+  highlightQuery,
+  defaultExpanded,
+  expanded,
+  onExpandedChange,
 }: {
   rank: number;
   hit: RagSearchHit | DiagnoseHit;
   topScore?: number;
+  highlightQuery?: string;
+  defaultExpanded?: boolean;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
   /** Retained for call-site compatibility; the expanded canonical card always
    *  shows the full chunk + breakdown. */
   showFullText?: boolean;
@@ -239,6 +251,19 @@ function RichHitCard({
     hit.chunk_id,
   );
   const openCitation = useOpenCitation();
+  const openHit = () =>
+    openCitation({
+      sourceKind: hit.source_kind,
+      sourceId: hit.source_id,
+      href,
+      chunkId: hit.chunk_id,
+      pageNumber: view.pageNumber,
+      pageNumbers: view.pageNumbers,
+      snippet: view.snippet,
+      fileName: view.title,
+      score: view.score,
+      query: highlightQuery ?? null,
+    });
 
   return (
     <RagHitCard
@@ -247,19 +272,25 @@ function RichHitCard({
       rank={rank}
       topScore={topScore}
       href={href}
-      onOpen={() =>
-        openCitation({
-          sourceKind: hit.source_kind,
-          sourceId: hit.source_id,
-          href,
-          chunkId: hit.chunk_id,
-          pageNumber: view.pageNumber,
-          pageNumbers: view.pageNumbers,
-          snippet: view.snippet,
-          fileName: view.title,
-          score: view.score,
-        })
+      highlightQuery={highlightQuery}
+      defaultExpanded={defaultExpanded}
+      expanded={expanded}
+      onExpandedChange={onExpandedChange}
+      expandedContent={(snippet) =>
+        (hit.source_kind === "cld_file" || hit.source_kind === "library_doc") ? (
+          <RagPageReferences
+            sourceKind={hit.source_kind}
+            sourceId={hit.source_id}
+            pageNumber={view.pageNumber}
+            onOpenPdf={openHit}
+          >
+            {snippet}
+          </RagPageReferences>
+        ) : (
+          <div className="px-3 py-2.5">{snippet}</div>
+        )
       }
+      onOpen={openHit}
     />
   );
 }
@@ -652,14 +683,7 @@ function QueryTermCoverage({
   query: string;
   hits: { snippet: string | null }[];
 }) {
-  const terms = Array.from(
-    new Set(
-      query
-        .toLowerCase()
-        .split(/[\s,.;:()[\]{}"'`]+/)
-        .filter((t) => t.length >= 3),
-    ),
-  );
+  const terms = getHighlightTerms(query);
   if (terms.length < 2 || hits.length === 0) return null;
 
   const haystacks = hits.map((h) => (h.snippet ?? "").toLowerCase());
@@ -707,6 +731,7 @@ function SearchTab({ scope }: { scope: Scope }) {
   const [running, setRunning] = useState(false);
   const [response, setResponse] = useState<RagSearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedHits, setExpandedHits] = useState<Record<string, boolean>>({});
   // Guards against a slow earlier search resolving after a newer one and
   // overwriting it (the `disabled={running}` button guard isn't synchronous).
   const seqRef = useRef(0);
@@ -750,6 +775,9 @@ function SearchTab({ scope }: { scope: Scope }) {
       });
       if (seq !== seqRef.current) return; // superseded by a newer search
       setResponse(r);
+      setExpandedHits(
+        Object.fromEntries(r.hits.map((hit, index) => [hit.chunk_id, index === 0])),
+      );
 
       const next = new URLSearchParams();
       if (trimmed) next.set("q", trimmed);
@@ -771,7 +799,8 @@ function SearchTab({ scope }: { scope: Scope }) {
     if (autoRanRef.current) return;
     if (!initialQuery.trim()) return;
     autoRanRef.current = true;
-    runSearch();
+    const timer = window.setTimeout(() => runSearch(), 0);
+    return () => window.clearTimeout(timer);
   }, [initialQuery, runSearch]);
 
   // Live input ref — `getApplicationScope` reads the selection off it at
@@ -826,6 +855,21 @@ function SearchTab({ scope }: { scope: Scope }) {
       selectionRange: null,
       contextData,
     });
+  const setAllResultsExpanded = (expanded: boolean) => {
+    if (!response) return;
+    setExpandedHits(
+      Object.fromEntries(response.hits.map((hit) => [hit.chunk_id, expanded])),
+    );
+  };
+  const resultExpansionStates =
+    response?.hits.map(
+      (hit, index) => expandedHits[hit.chunk_id] ?? index === 0,
+    ) ?? [];
+  const allResultsExpanded =
+    resultExpansionStates.length > 0 && resultExpansionStates.every(Boolean);
+  const allResultsCollapsed =
+    resultExpansionStates.length > 0 &&
+    resultExpansionStates.every((expanded) => !expanded);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -857,6 +901,7 @@ function SearchTab({ scope }: { scope: Scope }) {
               onClear={() => {
                 setQuery("");
                 setResponse(null);
+                setExpandedHits({});
               }}
               autoFocus
             />
@@ -869,12 +914,40 @@ function SearchTab({ scope }: { scope: Scope }) {
             {running ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
           </Button>
         </form>
-        <SearchScopeSummary
-          scope={scope}
-          storeName={storeName}
-          scopeIds={searchContext.scope_ids ?? searchContext.filters?.scope_ids}
-          organizationId={searchContext.filters?.organization_id}
-        />
+        <div className="flex items-start justify-between gap-3">
+          <SearchScopeSummary
+            scope={scope}
+            storeName={storeName}
+            scopeIds={searchContext.scope_ids ?? searchContext.filters?.scope_ids}
+            organizationId={searchContext.filters?.organization_id}
+          />
+          {response?.hits.length ? (
+            <div className="mt-2 flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-[11px]"
+                disabled={allResultsExpanded}
+                onClick={() => setAllResultsExpanded(true)}
+              >
+                <ChevronsUpDown className="h-3.5 w-3.5" />
+                Expand all
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-[11px]"
+                disabled={allResultsCollapsed}
+                onClick={() => setAllResultsExpanded(false)}
+              >
+                <ChevronsDownUp className="h-3.5 w-3.5" />
+                Collapse all
+              </Button>
+            </div>
+          ) : null}
+        </div>
       </header>
 
       <ScrollArea className="flex-1">
@@ -985,6 +1058,15 @@ function SearchTab({ scope }: { scope: Scope }) {
                       rank={i + 1}
                       hit={h}
                       topScore={response.hits[0]?.score}
+                      highlightQuery={response.query}
+                      defaultExpanded={i === 0}
+                      expanded={expandedHits[h.chunk_id] ?? i === 0}
+                      onExpandedChange={(expanded) =>
+                        setExpandedHits((current) => ({
+                          ...current,
+                          [h.chunk_id]: expanded,
+                        }))
+                      }
                     />
                   </motion.div>
                 ))
@@ -1612,7 +1694,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
             <div className="space-y-4" aria-busy="true" aria-live="polite">
               <div className="rounded-md border bg-card overflow-hidden">
                 <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                  <GitMerge className="h-3.5 w-3.5 text-muted-foreground" />
                   <Skeleton className="h-3 w-32" />
                   <Skeleton className="h-3 w-16 ml-auto" />
                 </div>
@@ -1650,7 +1732,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
               className="rounded-md border bg-card overflow-hidden"
             >
               <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
-                <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                <GitMerge className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="font-semibold">Query expansion</span>
                 <Badge variant="outline" className="text-[10px]">
                   {expand.embedding_model}
@@ -1760,7 +1842,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                     tone="info"
                   />
                   <AnimatedKpiCard
-                    icon={<Sparkles className="h-3.5 w-3.5" />}
+                    icon={<GitMerge className="h-3.5 w-3.5" />}
                     label="After fusion"
                     value={diag.candidates_after_fusion}
                     tone="primary"
@@ -1820,6 +1902,8 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                           rank={i + 1}
                           hit={h}
                           topScore={diag.hits[0]?.score}
+                          highlightQuery={query}
+                          defaultExpanded={i === 0}
                         />
                       </motion.div>
                     ))}

@@ -30,7 +30,7 @@ const EnhancedDynamicLayout: React.FC<EnhancedDynamicLayoutProps> = (
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const getResponsiveLayout = () => {
+    const getResponsiveLayout = (): 'desktop' | 'tablet' | 'mobile' => {
         if (windowWidth >= 1024) return 'desktop';
         if (windowWidth >= 768) return 'tablet';
         return 'mobile';
@@ -48,7 +48,14 @@ const EnhancedDynamicLayout: React.FC<EnhancedDynamicLayoutProps> = (
         large: 'p-6',
     };
 
-    const selectedLayout = layouts[layoutType]?.[getResponsiveLayout()] || layouts.complexDashboard[getResponsiveLayout()];
+    const selectedLayoutFamily = layouts[layoutType];
+    if (!selectedLayoutFamily) {
+        throw new Error(`Unknown layout: ${layoutType}`);
+    }
+    const selectedLayout = selectedLayoutFamily[getResponsiveLayout()];
+    if (!selectedLayout) {
+        throw new Error(`Layout ${layoutType} has no responsive configuration`);
+    }
 
     const childrenMap = React.Children.toArray(children).reduce<Record<string, React.ReactNode>>((acc, child) => {
         if (React.isValidElement<ChildProps>(child) && child.props.id) {

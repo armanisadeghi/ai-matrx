@@ -31,8 +31,8 @@ export function TokenManager() {
   // Update token in broker state - memoize callback
   const setToken = useCallback((newToken: string) => {
     dispatch(brokerActions.setText({
-      idArgs: SLACK_BROKER_IDS.token,
-      text: newToken
+      brokerId: SLACK_BROKER_IDS.token.mappedItemId,
+      value: newToken
     }));
   }, [dispatch]);
   
@@ -121,4 +121,4 @@ export function TokenManager() {
       {savedTokensList}
     </div>
   );
-} 
+}

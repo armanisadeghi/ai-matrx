@@ -2,7 +2,7 @@
 
 **Status:** `active` — production, actively maintained
 **Tier:** `1`
-**Last updated:** `2026-07-10`
+**Last updated:** `2026-07-14`
 
 > User-facing README at [`README.md`](./README.md). This doc is the agent-facing architecture view.
 
@@ -99,6 +99,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 - **The save-from-anywhere API is a public contract.** Agents and other features depend on it; don't break the signature silently.
 - **Cleanup never edits protected regions.** `lib/content-cleanup/` masks code / JSON / tables / front-matter / inline-code / HTML out before any whitespace or typography op, then restores them verbatim. The engine is pure and surface-agnostic — reuse it, never fork it, for any paste-cleanup need.
 - **Rich text editor:** Notes currently uses its own editor — the legacy `features/rich-text-editor/` is deprecated (per CLAUDE.md) and must not be re-adopted. Verify the current editor before modifying content rendering.
+- **The `/notes` route uses inline rich-document actions.** The header intentionally contains only view-mode controls; it does not mount a `RichDocumentActionSurface`. Do not pass an `actionsSurfaceId` from `NotesView` unless the matching consumer is mounted. With no remote ID, preview mode renders the full inline bar and split mode renders its compact inline icon menu.
 - **Scope columns** (`user_id`, `organization_id`, `project_id`) follow the project's multi-scope convention — see [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 - **Folder tree operations are transactional.** Moving a folder with children must update all descendants' paths — don't optimize away the reparenting walk.
 
@@ -114,6 +115,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 
 ## Change log
 
+- `2026-07-14` — **Restored `/notes` rich-document actions (D47).** `NotesView` no longer sends its active editor to a nonexistent `note-detail-*` remote surface. Preview mode now renders the canonical inline action bar and MatrxSplit renders its compact inline action menu; the deliberately decluttered page header and tab-owned note controls remain unchanged. Updated the rich-document remote-surface doctrine so future consumers only publish remotely when a matching surface is mounted.
 - `2026-07-13` — **Quick-save core on shared content-refine primitives + window footer.** `QuickNoteSaveCore` now renders `RefinableContentEditor` (`components/content-refine/`) instead of its own copy of the view-toggle/strip-thinking/copy/trim toolbar + TrimRow sliders (duplicate deleted), and portals its footer actions (Cancel/Save + post-save New tab · Window · Go to note · Done) into the `WindowPanel` `footerRight` slot via a new `footerHost` prop — `QuickNoteSaveWindow` provides the slot (same pattern as `TaskQuickCreateWindow`). Dialog/Popover/Overlay consumers keep the inline footer (no `footerHost`). `useQuickNoteSave`: the existing-note selection is stored keyed by folder+mode (derivation-invalidated; the setState-in-effect reset is gone); behavior change: after a save with `showPostSaveActions=false` the footer renders nothing (previously kept showing Cancel/Save).
 - `2026-07-12` — **Sidebar: active-note highlight fixed for light mode + bulk-action bar moved to the top.** (1) The active row used `ItemRow`'s default `bg-accent`, which is `zinc-150` in light mode (nearly white on the sidebar) — the active note was invisible in light mode while fine in dark. Active rows (both `NoteSidebarRow` and the inline Shared-with-me rows) now use a **primary tint** (`bg-primary/10 dark:bg-primary/20`) + `font-medium` + a **2px primary left accent bar** drawn as an inset box-shadow (no layout shift) — clearly visible and consistent in both themes. (2) `NoteSidebarBulkBar` previously rendered only once ≥1 note was checked AND was docked at the very **bottom** of the sidebar, where it was pushed off-screen and unreachable. It now renders the moment selection mode is entered, docked at the **top** just below the toolbar, with all actions **disabled until a note is selected** (so the layout never shifts). Added a **select-all/clear toggle**, a live "N selected"/"Select notes" label, and replaced every native `title` with real Radix `SimpleTooltip`s. The bottom New Note / New Folder bar stays put in selection mode.
 - `2026-07-12` — **MobileNoteEditor read-only notes get the NON-editable menu.** Review fix: v3's Cut/Paste mutate via `getTextarea`/`onTextReplace` regardless of the textarea's `readOnly` attribute, so the `EditableContextMenu` added earlier today let a read-only viewer dirty `localContent` and arm a doomed autosave. Plain mode now branches: `readOnly` → `NonEditableContextMenu` (copy/export/AI only), writable → `EditableContextMenu` unchanged.

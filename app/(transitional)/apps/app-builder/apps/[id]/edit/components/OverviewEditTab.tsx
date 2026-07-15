@@ -190,7 +190,7 @@ export default function OverviewEditTab({ appId }: OverviewEditTabProps) {
                 <Label>App Icon</Label>
                 <IconPicker
                   iconType="appIcon"
-                  selectedIcon={mainAppIcon}
+                  selectedIcon={mainAppIcon ?? "LayoutTemplate"}
                   onIconSelect={handleAppIconSelect}
                   primaryColor={primaryColor}
                   accentColor={accentColor}
@@ -245,4 +245,4 @@ export default function OverviewEditTab({ appId }: OverviewEditTabProps) {
       </Card>
     </div>
   );
-} 
+}

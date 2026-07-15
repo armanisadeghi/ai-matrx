@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { brokerSelectors, brokerActions } from "@/lib/redux/brokerSlice";
 import { ensureValidWidthClass } from "@/features/applet/constants/field-constants";
@@ -9,9 +9,22 @@ import { GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CommonFieldProps } from "./core/types";
 import { FieldOption } from "@/types/customAppTypes";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 
 interface SortableItem extends FieldOption {
     order: number;
+}
+
+function isSortableItem(value: unknown): value is SortableItem {
+    if (typeof value !== "object" || value === null) return false;
+    return (
+        "id" in value &&
+        typeof value.id === "string" &&
+        "label" in value &&
+        typeof value.label === "string" &&
+        "order" in value &&
+        typeof value.order === "number"
+    );
 }
 
 const SortableField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
@@ -24,7 +37,7 @@ const SortableField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
 
     const updateBrokerValue = useCallback(
-        (updatedValue: any) => {
+        (updatedValue: SortableItem[]) => {
             dispatch(
                 brokerActions.setValue({
                     brokerId,
@@ -37,13 +50,15 @@ const SortableField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-
 
     const [items, setItems] = useState<SortableItem[]>([]);
     const [activeItemId, setActiveItemId] = useState<string | null>(null);
+    const availableOptions = processFieldOptions(options);
 
     // Initialize items from options or state
     useEffect(() => {
-        if (stateValue) {
-            setItems(stateValue);
-        } else if (options.length > 0) {
-            const initialItems = options.map((option, index) => ({
+        const storedItems = Array.isArray(stateValue) ? stateValue.filter(isSortableItem) : [];
+        if (storedItems.length > 0) {
+            setItems(storedItems);
+        } else if (availableOptions.length > 0) {
+            const initialItems = availableOptions.map((option, index) => ({
                 id: option.id,
                 label: option.label,
                 description: option.description,
@@ -55,7 +70,7 @@ const SortableField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-
     }, [options, stateValue, dispatch, id, source]);
 
     // Handler for drag end
-    const handleOnDragEnd = (result: any) => {
+    const handleOnDragEnd = (result: DropResult) => {
         if (!result.destination || disabled) return;
 
         const updatedItems = Array.from(items);

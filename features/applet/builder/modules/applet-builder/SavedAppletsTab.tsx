@@ -33,7 +33,8 @@ export const SavedAppletsTab: React.FC<SavedAppletsTabProps> = ({
 }) => {
   // Memoize color class for saved applet cards
   const getColorClass = (color: string) => {
-    return COLOR_VARIANTS.text[color] || COLOR_VARIANTS.text.emerald;
+    const textColors: Record<string, string> = COLOR_VARIANTS.text;
+    return textColors[color] ?? COLOR_VARIANTS.text.emerald;
   };
 
   if (isLoading) {
@@ -127,4 +128,4 @@ export const SavedAppletsTab: React.FC<SavedAppletsTabProps> = ({
   );
 };
 
-export default SavedAppletsTab; 
+export default SavedAppletsTab;

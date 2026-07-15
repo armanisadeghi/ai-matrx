@@ -3212,6 +3212,14 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "filePreviewWindow" }))
             }
             fileId={typeof data?.fileId === "string" ? data.fileId : null}
+            pageNumber={
+              typeof data?.pageNumber === "number" ? data.pageNumber : null
+            }
+            navigationRequestId={
+              typeof data?.navigationRequestId === "number"
+                ? data.navigationRequestId
+                : null
+            }
           />
         );
       })()}

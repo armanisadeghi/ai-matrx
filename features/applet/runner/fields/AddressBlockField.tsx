@@ -161,6 +161,7 @@ const AddressBlockField: React.FC<CommonFieldProps> = ({
         if (required && touched[field as keyof typeof touched] && !address[field]) {
             const fieldLabels = {
                 address1: "Address",
+                address2: "Address line 2",
                 city: "City",
                 state: "State",
                 postalCode: "Postal Code",

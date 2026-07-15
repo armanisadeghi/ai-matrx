@@ -81,6 +81,9 @@ function isFileTab(value: string | null): value is FileTab {
 
 export interface FileTabsBodyProps {
   fileId: string;
+  /** Optional controlled 1-based page for the PDF Preview tab. */
+  pageNumber?: number;
+  onPageChange?: (pageNumber: number) => void;
   /**
    * Controlled active tab. When provided, the parent owns the selection
    * (used by SingleFileShell so the URL `?tab=` can be authoritative).
@@ -101,6 +104,8 @@ export interface FileTabsBodyProps {
 
 export function FileTabsBody({
   fileId,
+  pageNumber,
+  onPageChange,
   activeTab: controlledTab,
   onTabChange,
   initialTab,
@@ -278,7 +283,12 @@ export function FileTabsBody({
         >
           {isMounted("preview") ? (
             <PreviewErrorBoundary fileId={fileId}>
-              <FilePreview fileId={fileId} className="h-full w-full" />
+              <FilePreview
+                fileId={fileId}
+                pageNumber={pageNumber}
+                onPageChange={onPageChange}
+                className="h-full w-full"
+              />
             </PreviewErrorBoundary>
           ) : null}
         </div>

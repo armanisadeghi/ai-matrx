@@ -131,7 +131,7 @@ export const AppConfigStep: React.FC<AppConfigStepProps> = ({ appId, onAppSaved,
         dispatch(setName({ id: appId, name: newName }));
 
         // Auto-generate slug from name if field is empty or hasn't been manually edited
-        if (!slug || slug === convertToKebabCase(name)) {
+        if (!slug || (name && slug === convertToKebabCase(name))) {
             const newSlug = convertToKebabCase(newName);
             dispatch(setSlug({ id: appId, slug: newSlug }));
         }
@@ -231,6 +231,9 @@ export const AppConfigStep: React.FC<AppConfigStepProps> = ({ appId, onAppSaved,
             });
 
             // Call the parent's callback with the app ID
+            if (!savedApp.id) {
+                throw new Error("Saved app response did not include an id");
+            }
             onAppSaved(savedApp.id);
         } catch (error) {
             console.error("Error saving app:", error);
@@ -332,7 +335,7 @@ export const AppConfigStep: React.FC<AppConfigStepProps> = ({ appId, onAppSaved,
                                                     slugStatus === "notUnique" ? "border-red-500 dark:border-red-500" : ""
                                                 } pr-10`}
                                             />
-                                            <AppSlugChecker appId={appId} slug={slug} />
+                                            {slug ? <AppSlugChecker appId={appId} slug={slug} /> : null}
                                         </div>
                                         {slugStatus === "notUnique" && (
                                             <p className="text-red-500 text-xs mt-1">This slug is not available</p>
@@ -362,13 +365,13 @@ export const AppConfigStep: React.FC<AppConfigStepProps> = ({ appId, onAppSaved,
                                         <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">App Icon</Label>
                                         <div className="flex justify-center">
                                             <IconPicker
-                                                selectedIcon={mainAppIcon}
+                                                selectedIcon={mainAppIcon ?? "LayoutTemplate"}
                                                 onIconSelect={handleMainIconSelect}
                                                 dialogTitle="Select App Icon"
                                                 dialogDescription="Choose an icon to represent your app"
                                                 className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg"
-                                                primaryColor={primaryColor}
-                                                accentColor={accentColor}
+                                                primaryColor={primaryColor ?? "gray"}
+                                                accentColor={accentColor ?? "rose"}
                                                 iconType="appIcon"
                                             />
                                         </div>
@@ -378,13 +381,13 @@ export const AppConfigStep: React.FC<AppConfigStepProps> = ({ appId, onAppSaved,
                                         <Label className="text-sm font-medium text-gray-900 dark:text-gray-100">Submit Icon</Label>
                                         <div className="flex justify-center">
                                             <IconPicker
-                                                selectedIcon={mainAppSubmitIcon}
+                                                selectedIcon={mainAppSubmitIcon ?? "Search"}
                                                 onIconSelect={handleSubmitIconSelect}
                                                 dialogTitle="Select Submit Icon"
                                                 dialogDescription="Choose an icon for the submit action"
                                                 className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg"
-                                                primaryColor={primaryColor}
-                                                accentColor={accentColor}
+                                                primaryColor={primaryColor ?? "gray"}
+                                                accentColor={accentColor ?? "rose"}
                                                 iconType="submitIcon"
                                             />
                                         </div>

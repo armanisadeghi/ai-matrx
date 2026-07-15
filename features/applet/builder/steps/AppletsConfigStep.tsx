@@ -384,7 +384,7 @@ export const AppletsConfigStep: React.FC<AppletsConfigStepProps> = ({
                   </div>
                 </div>
                 <AppletFormComponent
-                  appletId={activeAppletId}
+                  appletId={activeAppletId ?? undefined}
                   appId={appId}
                   isNew={isCreateMode}
                   onSaveApplet={handleSaveApplet}

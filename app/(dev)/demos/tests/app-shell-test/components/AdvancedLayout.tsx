@@ -35,8 +35,15 @@ const layouts = {
     // Add more layout configurations here
 };
 
-const AdvancedLayout = ({ layoutType, children }) => {
-    const selectedLayout = layouts[layoutType] || layouts.complexDashboard;
+type LayoutType = keyof typeof layouts;
+
+interface AdvancedLayoutProps {
+    layoutType: LayoutType;
+    children: React.ReactNode;
+}
+
+const AdvancedLayout = ({ layoutType, children }: AdvancedLayoutProps) => {
+    const selectedLayout = layouts[layoutType];
 
     const gridStyle = {
         display: 'grid',
@@ -53,7 +60,9 @@ const AdvancedLayout = ({ layoutType, children }) => {
         <div style={gridStyle}>
             {React.Children.map(children, (child, index) => {
                 if (index >= selectedLayout.length) return null;
-                const { gridArea, minHeight } = selectedLayout[index];
+                const layoutItem = selectedLayout[index];
+                if (!layoutItem) return null;
+                const { gridArea, minHeight } = layoutItem;
                 return (
                     <motion.div
                         style={{

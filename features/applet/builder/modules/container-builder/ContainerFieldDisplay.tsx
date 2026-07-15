@@ -123,7 +123,7 @@ const ContainerFieldDisplay: React.FC<ContainerFieldDisplayProps> = ({
                                     </div>
                                 </div>
                                 <ContainerFieldStatusManager
-                                    container={container}
+                                    container={container ?? null}
                                     field={field}
                                     onRecompileField={handleRecompileField}
                                     onSaveFieldChanges={handleSaveFieldChanges}

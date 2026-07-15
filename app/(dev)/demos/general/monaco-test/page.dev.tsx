@@ -3,6 +3,7 @@
 import SmallCodeEditor from '@/features/code-editor/components/code-block/SmallCodeEditor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
+import type { Dispatch, SetStateAction } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const SAMPLE_JS = `// JavaScript with IntelliSense
 function calculateFactorial(n) {
@@ -169,6 +170,12 @@ export default function MonacoTestPage() {
   const [pythonCode, setPythonCode] = useState(SAMPLE_PYTHON);
   const [promptAppCode, setPromptAppCode] = useState(samplePromptAppCode);
 
+  const updateCode =
+    (setCode: Dispatch<SetStateAction<string>>) =>
+    (value: string | undefined) => {
+      if (value !== undefined) setCode(value);
+    };
+
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto pb-safe">
         <div className="container mx-auto p-6 space-y-6">
@@ -202,7 +209,7 @@ export default function MonacoTestPage() {
                     <SmallCodeEditor
                       language="javascript"
                       initialCode={jsCode}
-                      onChange={setJsCode}
+                      onChange={updateCode(setJsCode)}
                       height="500px"
                       showFormatButton={true}
                       showCopyButton={true}
@@ -220,7 +227,7 @@ export default function MonacoTestPage() {
                     <SmallCodeEditor
                       language="typescript"
                       initialCode={tsCode}
-                      onChange={setTsCode}
+                      onChange={updateCode(setTsCode)}
                       height="500px"
                       showFormatButton={true}
                       showCopyButton={true}
@@ -239,7 +246,7 @@ export default function MonacoTestPage() {
                       language="typescript"
                       fileExtension=".tsx"
                       initialCode={tsxCode}
-                      onChange={setTsxCode}
+                      onChange={updateCode(setTsxCode)}
                       height="500px"
                       showFormatButton={true}
                       showCopyButton={true}
@@ -258,7 +265,7 @@ export default function MonacoTestPage() {
                       language="typescript"
                       fileExtension=".tsx"
                       initialCode={promptAppCode}
-                      onChange={setPromptAppCode}
+                      onChange={updateCode(setPromptAppCode)}
                       height="500px"
                       showFormatButton={true}
                       showCopyButton={true}
@@ -276,7 +283,7 @@ export default function MonacoTestPage() {
                     <SmallCodeEditor
                       language="json"
                       initialCode={jsonCode}
-                      onChange={setJsonCode}
+                      onChange={updateCode(setJsonCode)}
                       height="500px"
                       showFormatButton={true}
                       showCopyButton={true}
@@ -294,7 +301,7 @@ export default function MonacoTestPage() {
                     <SmallCodeEditor
                       language="css"
                       initialCode={cssCode}
-                      onChange={setCssCode}
+                      onChange={updateCode(setCssCode)}
                       height="500px"
                       showFormatButton={true}
                       showCopyButton={true}
@@ -312,7 +319,7 @@ export default function MonacoTestPage() {
                     <SmallCodeEditor
                       language="python"
                       initialCode={pythonCode}
-                      onChange={setPythonCode}
+                      onChange={updateCode(setPythonCode)}
                       height="500px"
                       showFormatButton={true}
                       showCopyButton={true}
@@ -375,4 +382,3 @@ export default function MonacoTestPage() {
       </div>
   );
 }
-

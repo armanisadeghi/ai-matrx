@@ -163,7 +163,7 @@ const ContainerFormComponent: React.FC<ContainerFormComponentProps> = ({
   };
 
   const handleCompileContainer = async () => {
-    if (!containerId) return;
+    if (!containerId || !selectedApplet) return;
 
     setIsCompiling(true);
 

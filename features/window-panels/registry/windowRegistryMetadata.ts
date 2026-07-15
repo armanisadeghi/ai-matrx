@@ -266,7 +266,11 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     overlayId: "filePreviewWindow",
     kind: "window",
     label: "File preview",
-    defaultData: { fileId: null },
+    defaultData: {
+      fileId: null,
+      pageNumber: null,
+      navigationRequestId: null,
+    },
     ephemeral: true,
     mobilePresentation: "fullscreen",
     urlSync: { key: "file_preview" },

@@ -7,11 +7,13 @@ import React, { useState, useEffect } from "react";
 import AIAssistant from "./AIAssistant";
 import CodeEditor from "./CodeEditor";
 import ComponentManager from "./ComponentManager";
+import { parseSavedComponents, type SavedComponent } from "./types";
+import { toast } from "sonner";
 
 // Main application component that orchestrates everything
 const ComponentGenerator = () => {
   const [code, setCode] = useState("");
-  const [savedComponents, setSavedComponents] = useState([]);
+  const [savedComponents, setSavedComponents] = useState<SavedComponent[]>([]);
   const [currentComponentName, setCurrentComponentName] = useState("");
   const [aiSuggestion, setAiSuggestion] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -186,7 +188,7 @@ function EnhancedCounter() {
       try {
         const saved = localStorage.getItem("savedComponents");
         if (saved) {
-          setSavedComponents(JSON.parse(saved));
+          setSavedComponents(parseSavedComponents(saved));
         }
       } catch (err) {
         console.error("Failed to load saved components:", err);
@@ -202,7 +204,7 @@ function EnhancedCounter() {
   };
 
   // Simulate AI code generation (in real app, this would call your AI service)
-  const generateWithAI = async (prompt) => {
+  const generateWithAI = async (prompt: string) => {
     setIsGenerating(true);
 
     // Simulate API call delay
@@ -339,7 +341,7 @@ function CustomComponent() {
   // Save current component to database
   const saveComponent = async () => {
     if (!currentComponentName.trim()) {
-      alert("Please enter a name for your component");
+      toast.error("Please enter a name for your component");
       return;
     }
     // In a real app, you would save to your database
@@ -358,22 +360,22 @@ function CustomComponent() {
         "savedComponents",
         JSON.stringify(updatedComponents),
       );
-      alert(`Component "${currentComponentName}" saved successfully!`);
+      toast.success(`Component "${currentComponentName}" saved successfully!`);
       setCurrentComponentName("");
     } catch (err) {
       console.error("Failed to save component:", err);
-      alert("Failed to save component");
+      toast.error("Failed to save component");
     }
   };
 
   // Load a saved component into the editor
-  const loadComponent = (component) => {
+  const loadComponent = (component: SavedComponent) => {
     setCode(component.code);
     setCurrentComponentName(component.name);
   };
 
   // Delete a saved component
-  const deleteComponent = (id) => {
+  const deleteComponent = (id: string) => {
     const updatedComponents = savedComponents.filter((comp) => comp.id !== id);
     setSavedComponents(updatedComponents);
     localStorage.setItem("savedComponents", JSON.stringify(updatedComponents));

@@ -1,76 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
-import { AppletSourceConfig } from '@/types/customAppTypes';
+import { AppletSourceConfig, NeededBroker } from '@/types/customAppTypes';
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectTempSourceConfigList } from '@/lib/redux/app-builder/selectors/appletSelectors';
 import { selectActiveAppletId } from '@/lib/redux/app-builder/selectors/appletSelectors';
 import { fetchFieldsThunk } from '@/lib/redux/app-builder/thunks/fieldBuilderThunks';
 import { selectAllFields, selectFieldLoading, selectFieldError } from '@/lib/redux/app-builder/selectors/fieldSelectors';
-
-// Define interfaces for our data structure
-interface Broker {
-  id: string;
-  name: string;
-  required: boolean;
-  dataType: string;
-  defaultValue: string;
-  inputComponent: string;
-}
-
-interface RecipeConfig {
-  id: string;
-  compiledId: string;
-  version: number;
-  neededBrokers: Broker[];
-}
+import {
+  isRecipeAppletSourceConfig,
+  RecipeAppletSourceConfig,
+} from '@/features/applet/builder/utils/sourceConfigGuards';
 
 interface BrokerMapping {
   appletId: string;
   fieldId: string;
   brokerId: string;
-}
-
-type ComponentType = 
-  | 'input' 
-  | 'textarea' 
-  | 'select' 
-  | 'multiselect' 
-  | 'radio' 
-  | 'checkbox' 
-  | 'slider' 
-  | 'number' 
-  | 'date'
-  | 'switch'
-  | 'button'
-  | 'rangeSlider'
-  | 'numberPicker'
-  | 'jsonField'
-  | 'fileUpload';
-
-interface FieldOption {
-  label: string;
-  value: string;
-}
-
-interface ComponentProps {
-  [key: string]: any;
-}
-
-interface FieldDefinition {
-  id: string;
-  label: string;
-  description?: string;
-  helpText?: string;
-  group?: string;
-  iconName?: string;
-  component: ComponentType;
-  required?: boolean;
-  disabled?: boolean;
-  placeholder?: string;
-  defaultValue?: any;
-  options?: FieldOption[];
-  componentProps: ComponentProps;
-  includeOther?: boolean;
 }
 
 const convertPythonTypeToLabel = (dataType: string) => {
@@ -113,19 +57,20 @@ interface SourceConfigCardSelectorProps {
 }
 
 const SourceConfigCardSelector = ({ appletId, onSourceConfigSelected, onMappingCreated }: SourceConfigCardSelectorProps) => {
-  const [selectedSourceConfig, setSelectedSourceConfig] = useState<AppletSourceConfig | null>(null);
-  const [selectedBroker, setSelectedBroker] = useState<Broker | null>(null);
+  const [selectedSourceConfig, setSelectedSourceConfig] = useState<RecipeAppletSourceConfig | null>(null);
+  const [selectedBroker, setSelectedBroker] = useState<NeededBroker | null>(null);
   const [selectedField, setSelectedField] = useState<string>('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   
   const tempSourceConfigList = useAppSelector(selectTempSourceConfigList);
+  const recipeSourceConfigs = tempSourceConfigList.filter(isRecipeAppletSourceConfig);
   const activeAppletId = useAppSelector(selectActiveAppletId);
   const dispatch = useAppDispatch();
   const allFields = useAppSelector(selectAllFields);
   const isLoading = useAppSelector(selectFieldLoading);
   const error = useAppSelector(selectFieldError);
   
-  const idToUse = appletId || activeAppletId;
+  const idToUse = appletId ?? activeAppletId;
   
   useEffect(() => {
     // Fetch fields regardless of whether we have them already
@@ -133,7 +78,7 @@ const SourceConfigCardSelector = ({ appletId, onSourceConfigSelected, onMappingC
   }, [dispatch]);
   
   // Handle recipe selection
-  const handleSourceConfigSelect = (sourceConfig: AppletSourceConfig) => {
+  const handleSourceConfigSelect = (sourceConfig: RecipeAppletSourceConfig) => {
     setSelectedSourceConfig(sourceConfig);
     setSelectedBroker(null);
     setSelectedField('');
@@ -141,13 +86,13 @@ const SourceConfigCardSelector = ({ appletId, onSourceConfigSelected, onMappingC
   };
   
   // Handle broker selection
-  const handleBrokerSelect = (broker: Broker) => {
+  const handleBrokerSelect = (broker: NeededBroker) => {
     setSelectedBroker(broker);
   };
   
   // Create mapping between broker and field
   const handleCreateMapping = () => {
-    if (!selectedSourceConfig || !selectedBroker || !selectedField.trim()) return;
+    if (!selectedSourceConfig || !selectedBroker || !selectedField.trim() || !idToUse) return;
     
     const mapping: BrokerMapping = {
       appletId: idToUse,
@@ -160,7 +105,7 @@ const SourceConfigCardSelector = ({ appletId, onSourceConfigSelected, onMappingC
   };
   
   // Helper function to display values safely, showing "null" for null values
-  const displayValue = (value: any): string => {
+  const displayValue = (value: unknown): string => {
     if (value === null || value === undefined) return "null";
     if (typeof value === 'string') return value;
     return String(value);
@@ -181,7 +126,7 @@ const SourceConfigCardSelector = ({ appletId, onSourceConfigSelected, onMappingC
           <div className="border rounded-lg p-4 border-gray-200 dark:border-gray-700 dark:bg-gray-800">
             <h3 className="font-medium text-sm mb-3 text-gray-900 dark:text-gray-100">Available Recipes</h3>
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-              {tempSourceConfigList.map((sourceConfig, index) => (
+              {recipeSourceConfigs.map((sourceConfig, index) => (
                 <div 
                   key={`${sourceConfig.config.compiledId}-${index}`}
                   className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md ${
@@ -284,7 +229,7 @@ const SourceConfigCardSelector = ({ appletId, onSourceConfigSelected, onMappingC
                         </div>
                         <div className="flex mt-1">
                           <span className="font-medium text-gray-700 dark:text-gray-300 w-36">Default Input Component:</span>
-                          <span className="text-gray-900 dark:text-gray-100">{displayValue(broker.inputComponent)}</span>
+                          <span className="text-gray-900 dark:text-gray-100">{displayValue(broker.fieldComponentId)}</span>
                         </div>
                       </div>
                     </div>
@@ -359,7 +304,7 @@ const SourceConfigCardSelector = ({ appletId, onSourceConfigSelected, onMappingC
                     
                     <button
                       onClick={handleCreateMapping}
-                      disabled={!selectedField.trim()}
+                      disabled={!selectedField.trim() || !idToUse}
                       className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 rounded hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 mt-2"
                     >
                       Map Broker to Field

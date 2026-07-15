@@ -8,14 +8,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { FieldDefinition, FieldOption } from "@/types/customAppTypes";
+import { FieldOption } from "@/types/customAppTypes";
 import { CommonFieldProps } from "./core/types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
-
-export interface SelectedOptionValue extends FieldOption {
-    selected: boolean;
-    otherText?: string;
-}
+import { SelectedOptionValue, selectedOptionValues } from "./common/types";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 
 const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
     const { id, label, placeholder = "Select an option", options, componentProps, required, includeOther = false } = field;
@@ -38,7 +35,7 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
 
     const updateBrokerValue = useCallback(
-        (updatedValue: any) => {
+        (updatedValue: SelectedOptionValue[]) => {
             dispatch(
                 brokerActions.setValue({
                     brokerId,
@@ -55,15 +52,17 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
     const [otherText, setOtherText] = useState("");
     // Track if field has been interacted with
     const [touched, setTouched] = useState(false);
+    const availableOptions = processFieldOptions(options);
+    const storedOptions = selectedOptionValues(stateValue);
 
     // Extract parent options (options with no parentId)
-    const parentOptions = options.filter((option) => !option.parentId);
+    const parentOptions = availableOptions.filter((option) => !option.parentId);
 
     // Initialize stateValue if not set
     useEffect(() => {
-        if (!stateValue && options.length > 0) {
+        if (!stateValue && availableOptions.length > 0) {
             // Initialize with all options having selected: false
-            const initialOptions = options.map((option) => ({
+            const initialOptions = availableOptions.map((option) => ({
                 ...option,
                 selected: false,
             }));
@@ -81,7 +80,7 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
             updateBrokerValue(initialOptions);
         } else if (stateValue) {
             // If there's an "other" option and it's selected, initialize the otherText state
-            const otherOption = Array.isArray(stateValue) ? stateValue.find((opt: SelectedOptionValue) => opt.id === "other") : null;
+            const otherOption = storedOptions.find((option) => option.id === "other");
             if (otherOption && otherOption.selected && otherOption.description) {
                 setOtherText(otherOption.description);
             }
@@ -90,30 +89,29 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
 
     // Find the currently selected option at a specific level
     const getSelectedOptionAtLevel = (level: number): SelectedOptionValue | null => {
-        if (!stateValue) return null;
+        if (storedOptions.length === 0) return null;
 
         let currentParentId: string | undefined = undefined;
 
         // For level 0, we're looking at root options (no parent)
         if (level === 0) {
-            return Array.isArray(stateValue)
-                ? stateValue.find((option: SelectedOptionValue) => {
+            return (
+                storedOptions.find((option) => {
                       // Find the original option to check if it has a parentId
-                      const originalOption = options.find((o) => o.id === option.id);
+                      const originalOption = availableOptions.find((candidate) => candidate.id === option.id);
                       return option.selected && !originalOption?.parentId;
-                  }) || null
-                : null;
+                }) ?? null
+            );
         }
 
         // For other levels, we need to chain through the parents
         for (let i = 0; i < level; i++) {
             // Find the selected option at the current level
-            const selectedOption = Array.isArray(stateValue)
-                ? stateValue.find((option: SelectedOptionValue) => {
-                      const originalOption = options.find((o) => o.id === option.id);
+            const selectedOption =
+                storedOptions.find((option) => {
+                      const originalOption = availableOptions.find((candidate) => candidate.id === option.id);
                       return option.selected && originalOption?.parentId === currentParentId;
-                  })
-                : null;
+                }) ?? null;
 
             // If no option is selected at this level, break the chain
             if (!selectedOption) return null;
@@ -123,22 +121,22 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
         }
 
         // Now find the selected option at the target level
-        return Array.isArray(stateValue)
-            ? stateValue.find((option: SelectedOptionValue) => {
-                  const originalOption = options.find((o) => o.id === option.id);
+        return (
+            storedOptions.find((option) => {
+                  const originalOption = availableOptions.find((candidate) => candidate.id === option.id);
                   return option.selected && originalOption?.parentId === currentParentId;
-              }) || null
-            : null;
+            }) ?? null
+        );
     };
 
     // Get child options for a specific parent
     const getChildOptions = (parentId: string): FieldOption[] => {
-        return options.filter((option) => option.parentId === parentId);
+        return availableOptions.filter((option) => option.parentId === parentId);
     };
 
     // Check if an option has children
     const hasChildren = (optionId: string): boolean => {
-        return options.some((option) => option.parentId === optionId);
+        return availableOptions.some((option) => option.parentId === optionId);
     };
 
     // Handle option selection at a specific level
@@ -149,12 +147,12 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
         setTouched(true);
 
         // Create a copy of the current state
-        const updatedOptions = [...(stateValue || [])];
+        const updatedOptions = [...storedOptions];
 
         // Handle special case: "Other" option
         if (optionId === "other") {
             // Update only the "Other" option
-            const otherIndex = updatedOptions.findIndex((opt: SelectedOptionValue) => opt.id === "other");
+            const otherIndex = updatedOptions.findIndex((option) => option.id === "other");
             if (otherIndex >= 0) {
                 updatedOptions[otherIndex] = {
                     ...updatedOptions[otherIndex],
@@ -163,10 +161,10 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
             }
 
             // Find and deselect all other options
-            updatedOptions.forEach((opt: SelectedOptionValue, index: number) => {
-                if (opt.id !== "other") {
+            updatedOptions.forEach((option, index) => {
+                if (option.id !== "other") {
                     updatedOptions[index] = {
-                        ...opt,
+                        ...option,
                         selected: false,
                     };
                 }
@@ -195,13 +193,13 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
         }
 
         // Update the selected state
-        updatedOptions.forEach((opt: SelectedOptionValue, index: number) => {
-            const originalOption = options.find((o) => o.id === opt.id);
+        updatedOptions.forEach((option, index) => {
+            const originalOption = availableOptions.find((candidate) => candidate.id === option.id);
 
             // If this is the option we're selecting
-            if (opt.id === optionId) {
+            if (option.id === optionId) {
                 updatedOptions[index] = {
-                    ...opt,
+                    ...option,
                     selected: true,
                 };
             }
@@ -211,7 +209,7 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
                 (level > 0 && originalOption?.parentId === parentChain[parentChain.length - 1])
             ) {
                 updatedOptions[index] = {
-                    ...opt,
+                    ...option,
                     selected: false,
                 };
             }
@@ -226,22 +224,22 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
                         isChild = true;
                         break;
                     }
-                    const parentOption = options.find((o) => o.id === childParentId);
+                    const parentOption = availableOptions.find((candidate) => candidate.id === childParentId);
                     childParentId = parentOption?.parentId;
                 }
 
                 if (isChild) {
                     updatedOptions[index] = {
-                        ...opt,
+                        ...option,
                         selected: false,
                     };
                 }
             }
 
             // Deselect "Other" option when a regular option is selected
-            if (opt.id === "other") {
+            if (option.id === "other") {
                 updatedOptions[index] = {
-                    ...opt,
+                    ...option,
                     selected: false,
                 };
             }
@@ -260,7 +258,7 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
         const newOtherText = e.target.value;
         setOtherText(newOtherText);
 
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === "other") {
                 return {
                     ...option,
@@ -287,9 +285,7 @@ const DependentDropdownField: React.FC<CommonFieldProps> = ({ field, sourceId="n
 
         // Check if "Other" is selected
         if (!chain.length) {
-            const otherOption = Array.isArray(stateValue)
-                ? stateValue.find((opt: SelectedOptionValue) => opt.id === "other" && opt.selected)
-                : undefined;
+            const otherOption = storedOptions.find((option) => option.id === "other" && option.selected);
             if (otherOption) chain.push(otherOption);
         }
 

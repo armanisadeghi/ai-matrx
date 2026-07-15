@@ -8,8 +8,8 @@ const EMPTY_VALUES: Record<string, unknown> = {};
 const EMPTY_OPTIONS: BrokerOption[] = [];
 const EMPTY_TABLE: BrokerTableState = { columns: [], rows: [] };
 
-const noopBrokerId = (_state: RootState, _id: BrokerIdentifier | string): string | undefined =>
-  typeof _id === "string" ? _id : undefined;
+const noopBrokerId = (_state: RootState, _id: BrokerIdentifier | string): string =>
+  typeof _id === "string" ? _id : _id.mappedItemId;
 
 const noopValue = (_state: RootState, _brokerId?: string | BrokerIdentifier): unknown => undefined;
 

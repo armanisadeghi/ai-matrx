@@ -299,6 +299,14 @@ const ContainersList: React.FC<ContainersListProps> = ({
     }
   };
 
+  if (!appletContainers) {
+    return (
+      <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+        The applet container configuration is unavailable.
+      </div>
+    );
+  }
+
   return (
     <>
       {/* DeleteConfirmationDialog component */}

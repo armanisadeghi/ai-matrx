@@ -45,7 +45,6 @@ export function BrokerSlackClient({ children }: BrokerSlackClientProps) {
   useServerBrokerSync({
     brokers: Object.values(SLACK_BROKER_IDS),
     syncOnChange: true,
-    syncInterval: 0 // Only sync on changes
   });
   
   // Fetch channels when token changes
@@ -90,8 +89,8 @@ export function BrokerSlackClient({ children }: BrokerSlackClientProps) {
       
       // Store channels in broker
       dispatch(brokerActions.setText({
-        idArgs: SLACK_BROKER_IDS.channels,
-        text: JSON.stringify(channelsList)
+        brokerId: SLACK_BROKER_IDS.channels.mappedItemId,
+        value: JSON.stringify(channelsList)
       }));
       
       setSuccess('Channels fetched successfully');
@@ -106,16 +105,16 @@ export function BrokerSlackClient({ children }: BrokerSlackClientProps) {
   // Set selected channel
   const setChannel = (channelId: string) => {
     dispatch(brokerActions.setText({
-      idArgs: SLACK_BROKER_IDS.selectedChannel,
-      text: channelId
+      brokerId: SLACK_BROKER_IDS.selectedChannel.mappedItemId,
+      value: channelId
     }));
   };
   
   // Set token
   const setSlackToken = (newToken: string) => {
     dispatch(brokerActions.setText({
-      idArgs: SLACK_BROKER_IDS.token,
-      text: newToken
+      brokerId: SLACK_BROKER_IDS.token.mappedItemId,
+      value: newToken
     }));
   };
 
@@ -154,4 +153,4 @@ export function BrokerSlackClient({ children }: BrokerSlackClientProps) {
       {children}
     </div>
   );
-} 
+}

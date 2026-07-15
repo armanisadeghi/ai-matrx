@@ -111,4 +111,5 @@ If the DB survey shows **no** active composite usage (only single-applet "parent
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-15 | codex | Repaired legacy applet runtime and builder type contracts so the full repo TypeScript compiler is green; migration design and status are unchanged. |
 | 2026-04-21 | claude | Expanded the stub into a self-contained design doc. Picked join table over self-FK, one shared execution instance per composite, and a `${child_slug}__${key}` namespacing rule. Logged three corresponding DECISIONS entries. No prototype code. |

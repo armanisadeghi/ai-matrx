@@ -3,8 +3,10 @@ import Link from "next/link";
 import { HeaderExtraButtonsConfig } from "@/types/customAppTypes";
 import { useToast } from "@/components/ui/use-toast";
 
+type ToastFunction = ReturnType<typeof useToast>["toast"];
+
 // Export the handler functions for use in ButtonMenu
-export const renderChat = (button: HeaderExtraButtonsConfig, toast) => {
+export const renderChat = (button: HeaderExtraButtonsConfig, toast: ToastFunction) => {
     console.log("Rendering chat interface");
     // In a real app, this might open a chat window or component
     toast({
@@ -14,7 +16,7 @@ export const renderChat = (button: HeaderExtraButtonsConfig, toast) => {
     });
 };
 
-export const changeApplet = (button: HeaderExtraButtonsConfig, toast) => {
+export const changeApplet = (button: HeaderExtraButtonsConfig, toast: ToastFunction) => {
     console.log("Changing applet");
     // In a real app, this might switch to a different applet or module
     toast({
@@ -24,7 +26,7 @@ export const changeApplet = (button: HeaderExtraButtonsConfig, toast) => {
     });
 };
 
-export const renderModal = (button: HeaderExtraButtonsConfig, toast) => {
+export const renderModal = (button: HeaderExtraButtonsConfig, toast: ToastFunction) => {
     console.log("Rendering modal");
     // In a real app, this might open a modal or component
     toast({
@@ -34,7 +36,7 @@ export const renderModal = (button: HeaderExtraButtonsConfig, toast) => {
     });
 };
 
-export const renderSampleApplet = (button: HeaderExtraButtonsConfig, toast) => {
+export const renderSampleApplet = (button: HeaderExtraButtonsConfig, toast: ToastFunction) => {
     console.log("Rendering sample applet");
     // In a real app, this might open a modal or component
     toast({
@@ -104,7 +106,8 @@ export const HeaderExtraButtons = ({ buttons }: { buttons: HeaderExtraButtonsCon
                         );
 
                     case "redux":
-                        if (!button.reduxAction) {
+                        const reduxAction = button.reduxAction;
+                        if (!reduxAction) {
                             console.warn(`Redux button "${button.label}" missing reduxAction`);
                             return null;
                         }
@@ -113,7 +116,7 @@ export const HeaderExtraButtons = ({ buttons }: { buttons: HeaderExtraButtonsCon
                                 key={button.label}
                                 className={buttonStyles}
                                 onClick={() => {
-                                    dispatch({ type: button.reduxAction, payload: {} });
+                                    dispatch({ type: reduxAction, payload: {} });
                                     handleKnownMethod(button);
                                 }}
                             >

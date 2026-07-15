@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents/new", {
   titlePrefix: "Instant",
   title: "New Agent",
   description: "Instant chat assistant builder.",
-  letter: "G",
+  letter: "AG",
 });
 
 export default function NewAgentInstantBuilderLayout({

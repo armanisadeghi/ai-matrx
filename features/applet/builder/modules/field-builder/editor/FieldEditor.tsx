@@ -48,12 +48,12 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
 
     const isLoading = useAppSelector(selectFieldLoading);
     const error = useAppSelector(selectFieldError);
-    const [localFieldId, setLocalFieldId] = useState<string>(fieldId || null);
+    const [localFieldId, setLocalFieldId] = useState<string | null>(fieldId ?? null);
 
     // Get field data and state from Redux
-    const field = useAppSelector((state) => selectFieldById(state, localFieldId));
-    const componentType = useAppSelector((state) => selectFieldComponent(state, localFieldId));
-    const hasUnsavedChanges = useAppSelector((state) => selectHasFieldUnsavedChanges(state, localFieldId));
+    const field = useAppSelector((state) => localFieldId ? selectFieldById(state, localFieldId) : undefined);
+    const componentType = useAppSelector((state) => localFieldId ? selectFieldComponent(state, localFieldId) : null);
+    const hasUnsavedChanges = useAppSelector((state) => localFieldId ? selectHasFieldUnsavedChanges(state, localFieldId) : false);
 
     useEffect(() => {
         if (fieldId) {
@@ -63,11 +63,11 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
 
     useEffect(() => {
         if (isCreatingNew) {
-            dispatch(cancelFieldCreation(localFieldId));
+            if (localFieldId) dispatch(cancelFieldCreation(localFieldId));
             const newFieldId = uuidv4();
             setLocalFieldId(newFieldId);
             dispatch(startFieldCreation({ id: newFieldId }));
-        } else {
+        } else if (fieldId) {
             dispatch(setActiveField(fieldId));
         }
     }, [dispatch, isCreatingNew]);
@@ -142,22 +142,22 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                         title: "Changes Discarded",
                         description: "Your changes have been discarded",
                     });
-                } catch (err: any) {
+                } catch (err: unknown) {
                     toast({
                         title: "Error",
-                        description: err.message || "Failed to restore original field data",
+                        description: err instanceof Error ? err.message : "Failed to restore original field data",
                         variant: "destructive",
                     });
                     console.error("Error restoring field:", err);
                 }
             } else {
                 setLocalFieldId(null);
-                dispatch(cancelFieldCreation(localFieldId));
+                if (localFieldId) dispatch(cancelFieldCreation(localFieldId));
             }
         }
     };
 
-    if (!field) {
+    if (!field || !localFieldId) {
         return <LoadingSpinner />;
     }
 

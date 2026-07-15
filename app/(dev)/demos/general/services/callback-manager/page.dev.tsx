@@ -13,20 +13,21 @@ import { Check, AlertCircle, PlayCircle, XCircle } from 'lucide-react';
 // Import the callback manager we created
 const { callbackManager } = (() => {
   // Embedding the CallbackManager code here for demo purposes
-  type CallbackContext = Record<string, any>;
-
   interface ProgressInfo {
     progress?: number;
     status?: 'pending' | 'running' | 'completed' | 'error';
     error?: Error;
   }
 
-  type Callback<T = any, C extends CallbackContext = CallbackContext> = 
-    (data: T, context?: C) => void;
+  interface CallbackContext extends Record<string, unknown> {
+    progress?: ProgressInfo;
+  }
 
-  interface CallbackEntry<T = any, C extends CallbackContext = CallbackContext> {
-    callback: Callback<T, C>;
-    context?: C;
+  type Callback = (data: unknown, context?: CallbackContext) => void;
+
+  interface CallbackEntry {
+    callback: Callback;
+    context?: CallbackContext;
     groupId?: string;
   }
 
@@ -39,16 +40,16 @@ const { callbackManager } = (() => {
       this.groups = new Map();
     }
 
-    register<T>(callback: Callback<T>): string {
+    register(callback: Callback): string {
       const callbackId = crypto.randomUUID();
       this.callbacks.set(callbackId, { callback });
       return callbackId;
     }
 
-    registerWithContext<T, C extends CallbackContext = CallbackContext>(
-      callback: Callback<T, C>,
+    registerWithContext(
+      callback: Callback,
       options?: {
-        context?: C;
+        context?: CallbackContext;
         groupId?: string;
       }
     ): string {
@@ -66,7 +67,7 @@ const { callbackManager } = (() => {
       return callbackId;
     }
 
-    trigger<T>(callbackId: string, data: T): void {
+    trigger(callbackId: string, data: unknown): void {
       const entry = this.callbacks.get(callbackId);
       if (entry) {
         entry.callback(data);
@@ -75,11 +76,11 @@ const { callbackManager } = (() => {
       }
     }
 
-    triggerWithContext<T, C extends CallbackContext = CallbackContext>(
+    triggerWithContext(
       callbackId: string,
-      data: T,
+      data: unknown,
       options?: {
-        context?: C;
+        context?: CallbackContext;
         progress?: ProgressInfo;
         removeAfterTrigger?: boolean;
       }
@@ -90,7 +91,7 @@ const { callbackManager } = (() => {
           ...entry.context,
           ...options?.context,
           ...(options?.progress && { progress: options.progress })
-        } as C;
+        };
 
         entry.callback(data, mergedContext);
 
@@ -101,11 +102,11 @@ const { callbackManager } = (() => {
       }
     }
 
-    triggerGroup<T, C extends CallbackContext = CallbackContext>(
+    triggerGroup(
       groupId: string,
-      data: T,
+      data: unknown,
       options?: {
-        context?: C;
+        context?: CallbackContext;
         progress?: ProgressInfo;
         removeAfterTrigger?: boolean;
       }
@@ -253,8 +254,17 @@ const LongRunningExample = () => {
     
     const id = callbackManager.registerWithContext((data, context) => {
       if (context?.progress) {
-        setProgress(context.progress.progress || 0);
-        setStatus(context.progress.status as any || 'running');
+        if (context.progress.progress !== undefined) {
+          setProgress(context.progress.progress);
+        }
+        const nextStatus = context.progress.status;
+        if (
+          nextStatus === 'running' ||
+          nextStatus === 'completed' ||
+          nextStatus === 'error'
+        ) {
+          setStatus(nextStatus);
+        }
       }
       if (data) {
         addLog(`Task completed with result: ${JSON.stringify(data)}`);

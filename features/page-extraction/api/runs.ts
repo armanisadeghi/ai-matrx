@@ -129,6 +129,30 @@ export async function listResultsForFile(
   return (data ?? []) as PageExtractionResult[];
 }
 
+/**
+ * Page-scoped extraction references for citation/result surfaces. Unlike the
+ * full Extractions workspace, this never pulls every row for a large document:
+ * Postgres filters by the durable `source_pages[]` provenance anchor first.
+ */
+export async function listResultsForFilePage(
+  fileId: string,
+  pageNumber: number,
+  limit = 50,
+): Promise<{ results: PageExtractionResult[]; total: number }> {
+  const { data, error, count } = await docproc
+    .from("page_extraction_results")
+    .select("*", { count: "exact" })
+    .eq("file_id", fileId)
+    .contains("source_pages", [pageNumber])
+    .order("created_at", { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return {
+    results: (data ?? []) as PageExtractionResult[],
+    total: count ?? data?.length ?? 0,
+  };
+}
+
 export async function getLatestRunId(jobId: string): Promise<string | null> {
   const { data: jobRow, error: jobErr } = await docproc
     .from("page_extraction_jobs")

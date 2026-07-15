@@ -10,12 +10,10 @@ import {
   selectAppRuntimeMainAppIcon,
   selectAppRuntimePrimaryColor,
   selectAppRuntimeAppletList,
-  selectAppRuntimeLayoutType,
   selectAppRuntimeAccentColor,
 } from "@/lib/redux/app-runner/slices/customAppRuntimeSlice";
 import { getAppIcon } from "@/features/applet/styles/StyledComponents";
 import { CustomAppHeaderProps } from "../CustomAppHeader";
-import { selectAppletRuntimeActiveApplet } from "@/lib/redux/app-runner/slices/customAppletRuntimeSlice";
 import {
   CustomActionButton,
   AppletListItemConfig,
@@ -64,14 +62,8 @@ export const HeaderLogic: React.FC<HeaderLogicProps> = ({
   const primaryColor = useAppSelector(selectAppRuntimePrimaryColor);
   const accentColor = useAppSelector(selectAppRuntimeAccentColor);
   const appletList = useAppSelector(selectAppRuntimeAppletList) || [];
-  const layoutType = useAppSelector(
-    selectAppRuntimeLayoutType,
-  ) as AppLayoutOptions;
-  const activeApplet =
-    useAppSelector((state) => selectAppletRuntimeActiveApplet(state)) || null;
-
   // Get active applet slug from the route instead of the selector
-  const activeAppletSlug = React.useMemo(() => {
+  const activeAppletSlug = (() => {
     if (!pathname || !config?.slug) return "";
 
     // Assuming route format: /apps/custom/{configSlug}/{appletSlug}
@@ -79,11 +71,11 @@ export const HeaderLogic: React.FC<HeaderLogicProps> = ({
     const configSlugIndex = pathParts.findIndex((part) => part === config.slug);
 
     if (configSlugIndex !== -1 && pathParts.length > configSlugIndex + 1) {
-      return pathParts[configSlugIndex + 1];
+      return pathParts[configSlugIndex + 1] ?? "";
     }
 
     return "";
-  }, [pathname, config?.slug]);
+  })();
 
   const user = useAppSelector(selectUser);
   const displayName =
@@ -94,13 +86,11 @@ export const HeaderLogic: React.FC<HeaderLogicProps> = ({
   const profilePhoto = user.userMetadata.picture || null;
 
   // Generate the app icon using the existing function
-  const activeAppIcon = React.useMemo(() => {
-    return getAppIcon({
-      color: accentColor,
-      icon: iconName,
-      size: isPreview ? 18 : 24,
-    });
-  }, [primaryColor, iconName, isPreview]);
+  const activeAppIcon = getAppIcon({
+    color: accentColor,
+    icon: iconName,
+    size: isPreview ? 18 : 24,
+  });
 
   // Setup tab navigation function that uses routing instead of state
   const handleAppletChange = (appletSlug: string) => {
@@ -111,6 +101,10 @@ export const HeaderLogic: React.FC<HeaderLogicProps> = ({
       router.push(`/apps/custom/${config.slug}/${appletSlug}`);
     }
   };
+
+  if (!config || typeof primaryColor !== "string") {
+    return null;
+  }
 
   return children({
     activeAppIcon,

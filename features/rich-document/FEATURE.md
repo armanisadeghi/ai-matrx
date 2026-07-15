@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-20`
+**Last updated:** `2026-07-14`
 
 > **Skill**: [`.claude/skills/rich-document-actions/SKILL.md`](../../.claude/skills/rich-document-actions/SKILL.md) — the how-to for using RichDocument on a page, adding an action, adding a content source, and wiring a remote surface. Read the skill for tasks; read this FEATURE.md for deep reference.
 
@@ -66,15 +66,15 @@ This feature owns no database tables. It composes content originating elsewhere 
 
 **Exit condition** — handler completes, overlay closes, toast fires.
 
-### 2. Remote action surface — Notes detail header
+### 2. Remote action surface — headless working-document header
 
-**Trigger** — `app/(authenticated)/notes/[id]/page.tsx` renders a header containing `<RichDocumentActionSurface surfaceId="notes-detail-toolbar" variant="bar"/>` and a body containing `<RichDocument source={{type:"note", noteId}} actionsVariant="remote" actionsSurfaceId="notes-detail-toolbar"/>`.
+**Trigger** — `WorkingDocumentPanel.tsx` mounts a headless `<RichDocumentActionProvider surfaceId={wdSurfaceId}/>` next to the custom editor body and renders `<RichDocumentActionSurface surfaceId={wdSurfaceId} variant="bar"/>` in its header. The live `/notes` route deliberately uses inline variants because its page header does not mount a remote consumer.
 
 **Path**
-1. The body's `RichDocument` mounts. Generates a per-instance `providerId` via `useId()`. Effect dispatches `registerProvider(surfaceId, registration)` — push onto the stack.
+1. The headless provider mounts. It generates a per-instance `providerId` via `useId()`. Its shared registration hook dispatches `registerProvider(surfaceId, registration)` — push onto the stack.
 2. The header's `RichDocumentActionSurface` selects `selectTopProvider("notes-detail-toolbar")` → reads `computedActionSpecs`.
 3. The surface renders the spec-list using the same variant renderer the inline `"bar"` variant would use. Click handlers look up the handler by id from the module-scope registry, then build a live context via the body's still-mounted refs (Phase 2 wires this).
-4. Navigation from note A to note B: new RichDocument mounts FIRST → push(B), stack = `[A, B]`, top = B (correct render). Old RichDocument unmounts SECOND → splice(A), stack = `[B]`, top still = B. No empty state, no stale binding.
+4. If providers overlap during a surface transition, the new provider mounts FIRST → push(B), stack = `[A, B]`, top = B. The old provider unmounts SECOND → splice(A), stack = `[B]`, so the surface never rebinds to stale content.
 
 **State changes / side effects** — only the slice's `bySurfaceId[surfaceId]` map. Handlers themselves are the same as inline; the surface is purely a render target.
 
@@ -151,7 +151,7 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 | 2 | Build inline variants (`ActionBar`, `MiniActionBar`, `OverflowMenu`, `HoverMenu`) + module-scope provider bridge so `RichDocumentActionSurface` can invoke handlers without functions in Redux. | ✅ Done |
 | 3 | Wrapping-parity gate on PromptToast — vanilla content, no interactive blocks, isolates wrapper from registry. Exercises the remote-surface pattern end-to-end. | ✅ Done |
 | 4 | Chat parity migration — replace `AssistantActionBar` | ⏸ Deferred — chat already has the action toolkit via `AssistantActionBar`; migration is consolidation only. Specced in detail in the master plan; revisit when consolidation is the priority. |
-| 5 | Notes uplift — preview surfaces (desktop NoteEditor preview, NoteEditorCore preview, MobileNoteEditor preview). | ✅ Done (preview only; MatrxSplit-side + detail-header remote surface deferred — both require changes to the shared MatrxSplit primitive / Notes page chrome). |
+| 5 | Notes uplift — preview surfaces (desktop NoteEditor preview, NoteEditorCore preview, MobileNoteEditor preview). | ✅ Done. The live Notes route uses inline variants in preview and MatrxSplit; its decluttered page header intentionally does not host a remote action surface. |
 | 6 | Tier-2 surfaces — PromptInlineOverlay, PromptExecutionTestModal (3 result panes), WebResearchOverlay (2 panes). | ✅ Done |
 | 7 | Long tail — scoped down: block-level renderers (ArtifactBlock, MarkdownPreviewBlock, StructuredPlanViewer) intentionally stay on `BasicMarkdownContent` (they live INSIDE the engine; wrapping with RichDocument would recurse). Socket admin tabs deliberately keep `BasicMarkdownContent` because they're A/B-comparison renderer tools — adding the wrapper defeats the comparison. Flashcards / AI modals use `MarkdownRenderer` (a separate, lightweight primitive — not the heavy engine), out of scope. | ✅ Done (scope-clarified) |
 | 8 | Cleanup — delete `messageActionRegistry.ts` shim, delete `AssistantActionBar.tsx`, audit remaining `BasicMarkdownContent` imports | ⏸ Blocked on Phase 4 |
@@ -162,6 +162,7 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 Newest first.
 
+- `2026-07-14` — codex: **Removed the orphaned `/notes` remote publisher (D47).** The Notes page had intentionally removed its header `RichDocumentActionSurface` but still passed `note-detail-*` into `NoteContentEditor`, forcing preview/split actions into `remote` mode with no consumer. `NotesView` now omits the remote ID, restoring the canonical inline `bar` in preview and `icon-only` menu in MatrxSplit. Remote-surface documentation now uses the live headless working-document integration and explicitly requires a mounted matching consumer.
 - `2026-07-08` — claude: **HTML-preview save-back works on every editable source (D33).** The `html-preview` action (`actions/handlers/export.ts`) now registers a `createFullScreenEditorCallbackGroup` whose `onSave` routes through `ctx.sourceAdapter.edit` and passes only the `callbackGroupId` string through Redux — the `htmlPreview` overlay is callback-aware (see `features/overlays/FEATURE.md`). Saving from an HTML preview opened on a note (or any source whose adapter implements `edit`) persists; chat keeps its `editMessage` self-handle when no group is passed; read-only sources get no Save button; failures toast + console.error, never silent. The generic `ContentActionBar` html-preview item honors its `onSave` prop the same way.
 - `2026-06-23` — claude: **Working document gets the full toolkit.** New `working-document` `ContentSource` (`{ conversationId, kind, documentId? }`) + adapter (`actions/sources/working-document.ts`, edits via `persistWorkingDocumentContentThunk`) + `save-to-task` entity link (`cx_working_document` → `cx_conversation` parent). Extracted `RichDocument`'s provider/bridge registration into `runtime/useActionSurfaceProvider.ts`; added headless `RichDocumentActionProvider` (renders the toolkit with no engine). `NoteEditorCore` gained `actionsSource` (override the derived source) + `previewActionsVariant` (suppress the in-body bar when the host carries its own). The working-document panel/window/Smart-Input-tab now expose copy / read-aloud / save-to-notes-or-task / HTML page / email / print / edit — parity with an assistant response and a note — in every editor mode, plus the right-click menu.
 - `2026-06-16` — claude: "Add to docs" stub is now the real **Save to Document** action (`actions/handlers/save.ts`, source-agnostic). It lazy-imports `pushMarkdownToDocument` (`features/data-tables/export-targets`) to convert the content to a Univer document and toasts an "Open" link. The same change landed on the chat menu (`messageActionRegistry.ts` `add-docs`). Markdown → `IDocumentData` conversion lives in `features/data-tables/markdown-to-univer-doc.ts`.

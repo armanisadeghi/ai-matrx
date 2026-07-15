@@ -30,8 +30,25 @@ interface BrokerValue {
   name?: string;
 }
 
+function isNeededBroker(value: unknown): value is NeededBroker {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "required" in value &&
+    typeof value.required === "boolean" &&
+    "dataType" in value &&
+    typeof value.dataType === "string" &&
+    "defaultValue" in value &&
+    typeof value.defaultValue === "string"
+  );
+}
+
 interface UseAppletRecipeProps {
-  appletId: string;
+  appletId: string | null;
   /**
    * When false, all execution side effects are short-circuited (no task is
    * created/submitted over the socket transport). Used while applet execution
@@ -57,7 +74,7 @@ export function useAppletRecipe({
   enabled = true,
 }: UseAppletRecipeProps) {
   const sourceConfig = useAppSelector((state) =>
-    selectAppletRuntimeDataSourceConfig(state, appletId),
+    appletId ? selectAppletRuntimeDataSourceConfig(state, appletId) : undefined,
   );
   const [taskId] = useState<string | null>(null);
   const [neededBrokerIds] = useState<string[]>([]);
@@ -78,12 +95,19 @@ export function useAppletRecipe({
     return acc;
   }, {});
 
+  const sourceNeededBrokers =
+    sourceConfig?.config &&
+    "neededBrokers" in sourceConfig.config &&
+    Array.isArray(sourceConfig.config.neededBrokers)
+      ? sourceConfig.config.neededBrokers.filter(isNeededBroker)
+      : [];
+
   const structuredBrokerValues = Object.entries(rawBrokerValues || {}).map(
     ([id, value]) => ({
       id,
       value: value ?? "",
       ready: true,
-      name: sourceConfig?.config?.neededBrokers.find(
+      name: sourceNeededBrokers.find(
         (broker) => broker.id === id,
       )?.name,
     }),
@@ -92,9 +116,7 @@ export function useAppletRecipe({
   const isTaskValid = taskValidationState.isValid;
   const validationErrors = taskValidationState.validationErrors;
 
-  const notReadyBrokers = (taskData?.broker_values || []).filter(
-    (broker: BrokerValue) => !broker.ready,
-  );
+  const notReadyBrokers: BrokerValue[] = [];
 
   const submitRecipe = useCallback(() => {
     if (!enabled) return;

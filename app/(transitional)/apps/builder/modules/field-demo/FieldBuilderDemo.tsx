@@ -25,6 +25,10 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { duplicateFieldComponent } from "@/lib/redux/app-builder/service/fieldComponentService";
 import { useToast } from "@/components/ui/use-toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback;
 
 export default function FieldBuilderDemo() {
   const dispatch = useAppDispatch();
@@ -38,27 +42,41 @@ export default function FieldBuilderDemo() {
 
   // Local state for UI (use Redux state now)
   const [isCreatingNew, setIsCreatingNew] = React.useState(false);
+  const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = React.useState(false);
 
   // Determine active tab based on Redux state
   const activeTab = activeFieldId ? "editor" : "list";
-
-  // Load all components on initial render
-  useEffect(() => {
-    loadComponents();
-  }, []);
 
   // Load components from Redux (unchanged)
   const loadComponents = async () => {
     try {
       await dispatch(fetchFieldsThunk()).unwrap();
-    } catch (err) {
+    } catch (err: unknown) {
       toast({
         title: "Error",
-        description: err.message || "Failed to load components",
+        description: errorMessage(err, "Failed to load components"),
         variant: "destructive",
       });
     }
   };
+
+  // Load all components on initial render
+  useEffect(() => {
+    const loadInitialComponents = async () => {
+      try {
+        await dispatch(fetchFieldsThunk()).unwrap();
+      } catch (err: unknown) {
+        toast({
+          title: "Error",
+          description: errorMessage(err, "Failed to load components"),
+          variant: "destructive",
+        });
+      }
+    };
+
+    void loadInitialComponents();
+  }, [dispatch, toast]);
 
   // Create a new component (unchanged)
   const handleCreateNew = () => {
@@ -68,15 +86,15 @@ export default function FieldBuilderDemo() {
   };
 
   // Edit an existing component (unchanged)
-  const handleEdit = async (id) => {
+  const handleEdit = async (id: string) => {
     try {
       await dispatch(fetchFieldByIdThunk(id)).unwrap();
       dispatch(setActiveField(id));
       setIsCreatingNew(false);
-    } catch (err) {
+    } catch (err: unknown) {
       toast({
         title: "Error",
-        description: err.message || "Failed to load component",
+        description: errorMessage(err, "Failed to load component"),
         variant: "destructive",
       });
     }
@@ -93,19 +111,16 @@ export default function FieldBuilderDemo() {
   };
 
   // Handle save success (unchanged)
-  const handleSaveSuccess = (savedFieldId) => {
+  const handleSaveSuccess = (_savedFieldId: string) => {
     setIsCreatingNew(false);
     dispatch(setActiveField(null));
 
     // Refresh the components list
-    loadComponents();
+    void loadComponents();
   };
 
   // Delete a component (unchanged)
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this field component?"))
-      return;
-
+  const handleDelete = async (id: string) => {
     try {
       await dispatch(deleteFieldThunk(id)).unwrap();
 
@@ -117,19 +132,20 @@ export default function FieldBuilderDemo() {
         title: "Success",
         description: "Field component deleted successfully",
       });
-    } catch (err) {
+      setDeleteTargetId(null);
+    } catch (err: unknown) {
       toast({
         title: "Error",
-        description: err.message || "Failed to delete component",
+        description: errorMessage(err, "Failed to delete component"),
         variant: "destructive",
       });
     }
   };
 
   // Duplicate a component (unchanged)
-  const handleDuplicate = async (id) => {
+  const handleDuplicate = async (id: string) => {
     try {
-      const newComponent = await duplicateFieldComponent(id);
+      await duplicateFieldComponent(id);
       // Refresh the components to include the new duplicated component
       await loadComponents();
 
@@ -137,23 +153,23 @@ export default function FieldBuilderDemo() {
         title: "Success",
         description: "Field component duplicated successfully",
       });
-    } catch (err) {
+    } catch (err: unknown) {
       toast({
         title: "Error",
-        description: err.message || "Failed to duplicate component",
+        description: errorMessage(err, "Failed to duplicate component"),
         variant: "destructive",
       });
     }
   };
 
   // Handle field selection (simplified)
-  const handleFieldSelected = (id) => {
+  const handleFieldSelected = (id: string) => {
     dispatch(setActiveField(id));
     setIsCreatingNew(false);
   };
 
   // Handle tab change
-  const handleTabChange = (value) => {
+  const handleTabChange = (value: string) => {
     if (value === "list") {
       dispatch(setActiveField(null));
     }
@@ -199,7 +215,7 @@ export default function FieldBuilderDemo() {
               onFieldSelected={handleFieldSelected}
               onCreateNew={handleCreateNew}
               onEditField={handleEdit}
-              onDeleteField={handleDelete}
+              onDeleteField={setDeleteTargetId}
               onDuplicateField={handleDuplicate}
               isLoading={isLoading}
             />
@@ -217,6 +233,26 @@ export default function FieldBuilderDemo() {
           )}
         </TabsContent>
       </Tabs>
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteBusy) setDeleteTargetId(null);
+        }}
+        title="Delete field component"
+        description="Permanently delete this field component. This cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        busy={deleteBusy}
+        onConfirm={async () => {
+          if (!deleteTargetId) return;
+          setDeleteBusy(true);
+          try {
+            await handleDelete(deleteTargetId);
+          } finally {
+            setDeleteBusy(false);
+          }
+        }}
+      />
     </div>
   );
 }

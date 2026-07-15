@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents", {
   titlePrefix: "Battle",
   title: "Agents",
   description: "Compare and battle-test agent configurations side by side.",
-  letter: "G",
+  letter: "AG",
 });
 
 export default function AgentBattleLayout({

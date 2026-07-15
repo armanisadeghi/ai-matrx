@@ -2,18 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
 import { Button } from "@/components/ui/button";
+import { brokerSelectors } from "@/lib/redux/brokerSlice";
 
 /**
  * A utility component to debug broker map entries and values
  * Only use during development, remove in production
  */
-const BrokerDebugger: React.FC<{ fieldId?: string; fieldObject?: any }> = ({
+const BrokerDebugger: React.FC<{ fieldId?: string; fieldObject?: unknown }> = ({
   fieldId,
   fieldObject,
 }) => {
-  const brokerState = useAppSelector((state: RootState) => state.broker);
+  const brokerMap = useAppSelector(brokerSelectors.selectMap);
+  const brokerValues = useAppSelector(brokerSelectors.selectAllValues);
   // For toggle visibility
   const [isVisible, setIsVisible] = useState(false);
   // For tracking changes
@@ -30,19 +31,18 @@ const BrokerDebugger: React.FC<{ fieldId?: string; fieldObject?: any }> = ({
 
   // Get the specific entry for this field if a fieldId is provided
   const mapKey = fieldId ? `applet:${fieldId}` : "";
-  const fieldEntry = fieldId ? brokerState.brokerMap[mapKey] : null;
+  const fieldEntry = fieldId ? brokerMap[mapKey] : null;
   const fieldValue = fieldEntry
-    ? brokerState.brokers[fieldEntry.brokerId]
+    ? brokerValues[fieldEntry.brokerId]
     : undefined;
 
   // Get all entries related to applet preview
-  const previewEntries = Object.entries(brokerState.brokerMap)
+  const previewEntries = Object.entries(brokerMap)
     .filter(([key]) => key.startsWith("applet:"))
     .map(([key, entry]) => ({
       key,
       entry,
-      // @ts-ignore - brokerId exists on BrokerMapEntry but type system doesn't recognize it
-      value: brokerState.brokers[entry.brokerId],
+      value: brokerValues[entry.brokerId],
     }));
 
   if (!isVisible) {
@@ -77,7 +77,7 @@ const BrokerDebugger: React.FC<{ fieldId?: string; fieldObject?: any }> = ({
       </div>
 
       {/* Display full field object */}
-      {fieldObject && (
+      {fieldObject !== undefined && fieldObject !== null && (
         <div className="mb-4">
           <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
             Field Object

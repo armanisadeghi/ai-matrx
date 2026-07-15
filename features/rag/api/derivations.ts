@@ -208,11 +208,19 @@ export interface DerivativeChunksResponse {
 
 export async function fetchDerivativeChunks(
   derivativeId: string,
-  opts: { limit?: number; offset?: number; signal?: AbortSignal } = {},
+  opts: {
+    limit?: number;
+    offset?: number;
+    pageNumber?: number;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<DerivativeChunksResponse> {
   const params = new URLSearchParams();
   params.set("limit", String(opts.limit ?? 50));
   if (opts.offset) params.set("offset", String(opts.offset));
+  if (opts.pageNumber != null) {
+    params.set("page_number", String(opts.pageNumber));
+  }
   const { data } = await getJson<DerivativeChunksResponse>(
     `/rag/library/${encodeURIComponent(derivativeId)}/chunks?${params.toString()}`,
     { signal: opts.signal },

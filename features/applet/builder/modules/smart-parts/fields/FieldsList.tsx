@@ -93,7 +93,6 @@ const FieldsList: React.FC<FieldsListProps> = ({
             icon={ListX}
             title="No Fields Yet"
             description="Fields you add to this container will appear here"
-            buttonText={null}
           />
         ) : (
           <div className="space-y-2">
@@ -142,4 +141,4 @@ const FieldsList: React.FC<FieldsListProps> = ({
   );
 };
 
-export default FieldsList; 
+export default FieldsList;

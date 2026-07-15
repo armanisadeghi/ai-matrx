@@ -39,6 +39,8 @@ Run an AI integration page-by-page (or in small chunks) across a document and pe
 - `POST /page-extraction/runs/{id}/cancel` — cancel an in-flight run
 - `POST /page-extraction/runs/{id}/index` — RAG-index a completed run's results. **STREAMS NDJSON** (2026-07-06; the old blocking JSON body is gone): `extraction_index_progress` (stages `loaded`→`chunked`→`embedding`→`writing`) → terminal `extraction_index_complete`. No FE caller yet — when one is added, consume via `postNdjson` (`lib/python-client.ts`) + the generated `stream-events.ts` types, never a blocking `postJson` wrapper.
 
+**Page-scoped read:** `listResultsForFilePage(fileId, pageNumber)` in `api/runs.ts` filters on `source_pages[]` in Postgres and is used by citation/search surfaces that need references for one page without loading a document's full extraction dataset.
+
 **Redux slice**
 - `features/page-extraction/redux/pageExtractionSlice.ts` — jobs cache, active run + page-run statuses, live results buffer
 
@@ -116,6 +118,8 @@ Realtime publication enabled on `page_extraction_jobs`, `page_extraction_runs`, 
 ---
 
 ## Current work / migration state
+
+- **2026-07-14** — Added the page-scoped `listResultsForFilePage` read for RAG search result references. It filters by the durable `file_id + source_pages[]` provenance pair and returns an exact count with a bounded row preview, so a hit on a large document never downloads every custom extraction row.
 
 **Phase 1 (this scaffold):**
 - ✅ Storage tables + RLS + Realtime publication

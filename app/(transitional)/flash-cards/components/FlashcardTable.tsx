@@ -3,7 +3,6 @@
 "use client";
 
 import React from "react";
-import { useSelector, useDispatch } from "react-redux";
 import {
   Table,
   TableBody,
@@ -22,15 +21,15 @@ import {
   addFlashcard,
   updateFlashcard,
 } from "@/lib/redux/slices/flashcardChatSlice";
-import type { AppDispatch } from "@/lib/redux/store";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 
 interface FlashcardTableProps {
   onEditCard: (card: Flashcard) => void;
 }
 
 const FlashcardTable: React.FC<FlashcardTableProps> = ({ onEditCard }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const cards = useSelector(selectAllFlashcards);
+  const dispatch = useAppDispatch();
+  const cards = useAppSelector(selectAllFlashcards);
 
   const getPerformanceColor = (percentage: number, reviewCount: number) => {
     if (reviewCount === 0) return "text-gray-500";
@@ -116,6 +115,10 @@ const FlashcardTable: React.FC<FlashcardTableProps> = ({ onEditCard }) => {
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (!card.id) {
+                        console.error("Cannot delete a flashcard without an ID");
+                        return;
+                      }
                       handleDeleteCard(card.id);
                     }}
                     variant="destructive"

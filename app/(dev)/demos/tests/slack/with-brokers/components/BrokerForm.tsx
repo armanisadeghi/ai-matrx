@@ -13,7 +13,7 @@ interface BrokerFormConfig {
         type: "text" | "password" | "textarea" | "number";
         required?: boolean;
     }[];
-    onSubmit: (values: Record<string, any>) => Promise<void>;
+    onSubmit: (values: Record<string, unknown>) => Promise<void>;
     brokerSync?: boolean;
 }
 
@@ -22,10 +22,10 @@ export function BrokerForm({ fields, onSubmit, brokerSync = true }: BrokerFormCo
 
     // Get all field values
     const values = useAppSelector((state) => {
-        const fieldValues: Record<string, any> = {};
+        const fieldValues: Record<string, unknown> = {};
         fields.forEach((field) => {
             const key = JSON.stringify(field.broker);
-            fieldValues[key] = brokerSelectors.selectValue(state, field.broker as any);
+            fieldValues[key] = brokerSelectors.selectValue(state, field.broker);
         });
         return fieldValues;
     });
@@ -41,7 +41,7 @@ export function BrokerForm({ fields, onSubmit, brokerSync = true }: BrokerFormCo
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const submitValues: Record<string, any> = {};
+        const submitValues: Record<string, unknown> = {};
         fields.forEach((field) => {
             const key = JSON.stringify(field.broker);
             submitValues[field.label] = values[key];
@@ -54,19 +54,23 @@ export function BrokerForm({ fields, onSubmit, brokerSync = true }: BrokerFormCo
         <form onSubmit={handleSubmit} className="space-y-4">
             {fields.map((field, index) => {
                 const key = JSON.stringify(field.broker);
-                const value = values[key] || "";
+                const rawValue = values[key];
+                const value =
+                    typeof rawValue === "string" || typeof rawValue === "number"
+                        ? rawValue
+                        : "";
 
                 return (
                     <div key={index} className="space-y-1">
                         <label className="text-slate-800 dark:text-slate-200">{field.label}:</label>
                         {field.type === "textarea" ? (
                             <textarea
-                                value={value as string}
+                                value={typeof value === "string" ? value : String(value)}
                                 onChange={(e) =>
                                     dispatch(
                                         brokerActions.setText({
-                                            idArgs: field.broker,
-                                            text: e.target.value,
+                                            brokerId: field.broker.mappedItemId,
+                                            value: e.target.value,
                                         })
                                     )
                                 }
@@ -76,21 +80,21 @@ export function BrokerForm({ fields, onSubmit, brokerSync = true }: BrokerFormCo
                         ) : (
                             <input
                                 type={field.type}
-                                value={field.type === "number" ? (value as number) : (value as string)}
+                                value={value}
                                 onChange={(e) => {
                                     if (field.type === "number") {
                                         const numValue = Number(e.target.value);
                                         dispatch(
                                             brokerActions.setNumber({
-                                                idArgs: field.broker,
+                                                brokerId: field.broker.mappedItemId,
                                                 value: numValue,
                                             })
                                         );
                                     } else {
                                         dispatch(
                                             brokerActions.setText({
-                                                idArgs: field.broker,
-                                                text: e.target.value,
+                                                brokerId: field.broker.mappedItemId,
+                                                value: e.target.value,
                                             })
                                         );
                                     }

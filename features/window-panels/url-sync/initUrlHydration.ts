@@ -181,12 +181,23 @@ export function initUrlHydration() {
     );
   });
 
-  // File Preview Window — `?panels=file_preview:<fileId>` deep-links to a file.
-  registerPanelHydrator("file_preview", (dispatch, id) => {
+  // File Preview Window — `?panels=file_preview:<fileId>:p-<page>` deep-links
+  // to a file and, for PDFs, an optional 1-based page.
+  registerPanelHydrator("file_preview", (dispatch, id, args) => {
+    const parsedPage = Number.parseInt(args.p ?? "", 10);
+    const pageNumber = Number.isFinite(parsedPage)
+      ? Math.max(1, parsedPage)
+      : null;
     dispatch(
       openOverlay({
         overlayId: "filePreviewWindow",
-        data: id ? { fileId: id } : null,
+        data: id
+          ? {
+              fileId: id,
+              pageNumber,
+              navigationRequestId: Date.now(),
+            }
+          : null,
       }),
     );
   });
@@ -229,7 +240,6 @@ export function initUrlHydration() {
       }
     }
     if (missing.length > 0) {
-      // eslint-disable-next-line no-console
       console.error(
         `[initUrlHydration] ${missing.length} registry urlSync key(s) have no hydrator:\n` +
           missing.map((m) => `  - ${m.overlayId} → "${m.key}"`).join("\n") +

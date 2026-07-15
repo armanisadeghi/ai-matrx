@@ -34,6 +34,8 @@ import DragTableRowAndColumnField from "../concepts/DragTableRowAndColumnField";
 
 import ConceptBrokerOptionsField from "../concept-broker-options/SearchableSelectField";
 
+import type { CommonFieldProps } from "./types";
+
 export type { CommonFieldProps } from "./types";
 
 export const AppletFieldController = ({
@@ -186,6 +188,16 @@ export const AppletFieldController = ({
     case "button":
       console.log(
         "========== button. not buttonSelection using ButtonSelectionField ==========",
+      );
+      return (
+        <ButtonSelectionField
+          field={field}
+          sourceId={sourceId}
+          isMobile={isMobile}
+          source={source}
+          disabled={disabled}
+          className={className}
+        />
       );
 
     case "buttonSelection": {

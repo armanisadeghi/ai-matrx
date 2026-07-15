@@ -10,7 +10,7 @@ import {
 import { deleteAppThunk } from "@/lib/redux/app-builder/thunks/appBuilderThunks";
 import { Eye, Pencil, AppWindow, Trash2, Check } from "lucide-react";
 import { AppBuilder } from "@/lib/redux/app-builder/types";
-import { ICON_OPTIONS } from "@/features/applet/styles/StyledComponents";
+import { getIconComponent } from "@/components/official/icons/IconResolver";
 import GenericDataTable, {
   type ColumnConfig,
   type ActionConfig,
@@ -196,6 +196,10 @@ export default function AppListTable({
 
   // Handle delete app
   const handleDeleteApp = async (app: AppBuilder) => {
+    if (!app.id) {
+      console.error("Cannot delete an app without an id");
+      return;
+    }
     try {
       if (onAppDelete) {
         onAppDelete(app.id);
@@ -212,9 +216,7 @@ export default function AppListTable({
     if (!app.mainAppIcon)
       return <AppWindow className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
 
-    const IconComponent = ICON_OPTIONS[app.mainAppIcon];
-    if (!IconComponent)
-      return <AppWindow className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
+    const IconComponent = getIconComponent(app.mainAppIcon, "AppWindow");
 
     return (
       <IconComponent className="h-5 w-5 text-gray-700 dark:text-gray-300" />
@@ -287,7 +289,7 @@ export default function AppListTable({
   const selectAction: ActionConfig<AppBuilder> = {
     icon: <Eye className="h-4 w-4" />,
     onClick: (app) => {
-      handleViewApp(app.id);
+      if (app.id) handleViewApp(app.id);
     },
     badgeStyle: !!onAppSelect,
     badgeVariant: "outline",
@@ -308,8 +310,8 @@ export default function AppListTable({
       ? [
           {
             icon: <Pencil className="h-4 w-4" />,
-            onClick: (app) => {
-              handleEditApp(app.id);
+            onClick: (app: AppBuilder) => {
+              if (app.id) handleEditApp(app.id);
             },
           },
         ]
@@ -319,16 +321,16 @@ export default function AppListTable({
       ? [
           {
             icon: <Trash2 className="h-4 w-4" />,
-            onClick: (app) => {
+            onClick: (app: AppBuilder) => {
               handleDeleteApp(app);
             },
             className:
               "text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300",
             requiresConfirmation: true,
             confirmationProps: {
-              getTitle: (app) =>
+              getTitle: (app: AppBuilder) =>
                 `Delete Application: ${app.name || "Unnamed App"}`,
-              getDescription: (app) =>
+              getDescription: (app: AppBuilder) =>
                 `This action cannot be undone. This will permanently delete "${app.name || "Unnamed App"}" and all of its configuration. Any associated applets will be disconnected from this app.`,
               confirmButtonText: "Delete App",
             },
@@ -396,7 +398,9 @@ export default function AppListTable({
           />
         ),
       ]}
-      onRowClick={(app) => handleViewApp(app.id)}
+      onRowClick={(app) => {
+        if (app.id) handleViewApp(app.id);
+      }}
       sortBy={sortBy}
       sortDirection={sortDirection}
       onSortChange={handleSortClick}

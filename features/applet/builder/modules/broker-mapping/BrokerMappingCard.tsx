@@ -47,19 +47,18 @@ const BrokerMappingCard = ({
   const isLoading = useAppSelector(selectFieldLoading);
   const hasFetched = useAppSelector(selectFieldsHasFetched);
   const [mode, setMode] = useState<"create" | "edit" | "list">("list");
-  const [broker, setBroker] = useState<Broker | null>(selectedBroker);
   const isMappingComplete = useAppSelector((state) =>
-    selectIsBrokerMapped(state, appletId, selectedBroker?.id),
+    selectedBroker
+      ? selectIsBrokerMapped(state, appletId, selectedBroker.id)
+      : false,
   );
   const fieldLabel = useAppSelector((state) =>
-    selectFieldLabelByBrokerId(state, appletId, selectedBroker?.id),
+    selectedBroker
+      ? selectFieldLabelByBrokerId(state, appletId, selectedBroker.id)
+      : null,
   );
 
   const activeFieldId = useAppSelector(selectActiveFieldId);
-
-  useEffect(() => {
-    setBroker(selectedBroker);
-  }, [selectedBroker]);
 
   useEffect(() => {
     if (!hasFetched && !isLoading) {
@@ -69,6 +68,7 @@ const BrokerMappingCard = ({
 
   // Create mapping between broker and field
   const handleCreateMapping = (id: string) => {
+    if (!selectedBroker) return;
     const mapping: BrokerMapping = {
       appletId: appletId,
       fieldId: id,
@@ -169,12 +169,12 @@ const BrokerMappingCard = ({
           <div className="space-y-3">
             {(mode === "create" || mode === "edit") && (
               <FieldEditor
-                key={broker.id}
-                fieldId={activeFieldId}
+                key={selectedBroker.id}
+                fieldId={activeFieldId ?? undefined}
                 isCreatingNew={mode === "create"}
                 onSaveSuccess={handleCreateMapping}
                 onCancel={handleCancel}
-                broker={broker}
+                broker={selectedBroker}
                 showBackButton={mode === "edit"}
               />
             )}

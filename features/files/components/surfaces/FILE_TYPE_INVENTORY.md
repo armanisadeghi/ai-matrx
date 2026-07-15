@@ -137,7 +137,7 @@ When the doc and the code (`features/files/utils/file-types.ts` / `FilePreview.t
 |---|---|---|
 | 44 | 🟡 Inline file-chip | `FileResourceChip` (generic) — could be richer per kind |
 | 45 | 🔴 Drag-to-slot adapter (drop a file onto an agent / data source / context slot) | Not implemented |
-| 46 | 🟡 Citation deep-links (e.g. `?tab=document&page=N&chunk=…`) | PDF only |
+| 46 | 🟡 Citation deep-links (e.g. `?tab=document&page=N&chunk=…`; `filePreviewWindow` `{ fileId, pageNumber }`) | PDF only |
 | 47 | 🔴 Embeddability policy (CDN-friendly / signed-only / never) | Not modeled |
 | 48 | 🟡 Upload-accept rules per surface | Per-uploader, no central policy |
 | 49 | 🔴 Paste-from-clipboard support per type | Not implemented |
@@ -209,6 +209,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 **Has** ✅
 - Registry: ext `pdf`, MIME `application/pdf`, displayName, icon, color
 - PdfPreview (the best previewer in the system): zoom, fit-page, fit-width, actual-size, rotate, prev/next + counter, ResizeObserver sizing, overlay slot for annotations
+- File Preview window accepts a 1-based `pageNumber` (typed opener + `?panels=file_preview:<fileId>:p-<page>`) and remains navigable after landing
 - HTTP-range streaming via service worker — no full-file blob fetch
 - **Edit tab: 3-pane workshop** via `PdfEditTab` — `ThumbnailStrip` (left, page nav with annotation-count badges) + `AnnotatablePdfCanvas` (center, draw-to-annotate with snap-bbox + label picker, three modes: View / Select / Draw) + filtered `InspectorRail` (right, action panels only: Pages / Doc Ops / Notes / Findings / Redact / Search). Annotations persist through `useAnnotations` (shared cache with Analysis tab and the standalone Studio — same Realtime channel).
 - Action bar: Download, Copy link, **Edit** (jumps to the Edit tab), **Open in PDF Extractor** (floating window for the `processed_documents`-backed extraction pipeline), Rename, Delete. Inside the Edit tab: **Open in Studio** (`/files/f/{id}/studio` for the full unfiltered inspector).

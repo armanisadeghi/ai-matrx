@@ -25,6 +25,17 @@ interface CustomAppLayoutProps {
   children: React.ReactNode;
 }
 
+const readOptionalBoolean = (
+  value: unknown,
+  brokerName: string,
+): boolean | undefined => {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "boolean") {
+    throw new TypeError(`${brokerName} must contain a boolean value`);
+  }
+  return value;
+};
+
 // Skeleton header component that displays during loading
 const SkeletonHeader: React.FC = () => {
   return (
@@ -59,18 +70,17 @@ const SkeletonHeader: React.FC = () => {
 export default function CustomAppSlugLayoutClient({
   children,
 }: CustomAppLayoutProps) {
-  const params = useParams();
-  const slug = params.slug as string;
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug;
 
   const dispatch = useAppDispatch();
   const status = useAppSelector(selectAppRuntimeStatus);
 
   useEffect(() => {
     if (status === "uninitialized" && slug) {
-      const slugValue = Array.isArray(slug) ? slug[0] : slug;
       dispatch(
         fetchAppWithApplets({
-          idOrSlug: slugValue,
+          idOrSlug: slug,
           isSlug: true,
           validationOptions: {
             runValidations: false,
@@ -88,10 +98,16 @@ export default function CustomAppSlugLayoutClient({
   const appId = useAppSelector(selectAppRuntimeId);
   const isAppInitialized = useAppSelector(selectAppRuntimeIsInitialized);
   const userIsCreator = useAppSelector((state) =>
-    brokerSelectors.selectValue(state, "APPLET_USER_IS_ADMIN"),
+    readOptionalBoolean(
+      brokerSelectors.selectValue(state, "APPLET_USER_IS_ADMIN"),
+      "APPLET_USER_IS_ADMIN",
+    ),
   );
   const isAdmin = useAppSelector((state) =>
-    brokerSelectors.selectValue(state, "GLOBAL_USER_IS_ADMIN"),
+    readOptionalBoolean(
+      brokerSelectors.selectValue(state, "GLOBAL_USER_IS_ADMIN"),
+      "GLOBAL_USER_IS_ADMIN",
+    ),
   );
 
   if (!isAppInitialized) {

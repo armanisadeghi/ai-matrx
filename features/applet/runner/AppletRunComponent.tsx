@@ -148,7 +148,10 @@ export default function AppletRunComponent({
     [],
   );
 
-  const coordinatorId = SLUG_TO_COORDINATOR_MAP[appletSlug] || "default";
+  const coordinatorId =
+    Object.entries(SLUG_TO_COORDINATOR_MAP).find(
+      ([slug]) => slug === appletSlug,
+    )?.[1] ?? "default";
 
   useEffect(() => {
     if (taskId) {

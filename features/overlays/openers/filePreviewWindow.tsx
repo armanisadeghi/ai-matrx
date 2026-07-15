@@ -18,9 +18,12 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 const OVERLAY_ID = "filePreviewWindow" as const;
+let navigationRequestSequence = 0;
 
 export interface OpenFilePreviewWindowOptions {
   fileId?: string | null;
+  /** Optional 1-based page for PDF files. Ignored by non-PDF previewers. */
+  pageNumber?: number | null;
 }
 
 export interface FilePreviewWindowHandle {
@@ -35,7 +38,13 @@ export function useOpenFilePreviewWindow() {
         openOverlay({
           overlayId: OVERLAY_ID,
           data: {
-            fileId: opts.fileId,
+            fileId: opts.fileId ?? null,
+            pageNumber: opts.pageNumber ?? null,
+            // A caller may re-open the same file/page after navigating away
+            // inside the existing singleton window. This makes every open
+            // call an explicit navigation request, even when the public
+            // options are identical to the previous call.
+            navigationRequestId: ++navigationRequestSequence,
           },
         }),
       );
@@ -52,11 +61,13 @@ export function useOpenFilePreviewWindow() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function FilePreviewWindowController(props: OpenFilePreviewWindowOptions): null {
+export function FilePreviewWindowController(
+  props: OpenFilePreviewWindowOptions,
+): null {
   const open = useOpenFilePreviewWindow();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.fileId]);
+  }, [open, props.fileId, props.pageNumber]);
   return null;
 }

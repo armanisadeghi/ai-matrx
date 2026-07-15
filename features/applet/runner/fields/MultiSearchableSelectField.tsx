@@ -5,19 +5,15 @@ import { brokerSelectors, brokerActions } from "@/lib/redux/brokerSlice";
 import { ensureValidWidthClass } from "@/features/applet/constants/field-constants";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FieldDefinition, FieldOption } from "@/types/customAppTypes";
+import { FieldDefinition } from "@/types/customAppTypes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { CommonFieldProps } from "./core/types";
-
-// Define the type for selected option in state
-export interface SelectedOptionValue extends FieldOption {
-    selected: boolean;
-    otherText?: string;
-}
+import { SelectedOptionValue, selectedOptionValues } from "./common/types";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 
 const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({ 
     field, 
@@ -34,6 +30,8 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
     const dispatch = useAppDispatch();
     const brokerId = useAppSelector((state) => brokerSelectors.selectBrokerId(state, { source, mappedItemId: id }));
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
+    const storedOptions = selectedOptionValues(stateValue);
+    const availableOptions = processFieldOptions(options);
     
     const updateBrokerValue = useCallback(
         (updatedValue: any) => {
@@ -53,9 +51,9 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
     
     // Initialize stateValue if not set
     useEffect(() => {
-        if (!stateValue && options?.length > 0) {
+        if (!stateValue && availableOptions.length > 0) {
             // Initialize with all options having selected: false
-            const initialOptions = options.map((option) => ({
+            const initialOptions = availableOptions.map((option) => ({
                 ...option,
                 selected: false,
             }));
@@ -71,7 +69,7 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
             updateBrokerValue(initialOptions);
         } else if (stateValue) {
             // If there's an "other" option and it's selected, initialize the otherText state
-            const otherOption = Array.isArray(stateValue) ? stateValue.find((opt: SelectedOptionValue) => opt.id === "other") : null;
+            const otherOption = storedOptions.find((option) => option.id === "other");
             if (otherOption && otherOption.selected && otherOption.description) {
                 setOtherText(otherOption.description);
             }
@@ -81,7 +79,7 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
     // Handler for toggling a selection
     const toggleOption = (optionId: string) => {
         // Update the selection state for the specific option
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === optionId) {
                 return {
                     ...option,
@@ -106,12 +104,12 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
     const toggleSelectAll = () => {
         // Check how many are currently selected
         const areAllSelected = selectWithOptions.every((option) => {
-            const stateOption = stateValue?.find((o: SelectedOptionValue) => o.id === option.id);
+            const stateOption = storedOptions.find((optionValue) => optionValue.id === option.id);
             return stateOption?.selected;
         });
         
         // Toggle all options
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => ({
+        const updatedOptions = storedOptions.map((option) => ({
             ...option,
             selected: !areAllSelected,
         }));
@@ -124,7 +122,7 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
         const newOtherText = e.target.value;
         setOtherText(newOtherText);
         
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === "other") {
                 return {
                     ...option,
@@ -146,7 +144,7 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
     };
     
     // Get the currently selected options
-    const selectedOptions = Array.isArray(stateValue) ? stateValue.filter((option: SelectedOptionValue) => option.selected) : [];
+    const selectedOptions = storedOptions.filter((option) => option.selected);
     const isOtherSelected = selectedOptions.some((option) => option.id === "other");
     
     // Determine if we have any validation issues
@@ -159,7 +157,7 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
     }
     
     // Prepare options list including "Other" option if needed
-    const selectWithOptions = [...(options || [])];
+    const selectWithOptions = [...availableOptions];
     if (includeOther) {
         selectWithOptions.push({ id: "other", label: "Other" });
     }
@@ -258,7 +256,7 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
                                             className={cn(
                                                 "mr-2 h-4 w-4",
                                                 selectWithOptions.every((option) => {
-                                                    const stateOption = stateValue?.find((o: SelectedOptionValue) => o.id === option.id);
+                                                    const stateOption = storedOptions.find((optionValue) => optionValue.id === option.id);
                                                     return stateOption?.selected;
                                                 })
                                                     ? "opacity-100"

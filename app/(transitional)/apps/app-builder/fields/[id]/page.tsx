@@ -90,6 +90,19 @@ const getComponentIcon = (componentType: string, className = "h-5 w-5") => {
   return iconMap[componentType] || <TextCursorInput className={className} />;
 };
 
+const getConfiguredIcon = (iconName: string) =>
+  Object.entries(ICON_OPTIONS).find(([name]) => name === iconName)?.[1];
+
+const renderFieldIcon = (iconName: string | undefined, componentType: string) => {
+  if (iconName) {
+    const ConfiguredIcon = getConfiguredIcon(iconName);
+    if (ConfiguredIcon) {
+      return React.createElement(ConfiguredIcon, { className: "h-6 w-6" });
+    }
+  }
+  return getComponentIcon(componentType, "h-6 w-6");
+};
+
 export default function FieldDetailPage({
   params,
 }: {
@@ -142,7 +155,7 @@ export default function FieldDetailPage({
   };
 
   // Format JSON for display
-  const formatJSON = (data: any) => {
+  const formatJSON = (data: unknown) => {
     try {
       return JSON.stringify(data, null, 2);
     } catch (e) {
@@ -159,13 +172,7 @@ export default function FieldDetailPage({
   }
 
   // Get custom icon if set
-  let fieldIcon = null;
-  if (field.iconName && ICON_OPTIONS[field.iconName]) {
-    const IconComponent = ICON_OPTIONS[field.iconName];
-    fieldIcon = <IconComponent className="h-6 w-6" />;
-  } else {
-    fieldIcon = getComponentIcon(field.component, "h-6 w-6");
-  }
+  const fieldIcon = renderFieldIcon(field.iconName, field.component);
 
   return (
     <div className="space-y-6">
@@ -397,26 +404,28 @@ export default function FieldDetailPage({
                           </tr>
                         </thead>
                         <tbody className="divide-y">
-                          {field.options.map((option, index) => (
-                            <tr
-                              key={index}
-                              className={
-                                index % 2 === 1
-                                  ? "bg-gray-50 dark:bg-gray-900/10"
-                                  : ""
-                              }
-                            >
+                          {field.options.map((option, index) => {
+                            const OptionIcon = option.iconName
+                              ? getConfiguredIcon(option.iconName)
+                              : undefined;
+
+                            return (
+                              <tr
+                                key={index}
+                                className={
+                                  index % 2 === 1
+                                    ? "bg-gray-50 dark:bg-gray-900/10"
+                                    : ""
+                                }
+                              >
                               <td className="px-4 py-3 text-sm text-center">
                                 {option.iconName ? (
-                                  ICON_OPTIONS[option.iconName] ? (
+                                  OptionIcon ? (
                                     <div className="flex justify-center">
-                                      {React.createElement(
-                                        ICON_OPTIONS[option.iconName],
-                                        {
+                                      {React.createElement(OptionIcon, {
                                           className:
                                             "h-4 w-4 text-gray-600 dark:text-gray-300",
-                                        },
-                                      )}
+                                        })}
                                     </div>
                                   ) : (
                                     option.iconName
@@ -447,8 +456,9 @@ export default function FieldDetailPage({
                               <td className="px-4 py-3 text-xs font-mono text-gray-400 dark:text-gray-500 text-right truncate hidden lg:table-cell">
                                 {option.id}
                               </td>
-                            </tr>
-                          ))}
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

@@ -68,6 +68,10 @@ export const MobileAppHeader = ({
     }
   };
 
+  if (!config) {
+    return null;
+  }
+
   return (
     <div className="w-full h-full bg-textured transition-colors">
       <div

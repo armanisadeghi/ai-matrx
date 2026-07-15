@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { FormEvent } from "react";
 import HtmlDisplay from "./HtmlDisplay";
 
 export default function FetchReactPage() {
@@ -9,7 +10,7 @@ export default function FetchReactPage() {
     const [viewMode, setViewMode] = useState('rendered');
     const [htmlSource, setHtmlSource] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setCurrentId(htmlId);
         

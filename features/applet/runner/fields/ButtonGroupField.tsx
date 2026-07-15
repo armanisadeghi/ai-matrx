@@ -6,15 +6,11 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import SelectionPills from "./common/SelectionPills";
 import ValidationMessage from "./common/ValidationMessage";
-import { FieldOption } from "@/types/customAppTypes";
+import { SelectedOptionValue, selectedOptionValues } from "./common/types";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 import { CommonFieldProps } from "./core/types";
 
 // Define the type for selected option in state
-export interface SelectedOptionValue extends FieldOption {
-    selected: boolean;
-    otherText?: string;
-}
-
 const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
     const { id, label, options, componentProps, includeOther, required } = field;
 
@@ -25,6 +21,8 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
     const dispatch = useAppDispatch();
     const brokerId = useAppSelector((state) => brokerSelectors.selectBrokerId(state, { source, mappedItemId: id }));
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
+    const storedOptions = selectedOptionValues(stateValue);
+    const availableOptions = processFieldOptions(options);
 
     const updateBrokerValue = useCallback(
         (updatedOptions: SelectedOptionValue[]) => {
@@ -41,9 +39,9 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
 
     // Initialize stateValue if not set
     useEffect(() => {
-        if (!stateValue && options.length > 0) {
+        if (!stateValue && availableOptions.length > 0) {
             // Initialize with all options having selected: false
-            const initialOptions = options.map((option) => ({
+            const initialOptions = availableOptions.map((option) => ({
                 ...option,
                 selected: false,
             }));
@@ -61,7 +59,7 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
             updateBrokerValue(initialOptions);
         } else if (stateValue) {
             // If there's an "other" option and it's selected, initialize the otherText state
-            const otherOption = Array.isArray(stateValue) ? stateValue.find((opt: SelectedOptionValue) => opt.id === "other") : null;
+            const otherOption = storedOptions.find((option) => option.id === "other");
             if (otherOption && otherOption.selected && otherOption.description) {
                 setOtherText(otherOption.description);
             }
@@ -75,15 +73,15 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
         setTouched(true);
 
         // Get current selection state
-        const currentOption = Array.isArray(stateValue) ? stateValue.find((o: SelectedOptionValue) => o.id === optionId) : undefined;
+        const currentOption = storedOptions.find((option) => option.id === optionId);
         const isCurrentlySelected = currentOption?.selected || false;
 
         // Count currently selected items
-        const selectedCount = stateValue?.filter((o: SelectedOptionValue) => o.selected).length || 0;
+        const selectedCount = storedOptions.filter((option) => option.selected).length;
 
         // For single select mode (radio button behavior)
         if (!multiSelect) {
-            const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => ({
+            const updatedOptions = storedOptions.map((option) => ({
                 ...option,
                 selected: option.id === optionId,
             }));
@@ -105,7 +103,7 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
         }
 
         // Update the selection state for the specific option
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === optionId) {
                 return {
                     ...option,
@@ -123,7 +121,7 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
         const newOtherText = e.target.value;
         setOtherText(newOtherText);
 
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === "other") {
                 return {
                     ...option,
@@ -145,7 +143,7 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
     const handleClearAll = () => {
         if (disabled) return;
 
-        const clearedOptions = (stateValue || []).map((option: SelectedOptionValue) => ({
+        const clearedOptions = storedOptions.map((option) => ({
             ...option,
             selected: false,
         }));
@@ -154,7 +152,7 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
     };
 
     // Get the selected options
-    const selectedOptions = Array.isArray(stateValue) ? stateValue.filter((option: SelectedOptionValue) => option.selected) : [];
+    const selectedOptions = storedOptions.filter((option) => option.selected);
 
     const isOtherSelected = selectedOptions.some((option) => option.id === "other");
 
@@ -178,7 +176,7 @@ const ButtonColumnField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
     }
 
     // Prepare options list including "Other" option if needed
-    const selectWithOptions = [...options];
+    const selectWithOptions = [...availableOptions];
     if (includeOther) {
         selectWithOptions.push({ id: "other", label: "Other" });
     }

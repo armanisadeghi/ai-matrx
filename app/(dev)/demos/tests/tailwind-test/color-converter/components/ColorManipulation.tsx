@@ -14,6 +14,9 @@ interface ColorManipulationProps {
     onColorChange: (color: Colord) => void;
 }
 
+const MANIPULATION_TYPES = ['lighten', 'darken', 'saturate', 'desaturate', 'mix'] as const;
+type ManipulationType = (typeof MANIPULATION_TYPES)[number];
+
 export default function ColorManipulation({ color, onColorChange }: ColorManipulationProps) {
     const [percentages, setPercentages] = useState({
         lighten: 0,
@@ -23,7 +26,7 @@ export default function ColorManipulation({ color, onColorChange }: ColorManipul
         mix: 0
     });
 
-    const handleManipulation = (type: string, amount: number) => {
+    const handleManipulation = (type: ManipulationType, amount: number) => {
         let newColor: Colord;
         let newPercentage = Math.min(100, Math.max(0, percentages[type] + amount));
 
@@ -51,7 +54,7 @@ export default function ColorManipulation({ color, onColorChange }: ColorManipul
         onColorChange(newColor);
     };
 
-    const resetManipulation = (type: string) => {
+    const resetManipulation = (type: ManipulationType) => {
         setPercentages(prev => ({ ...prev, [type]: 0 }));
         onColorChange(color);
     };
@@ -62,7 +65,7 @@ export default function ColorManipulation({ color, onColorChange }: ColorManipul
                 <CardTitle>Color Manipulation</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                {['lighten', 'darken', 'saturate', 'desaturate', 'mix'].map((type) => (
+                {MANIPULATION_TYPES.map((type) => (
                     <div key={type} className="space-y-2">
                         <label className="text-sm font-medium">
                             {type.charAt(0).toUpperCase() + type.slice(1)} ({percentages[type]}%)
@@ -73,7 +76,12 @@ export default function ColorManipulation({ color, onColorChange }: ColorManipul
                                 max={100}
                                 step={1}
                                 value={[percentages[type]]}
-                                onValueChange={(value) => handleManipulation(type, value[0] - percentages[type])}
+                                onValueChange={(value) => {
+                                    const nextValue = value[0];
+                                    if (nextValue !== undefined) {
+                                        handleManipulation(type, nextValue - percentages[type]);
+                                    }
+                                }}
                             />
                             <Button onClick={() => handleManipulation(type, 10)}>+10%</Button>
                             <Button onClick={() => resetManipulation(type)}>Reset</Button>

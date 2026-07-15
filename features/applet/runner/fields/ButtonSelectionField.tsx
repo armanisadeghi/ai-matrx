@@ -5,7 +5,6 @@ import { ensureValidWidthClass } from "@/features/applet/constants/field-constan
 import { cn } from "@/lib/utils";
 import ValidationMessage from "./common/ValidationMessage";
 import { CommonFieldProps } from "./core/types";
-import { FieldOption } from "@/types/customAppTypes";
 
 const ButtonSelectionField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
     const { id, label, options, componentProps, required } = field;
@@ -19,7 +18,7 @@ const ButtonSelectionField: React.FC<CommonFieldProps> = ({ field, sourceId="no-
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
 
     const updateBrokerValue = useCallback(
-        (updatedValue: any) => {
+        (updatedValue: string[]) => {
             dispatch(
                 brokerActions.setValue({
                     brokerId,
@@ -52,7 +51,7 @@ const ButtonSelectionField: React.FC<CommonFieldProps> = ({ field, sourceId="no-
             if (Array.isArray(stateValue)) {
                 if (stateValue.includes(optionId)) {
                     // If minItems is set, check if we can remove
-                    if (minItems > 0 && stateValue.length <= minItems) {
+                    if (typeof minItems === "number" && minItems > 0 && stateValue.length <= minItems) {
                         return; // Don't allow removing if it would violate minItems
                     }
 
@@ -60,7 +59,7 @@ const ButtonSelectionField: React.FC<CommonFieldProps> = ({ field, sourceId="no-
                     updatedValue = stateValue.filter((id) => id !== optionId);
                 } else {
                     // If maxItems is set, check if we can add
-                    if (maxItems > 0 && stateValue.length >= maxItems) {
+                    if (typeof maxItems === "number" && maxItems > 0 && stateValue.length >= maxItems) {
                         return; // Don't allow adding if it would exceed maxItems
                     }
 
@@ -94,12 +93,12 @@ const ButtonSelectionField: React.FC<CommonFieldProps> = ({ field, sourceId="no-
     let validationMessage = "";
     if (required && !hasSelections) {
         validationMessage = "Please select at least one option.";
-    } else if (minItems > 0 && (!hasSelections || stateValue.length < minItems)) {
+    } else if (typeof minItems === "number" && minItems > 0 && (!hasSelections || stateValue.length < minItems)) {
         validationMessage = `Please select at least ${minItems} option${minItems !== 1 ? "s" : ""}.`;
     }
 
     let maxItemsMessage = "";
-    if (maxItems > 0 && hasSelections && stateValue.length > maxItems) {
+    if (typeof maxItems === "number" && maxItems > 0 && hasSelections && stateValue.length > maxItems) {
         maxItemsMessage = `Please select no more than ${maxItems} option${maxItems !== 1 ? "s" : ""}.`;
     }
 

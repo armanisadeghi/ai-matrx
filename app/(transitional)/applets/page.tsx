@@ -38,6 +38,12 @@ interface TransformedCategory {
     }>;
 }
 
+interface LegacyCategoryContent {
+    key: string;
+    title: AppletCategory;
+    applets: typeof appletDefinitions;
+}
+
 // Helper function to transform new category data
 const transformNewCategory = (categoryKey: string): TransformedCategory | null => {
     const category = appletCategories.find((cat) => cat.key === categoryKey);
@@ -81,7 +87,7 @@ export default function AppletsPage() {
                 applets: categoryApplets,
             };
         })
-        .filter(Boolean);
+        .filter((category): category is LegacyCategoryContent => category !== null);
 
     return (
         <div className="container py-8 space-y-8">

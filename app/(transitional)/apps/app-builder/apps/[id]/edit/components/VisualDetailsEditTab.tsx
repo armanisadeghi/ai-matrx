@@ -106,7 +106,7 @@ export default function VisualDetailsEditTab({ appId }: VisualDetailsEditTabProp
               <Label>App Icon</Label>
               <IconPicker
                 iconType="appIcon"
-                selectedIcon={mainAppIcon}
+                selectedIcon={mainAppIcon ?? "LayoutTemplate"}
                 onIconSelect={handleAppIconSelect}
                 primaryColor={primaryColor}
                 accentColor={accentColor}
@@ -117,4 +117,4 @@ export default function VisualDetailsEditTab({ appId }: VisualDetailsEditTabProp
       </Card>
     </div>
   );
-} 
+}

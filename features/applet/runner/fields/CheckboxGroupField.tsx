@@ -4,17 +4,15 @@ import { brokerSelectors, brokerActions } from "@/lib/redux/brokerSlice";
 import { ensureValidWidthClass } from "@/features/applet/constants/field-constants";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FieldDefinition, FieldOption } from "@/types/customAppTypes";
+import { FieldDefinition } from "@/types/customAppTypes";
 import { Input } from "@/components/ui/input";
 import SelectionPills from "./common/SelectionPills";
 import ValidationMessage from "./common/ValidationMessage";
 import { CommonFieldProps } from "./core/types";
 
 // Define the type for selected option in state
-export interface SelectedOptionValue extends FieldOption {
-    selected: boolean;
-    otherText?: string;
-}
+import { selectedOptionValues } from "./common/types";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 
 
 const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
@@ -35,6 +33,8 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
     const dispatch = useAppDispatch();
     const brokerId = useAppSelector((state) => brokerSelectors.selectBrokerId(state, { source, mappedItemId: id }));
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
+    const storedOptions = selectedOptionValues(stateValue);
+    const availableOptions = processFieldOptions(options);
 
     const updateBrokerValue = useCallback(
         (updatedValue: any) => {
@@ -53,9 +53,9 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
 
     // Initialize stateValue if not set
     useEffect(() => {
-        if (!stateValue && options.length > 0) {
+        if (!stateValue && availableOptions.length > 0) {
             // Initialize with all options having selected: false
-            const initialOptions = options.map((option) => ({
+            const initialOptions = availableOptions.map((option) => ({
                 ...option,
                 selected: false,
             }));
@@ -73,7 +73,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
             updateBrokerValue(initialOptions);
         } else if (stateValue) {
             // If there's an "other" option and it's selected, initialize the otherText state
-            const otherOption = Array.isArray(stateValue) ? stateValue.find((opt: SelectedOptionValue) => opt.id === "other") : null;
+            const otherOption = storedOptions.find((option) => option.id === "other");
             if (otherOption && otherOption.selected && otherOption.description) {
                 setOtherText(otherOption.description);
             }
@@ -87,11 +87,11 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
         setTouched(true);
 
         // Get current selection state
-        const currentOption = Array.isArray(stateValue) ? stateValue.find((o: SelectedOptionValue) => o.id === optionId) : undefined;
+        const currentOption = storedOptions.find((option) => option.id === optionId);
         const isCurrentlySelected = currentOption?.selected || false;
 
         // Count currently selected items
-        const selectedCount = stateValue?.filter((o: SelectedOptionValue) => o.selected).length || 0;
+        const selectedCount = storedOptions.filter((option) => option.selected).length;
 
         // Check if we're trying to deselect while at minItems
         if (isCurrentlySelected && minItems > 0 && selectedCount <= minItems) {
@@ -104,7 +104,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
         }
 
         // Update the selection state for the specific option
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === optionId) {
                 return {
                     ...option,
@@ -125,12 +125,12 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
 
         // Check how many are currently selected
         const areAllSelected = selectWithOptions.every((option) => {
-            const stateOption = stateValue?.find((o: SelectedOptionValue) => o.id === option.id);
+            const stateOption = storedOptions.find((optionValue) => optionValue.id === option.id);
             return stateOption?.selected;
         });
 
         // Toggle all options
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => ({
+        const updatedOptions = storedOptions.map((option) => ({
             ...option,
             selected: !areAllSelected,
         }));
@@ -155,7 +155,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
         const newOtherText = e.target.value;
         setOtherText(newOtherText);
 
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === "other") {
                 return {
                     ...option,
@@ -174,7 +174,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
     };
 
     // Get the selected options
-    const selectedOptions = Array.isArray(stateValue) ? stateValue.filter((option: SelectedOptionValue) => option.selected) : [];
+    const selectedOptions = storedOptions.filter((option) => option.selected);
 
     const isOtherSelected = selectedOptions.some((option) => option.id === "other");
 
@@ -196,7 +196,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
     const handleClearAll = () => {
         if (disabled) return;
 
-        const clearedOptions = (stateValue || []).map((option: SelectedOptionValue) => ({
+        const clearedOptions = storedOptions.map((option) => ({
             ...option,
             selected: false,
         }));
@@ -210,7 +210,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
     }
 
     // Prepare options list including "Other" option if needed
-    const selectWithOptions = [...options];
+    const selectWithOptions = [...availableOptions];
     if (includeOther) {
         selectWithOptions.push({ id: "other", label: "Other" });
     }
@@ -286,7 +286,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
                             className={cn(
                                 "relative flex items-center justify-center w-4 h-4 border rounded mr-2 cursor-pointer",
                                 selectWithOptions.every((option) => {
-                                    const stateOption = stateValue?.find((o: SelectedOptionValue) => o.id === option.id);
+                                    const stateOption = storedOptions.find((optionValue) => optionValue.id === option.id);
                                     return stateOption?.selected;
                                 })
                                     ? "bg-gray-200 dark:bg-gray-700 border-gray-500 dark:border-gray-400"
@@ -297,7 +297,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
                             onBlur={handleBlur}
                             role="checkbox"
                             aria-checked={selectWithOptions.every((option) => {
-                                const stateOption = stateValue?.find((o: SelectedOptionValue) => o.id === option.id);
+                                const stateOption = storedOptions.find((optionValue) => optionValue.id === option.id);
                                 return stateOption?.selected;
                             })}
                             tabIndex={disabled ? -1 : 0}
@@ -309,7 +309,7 @@ const CheckboxGroupField: React.FC<CommonFieldProps> = ({ field, sourceId="no-ap
                             }}
                         >
                             {selectWithOptions.every((option) => {
-                                const stateOption = stateValue?.find((o: SelectedOptionValue) => o.id === option.id);
+                                const stateOption = storedOptions.find((optionValue) => optionValue.id === option.id);
                                 return stateOption?.selected;
                             }) && <Check className="h-3 w-3 text-gray-700 dark:text-gray-300" />}
                         </div>

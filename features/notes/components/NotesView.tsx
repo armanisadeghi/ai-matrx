@@ -12,6 +12,7 @@ import React, {
   useCallback,
   useState,
   useMemo,
+  useId,
 } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -214,11 +215,9 @@ export function NotesView({
     (syncUrl ? (urlActive ?? routeNoteId) : undefined);
 
   // ── Generate or use provided instance ID ──────────────────────────
-  const instanceIdRef = useRef(
-    config?.instanceId ??
-      `notes-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  );
-  const instanceId = instanceIdRef.current;
+  const generatedInstanceId = useId();
+  const instanceId =
+    config?.instanceId ?? `notes-${generatedInstanceId.replaceAll(":", "")}`;
 
   // ── Register instance on mount, unregister on unmount ─────────────
   useEffect(() => {
@@ -249,8 +248,7 @@ export function NotesView({
     });
     dispatch(reorderInstanceTabs({ instanceId, tabs: ordered }));
     dispatch(setInstanceActiveTab({ instanceId, noteId: activeId }));
-    // Only run once on mount — initialTabs/initialActiveTab are stable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Only run once on mount — initialTabs/initialActiveTab are stable.
   }, [dispatch, instanceId]);
 
   // ── Fetch notes list + scope data on mount ──────────────────────────
@@ -559,10 +557,7 @@ export function NotesView({
             /* ── Split view: two editors side-by-side ─────────── */
             <div className="flex-1 flex min-h-0">
               <div className="flex-1 flex flex-col min-w-0 min-h-0">
-                <NoteContentEditor
-                  noteId={activeTabId}
-                  actionsSurfaceId={`note-detail-${activeTabId}`}
-                />
+                <NoteContentEditor noteId={activeTabId} />
               </div>
               <div className="w-px bg-border shrink-0" />
               <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -582,10 +577,7 @@ export function NotesView({
               </div>
             </div>
           ) : (
-            <NoteContentEditor
-              noteId={activeTabId}
-              actionsSurfaceId={`note-detail-${activeTabId}`}
-            />
+            <NoteContentEditor noteId={activeTabId} />
           )
         ) : (
           <FolderQuickPick instanceId={instanceId} />

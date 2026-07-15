@@ -24,14 +24,13 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { NeededBroker } from "@/types/customAppTypes";
+import type { NeededBroker, RecipeSourceConfig } from "@/types/customAppTypes";
 import { brokerSelectors } from "@/lib/redux/brokerSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAppletRuntimeDataSourceConfig } from "@/lib/redux/app-runner/slices/customAppletRuntimeSlice";
-import { useAppDispatch } from "@/lib/redux/hooks";
 
 interface UseAppletRecipeFastAPIProps {
-  appletId: string;
+  appletId: string | null;
   /**
    * When false, all execution side effects are short-circuited — notably the
    * recipe→agent conversion fetch (POST /api/recipes/{id}/convert-to-prompt),
@@ -43,13 +42,63 @@ interface UseAppletRecipeFastAPIProps {
   enabled?: boolean;
 }
 
+const EMPTY_VALIDATION_ERRORS: Record<string, string> = {};
+
+function isNeededBroker(value: unknown): value is NeededBroker {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "required" in value &&
+    typeof value.required === "boolean" &&
+    "dataType" in value &&
+    typeof value.dataType === "string" &&
+    "defaultValue" in value &&
+    typeof value.defaultValue === "string"
+  );
+}
+
+function isRecipeSourceConfig(value: unknown): value is RecipeSourceConfig {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "compiledId" in value &&
+    typeof value.compiledId === "string" &&
+    "version" in value &&
+    typeof value.version === "number" &&
+    "neededBrokers" in value &&
+    Array.isArray(value.neededBrokers) &&
+    value.neededBrokers.every(isNeededBroker) &&
+    (!("promptId" in value) ||
+      value.promptId === undefined ||
+      typeof value.promptId === "string")
+  );
+}
+
+function isConversionResponse(
+  value: unknown,
+): value is { success: boolean; promptId: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "success" in value &&
+    typeof value.success === "boolean" &&
+    "promptId" in value &&
+    typeof value.promptId === "string"
+  );
+}
+
 export function useAppletRecipeFastAPI({
   appletId,
   enabled = true,
 }: UseAppletRecipeFastAPIProps) {
-  const dispatch = useAppDispatch();
   const sourceConfig = useAppSelector((state) =>
-    selectAppletRuntimeDataSourceConfig(state, appletId),
+    appletId ? selectAppletRuntimeDataSourceConfig(state, appletId) : undefined,
   );
 
   const [taskId] = useState<string>(() => uuidv4());
@@ -67,9 +116,7 @@ export function useAppletRecipeFastAPI({
     brokerSelectors.selectMultipleValues(state, neededBrokerIds),
   );
 
-  // Read conversationId from taskData — dispatched by the thunk immediately from the response header.
-  const taskData = undefined;
-  const conversationId = taskData?.conversationId as string | undefined;
+  const conversationId: string | undefined = undefined;
 
   // Expose broker values in the same shape as useAppletRecipe for compatibility
   const brokerValues = Object.entries(rawBrokerValues ?? {}).reduce<
@@ -95,13 +142,14 @@ export function useAppletRecipeFastAPI({
     )
       return;
 
-    const config = sourceConfig.config as {
-      id: string;
-      compiledId: string;
-      version: number;
-      neededBrokers: NeededBroker[];
-      promptId?: string;
-    };
+    if (!isRecipeSourceConfig(sourceConfig.config)) {
+      console.error(
+        "[useAppletRecipeFastAPI] Recipe source config has an invalid runtime shape.",
+      );
+      setError("Applet recipe configuration is invalid.");
+      return;
+    }
+    const config = sourceConfig.config;
 
     const ids = config.neededBrokers.map((b) => b.id);
     setNeededBrokerIds(ids);
@@ -133,7 +181,11 @@ export function useAppletRecipeFastAPI({
             body.error || `Conversion failed: HTTP ${res.status}`,
           );
         }
-        return res.json() as Promise<{ success: boolean; promptId: string }>;
+        const body: unknown = await res.json();
+        if (!isConversionResponse(body)) {
+          throw new Error("Conversion returned an invalid response shape");
+        }
+        return body;
       })
       .then(({ promptId }) => {
         setAgentId(promptId);
@@ -160,41 +212,17 @@ export function useAppletRecipeFastAPI({
       return;
     }
 
-    // Map broker values by name → variables Record<string, unknown>
-    // Broker name is the template variable name the agent expects.
-    // Empty strings are fine — the agent API does not validate presence.
-    const variables: Record<string, unknown> = {};
-    for (const broker of neededBrokersRef.current) {
-      variables[broker.name] = rawBrokerValues?.[broker.id] ?? "";
-    }
-
-    setIsLoading(true);
-
-    dispatch(
-      submitAppletAgentThunk({
-        agentId,
-        variables,
-        userInput: "",
-        taskId,
-      }),
-    )
-      .unwrap()
-      .then(() => {
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error("[useAppletRecipeFastAPI] Agent execution failed:", err);
-        setError("Failed to process the request.");
-        setIsLoading(false);
-      });
-  }, [agentId, dispatch, rawBrokerValues, taskId, enabled]);
+    setError(
+      "Applet agent execution is unavailable while the legacy recipe runner is being rebuilt.",
+    );
+  }, [agentId, enabled]);
 
   return {
     taskId,
     isLoading,
     error,
     isTaskValid: !!agentId,
-    validationErrors: {} as Record<string, string>,
+    validationErrors: EMPTY_VALIDATION_ERRORS,
     submitRecipe,
     notReadyBrokers,
     brokerValues,

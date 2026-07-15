@@ -49,7 +49,7 @@ const AppletSourceSelection = ({ onSelect, itemCounts = {}, activeSourceType = n
     }
   ];
 
-  const handleSelect = (source) => {
+  const handleSelect = (source: (typeof sources)[number]) => {
     const count = itemCounts[source.id] || 0;
     if (count === 0) return;
     

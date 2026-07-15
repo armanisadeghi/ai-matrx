@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import L from 'leaflet';
+import { toast } from "sonner";
 
 interface LocationMarkerProps {
   icon?: Icon;
@@ -46,13 +47,12 @@ export default function LocationMarker({
     },
     locationerror: () => {
       setIsLocating(false);
-      alert('Could not find your location. Please make sure location services are enabled.');
+      toast.error('Could not find your location. Please make sure location services are enabled.');
     }
   });
 
   // Add a locate button to the map
   useEffect(() => {
-    if (typeof window !== 'undefined') {
       // Create custom locate button
       const locateButton = document.createElement('button');
       locateButton.innerHTML = buttonIcon;
@@ -83,13 +83,13 @@ export default function LocationMarker({
       });
       
       // Add the control to the map
-      new locateControl().addTo(map);
+      const control = new locateControl();
+      control.addTo(map);
       
       // Cleanup on unmount
       return () => {
-        // No explicit cleanup needed as the control is attached to the map
+        control.remove();
       };
-    }
   }, [map, buttonPosition, buttonIcon, flyToLocation, maxZoom]);
 
   // If no position or popup disabled, return null
@@ -108,4 +108,4 @@ export default function LocationMarker({
       </Popup>
     </Marker>
   );
-} 
+}

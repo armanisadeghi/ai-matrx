@@ -337,6 +337,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
       size="lg"
       style={handleStyles(isVertical, isFullScreen)}
       className={cn(
+        "select-none",
         isVertical
           ? "hover:cursor-row-resize active:cursor-row-resize"
           : "hover:cursor-col-resize active:cursor-col-resize",
@@ -454,7 +455,6 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
         className="h-full"
         style={{
           touchAction: "none",
-          userSelect: "none",
         }}
       >
         {isStartPosition ? panels.reverse() : panels}

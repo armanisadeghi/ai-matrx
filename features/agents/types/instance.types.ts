@@ -111,6 +111,8 @@ export type SourceFeature =
 
   // ── Code editor ──────────────────────────────────────────────────────────
   | "code-editor"
+  /** Context-menu behavior labs under `/demos/context-menu/*`. */
+  | "context-menu-demo"
 
   // ── Notes ────────────────────────────────────────────────────────────────
   | "notes"

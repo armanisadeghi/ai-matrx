@@ -1,18 +1,27 @@
-'use client';
-import DynamicComponentRenderer from './DynamicComponentRenderer';
-import React, { useState, useEffect } from 'react'; 
-import { LiveProvider, LiveEditor, LiveError, LivePreview } from 'react-live';
+"use client";
+
+import type { Dispatch, SetStateAction } from "react";
+import type { SavedComponent } from "./types";
 
 
 // Component for saving/loading components
-const ComponentManager = ({ 
+interface ComponentManagerProps {
+  currentComponentName: string;
+  setCurrentComponentName: Dispatch<SetStateAction<string>>;
+  saveComponent: () => Promise<void>;
+  savedComponents: SavedComponent[];
+  loadComponent: (component: SavedComponent) => void;
+  deleteComponent: (id: string) => void;
+}
+
+const ComponentManager = ({
   currentComponentName, 
   setCurrentComponentName, 
   saveComponent, 
   savedComponents, 
   loadComponent, 
-  deleteComponent 
-}) => {
+  deleteComponent,
+}: ComponentManagerProps) => {
   return (
     <>
       {/* Save Component Section */}

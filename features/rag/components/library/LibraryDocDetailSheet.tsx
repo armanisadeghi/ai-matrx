@@ -33,8 +33,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ExternalLink,
-  Copy,
-  Check,
   Database,
   FileText,
   Layers,
@@ -47,7 +45,15 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
+import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
+import {
+  citationOpensInWindow,
+  useOpenCitation,
+} from "@/features/rag/components/source-inspector/useOpenCitation";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import type { components } from "@/types/python-generated/api-types";
@@ -60,6 +66,39 @@ import type { StageName } from "@/features/rag/api/stages";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingJobView } from "./ProcessingJobView";
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
+
+function sourceHref(sourceKind: string, sourceId: string): string {
+  const id = encodeURIComponent(sourceId);
+  switch (sourceKind) {
+    case "cld_file":
+      return `/files/f/${id}`;
+    case "note":
+      return `/notes/${id}`;
+    case "code_file":
+      return `/code/${id}`;
+    case "library_doc":
+      return `/rag/viewer/${id}`;
+    case "transcript":
+      return `/transcription/studio?session=${id}`;
+    case "scraped":
+      return `/scraper?url=${id}`;
+    default:
+      return `/rag/viewer/${id}`;
+  }
+}
+
+function documentHumanSummary(doc: NonNullable<ReturnType<typeof useLibraryDoc>["doc"]>): string {
+  return [
+    doc.name,
+    `Document ID: ${doc.id}`,
+    `Source: ${doc.sourceKind} ${doc.sourceId}`,
+    `Status: ${doc.status}`,
+    `Pages: ${doc.pagesPersisted}${doc.totalPages ? ` / ${doc.totalPages}` : ""}`,
+    `${RAG_VOCAB.segmentsShort}: ${doc.chunks}`,
+    `Embeddings: ${doc.embeddingsOai} OpenAI, ${doc.embeddingsVoyage} Voyage`,
+    `Data stores: ${doc.dataStores.map((store) => store.name).join(", ") || "none"}`,
+  ].join("\n");
+}
 
 export interface LibraryDocDetailSheetProps {
   processedDocumentId: string | null;
@@ -98,6 +137,8 @@ export function LibraryDocDetailSheet({
   onDismissJob,
 }: LibraryDocDetailSheetProps) {
   const { doc, loading, error, reload } = useLibraryDoc(processedDocumentId);
+  const openFilePreview = useOpenFilePreviewWindow();
+  const openCitation = useOpenCitation();
   const lastExternalReloadKeyRef = useRef(externalReloadKey);
 
   useEffect(() => {
@@ -105,7 +146,6 @@ export function LibraryDocDetailSheet({
     lastExternalReloadKeyRef.current = externalReloadKey;
     if (processedDocumentId) reload();
   }, [externalReloadKey, processedDocumentId, reload]);
-  const [copiedId, setCopiedId] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renaming, setRenaming] = useState(false);
@@ -261,23 +301,30 @@ export function LibraryDocDetailSheet({
   const panelHeaderActions =
     doc && !error ? (
       <div className="flex gap-2 shrink-0">
-        <Button
+        <CopyButtons
           size="sm"
-          variant="outline"
-          onClick={() => {
-            navigator.clipboard.writeText(doc.id);
-            setCopiedId(true);
-            toast.success("Document ID copied");
-            setTimeout(() => setCopiedId(false), 1500);
-          }}
-        >
-          {copiedId ? (
-            <Check className="h-3.5 w-3.5 mr-1" />
-          ) : (
-            <Copy className="h-3.5 w-3.5 mr-1" />
-          )}
-          Copy ID
-        </Button>
+          label={doc.name}
+          human={() => documentHumanSummary(doc)}
+          agent={() => ({
+            kind: "rag-library-document",
+            location: "AI Matrx — RAG Document Library — Detail panel",
+            description:
+              "Complete detail payload for the processed document currently open in the library.",
+            data: doc,
+            summary: documentHumanSummary(doc),
+            attributes: {
+              id: doc.id,
+              "source-kind": doc.sourceKind,
+              "source-id": doc.sourceId,
+              status: doc.status,
+            },
+            context: {
+              "processed-document-id": doc.id,
+              "source-id": doc.sourceId,
+              "parent-processed-document-id": doc.parentProcessedId,
+            },
+          })}
+        />
         <Button
           size="sm"
           variant="outline"
@@ -625,15 +672,65 @@ export function LibraryDocDetailSheet({
                     <Section title="Identity">
                       <KV
                         k="Document ID"
-                        v={<code className="text-xs">{doc.id}</code>}
+                        v={
+                          <MatrxUuidCell
+                            value={doc.id}
+                            label="Document ID"
+                            href={`/rag/viewer/${encodeURIComponent(doc.id)}`}
+                            onOpen={(id) => {
+                              openCitation({
+                                sourceKind: "library_doc",
+                                sourceId: id,
+                                href: `/rag/viewer/${encodeURIComponent(id)}`,
+                                fileName: doc.name,
+                              });
+                            }}
+                          />
+                        }
                       />
                       <KV
                         k="Source"
                         v={
-                          <span>
-                            {doc.sourceKind} ·{" "}
-                            <code className="text-xs">{doc.sourceId}</code>
-                          </span>
+                          doc.sourceKind === "cld_file" ? (
+                            <FileRightClickMenu fileId={doc.sourceId}>
+                              <span className="inline-flex items-center gap-1.5 rounded-sm">
+                                <span className="text-xs text-muted-foreground">
+                                  {doc.sourceKind}
+                                </span>
+                                <MatrxUuidCell
+                                  value={doc.sourceId}
+                                  label="Source file ID"
+                                  href={sourceHref(doc.sourceKind, doc.sourceId)}
+                                  onOpen={(id) => {
+                                    openFilePreview({ fileId: id });
+                                  }}
+                                />
+                              </span>
+                            </FileRightClickMenu>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground">
+                                {doc.sourceKind}
+                              </span>
+                              <MatrxUuidCell
+                                value={doc.sourceId}
+                                label="Source ID"
+                                href={sourceHref(doc.sourceKind, doc.sourceId)}
+                                onOpen={
+                                  citationOpensInWindow(doc.sourceKind)
+                                    ? (id) => {
+                                        openCitation({
+                                          sourceKind: doc.sourceKind,
+                                          sourceId: id,
+                                          href: sourceHref(doc.sourceKind, id),
+                                          fileName: doc.name,
+                                        });
+                                      }
+                                    : undefined
+                                }
+                              />
+                            </span>
+                          )
                         }
                       />
                       <KV k="MIME" v={doc.mimeType ?? "—"} />
@@ -649,9 +746,18 @@ export function LibraryDocDetailSheet({
                         k="Parent"
                         v={
                           doc.parentProcessedId ? (
-                            <code className="text-xs">
-                              {doc.parentProcessedId}
-                            </code>
+                            <MatrxUuidCell
+                              value={doc.parentProcessedId}
+                              label="Parent document ID"
+                              href={`/rag/viewer/${encodeURIComponent(doc.parentProcessedId)}`}
+                              onOpen={(id) => {
+                                openCitation({
+                                  sourceKind: "library_doc",
+                                  sourceId: id,
+                                  href: `/rag/viewer/${encodeURIComponent(id)}`,
+                                });
+                              }}
+                            />
                           ) : (
                             "(none — initial extract)"
                           )
@@ -675,21 +781,26 @@ export function LibraryDocDetailSheet({
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {doc.dataStores.map((s) => (
-                            <Badge
+                            <div
                               key={s.dataStoreId}
-                              variant="secondary"
-                              className="cursor-pointer"
-                              onClick={() => {
-                                window.open(
-                                  `/rag/data-stores?store_id=${s.dataStoreId}`,
-                                  "_blank",
-                                );
-                              }}
+                              className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
                             >
                               <Database className="h-3 w-3 mr-1" />
-                              {s.name}
-                              {s.shortCode ? ` · ${s.shortCode}` : ""}
-                            </Badge>
+                              <a
+                                href={`/rag/data-stores?store_id=${encodeURIComponent(s.dataStoreId)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                              >
+                                {s.name}
+                                {s.shortCode ? ` · ${s.shortCode}` : ""}
+                              </a>
+                              <MatrxUuidCell
+                                value={s.dataStoreId}
+                                label={`${s.name} data store ID`}
+                                href={`/rag/data-stores?store_id=${encodeURIComponent(s.dataStoreId)}`}
+                              />
+                            </div>
                           ))}
                         </div>
                       )}
@@ -1011,8 +1122,26 @@ function SheetFullPagePreviews({
           full text.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <PreviewBlock label="Cleaned" text={fallbackCleaned} />
-          <PreviewBlock label="Raw" text={fallbackRaw} />
+          <PreviewBlock
+            label="Cleaned"
+            text={fallbackCleaned}
+            agentData={{
+              processedDocumentId: documentId,
+              pageNumber: pageIndex + 1,
+              textKind: "cleaned-preview",
+              text: fallbackCleaned,
+            }}
+          />
+          <PreviewBlock
+            label="Raw"
+            text={fallbackRaw}
+            agentData={{
+              processedDocumentId: documentId,
+              pageNumber: pageIndex + 1,
+              textKind: "raw-preview",
+              text: fallbackRaw,
+            }}
+          />
         </div>
       </div>
     );
@@ -1054,8 +1183,26 @@ function SheetFullPagePreviews({
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <PreviewBlock label="Cleaned" text={cleaned} />
-        <PreviewBlock label="Raw" text={raw} />
+        <PreviewBlock
+          label="Cleaned"
+          text={cleaned}
+          agentData={{
+            processedDocumentId: documentId,
+            pageNumber: pageIndex + 1,
+            textKind: "cleaned",
+            text: cleaned,
+          }}
+        />
+        <PreviewBlock
+          label="Raw"
+          text={raw}
+          agentData={{
+            processedDocumentId: documentId,
+            pageNumber: pageIndex + 1,
+            textKind: "raw",
+            text: raw,
+          }}
+        />
       </div>
     </div>
   );
@@ -1153,6 +1300,7 @@ function SheetChunksPanel({
             >
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline">#{entry.row.chunk_index ?? "?"}</Badge>
+                <MatrxUuidCell value={entry.row.id} label="Segment ID" />
                 {entry.row.chunk_kind && (
                   <Badge variant="outline">{entry.row.chunk_kind}</Badge>
                 )}
@@ -1183,7 +1331,14 @@ function SheetChunksPanel({
                     )}
                 </span>
               </div>
-              <PreviewBlock label="" text={entry.row.content_text} />
+              <PreviewBlock
+                label="Segment text"
+                text={entry.row.content_text}
+                agentData={{
+                  processedDocumentId: documentId,
+                  segment: entry.row,
+                }}
+              />
             </div>
           ) : (
             <div
@@ -1192,6 +1347,7 @@ function SheetChunksPanel({
             >
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline">#{entry.row.chunkIndex ?? "?"}</Badge>
+                <MatrxUuidCell value={entry.row.id} label="Segment ID" />
                 {entry.row.chunkKind && (
                   <Badge variant="outline">{entry.row.chunkKind}</Badge>
                 )}
@@ -1221,7 +1377,15 @@ function SheetChunksPanel({
                     )}
                 </span>
               </div>
-              <PreviewBlock label="" text={entry.row.contentPreview} />
+              <PreviewBlock
+                label="Segment preview"
+                text={entry.row.contentPreview}
+                agentData={{
+                  processedDocumentId: documentId,
+                  segment: entry.row,
+                  previewOnly: true,
+                }}
+              />
             </div>
           ),
         )}
@@ -1230,14 +1394,39 @@ function SheetChunksPanel({
   );
 }
 
-function PreviewBlock({ label, text }: { label: string; text: string }) {
+function PreviewBlock({
+  label,
+  text,
+  agentData,
+}: {
+  label: string;
+  text: string;
+  agentData?: unknown;
+}) {
   return (
     <div className="space-y-1">
-      {label && (
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          {label}
-        </span>
-      )}
+      <div className="flex min-h-7 items-center justify-between gap-2">
+        {label ? (
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {label}
+          </span>
+        ) : (
+          <span />
+        )}
+        <CopyButtons
+          size="icon"
+          label={label || "document text"}
+          human={() => text}
+          agent={() => ({
+            kind: "rag-document-content",
+            location: "AI Matrx — RAG Document Library — Detail panel",
+            description: `${label || "Document text"} from the open processed document.`,
+            data: agentData ?? { text },
+            attributes: { "content-kind": label || "text" },
+          })}
+          disabled={!text}
+        />
+      </div>
       <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed bg-muted/30 rounded p-2 overflow-x-auto">
         {text || <span className="italic text-muted-foreground">(empty)</span>}
       </pre>

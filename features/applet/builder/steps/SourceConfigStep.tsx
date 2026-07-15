@@ -85,12 +85,17 @@ const SourceConfigContent: React.FC<SourceConfigContentProps> = ({
     setEditingRecipe(true);
   };
 
-  const handleRecipeCompiledIdSelected = (compiledId: string) => {
-    if (appletId) {
-      dispatch(
-        setCompiledRecipeId({ id: appletId, compiledRecipeId: compiledId }),
-      );
+  const handleRecipeCompiledIdSelected = (compiledId: string | null) => {
+    if (!appletId) return;
+
+    if (compiledId === null) {
+      dispatch(setCompiledRecipeId({ id: appletId }));
+      return;
     }
+
+    dispatch(
+      setCompiledRecipeId({ id: appletId, compiledRecipeId: compiledId }),
+    );
   };
 
   const handleSourceConfigSelected = (

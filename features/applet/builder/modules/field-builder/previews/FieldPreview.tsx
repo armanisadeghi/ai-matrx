@@ -39,7 +39,8 @@ const FieldPreview: React.FC<FieldPreviewProps> = ({ fieldId, componentType = "t
     }
 
     // Get the broker identifier for the current component type
-    const identifier = brokerResult.getIdentifier(componentType);
+    const previewComponentType = componentType ?? field.component;
+    const identifier = brokerResult.getIdentifier(previewComponentType);
 
     return (
         <SectionCard
@@ -69,7 +70,7 @@ const FieldPreview: React.FC<FieldPreviewProps> = ({ fieldId, componentType = "t
                                 id: identifier.mappedItemId,
                             },
                         ]}
-                        appletId={brokerResult.sourceId}
+                        appletId={fieldId}
                         source="preview"
                     />
                 )}

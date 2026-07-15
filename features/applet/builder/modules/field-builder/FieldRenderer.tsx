@@ -23,7 +23,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   field: rawField,
 }) => {
   // Normalize the field to ensure all properties exist
-  const field = normalizeFieldDefinition(rawField) as FieldDefWithDisabled;
+  const field = {
+    ...normalizeFieldDefinition(rawField),
+    disabled: rawField.disabled,
+  };
 
   const [value, setValue] = useState(field.defaultValue);
   const [otherValue, setOtherValue] = useState("");
@@ -36,28 +39,24 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     return [min, max];
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const target = e.currentTarget;
     const newValue =
-      e.target.type === "checkbox" ? e.target.checked : e.target.value;
+      target instanceof HTMLInputElement && target.type === "checkbox"
+        ? target.checked
+        : target.value;
     setValue(newValue);
   };
 
-  const handleOtherChange = (e) => {
-    setOtherValue(e.target.value);
+  const handleOtherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setOtherValue(e.currentTarget.value);
   };
 
-  const handleJsonChange = (e) => {
-    try {
-      // Allow any input, but try to format it as JSON if possible
-      setValue(e.target.value);
-    } catch (error) {
-      // Silently fail and just keep the raw input
-      setValue(e.target.value);
-    }
+  const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(e.currentTarget.value);
   };
 
   const renderComponent = () => {
-    // @ts-ignore - Type mismatch: field.component may be ComponentType but switch handles string literals
     switch (field.component) {
       case "input":
         return (
@@ -377,7 +376,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         );
 
       // @ts-ignore - field.component is ComponentType but switch handles string literals
-      case "button":
+      case "buttonSelection":
         return (
           <div className="flex flex-wrap gap-2">
             {field.options?.map((option) => (

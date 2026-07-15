@@ -54,8 +54,11 @@ const DateField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id",
     };
     
     // Parse date from state if available
-    const selectedDate = stateValue ? new Date(stateValue) : undefined;
-    const isValidDate = selectedDate && !isNaN(selectedDate.getTime());
+    const selectedDate =
+        typeof stateValue === "string" || typeof stateValue === "number"
+            ? new Date(stateValue)
+            : undefined;
+    const isValidDate = selectedDate !== undefined && !isNaN(selectedDate.getTime());
     
     // Render custom content if provided
     if (customContent) {
@@ -74,7 +77,7 @@ const DateField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id",
                         )}
                         disabled={disabled}
                     >
-                        <span>{isValidDate ? format(selectedDate as Date, "PPP") : placeholder}</span>
+                        <span>{isValidDate ? format(selectedDate, "PPP") : placeholder}</span>
                         <CalendarIcon className="h-4 w-4 opacity-50" />
                     </Button>
                 </PopoverTrigger>

@@ -2,22 +2,40 @@
 
 import React, { useState } from "react";
 import { AppletFieldController } from "@/features/applet/runner/fields/core/AppletFieldController";
+import type { FieldDefinition } from "@/types/customAppTypes";
+import { FIELD_DEFAULT_COMPONENT_PROPS } from "@/lib/redux/app-builder/fieldBuilderDefaultProps";
 
 
 const advancedAppletCreatorDefinitionFAKE_FAKE_FAKE_FAKE = [
   {
     label: '',
-    fields: [{ brokerId: '', label: '' }]
+    fields: [{
+      id: "test-field",
+      label: "Test field",
+      description: "",
+      helpText: "",
+      component: "input",
+      required: false,
+      placeholder: "",
+      componentProps: FIELD_DEFAULT_COMPONENT_PROPS,
+      includeOther: false,
+      options: [],
+    } satisfies FieldDefinition]
   }
 ];
 
 
 const getFields = () => {
-  const allFields = [];
+  const allFields: {
+    id: string;
+    label: string;
+    container: string;
+    field: FieldDefinition;
+  }[] = [];
   advancedAppletCreatorDefinitionFAKE_FAKE_FAKE_FAKE.forEach(container => {
     container.fields.forEach(field => {
       allFields.push({
-        id: field.brokerId,
+        id: field.id,
         label: field.label,
         container: container.label,
         field
@@ -138,7 +156,7 @@ const FieldTester: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="text-sm text-gray-900 dark:text-gray-100">
                   <span className="font-medium">Type:</span> 
-                  <span className="ml-2 font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">{def.field.type}</span>
+                  <span className="ml-2 font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">{def.field.component}</span>
                 </div>
                 <div className="text-sm text-gray-900 dark:text-gray-100">
                   <span className="font-medium">ID:</span> 
@@ -167,4 +185,4 @@ const FieldTester: React.FC = () => {
   );
 };
 
-export default FieldTester; 
+export default FieldTester;

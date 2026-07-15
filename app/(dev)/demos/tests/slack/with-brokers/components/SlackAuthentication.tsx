@@ -51,8 +51,8 @@ export function SlackAuthentication() {
       // Auto-select first token if we have one and no token is set
       if (parsedTokens.length > 0 && !token) {
         dispatch(brokerActions.setText({
-          idArgs: SLACK_BROKER_IDS.token,
-          text: parsedTokens[0]
+          brokerId: SLACK_BROKER_IDS.token.mappedItemId,
+          value: parsedTokens[0]
         }));
       }
     }
@@ -64,8 +64,8 @@ export function SlackAuthentication() {
     if (urlToken) {
       setIsConnecting(true);
       dispatch(brokerActions.setText({
-        idArgs: SLACK_BROKER_IDS.token,
-        text: urlToken
+        brokerId: SLACK_BROKER_IDS.token.mappedItemId,
+        value: urlToken
       }));
       
       const updatedTokens = storedTokens 
@@ -84,8 +84,8 @@ export function SlackAuthentication() {
   const handleDisconnect = () => {
     if (token) {
       dispatch(brokerActions.setText({
-        idArgs: SLACK_BROKER_IDS.token,
-        text: ''
+        brokerId: SLACK_BROKER_IDS.token.mappedItemId,
+        value: ''
       }));
       
       const updatedTokens = savedTokens.filter(t => t !== token);
@@ -97,8 +97,8 @@ export function SlackAuthentication() {
   
   const handleSwitchToken = (savedToken: string) => {
     dispatch(brokerActions.setText({
-      idArgs: SLACK_BROKER_IDS.token,
-      text: savedToken
+      brokerId: SLACK_BROKER_IDS.token.mappedItemId,
+      value: savedToken
     }));
   };
   

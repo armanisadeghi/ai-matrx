@@ -9,6 +9,7 @@ import AdvancedDynamicLayout from '../../components/AdvancedDynamicLayout';
 import AdvancedLayout from '../../components/AdvancedLayout';
 import DynamicLayout from '../../components/DynamicLayout';
 import { HeaderControls } from '../../HeaderControls';
+import type { EnhancedProps } from '../../types';
 
 const FullWidthWrapper = ({ children }: { children: React.ReactNode }) => (
     <div className="w-full min-w-full flex-1 overflow-hidden">
@@ -20,7 +21,7 @@ type LayoutType = 'EnhancedDynamicLayout' | 'AdvancedDynamicLayoutNew' | 'Advanc
 
 export default function Page() {
     const [selectedLayout, setSelectedLayout] = useState<LayoutType>('EnhancedDynamicLayout');
-    const [enhancedProps, setEnhancedProps] = useState({
+    const [enhancedProps, setEnhancedProps] = useState<EnhancedProps>({
         backgroundColor: "bg-gray-900",
         gap: "medium",
         padding: "medium",
@@ -88,7 +89,7 @@ export default function Page() {
             case 'DynamicLayout':
                 return (
                     <FullWidthWrapper>
-                        <DynamicLayout {...baseProps}>
+                        <DynamicLayout layoutType="fourEqualTop">
                             {commonChildren}
                         </DynamicLayout>
                     </FullWidthWrapper>

@@ -192,6 +192,9 @@ export function useRecorder(
             const recordingResult = await getRecording(Number(createResult.data));
             if (recordingResult.error) throw new Error(recordingResult.error);
 
+            if (!recordingResult.data) {
+                throw new Error('Recording was created but could not be loaded');
+            }
             setCurrentRecording(recordingResult.data);
             setAudioChunks([]);
 

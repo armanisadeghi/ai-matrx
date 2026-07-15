@@ -1,8 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import React, { useSyncExternalStore } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, Sector, Label } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Sector,
+  Label,
+  type PieSectorDataItem,
+} from "recharts";
 import {
   ChartConfig,
   ChartContainer,
@@ -13,6 +19,7 @@ import {
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { selectPerformanceCounts } from "@/lib/redux/selectors/flashcardSelectors";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 interface PerformanceChartProps {
   /** Static deck size — same on server and client (avoids Redux hydration mismatch). */
@@ -30,15 +37,20 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const subscribeToHydration = () => () => undefined;
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
+
 const PerformanceChart: React.FC<PerformanceChartProps> = ({ cardCount }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [hasMounted, setHasMounted] = useState(false);
+  const hasMounted = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  );
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  const { totalCorrect, totalIncorrect } = useSelector(selectPerformanceCounts);
+  const { totalCorrect, totalIncorrect } = useAppSelector(
+    selectPerformanceCounts,
+  );
   const displayCorrect = hasMounted ? totalCorrect : 0;
   const displayIncorrect = hasMounted ? totalIncorrect : 0;
   const completedCount = displayCorrect + displayIncorrect;
@@ -56,9 +68,21 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ cardCount }) => {
     },
   ];
 
-  const renderActiveShape = (props: any) => {
+  const renderActiveShape = (props: PieSectorDataItem) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } =
       props;
+
+    if (
+      typeof cx !== "number" ||
+      typeof cy !== "number" ||
+      typeof innerRadius !== "number" ||
+      typeof outerRadius !== "number" ||
+      typeof startAngle !== "number" ||
+      typeof endAngle !== "number" ||
+      typeof fill !== "string"
+    ) {
+      return null;
+    }
 
     return (
       <g>
@@ -135,10 +159,7 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ cardCount }) => {
                 innerRadius={60}
                 outerRadius="80%"
                 paddingAngle={5}
-                // @ts-ignore - activeIndex prop not supported in this recharts version
-                activeIndex={activeIndex}
                 activeShape={renderActiveShape}
-                onMouseEnter={(_, index) => setActiveIndex(index)}
               >
                 {pieData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -170,6 +191,7 @@ const PerformanceChart: React.FC<PerformanceChartProps> = ({ cardCount }) => {
                         </text>
                       );
                     }
+                    return null;
                   }}
                 />
               </Pie>

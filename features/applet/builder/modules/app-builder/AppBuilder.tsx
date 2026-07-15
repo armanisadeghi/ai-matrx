@@ -27,7 +27,15 @@ import { CustomAppConfig } from "@/types/customAppTypes";
 import { appletLayoutOptionsArray } from "@/features/applet/constants/layout-options";
 
 // SINGLE SOURCE OF TRUTH FOR DEFAULT VALUES
-export const DEFAULT_APP_CONFIG: CustomAppConfig = {
+type EditableAppConfig = CustomAppConfig & {
+    mainAppIcon: string;
+    mainAppSubmitIcon: string;
+    primaryColor: string;
+    accentColor: string;
+    layoutType: NonNullable<CustomAppConfig["layoutType"]>;
+};
+
+export const DEFAULT_APP_CONFIG = {
     name: "",
     description: "",
     slug: "",
@@ -41,12 +49,12 @@ export const DEFAULT_APP_CONFIG: CustomAppConfig = {
     layoutType: "tabbedApplets",
     imageUrl: "",
     imageFileId: "",
-};
+} satisfies EditableAppConfig;
 
 export const AppBuilder = () => {
     const { toast } = useToast();
     // Use the DEFAULT_APP_CONFIG as the initial state
-    const [newApp, setNewApp] = useState<Partial<CustomAppConfig>>({ ...DEFAULT_APP_CONFIG });
+    const [newApp, setNewApp] = useState<EditableAppConfig>({ ...DEFAULT_APP_CONFIG });
     const [savedApps, setSavedApps] = useState<CustomAppConfig[]>([]);
     const [activeTab, setActiveTab] = useState<string>("create");
     const [selectedApp, setSelectedApp] = useState<CustomAppConfig | null>(null);
@@ -219,7 +227,7 @@ export const AppBuilder = () => {
                 }
             }
 
-            const updatedApp = await updateCustomAppConfig(selectedApp.id, newApp as CustomAppConfig);
+            const updatedApp = await updateCustomAppConfig(selectedApp.id, newApp);
             setSavedApps((prev) => prev.map((app) => (app.id === selectedApp.id ? updatedApp : app)));
 
             toast({

@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/rag/library", {
   titlePrefix: "Library",
   title: "Knowledge",
   description: "Browse ingested documents and knowledge library entries.",
-  letter: "Rl",
+  letter: "KL",
 });
 
 export default function RagLibraryLayout({

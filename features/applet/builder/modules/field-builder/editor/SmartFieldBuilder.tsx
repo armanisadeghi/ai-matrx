@@ -8,18 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-    selectFieldById,
-    selectFieldComponent,
-    selectFieldLabel,
-    selectFieldDescription,
-    selectFieldHelpText,
-    selectFieldPlaceholder,
-    selectFieldRequired,
-    selectFieldIncludeOther,
-    selectFieldComponentProps,
-    selectFieldIsDirty,
-} from "@/lib/redux/app-builder/selectors/fieldSelectors";
+import { selectFieldById } from "@/lib/redux/app-builder/selectors/fieldSelectors";
 import {
     setLabel,
     setDescription,
@@ -32,7 +21,7 @@ import {
     startFieldCreation,
 } from "@/lib/redux/app-builder/slices/fieldBuilderSlice";
 import { fieldHelpTextItems } from "../fieldHelpText";
-import { Broker, ComponentType } from "@/types/customAppTypes";
+import { Broker } from "@/types/customAppTypes";
 import HelpIcon from "@/components/official/HelpIcon";
 import { componentOptions } from "@/features/applet/constants/field-constants";
 
@@ -46,14 +35,6 @@ export const SmartFieldBuilder: React.FC<SmartFieldBuilderProps> = ({ fieldId, b
 
     // Redux selectors for field properties
     const field = useAppSelector((state) => selectFieldById(state, fieldId));
-    const component = useAppSelector((state) => selectFieldComponent(state, fieldId));
-    const label = useAppSelector((state) => selectFieldLabel(state, fieldId));
-    const description = useAppSelector((state) => selectFieldDescription(state, fieldId));
-    const helpText = useAppSelector((state) => selectFieldHelpText(state, fieldId));
-    const placeholder = useAppSelector((state) => selectFieldPlaceholder(state, fieldId));
-    const required = useAppSelector((state) => selectFieldRequired(state, fieldId));
-    const includeOther = useAppSelector((state) => selectFieldIncludeOther(state, fieldId));
-    const componentProps = useAppSelector((state) => selectFieldComponentProps(state, fieldId));
     const [autoSetLabel, setAutoSetLabel] = useState<boolean>(false);
 
     // Ensure field exists
@@ -64,18 +45,27 @@ export const SmartFieldBuilder: React.FC<SmartFieldBuilderProps> = ({ fieldId, b
     }, [fieldId, field, dispatch]);
 
     useEffect(() => {
-        if (label === "" && broker || autoSetLabel && broker) {
+        if ((field?.label === "" && broker) || (autoSetLabel && broker)) {
             dispatch(setLabel({ id: fieldId, label: broker.name }));
             setAutoSetLabel(true);
         }
-    }, [broker, dispatch, fieldId]);
+    }, [autoSetLabel, broker, dispatch, field?.label, fieldId]);
 
 
     if (!field) {
         return <div className="p-4">Loading field...</div>;
     }
 
-
+    const {
+        component,
+        label,
+        description,
+        helpText,
+        placeholder,
+        required,
+        includeOther,
+        componentProps,
+    } = field;
 
     const hasOptions = ["select", "multiselect", "radio", "checkbox", "button"].includes(component || "");
 
@@ -91,7 +81,10 @@ export const SmartFieldBuilder: React.FC<SmartFieldBuilderProps> = ({ fieldId, b
                 </div>
                 <Select
                     value={component || "textarea"}
-                    onValueChange={(value) => dispatch(setComponent({ id: fieldId, component: value as ComponentType }))}
+                    onValueChange={(value) => {
+                        const option = componentOptions.find((candidate) => candidate.value === value);
+                        if (option) dispatch(setComponent({ id: fieldId, component: option.value }));
+                    }}
                 >
                     <SelectTrigger className="border-gray-200 dark:border-gray-700 bg-textured text-gray-900 dark:text-gray-100 mt-1">
                         <SelectValue placeholder="Select component type" />

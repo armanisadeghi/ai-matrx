@@ -5,7 +5,12 @@ import { motion } from 'motion/react';
 import {ChildProps } from '../types';
 import { layouts } from '../app-data';
 
-const AdvancedDynamicLayout = ({ layoutType, children }) => {
+interface AdvancedDynamicLayoutProps {
+    layoutType: string;
+    children: React.ReactNode;
+}
+
+const AdvancedDynamicLayout = ({ layoutType, children }: AdvancedDynamicLayoutProps) => {
     const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 0);
 
     React.useEffect(() => {
@@ -14,13 +19,20 @@ const AdvancedDynamicLayout = ({ layoutType, children }) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const getResponsiveLayout = () => {
+    const getResponsiveLayout = (): 'desktop' | 'tablet' | 'mobile' => {
         if (windowWidth >= 1024) return 'desktop';
         if (windowWidth >= 768) return 'tablet';
         return 'mobile';
     };
 
-    const selectedLayout = layouts[layoutType]?.[getResponsiveLayout()] || layouts.complexDashboard[getResponsiveLayout()];
+    const selectedLayoutFamily = layouts[layoutType];
+    if (!selectedLayoutFamily) {
+        throw new Error(`Unknown layout: ${layoutType}`);
+    }
+    const selectedLayout = selectedLayoutFamily[getResponsiveLayout()];
+    if (!selectedLayout) {
+        throw new Error(`Layout ${layoutType} has no responsive configuration`);
+    }
 
     const gridStyle = {
         display: 'grid',

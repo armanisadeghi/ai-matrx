@@ -7,18 +7,23 @@ import dynamic from 'next/dynamic';
 import {EmployeeData} from "@/app/(dev)/demos/tests/matrx-table/test-data/sample-employees";
 import {FlashcardData} from "@/app/(dev)/demos/tests/matrx-table/test-data/sample-flashcards";
 import {MatrxTableLoading} from '@/components/matrx/LoadingComponents';
-import { ensureId } from "@/utils/schema/lite";
 
 const DynamicMatrxTable = dynamic(() => import('./components/MatrxTable'), {ssr: false});
 
-const tableDataOne = ensureId(EmployeeData);
-const tableDataTwo = ensureId(FlashcardData);
+const tableDataOne = EmployeeData.map((row, index) => ({
+    ...row,
+    id: `employee-${index}`,
+}));
+const tableDataTwo = FlashcardData.map((row, index) => ({
+    ...row,
+    id: `flashcard-${index}`,
+}));
 
 
 const MatrxTableTestPage: React.FC = () => {
 
 
-    const handleAction = (actionName: string, data: any) => {
+    const handleAction = (actionName: string, data: Record<string, unknown>) => {
         switch (actionName) {
             case 'add':
                 console.log('Adding new item.tsx:', data);

@@ -31,14 +31,16 @@ export const CustomAppHeader = ({
 }: CustomAppHeaderProps) => {
   const isMobile = useIsMobile();
   const isAppInitialized = useAppSelector(selectAppRuntimeIsInitialized);
-  const activeAppletSlug =
-    initialActiveAppletSlug || useAppSelector(selectActiveAppletSlug);
-  const userIsCreator = useAppSelector((state) =>
-    brokerSelectors.selectValue(state, "APPLET_USER_IS_ADMIN"),
-  );
-  const isAdmin = useAppSelector((state) =>
-    brokerSelectors.selectValue(state, "GLOBAL_USER_IS_ADMIN"),
-  );
+  const selectedActiveAppletSlug = useAppSelector(selectActiveAppletSlug);
+  const activeAppletSlug = initialActiveAppletSlug || selectedActiveAppletSlug;
+  const userIsCreator =
+    useAppSelector((state) =>
+      brokerSelectors.selectValue(state, "APPLET_USER_IS_ADMIN"),
+    ) === true;
+  const isAdmin =
+    useAppSelector((state) =>
+      brokerSelectors.selectValue(state, "GLOBAL_USER_IS_ADMIN"),
+    ) === true;
 
   if (isDebug) {
     console.log("isDebug", isDebug);

@@ -25,7 +25,6 @@ import {
     selectHasUnsavedContainerChanges,
 } from "@/lib/redux/app-builder/selectors/containerSelectors";
 import { selectFieldError, selectFieldLoading, selectHasUnsavedFieldChanges } from "@/lib/redux/app-builder/selectors/fieldSelectors";
-import { AppletBuilder } from "@/lib/redux/app-builder/types";
 import { recompileAppletThunk } from "@/lib/redux/app-builder/thunks/appletBuilderThunks";
 import SourceConfigStep from "@/features/applet/builder/steps/SourceConfigStep";
 import AppBuilderStartStep from "@/features/applet/builder/steps/AppBuilderStartStep";
@@ -64,7 +63,9 @@ export const ConfigBuilder = () => {
         type: "success" | "error" | "info" | "warning";
     } | null>(null);
 
-    const allAppApplets = useAppSelector((state) => selectAppletsByAppId(state, selectedAppId)) as AppletBuilder[];
+    const allAppApplets = useAppSelector((state) =>
+        selectedAppId ? selectAppletsByAppId(state, selectedAppId) : []
+    );
 
     const isAppletLoading = useAppSelector(selectAppletLoading);
     const isAppLoading = useAppSelector(selectAppLoading);
@@ -74,7 +75,9 @@ export const ConfigBuilder = () => {
     const isAppletError = useAppSelector(selectAppletError);
     const isContainerError = useAppSelector(selectContainerError);
     const isFieldError = useAppSelector(selectFieldError);
-    const appSlug = useAppSelector((state) => selectAppSlug(state, selectedAppId));
+    const appSlug = useAppSelector((state) =>
+        selectedAppId ? selectAppSlug(state, selectedAppId) : null
+    );
 
     const hasUnsavedAppChanges = useAppSelector(selectHasUnsavedAppChanges);
     const hasUnsavedAppletChanges = useAppSelector(selectHasUnsavedAppletChanges);
@@ -99,6 +102,11 @@ export const ConfigBuilder = () => {
     const handleNext = async () => {
         if (activeStep === 0) {
             setActiveStep(1);
+        } else if (!selectedAppId) {
+            setActionFeedback({
+                message: "Select an app before continuing",
+                type: "error",
+            });
         } else if (activeStep === 1) {
             dispatch(saveAppThunk(selectedAppId));
             setActiveStep(2);
@@ -338,7 +346,7 @@ export const ConfigBuilder = () => {
                                 </div>
                             )}
 
-                            {activeStep === 1 && (
+                            {activeStep === 1 && selectedAppId && (
                                 <div className="w-full rounded-3xl shadow-lg border border-rose-200 dark:border-rose-700">
                                     <AppletsConfigStep
                                         appId={selectedAppId}
@@ -347,7 +355,7 @@ export const ConfigBuilder = () => {
                                 </div>
                             )}
 
-                            {activeStep === 2 && (
+                            {activeStep === 2 && selectedAppId && (
                                 <div className="w-full rounded-3xl shadow-lg border border-rose-200 dark:border-rose-700">
                                     <SourceConfigStep
                                         appId={selectedAppId}
@@ -355,7 +363,7 @@ export const ConfigBuilder = () => {
                                     />
                                 </div>
                             )}
-                            {activeStep === 3 && (
+                            {activeStep === 3 && selectedAppId && (
                                 <div className="w-full rounded-3xl shadow-lg border border-rose-200 dark:border-rose-700">
                                     <FieldsBrokerConfigStep
                                         appId={selectedAppId}
@@ -364,7 +372,7 @@ export const ConfigBuilder = () => {
                                 </div>
                             )}
 
-                            {activeStep === 4 && (
+                            {activeStep === 4 && selectedAppId && (
                                 <div className="w-full rounded-3xl shadow-lg border border-rose-200 dark:border-rose-700">
                                     <GroupsConfigStep
                                         appId={selectedAppId}
@@ -374,7 +382,7 @@ export const ConfigBuilder = () => {
                             )}
 
                             {/* PreviewConfig has been updated to use Redux directly and only needs an appId */}
-                            {activeStep === 5 && (
+                            {activeStep === 5 && selectedAppId && (
                                 <div className="w-full rounded-3xl shadow-lg border border-rose-200 dark:border-rose-700">
                                     <PreviewConfig
                                         appId={selectedAppId}

@@ -326,7 +326,7 @@ export default function ContainerListTable({
       ? [
           {
             icon: <Pencil className="h-4 w-4" />,
-            onClick: (container) => {
+            onClick: (container: ContainerBuilder) => {
               handleEditContainer(container.id);
             },
           },
@@ -337,16 +337,16 @@ export default function ContainerListTable({
       ? [
           {
             icon: <Trash2 className="h-4 w-4" />,
-            onClick: (container) => {
+            onClick: (container: ContainerBuilder) => {
               handleDeleteContainer(container);
             },
             className:
               "text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300",
             requiresConfirmation: true,
             confirmationProps: {
-              getTitle: (container) =>
+              getTitle: (container: ContainerBuilder) =>
                 `Delete Container: ${container.label || "Unnamed Container"}`,
-              getDescription: (container) =>
+              getDescription: (container: ContainerBuilder) =>
                 `This action cannot be undone. This will permanently delete "${container.label || "Unnamed Container"}" and remove it from any layouts that use it.`,
               confirmButtonText: "Delete Container",
             },

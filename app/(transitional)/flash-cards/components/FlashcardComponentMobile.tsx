@@ -19,39 +19,45 @@ import {
 import { ensureId } from "@/utils/schema/lite";
 import { getFlashcardSet } from '@/app/(transitional)/flashcard/app-data';
 import AiAssistModal from '@/app/(transitional)/flash-cards/ai/AiAssistModal';
+import type { Flashcard } from '@/types/flashcards.types';
+import type { TableData } from '@/types/tableTypes';
 
-const FlashcardComponentMobile: React.FC<{ dataSetId }> = ({ dataSetId }) => {
+const isFlashcardRow = (row: TableData): row is TableData & Flashcard =>
+    typeof row.order === 'number' &&
+    typeof row.front === 'string' &&
+    typeof row.back === 'string' &&
+    typeof row.reviewCount === 'number' &&
+    typeof row.correctCount === 'number' &&
+    typeof row.incorrectCount === 'number';
+
+const FlashcardComponentMobile: React.FC<{ dataSetId: string }> = ({ dataSetId }) => {
     const initialFlashcards = getFlashcardSet(dataSetId);
     const flashcardHook = useFlashcard(initialFlashcards);
     const {
         allFlashcards,
         currentIndex,
-        firstName,
-        handleNext,
-        handlePrevious,
-        handleSelectChange,
-        activeFlashcard,
-        shuffleCards,
         textModalState: {
-            isAiModalOpen,
             isAiAssistModalOpen,
             aiAssistModalMessage,
             aiAssistModalDefaultTab,
         },
         textModalActions: {
-            openAiModal,
-            closeAiModal,
-            openAiAssistModal,
             closeAiAssistModal,
         },
-        setFontSize,
-        audioModalActions,
         handleAction,
         setEditingCard,
         editingCard,
 
     } = flashcardHook;
     const flashcardsWithUUIDs = ensureId(allFlashcards);
+
+    const handleTableAction = (actionName: string, row: TableData) => {
+        if (!isFlashcardRow(row)) {
+            console.error('Flashcard table action received an invalid row', row);
+            return;
+        }
+        handleAction(actionName, row);
+    };
 
     return (
         <div className="w-full">
@@ -78,7 +84,7 @@ const FlashcardComponentMobile: React.FC<{ dataSetId }> = ({ dataSetId }) => {
             <Suspense fallback={<LargeComponentLoading />}>
                 <MatrxTable
                     data={flashcardsWithUUIDs}
-                    onAction={handleAction}
+                    onAction={handleTableAction}
                     defaultVisibleColumns={['lesson', 'topic', 'front', 'reviewCount', 'correctCount', 'incorrectCount']}
                 />
             </Suspense>

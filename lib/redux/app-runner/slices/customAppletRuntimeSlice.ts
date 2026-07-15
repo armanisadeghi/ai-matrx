@@ -66,6 +66,7 @@ export const {
 
 // Selectors
 type WithCustomAppletRuntime = { customAppletRuntime: CustomAppletRuntimeState };
+const EMPTY_APPLET_CONTAINERS: AppletContainer[] = [];
 
 export const selectAppletRuntimeApplets = (state: WithCustomAppletRuntime) =>
   state.customAppletRuntime.applets;
@@ -137,7 +138,7 @@ export const selectAppletRuntimeLayoutType = (
 export const selectAppletRuntimeContainers = (
   state: WithCustomAppletRuntime,
   appletId: string,
-) => state.customAppletRuntime.applets[appletId]?.containers;
+) => state.customAppletRuntime.applets[appletId]?.containers ?? EMPTY_APPLET_CONTAINERS;
 export const selectAppletRuntimeDataSourceConfig = (
   state: WithCustomAppletRuntime,
   appletId: string,
@@ -195,7 +196,7 @@ export const selectActiveAppletAccentColor = (state: WithCustomAppletRuntime) =>
 export const selectActiveAppletLayoutType = (state: WithCustomAppletRuntime) =>
   selectActiveApplet(state)?.layoutType;
 export const selectActiveAppletContainers = (state: WithCustomAppletRuntime) =>
-  selectActiveApplet(state)?.containers;
+  selectActiveApplet(state)?.containers ?? EMPTY_APPLET_CONTAINERS;
 export const selectActiveAppletDataSourceConfig = (state: WithCustomAppletRuntime) =>
   selectActiveApplet(state)?.dataSourceConfig;
 export const selectActiveAppletBrokerMap = (state: WithCustomAppletRuntime) =>

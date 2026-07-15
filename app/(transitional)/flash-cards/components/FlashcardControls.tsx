@@ -134,7 +134,7 @@ const FlashcardControls: React.FC<{ flashcardHook: ReturnType<typeof useFlashcar
                     <AiChatModal
                         isOpen={isAiModalOpen}
                         onClose={closeAiModal}
-                        firstName={firstName}
+                        firstName={firstName ?? "there"}
                     />
             )}
         </div>

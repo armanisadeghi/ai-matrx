@@ -141,6 +141,9 @@ function DebugLayerLabel({
 export interface FilePreviewProps {
   fileId: string;
   className?: string;
+  /** Optional controlled 1-based page for PDF files. */
+  pageNumber?: number;
+  onPageChange?: (pageNumber: number) => void;
   /** Signed URL expiry. Default 1h. */
   urlExpiresIn?: number;
 }
@@ -148,6 +151,8 @@ export interface FilePreviewProps {
 export function FilePreview({
   fileId,
   className,
+  pageNumber,
+  onPageChange,
   urlExpiresIn = 3600,
 }: FilePreviewProps) {
   const router = useRouter();
@@ -389,7 +394,13 @@ export function FilePreview({
     // `<img>` / `<video>` / `<audio>` tags (no CORS preflight) but
     // `fetch(signedUrl)` returns 403 until the S3 bucket policy is fixed.
     case "pdf":
-      body = <PdfPreview fileId={fileId} />;
+      body = (
+        <PdfPreview
+          fileId={fileId}
+          pageNumber={pageNumber}
+          onPageChange={onPageChange}
+        />
+      );
       break;
     case "markdown":
       body = <MarkdownPreview fileId={fileId} />;

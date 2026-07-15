@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Apps",
     title: agent.name,
     description: `Agent apps connected to ${agent.name}.`,
-    letter: "G",
+    letter: "AG",
   });
 }
 

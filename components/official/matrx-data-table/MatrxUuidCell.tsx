@@ -224,6 +224,19 @@ export function MatrxUuidCell({
       >
         {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
       </button>
+      {onOpen && href && !forbidden ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={stop}
+          aria-label={`Open ${label ?? "record"} in a new tab`}
+          title={`Open ${label ?? "record"} in a new tab`}
+          className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none"
+        >
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      ) : null}
       {trailing}
     </span>
   );

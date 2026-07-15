@@ -32,7 +32,11 @@ async function getListDetail(listId: string): Promise<{
       return { list: null, userId: user?.id ?? null };
 
     const list = rpcResult.data as unknown as UserListWithItems;
-    if (!ownerResult.error && ownerResult.data) {
+    if (
+      !ownerResult.error &&
+      ownerResult.data &&
+      ownerResult.data.user_id !== null
+    ) {
       list.user_id = ownerResult.data.user_id;
     }
 

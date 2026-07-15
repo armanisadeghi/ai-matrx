@@ -7,7 +7,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
 import {API_CONFIG} from './constants';
-import {Endpoint, EndpointResponse} from "@/app/(dev)/demos/tests/matrx-local/types";
+import {Endpoint, EndpointResponse, type EndpointBody} from "@/app/(dev)/demos/tests/matrx-local/types";
 import ConnectionStatus from './ConnectionStatus';
 import MessageLog from './MessageLog';
 import EndpointCard from './EndpointCard';
@@ -22,10 +22,14 @@ const ApiTest = () => {
     const [activeTab, setActiveTab] = useState('rest');
     const [responses, setResponses] = useState<Record<string, EndpointResponse>>({});
     const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
-    const [wsMessages, setWsMessages] = useState([]);
+    const [wsMessages, setWsMessages] = useState<Array<{
+        type: string;
+        message: string;
+        timestamp: string;
+    }>>([]);
     const [wsInput, setWsInput] = useState(API_CONFIG.websocket.defaultMessage);
     const [loading, setLoading] = useState<Record<string, boolean>>({});
-    const [connectionStatus, setConnectionStatus] = useState('disconnected');
+    const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting' | 'error'>('disconnected');
 
     // Auto-connect WebSocket on component mount
     useEffect(() => {
@@ -39,16 +43,15 @@ const ApiTest = () => {
 
     // Auto-reconnect logic
     useEffect(() => {
-        if (connectionStatus === 'disconnected') {
-            const timer = setTimeout(() => {
-                connectWebSocket();
-            }, API_CONFIG.websocket.reconnectInterval);
-            return () => clearTimeout(timer);
-        }
+        if (connectionStatus !== 'disconnected') return undefined;
+        const timer = setTimeout(() => {
+            connectWebSocket();
+        }, API_CONFIG.websocket.reconnectInterval);
+        return () => clearTimeout(timer);
     }, [connectionStatus]);
 
     // Test REST API endpoint
-    const testEndpoint = async (endpoint: Endpoint, url: string, body?: any) => {
+    const testEndpoint = async (endpoint: Endpoint, url: string, body?: EndpointBody) => {
         setLoading(prev => ({...prev, [endpoint.id]: true}));
         try {
             const response = await fetch(`${API_CONFIG.baseUrl}${url}`, {
@@ -99,15 +102,19 @@ const ApiTest = () => {
             }]);
         };
 
-        socket.onmessage = (event) => {
+        socket.onmessage = (event: MessageEvent<unknown>) => {
+            const message =
+                typeof event.data === 'string'
+                    ? event.data
+                    : JSON.stringify(event.data);
             setWsMessages(prev => [...prev, {
                 type: 'received',
-                message: event.data,
+                message,
                 timestamp: new Date().toLocaleTimeString()
             }]);
         };
 
-        socket.onerror = (error) => {
+        socket.onerror = () => {
             setConnectionStatus('error');
             setWsMessages(prev => [...prev, {
                 type: 'error',

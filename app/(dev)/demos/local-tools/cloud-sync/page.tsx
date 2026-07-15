@@ -329,7 +329,7 @@ export default function CloudSyncPage() {
                             </Button>
                         </div>
 
-                        {currentInstance && (
+                        {currentInstance !== null && (
                             <div className="space-y-1">
                                 <h3 className="text-xs font-semibold text-muted-foreground">Current Instance</h3>
                                 <pre className="text-xs font-mono bg-background border rounded p-2 overflow-x-auto">

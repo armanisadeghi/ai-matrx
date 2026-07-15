@@ -1,4 +1,4 @@
-import type { PageSpeedResponse, LighthouseAuditResultV5 } from "../types";
+import type { PageSpeedResponse, LighthouseAuditResultV5, AuditRef } from "../types";
 
 export interface LLMAnalysisData {
     url: string;
@@ -42,7 +42,7 @@ export function formatPageSpeedForLLM(
     Object.entries(categories).forEach(([categoryKey, category]) => {
         if (!category) return;
 
-        category.auditRefs.forEach((ref) => {
+        category.auditRefs.forEach((ref: AuditRef) => {
             const audit = audits[ref.id];
             if (!audit) return;
 
@@ -180,4 +180,3 @@ export function formatAsMarkdown(data: LLMAnalysisData): string {
 export function formatAsJSON(data: LLMAnalysisData): string {
     return JSON.stringify(data, null, 2);
 }
-

@@ -26,6 +26,10 @@ const InputField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id"
     const dispatch = useAppDispatch();
     const brokerId = useAppSelector((state) => brokerSelectors.selectBrokerId(state, { source, mappedItemId: id }));
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
+    const inputValue =
+        typeof stateValue === "string" || typeof stateValue === "number"
+            ? stateValue
+            : undefined;
     
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         dispatch(
@@ -52,7 +56,7 @@ const InputField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id"
                 id={`${id}-input`}
                 className={inputClassName}
                 type={inputType}
-                value={stateValue ?? ""}
+                value={inputValue}
                 onChange={handleChange}
                 placeholder={placeholder}
                 required={required}
@@ -70,4 +74,4 @@ const InputField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id"
     );
 };
 
-export default InputField; 
+export default InputField;

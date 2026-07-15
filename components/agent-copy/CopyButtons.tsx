@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Webhook, Check } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
   buildAgentPayload,
   type AgentPayloadInput,
 } from "@/components/agent-copy/buildAgentPayload";
+import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 
 /**
  * CopyButtons — the reusable "copy this data" primitive.
@@ -129,7 +130,9 @@ export function CopyButtons({
         {copied === "agent" ? (
           <Check className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
         ) : (
-          <Webhook className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <CopyForAiIcon
+            className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"}
+          />
         )}
         {!isIcon && <span className="ml-1">Copy for AI</span>}
       </Button>

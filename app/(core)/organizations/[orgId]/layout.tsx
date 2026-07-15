@@ -15,7 +15,10 @@ export async function generateMetadata({
   let name = "Organization";
 
   try {
-    const query = supabase.schema("iam").from("organizations").select("name, description");
+    const query = supabase
+      .schema("iam")
+      .from("organizations")
+      .select("name, description");
     const { data } = UUID_RE.test(orgId)
       ? await query.eq("id", orgId).maybeSingle()
       : await query.eq("slug", orgId).maybeSingle();
@@ -26,13 +29,13 @@ export async function generateMetadata({
       description:
         (data?.description as string | null)?.slice(0, 120) ??
         `Workspace for ${name}.`,
-      letter: "O",
+      letter: "OR",
     });
   } catch {
     return createDynamicRouteMetadata("/organizations", {
       title: name,
       description: "Organization workspace.",
-      letter: "O",
+      letter: "OR",
     });
   }
 }

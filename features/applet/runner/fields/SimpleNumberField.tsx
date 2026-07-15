@@ -131,11 +131,12 @@ const SimpleNumberField: React.FC<CommonFieldProps> = ({ field, sourceId="no-app
   
   // Check if validation error (required but no valid value)
   const hasValidationError = required && (stateValue === undefined || stateValue === null);
+  const numericStateValue = typeof stateValue === "number" ? stateValue : undefined;
   
   // Check if value is outside min/max range
   const isOutOfRange = 
-    (min !== undefined && stateValue !== undefined && stateValue < min) || 
-    (max !== undefined && stateValue !== undefined && stateValue > max);
+    (min !== undefined && numericStateValue !== undefined && numericStateValue < min) ||
+    (max !== undefined && numericStateValue !== undefined && numericStateValue > max);
   
   // Render custom content if provided
   if (customContent) {

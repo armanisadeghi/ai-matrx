@@ -45,9 +45,21 @@ export default function ExtractTextDemo() {
     setTotalPages(0);
     setProgressMessage("Starting extraction…");
     try {
+      const payload = source.payload;
+      if (!payload) {
+        throw new Error("Choose a PDF source before starting extraction");
+      }
+      const sourceBody = payload.media
+        ? { media: payload.media }
+        : payload.url
+          ? { url: payload.url }
+          : null;
+      if (!sourceBody) {
+        throw new Error("The selected PDF source is invalid");
+      }
       const complete = await streamPdfExtractTextRemote({
         body: {
-          ...source.payload,
+          ...sourceBody,
           force_ocr: forceOcr,
           use_ocr_threshold: ocrThreshold,
           include_page_metadata: pageMetadata,

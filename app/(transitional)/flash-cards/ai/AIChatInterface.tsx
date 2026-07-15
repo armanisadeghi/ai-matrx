@@ -4,12 +4,10 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import {
-  Flashcard,
   FlashcardData,
   ChatMessage,
 } from "@/types/flashcards.types";
-import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "@/lib/redux/store";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { addMessage } from "@/lib/redux/slices/flashcardChatSlice";
 import { openai, defaultOpenAiModel } from "@/lib/ai/openAiBrowserClient";
 
@@ -24,17 +22,28 @@ const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   onClose,
   card,
 }) => {
-  const dispatch = useDispatch();
-  const chatMessages = useSelector(
-    (state: RootState) => state.flashcardChat[card.id]?.chat || [],
-  );
+  const dispatch = useAppDispatch();
+  const chatMessages = useAppSelector((state): ChatMessage[] => {
+    if (!card.id) return [];
+    return state.flashcardChat.flashcards[card.id]?.chat ?? [];
+  });
   const [chatInput, setChatInput] = useState("");
 
   const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
+    if (!card.id) {
+      console.error("Cannot send a chat message for a flashcard without an ID");
+      return;
+    }
+    if (!defaultOpenAiModel) {
+      console.error("Cannot send a chat message without a configured model");
+      return;
+    }
+
+    const flashcardId = card.id;
 
     const newMessage: ChatMessage = { role: "user", content: chatInput };
-    dispatch(addMessage({ flashcardId: card.id, message: newMessage }));
+    dispatch(addMessage({ flashcardId, message: newMessage }));
     setChatInput("");
 
     try {
@@ -57,7 +66,7 @@ const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         assistantMessage += content;
         dispatch(
           addMessage({
-            flashcardId: card.id,
+            flashcardId,
             message: { role: "assistant", content: assistantMessage },
           }),
         );

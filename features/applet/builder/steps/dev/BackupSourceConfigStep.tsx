@@ -120,6 +120,7 @@ export const SourceConfigStep: React.FC<SelectAppStepProps> = ({
   };
 
   const handleMappingCreated = (mapping: BrokerMapping) => {
+    if (!activeAppletId) return;
     dispatch(addBrokerMapping({ id: activeAppletId, brokerMapping: mapping }));
   };
 
@@ -216,25 +217,27 @@ export const SourceConfigStep: React.FC<SelectAppStepProps> = ({
                     >
                       <EmptyStateCard
                         title="Select an Intelligence Source"
-                        description={`${itemCounts["ai-agent"]} Agents, ${itemCounts["action"]} Actions, ${itemCounts["api-integration"]} API Integrations, ${itemCounts["ai-recipe"]} Recipes`}
+                        description={`${itemCounts["ai-agent"]} Agents, ${itemCounts["action"]} Actions, ${itemCounts["api-integration"]} API Integrations, ${itemCounts.recipe} Recipes`}
                         icon={BrainCircuit}
                       />
                     </SectionCard>
                   )}
 
-                  {appletCompiledRecipeId && (
+                  {appletCompiledRecipeId && activeAppletId && (
                     <RecipeDetailsCard
                       sourceConfig={sourceConfigs}
                       appletId={activeAppletId}
                     />
                   )}
 
-                  <NeededBrokersCard
-                    sourceConfig={sourceConfigs}
-                    selectedBroker={selectedBroker}
-                    onBrokerSelect={handleBrokerSelect}
-                    appletId={activeAppletId}
-                  />
+                  {activeAppletId && (
+                    <NeededBrokersCard
+                      sourceConfig={sourceConfigs}
+                      selectedBroker={selectedBroker}
+                      onBrokerSelect={handleBrokerSelect}
+                      appletId={activeAppletId}
+                    />
+                  )}
 
                   {/* Save Button */}
                   <div className="mt-4">
@@ -255,7 +258,7 @@ export const SourceConfigStep: React.FC<SelectAppStepProps> = ({
                 {/* Second and Third columns: Broker Mapping */}
                 {activeSourceType && (
                   <div className="md:col-span-2">
-                    {selectedBroker ? (
+                    {selectedBroker && activeAppletId ? (
                       <BrokerMappingCard
                         selectedBroker={selectedBroker}
                         appletId={activeAppletId}

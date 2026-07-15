@@ -9,13 +9,8 @@ import { CommonFieldProps } from "./core/types";
 // Import the shadcn/ui Select components
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { FieldOption } from "@/types/customAppTypes";
-
-// Define the type for selected option in state
-export interface SelectedOptionValue extends FieldOption {
-    selected: boolean;
-    otherText?: string;
-}
+import { selectedOptionValues } from "./common/types";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 
 
 const SelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
@@ -27,6 +22,8 @@ const SelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id
     const dispatch = useAppDispatch();
     const brokerId = useAppSelector((state) => brokerSelectors.selectBrokerId(state, { source, mappedItemId: id }));
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
+    const storedOptions = selectedOptionValues(stateValue);
+    const availableOptions = processFieldOptions(options);
 
     const updateBrokerValue = useCallback(
         (updatedValue: any) => {
@@ -42,9 +39,9 @@ const SelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id
 
     // Initialize stateValue if not set
     useEffect(() => {
-        if (!stateValue && options?.length > 0) {
+        if (!stateValue && availableOptions.length > 0) {
             // Initialize with all options having selected: false
-            const initialOptions = options.map((option) => ({
+            const initialOptions = availableOptions.map((option) => ({
                 ...option,
                 selected: false,
             }));
@@ -66,7 +63,7 @@ const SelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id
     // Handler for select change
     const handleSelectChange = (selectedId: string) => {
         // Create new options array with only the selected option set to true
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => ({
+        const updatedOptions = storedOptions.map((option) => ({
             ...option,
             selected: option.id === selectedId,
         }));
@@ -78,7 +75,7 @@ const SelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id
     const handleOtherTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const otherText = e.target.value;
 
-        const updatedOptions = (stateValue || []).map((option: SelectedOptionValue) => {
+        const updatedOptions = storedOptions.map((option) => {
             if (option.id === "other") {
                 return {
                     ...option,
@@ -92,7 +89,7 @@ const SelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id
     };
 
     // Determine the currently selected option
-    const selectedOption = Array.isArray(stateValue) ? stateValue.find((option: SelectedOptionValue) => option.selected) : null;
+    const selectedOption = storedOptions.find((option) => option.selected);
     const isOtherSelected = selectedOption?.id === "other";
 
     // Render custom content if provided
@@ -100,7 +97,7 @@ const SelectField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id
         return <>{customContent}</>;
     }
 
-    const selectWithOptions = [...(options || [])];
+    const selectWithOptions = [...availableOptions];
     if (includeOther) {
         selectWithOptions.push({ id: "other", label: "Other" });
     }

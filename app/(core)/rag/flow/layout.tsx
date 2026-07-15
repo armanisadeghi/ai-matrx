@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/rag", {
   titlePrefix: "Flow",
   title: "Knowledge",
   description: "Visualize and manage RAG ingestion and search flows.",
-  letter: "Rf",
+  letter: "KF",
 });
 
 export default function RagFlowLayout({

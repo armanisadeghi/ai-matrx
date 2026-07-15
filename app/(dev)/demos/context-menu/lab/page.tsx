@@ -429,14 +429,14 @@ export default function ContextMenuDemoPage() {
     [surfaceName],
   );
   const [labSourceFeature, setLabSourceFeature] =
-    useState<SourceFeature>("demo");
+    useState<SourceFeature>("context-menu-demo");
 
   // -- contextData editor ------------------------------------------------
   const [contextDataText, setContextDataText] = useState(DEFAULT_CONTEXT_DATA);
 
   useEffect(() => {
     if (!surfaceName) {
-      setLabSourceFeature("demo");
+      setLabSourceFeature("context-menu-demo");
       setContextDataText(DEFAULT_CONTEXT_DATA);
       return;
     }
@@ -445,7 +445,7 @@ export default function ContextMenuDemoPage() {
       setLabSourceFeature(preset.sourceFeature);
       setContextDataText(formatLabContextJson(preset.sampleContextData));
     } else {
-      setLabSourceFeature("demo");
+      setLabSourceFeature("context-menu-demo");
     }
   }, [surfaceName]);
   const parsedContextData = useMemo<{

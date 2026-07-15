@@ -21,6 +21,8 @@ import {
 import { selectAppletRuntimeApplets } from "@/lib/redux/app-runner/slices/customAppletRuntimeSlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ColorDivs from "./color-divs/ColorDivs";
+import { LoadingSpinner } from "@/components/ui/spinner";
+import type { CustomAppletConfig } from "@/types/customAppTypes";
 
 export interface HomeAppletProps {
   navigateToApplet: (appletSlug: string) => void;
@@ -51,7 +53,24 @@ export const HomeApplet: React.FC<HomeAppletProps> = ({
 
   const isMobile = useIsMobile();
 
-  const renderAppletCard = (applet: any) => (
+  const hasRequiredAppConfig =
+    storeIsInitialized &&
+    typeof storeAppName === "string" &&
+    typeof storeAppDescription === "string" &&
+    typeof storeAppImageUrl === "string" &&
+    typeof storeCreator === "string" &&
+    typeof storePrimaryColor === "string" &&
+    typeof storeAccentColor === "string";
+
+  if (!hasRequiredAppConfig) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  const renderAppletCard = (applet: CustomAppletConfig) => (
     <AppletCardAdapter
       variant={appletCardVariant}
       applet={applet}

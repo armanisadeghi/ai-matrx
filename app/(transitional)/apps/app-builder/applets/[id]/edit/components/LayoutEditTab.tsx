@@ -72,7 +72,7 @@ export default function LayoutEditTab({
             <Label htmlFor="applet-submit-text">Submit Button</Label>
             <div className="flex items-center gap-2 w-full">
               <IconPicker
-                selectedIcon={appletIcon || DEFAULT_APPLET_CONFIG.appletIcon}
+                selectedIcon={appletIcon ?? "Search"}
                 onIconSelect={handleAppletIconSelect}
                 dialogTitle="Select Submit Button"
                 dialogDescription="Choose an icon to represent your submit button"

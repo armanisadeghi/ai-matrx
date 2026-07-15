@@ -302,7 +302,7 @@ export default function FieldListTable({
             ? [
                   {
                       icon: <Pencil className="h-4 w-4" />,
-                      onClick: (field) => {
+                      onClick: (field: FieldBuilder) => {
                           handleEditField(field.id);
                       },
                   },
@@ -313,14 +313,14 @@ export default function FieldListTable({
             ? [
                   {
                       icon: <Trash2 className="h-4 w-4" />,
-                      onClick: (field) => {
+                      onClick: (field: FieldBuilder) => {
                           handleDeleteField(field);
                       },
                       className: "text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300",
                       requiresConfirmation: true,
                       confirmationProps: {
-                          getTitle: (field) => `Delete Field Component: ${field.label || "Unnamed Field"}`,
-                          getDescription: (field) =>
+                          getTitle: (field: FieldBuilder) => `Delete Field Component: ${field.label || "Unnamed Field"}`,
+                          getDescription: (field: FieldBuilder) =>
                               `This action cannot be undone. This will permanently delete "${
                                   field.label || "Unnamed Field"
                               }" and remove it from any containers or layouts that use it.`,

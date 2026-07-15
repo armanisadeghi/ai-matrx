@@ -16,9 +16,17 @@ import * as dateFns from "date-fns";
  * This component can be used anywhere in your app to render
  * dynamically generated React components
  */
-const DynamicComponentRenderer = ({ code, containerClassName = "" }) => {
+interface DynamicComponentRendererProps {
+  code: string;
+  containerClassName?: string;
+}
+
+const DynamicComponentRenderer = ({
+  code,
+  containerClassName = "",
+}: DynamicComponentRendererProps) => {
   const [processedCode, setProcessedCode] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Process the code to handle imports and other transformations
   useEffect(() => {
@@ -34,7 +42,7 @@ const DynamicComponentRenderer = ({ code, containerClassName = "" }) => {
       setError(null);
     } catch (err) {
       console.error("Error processing component code:", err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Unknown processing error");
     }
   }, [code]);
 
@@ -100,7 +108,7 @@ const DynamicComponentRenderer = ({ code, containerClassName = "" }) => {
 /**
  * Process component code to handle imports and transformations
  */
-function processComponentCode(code) {
+function processComponentCode(code: string): string {
   // First, handle standard ES module imports
   // Find all import statements and collect the imported items
   const importRegex = /import\s+{([^}]+)}\s+from\s+["']([^"']+)["'];?/g;

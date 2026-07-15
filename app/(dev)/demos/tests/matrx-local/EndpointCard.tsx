@@ -17,6 +17,7 @@ const EndpointCard = ({ endpoint, onTest, response, loading, baseUrl }: Endpoint
     );
 
     const handleTest = () => {
+        if (!onTest) return;
         const params = new URLSearchParams(queryParams).toString();
         const url = params ? `${endpoint.url}?${params}` : endpoint.url;
         onTest(endpoint, url, undefined);

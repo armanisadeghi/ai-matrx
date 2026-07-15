@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react'; 
-import { LiveProvider, LiveEditor, LiveError, LivePreview } from 'react-live';
+import type { Dispatch, SetStateAction } from "react";
+import { LiveProvider, LiveEditor } from "react-live";
 
 
 // Component for editing React code
-const CodeEditor = ({ code, setCode, resetCode }) => {
+interface CodeEditorProps {
+  code: string;
+  setCode: Dispatch<SetStateAction<string>>;
+  resetCode: () => void;
+}
+
+const CodeEditor = ({ code, setCode, resetCode }: CodeEditorProps) => {
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
       <div className="bg-gray-100 dark:bg-gray-800 p-2 flex justify-between items-center border-b border-border">

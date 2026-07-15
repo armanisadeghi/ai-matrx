@@ -4,11 +4,11 @@ import React from "react";
 import SectionCard from "@/components/official/cards/SectionCard";
 import { AppletSourceConfig } from "@/types/customAppTypes";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { BrokerMapping } from "@/types/customAppTypes";
 import { CheckCircle, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { selectAppletBrokerMappings } from "@/lib/redux/app-builder/selectors/appletSelectors";
 import { Button } from "@/components/ui/button";
+import { isRecipeAppletSourceConfig } from "@/features/applet/builder/utils/sourceConfigGuards";
 
 interface RecipeDetailsCardProps {
     sourceConfig: AppletSourceConfig | null;
@@ -17,14 +17,15 @@ interface RecipeDetailsCardProps {
 }
 
 const RecipeDetailsCard = ({ sourceConfig, appletId, onChangeRecipe }: RecipeDetailsCardProps) => {
-    const brokerCount = sourceConfig?.config.neededBrokers.length || 0;
+    const recipeSource = isRecipeAppletSourceConfig(sourceConfig) ? sourceConfig : null;
+    const brokerCount = recipeSource?.config.neededBrokers.length ?? 0;
     const brokerMappings = useAppSelector(state => 
         appletId ? selectAppletBrokerMappings(state, appletId) : null
-    ) as BrokerMapping[] | null;
+    );
     
     // Count how many needed brokers have been mapped
-    const neededBrokerIds = sourceConfig?.config.neededBrokers.map(broker => broker.id) || [];
-    const mappedBrokerIds = brokerMappings?.map(mapping => mapping.brokerId) || [];
+    const neededBrokerIds = recipeSource?.config.neededBrokers.map(broker => broker.id) ?? [];
+    const mappedBrokerIds = brokerMappings?.map(mapping => mapping.brokerId) ?? [];
     const mappedCount = neededBrokerIds.filter(id => 
         mappedBrokerIds.includes(id)
     ).length;
@@ -33,7 +34,7 @@ const RecipeDetailsCard = ({ sourceConfig, appletId, onChangeRecipe }: RecipeDet
     const allMapped = brokerCount > 0 && mappedCount === brokerCount;
 
     // Helper function to display values safely, showing "null" for null values
-    const displayValue = (value: any): string => {
+    const displayValue = (value: unknown): string => {
         if (value === null || value === undefined) return "null";
         if (typeof value === "string") return value;
         return String(value);
@@ -44,7 +45,7 @@ const RecipeDetailsCard = ({ sourceConfig, appletId, onChangeRecipe }: RecipeDet
             title={allMapped ? "Recipe Ready" : "Recipe Details"} 
             color={allMapped ? "blue" : "gray"}
         >
-            {sourceConfig && (
+            {recipeSource && (
                 <div className={cn(
                     "space-y-2 text-sm py-3",
                     "transition-all duration-300",
@@ -53,18 +54,18 @@ const RecipeDetailsCard = ({ sourceConfig, appletId, onChangeRecipe }: RecipeDet
                     <div className="flex">
                         <span className="font-medium text-gray-700 dark:text-gray-300 w-36">Recipe ID:</span>
                         <span className="text-gray-900 dark:text-gray-100 text-xs break-all">
-                            {displayValue(sourceConfig.config.id)}
+                            {displayValue(recipeSource.config.id)}
                         </span>
                     </div>
                     <div className="flex">
                         <span className="font-medium text-gray-700 dark:text-gray-300 w-36">Compiled ID:</span>
                         <span className="text-gray-900 dark:text-gray-100 text-xs break-all">
-                            {displayValue(sourceConfig.config.compiledId)}
+                            {displayValue(recipeSource.config.compiledId)}
                         </span>
                     </div>
                     <div className="flex">
                         <span className="font-medium text-gray-700 dark:text-gray-300 w-36">Version:</span>
-                        <span className="text-gray-900 dark:text-gray-100">{displayValue(sourceConfig.config.version)}</span>
+                        <span className="text-gray-900 dark:text-gray-100">{displayValue(recipeSource.config.version)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center">
@@ -101,4 +102,4 @@ const RecipeDetailsCard = ({ sourceConfig, appletId, onChangeRecipe }: RecipeDet
     );
 };
 
-export default RecipeDetailsCard; 
+export default RecipeDetailsCard;

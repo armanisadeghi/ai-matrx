@@ -16,6 +16,9 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { docprocDb } from "@/utils/supabase/docprocDb";
+
+const docproc = docprocDb(supabase);
 
 export interface PageBundle {
   pageNumber: number;
@@ -26,6 +29,10 @@ export interface PageBundle {
   sectionKind: string | null;
   sectionTitle: string | null;
   usedOcr: boolean;
+  extractionMethod: string | null;
+  extractionConfidence: number | null;
+  verifiedAt: string | null;
+  verificationFlags: string[];
   /** Rendered-page image in cld_files — the visual fallback when there's no
    *  live PDF to render (non-PDF source, or source bytes removed). */
   imageCldFileId: string | null;
@@ -47,24 +54,25 @@ export function usePageBundle({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || !processedDocumentId || pageNumber == null) {
-      setPage(null);
-      // Clear loading too — otherwise a disable mid-flight strands the
-      // "Loading page…" spinner forever (review P2).
-      setLoading(false);
-      setError(null);
-      return undefined;
-    }
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    (async () => {
+    void Promise.resolve().then(async () => {
+      if (!enabled || !processedDocumentId || pageNumber == null) {
+        if (!cancelled) {
+          setPage(null);
+          // Clear loading too — otherwise a disable mid-flight strands the
+          // "Loading page…" spinner forever (review P2).
+          setLoading(false);
+          setError(null);
+        }
+        return;
+      }
+      setLoading(true);
+      setError(null);
       try {
-        const { data, error: dbError } = await (supabase as any)
-          .schema("docproc").from("processed_document_pages")
+        const { data, error: dbError } = await docproc
+          .from("processed_document_pages")
           .select(
-            "page_number, raw_text, raw_char_count, cleaned_text, cleaned_char_count, section_kind, section_title, used_ocr, image_cld_file_id",
+            "page_number, raw_text, raw_char_count, cleaned_text, cleaned_char_count, section_kind, section_title, used_ocr, extraction_method, extraction_confidence, verified_at, verification_flags, image_cld_file_id",
           )
           .eq("processed_document_id", processedDocumentId)
           .eq("page_number", pageNumber)
@@ -75,17 +83,20 @@ export function usePageBundle({
           setPage(null);
           return;
         }
-        const row = data as Record<string, unknown>;
         setPage({
-          pageNumber: (row.page_number as number) ?? pageNumber,
-          rawText: (row.raw_text as string) ?? "",
-          rawCharCount: (row.raw_char_count as number) ?? 0,
-          cleanedText: (row.cleaned_text as string) ?? "",
-          cleanedCharCount: (row.cleaned_char_count as number) ?? 0,
-          sectionKind: (row.section_kind as string | null) ?? null,
-          sectionTitle: (row.section_title as string | null) ?? null,
-          usedOcr: (row.used_ocr as boolean) ?? false,
-          imageCldFileId: (row.image_cld_file_id as string | null) ?? null,
+          pageNumber: data.page_number ?? pageNumber,
+          rawText: data.raw_text ?? "",
+          rawCharCount: data.raw_char_count ?? 0,
+          cleanedText: data.cleaned_text ?? "",
+          cleanedCharCount: data.cleaned_char_count ?? 0,
+          sectionKind: data.section_kind ?? null,
+          sectionTitle: data.section_title ?? null,
+          usedOcr: data.used_ocr ?? false,
+          extractionMethod: data.extraction_method ?? null,
+          extractionConfidence: data.extraction_confidence ?? null,
+          verifiedAt: data.verified_at ?? null,
+          verificationFlags: data.verification_flags ?? [],
+          imageCldFileId: data.image_cld_file_id ?? null,
         });
       } catch (e) {
         if (cancelled) return;
@@ -93,7 +104,7 @@ export function usePageBundle({
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    });
 
     return () => {
       cancelled = true;

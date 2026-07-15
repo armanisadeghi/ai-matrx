@@ -7,8 +7,8 @@ export type LayoutType =
     | 'AdvancedLayout'
     | 'DynamicLayout';
 
-export type gapOptions = 'small' | 'medium' | 'large' | string;
-export type paddingOptions = 'small' | 'medium' | 'large' | string;
+export type gapOptions = 'small' | 'medium' | 'large';
+export type paddingOptions = 'small' | 'medium' | 'large';
 
 
 export type EnhancedProps = {
@@ -65,5 +65,4 @@ export interface EnhancedDynamicLayoutNewProps {
     animate?: boolean;
     hoverEffect?: boolean;
 }
-
 

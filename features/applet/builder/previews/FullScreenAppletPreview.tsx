@@ -64,6 +64,8 @@ export default function FullScreenAppletPreview({
             
             return () => clearTimeout(timer);
         }
+
+        return undefined;
     }, [isVisible]);
 
     if (!isVisible || !applet) return null;

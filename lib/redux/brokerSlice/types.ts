@@ -18,12 +18,16 @@ export interface BrokerOption {
   label: string;
   value?: unknown;
   selected?: boolean;
+  otherText?: string;
 }
 
 export interface BrokerTableColumn {
   id: string;
   label: string;
+  name?: string;
   order?: number;
+  isFixed?: boolean;
+  minWidthClass?: string;
 }
 
 export interface BrokerTableRow {

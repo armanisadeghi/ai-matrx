@@ -3,9 +3,10 @@ import React from 'react';
 import { CalendarIcon, CogIcon, UsersIcon, StarIcon, ImageIcon, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { ICON_OPTIONS, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
+import { COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
+import { getIconComponent } from '@/components/official/icons/IconResolver';
 import { InlineMediaRef } from '@/features/files';
 import { useAppSelector } from "@/lib/redux/hooks";
 import { 
@@ -55,20 +56,24 @@ const AppPreviewCard: React.FC<AppPreviewCardProps> = ({ appId, className }) => 
   const renderAppIcon = () => {
     if (!mainAppIcon) return <CogIcon className="h-5 w-5" />;
     
-    const IconComponent = ICON_OPTIONS[mainAppIcon];
-    if (!IconComponent) return <CogIcon className="h-5 w-5" />;
-    
+    const IconComponent = getIconComponent(mainAppIcon, "Settings");
     return <IconComponent className="h-5 w-5" />;
   };
 
   // Get color classes using exact variants
-  const primaryBgClass = COLOR_VARIANTS.primaryBg[primaryColor];
-  const primaryTextClass = COLOR_VARIANTS.primaryText[primaryColor];
-  const primaryBorderClass = COLOR_VARIANTS.primaryBorder[primaryColor];
+  const primaryBackgrounds: Record<string, string> = COLOR_VARIANTS.primaryBg;
+  const primaryTextColors: Record<string, string> = COLOR_VARIANTS.primaryText;
+  const primaryBorders: Record<string, string> = COLOR_VARIANTS.primaryBorder;
+  const accentBackgrounds: Record<string, string> = COLOR_VARIANTS.accentBg;
+  const accentTextColors: Record<string, string> = COLOR_VARIANTS.accentText;
+  const accentBorders: Record<string, string> = COLOR_VARIANTS.accentBorder;
+  const primaryBgClass = primaryBackgrounds[primaryColor];
+  const primaryTextClass = primaryTextColors[primaryColor];
+  const primaryBorderClass = primaryBorders[primaryColor];
   
-  const accentBgClass = COLOR_VARIANTS.accentBg[accentColor];
-  const accentTextClass = COLOR_VARIANTS.accentText[accentColor];
-  const accentBorderClass = COLOR_VARIANTS.accentBorder[accentColor];
+  const accentBgClass = accentBackgrounds[accentColor];
+  const accentTextClass = accentTextColors[accentColor];
+  const accentBorderClass = accentBorders[accentColor];
 
   return (
     <div className={cn("w-full", className)}>

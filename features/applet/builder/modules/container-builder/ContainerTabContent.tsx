@@ -56,8 +56,10 @@ const ContainerTabContent: React.FC<ContainerTabContentProps> = ({ appletId, app
     }, [appletContainers]);
 
     // Filter containers that are already in the applet
-    const appletContainerIds = appletContainers.map((container) => container.id);
-    const isContainerInApplet = activeContainerId ? appletContainerIds.includes(activeContainerId) : false;
+    const appletContainerIds = appletContainers?.map((container) => container.id);
+    const isContainerInApplet = activeContainerId
+        ? appletContainerIds?.includes(activeContainerId) === true
+        : false;
 
     // Show error toasts when they occur
     useEffect(() => {

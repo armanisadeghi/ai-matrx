@@ -2,7 +2,7 @@ import {Circle} from "lucide-react";
 import React from "react";
 
 interface ConnectionStatusProps {
-    status: string;
+    status: 'connected' | 'disconnected' | 'connecting' | 'error';
 }
 
 // =====================
@@ -16,7 +16,7 @@ const ConnectionStatus = ({status}: ConnectionStatusProps) => {
         error: {color: 'text-red-500', text: 'Error'}
     };
 
-    const config = statusConfig[status] || statusConfig.disconnected;
+    const config = statusConfig[status];
 
     return (
         <div className="flex items-center gap-2">

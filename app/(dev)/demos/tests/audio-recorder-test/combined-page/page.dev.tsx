@@ -302,7 +302,10 @@ export default function AudioRecorderPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => playRecording(recording.id)}
+                                                    onClick={() => {
+                                                        if (recording.id !== undefined) void playRecording(recording.id);
+                                                    }}
+                                                    disabled={recording.id === undefined}
                                                 >
                                                     {currentPlayingId === recording.id ? (
                                                         <Pause className="h-4 w-4" />

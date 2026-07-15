@@ -31,7 +31,7 @@ const RangeSlider = React.forwardRef<
         <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
             <SliderPrimitive.Range className="absolute h-full bg-gray-400 dark:bg-gray-500" />
         </SliderPrimitive.Track>
-        {props.defaultValue?.map((_: any, i: number) => (
+        {props.defaultValue?.map((_, i) => (
             <SliderPrimitive.Thumb
                 key={i}
                 className="block h-5 w-5 rounded-full border-2 border-gray-400 bg-white dark:border-gray-500 dark:bg-gray-800 ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
@@ -52,6 +52,17 @@ const SliderField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id
     const brokerId = useAppSelector((state) => brokerSelectors.selectBrokerId(state, { source, mappedItemId: id }));
     const stateValue = useAppSelector((state) => brokerSelectors.selectValue(state, brokerId));
 
+    const storedSliderValue =
+        typeof stateValue === "number" ||
+        (Array.isArray(stateValue) && stateValue.every((value) => typeof value === "number"))
+            ? stateValue
+            : undefined;
+    const configuredDefaultValue =
+        typeof defaultValue === "number" ||
+        (Array.isArray(defaultValue) && defaultValue.every((value) => typeof value === "number"))
+            ? defaultValue
+            : undefined;
+
     const updateBrokerValue = useCallback(
         (updatedValue: any) => {
             dispatch(
@@ -67,28 +78,28 @@ const SliderField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id
     // Set up UI state for controlled sliders
     const [sliderValue, setSliderValue] = useState<number | number[]>(
         multiSelect
-            ? stateValue || [min, max]
-            : stateValue !== undefined
-            ? stateValue
-            : defaultValue !== undefined
-            ? defaultValue
+            ? storedSliderValue ?? [min, max]
+            : storedSliderValue !== undefined
+            ? storedSliderValue
+            : configuredDefaultValue !== undefined
+            ? configuredDefaultValue
             : (min + max) / 2
     );
 
     // Initialize state if needed
     useEffect(() => {
-        if (stateValue === undefined) {
+        if (storedSliderValue === undefined) {
             // Initialize with default value
-            const initialValue = multiSelect ? [min, max] : defaultValue !== undefined ? defaultValue : (min + max) / 2;
+            const initialValue = multiSelect ? [min, max] : configuredDefaultValue ?? (min + max) / 2;
 
             updateBrokerValue(initialValue);
 
             setSliderValue(initialValue);
         } else {
             // Update local state when Redux state changes
-            setSliderValue(stateValue);
+            setSliderValue(storedSliderValue);
         }
-    }, [stateValue, defaultValue, min, max, multiSelect, dispatch, id]);
+    }, [storedSliderValue, configuredDefaultValue, min, max, multiSelect, dispatch, id]);
 
     // Handler for slider value change
     const handleSliderChange = (newValue: number[]) => {

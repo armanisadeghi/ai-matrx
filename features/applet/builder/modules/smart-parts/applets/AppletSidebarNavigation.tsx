@@ -66,6 +66,14 @@ const AppletSidebarNavigation: React.FC<AppletSidebarNavigationProps> = ({
     }, [applets, dispatch]);
 
     const handleExistingContainerSelect = async (group: ComponentGroup) => {
+        if (!activeAppletId) {
+            toast({
+                title: "Select an applet",
+                description: "Choose an applet before adding a container.",
+                variant: "destructive",
+            });
+            return;
+        }
         const containerExists = allContainerIds.includes(group.id);
 
         try {
@@ -162,6 +170,10 @@ const AppletSidebarNavigation: React.FC<AppletSidebarNavigationProps> = ({
             onAddContainer(appletId);
         }
     };
+
+    if (!app) {
+        return <div className="p-3 text-sm text-destructive">The selected app is unavailable.</div>;
+    }
 
     return (
         <SectionCard

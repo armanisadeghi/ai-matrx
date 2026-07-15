@@ -123,7 +123,9 @@ export default function AssetsPanel({ sites }: { sites: ClientSite[] }) {
                 { preset: 'web', visibility: 'public', fileName: file.name },
             );
             const envelope = normalized.asset;
-            const primary = envelope?.variants?.[envelope.primary_key] ?? envelope?.variants?.['original'];
+            // ORIGINAL first: the library references the untouched master (true
+            // bytes/dimensions/transparency); preset renders stay on the envelope.
+            const primary = envelope?.variants?.['original'] ?? envelope?.variants?.[envelope.primary_key];
             const cdnUrl = primary?.cdn_url ?? null;
             if (!envelope || !cdnUrl) {
                 // Durability doctrine: never register a signed URL as a library asset.

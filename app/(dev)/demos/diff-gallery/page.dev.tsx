@@ -141,11 +141,11 @@ class CardBoundary extends React.Component<
   { children: React.ReactNode },
   { error: string | null }
 > {
-  state = { error: null as string | null };
+  override state: { error: string | null } = { error: null };
   static getDerivedStateFromError(err: unknown) {
     return { error: err instanceof Error ? err.message : "Render failed" };
   }
-  render() {
+  override render() {
     if (this.state.error) {
       return (
         <div className="flex h-full items-center justify-center p-3 text-center text-xs text-destructive">
@@ -480,8 +480,8 @@ export default function DiffGalleryPage() {
           >
             <div className="h-full overflow-auto">
               <NoteDiffViewer
-                oldNote={{ title: "Sample", content: original }}
-                newNote={{ title: "Sample", content: modified }}
+                oldNote={{ label: "Sample", content: original }}
+                newNote={{ label: "Sample", content: modified }}
                 oldLabel="Before"
                 newLabel="After"
               />

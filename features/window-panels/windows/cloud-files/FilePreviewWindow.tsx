@@ -24,6 +24,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { PreviewPane } from "@/features/files";
 
@@ -36,14 +37,50 @@ export interface FilePreviewWindowProps {
    * and rely on `isOpen` being false anyway.
    */
   fileId?: string | null;
+  /** Optional 1-based page for PDF files. */
+  pageNumber?: number | null;
+  /** Internal opener sequence used to replay identical navigation requests. */
+  navigationRequestId?: number | null;
 }
 
 export default function FilePreviewWindow({
   isOpen,
   onClose,
   fileId,
+  pageNumber,
+  navigationRequestId,
 }: FilePreviewWindowProps) {
+  const requestedPage =
+    typeof pageNumber === "number" && Number.isFinite(pageNumber)
+      ? Math.max(1, Math.trunc(pageNumber))
+      : undefined;
   if (!isOpen || !fileId) return null;
+
+  return (
+    <FilePreviewWindowContent
+      key={`${fileId}:${navigationRequestId ?? requestedPage ?? "default"}`}
+      fileId={fileId}
+      requestedPage={requestedPage}
+      navigationRequestId={navigationRequestId}
+      onClose={onClose}
+    />
+  );
+}
+
+function FilePreviewWindowContent({
+  fileId,
+  requestedPage,
+  navigationRequestId,
+  onClose,
+}: {
+  fileId: string;
+  requestedPage: number | undefined;
+  navigationRequestId: number | null | undefined;
+  onClose: () => void;
+}) {
+  const [activePage, setActivePage] = useState<number | undefined>(
+    requestedPage,
+  );
 
   return (
     <WindowPanel
@@ -51,9 +88,17 @@ export default function FilePreviewWindow({
       width={900}
       height={680}
       urlSyncKey="file_preview"
+      urlSyncId={fileId}
+      urlSyncArgs={
+        activePage != null ? { p: String(activePage) } : undefined
+      }
       onClose={onClose}
       overlayId="filePreviewWindow"
-      onCollectData={() => ({ fileId })}
+      onCollectData={() => ({
+        fileId,
+        pageNumber: activePage ?? null,
+        navigationRequestId: navigationRequestId ?? null,
+      })}
     >
       {/*
         The canonical PreviewPane. Passing `onClose` so the pane's own
@@ -66,6 +111,8 @@ export default function FilePreviewWindow({
       */}
       <PreviewPane
         fileId={fileId}
+        pageNumber={activePage}
+        onPageChange={setActivePage}
         onClose={onClose}
         className="h-full w-full"
       />

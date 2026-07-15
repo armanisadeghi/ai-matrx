@@ -8,7 +8,6 @@ import {
   Mail,
   MessageSquare,
   Calendar,
-  Slack,
   FileText,
   HardDrive,
   Database,
@@ -51,7 +50,7 @@ export interface Integration {
   id: string;
   name: string;
   description: string;
-  icon: React.ElementType<any>;
+  icon: React.ElementType;
   iconColor?: string;
   category: Category;
   isConnected: boolean;

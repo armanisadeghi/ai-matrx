@@ -19,6 +19,8 @@ export default function PreviewLoadingWithMessage({ isLoading, isPreview }: Prev
       
       return () => clearTimeout(timer);
     }
+
+    return undefined;
   }, [isLoading, isPreview]);
   
   if (!isPreview || (isPreview && !isLoading && !showMessage)) {
@@ -33,4 +35,4 @@ export default function PreviewLoadingWithMessage({ isLoading, isPreview }: Prev
       </p>
     </div>
   );
-} 
+}

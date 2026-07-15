@@ -10,7 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import SelectionPills from "./common/SelectionPills";
 import { CommonFieldProps } from "./core/types";
-import { SelectedOptionValue } from "./common/types";
+import { SelectedOptionValue, selectedOptionValues } from "./common/types";
+import { processFieldOptions } from "@/features/applet/utils/field-normalization";
 
 export type { SelectedOptionValue } from "./common/types";
 const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
@@ -36,6 +37,8 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
   const stateValue = useAppSelector((state) =>
     brokerSelectors.selectValue(state, brokerId),
   );
+  const storedOptions = selectedOptionValues(stateValue);
+  const availableOptions = processFieldOptions(options);
 
   const updateBrokerValue = useCallback(
     (updatedValue: any) => {
@@ -54,9 +57,9 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
 
   // Initialize stateValue if not set
   useEffect(() => {
-    if (!stateValue && options?.length > 0) {
+    if (!stateValue && availableOptions.length > 0) {
       // Initialize with all options having selected: false
-      const initialOptions = options.map((option) => ({
+      const initialOptions = availableOptions.map((option) => ({
         ...option,
         selected: false,
       }));
@@ -74,9 +77,7 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
       updateBrokerValue(initialOptions);
     } else if (stateValue) {
       // If there's an "other" option and it's selected, initialize the otherText state
-      const otherOption = Array.isArray(stateValue)
-        ? stateValue.find((opt: SelectedOptionValue) => opt.id === "other")
-        : null;
+      const otherOption = storedOptions.find((option) => option.id === "other");
       if (otherOption && otherOption.selected && otherOption.description) {
         setOtherText(otherOption.description);
       }
@@ -89,12 +90,12 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
     if (disabled) return;
 
     // Update the selection state for the specific option
-    const updatedOptions = (stateValue || []).map(
+    const updatedOptions = storedOptions.map(
       (option: SelectedOptionValue) => {
         if (option.id === optionId) {
           // Check if we're trying to unselect while below minItems
           if (option.selected && minItems) {
-            const selectedCount = stateValue.filter(
+            const selectedCount = storedOptions.filter(
               (o: SelectedOptionValue) => o.selected,
             ).length;
             if (selectedCount <= minItems) {
@@ -104,7 +105,7 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
 
           // Check if we're trying to select while at maxItems
           if (!option.selected && maxItems) {
-            const selectedCount = stateValue.filter(
+            const selectedCount = storedOptions.filter(
               (o: SelectedOptionValue) => o.selected,
             ).length;
             if (selectedCount >= maxItems) {
@@ -130,14 +131,14 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
 
     // Check how many are currently selected
     const areAllSelected = selectWithOptions.every((option) => {
-      const stateOption = stateValue?.find(
+      const stateOption = storedOptions.find(
         (o: SelectedOptionValue) => o.id === option.id,
       );
       return stateOption?.selected;
     });
 
     // Toggle all options
-    const updatedOptions = (stateValue || []).map(
+    const updatedOptions = storedOptions.map(
       (option: SelectedOptionValue) => ({
         ...option,
         selected: !areAllSelected,
@@ -164,7 +165,7 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
     const newOtherText = e.target.value;
     setOtherText(newOtherText);
 
-    const updatedOptions = (stateValue || []).map(
+    const updatedOptions = storedOptions.map(
       (option: SelectedOptionValue) => {
         if (option.id === "other") {
           return {
@@ -180,9 +181,7 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
   };
 
   // Get the currently selected options
-  const selectedOptions = Array.isArray(stateValue)
-    ? stateValue.filter((option: SelectedOptionValue) => option.selected)
-    : [];
+  const selectedOptions = storedOptions.filter((option) => option.selected);
 
   const isOtherSelected = selectedOptions.some(
     (option) => option.id === "other",
@@ -198,7 +197,7 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
   }
 
   // Prepare options list including "Other" option if needed
-  const selectWithOptions = [...(options || [])];
+  const selectWithOptions = [...availableOptions];
   if (includeOther) {
     selectWithOptions.push({ id: "other", label: "Other" });
   }
@@ -234,7 +233,7 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
 
   // Handler for clearing all selections
   const handleClearAll = () => {
-    const clearedOptions = (stateValue || []).map(
+    const clearedOptions = storedOptions.map(
       (option: SelectedOptionValue) => ({
         ...option,
         selected: false,
@@ -271,7 +270,7 @@ const DirectMultiSelectField: React.FC<CommonFieldProps> = ({
               "flex items-center relative cursor-pointer select-none py-2 px-3 mx-2 mt-2 mb-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300",
               !disabled && "hover:bg-gray-100 dark:hover:bg-gray-700",
               selectWithOptions.every((option) => {
-                const stateOption = stateValue?.find(
+                const stateOption = storedOptions.find(
                   (o: SelectedOptionValue) => o.id === option.id,
                 );
                 return stateOption?.selected;

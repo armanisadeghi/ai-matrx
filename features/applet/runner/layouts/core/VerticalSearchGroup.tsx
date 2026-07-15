@@ -42,6 +42,10 @@ const VerticalSearchGroup: React.FC<ContainerRenderProps> = ({
         }
     };
 
+    if (!appletPrimaryColor || !appletAccentColor) {
+        return null;
+    }
+
     return (
         <div className={`border rounded-lg overflow-hidden bg-${appletPrimaryColor}-50 dark:bg-${appletPrimaryColor}-800 dark:border-${appletPrimaryColor}-700 ${className}`}>
             <button
@@ -52,7 +56,7 @@ const VerticalSearchGroup: React.FC<ContainerRenderProps> = ({
             >
                 <ContainerHeaderLabel
                     label={label}
-                    description={description}
+                    description={typeof description === "string" ? description : ""}
                     primaryColor={appletPrimaryColor}
                     accentColor={appletAccentColor}
                 />

@@ -48,6 +48,9 @@ import { FileTabsBody } from "./FileTabsBody";
 
 export interface PreviewPaneProps {
   fileId: string;
+  /** Optional controlled 1-based page for the PDF preview. */
+  pageNumber?: number;
+  onPageChange?: (pageNumber: number) => void;
   /**
    * Called when the user clicks the close (X) button. Defaults to dispatching
    * `setActiveFileId(null)`. Override only if you have a specific surface
@@ -68,6 +71,8 @@ export interface PreviewPaneProps {
 
 export function PreviewPane({
   fileId,
+  pageNumber,
+  onPageChange,
   onClose,
   isMaximized,
   onToggleMaximize,
@@ -329,7 +334,12 @@ export function PreviewPane({
       {/* Tab strip + always-mounted bodies — shared with SingleFileShell so
        * the two surfaces never drift on tab semantics. */}
       <div className="relative flex-1 min-h-0 overflow-hidden">
-        <FileTabsBody fileId={fileId} density="compact" />
+        <FileTabsBody
+          fileId={fileId}
+          pageNumber={pageNumber}
+          onPageChange={onPageChange}
+          density="compact"
+        />
       </div>
     </div>
   );

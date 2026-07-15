@@ -6,7 +6,7 @@ import { CogIcon, LayersIcon, ImageIcon, SlidersIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { ICON_OPTIONS } from '@/features/applet/styles/StyledComponents';
+import { getIconComponent } from '@/components/official/icons/IconResolver';
 import { InlineMediaRef } from '@/features/files';
 
 interface AppletPreviewCardProps {
@@ -20,9 +20,7 @@ const AppletPreviewCard: React.FC<AppletPreviewCardProps> = ({ applet, className
   const renderAppletIcon = () => {
     if (!applet.appletIcon) return <CogIcon className="h-5 w-5" />;
     
-    const IconComponent = ICON_OPTIONS[applet.appletIcon];
-    if (!IconComponent) return <CogIcon className="h-5 w-5" />;
-    
+    const IconComponent = getIconComponent(applet.appletIcon, "Settings");
     return <IconComponent className="h-5 w-5" />;
   };
 
@@ -140,4 +138,4 @@ const AppletPreviewCard: React.FC<AppletPreviewCardProps> = ({ applet, className
   );
 };
 
-export default AppletPreviewCard; 
+export default AppletPreviewCard;

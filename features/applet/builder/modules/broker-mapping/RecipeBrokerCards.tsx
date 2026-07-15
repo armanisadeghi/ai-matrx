@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import React, { useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveAppletId } from "@/lib/redux/app-builder/selectors/appletSelectors";
 import { Broker, BrokerMapping, AppletSourceConfig } from "@/types/customAppTypes";
 
@@ -27,7 +27,7 @@ const RecipeBrokerCards = ({ appletId, sourceConfig, onMappingCreated }: SourceC
 
                 {/* Second and Third columns: Broker Mapping */}
                 <div className="md:col-span-2">
-                    {sourceConfig ? (
+                    {sourceConfig && idToUse ? (
                         <BrokerMappingCard
                             selectedBroker={selectedBroker}
                             appletId={idToUse}
@@ -35,7 +35,9 @@ const RecipeBrokerCards = ({ appletId, sourceConfig, onMappingCreated }: SourceC
                         />
                     ) : (
                         <div className="border rounded-lg p-4 border-gray-200 dark:border-gray-700 dark:bg-gray-800 flex items-center justify-center h-64">
-                            <p className="text-gray-500 dark:text-gray-400">Select a recipe to view details</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                                {!sourceConfig ? "Select a recipe to view details" : "Select an applet before mapping fields"}
+                            </p>
                         </div>
                     )}
                 </div>

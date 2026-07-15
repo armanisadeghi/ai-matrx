@@ -3,14 +3,14 @@
 import { useReactMediaRecorder } from "react-media-recorder";
 import React, { useEffect, useState } from "react";
 
-const RecordView = (props) => {
+const RecordView = () => {
     const [second, setSecond] = useState("00");
     const [minute, setMinute] = useState("00");
     const [isActive, setIsActive] = useState(false);
     const [counter, setCounter] = useState(0);
 
     useEffect(() => {
-        let intervalId;
+        let intervalId: ReturnType<typeof setInterval> | undefined;
 
         if (isActive) {
             intervalId = setInterval(() => {
@@ -35,7 +35,9 @@ const RecordView = (props) => {
             }, 1000);
         }
 
-        return () => clearInterval(intervalId);
+        return () => {
+            if (intervalId !== undefined) clearInterval(intervalId);
+        };
     }, [isActive, counter]);
 
 

@@ -22,8 +22,16 @@ jest.mock("uuid", () => ({
   v4: () => `uuid-stub-${++__uuidCounter}`,
 }));
 
+jest.mock(
+  "@/features/agents/redux/execution-system/client-capabilities/desktop-presence",
+  () => ({
+    getLiveDesktopInstance: jest.fn().mockResolvedValue(null),
+  }),
+);
+
 import { assembleManualRequest } from "../execute-manual-instance.thunk";
 import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
+import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import type { RootState } from "@/lib/redux/store";
@@ -155,6 +163,9 @@ function makeState(
     // `selectEffectiveOrganizationId` (active-org resolution) is read while
     // assembling the request envelope.
     appContext: appContextReducer(undefined, { type: "@@INIT" }),
+    // Desktop target routing is a real RootState slice. Derive defaults from
+    // its reducer so this partial fixture cannot drift from production state.
+    adminPreferences: adminPreferencesReducer(undefined, { type: "@@INIT" }),
     // Deliberately omit instanceModelOverrides: this path MUST NOT read it.
     // If a future refactor reaches into the slice, accessing it will throw
     // and these tests will fail.

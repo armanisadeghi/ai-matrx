@@ -15,13 +15,28 @@ import { ensureValidWidthClass } from "@/features/applet/constants/field-constan
 import { GripHorizontal, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FieldDefinition } from "@/types/customAppTypes";
-import { BrokerIdentifier } from "@/lib/redux/brokerSlice/types";
+import { BrokerIdentifier, BrokerTableRow } from "@/lib/redux/brokerSlice/types";
 
 // Use action creators from brokerConceptActions
 const { setTable, updateCell, addRow, removeRow, addColumn, removeColumn, updateColumn, updateRowOrder, updateColumnOrder } =
     brokerActions;
 
 const { selectTable, selectSortedRows, selectSortedColumns } = brokerSelectors;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readCellText = (row: BrokerTableRow, columnId: string, emptyText: string): string => {
+    if (!row.cells) {
+        throw new TypeError(`Table row ${row.id} has no cell map`);
+    }
+
+    const value = row.cells[columnId];
+    if (value === undefined || value === null) return emptyText;
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    throw new TypeError(`Table cell ${row.id}.${columnId} must contain a primitive value`);
+};
 
 const DragEditModifyTableField: React.FC<{
     field: FieldDefinition;
@@ -81,7 +96,7 @@ const DragEditModifyTableField: React.FC<{
     useEffect(() => {
         if (table) return;
         let initialTable;
-        if (Array.isArray(stateValue)) {
+        if (Array.isArray(stateValue) && stateValue.every(isRecord)) {
             // Migrate legacy state
             const allKeys = new Set<string>();
             stateValue.forEach((item) => Object.keys(item).forEach((key) => key !== "id" && key !== "order" && allKeys.add(key)));
@@ -94,12 +109,12 @@ const DragEditModifyTableField: React.FC<{
                 minWidthClass: "min-w-[150px]",
             }));
             const rows = stateValue.map((item, index) => ({
-                id: item.id || `row-${Date.now()}-${index}`,
+                id: typeof item.id === "string" ? item.id : `row-${Date.now()}-${index}`,
                 cells: Object.fromEntries(Array.from(allKeys).map((key) => [key, item[key] ?? ""])),
                 order: index,
             }));
             initialTable = { columns, rows };
-        } else if (options?.length > 0) {
+        } else if (options && options.length > 0) {
             // Initialize from options
             const defaultColumns = [
                 { id: "label", name: "Label", type: "text", order: 0, isFixed: false, minWidthClass: "min-w-[150px]" },
@@ -124,11 +139,17 @@ const DragEditModifyTableField: React.FC<{
         if (type === "ROW") {
             const newRows = Array.from(sortedRows);
             const [movedRow] = newRows.splice(source.index, 1);
+            if (!movedRow) {
+                throw new RangeError(`No row exists at drag index ${source.index}`);
+            }
             newRows.splice(destination.index, 0, movedRow);
             dispatch(updateRowOrder({ idArgs, rowIds: newRows.map((row) => row.id) }));
         } else if (type === "COLUMN") {
             const newColumns = Array.from(sortedColumns);
             const [movedCol] = newColumns.splice(source.index, 1);
+            if (!movedCol) {
+                throw new RangeError(`No column exists at drag index ${source.index}`);
+            }
             newColumns.splice(destination.index, 0, movedCol);
             dispatch(updateColumnOrder({ idArgs, columnIds: newColumns.map((col) => col.id) }));
             requestAnimationFrame(measureColumnWidths);
@@ -156,7 +177,10 @@ const DragEditModifyTableField: React.FC<{
     };
     const handleStartRenameColumn = (columnId: string) => {
         const column = sortedColumns.find((col) => col.id === columnId);
-        if (!disabled && !column?.isFixed) {
+        if (!disabled && column && !column.isFixed) {
+            if (typeof column.name !== "string") {
+                throw new TypeError(`Table column ${column.id} has no editable name`);
+            }
             setEditingColumnId(columnId);
             setColumnEditValue(column.name);
         }
@@ -168,10 +192,10 @@ const DragEditModifyTableField: React.FC<{
         setEditingColumnId(null);
         setColumnEditValue("");
     };
-    const handleCellClick = (rowId: string, columnId: string, value: any) => {
+    const handleCellClick = (row: BrokerTableRow, columnId: string) => {
         if (!disabled) {
-            setEditingCell({ rowId, columnId });
-            setEditValue(value ?? "");
+            setEditingCell({ rowId: row.id, columnId });
+            setEditValue(readCellText(row, columnId, ""));
         }
     };
     const saveEdit = () => {
@@ -184,6 +208,9 @@ const DragEditModifyTableField: React.FC<{
 
     const renderRowClone = (provided: DraggableProvided, snapshot: DraggableStateSnapshot, rubric: DraggableRubric) => {
         const row = sortedRows[rubric.source.index];
+        if (!row) {
+            throw new RangeError(`No row exists at drag index ${rubric.source.index}`);
+        }
         const totalWidth =
             columnWidths.length === 1 + sortedColumns.length + 1
                 ? columnWidths.reduce((sum, w) => sum + parseFloat(w || "0"), 0) + "px"
@@ -215,7 +242,7 @@ const DragEditModifyTableField: React.FC<{
                                             : "text-gray-700 dark:text-gray-300"
                                     )}
                                 >
-                                    {row.cells[col.id] ?? "-"}
+                                    {readCellText(row, col.id, "-")}
                                 </span>
                             </td>
                         ))}
@@ -407,7 +434,7 @@ const DragEditModifyTableField: React.FC<{
                                                                     />
                                                                 ) : (
                                                                     <span
-                                                                        onClick={() => handleCellClick(row.id, col.id, row.cells[col.id])}
+                                                                        onClick={() => handleCellClick(row, col.id)}
                                                                         className={cn(
                                                                             "block w-full h-full px-3 py-2 text-sm cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap",
                                                                             col.id === "label"
@@ -415,7 +442,7 @@ const DragEditModifyTableField: React.FC<{
                                                                                 : "text-gray-700 dark:text-gray-300"
                                                                         )}
                                                                     >
-                                                                        {row.cells[col.id] ?? "-"}
+                                                                        {readCellText(row, col.id, "-")}
                                                                     </span>
                                                                 )}
                                                             </td>

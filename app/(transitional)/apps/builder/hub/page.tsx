@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 
 
 const BuilderHub = () => {
-  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -54,7 +54,7 @@ const BuilderHub = () => {
                 <div className="h-16 flex items-center justify-center">
                   {module.icon && React.cloneElement(module.icon, { 
                     className: `h-16 w-16 opacity-25 group-hover:opacity-40 transition-opacity ${
-                      module.icon.props.className.split(' ').filter(c => c.includes('text-')).join(' ')
+                      module.icon.props.className.split(' ').filter((className: string) => className.includes('text-')).join(' ')
                     }` 
                   })}
                 </div>

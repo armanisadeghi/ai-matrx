@@ -138,7 +138,7 @@ Put the bar in a page header / toolbar while the content lives elsewhere:
 - Use a **per-entity surfaceId** (`note-detail-${id}`) so fast A→B navigation never collides.
 - The surface renders nothing (`fallback`) when no provider is registered (e.g. the body is in a non-preview mode) — so an empty header row is fine.
 - The registry is a **stack**: if two RichDocuments target one surfaceId, the most-recently-mounted wins, and out-of-order unmount during navigation stays correct. Don't add your own last-wins logic.
-- Real example to copy: `features/notes/components/NotesView.tsx` (header) + `NoteEditorCore.tsx` (body, via `actionsSurfaceId` prop).
+- Real example to copy: `features/agents/components/working-document/WorkingDocumentPanel.tsx` (headless provider + header surface). The live `/notes` header intentionally has no remote consumer, so `NotesView` omits `actionsSurfaceId` and keeps preview/split actions inline.
 
 **Surface draws its OWN content (an editor)?** Don't mount a hidden `RichDocument` just to register the toolbar — it would double-render the heavy engine. Use the **headless `RichDocumentActionProvider`** (renders `null`):
 
@@ -270,4 +270,4 @@ features/rich-document/
 └── redux/actionSurfacesSlice.ts     ← surfaceId → provider stack (metadata only)
 ```
 
-Real migrated consumers to copy from: `features/notes/components/NoteEditorCore.tsx` + `NotesView.tsx` (remote header), `features/prompts/components/results-display/PromptToast.tsx` (remote + mini-bar), `features/tool-call-visualization/renderers/web-research/WebResearchOverlay.tsx` (icon-only hover), `features/agents/components/working-document/WorkingDocumentPanel.tsx` (headless provider — toolbar in every editor mode).
+Real migrated consumers to copy from: `features/notes/components/NoteEditorCore.tsx` + `NotesView.tsx` (inline preview/split actions), `features/tool-call-visualization/renderers/web-research/WebResearchOverlay.tsx` (icon-only hover), and `features/agents/components/working-document/WorkingDocumentPanel.tsx` (headless provider + remote header toolbar in every editor mode).

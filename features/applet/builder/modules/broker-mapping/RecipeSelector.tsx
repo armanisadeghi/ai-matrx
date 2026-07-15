@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { RecipeInfo } from "@/features/recipes/types";
 import { RecipeSelectDialog } from "@/features/applet/builder/modules/recipe-source/RecipeSelectDialog";
 import { AppletSourceConfig } from "@/types/customAppTypes";
+import { isRecipeAppletSourceConfig } from "@/features/applet/builder/utils/sourceConfigGuards";
 
 /* For reference only (For a recipe, this is the AppletSourceConfig)
 
@@ -38,30 +39,33 @@ export const RecipeSelector: React.FC<RecipeSelectorProps> = ({
 }) => {
     const { toast } = useToast();
     const [showRecipeDialog, setShowRecipeDialog] = useState(false);
+    const initialRecipeSource = isRecipeAppletSourceConfig(sourceConfig) ? sourceConfig : null;
     const [selectedRecipe, setSelectedRecipe] = useState<RecipeInfo | null>(
-        sourceConfig?.sourceType === "recipe" ? { 
-            id: sourceConfig.config.id, 
+        initialRecipeSource ? {
+            id: initialRecipeSource.config.id,
             name: "Selected Recipe",
-            version: sourceConfig.config.version 
-        } as RecipeInfo : null
+            version: initialRecipeSource.config.version,
+            status: "selected",
+        } : null
     );
     const [isLoading, setIsLoading] = useState(false);
     const [activeSourceConfig, setActiveSourceConfig] = useState<AppletSourceConfig | null>(sourceConfig);
 
     // Get the compiledId from the source config if available
-    const hasRecipeSelected = activeSourceConfig?.sourceType === "recipe";
-    const activeCompiledId = hasRecipeSelected ? activeSourceConfig.config.compiledId : null;
+    const activeRecipeSource = isRecipeAppletSourceConfig(activeSourceConfig) ? activeSourceConfig : null;
+    const hasRecipeSelected = activeRecipeSource !== null;
+    const activeCompiledId = activeRecipeSource?.config.compiledId ?? null;
         
     // Get the version from the source config if available
     const recipeVersion = hasRecipeSelected
-        ? activeSourceConfig.config.version
+        ? activeRecipeSource.config.version
         : selectedRecipe?.version;
 
-    const handleSetSourceConfig = (sourceConfig: AppletSourceConfig) => {
+    const handleSetSourceConfig = (sourceConfig: AppletSourceConfig | null) => {
         setActiveSourceConfig(sourceConfig);
         onGetSourceConfig(sourceConfig);
         
-        if (sourceConfig.sourceType === "recipe") {
+        if (isRecipeAppletSourceConfig(sourceConfig)) {
             onRecipeSelect(sourceConfig.config.compiledId);
         }
     };
@@ -161,9 +165,11 @@ export const RecipeSelector: React.FC<RecipeSelectorProps> = ({
                 initialSelectedRecipe={selectedRecipe?.id || null}
                 initialSourceConfig={activeSourceConfig}
                 setRecipeSourceConfig={handleSetSourceConfig}
-                setCompiledRecipeId={onRecipeSelect}
+                setCompiledRecipeId={(id) => {
+                    if (id) onRecipeSelect(id);
+                }}
                 onRecipeSelected={(recipeId) => {
-                    setSelectedRecipe(prev => prev?.id === recipeId ? prev : { id: recipeId, name: recipeId } as RecipeInfo);
+                    setSelectedRecipe(prev => prev?.id === recipeId ? prev : null);
                 }}
             />
         </div>

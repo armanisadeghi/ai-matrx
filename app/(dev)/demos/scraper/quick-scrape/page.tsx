@@ -80,6 +80,30 @@ function RenderedContent({ raw }: { raw: Record<string, unknown> }) {
   const images = (raw.images as string[]) ?? (links.images as string[]) ?? [];
   const markdownRenderable = (raw.markdown_renderable as string) ?? "";
   const plainBody = pickPlainTextFromRaw(raw);
+  const scrapedAt =
+    typeof raw.scraped_at === "string" ? raw.scraped_at : null;
+  const charCountValue = overview.char_count;
+  const stats: Array<{ label: string; value: string | number; warn: boolean }> = [
+    {
+      label: "char_count (overview)",
+      value:
+        typeof charCountValue === "number"
+          ? charCountValue.toLocaleString()
+          : "0",
+      warn: typeof charCountValue !== "number" || charCountValue === 0,
+    },
+    {
+      label: "Internal Links",
+      value: links.internal?.length ?? 0,
+      warn: false,
+    },
+    {
+      label: "External Links",
+      value: links.external?.length ?? 0,
+      warn: false,
+    },
+    { label: "Images", value: images.length, warn: false },
+  ];
 
   // All text variants exactly as returned by the API
   const textVariants: { key: string; label: string; description: string }[] = [
@@ -109,6 +133,30 @@ function RenderedContent({ raw }: { raw: Record<string, unknown> }) {
       description: "Full markdown with links and images",
     },
   ];
+  const variantAvailability: Array<{
+    key: string;
+    label: string;
+    description: string;
+    characterCount: string;
+    available: boolean;
+  }> = textVariants.map(({ key, label, description }) => {
+    const rawValue = raw[key];
+    const value = typeof rawValue === "string" ? rawValue : undefined;
+    return {
+      key,
+      label,
+      description,
+      characterCount: charCount(value),
+      available: value !== undefined && value.length > 0,
+    };
+  });
+  const outline =
+    typeof overview.outline === "object" &&
+    overview.outline !== null &&
+    !Array.isArray(overview.outline)
+      ? overview.outline
+      : null;
+  const outlineHeadings = outline === null ? [] : Object.keys(outline);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -223,25 +271,7 @@ function RenderedContent({ raw }: { raw: Record<string, unknown> }) {
 
             {/* Stats grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                {
-                  label: "char_count (overview)",
-                  value:
-                    (overview.char_count as number)?.toLocaleString() ?? "0",
-                  warn: !(overview.char_count as number),
-                },
-                {
-                  label: "Internal Links",
-                  value: links.internal?.length ?? 0,
-                  warn: false,
-                },
-                {
-                  label: "External Links",
-                  value: links.external?.length ?? 0,
-                  warn: false,
-                },
-                { label: "Images", value: images.length, warn: false },
-              ].map(({ label, value, warn }) => (
+              {stats.map(({ label, value, warn }) => (
                 <div
                   key={label}
                   className={`p-3 rounded-lg ${warn ? "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" : "bg-muted"}`}
@@ -254,19 +284,17 @@ function RenderedContent({ raw }: { raw: Record<string, unknown> }) {
               ))}
             </div>
 
-            {/* Text variants availability matrix */}
             <div className="space-y-2">
               <h3 className="text-sm font-medium">Text Variants</h3>
               <div className="space-y-1.5">
-                {textVariants.map(({ key, label, description }) => {
-                  const val = raw[key] as string | undefined;
-                  return (
+                {variantAvailability.map(
+                  ({ key, label, description, characterCount, available }) => (
                     <div
                       key={key}
                       className="flex items-center gap-3 p-2 rounded-lg bg-muted"
                     >
                       <div
-                        className={`w-2 h-2 rounded-full shrink-0 ${val ? "bg-green-500" : "bg-amber-400"}`}
+                        className={`w-2 h-2 rounded-full shrink-0 ${available ? "bg-green-500" : "bg-amber-400"}`}
                       />
                       <code className="text-xs font-mono text-foreground w-48 shrink-0">
                         {label}
@@ -275,35 +303,32 @@ function RenderedContent({ raw }: { raw: Record<string, unknown> }) {
                         {description}
                       </span>
                       <span
-                        className={`text-xs font-mono shrink-0 ${val ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`}
+                        className={`text-xs font-mono shrink-0 ${available ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`}
                       >
-                        {charCount(val)}
+                        {characterCount}
                       </span>
                     </div>
-                  );
-                })}
+                  ),
+                )}
               </div>
             </div>
 
-            {overview.outline &&
-              Object.keys(overview.outline as object).length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Page Outline</h3>
-                  <div className="space-y-1 bg-muted p-3 rounded-lg">
-                    {Object.keys(overview.outline as object).map(
-                      (heading, i) => (
-                        <div key={i} className="text-sm text-foreground">
-                          {heading}
-                        </div>
-                      ),
-                    )}
-                  </div>
+            {outlineHeadings.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Page Outline</h3>
+                <div className="space-y-1 bg-muted p-3 rounded-lg">
+                  {outlineHeadings.map((heading) => (
+                    <div key={heading} className="text-sm text-foreground">
+                      {heading}
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-            {raw.scraped_at && (
+            {scrapedAt !== null && (
               <p className="text-xs text-muted-foreground/60 font-mono">
-                Scraped at {raw.scraped_at as string}
+                Scraped at {scrapedAt}
               </p>
             )}
           </div>

@@ -71,52 +71,58 @@ export const QuickAppMaker: React.FC<QuickAppMakerProps> = ({ currentAppId, onAp
 
     // Redux state selectors
     const appLoading = useAppSelector(selectAppLoading);
-    const slugStatus = useAppSelector((state) => selectAppSlugStatus(state, appId));
-    const isDirty = useAppSelector((state) => selectAppIsDirty(state, appId));
-    const isLocal = useAppSelector((state) => selectAppIsLocal(state, appId));
+    const slugStatus = useAppSelector((state) => appId ? selectAppSlugStatus(state, appId) : "unchecked");
+    const isDirty = useAppSelector((state) => appId ? selectAppIsDirty(state, appId) : false);
+    const isLocal = useAppSelector((state) => appId ? selectAppIsLocal(state, appId) : false);
 
     // App field selectors
-    const name = useAppSelector((state) => selectAppName(state, appId));
-    const description = useAppSelector((state) => selectAppDescription(state, appId));
-    const slug = useAppSelector((state) => selectAppSlug(state, appId));
-    const creator = useAppSelector((state) => selectAppCreator(state, appId));
-    const imageUrl = useAppSelector((state) => selectAppImageUrl(state, appId));
+    const name = useAppSelector((state) => appId ? selectAppName(state, appId) : null);
+    const description = useAppSelector((state) => appId ? selectAppDescription(state, appId) : null);
+    const slug = useAppSelector((state) => appId ? selectAppSlug(state, appId) : null);
+    const creator = useAppSelector((state) => appId ? selectAppCreator(state, appId) : null);
+    const imageUrl = useAppSelector((state) => appId ? selectAppImageUrl(state, appId) : null);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!appId) return;
         const newName = e.target.value;
         dispatch(setName({ id: appId, name: newName }));
 
         // Auto-generate slug from name if field is empty or hasn't been manually edited
-        if (!slug || slug === convertToKebabCase(name)) {
+        if (!slug || (name && slug === convertToKebabCase(name))) {
             const newSlug = convertToKebabCase(newName);
             dispatch(setSlug({ id: appId, slug: newSlug }));
         }
     };
 
     const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!appId) return;
         const rawSlug = e.target.value;
         const newSlug = convertToKebabCase(rawSlug);
         dispatch(setSlug({ id: appId, slug: newSlug }));
     };
 
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        if (!appId) return;
         dispatch(setDescription({ id: appId, description: e.target.value }));
     };
 
     const handleCreatorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!appId) return;
         dispatch(setCreator({ id: appId, creator: e.target.value }));
     };
 
     const handleImageSelected = (imageUrl: string, imageFileId?: string) => {
+        if (!appId) return;
         dispatch(setImageUrl({ id: appId, imageUrl, imageFileId: imageFileId || "" }));
     };
 
     const handleImageRemoved = () => {
+        if (!appId) return;
         dispatch(setImageUrl({ id: appId, imageUrl: "", imageFileId: "" }));
     };
 
     const handleSaveApp = async () => {
-        if (!name || !slug) {
+        if (!appId || !name || !slug) {
             toast({
                 title: "Required Fields Missing",
                 description: "App name and slug are required.",
@@ -171,6 +177,9 @@ export const QuickAppMaker: React.FC<QuickAppMakerProps> = ({ currentAppId, onAp
             });
 
             // Call the parent's callback with the app ID and full app object
+            if (!savedApp.id) {
+                throw new Error("Saved app response did not include an id");
+            }
             onAppSaved(savedApp.id, savedApp);
         } catch (error) {
             console.error("Error saving app:", error);
@@ -323,7 +332,7 @@ export const QuickAppMaker: React.FC<QuickAppMakerProps> = ({ currentAppId, onAp
                                                     slugStatus === "notUnique" ? "border-red-500 dark:border-red-500" : ""
                                                 } pr-10`}
                                             />
-                                            <AppSlugChecker appId={appId} slug={slug} />
+                                            {appId && slug ? <AppSlugChecker appId={appId} slug={slug} /> : null}
                                         </div>
                                         {slugStatus === "notUnique" && (
                                             <p className="text-red-500 text-xs mt-1">This slug is not available</p>
@@ -373,8 +382,8 @@ export const QuickAppMaker: React.FC<QuickAppMakerProps> = ({ currentAppId, onAp
                                             onImageSelected={handleImageSelected}
                                             onImageRemoved={handleImageRemoved}
                                             initialTab="public-search"
-                                            initialSearchTerm={name}
-                                            preselectedImageUrl={imageUrl}
+                                            initialSearchTerm={name ?? undefined}
+                                            preselectedImageUrl={imageUrl ?? undefined}
                                             className="w-full max-w-full"
                                             instanceId="app-banner"
                                             saveTo="public"

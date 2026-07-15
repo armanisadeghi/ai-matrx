@@ -119,7 +119,7 @@ const AppBuilderStartStep: React.FC<AppBuilderStartStepProps> = ({ onAppSelected
                 </div>
             )}
 
-            {view === "edit" && (
+            {view === "edit" && selectedAppId && (
                 <div className="p-4">
                     <div
                         onClick={handleBackToChoice}
@@ -132,7 +132,7 @@ const AppBuilderStartStep: React.FC<AppBuilderStartStepProps> = ({ onAppSelected
                 </div>
             )}
 
-            {view === "create" && (
+            {view === "create" && newAppId && (
                 <div className="p-4">
                     <div
                         onClick={handleBackToChoice}

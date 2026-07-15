@@ -95,7 +95,7 @@ export default function ContextMenuScenariosPage() {
             </p>
           </header>
           <UnifiedAgentContextMenu
-            sourceFeature="demo"
+            sourceFeature="context-menu-demo"
             getTextarea={() => contentRef.current}
             onTextReplace={(v) => setContentValue(v)}
             onTextInsertBefore={(t) => setContentValue(t + contentValue)}
@@ -129,7 +129,7 @@ export default function ContextMenuScenariosPage() {
             </p>
           </header>
           <UnifiedAgentContextMenu
-            sourceFeature="demo"
+            sourceFeature="context-menu-demo"
             isEditable={false}
             addedContexts={["content-editor"]}
             placementMode={{
@@ -176,7 +176,7 @@ export default function ContextMenuScenariosPage() {
             </p>
           </header>
           <UnifiedAgentContextMenu
-            sourceFeature="demo"
+            sourceFeature="context-menu-demo"
             getTextarea={() => showcaseRef.current}
             onTextReplace={(v) => setShowcaseValue(v)}
             isEditable

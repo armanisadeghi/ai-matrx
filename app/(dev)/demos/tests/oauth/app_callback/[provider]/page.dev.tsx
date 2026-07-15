@@ -58,6 +58,14 @@ export default function OAuthCallback() {
     );
   }
 
+  if (code === null) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50">
+        <p className="text-red-600">Authentication completed without a code.</p>
+      </div>
+    );
+  }
+
   return (
       <div className="min-h-dvh flex flex-col items-center justify-center bg-gray-50">
         <div className="text-center">

@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/rag/search", {
   titlePrefix: "Search",
   title: "Knowledge",
   description: "Semantic search across your knowledge bases and data stores.",
-  letter: "Rq",
+  letter: "KS",
 });
 
 export default function RagSearchLayout({

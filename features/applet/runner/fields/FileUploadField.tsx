@@ -9,6 +9,18 @@ import { FileUploadWithStorage } from "@/components/ui/file-upload/FileUploadWit
 import { EnhancedFileDetails } from "@/utils/file-operations/constants";
 import { FieldValidation, useFieldValidation } from "./common/FieldValidation";
 import { CommonFieldProps } from "./core/types";
+import type { UploadedFileResult } from "@/components/ui/file-upload/types";
+
+function isUploadedFileResult(value: unknown): value is UploadedFileResult {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        "url" in value &&
+        typeof value.url === "string" &&
+        "type" in value &&
+        typeof value.type === "string"
+    );
+}
 
 const FileUploadField: React.FC<CommonFieldProps> = ({ field, sourceId="no-applet-id", isMobile, source = "applet", disabled = false, className = "" }) => {
     const { id, label, componentProps, required } = field;
@@ -97,7 +109,7 @@ const FileUploadField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
     const hasReachedMaxItems = multiSelect && maxItems !== undefined && Array.isArray(stateValue) && stateValue.length >= maxItems;
 
     // Prepare initialFiles based on the current state
-    const initialFiles = stateValue ? (Array.isArray(stateValue) ? stateValue : [stateValue]) : [];
+    const initialFiles = (Array.isArray(stateValue) ? stateValue : [stateValue]).filter(isUploadedFileResult);
 
     return (
         <div className={`${safeWidthClass} ${className}`}>
@@ -106,11 +118,9 @@ const FileUploadField: React.FC<CommonFieldProps> = ({ field, sourceId="no-apple
                 onBlur={handleBlur} // Add blur handler to the wrapper
             >
                 {/* Show the existing files count if any */}
-                {stateValue && (
+                {initialFiles.length > 0 && (
                     <div className="mb-2 text-sm text-gray-700 dark:text-gray-300">
-                        {Array.isArray(stateValue)
-                            ? `${stateValue.length} file${stateValue.length !== 1 ? "s" : ""} uploaded`
-                            : "1 file uploaded"}
+                        {`${initialFiles.length} file${initialFiles.length !== 1 ? "s" : ""} uploaded`}
                         {maxItems && <span className="ml-1 text-gray-500 dark:text-gray-400">(Max: {maxItems})</span>}
                     </div>
                 )}

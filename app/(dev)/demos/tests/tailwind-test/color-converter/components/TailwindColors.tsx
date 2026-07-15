@@ -21,7 +21,7 @@ interface TailwindColorsProps {
 
 export default function TailwindColors({ onColorChange }: TailwindColorsProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [expandedColors, setExpandedColors] = useState({});
+    const [expandedColors, setExpandedColors] = useState<Record<string, boolean>>({});
     const containerRef = useRef<HTMLDivElement>(null);
     const controls = useAnimation();
 
@@ -70,7 +70,7 @@ export default function TailwindColors({ onColorChange }: TailwindColorsProps) {
     }, [isOpen, controls]);
 
 
-    const toggleColorExpand = (colorName) => {
+    const toggleColorExpand = (colorName: string) => {
         setExpandedColors(prev => ({...prev, [colorName]: !prev[colorName]}));
     };
 
@@ -140,6 +140,7 @@ export default function TailwindColors({ onColorChange }: TailwindColorsProps) {
                             <div className="grid grid-cols-11 gap-1">
                                 {Object.entries(colorGroup.shades).map(([shade, hexValue]) => {
                                     const colorInfo = getColorInfo(hexValue);
+                                    if (!colorInfo) return null;
                                     return (
                                         <div key={shade} className="text-center">
                                             <div
@@ -159,6 +160,7 @@ export default function TailwindColors({ onColorChange }: TailwindColorsProps) {
                                 <div className="grid grid-cols-11 gap-1 text-sm">
                                     {Object.values(colorGroup.shades).map((hexValue, index) => {
                                         const colorInfo = getColorInfo(hexValue);
+                                        if (!colorInfo) return null;
                                         return (
                                             <div key={index} className="text-center">
                                                 <div>{`${colorInfo.rgb.r}, ${colorInfo.rgb.g}, ${colorInfo.rgb.b}`}</div>

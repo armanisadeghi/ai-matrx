@@ -59,7 +59,7 @@ export default function CanonicalV2Page() {
               </p>
             </header>
             <UniversalContextMenuV2
-              sourceFeature="demo"
+              sourceFeature="context-menu-demo"
               isEditable
               getTextarea={() => editRef.current}
               onTextReplace={setEditValue}
@@ -82,7 +82,7 @@ export default function CanonicalV2Page() {
               </p>
             </header>
             <UniversalContextMenuV2
-              sourceFeature="demo"
+              sourceFeature="context-menu-demo"
               isEditable={false}
               contextData={{ content: SAMPLE, context: "v2-display" }}
             >

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import BuilderPageLayout from "../common/BuilderPageLayout";
 import StructuredSectionCard from "@/components/official/StructuredSectionCard";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,10 @@ import {
 import { saveFieldThunk } from "@/lib/redux/app-builder/thunks/fieldBuilderThunks";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error && error.message ? error.message : fallback;
 
 interface FieldDemoLayoutProps {
   children: ReactNode;
@@ -30,6 +34,7 @@ export default function FieldDemoLayoutClient({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
 
   // Use Redux selectors instead of context
   const hasUnsavedChanges = useAppSelector(selectHasUnsavedFieldChanges);
@@ -42,12 +47,7 @@ export default function FieldDemoLayoutClient({
   // Example actions using Redux
   const handleBack = () => {
     if (hasUnsavedChanges) {
-      if (
-        confirm("You have unsaved changes. Are you sure you want to leave?")
-      ) {
-        dispatch(setActiveField(null));
-        router.push("/apps/builder/modules/field");
-      }
+      setConfirmLeaveOpen(true);
     } else {
       dispatch(setActiveField(null));
       router.push("/apps/builder/modules/field");
@@ -62,10 +62,10 @@ export default function FieldDemoLayoutClient({
           title: "Success",
           description: "Field component saved successfully",
         });
-      } catch (error) {
+      } catch (error: unknown) {
         toast({
           title: "Error",
-          description: error.message || "Failed to save field component",
+          description: errorMessage(error, "Failed to save field component"),
           variant: "destructive",
         });
       }
@@ -124,19 +124,34 @@ export default function FieldDemoLayoutClient({
   );
 
   return (
-    <BuilderPageLayout activeModuleId="fields">
-      <div className="container mx-auto px-4 py-6">
-        <StructuredSectionCard
-          title="Field Builder (Redux Demo)"
-          description="Enhanced layout using Redux state management"
-          headerActions={headerActions}
-          footerLeft={footerLeft}
-          footerCenter={footerCenter}
-          footerRight={footerRight}
-        >
-          {children}
-        </StructuredSectionCard>
-      </div>
-    </BuilderPageLayout>
+    <>
+      <BuilderPageLayout activeModuleId="fields">
+        <div className="container mx-auto px-4 py-6">
+          <StructuredSectionCard
+            title="Field Builder (Redux Demo)"
+            description="Enhanced layout using Redux state management"
+            headerActions={headerActions}
+            footerLeft={footerLeft}
+            footerCenter={footerCenter}
+            footerRight={footerRight}
+          >
+            {children}
+          </StructuredSectionCard>
+        </div>
+      </BuilderPageLayout>
+      <ConfirmDialog
+        open={confirmLeaveOpen}
+        onOpenChange={setConfirmLeaveOpen}
+        title="Discard unsaved changes?"
+        description="Leave the field editor and discard the current unsaved changes."
+        confirmLabel="Discard changes"
+        variant="destructive"
+        onConfirm={() => {
+          setConfirmLeaveOpen(false);
+          dispatch(setActiveField(null));
+          router.push("/apps/builder/modules/field");
+        }}
+      />
+    </>
   );
 }

@@ -68,6 +68,7 @@ const ChatSearchLayout: React.FC<AppletInputProps> = ({
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [currentFieldIndex, conversation, allFields]);
 
   // Handle field completion

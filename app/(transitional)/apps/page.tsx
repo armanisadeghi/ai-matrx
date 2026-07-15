@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +56,7 @@ export default async function AppsListPage() {
           </div>
 
           {/* Apps Grid */}
-          {!apps || apps.length === 0 ? (
+          {apps.length === 0 ? (
             <Card className="border-2 border-dashed">
               <CardContent className="pt-12 pb-12 text-center">
                 <div className="flex flex-col items-center gap-4">
@@ -77,7 +78,7 @@ export default async function AppsListPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(apps as PromptApp[]).map((app) => (
+              {apps.map((app) => (
                 <Card
                   key={app.id}
                   className="hover:shadow-lg transition-shadow"

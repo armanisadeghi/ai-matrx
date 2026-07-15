@@ -109,7 +109,7 @@ export default function CanonicalContextMenuV3Page() {
             title="1. Bare — no direction"
             hint="NonEditable · no surfaceName · content self-resolved from the DOM"
           >
-            <NonEditableContextMenu sourceFeature="demo">
+            <NonEditableContextMenu sourceFeature="context-menu-demo">
               <div className={DISPLAY_CLASS}>
                 {
                   "This block has no surfaceName and no contentSource.\n\nThe menu still works: right-click (no selection) → Copy grabs this text via the DOM fallback, and AI Actions / Quick Actions come from your global context.\n\nNothing is wired here — this is what the menu does on its own."
@@ -123,7 +123,7 @@ export default function CanonicalContextMenuV3Page() {
             hint="EditableContextMenu · Cut / Paste / Find / Save / Delete"
           >
             <EditableContextMenu
-              sourceFeature="demo"
+              sourceFeature="context-menu-demo"
               getTextarea={() => editRef.current}
               onTextReplace={setEditValue}
               contentSource={{ type: "raw" }}
@@ -144,7 +144,7 @@ export default function CanonicalContextMenuV3Page() {
             hint="NonEditable + contentSource · right-click (no selection) → Export → Download as Markdown"
           >
             <NonEditableContextMenu
-              sourceFeature="demo"
+              sourceFeature="context-menu-demo"
               contentSource={{ type: "raw" }}
               contextData={{ content: ARTICLE }}
             >

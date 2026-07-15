@@ -116,7 +116,7 @@ const FieldPreviewAs: React.FC<FieldPreviewAsProps> = ({ fieldId, initialCompone
                                 id: identifier.mappedItemId
                             }
                         ]}
-                        appletId={brokerResult.sourceId}
+                        appletId={fieldId}
                         source="preview"
                     />
                 </div>

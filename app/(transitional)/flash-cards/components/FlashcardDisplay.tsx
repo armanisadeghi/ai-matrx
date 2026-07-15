@@ -4,15 +4,20 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, MessageSquare } from 'lucide-react';
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import { ArmaniCollapsible } from '@/components/matrx/matrx-collapsible/armani-collapsible';
+import { useFlashcard } from '@/hooks/flashcard-app/useFlashcard';
 
-const FlashcardDisplay = ({ flashcardHook }) => {
+interface FlashcardDisplayProps {
+    flashcardHook: ReturnType<typeof useFlashcard>;
+}
+
+const FlashcardDisplay = ({ flashcardHook }: FlashcardDisplayProps) => {
     const {
         activeFlashcard,
         isFlipped,
         fontSize,
         handleFlip,
         handleAnswer,
-        handleAskQuestion,
+        textModalActions: { openAiModal },
     } = flashcardHook;
 
     const frontFontSize = fontSize + 20;
@@ -20,7 +25,7 @@ const FlashcardDisplay = ({ flashcardHook }) => {
     const backFontSize = fontSize;
     const titleFontSize = fontSize + 2;
 
-    const getTitleFontSizeClass = (size) => {
+    const getTitleFontSizeClass = (size: number) => {
         if (size <= 16) return 'text-base';
         if (size <= 18) return 'text-lg';
         if (size <= 20) return 'text-xl';
@@ -57,7 +62,7 @@ const FlashcardDisplay = ({ flashcardHook }) => {
                         />
                         <div className="w-full border-t border-zinc-700" />
 
-                        <div onClick={e => e.stopPropagation()}>
+                        {activeFlashcard.detailedExplanation && <div onClick={e => e.stopPropagation()}>
                             <ArmaniCollapsible
                                 title={<span className="text-purple-400 font-bold" style={{ fontSize: `${titleFontSize}px` }}>
                                     Detailed Explanation
@@ -75,11 +80,11 @@ const FlashcardDisplay = ({ flashcardHook }) => {
                                     />
                                 </div>
                             </ArmaniCollapsible>
-                        </div>
+                        </div>}
 
                         <div className="w-full border-t border-zinc-700" />
 
-                        <div onClick={e => e.stopPropagation()}>
+                        {activeFlashcard.example && <div onClick={e => e.stopPropagation()}>
                             <ArmaniCollapsible
                                 title={<span className="text-purple-400 font-bold" style={{ fontSize: `${titleFontSize}px` }}>
                                     Example
@@ -97,7 +102,7 @@ const FlashcardDisplay = ({ flashcardHook }) => {
                                     />
                                 </div>
                             </ArmaniCollapsible>
-                        </div>
+                        </div>}
                     </CardContent>
                     <CardFooter className="flex justify-between p-2 absolute bottom-0 left-0 right-0">
                         <Button
@@ -115,7 +120,7 @@ const FlashcardDisplay = ({ flashcardHook }) => {
                         <Button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleAskQuestion();
+                                openAiModal();
                             }}
                             variant="secondary"
                             className="sm:px-4 px-2 text-sm sm:text-base"

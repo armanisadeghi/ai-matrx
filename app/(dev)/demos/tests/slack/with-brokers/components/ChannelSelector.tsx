@@ -33,8 +33,8 @@ export function ChannelSelector() {
   // Handle channel selection
   const handleChannelSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(brokerActions.setText({
-      idArgs: SLACK_BROKER_IDS.selectedChannel,
-      text: e.target.value
+      brokerId: SLACK_BROKER_IDS.selectedChannel.mappedItemId,
+      value: e.target.value
     }));
   };
   
@@ -70,15 +70,15 @@ export function ChannelSelector() {
       
       // Store channels in broker
       dispatch(brokerActions.setText({
-        idArgs: SLACK_BROKER_IDS.channels,
-        text: JSON.stringify(channelsList)
+        brokerId: SLACK_BROKER_IDS.channels.mappedItemId,
+        value: JSON.stringify(channelsList)
       }));
       
       // Auto-select first channel if none selected
       if (channelsList.length > 0 && !selectedChannel) {
         dispatch(brokerActions.setText({
-          idArgs: SLACK_BROKER_IDS.selectedChannel,
-          text: channelsList[0].id
+          brokerId: SLACK_BROKER_IDS.selectedChannel.mappedItemId,
+          value: channelsList[0].id
         }));
       }
     } catch (error) {
@@ -135,4 +135,4 @@ export function ChannelSelector() {
       )}
     </div>
   );
-} 
+}

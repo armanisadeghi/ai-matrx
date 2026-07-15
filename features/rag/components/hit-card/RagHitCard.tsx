@@ -17,7 +17,14 @@
  * to `RagHitView` and pass `href` (deep-link) + `onOpen` (window).
  */
 
-import { ExternalLink, PanelRight, Copy, TriangleAlert } from "lucide-react";
+import { useId, useState } from "react";
+import {
+  ChevronDown,
+  ExternalLink,
+  PanelRight,
+  Copy,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ToolAccent } from "@/features/tool-call-visualization/types";
@@ -26,6 +33,7 @@ import { PartPeekPopover } from "@/features/tool-call-visualization/renderers/_s
 import { scoreTier, relativeStrength, type RelevanceTier } from "./scoreTier";
 import { kindGlyph } from "./kindGlyph";
 import { type RagHitView, isEntityOnly } from "./types";
+import { getQueryHighlightSegments } from "./query-highlighting";
 
 /** A subtle per-kind wash for the compact popover header strip. */
 const HEADER_WASH: Record<ToolAccent, string> = {
@@ -52,6 +60,16 @@ export interface RagHitCardProps {
   href: string;
   /** Open the source in its in-app window. */
   onOpen: () => void;
+  /** Search query used to highlight word chains in expanded snippets. */
+  highlightQuery?: string;
+  /** Initial disclosure state for the expanded search-lab card. */
+  defaultExpanded?: boolean;
+  /** Controlled disclosure state for result-list bulk controls. */
+  expanded?: boolean;
+  /** Notifies controlled callers and individual-card toggles. */
+  onExpandedChange?: (expanded: boolean) => void;
+  /** Replaces the default snippet body while preserving its highlighted node. */
+  expandedContent?: (snippet: React.ReactNode) => React.ReactNode;
 }
 
 // ── Shared pieces ────────────────────────────────────────────────────────────
@@ -206,6 +224,34 @@ function OpenButton({
   );
 }
 
+function HighlightedSnippet({ text, query }: { text: string; query?: string }) {
+  if (!query?.trim()) return text;
+
+  return getQueryHighlightSegments(text, query).map((segment, index) => {
+    if (!segment.highlighted) return segment.text;
+
+    const strength =
+      segment.maxWordCount === 1
+        ? 0
+        : (segment.wordCount - 1) / (segment.maxWordCount - 1);
+    const hue = Math.round(42 + strength * 150);
+
+    return (
+      <mark
+        key={`${index}-${segment.wordCount}`}
+        className="rounded-[3px] text-inherit box-decoration-clone"
+        style={{
+          backgroundColor: `hsl(${hue} 85% 52% / 0.24)`,
+          boxShadow: `inset 0 -2px 0 hsl(${hue} 78% 44% / 0.65)`,
+        }}
+        title={`${segment.wordCount}-word query-term chain`}
+      >
+        {segment.text}
+      </mark>
+    );
+  });
+}
+
 // ── The card ─────────────────────────────────────────────────────────────────
 
 export function RagHitCard({
@@ -215,7 +261,15 @@ export function RagHitCard({
   rank,
   href,
   onOpen,
+  highlightQuery,
+  defaultExpanded = true,
+  expanded: controlledExpanded,
+  onExpandedChange,
+  expandedContent,
 }: RagHitCardProps) {
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
+  const expanded = controlledExpanded ?? internalExpanded;
+  const contentId = useId();
   const kg = kindGlyph(view.sourceKind);
   const Icon = kg.icon;
   const tier = scoreTier(view.score);
@@ -226,28 +280,49 @@ export function RagHitCard({
   const subtitle =
     (view.pageNumber != null ? `${kg.label} · Page ${view.pageNumber}` : kg.label) +
     (view.libraryShortCode ? ` · ${view.libraryShortCode}` : "");
+  const setExpanded = (next: boolean) => {
+    if (controlledExpanded == null) setInternalExpanded(next);
+    onExpandedChange?.(next);
+  };
 
   // ── expanded (search lab) ──────────────────────────────────────────────────
   if (variant === "expanded") {
     return (
       <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="flex items-center gap-3 border-b border-border px-3 py-2.5">
-          {rank != null ? (
-            <span className="w-6 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
-              {rank}
-            </span>
-          ) : null}
-          <ToolGlyph icon={Icon} accent={kg.accent} size="md" />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium leading-tight text-foreground">
-              {title}
+        <div className="relative flex items-center gap-3 border-b border-border px-3 py-2.5 transition-colors hover:bg-muted/30">
+          <button
+            type="button"
+            className="absolute inset-0 z-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            aria-expanded={expanded}
+            aria-controls={contentId}
+            aria-label={`${expanded ? "Collapse" : "Expand"} result ${rank ?? ""}: ${title}`}
+            onClick={() => setExpanded(!expanded)}
+          />
+          <div className="pointer-events-none contents">
+            {rank != null ? (
+              <span className="w-6 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                {rank}
+              </span>
+            ) : null}
+            <ToolGlyph icon={Icon} accent={kg.accent} size="md" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium leading-tight text-foreground">
+                {title}
+              </div>
+              <div className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">
+                {subtitle}
+              </div>
             </div>
-            <div className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">
-              {subtitle}
-            </div>
+            {entityOnly ? <EntityOnlyBadge /> : null}
+            <ScoreBadge view={view} tier={tier} />
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                expanded && "rotate-180",
+              )}
+              aria-hidden="true"
+            />
           </div>
-          {entityOnly ? <EntityOnlyBadge /> : null}
-          <ScoreBadge view={view} tier={tier} />
           <a
             href={href}
             target="_blank"
@@ -255,20 +330,36 @@ export function RagHitCard({
             onClick={(e) => e.stopPropagation()}
             title="Open source in a new tab"
             aria-label="Open source in a new tab"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="relative z-10 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <ExternalLink className="h-4 w-4" />
           </a>
-          <OpenButton view={view} onOpen={onOpen} />
+          <OpenButton
+            view={view}
+            onOpen={onOpen}
+            className="relative z-10"
+          />
         </div>
 
-        <div className="whitespace-pre-wrap break-words px-3 py-2.5 text-sm leading-relaxed text-foreground">
-          {view.snippet}
-        </div>
+        {expanded ? (
+          <div id={contentId}>
+            {expandedContent ? (
+              expandedContent(
+                <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                  <HighlightedSnippet text={view.snippet} query={highlightQuery} />
+                </div>,
+              )
+            ) : (
+              <div className="whitespace-pre-wrap break-words px-3 py-2.5 text-sm leading-relaxed text-foreground">
+                <HighlightedSnippet text={view.snippet} query={highlightQuery} />
+              </div>
+            )}
 
-        <div className="border-t border-border bg-muted/20 px-3 py-2">
-          <HitBreakdown view={view} topScore={top} tier={tier} showChunkId />
-        </div>
+            <div className="border-t border-border bg-muted/20 px-3 py-2">
+              <HitBreakdown view={view} topScore={top} tier={tier} showChunkId />
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }

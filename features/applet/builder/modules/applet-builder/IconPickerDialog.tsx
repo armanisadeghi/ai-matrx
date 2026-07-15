@@ -68,7 +68,7 @@ export const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
                 className="h-12 flex flex-col items-center justify-center border-gray-200 dark:border-gray-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                 onClick={() => handleIconSelect(name)}
               >
-                {IconComponent && <IconComponent className="h-5 w-5" />}
+                {IconComponent && <IconComponent size={20} />}
                 <span className="text-xs mt-1 text-gray-500 dark:text-gray-400 truncate w-full text-center">
                   {name.length > 10 ? `${name.substring(0, 10)}...` : name}
                 </span>
@@ -91,4 +91,4 @@ export const IconPickerDialog: React.FC<IconPickerDialogProps> = ({
   );
 };
 
-export default IconPickerDialog; 
+export default IconPickerDialog;

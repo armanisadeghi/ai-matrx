@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Versions",
     title: agent.name,
     description: `Version history for ${agent.name}.`,
-    letter: "G",
+    letter: "AG",
   });
 }
 

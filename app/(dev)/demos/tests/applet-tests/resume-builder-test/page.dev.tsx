@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type { ChangeEvent } from "react";
 import { ChevronRight, ChevronLeft, Check, User, Briefcase, GraduationCap, Award, Calendar } from 'lucide-react';
+import { toast } from "sonner";
 
 const ResumeBuilder = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -28,7 +30,7 @@ const ResumeBuilder = () => {
     { name: 'Review', icon: <Check className="mb-1 mr-2" /> }
   ];
 
-  const handlePersonalInfoChange = (e) => {
+  const handlePersonalInfoChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -39,16 +41,13 @@ const ResumeBuilder = () => {
     });
   };
 
-  const handleExperienceChange = (index, e) => {
+  const handleExperienceChange = (index: number, e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    const updatedExperience = [...formData.experience];
-    updatedExperience[index] = {
-      ...updatedExperience[index],
-      [name]: value
-    };
     setFormData({
       ...formData,
-      experience: updatedExperience
+      experience: formData.experience.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [name]: value } : item,
+      ),
     });
   };
 
@@ -59,7 +58,7 @@ const ResumeBuilder = () => {
     });
   };
 
-  const removeExperience = (index) => {
+  const removeExperience = (index: number) => {
     const updatedExperience = [...formData.experience];
     updatedExperience.splice(index, 1);
     setFormData({
@@ -68,16 +67,13 @@ const ResumeBuilder = () => {
     });
   };
 
-  const handleEducationChange = (index, e) => {
+  const handleEducationChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const updatedEducation = [...formData.education];
-    updatedEducation[index] = {
-      ...updatedEducation[index],
-      [name]: value
-    };
     setFormData({
       ...formData,
-      education: updatedEducation
+      education: formData.education.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [name]: value } : item,
+      ),
     });
   };
 
@@ -88,7 +84,7 @@ const ResumeBuilder = () => {
     });
   };
 
-  const removeEducation = (index) => {
+  const removeEducation = (index: number) => {
     const updatedEducation = [...formData.education];
     updatedEducation.splice(index, 1);
     setFormData({
@@ -97,16 +93,13 @@ const ResumeBuilder = () => {
     });
   };
 
-  const handleSkillChange = (index, e) => {
+  const handleSkillChange = (index: number, e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const updatedSkills = [...formData.skills];
-    updatedSkills[index] = {
-      ...updatedSkills[index],
-      [name]: value
-    };
     setFormData({
       ...formData,
-      skills: updatedSkills
+      skills: formData.skills.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [name]: value } : item,
+      ),
     });
   };
 
@@ -117,7 +110,7 @@ const ResumeBuilder = () => {
     });
   };
 
-  const removeSkill = (index) => {
+  const removeSkill = (index: number) => {
     const updatedSkills = [...formData.skills];
     updatedSkills.splice(index, 1);
     setFormData({
@@ -126,16 +119,13 @@ const ResumeBuilder = () => {
     });
   };
 
-  const handleCertificationChange = (index, e) => {
+  const handleCertificationChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const updatedCertifications = [...formData.certifications];
-    updatedCertifications[index] = {
-      ...updatedCertifications[index],
-      [name]: value
-    };
     setFormData({
       ...formData,
-      certifications: updatedCertifications
+      certifications: formData.certifications.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [name]: value } : item,
+      ),
     });
   };
 
@@ -146,7 +136,7 @@ const ResumeBuilder = () => {
     });
   };
 
-  const removeCertification = (index) => {
+  const removeCertification = (index: number) => {
     const updatedCertifications = [...formData.certifications];
     updatedCertifications.splice(index, 1);
     setFormData({
@@ -166,7 +156,7 @@ const ResumeBuilder = () => {
   const handleSubmit = () => {
     console.log('Form submitted:', formData);
     // In a real application, this would send the data to a server
-    alert('Resume submitted successfully!');
+    toast.success('Resume submitted successfully!');
   };
 
   const renderPersonalInfo = () => (

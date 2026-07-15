@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/rag", {
   titlePrefix: "Visualization",
   title: "Knowledge",
   description: "Explore knowledge graph and RAG pipeline visualizations.",
-  letter: "Rv",
+  letter: "KV",
 });
 
 export default function RagVisualizationLayout({

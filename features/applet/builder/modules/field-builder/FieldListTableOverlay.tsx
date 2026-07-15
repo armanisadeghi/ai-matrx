@@ -22,6 +22,8 @@ import { v4 as uuidv4 } from "uuid";
 import FieldListTable from "./FieldListTable";
 import FieldEditor from "./editor/FieldEditor";
 import FieldPreview from "./previews/FieldPreview";
+import type { FieldBuilder } from "@/lib/redux/app-builder/types";
+import type { CustomTableSettings } from "@/components/generic-table/GenericDataTable";
 
 // Overlay view states
 type OverlayView = "list" | "create" | "edit" | "view";
@@ -63,7 +65,7 @@ interface FieldListTableOverlayProps {
   // All original FieldListTable props
   hiddenColumns?: string[];
   defaultPageSize?: number;
-  customSettings?: any; // Using any to avoid importing the type
+  customSettings?: CustomTableSettings;
   hideTableHeader?: boolean;
   hideActionsColumn?: boolean;
   hideStatusColumn?: boolean;
@@ -81,7 +83,7 @@ interface FieldListTableOverlayProps {
 
   renderCustomHeader?: React.ReactNode;
   customSelectActionRender?: (
-    field: any,
+    field: FieldBuilder,
     onClick: (e: React.MouseEvent) => void,
   ) => React.ReactNode;
 }
@@ -343,7 +345,7 @@ export default function FieldListTableOverlay({
         return (
           <div className="flex-1 overflow-auto px-2 py-0">
             <FieldEditor
-              fieldId={currentFieldId}
+              fieldId={currentFieldId ?? undefined}
               isCreatingNew={currentView === "create"}
               onSaveSuccess={handleSaveSuccess}
               onCancel={handleCancel}
@@ -352,10 +354,13 @@ export default function FieldListTableOverlay({
         );
 
       case "view":
+        if (!currentFieldId) {
+          return <div className="p-4 text-sm text-destructive">No field is selected for preview.</div>;
+        }
         return (
           <div className="flex-1 overflow-auto p-0">
             <FieldPreview
-              fieldId={currentFieldId!}
+              fieldId={currentFieldId}
               componentType={currentFieldComponentType}
             />
           </div>
@@ -407,6 +412,10 @@ export default function FieldListTableOverlay({
   };
 
   if (overlayType === "sheet") {
+    if (isOpen === undefined || !onOpenChange) {
+      console.error("FieldListTableOverlay requires isOpen and onOpenChange when overlayType is sheet");
+      return null;
+    }
     return (
       <>
         {trigger && (

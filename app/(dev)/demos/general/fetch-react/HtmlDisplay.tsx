@@ -1,10 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
-function HtmlDisplay({ htmlId }) {
+interface HtmlDisplayProps {
+  htmlId: string;
+}
+
+function HtmlDisplay({ htmlId }: HtmlDisplayProps) {
   const [html, setHtml] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -20,9 +24,9 @@ function HtmlDisplay({ htmlId }) {
           setHtml(data);
           setIsLoading(false);
         })
-        .catch(error => {
+        .catch((error: unknown) => {
           console.error('Error fetching HTML:', error);
-          setError(error.message);
+          setError(error instanceof Error ? error.message : "HTML request failed");
           setIsLoading(false);
         });
     }

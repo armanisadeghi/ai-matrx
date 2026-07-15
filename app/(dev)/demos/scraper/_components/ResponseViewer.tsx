@@ -58,13 +58,13 @@ class RenderErrorBoundary extends Component<
     return { hasError: true, error, componentStack: null };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ResponseViewer render error:", error, errorInfo);
     this.setState({ componentStack: errorInfo.componentStack ?? null });
     this.props.onError?.(error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError && this.state.error) {
       return this.props.fallback({
         error: this.state.error,
@@ -285,6 +285,12 @@ interface ResponseViewerProps {
   className?: string;
 }
 
+interface RenderFailure {
+  message: string;
+  stack?: string;
+  componentStack?: string;
+}
+
 export function ResponseViewer({
   data,
   isLoading,
@@ -297,11 +303,7 @@ export function ResponseViewer({
   const [activeTab, setActiveTab] = useState<string>(
     renderContent ? "rendered" : "explorer",
   );
-  const [renderFailure, setRenderFailure] = useState<{
-    message: string;
-    stack?: string;
-    componentStack?: string;
-  } | null>(null);
+  const [renderFailure, setRenderFailure] = useState<RenderFailure | null>(null);
   const [diagnosticsCopied, setDiagnosticsCopied] = useState(false);
 
   const diagnosticsText =
@@ -321,11 +323,12 @@ export function ResponseViewer({
   }, [diagnosticsText]);
 
   const handleRenderError = useCallback((err: Error, info: ErrorInfo) => {
-    setRenderFailure({
-      message: err.message,
-      stack: err.stack,
-      componentStack: info.componentStack,
-    });
+    const failure: RenderFailure = { message: err.message };
+    if (err.stack !== undefined) failure.stack = err.stack;
+    if (info.componentStack !== undefined && info.componentStack !== null) {
+      failure.componentStack = info.componentStack;
+    }
+    setRenderFailure(failure);
     setActiveTab("explorer");
   }, []);
 

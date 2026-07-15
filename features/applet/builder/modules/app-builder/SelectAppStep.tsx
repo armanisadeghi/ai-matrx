@@ -24,7 +24,9 @@ interface SelectAppStepProps {
 
 export const SelectAppStep: React.FC<SelectAppStepProps> = ({ onAppSelected, onCreateNewApp, selectedAppId, onUpdateCompletion }) => {
     const appListRef = useRef<SmartAppListRefType | null>(null);
-    const selectedApp = useAppSelector((state) => selectAppById(state, selectedAppId));
+    const selectedApp = useAppSelector((state) =>
+        selectedAppId ? selectAppById(state, selectedAppId) : undefined
+    );
 
     useEffect(() => {
         onUpdateCompletion?.({
@@ -37,6 +39,10 @@ export const SelectAppStep: React.FC<SelectAppStepProps> = ({ onAppSelected, onC
     }, [selectedAppId, selectedApp]);
 
     const handleAppSelected = (app: CustomAppConfig) => {
+        if (!app.id) {
+            console.error("Cannot select an app without an id");
+            return;
+        }
         onAppSelected(app.id);
     };
 

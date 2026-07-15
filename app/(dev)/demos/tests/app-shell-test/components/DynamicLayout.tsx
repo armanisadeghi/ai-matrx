@@ -24,14 +24,23 @@ const layouts = {
     // Add more layout configurations as needed
 };
 
-const DynamicLayout = ({ layoutType, children }) => {
-    const selectedLayout = layouts[layoutType] || layouts.fourEqualTop;
+type LayoutType = keyof typeof layouts;
+
+interface DynamicLayoutProps {
+    layoutType: LayoutType;
+    children: React.ReactNode;
+}
+
+const DynamicLayout = ({ layoutType, children }: DynamicLayoutProps) => {
+    const selectedLayout = layouts[layoutType];
 
     return (
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-900 min-h-dvh">
             {React.Children.map(children, (child, index) => {
                 if (index >= selectedLayout.length) return null;
-                const { gridColumn, gridRow, minHeight } = selectedLayout[index];
+                const layoutItem = selectedLayout[index];
+                if (!layoutItem) return null;
+                const { gridColumn, gridRow, minHeight } = layoutItem;
                 return (
                     <motion.div
                         className={`${gridColumn} ${gridRow} bg-gray-800 rounded-lg p-4 shadow-lg`}
