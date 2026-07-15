@@ -30,7 +30,7 @@
 | Requirement | Our posture | Status |
 |---|---|---|
 | Capture/represent user age band | `users.profiles.age_band` (`under_13`/`13_17`/`adult`); `edu_set_age_band` RPC; declared on `/education/data` (AgeBandPrivacyCard). | **[CODE ✅]** |
-| Verifiable **parental consent BEFORE** data collection / AI use for under-13 | `edu_coppa_gate()` blocks under-13 AI until an **active guardian link** exists; reuses the guardian-consent system (`features/education/family`). Block is a clear "a parent must approve" dialog → `/education/family`. Wired on the Study Kit front door. | **[CODE ◐]** — gate primitive done; **wire `useAiComplianceGate` on the remaining AI entries** (list in `features/education/compliance/FEATURE.md`). |
+| Verifiable **parental consent BEFORE** data collection / AI use for under-13 | `edu_coppa_gate()` blocks under-13 AI until an **active guardian link** exists; reuses the guardian-consent system (`features/education/family`). Block is a clear "a parent must approve" dialog → `/education/family`. Wired on every education AI-generation entry point (Study Kit, memory, quizzes/practice tests, handwritten grading, spoken practice, audio study, mind maps, convert/note fan-out, tutor); `engage` has no AI trigger to gate. | **[CODE ✅]** — gate rolled out to all AI entries (list in `features/education/compliance/FEATURE.md`). |
 | **Verifiable** consent *method* (credit-card / gov-ID / signed form — COPPA §312.5) | Our "guardian approves from their own account" is consent capture, not a legally *verifiable* method. | **[LEGAL]** + **[DECISION]** — pick the verification method; code hooks into the same guardian link. |
 | Age-declaration tamper-resistance (child can't self-flip to "adult") | Band is self-declared via a validated RPC; no re-verification on change. | **[LEGAL]** / **[DECISION]** — policy + optional re-consent-on-change (code can enforce once decided). |
 | Student **data export** (FERPA/COPPA data ownership) | `edu_export_study_data()` → full study-spine JSON archive (sessions, attempts, mastery, goals, plans, media, assessments, decks, learn docs, quizzes). Per-deck open-format export (JSON/MD/Anki/CSV) already shipped. UI on `/education/data`. | **[CODE ✅]** |
@@ -75,14 +75,15 @@
 
 **Code-done ✅ (this pass):**
 - Age band captured + declarable; COPPA gate RPC (`edu_coppa_gate`) blocking under-13 AI behind an active guardian link (reuses the guardian system).
+- `useAiComplianceGate` wired on every education AI-generation entry point (Study Kit, memory, quizzes/practice tests, handwritten grading, spoken practice, audio study, mind maps, convert/note fan-out, tutor) — `engage` confirmed to have no AI trigger. Live-verified (Supabase MCP + Playwright): under-13/no-guardian blocked; adult allowed.
 - Full study-data **export** (whole spine) + gated, auditable, **reversible-window delete/restore**; "Your data & privacy" surface.
 - Email-enumeration oracle closed + consent-request rate limit (D52).
 - Data-rights audit ledger.
 
 **Code follow-ups ◐ (named, not blocked on legal):**
-- Wire `useAiComplianceGate` on the remaining education AI entry points (list in `features/education/compliance/FEATURE.md`).
 - Schedule the hard-purge cron (aidream) for data soft-deleted > 30 days.
 - Verify no ad/analytics SDK reaches the education bundle; inventory analytics for minors.
+- Tutor gate is session-start-only (composer has no per-send hook) — consider a first-class composer `onSubmit` hook for an exact per-message gate.
 
 **Needs Arman / legal:**
 - Verifiable parental-consent *method* (COPPA §312.5) + age-change re-consent policy.

@@ -22,6 +22,7 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import {
   resolveDeckAudioSource,
   resolveTopicAudioSource,
@@ -37,6 +38,9 @@ export function MindMapNew() {
   const params = useSearchParams();
   const { generate, isGenerating } = useGenerateMindMap();
   const gen = useEntitlementGuard("education.mindmap_generate");
+  // School-safe COPPA gate: an under-13 account with no active guardian link is
+  // blocked from AI generation until a parent approves (never a silent failure).
+  const coppa = useAiComplianceGate();
 
   const [decks, setDecks] = useState<FcSetRow[]>([]);
   const [sourceKind, setSourceKind] = useState<SourceKind>(
@@ -61,6 +65,10 @@ export function MindMapNew() {
       toast.error("Type a topic to map");
       return;
     }
+    // School-safe gate FIRST (COPPA): is this account allowed to collect/process
+    // data at all? An unconsented under-13 opens the "a parent must approve"
+    // dialog and never reaches the billing gate or starts a run.
+    if (!(await coppa.ensureAllowed())) return;
     // Canonical guard: awaits the server-truth check BEFORE spending; on a
     // cap-hit it opens the respectful contextual paywall (not a toast) and never
     // starts the work (DoD #2 — no mid-generation ambush).
@@ -196,6 +204,7 @@ export function MindMapNew() {
         {isGenerating ? "Mapping your material…" : "Generate mind map"}
       </Button>
       <gen.Paywall />
+      <coppa.Gate />
     </div>
   );
 }

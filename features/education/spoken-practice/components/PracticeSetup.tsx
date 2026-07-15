@@ -15,6 +15,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { MODE_CONFIG, DIFFICULTY_OPTIONS, DEFAULT_PROMPTS } from "../constants";
 import { buildDeckSource, buildTopicSource } from "../data/grounding";
@@ -34,6 +35,9 @@ export function PracticeSetup({
   const cfg = MODE_CONFIG[mode];
   const Icon = cfg.icon;
   const guard = useEntitlementGuard("education.spoken_practice");
+  // School-safe COPPA gate: an under-13 account with no active guardian link is
+  // blocked from AI generation until a parent approves (never a silent failure).
+  const coppa = useAiComplianceGate();
 
   const [focus, setFocus] = useState("");
   const [difficulty, setDifficulty] = useState<string>(DIFFICULTY_OPTIONS[1]);
@@ -61,6 +65,10 @@ export function PracticeSetup({
       toast.error(`Enter a ${cfg.focusLabel.toLowerCase()} first`);
       return;
     }
+    // School-safe gate FIRST (COPPA): is this account allowed to collect/process
+    // data at all? An unconsented under-13 opens the "a parent must approve"
+    // dialog and never reaches the billing gate or starts a session.
+    if (!(await coppa.ensureAllowed())) return;
     setBusy(true);
     try {
       // Resolve the grounding source (deck > pasted > none).
@@ -204,6 +212,7 @@ export function PracticeSetup({
       </div>
 
       <guard.Paywall />
+      <coppa.Gate />
     </div>
   );
 }

@@ -21,6 +21,7 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import {
   resolveDeckAudioSource,
   resolveTopicAudioSource,
@@ -36,6 +37,9 @@ export function MemoryNew() {
   const params = useSearchParams();
   const { generate, isGenerating } = useGenerateMemoryAid();
   const gen = useEntitlementGuard("education.memory_generate");
+  // School-safe COPPA gate: an under-13 account with no active guardian link is
+  // blocked from AI generation until a parent approves (never a silent failure).
+  const coppa = useAiComplianceGate();
 
   const [decks, setDecks] = useState<FcSetRow[]>([]);
   const [sourceKind, setSourceKind] = useState<SourceKind>(
@@ -60,6 +64,10 @@ export function MemoryNew() {
       toast.error("Type a topic to build aids for");
       return;
     }
+    // School-safe gate FIRST (COPPA): is this account allowed to collect/process
+    // data at all? An unconsented under-13 opens the "a parent must approve"
+    // dialog and never reaches the billing gate or starts a run.
+    if (!(await coppa.ensureAllowed())) return;
     // Canonical guard: awaits the server-truth check BEFORE spending; a cap-hit
     // opens the respectful contextual paywall and never starts the work.
     await gen.guard(async () => {
@@ -194,6 +202,7 @@ export function MemoryNew() {
         {isGenerating ? "Building your memory aids…" : "Generate memory aids"}
       </Button>
       <gen.Paywall />
+      <coppa.Gate />
     </div>
   );
 }

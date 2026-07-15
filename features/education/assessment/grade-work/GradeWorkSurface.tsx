@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import type { GradeResult } from "@/features/education/trust/types";
 import { HandwrittenWorkInput } from "../components/HandwrittenWorkInput";
 import { StepBreakdown } from "../components/StepBreakdown";
@@ -63,12 +64,19 @@ export function GradeWorkSurface() {
   const [photo, setPhoto] = useState<File | null>(null);
   const grader = useGradeWork();
   const guard = useEntitlementGuard("education.image_grade");
+  // School-safe COPPA gate: an under-13 account with no active guardian link is
+  // blocked from AI generation until a parent approves (never a silent failure).
+  const coppa = useAiComplianceGate();
 
   const busy = grader.status === "grading" || guard.isChecking;
   const canGrade = problem.trim().length > 0 && !!photo && !busy;
 
   const onGrade = async () => {
     if (!photo || !problem.trim()) return;
+    // School-safe gate FIRST (COPPA): is this account allowed to collect/process
+    // data at all? An unconsented under-13 opens the "a parent must approve"
+    // dialog and never reaches the billing gate or starts a run.
+    if (!(await coppa.ensureAllowed())) return;
     await guard.guard(async () => {
       const graded = await grader.grade({ problem, expected, photo });
       if (!graded) {
@@ -227,6 +235,7 @@ export function GradeWorkSurface() {
       )}
 
       <guard.Paywall />
+      <coppa.Gate />
     </div>
   );
 }

@@ -41,6 +41,7 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { useEntitlement, useEntitlementConsume } from "@/features/entitlements/hooks";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
@@ -101,7 +102,14 @@ export function EducationTutorClient({
   // the action and the composer is blocked pre-send once a cap is reached, so
   // there is never a mid-send ambush (the entitlements TRUST mandate).
   const tutorMsg = useEntitlement("education.tutor_message");
-  const sendBlocked = !tutorMsg.allowed;
+  // School-safe COPPA gate: an under-13 account with no active guardian link is
+  // blocked from AI generation until a parent approves (never a silent failure).
+  // The tutor's composer has no first-class onSubmit hook to intercept per-send
+  // (tracked in FEATURE.md), so this gates the whole conversation: proactively
+  // checked on mount/session-start (below) and the composer stays disabled for
+  // as long as `coppa.blocked` is reactively true.
+  const coppa = useAiComplianceGate();
+  const sendBlocked = !tutorMsg.allowed || coppa.blocked;
   // The remaining-count meter is the canonical primitive (renders nothing while
   // unlimited/permissive; shows "X of Y left" once limits exist).
   const hasMeter = tutorMsg.limit != null;
@@ -193,6 +201,11 @@ export function EducationTutorClient({
     const target = liveConversationId;
     let cancelled = false;
     (async () => {
+      // School-safe gate FIRST (COPPA): session start is this surface's
+      // pre-generation checkpoint (no per-send hook available). A blocked
+      // under-13 opens the "a parent must approve" dialog and skips grounding —
+      // the disabled composer above then keeps the account out of the AI flow.
+      if (!(await coppa.ensureAllowed())) return;
       try {
         const grounding = await assembleTutorGrounding({ seed });
         if (cancelled) return;
@@ -216,7 +229,7 @@ export function EducationTutorClient({
     return () => {
       cancelled = true;
     };
-  }, [conversationIdProp, liveConversationId, authReady, dispatch, seed]);
+  }, [conversationIdProp, liveConversationId, authReady, dispatch, seed, coppa.ensureAllowed]);
 
   // ── Trust envelope for an EXISTING transcript ─────────────────────────────
   // The fresh route sets `tutorTrust` from the injection assembly above; on a
@@ -463,9 +476,11 @@ export function EducationTutorClient({
           smartInputProps={{
             sendButtonVariant: "blue",
             showSubmitOnEnterToggle: false,
-            placeholder: sendBlocked
-              ? tutorMsg.definition.upgradeMessage
-              : "Ask your tutor anything about what you're studying…",
+            placeholder: coppa.blocked
+              ? "A parent needs to approve AI use for this account first."
+              : sendBlocked
+                ? tutorMsg.definition.upgradeMessage
+                : "Ask your tutor anything about what you're studying…",
             disableSend: sendBlocked,
             extraRightControls: hasMeter ? (
               <EntitlementMeter
@@ -483,6 +498,7 @@ export function EducationTutorClient({
           }
         />
       </div>
+      <coppa.Gate />
     </div>
   );
 }

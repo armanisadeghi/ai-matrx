@@ -2,7 +2,7 @@
 
 **Status:** `live`
 **Tier:** `2` — a study-hub compliance sub-feature
-**Last updated:** `2026-07-15`
+**Last updated:** `2026-07-14`
 **Why:** [`docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md`](../../../docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md) §Compliance + [`docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md`](../../../docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md). Keeps the Education Hub installable on school devices (never banned by Apple/Google education review or district IT).
 
 ---
@@ -54,13 +54,17 @@ const onGenerate = async () => {
 <coppa.Gate />
 ```
 
-**Wired so far:** the front-door Study Kit generator (`onboard/components/StartHero.tsx`).
-**Still to wire (add the same 3 lines):** the other education AI entries —
+**Wired everywhere (rollout complete, 2026-07-14):** every education AI-generation
+entry point gates FIRST, mirroring `onboard/components/StartHero.tsx` exactly —
 `memory/components/MemoryNew.tsx`, `assessment/components/create/AssessmentCreate.tsx`,
 `assessment/grade-work/GradeWorkSurface.tsx`, `spoken-practice/components/PracticeSetup.tsx`,
 `media/audio/components/AudioStudyNew.tsx`, `media/mindmap/components/MindMapNew.tsx`,
-`convert/ConvertContentDialog.tsx`, `engage/components/lobby/HostSetupImpl.tsx`. (Tracked in
-SCHOOL_SAFE_CHECKLIST.md.)
+`convert/ConvertContentDialog.tsx` (also covers note generation, which fans out through
+this same dialog), and `tutor/components/EducationTutorClient.tsx` (composer has no
+per-send hook, so gated at session-start + the composer stays disabled reactively
+while blocked — see its inline comment). `engage/` (game hosting/play) triggers no AI
+generation — it draws only from existing deck cards / the SRS due queue — so there is
+no entry point to gate there.
 
 ## Invariants
 
@@ -75,6 +79,12 @@ SCHOOL_SAFE_CHECKLIST.md.)
 
 ## Change log
 
+- `2026-07-14` — Rollout completed to every remaining AI-generation entry point (memory,
+  quizzes/practice tests, handwritten grading, spoken practice, audio study, mind maps,
+  convert/note fan-out, tutor). `engage/` confirmed to have no AI trigger (deck/SRS-only).
+  Live-verified via Supabase MCP + Playwright: under-13 + no guardian blocked generation
+  with the consent dialog on memory, quizzes, and grade-work; switching the account to
+  `adult` let all three proceed. `SCHOOL_SAFE_CHECKLIST.md` item marked complete.
 - `2026-07-15` — Feature created. `users.profiles.age_band` + `edu_set_age_band` /
   `edu_coppa_gate` RPCs (`migrations/edu_compliance_age_band_coppa.sql`, applied + ledgered).
   `useAiComplianceGate` primitive + consent dialog + age-band card. Wired the Study Kit

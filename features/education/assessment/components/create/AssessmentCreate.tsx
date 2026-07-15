@@ -41,6 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useLibrary } from "@/features/rag/hooks/useLibrary";
 import { useDocumentChunks } from "@/features/rag/hooks/useDocument";
 import type { LibraryDocSummary } from "@/features/rag/types/library";
@@ -84,6 +85,9 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
   const base = `/education/${config.base}`;
   const { generate, isGenerating } = useGenerateQuiz();
   const entitlement = useEntitlementGuard(config.capability);
+  // School-safe COPPA gate: an under-13 account with no active guardian link is
+  // blocked from AI generation until a parent approves (never a silent failure).
+  const coppa = useAiComplianceGate();
   const [isNavigating, startNavigation] = useTransition();
 
   // Exam-hub deep links (P6 Phase B CTAs) seed the create surface:
@@ -146,6 +150,10 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
+    // School-safe gate FIRST (COPPA): is this account allowed to collect/process
+    // data at all? An unconsented under-13 opens the "a parent must approve"
+    // dialog and never reaches the billing gate or starts a run.
+    if (!(await coppa.ensureAllowed())) return;
     // Canonical guard: server-truth check BEFORE spending; a cap-hit opens the
     // respectful contextual paywall (not a toast) and never starts generation.
     await entitlement.guard(async () => {
@@ -584,6 +592,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
             {/* Metering (visible BEFORE the action — TRUST §6), canonical primitive */}
             <EntitlementMeter capability={config.capability} showAllWindows />
             <entitlement.Paywall />
+            <coppa.Gate />
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <Button

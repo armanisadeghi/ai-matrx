@@ -48,6 +48,7 @@ import type { ConvertResult, ConvertSource, SourceRef, TargetKind } from "./type
 import type { Capability } from "@/features/entitlements/registry";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 
 interface TargetMeta {
@@ -164,6 +165,9 @@ export function ConvertContentDialog({
 }: ConvertContentDialogProps) {
   const router = useRouter();
   const { convert } = useContentConverter();
+  // School-safe COPPA gate: an under-13 account with no active guardian link is
+  // blocked from AI generation until a parent approves (never a silent failure).
+  const coppa = useAiComplianceGate();
   const hasSelection = Boolean(selectionText && selectionText.trim().length > 20);
   const [useSelection, setUseSelection] = useState(false);
   const [rows, setRows] = useState<Record<string, RowState>>({});
@@ -180,6 +184,10 @@ export function ConvertContentDialog({
       toast.error("There's no content to convert yet.");
       return false;
     }
+    // School-safe gate FIRST (COPPA): is this account allowed to collect/process
+    // data at all? An unconsented under-13 opens the "a parent must approve"
+    // dialog and never reaches the billing gate or starts generation.
+    if (!(await coppa.ensureAllowed())) return false;
     setRows((r) => ({ ...r, [kind]: { status: "running" } }));
     const source: ConvertSource = {
       text: sourceText,
@@ -263,6 +271,7 @@ export function ConvertContentDialog({
             />
           ))}
         </div>
+        <coppa.Gate />
       </DialogContent>
     </Dialog>
   );
