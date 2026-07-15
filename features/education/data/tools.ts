@@ -8,7 +8,7 @@
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in VISION-education-hub.md.
 
-import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users } from "lucide-react";
+import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users, BadgeCheck } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -300,6 +300,25 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Per-class hub aggregates everything tagged to it + the class's exam dates",
       "Plan around a class's exams (deep-links into the study planner)",
       "Scopes-native: set a class active in the scope picker to bias generation + the tutor",
+    ],
+    featured: true,
+  },
+  {
+    slug: "creator",
+    name: "Creator page",
+    tagline: "Your public page — feature your videos, free tools & classes",
+    description: "Claim a public handle and get an SEO-first landing page at /c/<handle>. Feature your YouTube videos, your free flashcard sets and study guides, and your classes with enroll CTAs. Teachers and creators bring their audience; the page converts them.",
+    icon: BadgeCheck,
+    letter: "Cp",
+    status: "live", // Convergence C — creator profiles + public landing pages; manage at /education/creator, public at /c/[handle]
+    accessTier: "free",
+    visionRef: "CONVERGENCE_C_CREATORS.md (Convergence C — Creators, Classes & Monetization)",
+    capabilities: [
+      "Claim a unique public handle → indexable page at /c/<handle>",
+      "Feature YouTube videos (privacy-friendly nocookie embeds)",
+      "Feature your public flashcard sets + study guides as instantly-usable free tools",
+      "Feature your classes with open / closed / paid enroll CTAs (edu_class_join contract)",
+      "Anonymous funnel: free tools usable logged-out, sign-up saves progress + enrolls",
     ],
     featured: true,
   },

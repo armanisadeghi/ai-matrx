@@ -16,6 +16,11 @@ import {
   type DeckExportFormat,
 } from "../export/deckFormats";
 import { downloadTextFile, downloadBlob, safeFileBase } from "../export/download";
+import {
+  dataRightsService,
+  type StudyDeleteResult,
+  type StudyRestoreResult,
+} from "./dataRightsService";
 
 export interface UseDataOwnership {
   decks: FcSetRow[];
@@ -27,6 +32,18 @@ export interface UseDataOwnership {
   /** Download EVERY deck as a single .zip of JSON files (full account export). */
   exportAll: () => Promise<void>;
   exportingAll: boolean;
+  /**
+   * FERPA/COPPA data right: download the FULL study spine (sessions, attempts,
+   * mastery, plans, media, assessments, decks, learn docs, quizzes) as one JSON
+   * archive. Broader than exportAll (which is decks only).
+   */
+  exportStudyData: () => Promise<void>;
+  exportingStudy: boolean;
+  /** FERPA/COPPA data right: soft-delete all study data (reversible 30 days). */
+  deleteStudyData: () => Promise<StudyDeleteResult>;
+  /** Undo the most recent delete, if still inside the restore window. */
+  restoreStudyData: () => Promise<StudyRestoreResult>;
+  deletingStudy: boolean;
 }
 
 export function useDataOwnership(): UseDataOwnership {
@@ -34,6 +51,8 @@ export function useDataOwnership(): UseDataOwnership {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingAll, setExportingAll] = useState(false);
+  const [exportingStudy, setExportingStudy] = useState(false);
+  const [deletingStudy, setDeletingStudy] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -105,5 +124,65 @@ export function useDataOwnership(): UseDataOwnership {
     }
   }, [decks]);
 
-  return { decks, loading, error, refresh, exportDeck, exportAll, exportingAll };
+  const exportStudyData = useCallback(async () => {
+    setExportingStudy(true);
+    try {
+      const res = await dataRightsService.exportStudyData();
+      if (res.error || !res.data) {
+        throw new Error(
+          typeof res.error === "string" ? res.error : "Couldn't build your study export",
+        );
+      }
+      downloadTextFile(
+        `matrx-study-data-${new Date().toISOString().slice(0, 10)}.json`,
+        JSON.stringify(res.data, null, 2),
+        "application/json;charset=utf-8;",
+      );
+      void dataRightsService.logExport();
+    } finally {
+      setExportingStudy(false);
+    }
+  }, []);
+
+  const deleteStudyData = useCallback(async () => {
+    setDeletingStudy(true);
+    try {
+      const res = await dataRightsService.deleteStudyData();
+      if (res.error || !res.data) {
+        throw new Error(
+          typeof res.error === "string" ? res.error : "Couldn't delete your study data",
+        );
+      }
+      await refresh(); // decks list reflects the delete
+      return res.data;
+    } finally {
+      setDeletingStudy(false);
+    }
+  }, [refresh]);
+
+  const restoreStudyData = useCallback(async () => {
+    const res = await dataRightsService.restoreStudyData();
+    if (res.error || !res.data) {
+      throw new Error(
+        typeof res.error === "string" ? res.error : "Couldn't restore your study data",
+      );
+    }
+    await refresh();
+    return res.data;
+  }, [refresh]);
+
+  return {
+    decks,
+    loading,
+    error,
+    refresh,
+    exportDeck,
+    exportAll,
+    exportingAll,
+    exportStudyData,
+    exportingStudy,
+    deleteStudyData,
+    restoreStudyData,
+    deletingStudy,
+  };
 }

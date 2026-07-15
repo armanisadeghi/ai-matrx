@@ -71,7 +71,10 @@ export function FamilyDashboard() {
       const res = await familyService.requestStudent(email);
       if (res.error) return res.error;
       setStudentEmail("");
-      toast.success("Request sent — the student must approve before you can view their progress.");
+      // Neutral by design (D52): we never confirm whether an account exists.
+      toast.success(
+        "Request sent. If an account with that email exists, they must approve before you can view their progress.",
+      );
       return null;
     });
 
@@ -82,7 +85,10 @@ export function FamilyDashboard() {
       const res = await familyService.grantGuardian(email, "guardian");
       if (res.error) return res.error;
       setGuardianEmail("");
-      toast.success("Access granted — they can now see your study progress.");
+      // Neutral by design (D52): we never confirm whether an account exists.
+      toast.success(
+        "Done. If an account with that email exists, they can now see your study progress.",
+      );
       return null;
     });
 

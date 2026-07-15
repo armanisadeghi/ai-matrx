@@ -1,0 +1,82 @@
+# FEATURE.md — `education/compliance` (School-safe COPPA age gate)
+
+**Status:** `live`
+**Tier:** `2` — a study-hub compliance sub-feature
+**Last updated:** `2026-07-15`
+**Why:** [`docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md`](../../../docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md) §Compliance + [`docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md`](../../../docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md). Keeps the Education Hub installable on school devices (never banned by Apple/Google education review or district IT).
+
+---
+
+## Purpose
+
+Capture a user's **age band** and gate AI/data collection accordingly. An
+**under-13** account may use AI features only while a parent has approved it —
+enforced by **reusing the guardian-consent system** (`features/education/family`),
+never a parallel consent store. The block is a clear "a parent must approve"
+state, never a silent failure.
+
+## Data model
+
+- **`users.profiles.age_band`** (`under_13 | 13_17 | adult`, nullable = undeclared).
+  A single per-user attribute on the canonical profile row — a column, not a new
+  table (reuse-first). Migration `migrations/edu_compliance_age_band_coppa.sql`.
+- **RPCs (public, SECURITY DEFINER, authenticated-only):**
+  - `edu_set_age_band(band)` — validated single write path for the caller's own band.
+  - `edu_coppa_gate()` — the authoritative verdict `{age_band, requires_consent,
+    has_active_guardian, ai_allowed, reason}`. Reads the RLS-guarded
+    `education.guardian_link` server-side (only a definer RPC can), so
+    `has_active_guardian` is trustworthy. `ai_allowed = false` (reason
+    `guardian_consent_required`) only for an under-13 with no active inbound
+    guardian link. Undeclared band → allowed (existing users aren't broken) +
+    `age_undeclared` so the UI can nudge.
+
+## Entry points
+
+- `coppaService.ts` — typed wrappers over the two RPCs (`StudyResult<T>`).
+- `useAiComplianceGate.tsx` — **THE reusable gate primitive.** `ensureAllowed()`
+  (server-truth pre-action check; opens the consent dialog + returns false on a
+  block) + `<gate.Gate />` + reactive `gate`/`blocked`. Fails OPEN on a resolver
+  blip (never break an adult's flow; the block is a positive under-13 signal).
+- `components/AiConsentRequiredDialog.tsx` — the "a parent must approve" state,
+  routing to `/education/family` (the guardian flow).
+- `components/AgeBandPrivacyCard.tsx` — declare age band + see live COPPA status;
+  rendered on the "Your data & privacy" surface (`/education/data`).
+
+## How to gate a new AI entry point (the paved path)
+
+```ts
+const coppa = useAiComplianceGate();
+const onGenerate = async () => {
+  if (!(await coppa.ensureAllowed())) return;   // COPPA gate FIRST (school-safe)
+  await entitlementGuard.guard(runGeneration);  // then the billing gate
+};
+// render once near the action:
+<coppa.Gate />
+```
+
+**Wired so far:** the front-door Study Kit generator (`onboard/components/StartHero.tsx`).
+**Still to wire (add the same 3 lines):** the other education AI entries —
+`memory/components/MemoryNew.tsx`, `assessment/components/create/AssessmentCreate.tsx`,
+`assessment/grade-work/GradeWorkSurface.tsx`, `spoken-practice/components/PracticeSetup.tsx`,
+`media/audio/components/AudioStudyNew.tsx`, `media/mindmap/components/MindMapNew.tsx`,
+`convert/ConvertContentDialog.tsx`, `engage/components/lobby/HostSetupImpl.tsx`. (Tracked in
+SCHOOL_SAFE_CHECKLIST.md.)
+
+## Invariants
+
+- **Reuse the guardian system for consent.** The under-13 unblock is an active
+  `education.guardian_link` (student = the child). Never build a second consent store.
+- **COPPA gate runs BEFORE the entitlement gate.** Entitlements answer "can this plan
+  afford it?"; this answers "is this account legally allowed to collect data at all?".
+- **Never a silent failure.** A block always renders the "a parent must approve" dialog.
+- **Age band is server-validated** via `edu_set_age_band` (whitelist); the gate reads it
+  server-side. (Tamper-resistance beyond self-declaration is a policy/verification layer —
+  Arman/legal, tracked in the checklist.)
+
+## Change log
+
+- `2026-07-15` — Feature created. `users.profiles.age_band` + `edu_set_age_band` /
+  `edu_coppa_gate` RPCs (`migrations/edu_compliance_age_band_coppa.sql`, applied + ledgered).
+  `useAiComplianceGate` primitive + consent dialog + age-band card. Wired the Study Kit
+  front door. MCP-verified: under-13 + no guardian → blocked; +active guardian / adult / teen
+  → allowed.

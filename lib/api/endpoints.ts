@@ -340,6 +340,23 @@ export const ENDPOINTS = {
   },
 
   /**
+   * Content-processing orchestrator — the interactive counterpart to the
+   * automatic post-upload hook. Triggers extract→clean→chunk→embed→NER for an
+   * already-uploaded `cld_files` row and streams typed progress (NDJSON). The
+   * terminal `data` event carries a `ContentProcessingResult`
+   * (`signature: "ContentProcessingResult"`) with `status` + `processed_document_id`.
+   * Today's content types: `"pdf"` (default) and `"office"` (docx/pptx/xlsx —
+   * pure-python extraction, no LibreOffice/OCR; already-clean markdown so the
+   * LLM clean stage is skipped). The extracted text itself is NOT in the
+   * stream — read `docproc.processed_documents.content` directly via
+   * `docprocDb(supabase)` (canonical direct-Supabase read) once the run
+   * completes.
+   */
+  contentProcessing: {
+    process: (cldFileId: string) => `/content-processing/${cldFileId}` as const,
+  },
+
+  /**
    * Unified asset (image / media) upload + render-variants pipeline.
    *
    * One endpoint family handles every media upload in the platform. The

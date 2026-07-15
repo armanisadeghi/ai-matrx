@@ -24,6 +24,20 @@ export type GuardianRole = "guardian" | "student";
 /** Link lifecycle status. Only `active` confers read access. */
 export type GuardianLinkStatus = "pending" | "active" | "revoked";
 
+/**
+ * Result of a consent-initiation RPC (`guardian_grant` / `guardian_request_student`).
+ *
+ * D52: these RPCs return an IDENTICAL neutral shape whether or not the target
+ * email resolves to an account — never confirming existence (no email-enumeration
+ * oracle). `sent` = a request was recorded IF an account exists; `granted` = a
+ * grant was recorded IF an account exists. The client shows the same neutral
+ * message in both cases.
+ */
+export type GuardianConsentStatus = "sent" | "granted";
+export interface GuardianConsentResult {
+  status: GuardianConsentStatus;
+}
+
 /** Bucketed view of the caller's links, ready for the dashboard sections. */
 export interface GuardianLinkBuckets {
   /** Students who granted me access — the viewable roster (role=guardian, active). */

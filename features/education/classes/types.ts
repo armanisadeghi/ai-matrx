@@ -17,6 +17,15 @@ export interface ClassExamDate {
   date: string;
 }
 
+/**
+ * How a class is joined (Convergence C). Stored in scope.settings.access_mode;
+ * enforced by the edu_class_* RPC family + context.scopes RLS.
+ *   open   — publicly listed + anyone can join immediately.
+ *   closed — invite / request → owner-approve; not publicly listed.
+ *   paid   — join gated by a class_access grant a purchase confers.
+ */
+export type AccessMode = "open" | "closed" | "paid";
+
 /** Structured, education-facing shape of a class scope's settings JSONB. */
 export interface ClassSettings {
   examDates: ClassExamDate[];
@@ -27,6 +36,80 @@ export interface ClassSettings {
   color?: string;
   /** Soft-hide from the active list without deleting the scope. */
   archived?: boolean;
+  /** open | closed | paid. Missing → 'closed' (private personal classes). */
+  accessMode: AccessMode;
+}
+
+/** A caller's membership role on a class. */
+export type ClassRole = "owner" | "member";
+
+/**
+ * A caller's membership status on a class.
+ *   active   — on the roster (or the owner).
+ *   pending  — requested a closed class, awaiting owner approval.
+ *   entitled — holds the paid class_access grant, not yet enrolled.
+ */
+export type ClassStatus = "active" | "pending" | "entitled";
+
+/** The read contract behind the Join/Request/Enroll button (edu_class_state). */
+export interface ClassAccessState {
+  classId: string;
+  name: string;
+  description: string;
+  slug: string | null;
+  organizationId: string;
+  accessMode: AccessMode;
+  isOwner: boolean;
+  myRole: ClassRole | null;
+  myStatus: ClassStatus | null;
+  memberCount: number;
+  /** Only populated for the owner. */
+  pendingCount: number | null;
+}
+
+/** One row of a class roster (edu_class_roster). */
+export interface ClassRosterMember {
+  userId: string;
+  email: string | null;
+  role: ClassRole;
+  status: ClassStatus;
+  createdAt: string;
+}
+
+/** A class the caller owns / joined / requested (edu_my_classes). */
+export interface MyClass {
+  classId: string;
+  name: string;
+  description: string;
+  slug: string | null;
+  organizationId: string;
+  accessMode: AccessMode;
+  myRole: ClassRole;
+  myStatus: ClassStatus;
+  ownerId: string | null;
+  settings: ClassSettings;
+}
+
+/** The outcome verbs the join/request/enroll RPCs return. */
+export type ClassJoinStatus =
+  | "joined"
+  | "already_member"
+  | "pending"
+  | "needs_request"
+  | "needs_purchase"
+  | "left"
+  | "removed"
+  | "approved"
+  | "not_pending"
+  | "entitled"
+  | "ok";
+
+export interface ClassJoinResult {
+  status: ClassJoinStatus;
+  role?: ClassRole;
+  accessMode?: AccessMode;
+  stub?: boolean;
+  userId?: string;
 }
 
 /** A class = a scope + its parsed settings. */

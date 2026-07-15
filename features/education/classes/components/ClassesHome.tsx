@@ -7,40 +7,57 @@
 // Matches the education tool-page convention (MemoryHome): centered container,
 // inline header, content floats behind the shell glass. React Compiler on.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { GraduationCap, Plus, CalendarClock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClasses } from "../hooks/useClasses";
+import { useMyClasses } from "../hooks/useMyClasses";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
+import { AccessModeBadge } from "./AccessModeBadge";
 import { daysUntil, nextExamDate } from "../settings";
-import type { StudyClass } from "../types";
+import type { ClassSettings, StudyClass } from "../types";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function ClassRow({ cls }: { cls: StudyClass }) {
+function ClassRow({
+  id,
+  slug,
+  name,
+  settings,
+  statusChip,
+}: {
+  id: string;
+  slug: string | null;
+  name: string;
+  settings: ClassSettings;
+  statusChip?: ReactNode;
+}) {
   const router = useRouter();
   const today = todayIso();
-  const next = nextExamDate(cls.settings, today);
-  const meta = [cls.settings.teacher, cls.settings.term, cls.settings.period && `Period ${cls.settings.period}`]
+  const next = nextExamDate(settings, today);
+  const meta = [settings.teacher, settings.term, settings.period && `Period ${settings.period}`]
     .filter(Boolean)
     .join(" · ");
 
   return (
     <button
       type="button"
-      onClick={() => router.push(`/education/classes/${cls.slug ?? cls.id}`)}
+      onClick={() => router.push(`/education/classes/${slug ?? id}`)}
       className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
         <GraduationCap className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium text-foreground">
-          {cls.name}
+        <div className="flex items-center gap-1.5">
+          <span className="truncate text-sm font-medium text-foreground">
+            {name}
+          </span>
+          <AccessModeBadge mode={settings.accessMode} />
         </div>
         {meta && (
           <div className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
@@ -49,7 +66,8 @@ function ClassRow({ cls }: { cls: StudyClass }) {
           </div>
         )}
       </div>
-      {next && (
+      {statusChip}
+      {!statusChip && next && (
         <span className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
           <CalendarClock className="h-3 w-3" />
           {next.title} in {Math.max(0, daysUntil(next.date, today))}d
@@ -59,9 +77,21 @@ function ClassRow({ cls }: { cls: StudyClass }) {
   );
 }
 
+function OwnedRow({ cls }: { cls: StudyClass }) {
+  return (
+    <ClassRow id={cls.id} slug={cls.slug} name={cls.name} settings={cls.settings} />
+  );
+}
+
+const JOINED_STATUS_LABEL: Record<string, string> = {
+  pending: "Requested",
+  entitled: "Purchased",
+};
+
 export function ClassesHome() {
   const router = useRouter();
   const { classes, loading, createClass } = useClasses();
+  const { joined } = useMyClasses();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   async function handleCreate(value: ClassFormValue) {
@@ -111,10 +141,38 @@ export function ClassesHome() {
         <ul className="space-y-2">
           {classes.map((cls) => (
             <li key={cls.id}>
-              <ClassRow cls={cls} />
+              <OwnedRow cls={cls} />
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Classes the user has joined (owned by someone else). */}
+      {joined.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Joined classes
+          </h2>
+          <ul className="space-y-2">
+            {joined.map((c) => (
+              <li key={c.classId}>
+                <ClassRow
+                  id={c.classId}
+                  slug={c.slug}
+                  name={c.name}
+                  settings={{ ...c.settings, accessMode: c.accessMode }}
+                  statusChip={
+                    JOINED_STATUS_LABEL[c.myStatus] ? (
+                      <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                        {JOINED_STATUS_LABEL[c.myStatus]}
+                      </span>
+                    ) : undefined
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <ClassFormDialog

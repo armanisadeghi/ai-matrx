@@ -9163,6 +9163,30 @@ export type Database = {
         }
         Relationships: []
       }
+      data_rights_event: {
+        Row: {
+          action: string
+          created_at: string
+          detail: Json
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deck_suggestion: {
         Row: {
           body: string
@@ -25365,6 +25389,29 @@ export type Database = {
             }[]
           }
       _count_super_admins: { Args: never; Returns: number }
+      _edu_access_mode: {
+        Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+        Returns: string
+      }
+      _edu_class: {
+        Args: { p_class: string }
+        Returns: Database["context"]["Tables"]["scopes"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "scopes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _edu_ensure_owner_membership: {
+        Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+        Returns: undefined
+      }
+      _edu_is_owner: {
+        Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+        Returns: boolean
+      }
+      _edu_is_scope_member: { Args: { p_scope: string }; Returns: boolean }
       _library_assert_super_admin: {
         Args: { p_actor: string }
         Returns: undefined
@@ -27323,6 +27370,30 @@ export type Database = {
         }
         Returns: string
       }
+      creator_claim_handle: {
+        Args: { p_display_name?: string; p_handle: string }
+        Returns: Json
+      }
+      creator_get_mine: { Args: never; Returns: Json }
+      creator_handle_available: { Args: { p_handle: string }; Returns: boolean }
+      creator_normalize_handle: { Args: { p_handle: string }; Returns: string }
+      creator_public_page: { Args: { p_handle: string }; Returns: Json }
+      creator_resolve_featured_resource: {
+        Args: { p_id: string; p_token: string }
+        Returns: Json
+      }
+      creator_set_public: { Args: { p_public: boolean }; Returns: Json }
+      creator_update_profile: {
+        Args: {
+          p_avatar_url?: string
+          p_bio?: string
+          p_display_name?: string
+          p_featured?: Json
+          p_links?: Json
+          p_tagline?: string
+        }
+        Returns: Json
+      }
       ctx_seed_template: { Args: { p_template: Json }; Returns: string }
       current_personal_org_id: { Args: never; Returns: string }
       cx_canvas_archive: {
@@ -27780,6 +27851,31 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      edu_class_approve: {
+        Args: { p_class: string; p_user: string }
+        Returns: Json
+      }
+      edu_class_grant: {
+        Args: { p_class: string; p_user: string }
+        Returns: Json
+      }
+      edu_class_join: { Args: { p_class: string }; Returns: Json }
+      edu_class_leave: { Args: { p_class: string }; Returns: Json }
+      edu_class_purchase: { Args: { p_class: string }; Returns: Json }
+      edu_class_remove: {
+        Args: { p_class: string; p_user: string }
+        Returns: Json
+      }
+      edu_class_request: { Args: { p_class: string }; Returns: Json }
+      edu_class_roster: { Args: { p_class: string }; Returns: Json }
+      edu_class_set_access: {
+        Args: { p_access_mode: string; p_class: string }
+        Returns: Json
+      }
+      edu_class_state: { Args: { p_class: string }; Returns: Json }
+      edu_coppa_gate: { Args: never; Returns: Json }
+      edu_delete_study_data: { Args: never; Returns: Json }
+      edu_export_study_data: { Args: never; Returns: Json }
       edu_learn_doc_admin_list: {
         Args: never
         Returns: Database["education"]["Tables"]["learn_doc"]["Row"][]
@@ -27822,6 +27918,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      edu_log_data_export: { Args: never; Returns: undefined }
+      edu_my_classes: { Args: never; Returns: Json }
       edu_public_decks: {
         Args: {
           p_certified_only?: boolean
@@ -27851,6 +27949,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      edu_restore_study_data: { Args: never; Returns: Json }
+      edu_set_age_band: { Args: { p_band: string }; Returns: string }
       edu_suggest_edit: {
         Args: {
           p_body: string
@@ -29523,13 +29623,7 @@ export type Database = {
       }
       guardian_grant: {
         Args: { p_guardian_email: string; p_relationship?: string }
-        Returns: Database["education"]["Tables"]["guardian_link"]["Row"]
-        SetofOptions: {
-          from: "*"
-          to: "guardian_link"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        Returns: Json
       }
       guardian_has_active_link: {
         Args: { p_student_id: string }
@@ -29554,13 +29648,7 @@ export type Database = {
       }
       guardian_request_student: {
         Args: { p_relationship?: string; p_student_email: string }
-        Returns: Database["education"]["Tables"]["guardian_link"]["Row"]
-        SetofOptions: {
-          from: "*"
-          to: "guardian_link"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        Returns: Json
       }
       guardian_respond: {
         Args: { p_approve: boolean; p_guardian_user_id: string }
@@ -40072,9 +40160,17 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age_band: string | null
           avatar_url: string | null
           created_at: string
           created_by: string | null
+          creator_bio: string | null
+          creator_featured: Json
+          creator_handle: string | null
+          creator_links: Json
+          creator_public: boolean
+          creator_published_at: string | null
+          creator_tagline: string | null
           deleted_at: string | null
           display_name: string
           id: string
@@ -40089,9 +40185,17 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          age_band?: string | null
           avatar_url?: string | null
           created_at?: string
           created_by?: string | null
+          creator_bio?: string | null
+          creator_featured?: Json
+          creator_handle?: string | null
+          creator_links?: Json
+          creator_public?: boolean
+          creator_published_at?: string | null
+          creator_tagline?: string | null
           deleted_at?: string | null
           display_name?: string
           id: string
@@ -40106,9 +40210,17 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          age_band?: string | null
           avatar_url?: string | null
           created_at?: string
           created_by?: string | null
+          creator_bio?: string | null
+          creator_featured?: Json
+          creator_handle?: string | null
+          creator_links?: Json
+          creator_public?: boolean
+          creator_published_at?: string | null
+          creator_tagline?: string | null
           deleted_at?: string | null
           display_name?: string
           id?: string

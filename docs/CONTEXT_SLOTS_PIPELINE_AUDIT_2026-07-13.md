@@ -258,10 +258,3 @@ live-verified end-to-end in this session (no way to trigger a real aidream chat 
 recommend one real live-chat turn with the "my test" agent (`70399b83-a8a6-460c-a01a-12f3ef0b3903`) after
 aidream deploys, confirming the model's `<available_context>` block lists its declared slots, and one
 fork + one resume test to confirm the class of "agents instantly lose all context" is actually gone.
-
-## 6. Remaining follow-ups (not done — genuinely out of scope for this pass)
-
-- [ ] Deploy aidream and do the live-chat + fork + resume verification pass described in §5 — everything
-      here was verified by reading code + a live frontend check, not a live model turn.
-- [ ] Nothing else identified as open from this investigation. If the deploy verification in the item above
-      surfaces anything new, add it here rather than starting a fresh investigation from scratch.

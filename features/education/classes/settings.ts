@@ -6,8 +6,20 @@
 // layer reads/writes its shape, so a schema change lives here, not per-callsite.
 
 import type { Scope } from "@/features/agent-context/redux/scope/types";
-import { CLASS_SETTINGS_KEYS } from "./constants";
-import type { ClassExamDate, ClassSettings, StudyClass } from "./types";
+import { CLASS_SETTINGS_KEYS, DEFAULT_ACCESS_MODE } from "./constants";
+import type {
+  AccessMode,
+  ClassExamDate,
+  ClassSettings,
+  StudyClass,
+} from "./types";
+
+/** Coerce any value to a valid AccessMode, defaulting missing → 'closed'. */
+export function parseAccessMode(v: unknown): AccessMode {
+  return v === "open" || v === "closed" || v === "paid"
+    ? v
+    : DEFAULT_ACCESS_MODE;
+}
 
 function asRecord(v: unknown): Record<string, unknown> {
   return v && typeof v === "object" && !Array.isArray(v)
@@ -45,6 +57,7 @@ export function parseClassSettings(raw: unknown): ClassSettings {
     period: asString(s[CLASS_SETTINGS_KEYS.period]),
     color: asString(s[CLASS_SETTINGS_KEYS.color]),
     archived: s[CLASS_SETTINGS_KEYS.archived] === true,
+    accessMode: parseAccessMode(s[CLASS_SETTINGS_KEYS.accessMode]),
   };
 }
 
@@ -64,6 +77,9 @@ export function serializeClassSettings(
   if (settings.period) out[CLASS_SETTINGS_KEYS.period] = settings.period;
   if (settings.color) out[CLASS_SETTINGS_KEYS.color] = settings.color;
   if (settings.archived) out[CLASS_SETTINGS_KEYS.archived] = true;
+  // access_mode is always persisted — update_scope replaces the whole settings
+  // JSONB, so omitting it would silently drop the class's access mode.
+  out[CLASS_SETTINGS_KEYS.accessMode] = settings.accessMode;
   return out;
 }
 

@@ -21,39 +21,51 @@ import type {
   StudyStreakRow,
 } from "@/features/education/study/types";
 import type { AssessmentResultRow } from "@/features/education/assessment/data/types";
-import type { GuardianLinkRow, GuardianLinkView } from "./types";
+import type {
+  GuardianConsentResult,
+  GuardianLinkRow,
+  GuardianLinkView,
+} from "./types";
 
 export const familyService = {
   // ─── Consent lifecycle ───────────────────────────────────────────────────
-  /** STUDENT grants a guardian read access immediately (caller = the student). */
+  /**
+   * STUDENT grants a guardian read access immediately (caller = the student).
+   * D52: returns a neutral `{status:'granted'}` whether or not the guardian
+   * email resolves to an account — never confirming existence.
+   */
   async grantGuardian(
     guardianEmail: string,
     relationship?: string,
-  ): Promise<StudyResult<GuardianLinkRow>> {
+  ): Promise<StudyResult<GuardianConsentResult>> {
     try {
       const { data, error } = await supabase.rpc("guardian_grant", {
         p_guardian_email: guardianEmail,
         ...(relationship ? { p_relationship: relationship } : {}),
       });
       if (error) return fail("grantGuardian", error);
-      return { data: data as GuardianLinkRow, error: null };
+      return { data: data as GuardianConsentResult, error: null };
     } catch (e) {
       return fail("grantGuardian", e);
     }
   },
 
-  /** GUARDIAN requests access to a student — pending until the student approves. */
+  /**
+   * GUARDIAN requests access to a student — pending until the student approves.
+   * D52: returns a neutral `{status:'sent'}` whether or not the student email
+   * resolves to an account — never confirming existence.
+   */
   async requestStudent(
     studentEmail: string,
     relationship?: string,
-  ): Promise<StudyResult<GuardianLinkRow>> {
+  ): Promise<StudyResult<GuardianConsentResult>> {
     try {
       const { data, error } = await supabase.rpc("guardian_request_student", {
         p_student_email: studentEmail,
         ...(relationship ? { p_relationship: relationship } : {}),
       });
       if (error) return fail("requestStudent", error);
-      return { data: data as GuardianLinkRow, error: null };
+      return { data: data as GuardianConsentResult, error: null };
     } catch (e) {
       return fail("requestStudent", e);
     }

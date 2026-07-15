@@ -19,6 +19,8 @@ import {
   FileText,
   FileSpreadsheet,
   GraduationCap,
+  DatabaseZap,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,9 +30,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useDataOwnership } from "../data/useDataOwnership";
+import { totalSpineCount } from "../data/dataRightsService";
 import { EXPORT_LABEL, type DeckExportFormat } from "../export/deckFormats";
 import { ImportDeckPanel } from "./ImportDeckPanel";
+import { AgeBandPrivacyCard } from "@/features/education/compliance/components/AgeBandPrivacyCard";
 
 const FORMAT_ICON: Record<DeckExportFormat, typeof FileJson> = {
   json: FileJson,
@@ -47,9 +52,21 @@ const PLEDGE = [
 ];
 
 export function DataOwnershipPage() {
-  const { decks, loading, error, exportDeck, exportAll, exportingAll } =
-    useDataOwnership();
+  const {
+    decks,
+    loading,
+    error,
+    exportDeck,
+    exportAll,
+    exportingAll,
+    exportStudyData,
+    exportingStudy,
+    deleteStudyData,
+    restoreStudyData,
+    deletingStudy,
+  } = useDataOwnership();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const onExport = async (setId: string, format: DeckExportFormat) => {
     setBusyId(setId);
@@ -62,14 +79,53 @@ export function DataOwnershipPage() {
     }
   };
 
+  const onExportStudy = () =>
+    exportStudyData().catch((e) =>
+      toast.error(e instanceof Error ? e.message : "Export failed"),
+    );
+
+  const onDeleteStudy = async () => {
+    try {
+      const res = await deleteStudyData();
+      const total = totalSpineCount(res.counts);
+      setConfirmDelete(false);
+      toast.success(
+        total === 0
+          ? "No study data to delete."
+          : `Deleted ${total} study record${total === 1 ? "" : "s"}. You can undo for 30 days.`,
+        {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              restoreStudyData()
+                .then((r) =>
+                  toast.success(`Restored ${totalSpineCount(r.counts)} records.`),
+                )
+                .catch((e) =>
+                  toast.error(e instanceof Error ? e.message : "Restore failed"),
+                );
+            },
+          },
+          duration: 12000,
+        },
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">Your data</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Your data &amp; privacy</h1>
         <p className="text-sm text-muted-foreground">
-          Everything you create here is yours. Take it with you, any time.
+          Everything you create here is yours. Take it with you, or delete it —
+          any time.
         </p>
       </header>
+
+      {/* Age band + COPPA/parental-consent status */}
+      <AgeBandPrivacyCard />
 
       {/* The pledge — every line is backed by a button on this page. */}
       <section className="rounded-xl border border-border bg-card p-4">
@@ -120,6 +176,76 @@ export function DataOwnershipPage() {
           Export all ({decks.length})
         </Button>
       </section>
+
+      {/* Full study-data export (FERPA/COPPA data right) — the whole spine */}
+      <section className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center gap-3">
+          <DatabaseZap className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">
+              Export all study data
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Everything we store: study sessions, attempts, mastery, plans,
+              media, assessments, decks, and quizzes — one JSON archive.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={exportingStudy}
+          onClick={onExportStudy}
+        >
+          {exportingStudy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          Download archive
+        </Button>
+      </section>
+
+      {/* Delete study data (FERPA/COPPA data right) — soft-delete, reversible 30d */}
+      <section className="flex items-center justify-between rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+        <div className="flex items-center gap-3">
+          <Trash2 className="h-5 w-5 text-destructive" />
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">
+              Delete my study data
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Removes your study sessions, progress, plans, media, assessments,
+              and decks. Reversible for 30 days, then permanently purged.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-destructive/40 text-destructive hover:bg-destructive/10"
+          disabled={deletingStudy}
+          onClick={() => setConfirmDelete(true)}
+        >
+          {deletingStudy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+          Delete
+        </Button>
+      </section>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        variant="destructive"
+        title="Delete all your study data?"
+        description="This removes your study sessions, progress, mastery, plans, media, assessments, and decks. You can undo it for 30 days, after which it is permanently purged."
+        confirmLabel="Delete my data"
+        busy={deletingStudy}
+        onConfirm={onDeleteStudy}
+      />
 
       {/* Per-deck export */}
       <section className="space-y-2">

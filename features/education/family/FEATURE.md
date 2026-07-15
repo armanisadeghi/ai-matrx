@@ -98,11 +98,25 @@ SELECTs only their own rows; **all writes go through the RPCs** (no write polici
   `guardian_*` RPCs only. No `.schema("education").from(...)` for a student's rows.
 - **Consent-first.** A guardian request is inert until the student approves. Never add a
   path that grants access without a student action.
+- **No email-enumeration oracle (D52).** `guardian_grant` / `guardian_request_student` return
+  an IDENTICAL neutral jsonb (`{status:'granted'|'sent'}`) whether or not the target email
+  resolves to an account — never confirm existence via a response or error. The only errors
+  either raises are the caller's OWN-email case and the per-requester rate-limit block
+  (`public.check_file_rate_limit`, bucket `edu_guardian_consent`, 8/min), both existence-blind.
+  Never re-introduce a "No account found"-style branch. UI copy stays neutral
+  ("If an account with that email exists…").
 - **Read-only.** The guardian view mutates nothing on the student's data — `StudyAnalyticsView`
   is passed `readOnly` and no write RPC targets student study rows.
 
 ## Change log
 
+- `2026-07-15` — **D52 fix (school-safe hardening).** Closed the email-enumeration oracle in
+  `guardian_grant` / `guardian_request_student` (identical neutral jsonb response regardless of
+  email existence) + added a per-requester consent-request rate limit (8/min via
+  `check_file_rate_limit`). `migrations/edu_guardian_link_d52_enumeration_ratelimit.sql`
+  (applied + ledgered). Service now returns `GuardianConsentResult`; UI copy made neutral.
+  The active guardian link is also the COPPA unblock signal for under-13 accounts — see
+  `features/education/compliance/`.
 - `2026-07-14` — Feature created. `education.guardian_link` + `guardian_*` RPCs
   (`migrations/edu_guardian_link.sql`, applied live + ledger). Extracted `StudyAnalyticsView`
   (pure) from `StudyAnalyticsDashboard` and `buildGainReport` from `learningGainService` for

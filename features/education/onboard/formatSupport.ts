@@ -13,7 +13,9 @@
 //   pdf/image  → the PDF-extractor OCR service (`streamPdfExtractText`)
 //   audio/video→ the Groq-Whisper transcription route (`transcribeSignedUrl`)
 //   text       → read inline
-// Unsupported kinds (office, heic, unknown) are gated, not routed.
+//   office     → aidream's content-processing orchestrator (`extractOfficeText`) —
+//                python-docx/python-pptx/openpyxl, no LibreOffice/OCR
+// Unsupported kinds (office-legacy, heic, unknown) are gated, not routed.
 //
 // URLs are classified the same way (`describeUrlSupport`): a generic web page →
 // the scraper; a YouTube link → the REAL spoken transcript (aidream's
@@ -28,7 +30,8 @@ export type IngestFileKind =
   | "video"
   | "text"
   | "heic" // image we genuinely can't decode server-side yet
-  | "office" // docx/pptx/xlsx — no extractor wired yet
+  | "office" // docx/pptx/xlsx (+ macro variants) — extracted via content-processing
+  | "office-legacy" // .doc/.ppt/.xls (needs LibreOffice) or ODF/Apple formats — no extractor yet
   | "unknown";
 
 const PDF_EXT = /\.pdf$/i;
@@ -36,7 +39,19 @@ const IMAGE_EXT = /\.(png|jpe?g|webp|gif|bmp|tiff?)$/i;
 const HEIC_EXT = /\.(heic|heif)$/i;
 const AUDIO_EXT = /\.(mp3|wav|m4a|aac|ogg|oga|flac|opus|weba)$/i;
 const VIDEO_EXT = /\.(mp4|m4v|mov|webm|mkv|avi)$/i;
-const OFFICE_EXT = /\.(docx?|pptx?|xlsx?|odt|odp|ods|pages|key|numbers)$/i;
+// The three OpenXML formats aidream's pure-python codec actually reads
+// (matrx_files.specific_handlers.office) — no LibreOffice, no network.
+// Macro-enabled variants (.docm/.pptm/.xlsm) read the same as their base type.
+const OFFICE_EXT = /\.(docx|pptx|xlsx|docm|pptm|xlsm)$/i;
+const OFFICE_MIME = new Set([
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+// Legacy binary Office (needs a LibreOffice conversion step the app server
+// doesn't have) or a non-Microsoft office format (ODF/Apple) — genuinely
+// unread today. Checked only after OFFICE_EXT so real docx/pptx/xlsx wins.
+const OFFICE_LEGACY_EXT = /\.(docx?|pptx?|xlsx?|odt|odp|ods|pages|key|numbers)$/i;
 const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|html?|rtf|log|ya?ml)$/i;
 
 /**
@@ -44,7 +59,8 @@ const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|html?|rtf|log|ya?ml)$/i;
  * branch. Extension is checked before the (often unreliable) MIME type so a
  * `.heic` a browser labels `image/*` is still caught, and so `video/mp4`
  * containers with an audio track land on the video branch. Order matters:
- * HEIC and Office are checked before the generic image/`text` fallbacks.
+ * HEIC and Office are checked before the generic image/`text` fallbacks, and
+ * real OpenXML Office is checked before the broader legacy/ODF pattern.
  */
 export function classifyIngestFile(file: File): IngestFileKind {
   const name = file.name || "";
@@ -53,7 +69,8 @@ export function classifyIngestFile(file: File): IngestFileKind {
   if (PDF_EXT.test(name) || mime === "application/pdf") return "pdf";
   if (HEIC_EXT.test(name) || mime === "image/heic" || mime === "image/heif")
     return "heic";
-  if (OFFICE_EXT.test(name)) return "office";
+  if (OFFICE_EXT.test(name) || OFFICE_MIME.has(mime)) return "office";
+  if (OFFICE_LEGACY_EXT.test(name)) return "office-legacy";
   if (IMAGE_EXT.test(name) || mime.startsWith("image/")) return "image";
   if (AUDIO_EXT.test(name) || mime.startsWith("audio/")) return "audio";
   if (VIDEO_EXT.test(name) || mime.startsWith("video/")) return "video";
@@ -153,8 +170,14 @@ export function describeIngestSupport(file: File): IngestSupport {
     case "office":
       return {
         kind,
+        supported: true,
+        note: "Word, PowerPoint, or Excel — we'll extract the text.",
+      };
+    case "office-legacy":
+      return {
+        kind,
         supported: false,
-        note: "Word, PowerPoint, and Excel files aren't supported yet — export to PDF, or paste the text.",
+        note: "Older Office formats (.doc/.ppt/.xls) and non-Microsoft formats (ODF, Pages, Keynote, Numbers) aren't supported yet — save as .docx/.pptx/.xlsx, export to PDF, or paste the text.",
       };
     case "unknown":
     default:
@@ -168,15 +191,25 @@ export function describeIngestSupport(file: File): IngestSupport {
 
 /**
  * The `accept` attribute for the hero's file input. Advertises exactly — and
- * only — what `classifyIngestFile` routes to a real pipeline. Office/HEIC are
- * deliberately omitted so the OS picker doesn't imply support we don't have;
- * a user who drags one anyway still gets the honest gate from
- * `describeIngestSupport`.
+ * only — what `classifyIngestFile` routes to a real pipeline. Legacy Office
+ * (.doc/.ppt/.xls) and HEIC are deliberately omitted so the OS picker doesn't
+ * imply support we don't have; a user who drags one anyway still gets the
+ * honest gate from `describeIngestSupport`.
  */
 export const INGEST_ACCEPT = [
   // documents / text
   ".pdf",
   "application/pdf",
+  // Office (OpenXML only — the pure-python codec's real coverage)
+  ".docx",
+  ".pptx",
+  ".xlsx",
+  ".docm",
+  ".pptm",
+  ".xlsm",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ".txt",
   ".md",
   ".markdown",

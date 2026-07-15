@@ -9,6 +9,7 @@ import "server-only";
 import { EDU_AXES, EDU_BASE, EDU_LEARN_SEGMENT, eduHref } from "../constants";
 import { getAxisEntries } from "../data/registry";
 import { EDU_TOOLS } from "../data/tools";
+import { getCreatorSitemapPaths } from "../creators/sitemap";
 import { listPublishedLearnDocs } from "./queries";
 
 export interface SitemapPath {
@@ -48,9 +49,17 @@ export async function getEducationSitemapPaths(): Promise<SitemapPath[]> {
   }
 
   for (const tool of EDU_TOOLS) {
+    // `creator` is the AUTHED manage surface (/education/creator, noindex) — its
+    // public, indexable pages are /c/<handle> (added below), not this route.
+    if (tool.slug === "creator") continue;
     if (tool.status === "live" || tool.status === "beta") {
       add(eduHref(tool.slug), "weekly", "0.6");
     }
+  }
+
+  // Public creator landing pages (/c/<handle>) — top-level acquisition pages.
+  for (const p of await getCreatorSitemapPaths()) {
+    add(p.path, p.changefreq, p.priority);
   }
 
   return out;

@@ -36,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { getGenerator, isTargetAvailable } from "@/features/education/convert/registry";
@@ -67,6 +68,9 @@ const DEFAULT_TARGETS: TargetKind[] = ["deck", "summary", "mind_map"];
 export function StartHero() {
   const kit = useKitGeneration();
   const ingestGuard = useEntitlementGuard("education.ingest_document");
+  // School-safe COPPA gate: an under-13 account with no active guardian link is
+  // blocked from AI generation until a parent approves (never a silent failure).
+  const coppa = useAiComplianceGate();
 
   const [mode, setMode] = useState<InputMode>("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -104,6 +108,10 @@ export function StartHero() {
 
   const onGenerate = useCallback(async () => {
     if (!canGenerate) return;
+    // School-safe gate FIRST (COPPA): is this account allowed to collect/process
+    // data at all? An unconsented under-13 opens the "a parent must approve"
+    // dialog and never reaches the billing gate or starts a run.
+    if (!(await coppa.ensureAllowed())) return;
     // Canonical guard (P8): server-truth check BEFORE spending; a cap-hit opens
     // the respectful contextual paywall and never starts the kit build.
     await ingestGuard.guard(async () => {
@@ -133,6 +141,7 @@ export function StartHero() {
     isYouTube,
     focus,
     kit,
+    coppa,
   ]);
 
   const showResults = kit.phase === "generating" || kit.phase === "done";
@@ -198,6 +207,7 @@ export function StartHero() {
             />
           </div>
           <ingestGuard.Paywall />
+          <coppa.Gate />
 
           <Button
             size="lg"
@@ -320,7 +330,7 @@ function InputPanel(props: {
                   Drop a file or click to browse
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  PDF, image, audio, video, text, Markdown, or CSV
+                  PDF, Word, PowerPoint, Excel, image, audio, video, text, Markdown, or CSV
                 </p>
               </>
             )}

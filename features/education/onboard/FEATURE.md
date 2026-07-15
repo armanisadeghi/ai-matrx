@@ -81,7 +81,8 @@ routes to an **existing** platform pipeline — we wire, we don't build extracto
 | Paste | ✅ | anchored as a durable `.md` |
 | URL (generic web page) | ✅ | scraper (`useScraperApi.scrapeUrl`) |
 | YouTube URL | ✅ real spoken transcript | aidream `POST /media/youtube/transcript` (agent `0cd86da2`, Gemini) via `fetchYouTubeTranscript`; captionless video → honest fail |
-| Word / PowerPoint / Excel (docx/pptx/xlsx…) | ❌ gated | none exists — see the gap below |
+| Word / PowerPoint / Excel (docx/pptx/xlsx, +.docm/.pptm/.xlsm) | ✅ | aidream content-processing (`extractOfficeText`) — see below |
+| Legacy Office (.doc/.ppt/.xls) / ODF / Apple (odt/odp/ods/pages/key/numbers) | ❌ gated | no LibreOffice on the app server; codec is pure-python OpenXML-only — save as .docx/.pptx/.xlsx or export to PDF |
 | HEIC / HEIF photo | ❌ gated | backend OCR rejects HEIC; user exports JPG/PNG |
 
 Every file kind is uploaded through `fileHandler` first (durable ownership) and that upload's
@@ -102,15 +103,48 @@ paste the transcript") rather than faking a transcript from scraped page HTML. `
 = `"transcript"`. **Deploy note:** the endpoint ships with the next aidream release; until it is live,
 the FE call 404s (honest error) — the wiring is correct and lights up on deploy.
 
-### The remaining honest gap (gated loudly, not faked)
+### Office documents (DOCX / PPTX / XLSX) — shipped 2026-07-14
 
-- **Office documents (DOCX / PPTX / XLSX).** No text-extraction path exists anywhere today — not in
-  the frontend, not in aidream (its RAG ingest `sources.py` explicitly raises `UnsupportedMimeError`
-  for `.docx`/`.xlsx`; `/assets` is an image/PDF media-render pipeline, not an office extractor).
-  Dropping one surfaces the honest "export to PDF, or paste the text" message and the Build button
-  stays disabled. Wiring it means a NEW backend extractor (e.g. `libreoffice_converter` → the PDF
-  pipeline, or `python-docx`/`unstructured` behind an aidream route) — out of scope for a wire-only
-  task; do that first, then add a `kind: "office"` branch here.
+**Contract (two steps — compute then read, not one endpoint):**
+
+1. **Compute** — `useIngest`'s `office` branch calls `extractOfficeText` (`officeExtract.ts`), which
+   `POST`s `ENDPOINTS.contentProcessing.process(fileId)` → aidream bare route
+   `/content-processing/{cld_file_id}` (public `/api/content-processing/{cld_file_id}`) with
+   `{ content_type: "office", file_name }`. This is aidream's **content-processing orchestrator**
+   (`aidream/services/content_processing/`) — the SAME pipeline PDFs get automatically on upload,
+   triggered here interactively instead. Its `office` source adapter
+   (`aidream/services/content_processing/sources/office.py`) calls
+   `matrx_files.specific_handlers.office.extract_office` (pure python-docx/python-pptx/openpyxl —
+   no LibreOffice, no OCR, no network) and persists clean markdown portions (one per slide/sheet;
+   docx is one section) to `docproc.processed_documents` + `processed_document_pages`. Because the
+   codec's output is already clean markdown, the orchestrator's LLM `clean` stage is SKIPPED
+   (`content_already_clean=True` — saves a paid call per document); chunk/embed/NER still run so the
+   doc is fully searchable. The stream is NDJSON; we consume it only for the terminal `data` event
+   (`ContentProcessingResult`, `signature: "ContentProcessingResult"`) — `status` +
+   `processed_document_id`. **The extracted text itself does NOT travel in the stream.**
+2. **Read** — once the run reports `processed_document_id`, `extractOfficeText` reads
+   `docproc.processed_documents.content` **directly via Supabase**
+   (`docprocDb(supabase).from("processed_documents").select("content, total_pages")...`) — the exact
+   canonical direct-DB-read path `features/pdf/scanner/processing.ts` already uses for this table
+   (per the platform rule: Python for compute, direct Supabase for data reads). `content` is the
+   portions joined with `"\n\n"` — already the full document text, no per-page fan-out fetch needed.
+
+**Coverage is OpenXML-only, by design, and honestly gated at the edge.** `matrx_files`'s
+`extract_office` reads `.docx`/`.pptx`/`.xlsx` (+ macro variants `.docm`/`.pptm`/`.xlsm`) directly;
+a legacy binary container (`.doc`/`.ppt`/`.xls`, OLE/CFB magic bytes) needs a LibreOffice conversion
+step (`LegacyBinaryOfficeError` if `soffice` isn't on the host) the app server doesn't run. ODF
+(`.odt`/`.odp`/`.ods`) and Apple iWork (`.pages`/`.key`/`.numbers`) have no reader at all.
+`formatSupport.ts` therefore splits what used to be one `"office"` kind into two: `"office"` (real
+OpenXML — `OFFICE_EXT` + the three `application/vnd.openxmlformats-officedocument.*` MIME strings,
+checked FIRST) → supported, routes to `extractOfficeText`; `"office-legacy"` (the broader
+`OFFICE_LEGACY_EXT` pattern, checked only after `office` misses) → still honestly gated, same
+"aren't supported yet" treatment HEIC gets. **`INGEST_ACCEPT` only advertises the three real OpenXML
+extensions/MIMEs** — legacy variants are deliberately left off the picker's `accept` so the OS dialog
+doesn't imply support that doesn't exist; a user who drags one anyway still gets the honest gate.
+
+A failed extract (legacy format hits the app server without LibreOffice, corrupt/encrypted file,
+empty document) surfaces the server's own `ErrorInfo.message` (or a clear fallback) as a thrown
+`Error` — never a fake success and never a silent empty kit.
 
 When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT`) and the matching
 `useIngest` branch together — never one without the other.
@@ -126,6 +160,15 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
 
 ## Change log
 
+- **2026-07-14** — Office documents (DOCX/PPTX/XLSX) → REAL extraction. New service
+  `officeExtract.ts` (`extractOfficeText`) drives aidream's content-processing orchestrator
+  (`POST /content-processing/{cld_file_id}`, `content_type: "office"` — the same pipeline PDFs get
+  automatically on upload) then reads the result back via a direct `docprocDb(supabase)` read of
+  `processed_documents.content` (compute in Python, read direct — no Python round-trip for the text
+  itself). `formatSupport.ts` split `"office"` into real OpenXML (now supported) vs
+  `"office-legacy"` (.doc/.ppt/.xls/ODF/Apple — still gated, no LibreOffice on the host).
+  `INGEST_ACCEPT` now advertises `.docx`/`.pptx`/`.xlsx`(+macro variants). `useIngest` gained the
+  `office` branch, `useKitGeneration`/`StartHero` unchanged (both already generic over ingest kind).
 - **2026-07-14** — YouTube → REAL spoken transcript. New aidream endpoint `POST /media/youtube/transcript`
   (reuses agent `0cd86da2` via the shared `run_youtube_transcription` primitive); FE `useIngest` YouTube
   branch now calls it through `fetchYouTubeTranscript` instead of the page scraper, `formatSupport` gained

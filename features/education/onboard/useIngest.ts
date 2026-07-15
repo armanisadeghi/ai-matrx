@@ -23,6 +23,7 @@ import { usePdfClient } from "@/features/pdf/api/client";
 import { streamPdfExtractText } from "@/features/pdf-extractor/service/streamPdf";
 import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedUrl";
 import { fetchYouTubeTranscript } from "./youtubeTranscript";
+import { extractOfficeText } from "./officeExtract";
 import { describeIngestSupport } from "./formatSupport";
 import type { RawIngestInput, NormalizedIngest, IngestProgress } from "./types";
 
@@ -245,6 +246,36 @@ export function useIngest(): UseIngestResult {
           meta: {
             chars: text.length,
             extractionMethod: "transcript",
+            truncated,
+            inputKind: "file",
+          },
+        };
+      }
+
+      // ── Word / PowerPoint / Excel → aidream's content-processing extractor ──
+      if (kind === "office") {
+        if (!fileId) {
+          throw new Error(
+            "Couldn't save that file to extract it — please try again.",
+          );
+        }
+        onProgress?.({ phase: "extracting", message: `Reading ${file.name}…` });
+        const extracted = await extractOfficeText(backendApi.post, fileId, file.name);
+        const raw = extracted.text.trim();
+        if (!raw) {
+          throw new Error(
+            `Couldn't read any text from "${file.name}" — it may be empty or image-only.`,
+          );
+        }
+        const { text, truncated } = clamp(raw);
+        return {
+          text,
+          title,
+          ref: { kind: "file", fileId },
+          meta: {
+            chars: text.length,
+            pages: extracted.totalPages ?? undefined,
+            extractionMethod: "native",
             truncated,
             inputKind: "file",
           },

@@ -50,4 +50,40 @@ export const CLASS_SETTINGS_KEYS = {
   period: "period",
   color: "color",
   archived: "archived",
+  accessMode: "access_mode",
 } as const;
+
+/**
+ * Access-mode presentation metadata (Convergence C). The single source for how
+ * open/closed/paid render — badges, form picker, join copy. Lucide icon NAMES
+ * (resolved by consumers) so this stays a pure data module.
+ */
+export const ACCESS_MODES = [
+  {
+    value: "open",
+    label: "Open",
+    icon: "globe",
+    short: "Anyone can join",
+    description:
+      "Publicly listed. Anyone can find this class and join instantly — a free public study group or a creator's open class.",
+  },
+  {
+    value: "closed",
+    label: "Closed",
+    icon: "lock",
+    short: "Request to join",
+    description:
+      "Not publicly listed. People join by invite, or by requesting access that you approve.",
+  },
+  {
+    value: "paid",
+    label: "Paid",
+    icon: "credit-card",
+    short: "Purchase to enroll",
+    description:
+      "Enrolment is gated by a purchase. Free preview material stays open; full access unlocks after purchase.",
+  },
+] as const;
+
+/** Default access mode for a newly created class (private/personal-safe). */
+export const DEFAULT_ACCESS_MODE = "closed" as const;

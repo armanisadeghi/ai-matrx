@@ -29,8 +29,10 @@ import type { Scope } from "@/features/agent-context/redux/scope/types";
 import {
   CLASS_SCOPE_TYPE_SLUG,
   CLASS_SCOPE_TYPE_SEED,
+  DEFAULT_ACCESS_MODE,
 } from "../constants";
 import { scopeToClass, serializeClassSettings } from "../settings";
+import { setAccessMode } from "../service";
 import type { ClassSettings, StudyClass } from "../types";
 
 export interface CreateClassInput {
@@ -59,7 +61,10 @@ export interface UseClassesReturn {
   refresh: () => Promise<void>;
 }
 
-const emptySettings = (): ClassSettings => ({ examDates: [] });
+const emptySettings = (): ClassSettings => ({
+  examDates: [],
+  accessMode: DEFAULT_ACCESS_MODE,
+});
 
 export function useClasses(): UseClassesReturn {
   const dispatch = useAppDispatch();
@@ -135,6 +140,15 @@ export function useClasses(): UseClassesReturn {
           settings: serializeClassSettings(settings),
         }),
       ).unwrap()) as Scope;
+      // Register the class access mode + ensure the creator's OWNER membership
+      // row exists (the roster's authoritative owner). Idempotent; the scope
+      // already carries access_mode in settings, this reaffirms it server-side.
+      try {
+        await setAccessMode(scope.id, settings.accessMode);
+      } catch {
+        // Non-fatal: the scope is created; owner membership self-heals on the
+        // first roster/join interaction via _edu_ensure_owner_membership.
+      }
       // Make sure the class list reflects it even before a refetch.
       return scopeToClass(scope);
     },

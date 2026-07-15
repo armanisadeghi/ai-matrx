@@ -21,7 +21,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ClassExamDate, ClassSettings, StudyClass } from "../types";
+import { AccessModeField } from "./AccessModeField";
+import { DEFAULT_ACCESS_MODE } from "../constants";
+import type {
+  AccessMode,
+  ClassExamDate,
+  ClassSettings,
+  StudyClass,
+} from "../types";
 
 export interface ClassFormValue {
   name: string;
@@ -55,6 +62,9 @@ export function ClassFormDialog({
   const [period, setPeriod] = useState(initial?.settings.period ?? "");
   const [examDates, setExamDates] = useState<ClassExamDate[]>(
     initial?.settings.examDates ?? [],
+  );
+  const [accessMode, setAccessMode] = useState<AccessMode>(
+    initial?.settings.accessMode ?? DEFAULT_ACCESS_MODE,
   );
   const [busy, setBusy] = useState(false);
 
@@ -94,6 +104,7 @@ export function ClassFormDialog({
           period: period.trim() || undefined,
           color: initial?.settings.color,
           archived: initial?.settings.archived,
+          accessMode,
         },
       });
       onOpenChange(false);
@@ -172,6 +183,8 @@ export function ClassFormDialog({
               rows={2}
             />
           </div>
+
+          <AccessModeField value={accessMode} onChange={setAccessMode} />
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

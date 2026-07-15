@@ -443,9 +443,44 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
         "Tagging from an artifact: <ClassPicker entityType entityId /> (thin EntityScopeTagger wrapper locked to the Class scope type) — wired into flashcard SetDetailView",
       ],
     },
+    {
+      url: "/education/creator",
+      label: "Creator page (manage) — Convergence C",
+      description:
+        "CONVERGENCE_C_CREATORS.md. The authed creator dashboard: claim a unique public handle, edit identity (name/tagline/bio/links), and pick which YouTube videos + public free tools + classes to feature; publish toggle. Signed-in only (noindex); every creator_* RPC is gated on auth.uid() owning the row. The PUBLIC page is /c/[handle].",
+      filePath: "app/(core)/education/creator/page.tsx",
+      status: "Live",
+      notes: [
+        "Feature: features/education/creators/** (CreatorDashboard · service.ts direct-RPC path · youtube.ts)",
+        "DB: extends users.profiles (creator_handle/public/tagline/bio/links/featured) — ZERO new tables; migrations/education_creator_profiles.sql",
+        "RPCs: creator_claim_handle / creator_handle_available / creator_get_mine / creator_update_profile / creator_set_public (authed) + creator_public_page (anon)",
+        "Reuses useClasses for the class picker; consumes the documented edu_class_join contract (not yet landed) via EnrollButton",
+      ],
+    },
+    {
+      url: "/c/[handle]",
+      label: "Public creator landing page (SEO) — Convergence C",
+      description:
+        "The growth lever: a public, INDEXABLE, server-rendered landing page for each creator. Features their YouTube videos (nocookie embeds), public free tools (flashcard sets/guides → /p/e viewer, usable logged-out), and classes with enroll CTAs. Free-vs-paid layout + signup funnel. Person + Course JSON-LD, per-page OG image, sitemap entry. Anon read via creator_public_page RPC; force-dynamic (view-source has full content).",
+      filePath: "app/(public)/c/[handle]/page.tsx",
+      status: "Live",
+      notes: [
+        "Route lives in (public); components in features/education/creators/components/** (CreatorLandingPage · YouTubeEmbed · EnrollButton)",
+        "OG image: app/(public)/c/[handle]/opengraph-image.tsx (reuses renderEduOgImage)",
+        "Sitemap: getCreatorSitemapPaths() wired into the education sitemap; /c/<handle> per published creator",
+        "Anonymous funnel: free flashcards usable via /p/e + DuplicateToEditButton; sign-up CTAs redirect back to /c/<handle>",
+      ],
+    },
   ],
 
   components: [
+    {
+      name: "Creator landing page + dashboard (CreatorLandingPage / CreatorDashboard / EnrollButton / YouTubeEmbed)",
+      filePath: "features/education/creators/components/CreatorLandingPage.tsx",
+      description:
+        "Convergence C creator surface. CreatorLandingPage = the public /c/[handle] page (server-rendered, JSON-LD Person/Course, free-vs-paid layout, signup funnel). CreatorDashboard = the authed manage UI (claim handle, edit identity, feature videos/tools/classes, publish). EnrollButton = leaf client island consuming the edu_class_join contract. Extends users.profiles (zero new tables). See features/education/creators/FEATURE.md.",
+      tier: "official",
+    },
     {
       name: "Per-Class Hub (ClassesHome / ClassHubView / ClassFormDialog / ClassPicker / AddClassContentSheet)",
       filePath: "features/education/classes/components/ClassHubView.tsx",
