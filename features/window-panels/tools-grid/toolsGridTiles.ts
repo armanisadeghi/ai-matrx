@@ -638,7 +638,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     icon: ListFilter,
     category: "dupes",
     gate: "admin",
-    overlayId: "picklistManagerV2Window",
+    overlayId: "structuredListManagerV2Window",
   },
   {
     id: "tile.list-manager",

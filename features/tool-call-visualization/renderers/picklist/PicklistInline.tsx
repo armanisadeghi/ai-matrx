@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { GroupSection } from "@/features/user-lists/components/GroupSection";
 import type { GroupedItem } from "@/features/user-lists/types";
-import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
+import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import type { ToolRendererProps } from "../../types";
 import { parsePicklist } from "./parsePicklist";
 import { usePicklistDetail } from "./usePicklistDetail";
@@ -37,7 +37,7 @@ export function PicklistInline({ entry, onOpenOverlay , expanded, onToggleExpand
   const summary = useMemo(() => parsePicklist(entry), [entry]);
   const listId = summary.listId;
   const { list, loading } = usePicklistDetail(listId);
-  const openWindow = useOpenPicklistManagerV2Window();
+  const openWindow = useOpenStructuredListManagerV2Window();
 
   const groups = useMemo(
     () => (list ? orderedGroups(list.items_grouped) : []),

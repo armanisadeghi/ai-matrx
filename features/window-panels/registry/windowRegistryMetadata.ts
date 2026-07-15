@@ -453,23 +453,23 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // ── Picklist Manager V1 (sidebar + spreadsheet) ───────────────────────────
   {
     slug: "picklist-manager-v1-window",
-    overlayId: "picklistManagerV1Window",
+    overlayId: "structuredListManagerV1Window",
     kind: "window",
     label: "Picklists — v1",
     defaultData: { forcedListId: null, title: null },
     mobilePresentation: "fullscreen",
-    urlSync: { key: "picklistManagerV1" },
+    urlSync: { key: "structuredListManagerV1" },
   },
 
   // ── Picklist Manager V2 (compact switcher + flat table) ───────────────────
   {
     slug: "picklist-manager-v2-window",
-    overlayId: "picklistManagerV2Window",
+    overlayId: "structuredListManagerV2Window",
     kind: "window",
     label: "Picklists — v2",
     defaultData: { forcedListId: null, title: null },
     mobilePresentation: "fullscreen",
-    urlSync: { key: "picklistManagerV2" },
+    urlSync: { key: "structuredListManagerV2" },
   },
 
   // ── Settings ──────────────────────────────────────────────────────────────

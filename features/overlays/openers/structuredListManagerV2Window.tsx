@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Opener for the `picklistManagerV2Window` overlay.
+ * Opener for the `structuredListManagerV2Window` overlay.
  *
- * - `useOpenPicklistManagerV2Window()` — imperative hook. Pass `forcedListId`
+ * - `useOpenStructuredListManagerV2Window()` — imperative hook. Pass `forcedListId`
  *   to open in single-list mode (switcher hidden); omit it to open the full
  *   browse view.
- * - `<PicklistManagerV2WindowController />` — declarative wrapper. Mount to
+ * - `<StructuredListManagerV2WindowController />` — declarative wrapper. Mount to
  *   open, unmount to close.
  */
 
@@ -14,24 +14,24 @@ import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 
-const OVERLAY_ID = "picklistManagerV2Window" as const;
+const OVERLAY_ID = "structuredListManagerV2Window" as const;
 
-export interface OpenPicklistManagerV2WindowOptions {
+export interface OpenStructuredListManagerV2WindowOptions {
   title?: string;
   /** When set, opens in single-list mode pinned to this picklist. */
   forcedListId?: string | null;
 }
 
-export interface PicklistManagerV2WindowHandle {
+export interface StructuredListManagerV2WindowHandle {
   close: () => void;
 }
 
-export function useOpenPicklistManagerV2Window() {
+export function useOpenStructuredListManagerV2Window() {
   const dispatch = useAppDispatch();
   return useCallback(
     (
-      opts: OpenPicklistManagerV2WindowOptions = {},
-    ): PicklistManagerV2WindowHandle => {
+      opts: OpenStructuredListManagerV2WindowOptions = {},
+    ): StructuredListManagerV2WindowHandle => {
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
@@ -49,10 +49,10 @@ export function useOpenPicklistManagerV2Window() {
   );
 }
 
-export function PicklistManagerV2WindowController(
-  props: OpenPicklistManagerV2WindowOptions,
+export function StructuredListManagerV2WindowController(
+  props: OpenStructuredListManagerV2WindowOptions,
 ): null {
-  const open = useOpenPicklistManagerV2Window();
+  const open = useOpenStructuredListManagerV2Window();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();

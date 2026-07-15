@@ -16,12 +16,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
- * PicklistLanding — overview + chooser for the two picklist editor variants.
+ * StructuredListLanding — overview + chooser for the two picklist editor variants.
  *
  * Routes:
  *   /lists       → this landing
- *   /lists/v1    → PicklistManagerV1 (sidebar + spreadsheet)
- *   /lists/v2    → PicklistManagerV2 (compact switcher + flat table)
+ *   /lists/v1    → StructuredListManagerV1 (sidebar + spreadsheet)
+ *   /lists/v2    → StructuredListManagerV2 (compact switcher + flat table)
  *   /lists/v3    → PicklistManager (Notion-style document) — current primary
  */
 
@@ -132,7 +132,7 @@ const SCHEMA = [
   },
 ];
 
-export default function PicklistLanding() {
+export default function StructuredListLanding() {
   return (
     <div className="min-h-dvh">
       {/* Hero */}

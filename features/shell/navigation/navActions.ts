@@ -23,7 +23,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
-import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
+import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -40,7 +40,7 @@ export function useNavActions(): ShellNavActionHandlers {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const openCreateProject = useOpenCreateProjectWindow();
-  const openPicklistManager = useOpenPicklistManagerV2Window();
+  const openPicklistManager = useOpenStructuredListManagerV2Window();
   const openFavoritesManager = useOpenFavoritesManagerWindow();
 
   return {

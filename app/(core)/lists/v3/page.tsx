@@ -1,12 +1,12 @@
-import { PicklistManagerV3Client } from "@/features/udt-picklist/PicklistManagerV3Client";
-import { PicklistEditorHeader } from "@/features/udt-picklist/PicklistEditorHeader";
+import { StructuredListManagerV3Client } from "@/features/structured-lists/StructuredListManagerV3Client";
+import { StructuredListEditorHeader } from "@/features/structured-lists/StructuredListEditorHeader";
 
 export default function PicklistsV3Page() {
   return (
     <>
-      <PicklistEditorHeader />
+      <StructuredListEditorHeader />
       <div className="h-full flex flex-col overflow-hidden">
-        <PicklistManagerV3Client />
+        <StructuredListManagerV3Client />
       </div>
     </>
   );

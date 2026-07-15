@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
+import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { EntityOpenActions } from "../_shared-entity/EntityOpenActions";
 import { getArg, resultAsObject } from "../_shared";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
@@ -105,7 +105,7 @@ export const UserListsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const data = useMemo(() => parseListsData(entry), [entry]);
-    const openWindow = useOpenPicklistManagerV2Window();
+    const openWindow = useOpenStructuredListManagerV2Window();
 
     const filteredAndSorted = useMemo(() => {
         let items = [...data.lists];

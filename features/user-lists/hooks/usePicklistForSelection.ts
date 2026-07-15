@@ -23,7 +23,7 @@ export interface UsePicklistForSelectionResult {
 }
 
 // Module-level cache keyed by listId — labels are public and rarely change within a session.
-// Mirrors the in-memory cache pattern used by usePicklists (@/features/udt-picklist).
+// Mirrors the in-memory cache pattern used by useStructuredLists (@/features/structured-lists).
 const _cache = new Map<string, PicklistForSelection | null>();
 
 function flatten(data: PicklistForSelection | null): {

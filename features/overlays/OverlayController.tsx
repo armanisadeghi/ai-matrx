@@ -551,12 +551,12 @@ const ListManagerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ListManagerWindow"),
   { ssr: false },
 );
-const PicklistManagerV1Window = lazyOverlay(
-  () => import("@/features/window-panels/windows/PicklistManagerV1Window"),
+const StructuredListManagerV1Window = lazyOverlay(
+  () => import("@/features/window-panels/windows/StructuredListManagerV1Window"),
   { ssr: false },
 );
-const PicklistManagerV2Window = lazyOverlay(
-  () => import("@/features/window-panels/windows/PicklistManagerV2Window"),
+const StructuredListManagerV2Window = lazyOverlay(
+  () => import("@/features/window-panels/windows/StructuredListManagerV2Window"),
   { ssr: false },
 );
 const FullscreenMarkdownEditor = lazyOverlay(
@@ -1082,11 +1082,11 @@ export default function OverlayController() {
     pdfBatchExtractDebugWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "pdfBatchExtractDebugWindow"),
     ),
-    picklistManagerV1Window: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "picklistManagerV1Window"),
+    structuredListManagerV1Window: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "structuredListManagerV1Window"),
     ),
-    picklistManagerV2Window: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "picklistManagerV2Window"),
+    structuredListManagerV2Window: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "structuredListManagerV2Window"),
     ),
     projectsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "projectsWindow"),
@@ -1378,11 +1378,11 @@ export default function OverlayController() {
     pdfBatchExtractDebugWindow: useAppSelector((s) =>
       selectOverlayData(s, "pdfBatchExtractDebugWindow"),
     ) as Record<string, unknown> | null,
-    picklistManagerV1Window: useAppSelector((s) =>
-      selectOverlayData(s, "picklistManagerV1Window"),
+    structuredListManagerV1Window: useAppSelector((s) =>
+      selectOverlayData(s, "structuredListManagerV1Window"),
     ) as Record<string, unknown> | null,
-    picklistManagerV2Window: useAppSelector((s) =>
-      selectOverlayData(s, "picklistManagerV2Window"),
+    structuredListManagerV2Window: useAppSelector((s) =>
+      selectOverlayData(s, "structuredListManagerV2Window"),
     ) as Record<string, unknown> | null,
     projectsWindow: useAppSelector((s) =>
       selectOverlayData(s, "projectsWindow"),
@@ -4099,14 +4099,14 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* picklistManagerV1Window */}
+      {/* structuredListManagerV1Window */}
       {(() => {
-        const isOpen = isOpenById.picklistManagerV1Window;
-        const data = dataById.picklistManagerV1Window as
+        const isOpen = isOpenById.structuredListManagerV1Window;
+        const data = dataById.structuredListManagerV1Window as
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
-          <PicklistManagerV1Window
+          <StructuredListManagerV1Window
             title={typeof data?.title === "string" ? data.title : undefined}
             forcedListId={
               typeof data?.forcedListId === "string" ? data.forcedListId : null
@@ -4115,14 +4115,14 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* picklistManagerV2Window */}
+      {/* structuredListManagerV2Window */}
       {(() => {
-        const isOpen = isOpenById.picklistManagerV2Window;
-        const data = dataById.picklistManagerV2Window as
+        const isOpen = isOpenById.structuredListManagerV2Window;
+        const data = dataById.structuredListManagerV2Window as
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
-          <PicklistManagerV2Window
+          <StructuredListManagerV2Window
             title={typeof data?.title === "string" ? data.title : undefined}
             forcedListId={
               typeof data?.forcedListId === "string" ? data.forcedListId : null

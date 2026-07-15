@@ -19,7 +19,7 @@ const MODES = [
   { name: "v3", href: "/lists/v3", icon: FileText },
 ];
 
-export function PicklistEditorHeader() {
+export function StructuredListEditorHeader() {
   return (
     <RouteHeader
       left={<ChevronLeftTapButton href="/lists" ariaLabel="Back to lists" />}

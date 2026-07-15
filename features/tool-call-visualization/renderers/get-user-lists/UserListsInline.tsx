@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { List, CheckSquare, Lock, Globe, Users, Search, ChevronRight, ExternalLink } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
+import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 
 interface UserList {
@@ -102,7 +102,7 @@ export const UserListsInline: React.FC<ToolRendererProps> = ({
     toolGroupId = "default",
 }) => {
     const data = useMemo(() => parseListsData(entry), [entry]);
-    const openWindow = useOpenPicklistManagerV2Window();
+    const openWindow = useOpenStructuredListManagerV2Window();
 
     if (data.isLoading) {
         return (

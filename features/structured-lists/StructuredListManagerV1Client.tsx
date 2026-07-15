@@ -4,20 +4,20 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { PicklistManagerV1 } from "./PicklistManagerV1";
+import { StructuredListManagerV1 } from "./StructuredListManagerV1";
 
-interface PicklistManagerV1ClientProps {
+interface StructuredListManagerV1ClientProps {
   forcedListId?: string | null;
 }
 
 /**
  * Thin client wrapper that injects the browser Supabase client and the
- * Redux-backed user id into PicklistManagerV1. Use this from any route,
+ * Redux-backed user id into StructuredListManagerV1. Use this from any route,
  * window panel, or modal that doesn't already have those values in scope.
  */
-export function PicklistManagerV1Client({
+export function StructuredListManagerV1Client({
   forcedListId,
-}: PicklistManagerV1ClientProps) {
+}: StructuredListManagerV1ClientProps) {
   const userId = useAppSelector(selectUserId);
 
   if (!userId) {
@@ -30,7 +30,7 @@ export function PicklistManagerV1Client({
   }
 
   return (
-    <PicklistManagerV1
+    <StructuredListManagerV1
       supabase={supabase}
       userId={userId}
       forcedListId={forcedListId ?? undefined}

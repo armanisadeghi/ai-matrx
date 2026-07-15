@@ -310,7 +310,7 @@ function uniqueGroups(items: PicklistItem[]): string[] {
 
 // ---------- Main component ----------
 
-export type PicklistManagerV1Props = {
+export type StructuredListManagerV1Props = {
   supabase: SupabaseClient;
   userId: string;
   /**
@@ -321,11 +321,11 @@ export type PicklistManagerV1Props = {
   forcedListId?: string | null;
 };
 
-export function PicklistManagerV1({
+export function StructuredListManagerV1({
   supabase,
   userId,
   forcedListId,
-}: PicklistManagerV1Props) {
+}: StructuredListManagerV1Props) {
   const [lists, setLists] = React.useState<Picklist[]>([]);
   const [items, setItems] = React.useState<PicklistItem[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(

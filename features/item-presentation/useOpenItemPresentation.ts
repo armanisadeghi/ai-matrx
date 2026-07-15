@@ -19,7 +19,7 @@ import { useCallback } from "react";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
-import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
+import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenItemDetailWindow } from "@/features/overlays/openers/itemDetailWindow";
 
 import { getItemConfig } from "./registry";
@@ -35,7 +35,7 @@ export function useOpenItemPresentation() {
   const openAgent = useOpenAgentRunWindow();
   const openNote = useOpenNoteInfoWindow();
   const openFile = useOpenFilePreviewWindow();
-  const openPicklist = useOpenPicklistManagerV2Window();
+  const openPicklist = useOpenStructuredListManagerV2Window();
   const openDetail = useOpenItemDetailWindow();
 
   return useCallback(

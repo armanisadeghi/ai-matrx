@@ -29,28 +29,28 @@ import {
   type CuratedIconPickerHandle,
 } from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
 import type { UserListItem } from "@/features/user-lists/types";
-import { usePicklists, type PicklistSummary } from "./usePicklists";
+import { useStructuredLists, type PicklistSummary } from "./useStructuredLists";
 import { idMatchesQuery } from "@/utils/search-scoring";
 
-interface PicklistManagerV2Props {
+interface StructuredListManagerV2Props {
   /** Pin to a specific list and hide the switcher (e.g. in a modal). */
   forcedListId?: string;
   className?: string;
 }
 
 /**
- * PicklistManagerV2 — flat-table picklist manager (`udt_structured_lists` /
+ * StructuredListManagerV2 — flat-table picklist manager (`udt_structured_lists` /
  * `udt_structured_list_items`).
  *
  * One screen, one table, five editable columns
  * (Label / Description / Help Text / Group / Icon). Embeddable as-is in a
  * route, modal, or window panel — pass `forcedListId` to lock to one list.
  */
-export function PicklistManagerV2({
+export function StructuredListManagerV2({
   forcedListId,
   className,
-}: PicklistManagerV2Props) {
-  const q = usePicklists();
+}: StructuredListManagerV2Props) {
+  const q = useStructuredLists();
   useEffect(() => {
     if (forcedListId) q.setActiveListId(forcedListId);
   }, [forcedListId]); // eslint-disable-line react-hooks/exhaustive-deps

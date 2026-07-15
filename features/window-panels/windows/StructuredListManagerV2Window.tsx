@@ -7,9 +7,9 @@ import {
   WindowPanel,
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
-import { PicklistManagerV2 } from "@/features/udt-picklist/PicklistManagerV2";
+import { StructuredListManagerV2 } from "@/features/structured-lists/StructuredListManagerV2";
 
-export interface PicklistManagerV2WindowProps extends Omit<
+export interface StructuredListManagerV2WindowProps extends Omit<
   WindowPanelProps,
   "children" | "title" | "actionsLeft" | "actionsRight"
 > {
@@ -22,16 +22,16 @@ export interface PicklistManagerV2WindowProps extends Omit<
   forcedListId?: string | null;
 }
 
-export default function PicklistManagerV2Window({
+export default function StructuredListManagerV2Window({
   title,
   id = "picklist-manager-v2-window",
   forcedListId = null,
   ...windowProps
-}: PicklistManagerV2WindowProps) {
+}: StructuredListManagerV2WindowProps) {
   const dispatch = useAppDispatch();
 
   const onClose = useCallback(() => {
-    dispatch(closeOverlay({ overlayId: "picklistManagerV2Window" }));
+    dispatch(closeOverlay({ overlayId: "structuredListManagerV2Window" }));
   }, [dispatch]);
 
   const resolvedTitle = title ?? (forcedListId ? "Picklist" : "Picklists — v2");
@@ -45,13 +45,13 @@ export default function PicklistManagerV2Window({
       minHeight={400}
       width={forcedListId ? 680 : 960}
       height={620}
-      urlSyncKey="picklistManagerV2"
+      urlSyncKey="structuredListManagerV2"
       urlSyncId={forcedListId ?? "default"}
       className="bg-background/95 backdrop-blur-md"
-      overlayId="picklistManagerV2Window"
+      overlayId="structuredListManagerV2Window"
       {...windowProps}
     >
-      <PicklistManagerV2 forcedListId={forcedListId ?? undefined} />
+      <StructuredListManagerV2 forcedListId={forcedListId ?? undefined} />
     </WindowPanel>
   );
 }

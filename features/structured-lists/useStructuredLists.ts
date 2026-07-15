@@ -35,7 +35,7 @@ type ItemPatch = Partial<
  * - Loads items lazily when a list is activated; caches them in-memory.
  * - All mutations are optimistic; server errors revert and surface in `error`.
  */
-export function usePicklists() {
+export function useStructuredLists() {
   const userId = useAppSelector(selectUserId);
   const [lists, setLists] = useState<PicklistSummary[]>([]);
   const [itemsByList, setItemsByList] = useState<
