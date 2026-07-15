@@ -337,6 +337,7 @@ export default function PageEditor({
         siteSlug: site.slug,
         slug: page.slug,
         category: page.category,
+        domain: site.domain,
       })
     : undefined;
   const previewUrl = page

@@ -1,0 +1,106 @@
+{
+  "_comment": "C4 cross-repo drift guard. Language-neutral encoding of the my-matrx URL routing rules. aidream/services/cms/urls.py AND matrx-frontend's TS twin BOTH test against this exact file. Do not edit one side's URL logic without updating this fixture (and the other side goes red).",
+  "base_url": "https://mymatrx.com",
+  "client_page_cases": [
+    {
+      "name": "page_with_category",
+      "input": { "site_slug": "dev-website", "slug": "about", "category": "general", "is_home_page": false },
+      "expect": {
+        "path": "/c/dev-website/general/about",
+        "live_url": "https://mymatrx.com/c/dev-website/general/about",
+        "preview_url": "https://mymatrx.com/c/dev-website/general/about?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "page_with_distinct_category",
+      "input": { "site_slug": "iopbm", "slug": "gut-health-basics", "category": "education", "is_home_page": false },
+      "expect": {
+        "path": "/c/iopbm/education/gut-health-basics",
+        "live_url": "https://mymatrx.com/c/iopbm/education/gut-health-basics",
+        "preview_url": "https://mymatrx.com/c/iopbm/education/gut-health-basics?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "page_without_category",
+      "input": { "site_slug": "dev-website", "slug": "landing", "category": null, "is_home_page": false },
+      "expect": {
+        "path": "/c/dev-website/landing",
+        "live_url": "https://mymatrx.com/c/dev-website/landing",
+        "preview_url": "https://mymatrx.com/c/dev-website/landing?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "page_empty_category_is_one_segment",
+      "input": { "site_slug": "dev-website", "slug": "landing", "category": "", "is_home_page": false },
+      "expect": {
+        "path": "/c/dev-website/landing",
+        "live_url": "https://mymatrx.com/c/dev-website/landing",
+        "preview_url": "https://mymatrx.com/c/dev-website/landing?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "home_page_exposes_root_url",
+      "input": { "site_slug": "dev-website", "slug": "home", "category": "general", "is_home_page": true },
+      "expect": {
+        "path": "/c/dev-website/general/home",
+        "live_url": "https://mymatrx.com/c/dev-website/general/home",
+        "preview_url": "https://mymatrx.com/c/dev-website/general/home?preview=true",
+        "root_url": "https://mymatrx.com/c/dev-website"
+      }
+    },
+    {
+      "name": "domain_page_with_category",
+      "input": { "site_slug": "dev-website", "slug": "pricing", "category": "general", "is_home_page": false, "domain": "www.devwebsite-test.com" },
+      "expect": {
+        "path": "/general/pricing",
+        "live_url": "https://www.devwebsite-test.com/general/pricing",
+        "preview_url": "https://mymatrx.com/c/dev-website/general/pricing?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "domain_page_without_category",
+      "input": { "site_slug": "dev-website", "slug": "landing", "category": null, "is_home_page": false, "domain": "www.devwebsite-test.com" },
+      "expect": {
+        "path": "/landing",
+        "live_url": "https://www.devwebsite-test.com/landing",
+        "preview_url": "https://mymatrx.com/c/dev-website/landing?preview=true",
+        "root_url": null
+      }
+    },
+    {
+      "name": "domain_home_page_exposes_domain_root",
+      "input": { "site_slug": "dev-website", "slug": "home", "category": "general", "is_home_page": true, "domain": "www.devwebsite-test.com" },
+      "expect": {
+        "path": "/general/home",
+        "live_url": "https://www.devwebsite-test.com/general/home",
+        "preview_url": "https://mymatrx.com/c/dev-website/general/home?preview=true",
+        "root_url": "https://www.devwebsite-test.com"
+      }
+    },
+    {
+      "name": "domain_null_is_platform_form",
+      "input": { "site_slug": "iopbm", "slug": "about", "category": null, "is_home_page": false, "domain": null },
+      "expect": {
+        "path": "/c/iopbm/about",
+        "live_url": "https://mymatrx.com/c/iopbm/about",
+        "preview_url": "https://mymatrx.com/c/iopbm/about?preview=true",
+        "root_url": null
+      }
+    }
+  ],
+  "html_page_cases": [
+    {
+      "name": "html_page",
+      "input": { "page_id": "11111111-1111-1111-1111-111111111111" },
+      "expect": {
+        "path": "/p/11111111-1111-1111-1111-111111111111",
+        "url": "https://mymatrx.com/p/11111111-1111-1111-1111-111111111111"
+      }
+    }
+  ]
+}

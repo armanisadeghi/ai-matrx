@@ -68,7 +68,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
                 </Select>
                 {site && (
                     <a
-                        href={clientSiteRootUrl(site.slug)}
+                        href={clientSiteRootUrl(site.slug, false, site.domain)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1"
@@ -133,7 +133,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
                                             {site && (
                                                 <>
                                                     <a
-                                                        href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, category: page.category })}
+                                                        href={clientPageUrl({ siteSlug: site.slug, slug: page.slug, category: page.category, domain: site.domain })}
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"

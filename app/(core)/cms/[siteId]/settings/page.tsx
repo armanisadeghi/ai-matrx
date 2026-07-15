@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { Save, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeDomainInput } from "@/features/cms/utils/pageUrls";
 
 export default function SiteSettingsPage() {
   const { siteId } = useParams() as { siteId: string };
@@ -63,11 +64,16 @@ export default function SiteSettingsPage() {
     setIsSaving(true);
     setError(null);
     setSaved(false);
+    // The DB CHECK (client_sites_domain_normalized, CMS migration 0014) rejects
+    // a non-normalized host, and the my-matrx renderer only ever matches the
+    // normalized form — so normalize before save and reflect it back in the UI.
+    const cleanDomain = normalizeDomainInput(domain);
+    if (cleanDomain !== domain) setDomain(cleanDomain);
     try {
       await CmsSiteService.updateSite(siteId, {
         name,
         slug,
-        domain: domain || undefined,
+        domain: cleanDomain || undefined,
         globalCss: globalCss || undefined,
         favicon: favicon || undefined,
         isActive,
@@ -137,9 +143,15 @@ export default function SiteSettingsPage() {
               <Input
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
+                onBlur={(e) => setDomain(normalizeDomainInput(e.target.value))}
                 placeholder="www.example.com"
                 className="text-sm"
               />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Canonical serving host (lowercase). The site then serves at this
+                domain with no /c/ prefix. Attach this domain (and its www/apex
+                counterpart) to the my-matrx Vercel project + DNS to go live.
+              </p>
             </div>
             <div>
               <label className="text-sm font-medium block mb-1.5">
