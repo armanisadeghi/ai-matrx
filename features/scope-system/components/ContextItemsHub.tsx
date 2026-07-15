@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -207,7 +207,16 @@ function ContextItemsTypeView({
   const [addingItem, setAddingItem] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [reorderOpen, setReorderOpen] = useState(false);
+  const addItemTriggerRef = useRef<HTMLButtonElement>(null);
+  const wasAddingItemRef = useRef(false);
   const openContextItemsWindow = useOpenContextItemsWindow();
+
+  useEffect(() => {
+    if (!addingItem && wasAddingItemRef.current) {
+      requestAnimationFrame(() => addItemTriggerRef.current?.focus());
+    }
+    wasAddingItemRef.current = addingItem;
+  }, [addingItem]);
 
   useEffect(() => {
     if (resolvedTypeId) dispatch(listScopeTypeItems(resolvedTypeId));
@@ -284,7 +293,11 @@ function ContextItemsTypeView({
                 </Button>
               )}
               {!addingItem && (
-                <Button size="sm" onClick={() => setAddingItem(true)}>
+                <Button
+                  ref={addItemTriggerRef}
+                  size="sm"
+                  onClick={() => setAddingItem(true)}
+                >
                   <Plus className="h-3.5 w-3.5 mr-1.5" />
                   Add item
                 </Button>
@@ -539,7 +552,7 @@ function ContextItemListRow({
           variant="ghost"
           size="sm"
           onClick={onEdit}
-          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity h-7 px-2"
+          className="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity h-7 px-2"
           aria-label={`Edit ${item.display_name}`}
         >
           <Pencil className="h-3.5 w-3.5" />

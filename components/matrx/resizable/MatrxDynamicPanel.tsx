@@ -65,7 +65,12 @@ const PositionControl: React.FC<PositionControlProps> = ({
       <TooltipTrigger asChild>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-6 px-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2"
+              aria-label="Change panel position"
+            >
               <GripVertical className="h-3 w-3 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
@@ -130,6 +135,8 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
   const [isFullScreen, setIsFullScreen] = React.useState(false);
   const [currentPosition, setCurrentPosition] =
     React.useState<PanelPosition>(initialPosition);
+  const [lastInitialPosition, setLastInitialPosition] =
+    React.useState(initialPosition);
   const isExpanded = controlledExpanded ?? localExpanded;
   const isMobile = useIsMobile();
 
@@ -140,9 +147,10 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
   const isStartPosition =
     currentPosition === "left" || currentPosition === "top";
 
-  React.useEffect(() => {
+  if (lastInitialPosition !== initialPosition) {
+    setLastInitialPosition(initialPosition);
     setCurrentPosition(initialPosition);
-  }, [initialPosition]);
+  }
 
   React.useEffect(() => {
     const group = panelGroupRef.current;
@@ -390,6 +398,11 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
                         size="sm"
                         onClick={handleFullScreenToggle}
                         className="h-6 px-2"
+                        aria-label={
+                          isFullScreen
+                            ? "Exit panel full screen"
+                            : "Enter panel full screen"
+                        }
                       >
                         {isFullScreen ? (
                           <Minimize2 className="h-3 w-3" />
@@ -411,6 +424,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
                     size="sm"
                     onClick={handleToggle}
                     className="h-6 px-2"
+                    aria-label="Collapse panel"
                   >
                     <ChevronIcon className="h-3 w-3" />
                   </Button>

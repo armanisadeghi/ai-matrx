@@ -16,7 +16,14 @@
  * `ContextItemAddForm` (create) — rather than forking a third editor.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import {
   ArrowUpDown,
   ListChecks,
@@ -97,15 +104,25 @@ function useContextItemTabs(
     setActiveTabId(id);
   }, []);
 
-  const closeTab = useCallback((id: TabId) => {
-    setOpenTabIds((prev) => {
-      const next = prev.filter((t) => t !== id);
-      setActiveTabId((active) =>
-        active !== id ? active : next.length > 0 ? next[next.length - 1] : null,
-      );
-      return next;
-    });
-  }, []);
+  const closeTab = useCallback(
+    (id: TabId) => {
+      const next = openTabIds.filter((tabId) => tabId !== id);
+      const nextActiveId =
+        activeTabId !== id
+          ? activeTabId
+          : next.length > 0
+            ? next[next.length - 1]
+            : null;
+      setOpenTabIds(next);
+      setActiveTabId(nextActiveId);
+      if (nextActiveId) {
+        requestAnimationFrame(() => {
+          document.getElementById(tabDomId(nextActiveId))?.focus();
+        });
+      }
+    },
+    [activeTabId, openTabIds],
+  );
 
   /** Swap a draft tab's id for the newly-created item's real id, in place. */
   const replaceTab = useCallback((oldId: TabId, newId: TabId) => {
@@ -130,17 +147,25 @@ function SidebarRow({
   item,
   isOpenTab,
   isActive,
+  tabIndex,
   onSelect,
+  onKeyDown,
 }: {
   item: ContextItem;
   isOpenTab: boolean;
   isActive: boolean;
+  tabIndex: number;
   onSelect: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
 }) {
   return (
     <button
       type="button"
       onClick={onSelect}
+      onKeyDown={onKeyDown}
+      tabIndex={tabIndex}
+      aria-current={isActive ? "page" : undefined}
+      data-context-item-sidebar-row
       className={cn(
         "flex w-full min-w-0 items-start gap-1.5 border-l-2 px-2 py-1.5 text-left transition-colors",
         isActive
@@ -198,11 +223,38 @@ function ContextItemsSidebar({
   onReorder: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const navRef = useRef<HTMLElement>(null);
   const filtered = query.trim()
     ? items.filter((i) =>
         i.display_name.toLowerCase().includes(query.trim().toLowerCase()),
       )
     : items;
+  const activeItemIsVisible = filtered.some((item) => item.id === activeTabId);
+
+  function moveSidebarFocus(nextIndex: number) {
+    const rows = navRef.current?.querySelectorAll<HTMLButtonElement>(
+      "[data-context-item-sidebar-row]",
+    );
+    const target = Math.max(0, Math.min(nextIndex, filtered.length - 1));
+    const item = filtered[target];
+    if (!item) return;
+    onSelect(item.id);
+    requestAnimationFrame(() => rows?.[target]?.focus());
+  }
+
+  function handleSidebarKeyDown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) {
+    let target: number | null = null;
+    if (event.key === "ArrowDown") target = index + 1;
+    if (event.key === "ArrowUp") target = index - 1;
+    if (event.key === "Home") target = 0;
+    if (event.key === "End") target = filtered.length - 1;
+    if (target === null) return;
+    event.preventDefault();
+    moveSidebarFocus(target);
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -211,6 +263,7 @@ function ContextItemsSidebar({
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
             <Input
+              aria-label="Search context items"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search items…"
@@ -222,6 +275,7 @@ function ContextItemsSidebar({
             type="button"
             onClick={onAdd}
             title="Add context item"
+            aria-label="Add context item"
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Plus className="h-4 w-4" />
@@ -240,6 +294,7 @@ function ContextItemsSidebar({
       </div>
 
       <nav
+        ref={navRef}
         aria-label="Context items"
         className="flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
@@ -252,13 +307,19 @@ function ContextItemsSidebar({
             {items.length === 0 ? "No context items yet." : "No matches."}
           </div>
         ) : (
-          filtered.map((item) => (
+          filtered.map((item, index) => (
             <SidebarRow
               key={item.id}
               item={item}
               isOpenTab={openTabIds.includes(item.id)}
               isActive={activeTabId === item.id}
+              tabIndex={
+                activeTabId === item.id || (!activeItemIsVisible && index === 0)
+                  ? 0
+                  : -1
+              }
               onSelect={() => onSelect(item.id)}
+              onKeyDown={(event) => handleSidebarKeyDown(event, index)}
             />
           ))
         )}
@@ -284,9 +345,33 @@ function TabBar({
 }) {
   if (openTabIds.length === 0) return null;
 
+  function activateByKeyboard(
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) {
+    let target: number | null = null;
+    if (event.key === "ArrowRight") target = (index + 1) % openTabIds.length;
+    if (event.key === "ArrowLeft") {
+      target = (index - 1 + openTabIds.length) % openTabIds.length;
+    }
+    if (event.key === "Home") target = 0;
+    if (event.key === "End") target = openTabIds.length - 1;
+    if (target === null) return;
+    event.preventDefault();
+    const nextId = openTabIds[target];
+    onActivate(nextId);
+    requestAnimationFrame(() => {
+      document.getElementById(tabDomId(nextId))?.focus();
+    });
+  }
+
   return (
-    <div className="no-scrollbar flex h-8 shrink-0 items-end overflow-x-auto border-b border-border bg-muted/20 px-1">
-      {openTabIds.map((id) => {
+    <div
+      role="tablist"
+      aria-label="Open context items"
+      className="no-scrollbar flex h-8 shrink-0 items-end overflow-x-auto border-b border-border bg-muted/20 px-1"
+    >
+      {openTabIds.map((id, index) => {
         const label = isNewTab(id)
           ? "New item"
           : (itemById.get(id)?.display_name ?? "…");
@@ -294,18 +379,31 @@ function TabBar({
         return (
           <div
             key={id}
-            onClick={() => onActivate(id)}
             className={cn(
-              "group flex h-full min-w-[80px] max-w-[180px] shrink-0 cursor-pointer select-none items-center rounded-t border border-b-0 pl-2.5 pr-1 transition-colors",
+              "group flex h-full min-w-[80px] max-w-[180px] shrink-0 select-none items-center rounded-t border border-b-0 pl-2.5 pr-1 transition-colors",
               isActive
                 ? "z-10 translate-y-px border-border bg-background pb-px font-medium text-foreground"
                 : "border-border/40 bg-muted/20 text-muted-foreground hover:border-border/70 hover:bg-muted/40 hover:text-foreground",
             )}
           >
-            {isNewTab(id) && <Plus className="mr-1 h-3 w-3 shrink-0" />}
-            <span className="flex-1 truncate text-xs">{label}</span>
+            <button
+              id={tabDomId(id)}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={tabPanelDomId(id)}
+              tabIndex={isActive ? 0 : -1}
+              onClick={() => onActivate(id)}
+              onKeyDown={(event) => activateByKeyboard(event, index)}
+              className="flex min-w-0 flex-1 items-center rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {isNewTab(id) && <Plus className="mr-1 h-3 w-3 shrink-0" />}
+              <span className="flex-1 truncate text-xs">{label}</span>
+            </button>
             <button
               type="button"
+              tabIndex={isActive ? 0 : -1}
+              aria-label={`Close ${label}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onClose(id);
@@ -324,6 +422,14 @@ function TabBar({
       })}
     </div>
   );
+}
+
+function tabDomId(id: TabId): string {
+  return `context-item-tab-${encodeURIComponent(id)}`;
+}
+
+function tabPanelDomId(id: TabId): string {
+  return `context-item-tabpanel-${encodeURIComponent(id)}`;
 }
 
 // ─── Body ─────────────────────────────────────────────────────────────────────
@@ -375,7 +481,9 @@ function ContextItemsBody({
   return (
     <div className="p-4">
       <ContextItemSettingsForm
+        key={activeTabId}
         itemId={activeTabId}
+        autoFocus
         onDeleted={() => onDeleted(activeTabId)}
       />
     </div>
@@ -487,7 +595,14 @@ function ContextItemsWindowInner({
           onActivate={tabs.setActiveTabId}
           onClose={tabs.closeTab}
         />
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+        <div
+          id={tabs.activeTabId ? tabPanelDomId(tabs.activeTabId) : undefined}
+          role={tabs.activeTabId ? "tabpanel" : undefined}
+          aria-labelledby={
+            tabs.activeTabId ? tabDomId(tabs.activeTabId) : undefined
+          }
+          className="min-h-0 min-w-0 flex-1 overflow-y-auto"
+        >
           <ContextItemsBody
             activeTabId={tabs.activeTabId}
             scopeTypeId={scopeTypeId}

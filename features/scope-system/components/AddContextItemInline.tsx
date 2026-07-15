@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -28,10 +28,20 @@ export function AddContextItemInline({
 }: AddContextItemInlineProps) {
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (!open && wasOpenRef.current) {
+      requestAnimationFrame(() => triggerRef.current?.focus());
+    }
+    wasOpenRef.current = open;
+  }, [open]);
 
   if (!open) {
     return (
       <Button
+        ref={triggerRef}
         type="button"
         variant="ghost"
         size="sm"

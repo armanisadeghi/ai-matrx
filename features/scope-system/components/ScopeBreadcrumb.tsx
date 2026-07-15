@@ -164,6 +164,7 @@ function DesktopCrumb({ level }: { level: Level }) {
   const text = level.href ? (
     <Link
       href={level.href}
+      aria-current={level.isCurrent ? "page" : undefined}
       className={cn(
         "inline-flex items-center gap-1.5",
         CRUMB_LINK,
@@ -175,6 +176,7 @@ function DesktopCrumb({ level }: { level: Level }) {
     </Link>
   ) : (
     <span
+      aria-current={level.isCurrent ? "page" : undefined}
       className={cn(
         "inline-flex items-center gap-1.5 truncate max-w-[12rem]",
         level.isCurrent
@@ -332,31 +334,37 @@ export function ScopeBreadcrumb({
   );
 
   const content = isMobile ? (
-    <div className="flex items-center gap-1 min-w-0">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1 min-w-0">
       {backControl}
       <MobileBreadcrumbDrawer levels={levels} />
-    </div>
+    </nav>
   ) : (
-    <div
+    <nav
+      aria-label="Breadcrumb"
       className={cn(
         "flex items-center gap-1.5 text-sm min-w-0",
         singleLine ? "flex-nowrap overflow-hidden" : "flex-wrap",
       )}
     >
       {backControl}
-      <span className="text-muted-foreground/50 shrink-0">·</span>
+      <span aria-hidden className="text-muted-foreground/50 shrink-0">
+        ·
+      </span>
       {levels.map((level, i) => (
         <span
           key={level.key}
           className="inline-flex items-center gap-1.5 min-w-0"
         >
           {i > 0 && (
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+            <ChevronRight
+              aria-hidden
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60"
+            />
           )}
           <DesktopCrumb level={level} />
         </span>
       ))}
-    </div>
+    </nav>
   );
 
   if (actions) {

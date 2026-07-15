@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { Plus, X, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,16 @@ export function AddScopeModal({
   onOpenChange,
   orgId,
 }: AddScopeModalProps) {
+  const generatedId = useId();
+  const singularId = `scope-type-singular-${generatedId}`;
+  const pluralId = `scope-type-plural-${generatedId}`;
+  const iconId = `scope-type-icon-${generatedId}`;
+  const descriptionId = `scope-type-description-${generatedId}`;
+  const advancedId = `scope-type-advanced-${generatedId}`;
+  const sortOrderId = `scope-type-sort-order-${generatedId}`;
+  const maxAssignmentsId = `scope-type-max-assignments-${generatedId}`;
+  const parentId = `scope-type-parent-${generatedId}`;
+  const variableKeyId = `scope-type-variable-key-${generatedId}`;
   const dispatch = useAppDispatch();
   const existingTypes = useAppSelector((s) => selectScopeTypesByOrg(s, orgId));
   const [busy, setBusy] = useState(false);
@@ -84,6 +94,8 @@ export function AddScopeModal({
 
   useEffect(() => {
     if (!open) return;
+    // Opening the panel intentionally starts a fresh controlled draft.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLabelSingular("");
     setLabelPlural("");
     setPluralEdited(false);
@@ -156,7 +168,8 @@ export function AddScopeModal({
     setVariableKeys(variableKeys.filter((k) => k !== key));
   }
 
-  async function handleSave() {
+  async function handleSave(event?: React.FormEvent) {
+    event?.preventDefault();
     const trimmedSingular = labelSingular.trim();
     const trimmedPlural = (labelPlural || pluralize(labelSingular)).trim();
     if (!trimmedSingular) {
@@ -223,15 +236,19 @@ export function AddScopeModal({
       description="A scope type is a dimension you track — Clients, Products, Teams, anything. Define the context items you want for each one."
       expandButtonLabel="Scope type"
       dismissDisabled={busy}
+      initialFocus
       position="right"
       defaultSize={38}
     >
-      <div className="space-y-5">
+      <form className="space-y-5" onSubmit={handleSave}>
         {/* Basics */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Name (one item)</Label>
+            <Label htmlFor={singularId} className="text-xs">
+              Name (one item)
+            </Label>
             <Input
+              id={singularId}
               autoFocus
               value={labelSingular}
               onChange={(e) => handleSingularChange(e.target.value)}
@@ -241,8 +258,11 @@ export function AddScopeModal({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Name (many)</Label>
+            <Label htmlFor={pluralId} className="text-xs">
+              Name (many)
+            </Label>
             <Input
+              id={pluralId}
               value={labelPlural}
               onChange={(e) => {
                 setPluralEdited(true);
@@ -257,8 +277,11 @@ export function AddScopeModal({
 
         <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
           <div className="space-y-1.5">
-            <Label className="text-xs">Icon</Label>
+            <Label htmlFor={iconId} className="text-xs">
+              Icon
+            </Label>
             <IconInputWithValidation
+              id={iconId}
               value={icon}
               onChange={setIcon}
               showLucideLink={false}
@@ -276,8 +299,11 @@ export function AddScopeModal({
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs">Description (optional)</Label>
+          <Label htmlFor={descriptionId} className="text-xs">
+            Description (optional)
+          </Label>
           <ProTextarea
+            id={descriptionId}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What goes here?"
@@ -290,12 +316,12 @@ export function AddScopeModal({
         </div>
 
         {/* Context items to track */}
-        <div className="space-y-2">
+        <fieldset className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <Label className="text-xs">
+              <legend className="text-xs font-medium">
                 Context items to track for each {labelSingular || "item"}
-              </Label>
+              </legend>
               <p className="text-[11px] text-muted-foreground/80 mt-0.5">
                 Add a few now or skip — you can add more later from any scope.
               </p>
@@ -312,6 +338,7 @@ export function AddScopeModal({
                     if (el) rowInputsRef.current.set(row.id, el);
                     else rowInputsRef.current.delete(row.id);
                   }}
+                  aria-label={`Context item ${idx + 1} name`}
                   placeholder={
                     idx === 0
                       ? "e.g. Industry"
@@ -331,7 +358,7 @@ export function AddScopeModal({
                   size="icon"
                   onClick={() => removeItemRow(row.id)}
                   disabled={busy || items.length === 1}
-                  aria-label="Remove context item"
+                  aria-label={`Remove context item ${idx + 1}`}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -348,13 +375,15 @@ export function AddScopeModal({
             <Plus className="h-3.5 w-3.5 mr-1" />
             Add context item
           </Button>
-        </div>
+        </fieldset>
 
         {/* Advanced disclosure */}
         <div className="border-t border-border pt-4">
           <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
+            aria-expanded={advancedOpen}
+            aria-controls={advancedId}
             className="w-full flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
             disabled={busy}
           >
@@ -371,11 +400,14 @@ export function AddScopeModal({
         </div>
 
         {advancedOpen && (
-          <div className="space-y-5">
+          <div id={advancedId} className="space-y-5">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Sort order</Label>
+                <Label htmlFor={sortOrderId} className="text-xs">
+                  Sort order
+                </Label>
                 <Input
+                  id={sortOrderId}
                   type="number"
                   value={sortOrder}
                   onChange={(e) =>
@@ -387,8 +419,11 @@ export function AddScopeModal({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Max assignments</Label>
+                <Label htmlFor={maxAssignmentsId} className="text-xs">
+                  Max assignments
+                </Label>
                 <Input
+                  id={maxAssignmentsId}
                   type="number"
                   value={maxAssignments}
                   onChange={(e) => setMaxAssignments(e.target.value)}
@@ -405,13 +440,15 @@ export function AddScopeModal({
 
             {parentCandidates.length > 0 && (
               <div className="space-y-1.5">
-                <Label className="text-xs">Parent type</Label>
+                <Label htmlFor={parentId} className="text-xs">
+                  Parent type
+                </Label>
                 <Select
                   value={parentTypeId}
                   onValueChange={setParentTypeId}
                   disabled={busy}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id={parentId}>
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
@@ -427,9 +464,12 @@ export function AddScopeModal({
             )}
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Default variable keys</Label>
+              <Label htmlFor={variableKeyId} className="text-xs">
+                Default variable keys
+              </Label>
               <div className="flex gap-2">
                 <Input
+                  id={variableKeyId}
                   value={variableKeyInput}
                   onChange={(e) => setVariableKeyInput(e.target.value)}
                   placeholder="e.g. budget_code"
@@ -484,6 +524,7 @@ export function AddScopeModal({
 
         <div className="flex gap-2 pt-4 border-t border-border">
           <Button
+            type="button"
             variant="outline"
             className="flex-1"
             onClick={() => onOpenChange(false)}
@@ -491,16 +532,12 @@ export function AddScopeModal({
           >
             Cancel
           </Button>
-          <Button
-            className="flex-1"
-            onClick={handleSave}
-            disabled={!canSave || busy}
-          >
+          <Button type="submit" className="flex-1" disabled={!canSave || busy}>
             {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Create scope type
           </Button>
         </div>
-      </div>
+      </form>
     </MatrxDynamicPanelHost>
   );
 }

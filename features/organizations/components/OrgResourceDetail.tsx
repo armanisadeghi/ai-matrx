@@ -44,16 +44,29 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { UserAvatarDisplay, type UserLike } from "@/components/user/UserIdentity";
+import {
+  UserAvatarDisplay,
+  type UserLike,
+} from "@/components/user/UserIdentity";
 import {
   getOrganizationBySlugOrId,
   getOrganizationMembers,
 } from "@/features/organizations/service";
 import { revokeOrgShare } from "@/utils/permissions/orgModeration";
 import { getShareableResource } from "@/utils/permissions/registry";
-import { getEntry, getContentRole, type OrgResourceEntry } from "../resource-catalogue";
-import { useOrgContributableItems, type MyItem } from "../hooks/useOrgContributableItems";
-import { useOrgSharedItems, type OrgSharedItem } from "../hooks/useOrgSharedItems";
+import {
+  getEntry,
+  getContentRole,
+  type OrgResourceEntry,
+} from "../resource-catalogue";
+import {
+  useOrgContributableItems,
+  type MyItem,
+} from "../hooks/useOrgContributableItems";
+import {
+  useOrgSharedItems,
+  type OrgSharedItem,
+} from "../hooks/useOrgSharedItems";
 import { ResourcePeekHost } from "../peek/ResourcePeekHost";
 import { hasPeek } from "../peek/registry";
 
@@ -64,10 +77,16 @@ export function OrgResourceDetail() {
   const kind = params.kind as string;
 
   const entry = getEntry(kind) ?? null;
-  const [org, setOrg] = React.useState<{ id: string; name: string; slug: string } | null>(null);
+  const [org, setOrg] = React.useState<{
+    id: string;
+    name: string;
+    slug: string;
+  } | null>(null);
   const [resolving, setResolving] = React.useState(true);
   const [query, setQuery] = React.useState("");
-  const [userMap, setUserMap] = React.useState<Map<string, UserLike>>(new Map());
+  const [userMap, setUserMap] = React.useState<Map<string, UserLike>>(
+    new Map(),
+  );
   const [peekId, setPeekId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -105,9 +124,14 @@ export function OrgResourceDetail() {
   }, [orgParam]);
 
   const shared = useOrgSharedItems(org?.id ?? null, entry);
-  const mine = useOrgContributableItems(org?.id ?? null, org?.name ?? "", entry, () => {
-    shared.reload();
-  });
+  const mine = useOrgContributableItems(
+    org?.id ?? null,
+    org?.name ?? "",
+    entry,
+    () => {
+      shared.reload();
+    },
+  );
 
   const canPeek = entry ? hasPeek(entry.key) : false;
 
@@ -152,7 +176,11 @@ export function OrgResourceDetail() {
               ? "This resource kind doesn't exist."
               : "This organization doesn't exist or has been removed."}
           </p>
-          <Button variant="outline" size="sm" onClick={() => router.push("/organizations")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/organizations")}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Organizations
           </Button>
@@ -163,8 +191,10 @@ export function OrgResourceDetail() {
 
   const role = getContentRole(entry.role);
   const Icon = entry.icon;
-  const filteredMine = mine.items.filter((it) =>
-    it.title.toLowerCase().includes(query.toLowerCase()) || idMatchesQuery(it, query),
+  const filteredMine = mine.items.filter(
+    (it) =>
+      it.title.toLowerCase().includes(query.toLowerCase()) ||
+      idMatchesQuery(it, query),
   );
 
   return (
@@ -195,132 +225,163 @@ export function OrgResourceDetail() {
         }
       />
       <div className="h-full overflow-y-auto bg-textured">
-      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
-        {/* Header */}
-        <Card className="p-5 md:p-6 relative overflow-hidden">
-          <span className={`absolute inset-x-0 top-0 h-1 ${role.accentBar}`} />
-          <div className="flex items-start gap-4">
-            <span className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${role.accentBg} ${role.accentText}`}>
-              <Icon className="h-6 w-6" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-bold text-foreground">{entry.labelPlural}</h1>
-                <Badge variant="outline" className={`text-[10px] ${role.accentText}`}>
-                  {role.title}
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">{entry.description}</p>
-            </div>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-          {/* Shared with org (team view) */}
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-base font-semibold">Shared with {org.name}</h2>
-              {!shared.loading && (
-                <Badge variant="secondary" className="text-xs">{shared.items.length}</Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              {entry.labelPlural} the org owns or that members have shared with the team.
-            </p>
-
-            {shared.loading ? (
-              <Loading />
-            ) : shared.items.length === 0 ? (
-              <Empty icon={<Icon className="h-7 w-7 text-muted-foreground" />}>
-                Nothing here yet. Share one of yours from the right.
-              </Empty>
-            ) : (
-              <ul className="space-y-1.5">
-                {shared.items.map((item) => (
-                  <SharedRow
-                    key={`${item.source}-${item.id}`}
-                    item={item}
-                    entry={entry}
-                    sharer={item.sharedBy ? userMap.get(item.sharedBy) : undefined}
-                    canPeek={canPeek}
-                    onOpen={() => openItem(item.href, false)}
-                    onOpenNewTab={() => openItem(item.href, true)}
-                    onPeek={() => setPeekId(item.id)}
-                    onUnshare={() => unshare(item)}
-                  />
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          {/* Yours to share */}
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <Share2 className="h-4 w-4 text-primary" />
-              <h2 className="text-base font-semibold">Yours to share</h2>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              Your own {entry.labelPlural.toLowerCase()}. One click adds them to the team.
-            </p>
-
-            {!mine.contributable ? (
-              <Empty icon={<Icon className="h-7 w-7 text-muted-foreground" />}>
-                This kind can&apos;t be shared with an org yet.
-              </Empty>
-            ) : (
-              <>
-                <div className="relative mb-3">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={`Search your ${entry.labelPlural.toLowerCase()}…`}
-                    className="pl-9"
-                  />
+        <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
+          {/* Header */}
+          <Card className="p-5 md:p-6 relative overflow-hidden">
+            <span
+              className={`absolute inset-x-0 top-0 h-1 ${role.accentBar}`}
+            />
+            <div className="flex items-start gap-4">
+              <span
+                className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${role.accentBg} ${role.accentText}`}
+              >
+                <Icon className="h-6 w-6" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {entry.labelPlural}
+                  </h1>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] ${role.accentText}`}
+                  >
+                    {role.title}
+                  </Badge>
                 </div>
-                {mine.loading ? (
-                  <Loading />
-                ) : filteredMine.length === 0 ? (
-                  <Empty icon={<Icon className="h-7 w-7 text-muted-foreground" />}>
-                    {mine.items.length === 0
-                      ? `You don't own any ${entry.labelPlural.toLowerCase()} yet.`
-                      : "No matches."}
-                  </Empty>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {filteredMine.map((item) => {
-                      const isShared =
-                        mine.alreadyShared.has(item.id) || mine.justShared.has(item.id);
-                      return (
-                        <MineRow
-                          key={item.id}
-                          item={item}
-                          entry={entry}
-                          isShared={isShared}
-                          sharing={mine.sharingId === item.id}
-                          canPeek={canPeek}
-                          onShare={() => mine.share(item)}
-                          onUnshare={() => unshare(item)}
-                          onOpen={() => openItem(itemHref(entry, item.id), false)}
-                          onOpenNewTab={() => openItem(itemHref(entry, item.id), true)}
-                          onPeek={() => setPeekId(item.id)}
-                        />
-                      );
-                    })}
-                  </ul>
-                )}
-              </>
-            )}
+                <p className="text-sm text-muted-foreground mt-1">
+                  {entry.description}
+                </p>
+              </div>
+            </div>
           </Card>
-        </div>
-      </div>
 
-      <ResourcePeekHost
-        kind={entry.key}
-        id={peekId}
-        onClose={() => setPeekId(null)}
-      />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+            {/* Shared with org (team view) */}
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-base font-semibold">
+                  Shared with {org.name}
+                </h2>
+                {!shared.loading && (
+                  <Badge variant="secondary" className="text-xs">
+                    {shared.items.length}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                {entry.labelPlural} the org owns or that members have shared
+                with the team.
+              </p>
+
+              {shared.loading ? (
+                <Loading />
+              ) : shared.items.length === 0 ? (
+                <Empty
+                  icon={<Icon className="h-7 w-7 text-muted-foreground" />}
+                >
+                  Nothing here yet. Share one of yours from the right.
+                </Empty>
+              ) : (
+                <ul className="space-y-1.5">
+                  {shared.items.map((item) => (
+                    <SharedRow
+                      key={`${item.source}-${item.id}`}
+                      item={item}
+                      entry={entry}
+                      sharer={
+                        item.sharedBy ? userMap.get(item.sharedBy) : undefined
+                      }
+                      canPeek={canPeek}
+                      onOpen={() => openItem(item.href, false)}
+                      onOpenNewTab={() => openItem(item.href, true)}
+                      onPeek={() => setPeekId(item.id)}
+                      onUnshare={() => unshare(item)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </Card>
+
+            {/* Yours to share */}
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <Share2 className="h-4 w-4 text-primary" />
+                <h2 className="text-base font-semibold">Yours to share</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                Your own {entry.labelPlural.toLowerCase()}. One click adds them
+                to the team.
+              </p>
+
+              {!mine.contributable ? (
+                <Empty
+                  icon={<Icon className="h-7 w-7 text-muted-foreground" />}
+                >
+                  This kind can&apos;t be shared with an org yet.
+                </Empty>
+              ) : (
+                <>
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      aria-label={`Search your ${entry.labelPlural.toLowerCase()}`}
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder={`Search your ${entry.labelPlural.toLowerCase()}…`}
+                      className="pl-9"
+                    />
+                  </div>
+                  {mine.loading ? (
+                    <Loading />
+                  ) : filteredMine.length === 0 ? (
+                    <Empty
+                      icon={<Icon className="h-7 w-7 text-muted-foreground" />}
+                    >
+                      {mine.items.length === 0
+                        ? `You don't own any ${entry.labelPlural.toLowerCase()} yet.`
+                        : "No matches."}
+                    </Empty>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {filteredMine.map((item) => {
+                        const isShared =
+                          mine.alreadyShared.has(item.id) ||
+                          mine.justShared.has(item.id);
+                        return (
+                          <MineRow
+                            key={item.id}
+                            item={item}
+                            entry={entry}
+                            isShared={isShared}
+                            sharing={mine.sharingId === item.id}
+                            canPeek={canPeek}
+                            onShare={() => mine.share(item)}
+                            onUnshare={() => unshare(item)}
+                            onOpen={() =>
+                              openItem(itemHref(entry, item.id), false)
+                            }
+                            onOpenNewTab={() =>
+                              openItem(itemHref(entry, item.id), true)
+                            }
+                            onPeek={() => setPeekId(item.id)}
+                          />
+                        );
+                      })}
+                    </ul>
+                  )}
+                </>
+              )}
+            </Card>
+          </div>
+        </div>
+
+        <ResourcePeekHost
+          kind={entry.key}
+          id={peekId}
+          onClose={() => setPeekId(null)}
+        />
       </div>
     </>
   );
@@ -421,13 +482,27 @@ function SharedRow({
         onUnshare={onUnshare}
       >
         <div className="group flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors">
-          {!entry.hideRowIcon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
-          <span className="flex-1 min-w-0 text-sm truncate" title={item.title}>
+          {!entry.hideRowIcon && (
+            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+          <button
+            type="button"
+            onClick={onOpen}
+            className="flex-1 min-w-0 text-left text-sm truncate hover:text-primary"
+            title={`Open ${item.title}`}
+          >
             {item.title}
-          </span>
+          </button>
           {item.source === "shared" && sharer && (
-            <span className="flex items-center gap-1.5 shrink-0" title={`Shared by ${sharer.displayName ?? sharer.email ?? "a member"}`}>
-              <UserAvatarDisplay user={sharer} size="xs" className="ring-2 ring-card" />
+            <span
+              className="flex items-center gap-1.5 shrink-0"
+              title={`Shared by ${sharer.displayName ?? sharer.email ?? "a member"}`}
+            >
+              <UserAvatarDisplay
+                user={sharer}
+                size="xs"
+                className="ring-2 ring-card"
+              />
             </span>
           )}
           <Badge
@@ -438,9 +513,11 @@ function SharedRow({
           </Badge>
           {item.href && (
             <button
+              type="button"
               onClick={onOpenNewTab}
-              className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
               title="Open in new tab"
+              aria-label={`Open ${item.title} in a new tab`}
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </button>
@@ -487,14 +564,23 @@ function MineRow({
         onUnshare={onUnshare}
       >
         <div className="group flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors">
-          {!entry.hideRowIcon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
-          <span className="flex-1 min-w-0 text-sm truncate" title={item.title}>
-            {item.title}
-          </span>
+          {!entry.hideRowIcon && (
+            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
           <button
+            type="button"
+            onClick={onOpen}
+            className="flex-1 min-w-0 text-left text-sm truncate hover:text-primary"
+            title={`Open ${item.title}`}
+          >
+            {item.title}
+          </button>
+          <button
+            type="button"
             onClick={onOpenNewTab}
-            className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
             title="Open in new tab"
+            aria-label={`Open ${item.title} in a new tab`}
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
@@ -531,7 +617,9 @@ function MineRow({
 
 function itemHref(entry: OrgResourceEntry, id: string): string | null {
   // Mirror useOrgSharedItems' href derivation for the "yours" side.
-  const shareable = entry.shareKey ? getShareableResource(entry.shareKey) : undefined;
+  const shareable = entry.shareKey
+    ? getShareableResource(entry.shareKey)
+    : undefined;
   return shareable ? shareable.urlPathTemplate.replace("{id}", id) : null;
 }
 
@@ -551,11 +639,19 @@ function Loading() {
   );
 }
 
-function Empty({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+function Empty({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="text-center py-10 border-2 border-dashed border-border rounded-lg">
       <div className="flex justify-center mb-3">{icon}</div>
-      <p className="text-sm text-muted-foreground max-w-xs mx-auto">{children}</p>
+      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+        {children}
+      </p>
     </div>
   );
 }

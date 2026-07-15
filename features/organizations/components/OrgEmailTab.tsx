@@ -163,6 +163,7 @@ export function OrgEmailTab({
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
+              aria-label="Search organization members"
               placeholder="Search members..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -192,6 +193,7 @@ export function OrgEmailTab({
               className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer"
             >
               <Checkbox
+                aria-label={`Select ${member.user?.displayName || member.user?.email || "member"}`}
                 checked={isSelected}
                 onCheckedChange={() => toggleMember(member.userId)}
               />

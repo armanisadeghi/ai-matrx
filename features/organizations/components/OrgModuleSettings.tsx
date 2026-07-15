@@ -41,7 +41,8 @@ import {
   type PermissionLevel,
 } from "../orgModuleSettings";
 
-type ToggleField = "membersCanAdd" | "requiresApproval" | "isScopeable" | "autoIngest";
+type ToggleField =
+  "membersCanAdd" | "requiresApproval" | "isScopeable" | "autoIngest";
 
 interface ColumnDef {
   field: ToggleField;
@@ -84,7 +85,9 @@ export function OrgModuleSettings({
   orgId: string;
   canEdit: boolean;
 }) {
-  const [settings, setSettings] = React.useState<Map<string, OrgModuleSetting>>(new Map());
+  const [settings, setSettings] = React.useState<Map<string, OrgModuleSetting>>(
+    new Map(),
+  );
   const [loading, setLoading] = React.useState(true);
   const [savingKey, setSavingKey] = React.useState<string | null>(null);
 
@@ -141,9 +144,10 @@ export function OrgModuleSettings({
         <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground">
           Changes save instantly.{" "}
-          <span className="font-medium text-foreground">Members can add</span> and{" "}
-          <span className="font-medium text-foreground">Needs approval</span> are
-          enforced now; the rest are saved for upcoming enforcement.
+          <span className="font-medium text-foreground">Members can add</span>{" "}
+          and{" "}
+          <span className="font-medium text-foreground">Needs approval</span>{" "}
+          are enforced now; the rest are saved for upcoming enforcement.
           {!canEdit && " You have read-only access."}
         </p>
       </div>
@@ -202,12 +206,19 @@ export function OrgModuleSettings({
                       const saving = savingKey === key;
                       const Icon = entry.icon;
                       return (
-                        <tr key={entry.key} className="border-b border-border last:border-0 hover:bg-accent/30">
+                        <tr
+                          key={entry.key}
+                          className="border-b border-border last:border-0 hover:bg-accent/30"
+                        >
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-2">
                               <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                              <span className="font-medium">{entry.labelPlural}</span>
-                              {saving && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                              <span className="font-medium">
+                                {entry.labelPlural}
+                              </span>
+                              {saving && (
+                                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                              )}
                             </div>
                           </td>
                           {COLUMNS.map((col) => (
@@ -227,10 +238,16 @@ export function OrgModuleSettings({
                               value={s.defaultPermission}
                               disabled={!canEdit || saving}
                               onValueChange={(v) =>
-                                persist(entry, { ...s, defaultPermission: v as PermissionLevel })
+                                persist(entry, {
+                                  ...s,
+                                  defaultPermission: v as PermissionLevel,
+                                })
                               }
                             >
-                              <SelectTrigger className="h-7 w-[120px] text-xs">
+                              <SelectTrigger
+                                className="h-7 w-[120px] text-xs"
+                                aria-label={`Default access for ${entry.labelPlural}`}
+                              >
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>

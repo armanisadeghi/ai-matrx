@@ -38,6 +38,9 @@ import type { ReferenceItemConfig } from "@/features/scopes/utils/referenceCell"
 
 export interface ContextValueInputProps {
   id?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
+  "aria-describedby"?: string;
   valueType: ContextValueType;
   customComponent?: VariableCustomComponent | null;
   /** Current value: a string for primitive types, a structured object for a custom component. */
@@ -62,6 +65,7 @@ export interface ContextValueInputProps {
    * `ProTextarea`'s voice/cleanup richness earns its keep.
    */
   compact?: boolean;
+  auxiliaryControlsTabIndex?: number;
 }
 
 /**
@@ -110,6 +114,9 @@ const NATIVE_INPUT_TYPE: Partial<Record<ContextValueType, string>> = {
 
 export function ContextValueInput({
   id,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
   valueType,
   customComponent,
   value,
@@ -124,6 +131,7 @@ export function ContextValueInput({
   maxHeight = 600,
   className,
   compact = false,
+  auxiliaryControlsTabIndex,
 }: ContextValueInputProps) {
   const resolvedMinHeight = minHeight ?? (compact ? 40 : 80);
   if (customComponent) {
@@ -131,14 +139,22 @@ export function ContextValueInput({
     // every custom-component kind) — the caller owns whether/when to debounce
     // and commit, exactly like the pre-existing custom-component flow did.
     return (
-      <VariableInputComponent
-        value={value}
-        onChange={onChange}
-        variableName={displayName ?? "Value"}
-        customComponent={customComponent}
-        hideLabel
-        compact
-      />
+      <div
+        id={id}
+        role="group"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
+      >
+        <VariableInputComponent
+          value={value}
+          onChange={onChange}
+          variableName={displayName ?? "Value"}
+          customComponent={customComponent}
+          hideLabel
+          compact
+        />
+      </div>
     );
   }
 
@@ -153,6 +169,10 @@ export function ContextValueInput({
     const fence = typeof value === "string" && value.trim() ? value : null;
     return (
       <ReferenceValuePicker
+        id={id}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         config={referenceConfig}
         value={fence}
         scopeId={scopeId}
@@ -178,7 +198,13 @@ export function ContextValueInput({
         }}
         disabled={disabled}
       >
-        <SelectTrigger id={id} className={className}>
+        <SelectTrigger
+          id={id}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          aria-describedby={ariaDescribedBy}
+          className={className}
+        >
           <SelectValue placeholder="—" />
         </SelectTrigger>
         <SelectContent>
@@ -195,6 +221,9 @@ export function ContextValueInput({
     return (
       <Input
         id={id}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         type="date"
         value={current}
         onChange={(e) => onChange(e.target.value)}
@@ -215,6 +244,9 @@ export function ContextValueInput({
     return (
       <Input
         id={id}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         type={NATIVE_INPUT_TYPE[valueType]}
         value={current}
         onChange={(e) => onChange(e.target.value)}
@@ -229,11 +261,18 @@ export function ContextValueInput({
 
   if (valueType === "percent") {
     const current =
-      typeof value === "number" ? String(value) : typeof value === "string" ? value : "";
+      typeof value === "number"
+        ? String(value)
+        : typeof value === "string"
+          ? value
+          : "";
     return (
       <div className={cn("relative", className)}>
         <Input
           id={id}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          aria-describedby={ariaDescribedBy}
           type="number"
           min={0}
           max={100}
@@ -255,7 +294,13 @@ export function ContextValueInput({
   if (valueType === "color") {
     const current = typeof value === "string" ? value : "";
     return (
-      <div className={cn("flex items-center gap-2", className)}>
+      <div
+        className={cn("flex items-center gap-2", className)}
+        role="group"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
+      >
         <input
           type="color"
           value={/^#[0-9a-fA-F]{6}$/.test(current) ? current : "#000000"}
@@ -264,11 +309,14 @@ export function ContextValueInput({
             onCommit?.(e.target.value);
           }}
           disabled={disabled}
-          aria-label={displayName ?? "Color"}
+          aria-label={ariaLabel ?? displayName ?? "Color"}
           className="h-9 w-12 shrink-0 cursor-pointer rounded border border-border bg-transparent p-1"
         />
         <Input
           id={id}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          aria-describedby={ariaDescribedBy}
           value={current}
           onChange={(e) => onChange(e.target.value)}
           onBlur={(e) => onCommit?.(e.target.value)}
@@ -290,6 +338,9 @@ export function ContextValueInput({
     return (
       <Textarea
         id={id}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         value={current}
         onChange={(e) => onChange(e.target.value)}
         onBlur={(e) => onCommit?.(e.target.value)}
@@ -307,6 +358,9 @@ export function ContextValueInput({
   return (
     <ProTextarea
       id={id}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
       value={current}
       onChange={(e) => onChange(e.target.value)}
       onBlur={(e) => onCommit?.(e.target.value)}
@@ -319,6 +373,8 @@ export function ContextValueInput({
       autoGrow
       disabled={disabled}
       enableTextStats={false}
+      auxiliaryControlsTabIndex={auxiliaryControlsTabIndex}
+      auxiliaryControlsLabel={displayName}
     />
   );
 }

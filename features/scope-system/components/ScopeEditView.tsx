@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowUpRight, ListChecks, Loader2, Trash2 } from "lucide-react";
@@ -61,6 +61,9 @@ export function ScopeEditView({
   scopeParam,
   canManage,
 }: ScopeEditViewProps) {
+  const generatedId = useId();
+  const nameId = `scope-edit-name-${generatedId}`;
+  const descriptionId = `scope-edit-description-${generatedId}`;
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -126,7 +129,8 @@ export function ScopeEditView({
   const color = resolveColor(scopeType);
   const hubHref = scopeHref(orgSlugOrId, scopeType, scope);
 
-  async function saveBasics() {
+  async function saveBasics(event?: React.FormEvent) {
+    event?.preventDefault();
     if (!scope) return;
     const trimmed = name.trim();
     if (!trimmed) {
@@ -218,41 +222,50 @@ export function ScopeEditView({
       ) : (
         <>
           {/* Basics */}
-          <Card className="p-6 space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Name</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{ fontSize: "16px" }}
-                disabled={savingBasics}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Description</Label>
-              <ProTextarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                minHeight={80}
-                maxHeight={600}
-                autoGrow
-                placeholder="Describe this scope (optional)"
-                disabled={savingBasics}
-                enableTextStats={false}
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button
-                onClick={saveBasics}
-                disabled={savingBasics || !name.trim()}
-                size="sm"
-              >
-                {savingBasics && (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                )}
-                Save
-              </Button>
-            </div>
+          <Card>
+            <form className="p-6 space-y-4" onSubmit={saveBasics}>
+              <div className="space-y-1.5">
+                <Label htmlFor={nameId} className="text-xs">
+                  Name
+                </Label>
+                <Input
+                  id={nameId}
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={{ fontSize: "16px" }}
+                  disabled={savingBasics}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={descriptionId} className="text-xs">
+                  Description
+                </Label>
+                <ProTextarea
+                  id={descriptionId}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  minHeight={80}
+                  maxHeight={600}
+                  autoGrow
+                  placeholder="Describe this scope (optional)"
+                  disabled={savingBasics}
+                  enableTextStats={false}
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  disabled={savingBasics || !name.trim()}
+                  size="sm"
+                >
+                  {savingBasics && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
+                  Save
+                </Button>
+              </div>
+            </form>
           </Card>
 
           {/* Advanced: slug, sort order, settings JSON (reused) */}

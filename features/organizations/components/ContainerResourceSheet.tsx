@@ -54,7 +54,9 @@ export function ContainerResourceSheet({
       const titleCol = entry.titleColumn ?? "id";
       try {
         const db = (
-          entry.schemaName ? supabase.schema(entry.schemaName as "files") : supabase
+          entry.schemaName
+            ? supabase.schema(entry.schemaName as "files")
+            : supabase
         ) as typeof supabase;
         let q = db
           .from(entry.table as never)
@@ -117,6 +119,7 @@ export function ContainerResourceSheet({
         }
         description={`${entry.labelPlural} associated with this ${column === "project_id" ? "project" : "task"}.`}
         expandButtonLabel={entry.labelPlural}
+        initialFocus
         position="right"
         defaultSize={34}
         contentClassName="flex min-h-0 flex-1 flex-col p-0"
@@ -125,6 +128,7 @@ export function ContainerResourceSheet({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              aria-label={`Search ${entry.labelPlural.toLowerCase()}`}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Search ${entry.labelPlural.toLowerCase()}…`}
@@ -167,23 +171,26 @@ export function ContainerResourceSheet({
                     </span>
                     {peekable && (
                       <button
+                        type="button"
                         onClick={() => setPeekId(item.id)}
-                        className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                         title="Peek"
+                        aria-label={`Peek at ${item.title}`}
                       >
                         <Eye className="h-3.5 w-3.5" />
                       </button>
                     )}
                     {href && (
-                      <button
-                        onClick={() =>
-                          window.open(href, "_blank", "noopener,noreferrer")
-                        }
-                        className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                         title="Open in new tab"
+                        aria-label={`Open ${item.title} in a new tab`}
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                      </button>
+                      </a>
                     )}
                   </li>
                 );

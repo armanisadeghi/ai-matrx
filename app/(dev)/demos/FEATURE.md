@@ -10,9 +10,9 @@ Filesystem scan at request time — no manual link lists.
 
 | Layer | Primitive | File |
 |---|---|---|
-| Folder index (menu page) | `RouteIndexPage` | `page.dev.tsx` or `page.tsx` |
+| Folder index (menu page) | `RouteIndexPage` + `scanRoutes()` | `page.dev.tsx` or `page.tsx` |
 | Child-page nav strip | `RouteHeaderData` | `layout.dev.tsx` |
-| Root `/demos` only | `scanRoutesShallow()` | `page.dev.tsx` (custom shell + legacy section) |
+| Root `/demos` | `RouteIndexPage` (recursive) | `page.dev.tsx` |
 
 ```tsx
 // index
@@ -28,4 +28,5 @@ Scanner: `@/utils/route-discovery` — finds `page.tsx` / `page.dev.tsx`, skips 
 
 ## Change log
 
+- 2026-07-15 — Root `/demos` uses recursive `RouteIndexPage`; removed legacy section and `/demo` redirects; `general` basePath → `/demos/general`.
 - 2026-07-03 — Doc added; route-discovery wired for agents, blocks, scopes, sync-demo, and nested test layouts.

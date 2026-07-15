@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Check,
@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
 import {
@@ -95,6 +96,15 @@ export function ScopeFieldInput({
   nameHref,
   headerSlot,
 }: ScopeFieldInputProps) {
+  const generatedId = useId();
+  const fieldId = `scope-value-${generatedId}`;
+  const labelId = `scope-value-label-${generatedId}`;
+  const descriptionId = row.description
+    ? `scope-value-description-${generatedId}`
+    : undefined;
+  const keyboardHintId = `scope-value-keyboard-hint-${generatedId}`;
+  const fieldGroupRef = useRef<HTMLDivElement>(null);
+  const advancedEditorButtonRef = useRef<HTMLButtonElement>(null);
   const hasCustom = !!row.custom_component;
   const initialValue: unknown = hasCustom
     ? rowToComponentValue(row)
@@ -114,9 +124,53 @@ export function ScopeFieldInput({
 
   // Keep the latest commit closure reachable from the debounce timer / unmount flush.
   const commitRef = useRef(commit);
-  commitRef.current = commit;
   const pendingRef = useRef<{ v: unknown } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function focusValueControl() {
+    const field = document.getElementById(fieldId);
+    const target = field?.matches("input, textarea, button, [role='combobox']")
+      ? field
+      : field?.querySelector<HTMLElement>(
+          "input, textarea, button, [role='combobox'], [tabindex='0']",
+        );
+    (target as HTMLElement | null)?.focus();
+  }
+
+  function handleCompositeKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const actions = Array.from(
+      fieldGroupRef.current?.querySelectorAll<HTMLElement>(
+        "button[tabindex='-1'], a[tabindex='-1']",
+      ) ?? [],
+    ).filter((element) => !element.hasAttribute("disabled"));
+    const actionIndex = actions.indexOf(event.target as HTMLElement);
+    if (event.key === "F6") {
+      event.preventDefault();
+      if (actionIndex >= 0) focusValueControl();
+      else actions[0]?.focus();
+      return;
+    }
+    if (actionIndex < 0) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      focusValueControl();
+      return;
+    }
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight")
+      nextIndex = (actionIndex + 1) % actions.length;
+    if (event.key === "ArrowLeft")
+      nextIndex = (actionIndex - 1 + actions.length) % actions.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = actions.length - 1;
+    if (nextIndex == null) return;
+    event.preventDefault();
+    actions[nextIndex]?.focus();
+  }
+
+  useEffect(() => {
+    commitRef.current = commit;
+  }, [commit]);
 
   const scheduleCommit = (v: unknown) => {
     pendingRef.current = { v };
@@ -152,40 +206,53 @@ export function ScopeFieldInput({
   // effect on every keystroke, wiping the value back to `initial`.
   useEffect(() => {
     if (isDirtyRef.current) return;
-    // Intentional store→input sync when not mid-edit; see the comment above.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(initialValue);
     // initialValue is recomputed each render; key it off the canonical string.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialKey]);
 
   return (
     <>
-      <div className="space-y-1.5">
+      <div
+        ref={fieldGroupRef}
+        className="space-y-1.5"
+        onKeyDown={handleCompositeKeyDown}
+      >
         <div className="flex items-center justify-between gap-2">
           <div className="inline-flex items-center gap-1">
             {nameHref ? (
               <Link
+                tabIndex={-1}
                 href={nameHref}
                 className="text-sm font-medium text-foreground hover:text-primary"
               >
-                {nameLabel ?? row.display_name}
+                <span id={labelId}>{nameLabel ?? row.display_name}</span>
               </Link>
             ) : (
-              <button
-                type="button"
-                onClick={() => setEditingItem(true)}
-                className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
-                title="Edit this context item"
-              >
-                {nameLabel ?? row.display_name}
-                <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
+              <>
+                <Label
+                  id={labelId}
+                  htmlFor={fieldId}
+                  className="text-sm font-medium text-foreground"
+                >
+                  {nameLabel ?? row.display_name}
+                </Label>
+                <button
+                  tabIndex={-1}
+                  type="button"
+                  onClick={() => setEditingItem(true)}
+                  className="rounded-sm text-muted-foreground opacity-60 transition-opacity hover:text-primary hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  aria-label={`Edit ${nameLabel ?? row.display_name} definition`}
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              </>
             )}
             {itemHref && (
               <Link
+                tabIndex={-1}
                 href={itemHref}
                 title="Open page"
+                aria-label={`Open ${nameLabel ?? row.display_name} page`}
                 className="text-muted-foreground hover:text-primary"
               >
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -199,12 +266,15 @@ export function ScopeFieldInput({
               hasValue={row.has_value || canonical(value).length > 0}
             />
             <Button
+              ref={advancedEditorButtonRef}
               type="button"
               variant="ghost"
               size="icon"
               onClick={() => setEditingValue(true)}
               title="Open advanced value editor"
-              aria-label="Open advanced value editor"
+              aria-label={`Open advanced value editor for ${nameLabel ?? row.display_name}`}
+              tabIndex={-1}
+              aria-keyshortcuts="F6"
               className="h-6 w-6"
             >
               <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -212,7 +282,11 @@ export function ScopeFieldInput({
           </div>
         </div>
         <ContextValueInput
-          id={`field-${row.item_id}`}
+          id={fieldId}
+          aria-labelledby={labelId}
+          aria-describedby={[descriptionId, keyboardHintId]
+            .filter(Boolean)
+            .join(" ")}
           valueType={row.value_type}
           customComponent={row.custom_component}
           value={value}
@@ -234,12 +308,19 @@ export function ScopeFieldInput({
             row.value_type,
             "Type a value, leave to save",
           )}
+          auxiliaryControlsTabIndex={-1}
           minHeight={80}
           maxHeight={600}
         />
         {row.description && (
-          <p className="text-xs text-muted-foreground">{row.description}</p>
+          <p id={descriptionId} className="text-xs text-muted-foreground">
+            {row.description}
+          </p>
         )}
+        <span id={keyboardHintId} className="sr-only">
+          Press F6 for field actions. Use Left and Right Arrow to move between
+          actions, then F6 or Escape to return to the value.
+        </span>
       </div>
 
       <EditContextItemSheet
@@ -249,7 +330,14 @@ export function ScopeFieldInput({
       />
       <EditScopeValueSheet
         open={editingValue}
-        onOpenChange={setEditingValue}
+        onOpenChange={(nextOpen) => {
+          setEditingValue(nextOpen);
+          if (!nextOpen) {
+            requestAnimationFrame(() =>
+              advancedEditorButtonRef.current?.focus(),
+            );
+          }
+        }}
         scopeId={scopeId}
         itemId={row.item_id}
       />
@@ -266,7 +354,10 @@ function FieldStatus({
 }) {
   if (status === "saving") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+      <span
+        aria-live="polite"
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+      >
         <Loader2 className="h-3 w-3 animate-spin" />
         saving
       </span>
@@ -274,7 +365,10 @@ function FieldStatus({
   }
   if (status === "saved") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+      <span
+        aria-live="polite"
+        className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400"
+      >
         <Check className="h-3 w-3" />
         saved
       </span>
@@ -282,7 +376,10 @@ function FieldStatus({
   }
   if (status === "error") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-rose-600 dark:text-rose-400">
+      <span
+        role="alert"
+        className="inline-flex items-center gap-1 text-xs text-rose-600 dark:text-rose-400"
+      >
         <AlertCircle className="h-3 w-3" />
         not saved
       </span>

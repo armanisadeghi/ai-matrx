@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Save, X, Loader2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,9 +44,13 @@ export function GeneralSettings({
 }: GeneralSettingsProps) {
   const dispatchThunk = useDispatchThunk();
   const refreshLayoutOrganization = useOrgSettingsLayoutRefresh();
+  const fieldId = React.useId();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [logoModalOpen, setLogoModalOpen] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  const wasEditingRef = useRef(false);
 
   // Form state
   const [name, setName] = useState(organization.name);
@@ -68,6 +72,15 @@ export function GeneralSettings({
     setLogoFileId(organization.logoFileId || "");
     setIsEditing(false);
   }, [organization]);
+
+  useEffect(() => {
+    if (isEditing) {
+      nameInputRef.current?.focus();
+    } else if (wasEditingRef.current) {
+      editButtonRef.current?.focus();
+    }
+    wasEditingRef.current = isEditing;
+  }, [isEditing]);
 
   // Check if form has changes
   const hasChanges =
@@ -150,25 +163,43 @@ export function GeneralSettings({
   };
 
   return (
-    <div className="space-y-5">
+    <form
+      className="space-y-5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void handleSave();
+      }}
+    >
       {/* Form Fields */}
       <div className="space-y-5">
         {/* Organization Name */}
         <div className="space-y-2">
-          <Label htmlFor="name">Organization Name *</Label>
+          <Label htmlFor={isEditing ? `${fieldId}-name` : undefined}>
+            Organization Name *
+          </Label>
           {isEditing ? (
             <>
               <Input
-                id="name"
+                ref={nameInputRef}
+                id={`${fieldId}-name`}
+                aria-invalid={!nameValidation.valid}
+                aria-describedby={
+                  !nameValidation.valid ? `${fieldId}-name-error` : undefined
+                }
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Organization name"
+                required
+                autoComplete="organization"
                 maxLength={50}
                 disabled={isSaving}
                 className={!nameValidation.valid ? "border-red-500" : ""}
               />
               {!nameValidation.valid && (
-                <p className="text-xs text-red-600 dark:text-red-400">
+                <p
+                  id={`${fieldId}-name-error`}
+                  className="text-xs text-red-600 dark:text-red-400"
+                >
                   {nameValidation.error}
                 </p>
               )}
@@ -183,7 +214,7 @@ export function GeneralSettings({
 
         {/* Slug (Read-only) */}
         <div className="space-y-2">
-          <Label htmlFor="slug">Organization URL</Label>
+          <Label>Organization URL</Label>
           <div className="flex items-center gap-2 flex-wrap">
             <a
               href={`https://aimatrx.com/organizations/${organization.slug}`}
@@ -195,6 +226,7 @@ export function GeneralSettings({
               <ExternalLink className="h-3 w-3" />
             </a>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={handleCopyUrl}
@@ -214,11 +246,13 @@ export function GeneralSettings({
 
         {/* Description */}
         <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
+          <Label htmlFor={isEditing ? `${fieldId}-description` : undefined}>
+            Description
+          </Label>
           {isEditing ? (
             <>
               <Textarea
-                id="description"
+                id={`${fieldId}-description`}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="What does your organization do?"
@@ -243,14 +277,17 @@ export function GeneralSettings({
 
         {/* Website */}
         <div className="space-y-2">
-          <Label htmlFor="website">Website</Label>
+          <Label htmlFor={isEditing ? `${fieldId}-website` : undefined}>
+            Website
+          </Label>
           {isEditing ? (
             <Input
-              id="website"
+              id={`${fieldId}-website`}
               type="url"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://example.com"
+              autoComplete="url"
               disabled={isSaving}
             />
           ) : (
@@ -404,8 +441,7 @@ export function GeneralSettings({
                   Cancel
                 </Button>
                 <Button
-                  type="button"
-                  onClick={handleSave}
+                  type="submit"
                   disabled={!hasChanges || !isFormValid || isSaving}
                   size="sm"
                   className="bg-blue-500 hover:bg-blue-600"
@@ -425,6 +461,8 @@ export function GeneralSettings({
               </>
             ) : (
               <Button
+                ref={editButtonRef}
+                type="button"
                 onClick={() => setIsEditing(true)}
                 variant="outline"
                 size="sm"
@@ -435,6 +473,6 @@ export function GeneralSettings({
           </div>
         )}
       </div>
-    </div>
+    </form>
   );
 }

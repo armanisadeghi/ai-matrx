@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -29,6 +29,11 @@ interface ScopeAdvancedSectionProps {
  * path (name / description / values) stays uncluttered.
  */
 export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
+  const generatedId = useId();
+  const panelId = `scope-advanced-${generatedId}`;
+  const slugId = `scope-slug-${generatedId}`;
+  const sortOrderId = `scope-sort-order-${generatedId}`;
+  const settingsId = `scope-settings-${generatedId}`;
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -41,8 +46,12 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
     JSON.stringify(scope.settings ?? {}, null, 2),
   );
   const [jsonError, setJsonError] = useState<string | null>(null);
+  const jsonErrorId = jsonError
+    ? `scope-settings-error-${generatedId}`
+    : undefined;
 
-  async function handleSave() {
+  async function handleSave(event?: React.FormEvent) {
+    event?.preventDefault();
     const trimmedSlug = slug.trim();
     if (trimmedSlug && !isValidSlug(trimmedSlug)) {
       toast.error("URL slug must be lowercase letters, numbers, and hyphens");
@@ -87,6 +96,8 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
         className="w-full flex items-center gap-2 px-6 py-4 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
         {open ? (
@@ -99,11 +110,18 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
       </button>
 
       {open && (
-        <div className="px-6 pb-6 space-y-5 border-t border-border pt-5">
+        <form
+          id={panelId}
+          className="px-6 pb-6 space-y-5 border-t border-border pt-5"
+          onSubmit={handleSave}
+        >
           <div className="space-y-1.5">
-            <Label className="text-xs">URL slug</Label>
+            <Label htmlFor={slugId} className="text-xs">
+              URL slug
+            </Label>
             <div className="flex gap-2">
               <Input
+                id={slugId}
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder={toSlug(scope.name) || "url-slug"}
@@ -128,8 +146,11 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Display order</Label>
+            <Label htmlFor={sortOrderId} className="text-xs">
+              Display order
+            </Label>
             <Input
+              id={sortOrderId}
               type="number"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
@@ -145,8 +166,12 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Settings (JSON)</Label>
+            <Label htmlFor={settingsId} className="text-xs">
+              Settings (JSON)
+            </Label>
             <ProTextarea
+              id={settingsId}
+              aria-describedby={jsonErrorId}
               value={settingsText}
               onChange={(e) => setSettingsText(e.target.value)}
               minHeight={140}
@@ -158,7 +183,11 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
               enableTextStats={false}
             />
             {jsonError && (
-              <p className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1">
+              <p
+                id={jsonErrorId}
+                role="alert"
+                className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1"
+              >
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 {jsonError}
               </p>
@@ -170,12 +199,12 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
           </div>
 
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={busy} size="sm">
+            <Button type="submit" disabled={busy} size="sm">
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save advanced settings
             </Button>
           </div>
-        </div>
+        </form>
       )}
     </Card>
   );

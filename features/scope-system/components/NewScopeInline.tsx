@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Plus, X, Info, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,11 +66,10 @@ const newRow = (): NewItemRow => ({
  * set_scope_context_value for each new (name, value) pair. New items
  * propagate to every other scope of the type.
  *
- * IMPORTANT: every value editor renders through `ContextValueInput`, which
- * uses `ProTextarea` for text — never a plain `Input`. Inputs were once
- * silently swapped to Textareas above a char-count threshold, which unmounts
- * the focused field mid-keystroke. That bug caused the "I can't even type
- * into the fields" feedback.
+ * IMPORTANT: every value editor renders through `ContextValueInput` in its
+ * stable compact mode. Text values stay textareas for the full lifetime of the
+ * field — they never swap element types mid-keystroke — while the dense create
+ * form avoids inserting rich-editor toolbar controls between every value.
  */
 export function NewScopeInline({
   orgId,
@@ -82,6 +81,14 @@ export function NewScopeInline({
   onCreated,
   onCancel,
 }: NewScopeInlineProps) {
+  const generatedId = useId();
+  const nameId = `new-scope-name-${generatedId}`;
+  const slugId = `new-scope-slug-${generatedId}`;
+  const descriptionId = `new-scope-description-${generatedId}`;
+  const addItemButtonRef = useRef<HTMLButtonElement>(null);
+  const newItemNameRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const pendingFocusRowRef = useRef<string | null>(null);
+  const editItemButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const dispatch = useAppDispatch();
   const items = useAppSelector((s) => selectItemsByType(s, typeId));
   const itemsLoaded = useAppSelector((s) =>
@@ -105,6 +112,13 @@ export function NewScopeInline({
     if (!itemsLoaded) dispatch(listScopeTypeItems(typeId));
   }, [dispatch, typeId, itemsLoaded]);
 
+  useEffect(() => {
+    const rowId = pendingFocusRowRef.current;
+    if (!rowId) return;
+    newItemNameRefs.current.get(rowId)?.focus();
+    pendingFocusRowRef.current = null;
+  }, [newItems]);
+
   function setExistingValue(itemId: string, value: unknown) {
     setExistingValues((prev) => ({ ...prev, [itemId]: value }));
   }
@@ -116,10 +130,13 @@ export function NewScopeInline({
   }
 
   function addNewItemRow() {
-    setNewItems((rows) => [...rows, newRow()]);
+    const row = newRow();
+    pendingFocusRowRef.current = row.rowId;
+    setNewItems((rows) => [...rows, row]);
   }
   function removeNewItemRow(rowId: string) {
     setNewItems((rows) => rows.filter((r) => r.rowId !== rowId));
+    requestAnimationFrame(() => addItemButtonRef.current?.focus());
   }
   function updateNewItemRow(rowId: string, patch: Partial<NewItemRow>) {
     setNewItems((rows) =>
@@ -248,8 +265,11 @@ export function NewScopeInline({
       >
         {/* Core: name + description (stacked) */}
         <div className="space-y-1.5">
-          <Label className="text-xs">{labelSingular} name</Label>
+          <Label htmlFor={nameId} className="text-xs">
+            {labelSingular} name
+          </Label>
           <Input
+            id={nameId}
             autoFocus
             placeholder={`e.g. ${labelSingular}…`}
             value={name}
@@ -260,9 +280,12 @@ export function NewScopeInline({
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">URL slug</Label>
+          <Label htmlFor={slugId} className="text-xs">
+            URL slug
+          </Label>
           <div className="flex gap-2">
             <Input
+              id={slugId}
               value={slug}
               onChange={(e) => {
                 setSlugTouched(true);
@@ -304,8 +327,11 @@ export function NewScopeInline({
           </p>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Description (optional)</Label>
+          <Label htmlFor={descriptionId} className="text-xs">
+            Description (optional)
+          </Label>
           <Input
+            id={descriptionId}
             placeholder="Short note"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -314,24 +340,39 @@ export function NewScopeInline({
           />
         </div>
 
-        {submitActions}
-
         {/* Existing context items — one ContextValueInput per item */}
         {items.length > 0 && (
           <div className="space-y-4 pt-2 border-t border-border">
-            <Label className="text-xs">Context items</Label>
+            <p className="text-xs font-medium">Context items</p>
             {items.map((item) => (
               <div key={item.id} className="space-y-1.5">
-                <button
-                  type="button"
-                  onClick={() => setEditingItemId(item.id)}
-                  className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
-                  title="Edit this context item"
-                  disabled={busy}
-                >
-                  {item.display_name}
-                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
+                <div className="inline-flex items-center gap-1.5">
+                  <Label
+                    id={`new-scope-label-${item.id}`}
+                    htmlFor={
+                      item.value_type === "reference"
+                        ? undefined
+                        : `new-scope-val-${item.id}`
+                    }
+                    className="text-sm font-medium text-foreground"
+                  >
+                    {item.display_name}
+                  </Label>
+                  <button
+                    ref={(element) => {
+                      if (element)
+                        editItemButtonRefs.current.set(item.id, element);
+                      else editItemButtonRefs.current.delete(item.id);
+                    }}
+                    type="button"
+                    onClick={() => setEditingItemId(item.id)}
+                    className="rounded-sm text-muted-foreground opacity-60 transition-opacity hover:text-primary hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    aria-label={`Edit ${item.display_name} definition`}
+                    disabled={busy}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
                 {item.value_type === "reference" ? (
                   <p className="text-xs text-muted-foreground">
                     Reference fields are set from the {labelSingular}
@@ -340,6 +381,7 @@ export function NewScopeInline({
                 ) : (
                   <ContextValueInput
                     id={`new-scope-val-${item.id}`}
+                    aria-labelledby={`new-scope-label-${item.id}`}
                     valueType={item.value_type}
                     customComponent={item.custom_component}
                     value={existingValues[item.id] ?? ""}
@@ -347,6 +389,7 @@ export function NewScopeInline({
                     displayName={item.display_name}
                     placeholder="Leave blank to fill later"
                     disabled={busy}
+                    compact
                     minHeight={80}
                     maxHeight={600}
                   />
@@ -376,6 +419,12 @@ export function NewScopeInline({
               <div key={row.rowId} className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Input
+                    ref={(element) => {
+                      if (element)
+                        newItemNameRefs.current.set(row.rowId, element);
+                      else newItemNameRefs.current.delete(row.rowId);
+                    }}
+                    aria-label="New context item name"
                     placeholder="New context item name"
                     value={row.display_name}
                     onChange={(e) =>
@@ -399,6 +448,8 @@ export function NewScopeInline({
                   </Button>
                 </div>
                 <ContextValueInput
+                  id={`new-context-item-value-${row.rowId}`}
+                  aria-label={`Value for ${row.display_name || "new context item"}`}
                   valueType="string"
                   value={row.value}
                   onChange={(v) =>
@@ -406,6 +457,7 @@ export function NewScopeInline({
                   }
                   placeholder="Value for this one (optional)"
                   disabled={busy}
+                  compact
                   minHeight={80}
                   maxHeight={600}
                 />
@@ -416,6 +468,7 @@ export function NewScopeInline({
 
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
           <Button
+            ref={addItemButtonRef}
             type="button"
             variant="ghost"
             size="sm"
@@ -432,7 +485,15 @@ export function NewScopeInline({
 
       <EditContextItemSheet
         open={!!editingItemId}
-        onOpenChange={(o) => !o && setEditingItemId(null)}
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) return;
+          const previousItemId = editingItemId;
+          setEditingItemId(null);
+          requestAnimationFrame(() => {
+            if (previousItemId)
+              editItemButtonRefs.current.get(previousItemId)?.focus();
+          });
+        }}
         itemId={editingItemId}
       />
     </>

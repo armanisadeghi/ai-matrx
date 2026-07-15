@@ -89,6 +89,7 @@ export function ContributeResourceSheet({
           : "Choose what kind of thing you want to share, then pick the items."
       }
       expandButtonLabel="Share with team"
+      initialFocus
       position="right"
       defaultSize={34}
       contentClassName="flex min-h-0 flex-1 flex-col p-0"
@@ -136,6 +137,7 @@ export function ContributeResourceSheet({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                aria-label={`Search your ${selected.labelPlural.toLowerCase()}`}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Search your ${selected.labelPlural.toLowerCase()}…`}
@@ -227,6 +229,8 @@ function KindButton({
   const Icon = entry.icon;
   return (
     <button
+      type="button"
+      data-panel-initial-focus
       onClick={onClick}
       className="flex items-center gap-2.5 p-3 rounded-lg border border-border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all text-left"
     >

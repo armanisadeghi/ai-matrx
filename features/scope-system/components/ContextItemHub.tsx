@@ -178,6 +178,7 @@ export function ContextItemHub({
                 size="sm"
                 onClick={() => setEditing(true)}
                 title="Quick edit"
+                aria-label={`Quick edit ${item.display_name}`}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </Button>

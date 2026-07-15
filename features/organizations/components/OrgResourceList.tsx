@@ -46,8 +46,7 @@ export interface OrgResourceListProps {
   tableName: string;
   selectColumns: string;
   ownedQuery:
-    | ((orgId: string) => Promise<Array<Record<string, unknown>>>)
-    | null;
+    ((orgId: string) => Promise<Array<Record<string, unknown>>>) | null;
   mapRow: (
     row: Record<string, unknown>,
     source: "owned" | "shared",
@@ -102,7 +101,9 @@ export function OrgResourceList({
           const entry = getShareableResource(resourceType);
           const physicalTable = entry?.tableName ?? tableName;
           const base = (
-            entry?.schemaName ? supabase.schema(entry.schemaName as never) : supabase
+            entry?.schemaName
+              ? supabase.schema(entry.schemaName as never)
+              : supabase
           ) as ReturnType<typeof supabase.schema>;
           const res = await base
             .from(physicalTable as never)
@@ -111,7 +112,9 @@ export function OrgResourceList({
           // MATRX-EXCEPTION: physical table + projection are resolved from
           // the shareable-resource registry at runtime (any resource type),
           // so the row shape cannot be a compile-time DbRpcRow guard.
-          sharedRows = (res.data ?? []) as unknown as Array<Record<string, unknown>>;
+          sharedRows = (res.data ?? []) as unknown as Array<
+            Record<string, unknown>
+          >;
         }
 
         if (cancelled) return;
@@ -167,6 +170,7 @@ export function OrgResourceList({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {items.map((item) => (
         <button
+          type="button"
           key={item.id}
           onClick={() => router.push(getHref(item.id))}
           className="text-left p-4 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all cursor-pointer flex flex-col gap-2 min-h-[6rem]"

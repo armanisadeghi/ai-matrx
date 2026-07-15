@@ -228,8 +228,7 @@ export function ContextItemAddForm({
       // it to value_text and write_context_value validates it against the item's
       // just-saved allowed_reference_types.
       const hasValue =
-        value != null &&
-        (typeof value !== "string" || value.trim() !== "");
+        value != null && (typeof value !== "string" || value.trim() !== "");
       if (scopeId && hasValue) {
         await dispatch(
           setScopeContextValue({
@@ -368,10 +367,7 @@ export function ContextItemAddForm({
         </Field>
 
         <Field label="Tags" htmlFor={ids.tags} optional>
-          <div
-            id={ids.tags}
-            className="flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-0.5"
-          >
+          <div className="flex min-h-7 flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-0.5">
             {tags.map((t) => (
               <span
                 key={t}
@@ -390,6 +386,7 @@ export function ContextItemAddForm({
               </span>
             ))}
             <input
+              id={ids.tags}
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => {

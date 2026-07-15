@@ -72,6 +72,7 @@ export function OrgResourceRoleSection({
                 className={`absolute inset-x-0 top-0 h-0.5 ${meta.accentBar} opacity-60`}
               />
               <button
+                type="button"
                 onClick={() => onOpen(entry)}
                 className="w-full text-left p-3.5 flex flex-col gap-2 cursor-pointer"
                 title={entry.description}
@@ -104,12 +105,14 @@ export function OrgResourceRoleSection({
 
               {contributable && onContribute && (
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onContribute(entry);
                   }}
-                  className="absolute bottom-2 right-2 h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+                  className="absolute bottom-2 right-2 h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-accent hover:text-foreground transition-all"
                   title={`Share your ${entry.labelPlural.toLowerCase()} with the team`}
+                  aria-label={`Share your ${entry.labelPlural.toLowerCase()} with the team`}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>

@@ -122,6 +122,7 @@ export function OrgHomeScopeSection({
           <Button
             variant="ghost"
             size="sm"
+            aria-label={`Open ${scopeType.label_plural}`}
             onClick={() =>
               router.push(
                 `/organizations/${orgSlugOrId}/scopes/${scopeType.id}`,
@@ -217,6 +218,7 @@ export function OrgHomeScopeSection({
                     key={scope.id}
                     scopeId={scope.id}
                     scopeName={scope.name}
+                    href={`/organizations/${orgSlugOrId}/scopes/${scopeType.id}/${scope.id}`}
                     nameColorClass={color.fg}
                     columns={columns}
                     overflowCount={overflowCount}
@@ -313,17 +315,8 @@ function ContextItemsReadyPreview({
             {ghostRows.map((label) => (
               <TableRow
                 key={label}
-                role="button"
-                tabIndex={0}
-                onClick={onAdd}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onAdd();
-                  }
-                }}
-                className="cursor-pointer opacity-45 hover:opacity-70 hover:bg-accent/30 transition-[opacity,background-color]"
-                aria-label={`Add your first ${singular}`}
+                aria-hidden="true"
+                className="opacity-45"
               >
                 <TableCell className="px-2 font-medium max-w-0">
                   <span className={`truncate block italic ${nameColorClass}`}>
@@ -368,6 +361,7 @@ function ContextItemsReadyPreview({
 interface ScopeRowProps {
   scopeId: string;
   scopeName: string;
+  href: string;
   nameColorClass: string;
   columns: { id: string; display_name: string }[];
   overflowCount: number;
@@ -377,6 +371,7 @@ interface ScopeRowProps {
 function ScopeRow({
   scopeId,
   scopeName,
+  href,
   nameColorClass,
   columns,
   overflowCount,
@@ -395,12 +390,16 @@ function ScopeRow({
         <TooltipProvider delayDuration={400}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="flex items-center gap-1.5 w-full min-w-0">
+              <Link
+                href={href}
+                onClick={(event) => event.stopPropagation()}
+                className="flex w-full min-w-0 items-center gap-1.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <span className={`truncate font-semibold ${nameColorClass}`}>
                   {scopeName}
                 </span>
-                <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              </span>
+                <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0" />
+              </Link>
             </TooltipTrigger>
             <TooltipContent side="top">
               <p className="text-xs">{scopeName}</p>

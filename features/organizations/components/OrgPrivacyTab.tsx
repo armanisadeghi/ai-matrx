@@ -15,7 +15,7 @@
  * handles memoization — no manual `useMemo` / `useCallback`.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Brain,
@@ -79,13 +79,19 @@ function percentToneClass(percent: number): string {
   return "text-muted-foreground";
 }
 
-export function OrgPrivacyTab({
-  organizationId,
-  canEdit,
-}: OrgPrivacyTabProps) {
+export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
   const pref = useOrgAutoRagPreference(organizationId);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState<string>("");
+  const editBudgetButtonRef = useRef<HTMLButtonElement>(null);
+  const wasEditingBudgetRef = useRef(false);
+
+  useEffect(() => {
+    if (!editingBudget && wasEditingBudgetRef.current) {
+      editBudgetButtonRef.current?.focus();
+    }
+    wasEditingBudgetRef.current = editingBudget;
+  }, [editingBudget]);
 
   const handleToggle = (next: boolean) => {
     void pref
@@ -170,10 +176,10 @@ export function OrgPrivacyTab({
               Auto-ingest content for the knowledge graph
             </h2>
             <p className="text-sm text-muted-foreground">
-              When on, notes, transcripts, chat messages, and uploaded files
-              are automatically processed for the knowledge graph and
-              surfaced as scope-association suggestions. Suggestions are
-              never applied automatically — every match is reviewed.
+              When on, notes, transcripts, chat messages, and uploaded files are
+              automatically processed for the knowledge graph and surfaced as
+              scope-association suggestions. Suggestions are never applied
+              automatically — every match is reviewed.
             </p>
           </div>
         </div>
@@ -233,7 +239,10 @@ export function OrgPrivacyTab({
             <div className="flex items-start gap-2 min-w-0">
               <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
               <div className="space-y-0.5 min-w-0">
-                <Label htmlFor="org-suggestion-sweeps-switch" className="text-sm">
+                <Label
+                  htmlFor="org-suggestion-sweeps-switch"
+                  className="text-sm"
+                >
                   Suggest scope values from existing content
                 </Label>
                 <p className="text-xs text-muted-foreground">
@@ -268,6 +277,7 @@ export function OrgPrivacyTab({
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted-foreground">$</span>
                   <Input
+                    aria-label="Daily budget in US dollars"
                     type="number"
                     min={0}
                     step="0.01"
@@ -319,6 +329,7 @@ export function OrgPrivacyTab({
                   </span>
                   {canEdit && (
                     <Button
+                      ref={editBudgetButtonRef}
                       size="sm"
                       variant="ghost"
                       onClick={handleStartEditingBudget}

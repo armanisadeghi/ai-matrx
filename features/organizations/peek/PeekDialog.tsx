@@ -66,13 +66,11 @@ export function PeekDialog({
 
         {href && (
           <DialogFooter className="px-5 py-3 border-t border-border">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(href, "_blank", "noopener,noreferrer")}
-            >
-              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-              New tab
+            <Button asChild variant="outline" size="sm">
+              <a href={href} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                New tab
+              </a>
             </Button>
             <Button
               size="sm"

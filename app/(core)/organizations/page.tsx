@@ -129,11 +129,7 @@ function OrgCard({
       <div className="p-5 flex flex-col gap-4 flex-1">
         {/* Header */}
         <div className="flex items-start gap-3.5">
-          <button
-            onClick={open}
-            className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-muted flex items-center justify-center border border-border"
-            title={`Open ${org.name}`}
-          >
+          <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-muted flex items-center justify-center border border-border">
             <InlineMediaRef
               ref={org.logoUrl ?? null}
               size="fill"
@@ -148,16 +144,9 @@ function OrgCard({
               }
               alt={org.name}
             />
-          </button>
+          </div>
           <div className="min-w-0 flex-1">
-            <button
-              onClick={open}
-              className="text-left group/title block max-w-full"
-            >
-              <h3 className="font-semibold text-lg truncate group-hover/title:text-primary transition-colors">
-                {org.name}
-              </h3>
-            </button>
+            <h3 className="font-semibold text-lg truncate">{org.name}</h3>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <Badge
                 variant="outline"
@@ -170,7 +159,7 @@ function OrgCard({
                 /{org.slug}
               </span>
               {orgSuggestions.length > 0 && (
-                <span onClick={(e) => e.stopPropagation()}>
+                <span>
                   <KgSuggestionHint
                     variant="badge"
                     rows={orgSuggestions}
@@ -334,6 +323,7 @@ export default function OrganizationsPage() {
               <div className="relative flex items-center gap-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  aria-label="Search organizations"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search organizations…"
@@ -354,64 +344,72 @@ export default function OrganizationsPage() {
           </div>
 
           {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center">
-              <Loader2 className="h-7 w-7 animate-spin text-primary mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                Loading organizations…
-              </p>
-            </div>
-          </div>
-        ) : organizations.length === 0 ? (
-          <Card className="p-12 text-center">
-            <div className="max-w-xs mx-auto">
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <Building2 className="h-7 w-7 text-muted-foreground" />
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <Loader2 className="h-7 w-7 animate-spin text-primary mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  Loading organizations…
+                </p>
               </div>
-              <h3 className="font-semibold mb-1">No organizations yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Create a team to collaborate, share agents, and build shared
-                knowledge.
-              </p>
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4 mr-1.5" />
-                Create organization
-              </Button>
             </div>
-          </Card>
-        ) : filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">
-            No organizations match “{query}”.
-          </p>
-        ) : (
-          <>
-            {personal.length > 0 && (
-              <section>
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Personal
-                </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {personal.map((org) => (
-                    <OrgCard key={org.id} org={org} suggestions={suggestions} />
-                  ))}
+          ) : organizations.length === 0 ? (
+            <Card className="p-12 text-center">
+              <div className="max-w-xs mx-auto">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Building2 className="h-7 w-7 text-muted-foreground" />
                 </div>
-              </section>
-            )}
+                <h3 className="font-semibold mb-1">No organizations yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create a team to collaborate, share agents, and build shared
+                  knowledge.
+                </p>
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Create organization
+                </Button>
+              </div>
+            </Card>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-12">
+              No organizations match “{query}”.
+            </p>
+          ) : (
+            <>
+              {personal.length > 0 && (
+                <section>
+                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    Personal
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {personal.map((org) => (
+                      <OrgCard
+                        key={org.id}
+                        org={org}
+                        suggestions={suggestions}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
 
-            {teams.length > 0 && (
-              <section>
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Teams
-                </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {teams.map((org) => (
-                    <OrgCard key={org.id} org={org} suggestions={suggestions} />
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
-        )}
+              {teams.length > 0 && (
+                <section>
+                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    Teams
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {teams.map((org) => (
+                      <OrgCard
+                        key={org.id}
+                        org={org}
+                        suggestions={suggestions}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
+          )}
         </div>
       </div>
 

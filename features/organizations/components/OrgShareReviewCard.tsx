@@ -12,7 +12,15 @@
  */
 
 import React from "react";
-import { Loader2, ShieldCheck, ExternalLink, X, RotateCcw, Check, Clock } from "lucide-react";
+import {
+  Loader2,
+  ShieldCheck,
+  ExternalLink,
+  X,
+  RotateCcw,
+  Check,
+  Clock,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -27,7 +35,10 @@ import {
   type OrgShareStatus,
 } from "@/utils/permissions/orgModeration";
 import type { OrganizationMemberWithUser } from "../types";
-import { ORG_RESOURCE_CATALOGUE, type OrgResourceEntry } from "../resource-catalogue";
+import {
+  ORG_RESOURCE_CATALOGUE,
+  type OrgResourceEntry,
+} from "../resource-catalogue";
 
 interface OrgShareReviewCardProps {
   orgId: string;
@@ -120,7 +131,9 @@ export function OrgShareReviewCard({
           // shareable-resource registry at runtime (any cardable resource
           // type), so the row shape cannot be a compile-time DbRpcRow guard —
           // narrowed defensively below instead of trusted structurally.
-          const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+          const rows = (data ?? []) as unknown as Array<
+            Record<string, unknown>
+          >;
           for (const row of rows) {
             map.set(String(row.id), String(row[titleCol] ?? "").trim());
           }
@@ -222,21 +235,28 @@ export function OrgShareReviewCard({
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium truncate" title={grant.title}>
+                    <span
+                      className="text-sm font-medium truncate"
+                      title={grant.title}
+                    >
                       {grant.title}
                     </span>
                     {href && (
-                      <button
-                        onClick={() => window.open(href, "_blank", "noopener,noreferrer")}
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-foreground shrink-0"
                         title="Open in new tab"
+                        aria-label={`Open ${grant.title} in a new tab`}
                       >
                         <ExternalLink className="h-3 w-3" />
-                      </button>
+                      </a>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">
-                    {grant.entry?.label ?? "Item"} · shared by {memberName(grant.sharedBy)}
+                    {grant.entry?.label ?? "Item"} · shared by{" "}
+                    {memberName(grant.sharedBy)}
                     {grant.createdAt &&
                       ` · ${formatDistanceToNow(new Date(grant.createdAt), { addSuffix: true })}`}
                   </p>
@@ -244,7 +264,10 @@ export function OrgShareReviewCard({
 
                 {rejected ? (
                   <>
-                    <Badge variant="outline" className="text-[10px] shrink-0 text-red-600 dark:text-red-400 border-red-300 dark:border-red-800">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] shrink-0 text-red-600 dark:text-red-400 border-red-300 dark:border-red-800"
+                    >
                       Rejected
                     </Badge>
                     {isAdmin && (
@@ -268,7 +291,10 @@ export function OrgShareReviewCard({
                   </>
                 ) : grant.status === "pending" ? (
                   <>
-                    <Badge variant="outline" className="text-[10px] shrink-0 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 gap-1">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] shrink-0 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 gap-1"
+                    >
                       <Clock className="h-3 w-3" />
                       Pending
                     </Badge>
@@ -305,7 +331,10 @@ export function OrgShareReviewCard({
                   </>
                 ) : (
                   <>
-                    <Badge variant="secondary" className="text-[10px] shrink-0 gap-1">
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] shrink-0 gap-1"
+                    >
                       <Check className="h-3 w-3" />
                       Shared
                     </Badge>

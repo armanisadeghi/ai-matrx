@@ -16,9 +16,9 @@
  *   toolbar mic streams into this same controlled value).
  * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and
  *   agent actions (Clean up, Help with this…, Custom Agent). It floats over the
- *   text (no reserved right gutter) and only appears while the mouse is over
- *   the field; it never shows from focus alone, so it stays out of the way
- *   while typing.
+ *   text (no reserved right gutter). Pointer users reveal it on hover; keyboard
+ *   users reveal it with focus-within so its mic/menu buttons are never
+ *   invisible tab stops.
  * - **Agent actions** — each runs an agent over the current text, streams the
  *   result into a popover, and replaces the field on Apply (never auto-mutates):
  *   - **Clean up** — ON by default (`enableCleanup={false}` to hide). Default
@@ -259,6 +259,10 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * form-style flows (e.g. tab through variables, then land in the composer).
    */
   onEnterKey?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  /** Override sequential focus for mic/menu controls in dense composite fields. */
+  auxiliaryControlsTabIndex?: number;
+  /** Suffix used to distinguish repeated auxiliary controls in dense forms. */
+  auxiliaryControlsLabel?: string;
   /**
    * Floating label text (dense-form variant). When set, the label animates
    * into the border on focus or value, and the `placeholder` prop is
@@ -313,6 +317,8 @@ export const ProTextarea = React.forwardRef<
       submitOnCmdEnter,
       submitOnEnter = false,
       onEnterKey,
+      auxiliaryControlsTabIndex,
+      auxiliaryControlsLabel,
       floatingLabel,
       id: idProp,
       placeholder,
@@ -354,12 +360,6 @@ export const ProTextarea = React.forwardRef<
       helpAgentId,
       customAgentId,
     });
-    agentActionContext.current = {
-      cleanupAgentId,
-      cleanupSurfaceAgentId,
-      helpAgentId,
-      customAgentId,
-    };
     const agentContextByAction = useRef<
       Record<ProTextareaAgentActionId, SessionContextItem[]>
     >({
@@ -367,11 +367,27 @@ export const ProTextarea = React.forwardRef<
       help: helpContextItems ?? cleanupContextItems ?? [],
       customAgent: customAgentContextItems ?? cleanupContextItems ?? [],
     });
-    agentContextByAction.current = {
-      cleanup: cleanupContextItems ?? [],
-      help: helpContextItems ?? cleanupContextItems ?? [],
-      customAgent: customAgentContextItems ?? cleanupContextItems ?? [],
-    };
+    useEffect(() => {
+      agentActionContext.current = {
+        cleanupAgentId,
+        cleanupSurfaceAgentId,
+        helpAgentId,
+        customAgentId,
+      };
+      agentContextByAction.current = {
+        cleanup: cleanupContextItems ?? [],
+        help: helpContextItems ?? cleanupContextItems ?? [],
+        customAgent: customAgentContextItems ?? cleanupContextItems ?? [],
+      };
+    }, [
+      cleanupAgentId,
+      cleanupContextItems,
+      cleanupSurfaceAgentId,
+      customAgentContextItems,
+      customAgentId,
+      helpContextItems,
+      helpAgentId,
+    ]);
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuMode, setMenuMode] = useState<ProTextareaMenuMode>("menu");
@@ -788,9 +804,10 @@ export const ProTextarea = React.forwardRef<
       ],
     );
 
-    // Icons appear ONLY on active mouse presence (or when recording/
-    // transcribing, so the user can see/stop an in-flight session). Focus
-    // does NOT reveal the controls. `isHovered` is cleared on keydown and
+    // Icons appear on active mouse presence (or when recording/transcribing,
+    // so the user can see/stop an in-flight session). The wrapper's
+    // focus-within styles also reveal them for keyboard navigation. `isHovered`
+    // is cleared on keydown and
     // re-armed on mousemove — matching how the OS cursor auto-hides while
     // typing and reappears on motion. The controls float OVER the text (no
     // reserved right gutter), so they only overlap content while hovering —
@@ -905,12 +922,12 @@ export const ProTextarea = React.forwardRef<
             )}
 
             {/* Top-right control cluster (mic + "…" menu) — floats OVER the text
-            and fades in only on mouse hover (never focus), so it stays out of
-            the way while typing. It also stays visible while the menu popover
-            is open so it can't vanish mid-interaction. */}
+            and fades in on pointer hover or keyboard focus-within. It also
+            stays visible while the menu popover is open so it can't vanish
+            mid-interaction. */}
             <div
               className={cn(
-                "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10",
+                "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10 focus-within:opacity-100 focus-within:pointer-events-auto",
                 showControls || menuOpen
                   ? "opacity-100"
                   : "opacity-0 pointer-events-none",
@@ -918,13 +935,25 @@ export const ProTextarea = React.forwardRef<
             >
               {enableVoice && isAudioAvailable && (
                 <MicWithDeviceMenu
+                  tabIndex={auxiliaryControlsTabIndex}
+                  deviceMenuAriaLabel={
+                    auxiliaryControlsLabel
+                      ? `Choose microphone for ${auxiliaryControlsLabel}`
+                      : undefined
+                  }
                   onMicClick={handleVoiceClick}
                   disabled={isVoiceDisabled}
                   isRecording={isRecording}
                   isTranscribing={isTranscribing}
                   audioLevel={audioLevel}
                   micAriaLabel={
-                    isRecording ? "Stop recording" : "Start voice input"
+                    isRecording
+                      ? auxiliaryControlsLabel
+                        ? `Stop recording for ${auxiliaryControlsLabel}`
+                        : "Stop recording"
+                      : auxiliaryControlsLabel
+                        ? `Start voice input for ${auxiliaryControlsLabel}`
+                        : "Start voice input"
                   }
                 />
               )}
@@ -933,7 +962,12 @@ export const ProTextarea = React.forwardRef<
                 <Popover open={menuOpen} onOpenChange={handleMenuOpenChange}>
                   <PopoverTrigger asChild>
                     <TapTargetButton
-                      ariaLabel="More options"
+                      tabIndex={auxiliaryControlsTabIndex}
+                      ariaLabel={
+                        auxiliaryControlsLabel
+                          ? `More options for ${auxiliaryControlsLabel}`
+                          : "More options"
+                      }
                       tooltip="More"
                       className={
                         hasCopied ? "text-green-500" : "text-muted-foreground"

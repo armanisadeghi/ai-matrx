@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Loader2, Pencil, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -84,6 +84,8 @@ export function ScopeDetailEditor({
     selectScopeValuesLoading(s, scopeId ?? ""),
   );
   const suggestions = useScopeSuggestions();
+  const editNameButtonRef = useRef<HTMLButtonElement>(null);
+  const editDescriptionButtonRef = useRef<HTMLButtonElement>(null);
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -92,6 +94,26 @@ export function ScopeDetailEditor({
   const [editingDescription, setEditingDescription] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [savingDescription, setSavingDescription] = useState(false);
+
+  function closeNameEditor() {
+    setEditingName(false);
+    requestAnimationFrame(() => editNameButtonRef.current?.focus());
+  }
+
+  function cancelNameEdit() {
+    setNameDraft(scope?.name ?? "");
+    closeNameEditor();
+  }
+
+  function closeDescriptionEditor() {
+    setEditingDescription(false);
+    requestAnimationFrame(() => editDescriptionButtonRef.current?.focus());
+  }
+
+  function cancelDescriptionEdit() {
+    setDescriptionDraft(scope?.description ?? "");
+    closeDescriptionEditor();
+  }
 
   useEffect(() => {
     if (!resolvedTypeId) return;
@@ -105,6 +127,8 @@ export function ScopeDetailEditor({
 
   useEffect(() => {
     if (scope) {
+      // Selecting a different scope intentionally resets both inline drafts.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNameDraft(scope.name);
       setDescriptionDraft(scope.description ?? "");
     }
@@ -142,15 +166,15 @@ export function ScopeDetailEditor({
     if (!scope) return;
     const next = nameDraft.trim();
     if (!next || next === scope.name) {
-      setEditingName(false);
       setNameDraft(scope.name);
+      closeNameEditor();
       return;
     }
     setSavingName(true);
     try {
       await dispatch(updateScope({ scope_id: scope.id, name: next })).unwrap();
       toast.success("Renamed");
-      setEditingName(false);
+      closeNameEditor();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to rename");
     } finally {
@@ -162,7 +186,7 @@ export function ScopeDetailEditor({
     if (!scope) return;
     const next = descriptionDraft.trim();
     if (next === (scope.description ?? "").trim()) {
-      setEditingDescription(false);
+      closeDescriptionEditor();
       return;
     }
     setSavingDescription(true);
@@ -171,7 +195,7 @@ export function ScopeDetailEditor({
         updateScope({ scope_id: scope.id, description: next }),
       ).unwrap();
       toast.success("Description updated");
-      setEditingDescription(false);
+      closeDescriptionEditor();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to update description",
@@ -198,13 +222,14 @@ export function ScopeDetailEditor({
               <div className="flex items-center gap-2">
                 <Input
                   autoFocus
+                  aria-label="Scope name"
                   value={nameDraft}
                   onChange={(e) => setNameDraft(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") saveName();
                     if (e.key === "Escape") {
-                      setEditingName(false);
-                      setNameDraft(scope.name);
+                      e.preventDefault();
+                      cancelNameEdit();
                     }
                   }}
                   className="text-xl font-bold h-auto py-1"
@@ -212,10 +237,12 @@ export function ScopeDetailEditor({
                   style={{ fontSize: "16px" }}
                 />
                 <Button
+                  type="button"
                   size="icon"
                   variant="ghost"
                   onClick={saveName}
                   disabled={savingName}
+                  aria-label="Save scope name"
                 >
                   {savingName ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -224,13 +251,12 @@ export function ScopeDetailEditor({
                   )}
                 </Button>
                 <Button
+                  type="button"
                   size="icon"
                   variant="ghost"
-                  onClick={() => {
-                    setEditingName(false);
-                    setNameDraft(scope.name);
-                  }}
+                  onClick={cancelNameEdit}
                   disabled={savingName}
+                  aria-label="Cancel editing scope name"
                 >
                   <XIcon className="h-4 w-4" />
                 </Button>
@@ -241,9 +267,11 @@ export function ScopeDetailEditor({
                   {scope.name}
                 </h1>
                 <Button
+                  ref={editNameButtonRef}
+                  type="button"
                   size="icon"
                   variant="ghost"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
                   onClick={() => setEditingName(true)}
                   aria-label="Edit name"
                 >
@@ -260,6 +288,7 @@ export function ScopeDetailEditor({
               <div className="mt-3 space-y-2">
                 <ProTextarea
                   autoFocus
+                  aria-label="Scope description"
                   minHeight={80}
                   maxHeight={600}
                   autoGrow
@@ -271,6 +300,7 @@ export function ScopeDetailEditor({
                 />
                 <div className="flex items-center gap-2">
                   <Button
+                    type="button"
                     size="sm"
                     onClick={saveDescription}
                     disabled={savingDescription}
@@ -281,12 +311,10 @@ export function ScopeDetailEditor({
                     Save description
                   </Button>
                   <Button
+                    type="button"
                     size="sm"
                     variant="ghost"
-                    onClick={() => {
-                      setEditingDescription(false);
-                      setDescriptionDraft(scope.description ?? "");
-                    }}
+                    onClick={cancelDescriptionEdit}
                     disabled={savingDescription}
                   >
                     Cancel
@@ -295,6 +323,7 @@ export function ScopeDetailEditor({
               </div>
             ) : (
               <button
+                ref={editDescriptionButtonRef}
                 type="button"
                 onClick={() => setEditingDescription(true)}
                 className="group mt-2 block w-full text-left"

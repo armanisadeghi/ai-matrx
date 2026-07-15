@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import {
   Plus,
   X,
@@ -89,6 +89,17 @@ export function EditScopeTypeSheet({
   // Advanced
   const [sortOrder, setSortOrder] = useState(0);
   const [maxAssignments, setMaxAssignments] = useState("");
+  const uid = useId();
+  const ids = {
+    singular: `${uid}-singular`,
+    plural: `${uid}-plural`,
+    icon: `${uid}-icon`,
+    description: `${uid}-description`,
+    slug: `${uid}-slug`,
+    sortOrder: `${uid}-sort-order`,
+    maxAssignments: `${uid}-max-assignments`,
+    system: `${uid}-system`,
+  };
 
   // System Context (platform-global) — super-admin only; the RPC enforces it server-side.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -333,6 +344,7 @@ export function EditScopeTypeSheet({
         description="Rename, change the icon and color, manage context items, and adjust advanced settings."
         expandButtonLabel="Scope type"
         dismissDisabled={busy}
+        initialFocus
         position="right"
         defaultSize={38}
       >
@@ -340,8 +352,13 @@ export function EditScopeTypeSheet({
           {/* Names */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Name (one item)</Label>
+              <Label htmlFor={ids.singular} className="text-xs">
+                Name (one item)
+              </Label>
               <Input
+                id={ids.singular}
+                data-panel-initial-focus
+                autoFocus
                 value={labelSingular}
                 onChange={(e) => setLabelSingular(e.target.value)}
                 style={{ fontSize: "16px" }}
@@ -349,8 +366,11 @@ export function EditScopeTypeSheet({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Name (many)</Label>
+              <Label htmlFor={ids.plural} className="text-xs">
+                Name (many)
+              </Label>
               <Input
+                id={ids.plural}
                 value={labelPlural}
                 onChange={(e) => setLabelPlural(e.target.value)}
                 style={{ fontSize: "16px" }}
@@ -362,8 +382,11 @@ export function EditScopeTypeSheet({
           {/* Icon + Color in one row */}
           <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
             <div className="space-y-1.5">
-              <Label className="text-xs">Icon</Label>
+              <Label htmlFor={ids.icon} className="text-xs">
+                Icon
+              </Label>
               <IconInputWithValidation
+                id={ids.icon}
                 value={icon}
                 onChange={setIcon}
                 showLucideLink={false}
@@ -381,8 +404,11 @@ export function EditScopeTypeSheet({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Description (optional)</Label>
+            <Label htmlFor={ids.description} className="text-xs">
+              Description (optional)
+            </Label>
             <ProTextarea
+              id={ids.description}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               minHeight={64}
@@ -415,6 +441,7 @@ export function EditScopeTypeSheet({
                         else rowInputsRef.current.delete(row.rowId);
                       }}
                       placeholder="Context item name"
+                      aria-label={`Context item ${idx + 1} name`}
                       value={row.display_name}
                       onChange={(e) =>
                         patchItem(row.rowId, {
@@ -439,7 +466,7 @@ export function EditScopeTypeSheet({
                         size="icon"
                         onClick={() => setEditingItemId(row.id)}
                         disabled={busy}
-                        aria-label="Open full editor"
+                        aria-label={`Open full editor for ${row.display_name || `context item ${idx + 1}`}`}
                         title="Full edit (type, sensitivity, tags, …)"
                         className="shrink-0"
                       >
@@ -452,7 +479,7 @@ export function EditScopeTypeSheet({
                       size="icon"
                       onClick={() => toggleDelete(row.rowId)}
                       disabled={busy}
-                      aria-label={removed ? "Restore" : "Remove"}
+                      aria-label={`${removed ? "Restore" : "Remove"} ${row.display_name || `context item ${idx + 1}`}`}
                       title={removed ? "Restore" : "Remove"}
                       className={`shrink-0 ${
                         removed
@@ -505,9 +532,12 @@ export function EditScopeTypeSheet({
           {advancedOpen && (
             <div className="space-y-5">
               <div className="space-y-1.5">
-                <Label className="text-xs">URL slug</Label>
+                <Label htmlFor={ids.slug} className="text-xs">
+                  URL slug
+                </Label>
                 <div className="flex gap-2">
                   <Input
+                    id={ids.slug}
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
                     placeholder={toSlug(labelPlural) || "url-slug"}
@@ -535,8 +565,11 @@ export function EditScopeTypeSheet({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Sort order</Label>
+                  <Label htmlFor={ids.sortOrder} className="text-xs">
+                    Sort order
+                  </Label>
                   <Input
+                    id={ids.sortOrder}
                     type="number"
                     value={sortOrder}
                     onChange={(e) =>
@@ -548,8 +581,11 @@ export function EditScopeTypeSheet({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Max assignments</Label>
+                  <Label htmlFor={ids.maxAssignments} className="text-xs">
+                    Max assignments
+                  </Label>
                   <Input
+                    id={ids.maxAssignments}
                     type="number"
                     value={maxAssignments}
                     onChange={(e) => setMaxAssignments(e.target.value)}
@@ -565,7 +601,7 @@ export function EditScopeTypeSheet({
               {isSuperAdmin && (
                 <div className="flex items-start justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
                   <div>
-                    <Label className="text-xs font-medium">
+                    <Label htmlFor={ids.system} className="text-xs font-medium">
                       System context
                     </Label>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -577,6 +613,7 @@ export function EditScopeTypeSheet({
                     </p>
                   </div>
                   <Switch
+                    id={ids.system}
                     checked={isSystem}
                     onCheckedChange={handleToggleSystem}
                     disabled={busy}

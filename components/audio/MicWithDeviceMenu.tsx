@@ -30,7 +30,9 @@ export interface MicWithDeviceMenuProps {
   /** Defaults to true only when idle (not recording / transcribing). */
   showDeviceMenu?: boolean;
   micAriaLabel?: string;
+  deviceMenuAriaLabel?: string;
   iconClassName?: string;
+  tabIndex?: number;
 }
 
 export function MicWithDeviceMenu({
@@ -41,7 +43,9 @@ export function MicWithDeviceMenu({
   audioLevel = 0,
   showDeviceMenu,
   micAriaLabel = "Start voice input",
+  deviceMenuAriaLabel = "Choose microphone",
   iconClassName,
+  tabIndex,
 }: MicWithDeviceMenuProps) {
   const deviceMenuVisible = showDeviceMenu ?? (!isRecording && !isTranscribing);
   const { handleOpenChange, openSettings } = useMicDevicePicker();
@@ -83,6 +87,7 @@ export function MicWithDeviceMenu({
         )}
 
         <button
+          tabIndex={tabIndex}
           type="button"
           onClick={onMicClick}
           disabled={disabled}
@@ -113,9 +118,10 @@ export function MicWithDeviceMenu({
             <Popover onOpenChange={handleOpenChange}>
               <PopoverTrigger asChild>
                 <button
+                  tabIndex={tabIndex}
                   type="button"
                   disabled={disabled}
-                  aria-label="Choose microphone"
+                  aria-label={deviceMenuAriaLabel}
                   className={cn(
                     SEGMENT_TOUCH,
                     "relative z-[1]",

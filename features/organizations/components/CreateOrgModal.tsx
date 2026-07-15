@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId, useRef } from "react";
 import { Plus, Loader2, Check, X, AlertCircle } from "lucide-react";
 import {
   Dialog,
@@ -44,6 +44,8 @@ export function CreateOrgModal({
   onSuccess,
 }: CreateOrgModalProps) {
   const router = useRouter();
+  const fieldId = useId();
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
@@ -177,8 +179,14 @@ export function CreateOrgModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="max-w-2xl max-h-[90dvh] overflow-y-auto"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          nameInputRef.current?.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Create New Organization</DialogTitle>
           <DialogDescription>
@@ -189,20 +197,30 @@ export function CreateOrgModal({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Organization Name */}
           <div className="space-y-2">
-            <Label htmlFor="name" className="required">
+            <Label htmlFor={`${fieldId}-name`} className="required">
               Organization Name *
             </Label>
             <Input
-              id="name"
+              ref={nameInputRef}
+              id={`${fieldId}-name`}
+              aria-invalid={!nameValidation.valid}
+              aria-describedby={
+                !nameValidation.valid ? `${fieldId}-name-error` : undefined
+              }
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Acme Corporation"
+              required
+              autoComplete="organization"
               maxLength={50}
               disabled={isSubmitting}
               className={!nameValidation.valid ? "border-red-500" : ""}
             />
             {!nameValidation.valid && (
-              <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+              <p
+                id={`${fieldId}-name-error`}
+                className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1"
+              >
                 <AlertCircle className="h-3 w-3" />
                 {nameValidation.error}
               </p>
@@ -214,7 +232,7 @@ export function CreateOrgModal({
 
           {/* Slug */}
           <div className="space-y-2">
-            <Label htmlFor="slug" className="required">
+            <Label htmlFor={`${fieldId}-slug`} className="required">
               URL Slug *
             </Label>
             <div className="flex items-center gap-2">
@@ -222,13 +240,20 @@ export function CreateOrgModal({
                 aimatrx.com/organizations/
               </span>
               <Input
-                id="slug"
+                id={`${fieldId}-slug`}
+                aria-invalid={
+                  Boolean(slug) &&
+                  (!slugValidation.valid ||
+                    (!checkingSlug && slugAvailable === false))
+                }
+                aria-describedby={`${fieldId}-slug-status ${fieldId}-slug-help`}
                 value={slug}
                 onChange={(e) => {
                   setSlug(e.target.value);
                   setIsSlugManuallyEdited(true);
                 }}
                 placeholder="acme-corp"
+                required
                 maxLength={50}
                 disabled={isSubmitting}
                 className={cn(
@@ -244,7 +269,11 @@ export function CreateOrgModal({
                 )}
               />
             </div>
-            <div className="flex items-center justify-between">
+            <div
+              id={`${fieldId}-slug-status`}
+              className="flex items-center justify-between"
+              aria-live="polite"
+            >
               {getSlugIndicator()}
               {!isSlugManuallyEdited && (
                 <p className="text-xs text-muted-foreground">
@@ -252,16 +281,19 @@ export function CreateOrgModal({
                 </p>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p
+              id={`${fieldId}-slug-help`}
+              className="text-xs text-muted-foreground"
+            >
               Lowercase letters, numbers, and hyphens only
             </p>
           </div>
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor={`${fieldId}-description`}>Description</Label>
             <Textarea
-              id="description"
+              id={`${fieldId}-description`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does your organization do?"
@@ -276,20 +308,21 @@ export function CreateOrgModal({
 
           {/* Website */}
           <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
+            <Label htmlFor={`${fieldId}-website`}>Website</Label>
             <Input
-              id="website"
+              id={`${fieldId}-website`}
               type="url"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://example.com"
+              autoComplete="url"
               disabled={isSubmitting}
             />
           </div>
 
           {/* Logo — drag-drop with asset variants, or paste a URL */}
-          <div className="space-y-2">
-            <Label>Logo</Label>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium leading-none">Logo</legend>
             <ImageAssetUploader
               preset="logo"
               currentUrl={logoUrl || null}
@@ -302,7 +335,7 @@ export function CreateOrgModal({
               enableViewerAction
               label="Organization logo"
             />
-          </div>
+          </fieldset>
 
           <DialogFooter>
             <Button

@@ -49,6 +49,7 @@ export function OrganizationPickerPanel() {
               <li key={org.id}>
                 <button
                   type="button"
+                  aria-pressed={isActive}
                   onClick={() => selectOrganization(org.id, org.name)}
                   className={cn(
                     "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent",

@@ -17,7 +17,7 @@
  *                `EntityTypeToken` (task, note, project, agent, app, …)
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Link2, Loader2, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useFilePicker } from "@/features/files/components/pickers/FilePicker";
+import { useFilePicker } from "@/features/files";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
   makeSelectScope,
@@ -48,6 +48,10 @@ import {
 } from "@/features/scopes/utils/referenceCell";
 
 export interface ReferenceValuePickerProps {
+  id?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
+  "aria-describedby"?: string;
   config: ReferenceItemConfig;
   /** The cell's raw `value_text` (a ```matrx fence), or null when unset. */
   value: string | null;
@@ -61,6 +65,10 @@ export interface ReferenceValuePickerProps {
 const typeLabel = referenceTypeLabel;
 
 export function ReferenceValuePicker({
+  id,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
   config,
   value,
   onChange,
@@ -68,6 +76,7 @@ export function ReferenceValuePicker({
   disabled,
   className,
 }: ReferenceValuePickerProps) {
+  const addContentRef = useRef<HTMLDivElement>(null);
   const allowedTypes = config.allowed_reference_types ?? [];
   const parsed = parseReferenceCellValue(value);
   const currentType = parsed?.type ?? null;
@@ -80,13 +89,11 @@ export function ReferenceValuePicker({
     currentType ?? allowedTypes[0] ?? "",
   );
 
-  useEffect(() => {
-    if (!allowedTypes.includes(addType) && allowedTypes[0]) {
-      setAddType(currentType ?? allowedTypes[0]);
-    }
-    // Only re-sync when the allowed set itself changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowedTypes.join(","), currentType]);
+  const activeAddType = allowedTypes.includes(addType)
+    ? addType
+    : currentType && allowedTypes.includes(currentType)
+      ? currentType
+      : (allowedTypes[0] ?? "");
 
   function addItems(type: string, newItems: ReferenceItem[]) {
     if (newItems.length === 0) return;
@@ -108,7 +115,14 @@ export function ReferenceValuePicker({
   }
 
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div
+      id={id}
+      role="group"
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
+      className={cn("space-y-1.5", className)}
+    >
       {items.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">
           {items.map((item, i) => (
@@ -133,10 +147,22 @@ export function ReferenceValuePicker({
               className="h-7 gap-1.5 text-xs"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add {typeLabel(addType || allowedTypes[0])}
+              Add {typeLabel(activeAddType)}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-2" align="start">
+          <PopoverContent
+            ref={addContentRef}
+            className="w-80 p-2"
+            align="start"
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+              requestAnimationFrame(() => {
+                addContentRef.current
+                  ?.querySelector<HTMLElement>("[data-reference-autofocus]")
+                  ?.focus();
+              });
+            }}
+          >
             {allowedTypes.length > 1 && (
               <div className="mb-2 flex flex-wrap gap-1">
                 {allowedTypes.map((t) => (
@@ -144,9 +170,10 @@ export function ReferenceValuePicker({
                     key={t}
                     type="button"
                     onClick={() => setAddType(t)}
+                    aria-pressed={activeAddType === t}
                     className={cn(
                       "rounded-md border px-2 py-0.5 text-[11px] transition-colors",
-                      addType === t
+                      activeAddType === t
                         ? "border-primary/50 bg-primary/10 text-foreground"
                         : "border-border text-muted-foreground hover:text-foreground hover:bg-accent",
                     )}
@@ -157,11 +184,11 @@ export function ReferenceValuePicker({
               </div>
             )}
             <ReferenceTypeAdder
-              type={addType || allowedTypes[0] || ""}
+              type={activeAddType}
               scopeId={scopeId}
               allowedScopeTypeIds={config.allowed_scope_type_ids}
               onPickMany={(picked) => {
-                addItems(addType || allowedTypes[0] || "", picked);
+                addItems(activeAddType, picked);
                 if (remaining - picked.length <= 0) setAddOpen(false);
               }}
             />
@@ -203,7 +230,8 @@ function PickerChip({
   // backfilled cell (no label at all) or a renamed entity (stale label) needs
   // to still show the real current name here instead of a bare type name.
   const { display, status } = useResolvedReferenceLabel(item, type);
-  const label = type === "url" && hints.url && !hints.label ? hints.url : display;
+  const label =
+    type === "url" && hints.url && !hints.label ? hints.url : display;
   const Icon = type === "url" ? Link2 : type === "file" ? FileText : null;
 
   return (
@@ -218,7 +246,7 @@ function PickerChip({
           type="button"
           onClick={onRemove}
           className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          aria-label="Remove"
+          aria-label={`Remove ${label}`}
         >
           <X className="h-3 w-3" />
         </button>
@@ -266,6 +294,7 @@ function FileTypeAdder({
   return (
     <div className="space-y-2">
       <Button
+        data-reference-autofocus
         type="button"
         size="sm"
         variant="secondary"
@@ -323,37 +352,39 @@ function UrlTypeAdder({
   const valid = isLikelyUrl(url.trim());
 
   return (
-    <div className="space-y-2">
+    <form
+      className="space-y-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!valid) return;
+        const item: Record<string, string> = { url: url.trim() };
+        const nextLabel = label.trim();
+        if (nextLabel) item.label = nextLabel;
+        onPickMany([item as unknown as ReferenceItem]);
+        setUrl("");
+        setLabel("");
+      }}
+    >
       <Input
+        data-reference-autofocus
+        aria-label="URL"
         placeholder="https://…"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         style={{ fontSize: "16px" }}
       />
       <Input
+        aria-label="Link label"
         placeholder="Label (optional)"
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         style={{ fontSize: "16px" }}
       />
-      <Button
-        type="button"
-        size="sm"
-        className="w-full"
-        disabled={!valid}
-        onClick={() => {
-          const item: Record<string, string> = { url: url.trim() };
-          const l = label.trim();
-          if (l) item.label = l;
-          onPickMany([item as unknown as ReferenceItem]);
-          setUrl("");
-          setLabel("");
-        }}
-      >
+      <Button type="submit" size="sm" className="w-full" disabled={!valid}>
         <Link2 className="mr-1.5 h-3.5 w-3.5" />
         Add link
       </Button>
-    </div>
+    </form>
   );
 }
 
@@ -368,6 +399,8 @@ function ScopeTypeAdder({
 }) {
   const dispatch = useAppDispatch();
   const [search, setSearch] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const candidateRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
     void dispatch(ensureScopeTree());
@@ -412,29 +445,58 @@ function ScopeTypeAdder({
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
+          data-reference-autofocus
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setActiveIndex(0);
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowDown" || candidates.length === 0) return;
+            event.preventDefault();
+            candidateRefs.current[0]?.focus();
+          }}
           placeholder="Search scopes…"
           className="h-8 pl-8 text-sm"
           style={{ fontSize: "16px" }}
         />
       </div>
-      <div className="max-h-56 space-y-0.5 overflow-y-auto">
+      <div
+        role="listbox"
+        aria-label="Scope results"
+        className="max-h-56 space-y-0.5 overflow-y-auto"
+      >
         {candidates.length === 0 && (
           <p className="px-1 py-2 text-xs text-muted-foreground">
             No scopes found.
           </p>
         )}
-        {candidates.map((c) => (
+        {candidates.map((c, index) => (
           <button
             key={c.id}
+            ref={(element) => {
+              candidateRefs.current[index] = element;
+            }}
             type="button"
+            role="option"
+            aria-selected={false}
+            tabIndex={index === activeIndex ? 0 : -1}
+            onFocus={() => setActiveIndex(index)}
+            onKeyDown={(event) =>
+              handleCandidateKeyDown(
+                event,
+                index,
+                candidates.length,
+                candidateRefs,
+                setActiveIndex,
+              )
+            }
             onClick={() =>
               onPickMany([
                 { id: c.id, label: c.name } as unknown as ReferenceItem,
               ])
             }
-            className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
+            className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <span className="truncate text-foreground">{c.name}</span>
             <span className="shrink-0 text-[10px] uppercase text-muted-foreground">
@@ -455,6 +517,8 @@ function RecordTypeAdder({
   onPickMany: (items: ReferenceItem[]) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const candidateRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const token = type as EntityTypeToken;
   const info = getEntityInfo(token);
   const { results, loading } = useUniversalEntitySearch({
@@ -468,8 +532,17 @@ function RecordTypeAdder({
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
+          data-reference-autofocus
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActiveIndex(0);
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowDown" || results.length === 0) return;
+            event.preventDefault();
+            candidateRefs.current[0]?.focus();
+          }}
           placeholder={`Search ${info.labelPlural.toLowerCase()}…`}
           className="h-8 pl-8 text-sm"
           style={{ fontSize: "16px" }}
@@ -478,7 +551,11 @@ function RecordTypeAdder({
           <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
         )}
       </div>
-      <div className="max-h-56 space-y-0.5 overflow-y-auto">
+      <div
+        role="listbox"
+        aria-label={`${info.labelPlural} results`}
+        className="max-h-56 space-y-0.5 overflow-y-auto"
+      >
         {results.length === 0 && !loading && (
           <p className="px-1 py-2 text-xs text-muted-foreground">
             {query.trim()
@@ -486,16 +563,32 @@ function RecordTypeAdder({
               : `Type to search ${info.labelPlural.toLowerCase()}.`}
           </p>
         )}
-        {results.map((c) => (
+        {results.map((c, index) => (
           <button
             key={`${c.token}:${c.id}`}
+            ref={(element) => {
+              candidateRefs.current[index] = element;
+            }}
             type="button"
+            role="option"
+            aria-selected={false}
+            tabIndex={index === activeIndex ? 0 : -1}
+            onFocus={() => setActiveIndex(index)}
+            onKeyDown={(event) =>
+              handleCandidateKeyDown(
+                event,
+                index,
+                results.length,
+                candidateRefs,
+                setActiveIndex,
+              )
+            }
             onClick={() =>
               onPickMany([
                 { id: c.id, label: c.title } as unknown as ReferenceItem,
               ])
             }
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <info.Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span className="truncate text-foreground">{c.title}</span>
@@ -504,6 +597,30 @@ function RecordTypeAdder({
       </div>
     </div>
   );
+}
+
+function handleCandidateKeyDown(
+  event: React.KeyboardEvent<HTMLButtonElement>,
+  currentIndex: number,
+  count: number,
+  refs: React.RefObject<Array<HTMLButtonElement | null>>,
+  setActiveIndex: (index: number) => void,
+) {
+  if (count === 0) return;
+  let nextIndex: number | null = null;
+  if (event.key === "ArrowDown") {
+    nextIndex = (currentIndex + 1) % count;
+  } else if (event.key === "ArrowUp") {
+    nextIndex = (currentIndex - 1 + count) % count;
+  } else if (event.key === "Home") {
+    nextIndex = 0;
+  } else if (event.key === "End") {
+    nextIndex = count - 1;
+  }
+  if (nextIndex == null) return;
+  event.preventDefault();
+  setActiveIndex(nextIndex);
+  refs.current[nextIndex]?.focus();
 }
 
 export default ReferenceValuePicker;

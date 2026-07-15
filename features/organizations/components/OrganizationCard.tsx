@@ -32,13 +32,10 @@ interface OrganizationCardProps {
  * - Shows org name, description, member count
  * - Role badge (Owner/Admin/Member/Personal)
  * - Quick action buttons based on role
- * - Click to navigate to org settings
+ * - Explicit keyboard-accessible action to navigate to org settings
  * - Special styling for personal orgs
  */
-export function OrganizationCard({
-  organization,
-  onUpdate,
-}: OrganizationCardProps) {
+export function OrganizationCard({ organization }: OrganizationCardProps) {
   // Presentation-aware nav: dismisses the settings window/drawer
   // before pushing when this card is rendered inside the settings
   // overlay. Standalone /settings/organizations route navigates
@@ -96,17 +93,16 @@ export function OrganizationCard({
 
   const settingsPath = `/organizations/${organization.id}/settings`;
 
-  const handleNavigate = (e?: React.MouseEvent) => {
+  const handleNavigate = (e: React.MouseEvent) => {
     // Let new-tab modifiers through untouched — the hook handles them.
-    if (!e || !(e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) {
+    if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) {
       setIsNavigating(true);
     }
-    navigate(settingsPath, e ?? null);
+    navigate(settingsPath, e);
   };
 
   // Determine available actions based on role
   const canManageSettings = role === "owner" || role === "admin";
-  const canManageMembers = role === "owner" || role === "admin";
 
   return (
     <Card
@@ -116,7 +112,7 @@ export function OrganizationCard({
           "border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10",
         isNavigating && "opacity-50 pointer-events-none",
       )}
-      onClick={(e) => handleNavigate(e)}
+      onClick={handleNavigate}
     >
       <div className="flex items-start justify-between gap-4">
         {/* Left side - Org info */}
@@ -202,63 +198,63 @@ export function OrganizationCard({
         {/* Right side - Actions */}
         <div className="flex flex-col gap-2 items-end">
           {canManageSettings && !isPersonal && (
-            <Link
-              href={settingsPath}
-              tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNavigate(e);
-              }}
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
             >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
+              <Link
+                href={settingsPath}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleNavigate(event);
+                }}
               >
                 <Settings className="h-4 w-4" />
                 Settings
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
 
           {isPersonal && (
-            <Link
-              href={settingsPath}
-              tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNavigate(e);
-              }}
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/30"
             >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/30"
+              <Link
+                href={settingsPath}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleNavigate(event);
+                }}
               >
                 View
                 <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
 
           {!canManageSettings && !isPersonal && (
-            <Link
-              href={settingsPath}
-              tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNavigate(e);
-              }}
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
             >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+              <Link
+                href={settingsPath}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleNavigate(event);
+                }}
               >
                 View
                 <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
         </div>
       </div>

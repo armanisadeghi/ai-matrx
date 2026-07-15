@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -141,6 +141,15 @@ export function ScopesList({
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [reorderScopesOpen, setReorderScopesOpen] = useState(false);
   const [reorderItemsOpen, setReorderItemsOpen] = useState(false);
+  const addItemTriggerRef = useRef<HTMLButtonElement>(null);
+  const wasAddingItemRef = useRef(false);
+
+  useEffect(() => {
+    if (!addingItem && wasAddingItemRef.current) {
+      requestAnimationFrame(() => addItemTriggerRef.current?.focus());
+    }
+    wasAddingItemRef.current = addingItem;
+  }, [addingItem]);
 
   useEffect(() => {
     if (!resolvedTypeId) return;
@@ -308,6 +317,7 @@ export function ScopesList({
                 size="sm"
                 onClick={() => setEditingType(true)}
                 title="Quick edit"
+                aria-label={`Quick edit ${scopeType.label_singular} settings`}
               >
                 <Settings2 className="h-3.5 w-3.5" />
               </Button>
@@ -462,6 +472,7 @@ export function ScopesList({
                       canManage={canManage}
                       deleting={deletingScopeId === scope.id}
                       onDelete={() => handleDeleteScope(scope.id, scope.name)}
+                      href={scopeHref(orgSlugOrId, scopeType, scope)}
                       onClick={() =>
                         router.push(scopeHref(orgSlugOrId, scopeType, scope))
                       }
@@ -532,6 +543,7 @@ export function ScopesList({
             )}
             {canManage && !addingItem && (
               <Button
+                ref={addItemTriggerRef}
                 variant="outline"
                 size="sm"
                 onClick={() => setAddingItem(true)}
@@ -653,35 +665,7 @@ function ContextItemRow({
 }: ContextItemRowProps) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/30 transition-colors group">
-      {/* Reorder controls (admins only) */}
-      {canManage && (
-        <div className="flex flex-col -my-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            type="button"
-            onClick={onMoveUp}
-            disabled={isFirst || disabled}
-            aria-label="Move up"
-            className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {moving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <ChevronUp className="h-3.5 w-3.5" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={onMoveDown}
-            disabled={isLast || disabled}
-            aria-label="Move down"
-            className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
-
-      <div className="flex-1 min-w-0">
+      <div className="order-2 flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             href={href}
@@ -726,7 +710,7 @@ function ContextItemRow({
         )}
       </div>
       {canManage && (
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="order-3 flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="sm"
@@ -752,6 +736,35 @@ function ContextItemRow({
           </Button>
         </div>
       )}
+      {/* Visually left, but last in DOM so the primary link/edit actions come
+          first in keyboard order. Arrow buttons remain the keyboard fallback
+          for drag-and-drop reordering. */}
+      {canManage && (
+        <div className="order-1 flex flex-col -my-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={isFirst || disabled}
+            aria-label={`Move ${item.display_name} up`}
+            className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {moving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={isLast || disabled}
+            aria-label={`Move ${item.display_name} down`}
+            className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -768,6 +781,7 @@ interface ScopeTableRowProps {
   canManage: boolean;
   deleting: boolean;
   onDelete: () => void;
+  href: string;
   onClick: () => void;
 }
 
@@ -783,6 +797,7 @@ function ScopeTableRow({
   canManage,
   deleting,
   onDelete,
+  href,
   onClick,
 }: ScopeTableRowProps) {
   const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
@@ -793,7 +808,13 @@ function ScopeTableRow({
     <TableRow onClick={onClick} className="cursor-pointer group">
       <TableCell className="sticky left-0 z-10 bg-card group-hover:bg-accent/40 px-3 font-medium w-[200px] min-w-[200px] border-b border-border">
         <span className="flex items-center gap-1.5 w-full min-w-0">
-          <span className="truncate">{scopeName}</span>
+          <Link
+            href={href}
+            onClick={(event) => event.stopPropagation()}
+            className="truncate rounded-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {scopeName}
+          </Link>
           {suggestionRows.length > 0 && (
             <span onClick={(e) => e.stopPropagation()} className="shrink-0">
               <KgSuggestionHint
@@ -816,7 +837,7 @@ function ScopeTableRow({
               }}
               disabled={deleting}
               aria-label={`Delete ${scopeName}`}
-              className="ml-auto shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive disabled:opacity-50"
+              className="ml-auto shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-destructive disabled:opacity-50"
             >
               {deleting ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

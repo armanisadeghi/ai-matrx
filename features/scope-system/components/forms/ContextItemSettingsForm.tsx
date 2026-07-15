@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   Loader2,
   Trash2,
@@ -51,12 +51,17 @@ import {
   makeSelectScopeType,
   makeSelectScopeTypesForOrg,
 } from "@/features/scopes/redux/selectors/tree";
-import { EntryModeToggle, type EntryMode } from "@/features/scopes/components/reference/EntryModeToggle";
+import {
+  EntryModeToggle,
+  type EntryMode,
+} from "@/features/scopes/components/reference/EntryModeToggle";
 import { ReferenceConfigFields } from "@/features/scopes/components/reference/ReferenceConfigFields";
 import { ContextItemCurrentValues } from "./ContextItemCurrentValues";
 
 interface ContextItemSettingsFormProps {
   itemId: string;
+  /** Focus the first editable field when this form opens in a panel/window. */
+  autoFocus?: boolean;
   /** Called after a successful save. */
   onSaved?: () => void;
   /** When provided, shows a Cancel button that calls this. */
@@ -72,6 +77,7 @@ interface ContextItemSettingsFormProps {
  */
 export function ContextItemSettingsForm({
   itemId,
+  autoFocus = false,
   onSaved,
   onCancelled,
   onDeleted,
@@ -95,6 +101,21 @@ export function ContextItemSettingsForm({
   const [statusNote, setStatusNote] = useState("");
   const [reviewIntervalDays, setReviewIntervalDays] = useState("");
   const [sortOrder, setSortOrder] = useState("");
+  const uid = useId();
+  const ids = {
+    displayName: `${uid}-display-name`,
+    slug: `${uid}-slug`,
+    entryMode: `${uid}-entry-mode`,
+    description: `${uid}-description`,
+    category: `${uid}-category`,
+    fetchHint: `${uid}-fetch-hint`,
+    sensitivity: `${uid}-sensitivity`,
+    tags: `${uid}-tags`,
+    sortOrder: `${uid}-sort-order`,
+    reviewInterval: `${uid}-review-interval`,
+    statusNote: `${uid}-status-note`,
+    categoryList: `${uid}-category-suggestions`,
+  };
 
   // Value shape: the first decision (EntryModeToggle) — direct-typed value
   // vs. a reference fence. Reference config below is only meaningful in
@@ -109,6 +130,7 @@ export function ContextItemSettingsForm({
 
   useEffect(() => {
     if (!item) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- selecting a different item intentionally resets the controlled editor fields.
     setDisplayName(item.display_name);
     setSlug(item.slug ?? "");
     setDescription(item.description ?? "");
@@ -262,10 +284,21 @@ export function ContextItemSettingsForm({
   const derivedValueType = componentToValueType(customComponent);
 
   return (
-    <div className="space-y-5">
+    <form
+      className="space-y-5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void handleSave();
+      }}
+    >
       <div className="space-y-1.5">
-        <Label className="text-xs">Display name</Label>
+        <Label htmlFor={ids.displayName} className="text-xs">
+          Display name
+        </Label>
         <Input
+          id={ids.displayName}
+          data-panel-initial-focus={autoFocus ? "" : undefined}
+          autoFocus={autoFocus}
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           style={{ fontSize: "16px" }}
@@ -277,9 +310,12 @@ export function ContextItemSettingsForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">URL slug</Label>
+        <Label htmlFor={ids.slug} className="text-xs">
+          URL slug
+        </Label>
         <div className="flex gap-2">
           <Input
+            id={ids.slug}
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder={toSlug(displayName) || "url-slug"}
@@ -308,10 +344,14 @@ export function ContextItemSettingsForm({
           never a nested bordered card, which wastes width on small screens. ── */}
       <section className="space-y-4 border-t border-border pt-5">
         <div className="space-y-2">
-          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground block">
+          <Label
+            htmlFor={ids.entryMode}
+            className="text-xs font-semibold uppercase tracking-wide text-muted-foreground block"
+          >
             Value type
           </Label>
           <EntryModeToggle
+            id={ids.entryMode}
             value={entryMode}
             onChange={setEntryMode}
             disabled={busy}
@@ -350,8 +390,8 @@ export function ContextItemSettingsForm({
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              The same components used in the Agent Builder. The storage type
-              is derived automatically from the component you pick.
+              The same components used in the Agent Builder. The storage type is
+              derived automatically from the component you pick.
             </p>
             <CustomComponentConfigurator
               value={customComponent}
@@ -369,20 +409,12 @@ export function ContextItemSettingsForm({
         )}
       </section>
 
-      {/* What already exists — so a type/component change is an informed one
-          (existing values don't auto-convert). */}
-      {orgId && (
-        <ContextItemCurrentValues
-          itemId={item.id}
-          scopeTypeId={item.scope_type_id}
-          orgId={orgId}
-          labelPlural={scopeTypeNode?.label_plural}
-        />
-      )}
-
       <div className="space-y-1.5">
-        <Label className="text-xs">Description</Label>
+        <Label htmlFor={ids.description} className="text-xs">
+          Description
+        </Label>
         <ProTextarea
+          id={ids.description}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           minHeight={80}
@@ -395,16 +427,19 @@ export function ContextItemSettingsForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">Category</Label>
+        <Label htmlFor={ids.category} className="text-xs">
+          Category
+        </Label>
         <Input
+          id={ids.category}
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           placeholder="e.g. Brand & Identity"
           style={{ fontSize: "16px" }}
           disabled={busy}
-          list="context-item-settings-category-suggestions"
+          list={ids.categoryList}
         />
-        <datalist id="context-item-settings-category-suggestions">
+        <datalist id={ids.categoryList}>
           {DEFAULT_CATEGORIES.map((c) => (
             <option key={c} value={c} />
           ))}
@@ -412,13 +447,15 @@ export function ContextItemSettingsForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">Fetch hint</Label>
+        <Label htmlFor={ids.fetchHint} className="text-xs">
+          Fetch hint
+        </Label>
         <Select
           value={fetchHint}
           onValueChange={(v) => setFetchHint(v as ContextFetchHint)}
           disabled={busy}
         >
-          <SelectTrigger>
+          <SelectTrigger id={ids.fetchHint}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -435,13 +472,15 @@ export function ContextItemSettingsForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">Sensitivity</Label>
+        <Label htmlFor={ids.sensitivity} className="text-xs">
+          Sensitivity
+        </Label>
         <Select
           value={sensitivity}
           onValueChange={(v) => setSensitivity(v as ContextSensitivity)}
           disabled={busy}
         >
-          <SelectTrigger>
+          <SelectTrigger id={ids.sensitivity}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -460,9 +499,12 @@ export function ContextItemSettingsForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">Tags</Label>
+        <Label htmlFor={ids.tags} className="text-xs">
+          Tags
+        </Label>
         <div className="flex gap-2">
           <Input
+            id={ids.tags}
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             placeholder="Add tag and press Enter"
@@ -500,7 +542,7 @@ export function ContextItemSettingsForm({
                   type="button"
                   onClick={() => removeTag(t)}
                   className="hover:bg-muted-foreground/10 rounded p-0.5"
-                  aria-label="Remove tag"
+                  aria-label={`Remove ${t}`}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -512,8 +554,11 @@ export function ContextItemSettingsForm({
 
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs">Sort order</Label>
+          <Label htmlFor={ids.sortOrder} className="text-xs">
+            Sort order
+          </Label>
           <Input
+            id={ids.sortOrder}
             type="number"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
@@ -524,8 +569,11 @@ export function ContextItemSettingsForm({
           <p className="text-[10px] text-muted-foreground">Lower shows first</p>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Review interval (days)</Label>
+          <Label htmlFor={ids.reviewInterval} className="text-xs">
+            Review interval (days)
+          </Label>
           <Input
+            id={ids.reviewInterval}
             type="number"
             value={reviewIntervalDays}
             onChange={(e) => setReviewIntervalDays(e.target.value)}
@@ -547,8 +595,11 @@ export function ContextItemSettingsForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">Status note</Label>
+        <Label htmlFor={ids.statusNote} className="text-xs">
+          Status note
+        </Label>
         <ProTextarea
+          id={ids.statusNote}
           value={statusNote}
           onChange={(e) => setStatusNote(e.target.value)}
           minHeight={64}
@@ -560,8 +611,20 @@ export function ContextItemSettingsForm({
         />
       </div>
 
+      {/* Keep this read-only preview after the editable sequence so links inside
+          reference values do not interrupt field-to-field tabbing. */}
+      {orgId && (
+        <ContextItemCurrentValues
+          itemId={item.id}
+          scopeTypeId={item.scope_type_id}
+          orgId={orgId}
+          labelPlural={scopeTypeNode?.label_plural}
+        />
+      )}
+
       <div className="flex gap-2 pt-4 border-t border-border">
         <Button
+          type="button"
           variant="outline"
           onClick={handleDelete}
           disabled={busy}
@@ -572,15 +635,20 @@ export function ContextItemSettingsForm({
         </Button>
         <div className="flex-1" />
         {onCancelled && (
-          <Button variant="ghost" onClick={onCancelled} disabled={busy}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancelled}
+            disabled={busy}
+          >
             Cancel
           </Button>
         )}
-        <Button onClick={handleSave} disabled={busy || !displayName.trim()}>
+        <Button type="submit" disabled={busy || !displayName.trim()}>
           {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Save changes
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

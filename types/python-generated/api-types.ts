@@ -26529,8 +26529,8 @@ export interface components {
             /** Last Error At */
             last_error_at?: string | null;
         };
-        /** PicklistBinding */
-        PicklistBinding: {
+        /** StructuredListBinding */
+        StructuredListBinding: {
             /**
              * Listid
              * @description udt_structured_lists.id the options are hydrated from.
@@ -32645,7 +32645,7 @@ export interface components {
              */
             step?: number | null;
             /** @description Bind the options to a user picklist. */
-            picklist?: components["schemas"]["PicklistBinding"] | null;
+            picklist?: components["schemas"]["StructuredListBinding"] | null;
         } & {
             [key: string]: unknown;
         };

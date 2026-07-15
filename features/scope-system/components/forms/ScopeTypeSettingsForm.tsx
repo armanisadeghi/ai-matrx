@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
-import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
+import { ScopeColorPicker } from "@/features/scope-system/components/ScopeColorPicker";
 import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -53,6 +53,15 @@ export function ScopeTypeSettingsForm({
   const [description, setDescription] = useState("");
   const [sortOrder, setSortOrder] = useState(0);
   const [maxAssignments, setMaxAssignments] = useState("");
+  const uid = useId();
+  const ids = {
+    singular: `${uid}-singular`,
+    plural: `${uid}-plural`,
+    icon: `${uid}-icon`,
+    description: `${uid}-description`,
+    sortOrder: `${uid}-sort-order`,
+    maxAssignments: `${uid}-max-assignments`,
+  };
 
   useEffect(() => {
     if (!scopeType) return;
@@ -135,11 +144,20 @@ export function ScopeTypeSettingsForm({
   }
 
   return (
-    <div className="space-y-5">
+    <form
+      className="space-y-5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void handleSave();
+      }}
+    >
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs">Name (one item)</Label>
+          <Label htmlFor={ids.singular} className="text-xs">
+            Name (one item)
+          </Label>
           <Input
+            id={ids.singular}
             value={labelSingular}
             onChange={(e) => setLabelSingular(e.target.value)}
             style={{ fontSize: "16px" }}
@@ -147,8 +165,11 @@ export function ScopeTypeSettingsForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Name (many)</Label>
+          <Label htmlFor={ids.plural} className="text-xs">
+            Name (many)
+          </Label>
           <Input
+            id={ids.plural}
             value={labelPlural}
             onChange={(e) => setLabelPlural(e.target.value)}
             style={{ fontSize: "16px" }}
@@ -159,8 +180,11 @@ export function ScopeTypeSettingsForm({
 
       <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
         <div className="space-y-1.5">
-          <Label className="text-xs">Icon</Label>
+          <Label htmlFor={ids.icon} className="text-xs">
+            Icon
+          </Label>
           <IconInputWithValidation
+            id={ids.icon}
             value={icon}
             onChange={setIcon}
             showLucideLink={false}
@@ -169,17 +193,16 @@ export function ScopeTypeSettingsForm({
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Color</Label>
-          <TailwindColorPicker
-            selectedColor={color}
-            onColorChange={setColor}
-            size="md"
-          />
+          <ScopeColorPicker value={color} onChange={setColor} disabled={busy} />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">Description</Label>
+        <Label htmlFor={ids.description} className="text-xs">
+          Description
+        </Label>
         <ProTextarea
+          id={ids.description}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           minHeight={80}
@@ -213,8 +236,11 @@ export function ScopeTypeSettingsForm({
       {advancedOpen && (
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Sort order</Label>
+            <Label htmlFor={ids.sortOrder} className="text-xs">
+              Sort order
+            </Label>
             <Input
+              id={ids.sortOrder}
               type="number"
               value={sortOrder}
               onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 0)}
@@ -227,8 +253,11 @@ export function ScopeTypeSettingsForm({
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Max assignments</Label>
+            <Label htmlFor={ids.maxAssignments} className="text-xs">
+              Max assignments
+            </Label>
             <Input
+              id={ids.maxAssignments}
               type="number"
               value={maxAssignments}
               onChange={(e) => setMaxAssignments(e.target.value)}
@@ -243,6 +272,7 @@ export function ScopeTypeSettingsForm({
 
       <div className="flex gap-2 pt-4 border-t border-border">
         <Button
+          type="button"
           variant="outline"
           onClick={handleDelete}
           disabled={busy}
@@ -253,15 +283,20 @@ export function ScopeTypeSettingsForm({
         </Button>
         <div className="flex-1" />
         {onCancelled && (
-          <Button variant="ghost" onClick={onCancelled} disabled={busy}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancelled}
+            disabled={busy}
+          >
             Cancel
           </Button>
         )}
-        <Button onClick={handleSave} disabled={busy || !labelSingular.trim()}>
+        <Button type="submit" disabled={busy || !labelSingular.trim()}>
           {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Save changes
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

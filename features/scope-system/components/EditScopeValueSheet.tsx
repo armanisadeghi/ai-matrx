@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { Loader2, Pencil, AlertTriangle, Info } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,7 @@ export function EditScopeValueSheet({
   scopeId,
   itemId,
 }: EditScopeValueSheetProps) {
+  const generatedId = useId();
   const dispatch = useAppDispatch();
   const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
   const row = rows?.find((r) => r.item_id === itemId);
@@ -73,19 +74,31 @@ export function EditScopeValueSheet({
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [editingItemDef, setEditingItemDef] = useState(false);
 
+  const valueId = `scope-value-editor-${generatedId}`;
+  const valueLabelId = `scope-value-editor-label-${generatedId}`;
+  const descriptionId = row?.description
+    ? `scope-value-editor-description-${generatedId}`
+    : undefined;
+  const jsonErrorId = jsonError
+    ? `scope-value-editor-error-${generatedId}`
+    : undefined;
+  const summaryId = `scope-value-summary-${generatedId}`;
+
   const hasCustom = !!row?.custom_component;
 
   useEffect(() => {
     if (!open || !row) return;
+    // Opening against a row intentionally seeds a fresh controlled draft.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(hasCustom ? rowToComponentValue(row) : rowToString(row));
     setChangeSummary("");
     setJsonError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, row]);
 
   if (!row) return null;
 
-  async function handleSave() {
+  async function handleSave(event?: React.FormEvent) {
+    event?.preventDefault();
     if (!row) return;
     setJsonError(null);
     const payload: Parameters<typeof setScopeContextValue>[0] = {
@@ -172,6 +185,7 @@ export function EditScopeValueSheet({
         description="Advanced value editor. Changes create a new version; previous versions are kept in history."
         expandButtonLabel="Scope value"
         dismissDisabled={busy}
+        initialFocus
         position="right"
         defaultSize={42}
         maxSize={92}
@@ -188,7 +202,7 @@ export function EditScopeValueSheet({
           </Button>
         }
       >
-        <div className="space-y-5">
+        <form className="space-y-5" onSubmit={handleSave}>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="text-[10px] capitalize">
               {row.value_type}
@@ -211,14 +225,17 @@ export function EditScopeValueSheet({
           </div>
 
           {row.description && (
-            <div className="rounded-md bg-muted/50 border border-border px-3 py-2 text-xs text-muted-foreground inline-flex items-start gap-2 w-full">
+            <div
+              id={descriptionId}
+              className="rounded-md bg-muted/50 border border-border px-3 py-2 text-xs text-muted-foreground inline-flex items-start gap-2 w-full"
+            >
               <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>{row.description}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <Label className="text-xs">
+            <Label id={valueLabelId} htmlFor={valueId} className="text-xs">
               Value
               {(row.value_type === "object" || row.value_type === "array") && (
                 <span className="ml-1.5 text-muted-foreground font-normal">
@@ -227,6 +244,12 @@ export function EditScopeValueSheet({
               )}
             </Label>
             <ContextValueInput
+              id={valueId}
+              aria-labelledby={valueLabelId}
+              aria-describedby={
+                [descriptionId, jsonErrorId].filter(Boolean).join(" ") ||
+                undefined
+              }
               valueType={row.value_type}
               customComponent={row.custom_component}
               value={value}
@@ -249,7 +272,11 @@ export function EditScopeValueSheet({
               disabled={busy}
             />
             {jsonError && (
-              <p className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1">
+              <p
+                id={jsonErrorId}
+                role="alert"
+                className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1"
+              >
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 {jsonError}
               </p>
@@ -257,8 +284,11 @@ export function EditScopeValueSheet({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Change summary (optional)</Label>
+            <Label htmlFor={summaryId} className="text-xs">
+              Change summary (optional)
+            </Label>
             <Input
+              id={summaryId}
               value={changeSummary}
               onChange={(e) => setChangeSummary(e.target.value)}
               placeholder="What changed and why?"
@@ -273,18 +303,19 @@ export function EditScopeValueSheet({
           <div className="flex gap-2 pt-4 border-t border-border">
             <div className="flex-1" />
             <Button
+              type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={busy}
             >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={busy}>
+            <Button type="submit" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save value
             </Button>
           </div>
-        </div>
+        </form>
       </MatrxDynamicPanelHost>
 
       <EditContextItemSheet

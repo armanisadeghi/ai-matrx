@@ -285,6 +285,7 @@ export function TemplateGalleryDrawer({
       position="right"
       defaultSize={44}
       maxSize={92}
+      initialFocus
     >
       <div className="space-y-4">
         {/* Mode toggle */}
@@ -310,6 +311,11 @@ export function TemplateGalleryDrawer({
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              aria-label={
+                mode === "templates"
+                  ? "Search templates"
+                  : "Search individual scopes"
+              }
               placeholder={
                 mode === "templates"
                   ? "Search templates"
@@ -419,6 +425,7 @@ function ModeButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
         active
           ? "bg-background text-foreground shadow-sm"
@@ -444,6 +451,7 @@ function CategoryChip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
         active
           ? "bg-primary text-primary-foreground"

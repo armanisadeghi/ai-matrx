@@ -33,10 +33,12 @@ export function EditContextItemSheet({
       description="Full settings for this context item. Changes apply to every scope of this type."
       expandButtonLabel="Context item"
       position="right"
+      initialFocus
     >
       {item ? (
         <ContextItemSettingsForm
           itemId={item.id}
+          autoFocus
           onSaved={() => onOpenChange(false)}
           onCancelled={() => onOpenChange(false)}
           onDeleted={() => onOpenChange(false)}

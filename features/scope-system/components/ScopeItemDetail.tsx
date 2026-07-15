@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ChevronLeft,
@@ -71,8 +70,8 @@ export function ScopeItemDetail({
   itemParam,
   canManage,
 }: ScopeItemDetailProps) {
-  const router = useRouter();
   const dispatch = useAppDispatch();
+  const editItemButtonRef = useRef<HTMLButtonElement>(null);
 
   const scopeType = useAppSelector((s) =>
     selectScopeTypeBySlugOrId(s, orgId, typeParam),
@@ -207,6 +206,8 @@ export function ScopeItemDetail({
           </div>
           {canManage && (
             <Button
+              ref={editItemButtonRef}
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => setEditingItem(true)}
@@ -270,35 +271,27 @@ export function ScopeItemDetail({
       {/* Prev / next item within this scope */}
       <div className="flex items-center justify-between">
         {prevItem ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              router.push(
-                scopeItemHref(orgSlugOrId, scopeType, scope, prevItem),
-              )
-            }
-            className="text-muted-foreground"
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            {prevItem.display_name}
+          <Button asChild variant="ghost" size="sm">
+            <Link
+              href={scopeItemHref(orgSlugOrId, scopeType, scope, prevItem)}
+              className="text-muted-foreground"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              {prevItem.display_name}
+            </Link>
           </Button>
         ) : (
           <span />
         )}
         {nextItem ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              router.push(
-                scopeItemHref(orgSlugOrId, scopeType, scope, nextItem),
-              )
-            }
-            className="text-muted-foreground"
-          >
-            {nextItem.display_name}
-            <ChevronRight className="h-4 w-4 ml-1" />
+          <Button asChild variant="ghost" size="sm">
+            <Link
+              href={scopeItemHref(orgSlugOrId, scopeType, scope, nextItem)}
+              className="text-muted-foreground"
+            >
+              {nextItem.display_name}
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
           </Button>
         ) : (
           <span />
@@ -307,7 +300,12 @@ export function ScopeItemDetail({
 
       <EditContextItemSheet
         open={editingItem}
-        onOpenChange={setEditingItem}
+        onOpenChange={(nextOpen) => {
+          setEditingItem(nextOpen);
+          if (!nextOpen) {
+            requestAnimationFrame(() => editItemButtonRef.current?.focus());
+          }
+        }}
         itemId={item.id}
       />
     </div>

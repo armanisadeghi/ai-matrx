@@ -288,8 +288,6 @@ const nextConfig = {
             ...(MATRX_PROFILE === "full" ? [
                 { source: '/tests/:path*', destination: '/demos/tests/:path*', permanent: false },
                 { source: '/tests', destination: '/demos/tests', permanent: false },
-                { source: '/demo/:path*', destination: '/demos/general/:path*', permanent: false },
-                { source: '/demo', destination: '/demos/general', permanent: false },
                 { source: '/settings-hooks-demo', destination: '/demos/settings-hooks', permanent: false },
                 { source: '/settings-primitives', destination: '/demos/settings-primitives', permanent: false },
                 { source: '/settings-shell-demo', destination: '/demos/settings-shell', permanent: false },
