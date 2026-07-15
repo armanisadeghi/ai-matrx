@@ -83,7 +83,7 @@ See [`CONVERGENCE_C_CREATORS.md`](./CONVERGENCE_C_CREATORS.md) + [`SCHOOL_SAFE_C
 - ✅ **Creator profiles + public landing pages** (`/c/[handle]`, SEO/JSON-LD/OG, YouTube + free tools + enroll CTA) — the growth engine.
 - ✅ **Teacher tools** — assignments (association edges + due dates) + class analytics + **assignment confers read-visibility** so students can study an assigned private deck.
 - ✅ **FERPA/COPPA code affordances** — D52 fix, COPPA age-gate (fail-closed, on all 9 AI entries), student data export/delete/restore, guardian consent. Server-side gate enforcement + verifiable consent = open (D57 remainder).
-- 🟡 **Paid gate** — access-gating live; `edu_class_purchase` is a payment-free STUB (D58). Real payouts = **Stripe Connect, pending Arman**.
+- 🟡 **Paid gate + creator payouts — REAL money movement built (Stripe Connect Express), 2026-07-15.** Paid-class checkout is a Connect **destination charge** (20% platform / 80% creator, config in `lib/stripe/connect.ts`); the enrolment is conferred **webhook-only** via the service_role-only `edu_class_confer_purchase` (the bypassable `edu_class_purchase` stub is deleted). Price in `scope.settings.price_cents`; real "Enroll — $X" checkout on the class hub + `/c/[handle]`; refund/chargeback revokes access; creator earnings panel links to the Stripe Express dashboard. Grant/revoke path verified live. **Blocked on Arman:** enable Connect on the Stripe account (+ platform profile) and set `STRIPE_WEBHOOK_SECRET` — then the money paths verify end-to-end in test mode. See `features/entitlements/FEATURE.md` §Creator payouts.
 - 🔲 Class rooms & real-time co-study; card-level discussion threads.
 - 🔲 LMS — Google Classroom / Canvas, LTI 1.3 / OneRoster.
 - 🔲 Live classroom quiz mode (P10 fan-out).

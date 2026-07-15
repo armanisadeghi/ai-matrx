@@ -31,6 +31,12 @@ function asString(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() ? v : undefined;
 }
 
+/** Coerce a settings price to a positive integer cent amount, or undefined. */
+function asPriceCents(v: unknown): number | undefined {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : undefined;
+}
+
 /** Parse exam dates defensively — a malformed row is dropped, never thrown. */
 function parseExamDates(v: unknown): ClassExamDate[] {
   if (!Array.isArray(v)) return [];
@@ -58,6 +64,7 @@ export function parseClassSettings(raw: unknown): ClassSettings {
     color: asString(s[CLASS_SETTINGS_KEYS.color]),
     archived: s[CLASS_SETTINGS_KEYS.archived] === true,
     accessMode: parseAccessMode(s[CLASS_SETTINGS_KEYS.accessMode]),
+    priceCents: asPriceCents(s[CLASS_SETTINGS_KEYS.priceCents]),
   };
 }
 
@@ -80,6 +87,14 @@ export function serializeClassSettings(
   // access_mode is always persisted — update_scope replaces the whole settings
   // JSONB, so omitting it would silently drop the class's access mode.
   out[CLASS_SETTINGS_KEYS.accessMode] = settings.accessMode;
+  // Price only meaningful for paid classes; persist a valid positive cent amount.
+  if (
+    settings.accessMode === "paid" &&
+    typeof settings.priceCents === "number" &&
+    settings.priceCents > 0
+  ) {
+    out[CLASS_SETTINGS_KEYS.priceCents] = Math.round(settings.priceCents);
+  }
   return out;
 }
 

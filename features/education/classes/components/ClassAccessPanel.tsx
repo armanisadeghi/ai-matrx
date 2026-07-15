@@ -6,15 +6,18 @@
 // right call-to-action for the class's access mode + the caller's current status:
 //   open   → "Join class" (immediate)
 //   closed → "Request to join" → "Request pending" once sent
-//   paid   → "Enroll" → needs_purchase gate → "Get access" (STUB purchase) → enroll
+//   paid   → "Enroll — $X" → Stripe Checkout (Connect) → webhook confers enrolment
 // Active members get a compact "Enrolled" row + Leave. Owner controls live in the
-// roster panel, not here. All actions run through the role-gated edu_class_* RPCs.
+// roster panel, not here. Paid access is conferred ONLY by the Stripe webhook —
+// this component never grants access (webhook-only paid gate).
 
-import { useState } from "react";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Check, LogOut, Loader2 } from "lucide-react";
+import { Check, LogOut, Loader2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ACCESS_MODES } from "../constants";
+import { formatPriceCents } from "@/lib/stripe/connect";
 import { AccessModeBadge } from "./AccessModeBadge";
 import type { UseClassAccessReturn } from "../hooks/useClassAccess";
 
@@ -24,12 +27,43 @@ export function ClassAccessPanel({
   access: UseClassAccessReturn;
 }) {
   const { state, acting } = access;
-  const [needsPurchase, setNeedsPurchase] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Returned from Stripe Checkout — refresh state so the freshly-conferred
+  // enrolment shows immediately, and toast the outcome once.
+  const enrolled = searchParams.get("enrolled");
+  useEffect(() => {
+    if (enrolled === "1") {
+      void access.refresh();
+      toast.success("Payment received — welcome to the class.");
+    } else if (enrolled === "cancelled") {
+      toast.info("Checkout cancelled — you can enrol anytime.");
+    }
+  }, [enrolled]);
 
   if (!state || state.isOwner) return null;
 
-  const { accessMode, myStatus } = state;
+  const { accessMode, myStatus, priceCents } = state;
   const modeMeta = ACCESS_MODES.find((m) => m.value === accessMode);
+  const priceLabel = priceCents ? formatPriceCents(priceCents) : null;
+
+  async function handleEnroll() {
+    const returnTo =
+      typeof window !== "undefined"
+        ? window.location.pathname + window.location.search
+        : undefined;
+    const r = await access.startCheckout(returnTo);
+    if (r.alreadyEnrolled) {
+      await access.refresh();
+      toast.success("You already have access.");
+      return;
+    }
+    if (r.url) {
+      window.location.assign(r.url);
+      return;
+    }
+    toast.error(r.error ?? "Could not start checkout.");
+  }
 
   // ── Active member ── compact enrolled row + leave.
   if (myStatus === "active") {
@@ -60,7 +94,7 @@ export function ClassAccessPanel({
     const r = await access.join();
     if (!r) return;
     if (r.status === "joined") toast.success("You joined the class.");
-    else if (r.status === "needs_purchase") setNeedsPurchase(true);
+    else if (r.status === "needs_purchase") void handleEnroll();
   }
 
   async function handleRequest() {
@@ -68,20 +102,6 @@ export function ClassAccessPanel({
     if (!r) return;
     if (r.status === "pending") toast.success("Request sent — the owner will review it.");
     else if (r.status === "joined") toast.success("You joined the class.");
-  }
-
-  async function handlePurchase() {
-    const r = await access.purchase();
-    if (!r) return;
-    if (r.status === "entitled") {
-      // Grant conferred — immediately complete enrolment.
-      const j = await access.join();
-      if (j?.status === "joined") toast.success("Enrolled — welcome to the class.");
-      setNeedsPurchase(false);
-    } else if (r.status === "already_member") {
-      toast.success("You already have access.");
-      setNeedsPurchase(false);
-    }
   }
 
   const busy = acting;
@@ -123,27 +143,32 @@ export function ClassAccessPanel({
       {accessMode === "paid" && (
         <div className="space-y-2">
           {myStatus === "entitled" ? (
+            // Legacy comp grant (owner comped access before enrolment) — join to
+            // complete. Paid purchasers are enrolled directly by the webhook.
             <Button size="sm" className="gap-1.5" disabled={busy} onClick={handleJoin}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               Complete enrolment
             </Button>
-          ) : needsPurchase || myStatus === null ? (
+          ) : (
             <>
               <Button
                 size="sm"
                 className="gap-1.5"
                 disabled={busy}
-                onClick={needsPurchase ? handlePurchase : handleJoin}
+                onClick={handleEnroll}
               >
-                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-                {needsPurchase ? "Get access" : "Enroll"}
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CreditCard className="h-4 w-4" />
+                )}
+                {priceLabel ? `Enroll — ${priceLabel}` : "Enroll"}
               </Button>
-              <p className="text-[11px] italic text-muted-foreground">
-                Payments are a stub for now — real checkout (Stripe Connect) is
-                coming. Free preview material stays open.
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                Secure checkout by Stripe. Free preview material stays open.
               </p>
             </>
-          ) : null}
+          )}
         </div>
       )}
     </div>

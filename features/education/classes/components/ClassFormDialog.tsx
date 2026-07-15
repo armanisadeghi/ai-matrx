@@ -66,6 +66,10 @@ export function ClassFormDialog({
   const [accessMode, setAccessMode] = useState<AccessMode>(
     initial?.settings.accessMode ?? DEFAULT_ACCESS_MODE,
   );
+  // Price is edited in DOLLARS; persisted as integer cents in scope.settings.
+  const [price, setPrice] = useState(
+    initial?.settings.priceCents ? String(initial.settings.priceCents / 100) : "",
+  );
   const [busy, setBusy] = useState(false);
 
   function addExam() {
@@ -92,6 +96,14 @@ export function ClassFormDialog({
     const cleanExams = examDates
       .map((e) => ({ ...e, title: e.title.trim() }))
       .filter((e) => e.title && e.date);
+    // Dollars → cents. Guard the $1.00 floor for a paid class (Stripe's charge
+    // minimum + a clean whole-cent 20% fee).
+    const priceCents =
+      accessMode === "paid" ? Math.round(Number(price) * 100) : undefined;
+    if (accessMode === "paid" && (!priceCents || priceCents < 100)) {
+      toast.error("Set a price of at least $1.00 for a paid class.");
+      return;
+    }
     setBusy(true);
     try {
       await onSubmit({
@@ -105,6 +117,7 @@ export function ClassFormDialog({
           color: initial?.settings.color,
           archived: initial?.settings.archived,
           accessMode,
+          priceCents,
         },
       });
       onOpenChange(false);
@@ -185,6 +198,30 @@ export function ClassFormDialog({
           </div>
 
           <AccessModeField value={accessMode} onChange={setAccessMode} />
+
+          {accessMode === "paid" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="class-price">Enrolment price (USD)</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">$</span>
+                <Input
+                  id="class-price"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="29"
+                  className="w-32"
+                />
+              </div>
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                Students pay this once for full access. You keep 80%; the platform
+                fee is 20%. Payouts require connecting Stripe on your creator page.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

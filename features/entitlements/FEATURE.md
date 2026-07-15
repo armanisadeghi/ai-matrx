@@ -131,6 +131,67 @@ full snapshot refresh.
 Premium/trial = unlimited (no limit rows). Numbers activate per-capability once the
 aidream spend re-check lands (`enforced` flips in `billing.capability`).
 
+## Creator payouts (Stripe Connect Express) — real money to creators
+
+The monetization layer also moves **real money to creators**: a student buys a paid
+class, the platform takes a cut, and the rest is paid out to the creator. Built on
+**Stripe Connect Express** (Stripe hosts onboarding, KYC, payouts, tax — we link, we
+never rebuild). Live in TEST mode as far as the Stripe account allows; the money
+paths are **blocked on Arman enabling Connect** (see below).
+
+**Split model — ONE source: [`lib/stripe/connect.ts`](../../lib/stripe/connect.ts).**
+`PLATFORM_FEE_BPS = 2000` → **platform 20% / creator 80%**. `platformFeeAmount()` /
+`creatorAmount()` compute the cents; every surface (checkout, ledger, dashboard, docs)
+reads them from here. `MIN_CLASS_PRICE_CENTS = 100` ($1 floor). `formatPriceCents()` is
+the display formatter.
+
+**The flow (destination charge):**
+1. Creator connects an Express account on the dashboard → `POST /api/stripe/connect/onboard`
+   (`ensureConnectAccount` + a hosted onboarding link). Status: `GET /api/stripe/connect/status`
+   (refreshes from Stripe); Express dashboard link: `POST /api/stripe/connect/dashboard`.
+2. Creator sets a class to **paid** + a price in the class form → `scope.settings.price_cents`.
+3. Student buys → `POST /api/stripe/class-checkout`: a Stripe Checkout session in `payment`
+   mode with `application_fee_amount` (the 20%) + `transfer_data.destination` = the creator's
+   Connect account. Price is read **authoritatively server-side** from the class scope (never
+   trusted from the client). A pending `billing.class_purchase` row is written.
+4. `checkout.session.completed` (webhook) → `fulfillClassPurchase` marks the sale paid and
+   confers the enrolment via **`edu_class_confer_purchase`** (service_role-only RPC).
+5. Refund/chargeback (`charge.refunded` / `charge.dispute.created`) → `revokeClassPurchaseByPaymentIntent`
+   → `edu_class_revoke_purchase` soft-removes access. `account.updated` keeps Connect status fresh.
+
+**The paid gate is WEBHOOK-ONLY (the load-bearing security invariant).** `edu_class_confer_purchase`
+/ `_revoke_purchase` have EXECUTE **revoked from anon + authenticated**, granted to `service_role`
+alone — so the ONLY path to `active` paid membership is the signature-verified Stripe webhook via
+the admin client. A client can never self-grant paid access (the exact bypass the security review
+flagged on the deleted `edu_class_purchase` stub). Verified live.
+
+**DB (`migrations/stripe_connect_creator_payouts.sql`):** `billing.connect_account` (one row per
+creator; `charges_enabled` = the "can receive payouts" gate) + `billing.class_purchase` (sales
+ledger + refund lookup by payment_intent), both RLS deny-by-default (service_role writes only).
+`creator_connect_status()` (authed self-read) exposes a creator's own status. Idempotency reuses
+`billing.stripe_event`.
+
+**Files:** [`lib/stripe/connect.ts`](../../lib/stripe/connect.ts) (split config, pure) ·
+[`stripe/connect.ts`](./stripe/connect.ts) (server DB-sync: connect accounts + purchase confer/revoke) ·
+`app/api/stripe/connect/{onboard,status,dashboard}/route.ts` · `app/api/stripe/class-checkout/route.ts` ·
+webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
+`features/education/classes/{ClassAccessPanel,ClassFormDialog}` + `service.startClassCheckout`,
+`features/education/creators/{EnrollButton,CreatorPayoutsPanel}`.
+
+**Blocked on Arman (Stripe dashboard) — exact list:**
+1. **Enable Connect** at `https://dashboard.stripe.com/connect` (verified: account creation currently
+   fails "you can only create new accounts if you've signed up for Connect"). Fill the **platform
+   profile** (business name, support email, statement descriptor) Connect requires.
+2. **Set `STRIPE_WEBHOOK_SECRET`** (still unset) — from `stripe listen --forward-to
+   localhost:3000/api/stripe/webhook` for dev, or the dashboard endpoint secret in prod. Subscribe
+   the endpoint to `checkout.session.completed`, `charge.refunded`, `charge.dispute.created`,
+   `account.updated` (+ the existing subscription events).
+3. **Connect `client_id` is NOT needed** for Express (that's for Standard OAuth). Express uses the
+   platform account + `accounts.create({type:'express'})` — already wired.
+4. Then verify end-to-end: connect a test Express account → set a class paid + priced → buy with a
+   test card → confirm the webhook confers the `active` membership and the split lands in the
+   payment intent's `application_fee_amount` + transfer.
+
 ## Invariants
 
 - **Features never read plan/subscription/usage tables directly.** They ask the resolver
@@ -161,7 +222,12 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
   it's the only surface for a gate limit until a gate-limit primitive is warranted (only one gate
   capability exists today; don't build a speculative abstraction for it).
 - **Billing tables are protected resources** — RLS deny-by-default; writes only via webhooks /
-  `SECURITY DEFINER` RPCs. (Backend, landing next.)
+  `SECURITY DEFINER` RPCs.
+- **Paid access is WEBHOOK-ONLY.** The only path to a paid `active` class membership is the
+  signature-verified Stripe webhook (`edu_class_confer_purchase`, service_role-only). No client
+  code — no RPC, no direct write — may confer paid access. A client-callable "grant myself access"
+  path is the exact bypass this design kills (the deleted `edu_class_purchase` stub). Price is
+  read server-side from the class scope, never trusted from the client.
 
 ## Roadmap (this project)
 
@@ -245,6 +311,18 @@ real (F6, 2026-07-13).
 
 ## Change Log
 
+- **2026-07-15** — **Creator payouts (Stripe Connect Express) — real money movement.** Added the
+  full marketplace path: `billing.connect_account` + `billing.class_purchase`, the webhook-only paid
+  gate (`edu_class_confer_purchase`/`_revoke_purchase`, service_role-only — verified anon/authenticated
+  cannot execute), `creator_connect_status()`, and `creator_public_page` single-sourcing a class's
+  live price/access mode. Split model (20/80) in `lib/stripe/connect.ts`; server DB-sync in
+  `stripe/connect.ts`; routes `api/stripe/connect/{onboard,status,dashboard}` +
+  `api/stripe/class-checkout`; webhook extended (`checkout.session.completed` for class purchases,
+  `charge.refunded`/`dispute.created` revoke, `account.updated`). FE: real "Enroll — $X" checkout on
+  the class hub + creator page, a price field in the class form, and a creator earnings panel.
+  Migration `stripe_connect_creator_payouts.sql` applied + ledgered; grant path verified live. Deleted
+  the bypassable `edu_class_purchase` stub. **Blocked on Arman:** enable Connect + platform profile +
+  `STRIPE_WEBHOOK_SECRET` (see §Creator payouts).
 - **2026-07-13** — **F6: the meter is now honest — consume-on-success wired platform-wide.**
   Before this, `entitlement_consume` had ZERO callers, so every meter read "X of Y left"
   forever (a TRUST-mandate violation + no usage captured). Added the consume primitive:

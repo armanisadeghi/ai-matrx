@@ -93,6 +93,56 @@ export async function setCreatorPublic(isPublic: boolean): Promise<CreatorProfil
   return coerceMine(data);
 }
 
+// ─── Creator payouts (Stripe Connect Express) ───────────────────────────────────
+//
+// Stripe is a legitimate Next.js API-route concern (webhooks/checkout/Connect) per
+// CLAUDE.md, so these — unlike the DIRECT-RPC calls above — go through the
+// /api/stripe/connect/* routes (the server holds the Stripe secret + service_role).
+
+/** The creator's live Connect payout status, for the earnings panel. */
+export interface ConnectStatus {
+  connected: boolean;
+  configured: boolean;
+  chargesEnabled?: boolean;
+  payoutsEnabled?: boolean;
+  detailsSubmitted?: boolean;
+  onboardedAt?: string | null;
+  country?: string | null;
+  defaultCurrency?: string | null;
+}
+
+/** Fetch the caller's Connect status (refreshes from Stripe server-side). */
+export async function getConnectStatus(): Promise<ConnectStatus> {
+  const res = await fetch("/api/stripe/connect/status", { method: "GET" });
+  const json = (await res.json().catch(() => ({}))) as Partial<ConnectStatus>;
+  return {
+    connected: json.connected === true,
+    configured: json.configured !== false,
+    chargesEnabled: json.chargesEnabled,
+    payoutsEnabled: json.payoutsEnabled,
+    detailsSubmitted: json.detailsSubmitted,
+    onboardedAt: json.onboardedAt ?? null,
+    country: json.country ?? null,
+    defaultCurrency: json.defaultCurrency ?? null,
+  };
+}
+
+/** Start (or resume) Connect Express onboarding — returns a hosted onboarding URL. */
+export async function startConnectOnboarding(): Promise<{ url?: string; error?: string; connectDisabled?: boolean }> {
+  const res = await fetch("/api/stripe/connect/onboard", { method: "POST" });
+  const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string; connectDisabled?: boolean };
+  if (!res.ok) return { error: json.error ?? "Could not start onboarding.", connectDisabled: json.connectDisabled };
+  return { url: json.url };
+}
+
+/** Open the creator's Stripe Express dashboard (Stripe hosts the payout UI). */
+export async function openConnectDashboard(): Promise<{ url?: string; error?: string }> {
+  const res = await fetch("/api/stripe/connect/dashboard", { method: "POST" });
+  const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+  if (!res.ok) return { error: json.error ?? "Could not open your payout dashboard." };
+  return { url: json.url };
+}
+
 /** A public resource the creator owns and can feature (free tool). */
 export interface OwnedPublicResource {
   resourceType: string;

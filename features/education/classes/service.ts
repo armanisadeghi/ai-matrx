@@ -16,8 +16,11 @@
 //   edu_class_remove(p_class, p_user)     → owner removes a member / declines a request
 //   edu_class_roster(p_class)             → ClassRosterMember[] (owner: all; member: active)
 //   edu_class_grant(p_class, p_user)      → owner comps the paid class_access grant
-//   edu_class_purchase(p_class)           → STUB purchase → entitled (real Stripe Connect pending)
 //   edu_class_set_access(p_class, mode)   → owner sets access_mode + ensures owner membership
+//
+// Paid enrolment is NOT an RPC here — it goes through Stripe Checkout via the
+// /api/stripe/class-checkout route (startClassCheckout below); the webhook confers
+// access with the service_role-only edu_class_confer_purchase RPC (webhook-only gate).
 //   edu_my_classes()                      → MyClass[] the caller owns / joined / requested
 //
 // Teacher tools (migrations/edu_class_assignments_analytics.sql):
@@ -74,6 +77,13 @@ function coerceJoin(data: unknown): ClassJoinResult {
   };
 }
 
+function priceCentsFromSettings(v: unknown): number | null {
+  const s = rec(v);
+  const raw = s.price_cents;
+  const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+}
+
 function coerceState(data: unknown): ClassAccessState {
   const o = rec(data);
   return {
@@ -88,6 +98,7 @@ function coerceState(data: unknown): ClassAccessState {
     myStatus: status(o.my_status),
     memberCount: typeof o.member_count === "number" ? o.member_count : 0,
     pendingCount: typeof o.pending_count === "number" ? o.pending_count : null,
+    priceCents: priceCentsFromSettings(o.settings),
   };
 }
 
@@ -362,17 +373,44 @@ export async function getClassProgressOverview(
   return coerceOverview(data);
 }
 
-// ─── Paid gate (STUB) ──────────────────────────────────────────────────────────
+// ─── Paid gate — REAL Stripe Connect checkout ───────────────────────────────────
+//
+// The stub (edu_class_purchase → direct grant) is GONE. A paid enrolment now goes
+// through Stripe Checkout (a Connect destination charge); the webhook confers the
+// enrolment via the service_role-only edu_class_confer_purchase RPC. A client can
+// NEVER self-grant paid access — the paid gate is webhook-only. This starter is the
+// ONLY client entry point: it asks the API route for a Checkout URL and returns it.
+
+export interface ClassCheckoutResult {
+  /** Redirect the browser here to pay. Present on a successful session create. */
+  url?: string;
+  /** True when the caller already holds active access (no charge needed). */
+  alreadyEnrolled?: boolean;
+  /** True when the creator hasn't finished Connect onboarding (enrolment closed). */
+  creatorNotReady?: boolean;
+  /** A human-readable error to toast, when the request failed. */
+  error?: string;
+}
 
 /**
- * STUB purchase — confers the caller the paid class_access grant directly. Real
- * money movement (Stripe Connect payouts + revenue share) is PENDING (Arman);
- * when Connect lands, the checkout webhook replaces this direct grant.
+ * Start Stripe Checkout for a paid class. `returnTo` is the in-app path Stripe
+ * bounces back to after payment (defaults server-side to the class hub).
  */
-export async function purchaseClass(classId: string): Promise<ClassJoinResult> {
-  const { data, error } = await createClient().rpc("edu_class_purchase", {
-    p_class: classId,
+export async function startClassCheckout(
+  classId: string,
+  returnTo?: string,
+): Promise<ClassCheckoutResult> {
+  const res = await fetch("/api/stripe/class-checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ classId, returnTo }),
   });
-  if (error) throw new Error(error.message);
-  return coerceJoin(data);
+  const json = (await res.json().catch(() => ({}))) as ClassCheckoutResult;
+  if (!res.ok) {
+    return {
+      error: json.error ?? "Could not start checkout.",
+      creatorNotReady: json.creatorNotReady,
+    };
+  }
+  return json;
 }

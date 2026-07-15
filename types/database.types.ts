@@ -2857,6 +2857,105 @@ export type Database = {
           },
         ]
       }
+      class_purchase: {
+        Row: {
+          amount_total: number
+          application_fee_amount: number
+          buyer_user_id: string
+          class_id: string
+          created_at: string
+          creator_amount: number
+          creator_user_id: string
+          currency: string
+          id: string
+          organization_id: string | null
+          paid_at: string | null
+          refunded_at: string | null
+          status: string
+          stripe_account_id: string | null
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_total: number
+          application_fee_amount: number
+          buyer_user_id: string
+          class_id: string
+          created_at?: string
+          creator_amount: number
+          creator_user_id: string
+          currency?: string
+          id?: string
+          organization_id?: string | null
+          paid_at?: string | null
+          refunded_at?: string | null
+          status?: string
+          stripe_account_id?: string | null
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_total?: number
+          application_fee_amount?: number
+          buyer_user_id?: string
+          class_id?: string
+          created_at?: string
+          creator_amount?: number
+          creator_user_id?: string
+          currency?: string
+          id?: string
+          organization_id?: string | null
+          paid_at?: string | null
+          refunded_at?: string | null
+          status?: string
+          stripe_account_id?: string | null
+          stripe_checkout_session_id?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      connect_account: {
+        Row: {
+          charges_enabled: boolean
+          country: string | null
+          created_at: string
+          default_currency: string | null
+          details_submitted: boolean
+          onboarded_at: string | null
+          payouts_enabled: boolean
+          stripe_account_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          charges_enabled?: boolean
+          country?: string | null
+          created_at?: string
+          default_currency?: string | null
+          details_submitted?: boolean
+          onboarded_at?: string | null
+          payouts_enabled?: boolean
+          stripe_account_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          charges_enabled?: boolean
+          country?: string | null
+          created_at?: string
+          default_currency?: string | null
+          details_submitted?: boolean
+          onboarded_at?: string | null
+          payouts_enabled?: boolean
+          stripe_account_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customer: {
         Row: {
           created_at: string
@@ -9900,6 +9999,7 @@ export type Database = {
       }
       guardian_link: {
         Row: {
+          consent_method: string | null
           created_at: string
           created_by: string
           guardian_user_id: string
@@ -9911,8 +10011,11 @@ export type Database = {
           status: string
           student_user_id: string
           updated_at: string
+          verification_ref: string | null
+          verified_at: string | null
         }
         Insert: {
+          consent_method?: string | null
           created_at?: string
           created_by?: string
           guardian_user_id: string
@@ -9924,8 +10027,11 @@ export type Database = {
           status?: string
           student_user_id: string
           updated_at?: string
+          verification_ref?: string | null
+          verified_at?: string | null
         }
         Update: {
+          consent_method?: string | null
           created_at?: string
           created_by?: string
           guardian_user_id?: string
@@ -9937,6 +10043,8 @@ export type Database = {
           status?: string
           student_user_id?: string
           updated_at?: string
+          verification_ref?: string | null
+          verified_at?: string | null
         }
         Relationships: []
       }
@@ -27608,6 +27716,7 @@ export type Database = {
         Args: { p_display_name?: string; p_handle: string }
         Returns: Json
       }
+      creator_connect_status: { Args: never; Returns: Json }
       creator_get_mine: { Args: never; Returns: Json }
       creator_handle_available: { Args: { p_handle: string }; Returns: boolean }
       creator_normalize_handle: { Args: { p_handle: string }; Returns: string }
@@ -28106,6 +28215,10 @@ export type Database = {
         Returns: Json
       }
       edu_class_assignments: { Args: { p_class: string }; Returns: Json }
+      edu_class_confer_purchase: {
+        Args: { p_class: string; p_user: string }
+        Returns: Json
+      }
       edu_class_grant: {
         Args: { p_class: string; p_user: string }
         Returns: Json
@@ -28119,6 +28232,10 @@ export type Database = {
         Returns: Json
       }
       edu_class_request: { Args: { p_class: string }; Returns: Json }
+      edu_class_revoke_purchase: {
+        Args: { p_class: string; p_user: string }
+        Returns: Json
+      }
       edu_class_roster: { Args: { p_class: string }; Returns: Json }
       edu_class_set_access: {
         Args: { p_access_mode: string; p_class: string }
@@ -29881,6 +29998,16 @@ export type Database = {
         Returns: undefined
       }
       guardian_can_view: { Args: { p_student_id: string }; Returns: boolean }
+      guardian_confirm_verification: {
+        Args: { p_link_id: string; p_method: string; p_ref: string }
+        Returns: Database["education"]["Tables"]["guardian_link"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "guardian_link"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       guardian_find_user_by_email: {
         Args: { p_email: string }
         Returns: string
@@ -29896,6 +30023,7 @@ export type Database = {
       guardian_list_links: {
         Args: never
         Returns: {
+          consent_method: string
           counterpart_email: string
           counterpart_name: string
           counterpart_user_id: string
@@ -29907,7 +30035,9 @@ export type Database = {
           reviewed_at: string
           role: string
           status: string
+          student_age_band: string
           student_user_id: string
+          verified_at: string
         }[]
       }
       guardian_request_student: {

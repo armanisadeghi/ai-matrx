@@ -1,22 +1,22 @@
 "use client";
 
-// Enroll / join CTA for a featured class. CONSUMES the documented class-model
-// contract (CONVERGENCE_C_CREATORS.md §Fleet contracts):
-//   edu_class_join(class, access_mode) -> immediate | pending | needs_purchase
-// The class-model build owns that RPC (features/education/classes) and, per its
-// FEATURE.md, the join family is NOT landed yet (roster/join = Convergence C).
-// So this is wired against the contract SHAPE and degrades gracefully:
+// Enroll / join CTA for a featured class on a public creator page.
 //   • anonymous visitor  -> /sign-up?redirectTo=/c/<handle> (the acquisition loop)
-//   • signed-in + RPC live -> call it, route by outcome
-//   • signed-in + RPC absent -> honest "opens soon" toast (no fake success)
-// When edu_class_join lands, this island already calls it — no rewire needed.
+//   • signed-in + open    -> edu_class_join (immediate)
+//   • signed-in + closed  -> edu_class_join (request → owner approves)
+//   • signed-in + paid    -> Stripe Checkout (Connect destination charge); the
+//                            webhook confers enrolment. This island NEVER grants
+//                            paid access (webhook-only paid gate).
+// `price` arrives in DOLLARS, resolved LIVE from the class scope settings by
+// creator_public_page (single source — matches what the owner set in the class form).
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Lock, Loader2 } from "lucide-react";
+import { GraduationCap, CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
+import { startClassCheckout } from "@/features/education/classes/service";
 import type { ClassAccessMode } from "../types";
 
 interface EnrollButtonProps {
@@ -24,19 +24,18 @@ interface EnrollButtonProps {
   title: string;
   accessMode: ClassAccessMode;
   price?: number | null;
-  /** Handle of the page — used for the signed-out redirect target. */
+  /** Handle of the page — used for the signed-out redirect + checkout return target. */
   handle: string;
 }
 
-/** True when the RPC simply isn't deployed yet (contract not landed). */
-function isMissingRpc(message: string): boolean {
-  const m = message.toLowerCase();
-  return (
-    m.includes("could not find") ||
-    m.includes("does not exist") ||
-    m.includes("schema cache") ||
-    m.includes("function public.edu_class_join")
-  );
+function priceLabel(price?: number | null): string {
+  if (typeof price !== "number") return "Enroll";
+  const whole = Number.isInteger(price);
+  return `Enroll — ${new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: whole ? 0 : 2,
+  }).format(price)}`;
 }
 
 export function EnrollButton({ classId, title, accessMode, price, handle }: EnrollButtonProps) {
@@ -46,9 +45,7 @@ export function EnrollButton({ classId, title, accessMode, price, handle }: Enro
 
   const paid = accessMode === "paid";
   const label = paid
-    ? typeof price === "number"
-      ? `Enroll — $${price}`
-      : "Enroll"
+    ? priceLabel(price)
     : accessMode === "closed"
       ? "Request to join"
       : "Join class — free";
@@ -66,27 +63,31 @@ export function EnrollButton({ classId, title, accessMode, price, handle }: Enro
         return;
       }
 
-      // Signed-in: call the documented contract.
-      const { data, error } = await sb.rpc("edu_class_join", {
-        p_class_id: classId,
-        p_access_mode: accessMode,
-      } as never);
-
-      if (error) {
-        if (isMissingRpc(error.message)) {
-          toast.info("Enrollment opens soon", {
-            description: `"${title}" isn't accepting enrollments just yet. We'll email you when it's live.`,
-          });
+      // Paid → Stripe Checkout (the webhook confers access on payment).
+      if (paid) {
+        const r = await startClassCheckout(classId, `/c/${handle}`);
+        if (r.alreadyEnrolled) {
+          toast.success(`You already have access to "${title}"`);
           return;
         }
-        throw error;
+        if (r.url) {
+          window.location.assign(r.url);
+          return;
+        }
+        toast.error(r.creatorNotReady ? "Enrollment isn't open yet" : "Could not start checkout", {
+          description: r.error,
+        });
+        return;
       }
 
-      const outcome = (data as { outcome?: string } | null)?.outcome;
-      if (outcome === "needs_purchase") {
-        toast.info("Payment required", { description: "Checkout opens soon for this class." });
-      } else if (outcome === "pending") {
+      // Open / closed → the class-join contract.
+      const { data, error } = await sb.rpc("edu_class_join", { p_class: classId });
+      if (error) throw error;
+      const outcome = (data as { status?: string } | null)?.status;
+      if (outcome === "needs_request" || outcome === "pending") {
         toast.success("Request sent", { description: "The teacher will approve your request." });
+      } else if (outcome === "already_member") {
+        toast.success(`You're already in "${title}"`);
       } else {
         toast.success(`You're enrolled in "${title}"`);
       }
@@ -104,7 +105,7 @@ export function EnrollButton({ classId, title, accessMode, price, handle }: Enro
       {busy || pending ? (
         <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
       ) : paid ? (
-        <Lock className="mr-1.5 h-4 w-4" />
+        <CreditCard className="mr-1.5 h-4 w-4" />
       ) : (
         <GraduationCap className="mr-1.5 h-4 w-4" />
       )}

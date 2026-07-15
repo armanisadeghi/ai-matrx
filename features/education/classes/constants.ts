@@ -67,6 +67,7 @@ export const CLASS_SETTINGS_KEYS = {
   color: "color",
   archived: "archived",
   accessMode: "access_mode",
+  priceCents: "price_cents",
 } as const;
 
 /**

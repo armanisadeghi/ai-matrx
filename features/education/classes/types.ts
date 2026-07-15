@@ -38,6 +38,12 @@ export interface ClassSettings {
   archived?: boolean;
   /** open | closed | paid. Missing → 'closed' (private personal classes). */
   accessMode: AccessMode;
+  /**
+   * Enrolment price for a PAID class, in the smallest currency unit (cents). The
+   * authoritative price — the checkout route reads it server-side, never trusting
+   * a client value. Undefined/0 → not sellable (a paid class needs a price set).
+   */
+  priceCents?: number;
 }
 
 /** A caller's membership role on a class. */
@@ -65,6 +71,8 @@ export interface ClassAccessState {
   memberCount: number;
   /** Only populated for the owner. */
   pendingCount: number | null;
+  /** Paid-class enrolment price in cents (from scope.settings.price_cents), or null. */
+  priceCents: number | null;
 }
 
 /** One row of a class roster (edu_class_roster). */

@@ -35,8 +35,9 @@ Migration: [`migrations/education_creator_profiles.sql`](../../../migrations/edu
 | `sitemap.ts` | `getCreatorSitemapPaths()` → wired into the education sitemap (`publishing/sitemap.ts`) |
 | `components/CreatorLandingPage.tsx` | The public `/c/[handle]` page (server): hero + videos + free tools + classes + funnel + Person/Course JSON-LD |
 | `components/YouTubeEmbed.tsx` | Responsive privacy-friendly (nocookie) 16:9 iframe (server) |
-| `components/EnrollButton.tsx` | Leaf client island — consumes the `edu_class_join` contract (see below) |
-| `components/CreatorDashboard.tsx` | The authed manage UI (claim → editor: identity, links, featured picker, publish) |
+| `components/EnrollButton.tsx` | Leaf client island — open/closed via `edu_class_join`, **paid via real Stripe Checkout** (`startClassCheckout`); webhook-only paid gate |
+| `components/CreatorDashboard.tsx` | The authed manage UI (claim → editor: identity, links, featured picker, publish) + the earnings panel |
+| `components/CreatorPayoutsPanel.tsx` | Creator earnings surface — Connect onboard/status + Stripe Express dashboard link (`/api/stripe/connect/*`) |
 | `app/(public)/c/[handle]/page.tsx` | Public route (metadata, canonical, robots:index, notFound) |
 | `app/(public)/c/[handle]/opengraph-image.tsx` | Per-creator OG (reuses `renderEduOgImage`) |
 | `app/(core)/education/creator/page.tsx` | Authed manage route (server auth gate → dashboard; noindex) |
@@ -69,13 +70,15 @@ A logged-out visitor on `/c/[handle]`:
 1. Watches the embedded videos and opens any free tool — flashcard sets route to the **existing `/p/e` public viewer** (usable logged-out, with `DuplicateToEditButton` to fork-and-study). No reinvention.
 2. Every enroll CTA + the funnel banner routes anon → `/sign-up?redirectTo=/c/<handle>` — sign up, land back on the page, save progress / enroll.
 
-## Consuming the class-join contract (stubbed until landed)
+## Enroll CTA + paid checkout (LIVE)
 
-`EnrollButton` consumes the documented `edu_class_join(class, access_mode) → immediate | pending | needs_purchase` contract (CONVERGENCE_C §Fleet contracts). Per `features/education/classes/FEATURE.md`, **the join/roster family is NOT landed yet** (it's Convergence C). So the button is wired against the contract SHAPE and degrades honestly:
-- anon → sign-up redirect;
-- signed-in + RPC live → call it, route by `outcome`;
-- signed-in + RPC absent → an honest "enrollment opens soon" toast (never a fake success).
-**When `edu_class_join` lands, no rewire is needed** — the island already calls it. Paid checkout (Stripe Connect) is a separate pending build (CONVERGENCE_C §Monetization) — the price CTA is display + intent only.
+`EnrollButton` is the leaf island behind every featured-class CTA:
+- **anon** → sign-up redirect (the acquisition loop);
+- **open** → `edu_class_join` (immediate);
+- **closed** → `edu_class_join` (request → owner approves);
+- **paid** → **real Stripe Checkout** via `startClassCheckout` (`features/education/classes/service.ts` → `POST /api/stripe/class-checkout`, a Connect destination charge). The webhook confers access — this island NEVER grants paid access (webhook-only gate). See `features/entitlements/FEATURE.md` §Creator payouts.
+
+A featured class's **access mode + price are single-sourced LIVE from the class scope settings** (`scope.settings.price_cents`), resolved by `creator_public_page` — so the public CTA can never diverge from what the owner set in the class form. The dashboard shows them read-only (edit in the class settings). **Creator payouts** run through `CreatorPayoutsPanel` (Connect onboard/status + Express dashboard link); blocked only on Arman enabling Connect.
 
 ## Product decisions (flagged for Arman — reasonable defaults)
 
@@ -88,12 +91,13 @@ A logged-out visitor on `/c/[handle]`:
 ## Known gaps / follow-ups
 
 - **`edu_class_join` not landed** — enroll CTA stubbed against the contract (above).
-- **Paid checkout** — Stripe Connect payouts + purchase flow pending Arman's decision (CONVERGENCE_C §Monetization). Price CTA is intent-only.
+- **Paid checkout — LIVE** (Stripe Connect Express; 20/80 split). Blocked only on Arman enabling Connect on the Stripe account + `STRIPE_WEBHOOK_SECRET` (see `features/entitlements/FEATURE.md` §Creator payouts).
 - **Avatar uploader in the dashboard** — reuse `fileHandler` to let creators set a public avatar in-page.
 - **`fc_card` count** in `creator_resolve_featured_resource` counts `platform.associations` member edges (best-effort; swallowed on error).
 - **Featured resource types** the picker offers today: `fc_set` + `learn_doc` (the creator's public free tools). `note`/`study_media` resolve if hand-added but aren't in the picker yet.
 
 ## Change log
 
+- **2026-07-15** — **Creator payouts LIVE (Stripe Connect Express).** `EnrollButton` now starts real Stripe Checkout for paid classes (`startClassCheckout`); added `CreatorPayoutsPanel` (Connect onboard/status + Express dashboard link) to the dashboard; a featured class's access mode + price are single-sourced LIVE from the class scope (`creator_public_page` reads `settings.price_cents`), shown read-only in the dashboard. Webhook-only paid gate. Full subsystem doc: `features/entitlements/FEATURE.md` §Creator payouts. Blocked on Arman (enable Connect + webhook secret).
 - **2026-07-15** — `learn.aimatrx.com` code readiness: `EDU_ORIGIN` (`features/education/constants.ts`) centralizes the public education origin behind `NEXT_PUBLIC_EDU_ORIGIN`; every public canonical/OG/JSON-LD/sitemap URL builder repointed; `proxy.ts` host gate serves only the education/creator/public/auth surface on the edu host. See "Public education origin" above. Domain not yet added in Vercel — code-only.
 - **2026-07-14** — Created (Convergence C). Extended `users.profiles` with creator columns (zero new tables) + 8 creator RPCs (`migrations/education_creator_profiles.sql`); public SEO landing page at `/c/[handle]` (server-rendered, Person/Course JSON-LD, OG, sitemap); authed dashboard at `/education/creator` (claim handle, feature videos/tools/classes, publish); anon funnel reuses `/p/e` + `DuplicateToEditButton`; `EnrollButton` consumes the documented `edu_class_join` contract (stubbed until landed). Registered `creator` in `EDU_TOOLS` + the education admin map.

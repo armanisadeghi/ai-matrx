@@ -15,7 +15,8 @@ import {
   joinClass,
   requestClass,
   leaveClass,
-  purchaseClass,
+  startClassCheckout,
+  type ClassCheckoutResult,
 } from "../service";
 import type { ClassAccessState, ClassJoinResult } from "../types";
 
@@ -29,7 +30,12 @@ export interface UseClassAccessReturn {
   join: () => Promise<ClassJoinResult | null>;
   request: () => Promise<ClassJoinResult | null>;
   leave: () => Promise<ClassJoinResult | null>;
-  purchase: () => Promise<ClassJoinResult | null>;
+  /**
+   * Start Stripe Checkout for a paid class. Resolves to the API result; the caller
+   * redirects to `url`. Access is conferred ONLY by the webhook after payment —
+   * this never grants access (webhook-only paid gate).
+   */
+  startCheckout: (returnTo?: string) => Promise<ClassCheckoutResult>;
 }
 
 export function useClassAccess(classId: string | null): UseClassAccessReturn {
@@ -76,6 +82,19 @@ export function useClassAccess(classId: string | null): UseClassAccessReturn {
     [classId, refresh],
   );
 
+  const startCheckout = useCallback(
+    async (returnTo?: string): Promise<ClassCheckoutResult> => {
+      if (!classId) return { error: "No class." };
+      setActing(true);
+      try {
+        return await startClassCheckout(classId, returnTo);
+      } finally {
+        setActing(false);
+      }
+    },
+    [classId],
+  );
+
   return {
     state,
     loading,
@@ -85,6 +104,6 @@ export function useClassAccess(classId: string | null): UseClassAccessReturn {
     join: useCallback(() => run(joinClass), [run]),
     request: useCallback(() => run(requestClass), [run]),
     leave: useCallback(() => run(leaveClass), [run]),
-    purchase: useCallback(() => run(purchaseClass), [run]),
+    startCheckout,
   };
 }

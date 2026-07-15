@@ -47,8 +47,9 @@ import {
   type OwnedPublicResource,
 } from "../service";
 import { parseYouTubeId } from "../youtube";
+import { CreatorPayoutsPanel } from "./CreatorPayoutsPanel";
+import { formatPriceCents } from "@/lib/stripe/connect";
 import type {
-  ClassAccessMode,
   CreatorLink,
   CreatorProfileMine,
   FeaturedClass,
@@ -310,12 +311,6 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
     setFeatured((p) => [...p, item]);
   }
 
-  function updateClassItem(classId: string, patch: Partial<Pick<FeaturedClass, "accessMode" | "price">>) {
-    setFeatured((prev) =>
-      prev.map((f) => (f.kind === "class" && f.classId === classId ? { ...f, ...patch } : f)),
-    );
-  }
-
   async function save() {
     setSaving(true);
     try {
@@ -469,31 +464,23 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
                   onDown={() => move(i, 1)}
                   onRemove={() => removeAt(i)}
                 />
-                {item.kind === "class" ? (
-                  <div className="mt-1 flex items-center gap-2 pl-11 text-xs">
-                    <select
-                      value={item.accessMode}
-                      onChange={(e) => updateClassItem(item.classId, { accessMode: e.target.value as ClassAccessMode })}
-                      className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
-                    >
-                      <option value="open">Open (free)</option>
-                      <option value="closed">Closed (approve)</option>
-                      <option value="paid">Paid</option>
-                    </select>
-                    {item.accessMode === "paid" ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">$</span>
-                        <Input
-                          type="number"
-                          value={item.price ?? ""}
-                          onChange={(e) => updateClassItem(item.classId, { price: e.target.value ? Number(e.target.value) : null })}
-                          className="h-7 w-20"
-                          placeholder="29"
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+                {item.kind === "class" ? (() => {
+                  // Access mode + price are single-sourced from the class settings
+                  // (edited in the class form). Shown read-only here so the page
+                  // CTA can never diverge from what the owner actually set.
+                  const live = classes.find((c) => c.id === item.classId);
+                  const mode = live?.settings.accessMode ?? item.accessMode;
+                  const cents = live?.settings.priceCents;
+                  return (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-11 text-xs text-muted-foreground">
+                      <span className="capitalize text-foreground">{mode}</span>
+                      {mode === "paid" ? (
+                        <span>· {cents ? formatPriceCents(cents) : "set a price in class settings"}</span>
+                      ) : null}
+                      <span className="text-muted-foreground/70">· manage in the class settings</span>
+                    </div>
+                  );
+                })() : null}
               </div>
             ))}
           </div>
@@ -547,10 +534,14 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
         ) : null}
         {featuredClasses.length > 0 ? (
           <p className="text-xs text-muted-foreground">
-            Paid enrollment checkout is coming soon — the enroll button is live and free/open classes work now.
+            Set a class to <span className="font-medium text-foreground">Paid</span> with a price in
+            its settings, then connect Stripe below to sell enrolments. The enroll button is live.
           </p>
         ) : null}
       </section>
+
+      {/* Earnings & payouts (Stripe Connect) */}
+      <CreatorPayoutsPanel />
     </div>
   );
 }
