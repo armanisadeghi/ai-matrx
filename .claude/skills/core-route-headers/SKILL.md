@@ -39,10 +39,16 @@ The shell header is a **transparent glass strip** over the page. The shell owns 
 
 Two drop-in templates in `features/shell/components/header/templates/` cover almost every route; consuming one is the default, hand-rolling is the exception:
 
-- **`EntityModeHeader`** — the agents pattern for any `[id]` route: back chevron + entity-name **sibling dropdown** + center `RouteModeNav` (View | Edit | …) + right tap-target actions. Reference consumer: `/schedules/[id]` (`features/scheduling/components/detail/ScheduleDetail.tsx`).
+- **`EntityModeHeader`** — the agents pattern for any `[id]` route: back chevron + entity-name **sibling dropdown** + center `RouteModeNav` + **declarative `actions`** (`{label, icon, onPress|href, primary?, destructive?}`). Desktop renders them as tap targets; **mobile renders back + name + ONE `…` that opens a bottom drawer** containing modes AND actions. Reference consumer: `/schedules/[id]` (`features/scheduling/components/detail/ScheduleDetail.tsx`).
 - **`CrumbTrailHeader`** — the org/scopes pattern for drill-down hierarchies: clickable trail, per-level sibling dropdowns, mobile collapses to the last crumb.
 
-**Tap buttons stay `glass` (the default) in the header row — never pass `variant="transparent"`;** the icons must match the shell's hamburger/inbox buttons.
+**Button rules** (live catalogue: `/demos/button-demo`):
+- Tap buttons stay `glass` (the default) — never pass `variant="transparent"` in a header row; icons must match the shell's own buttons.
+- The page's ONE primary action → `variant="solid"` (primary). Delete/remove → solid `bgColor="bg-destructive" hoverBgColor="hover:bg-destructive/90"`.
+- **Tap targets self-space (44px)** — never wrap them in `gap-*`/`p-*`.
+- Related actions can share a `TapTargetButtonGroup` (`TapTargetButtonForGroup` children). Search surfaces: see the SearchToolbar / SearchGroup patterns in the demo.
+
+**Mobile doctrine:** don't cram. As few header items as possible — back + identity + one `…` → bottom drawer. A truncated 8-letter dropdown is worse than a drawer. Only keep richer mobile headers where a route has a genuinely great concept (chat).
 
 ## Compose with RouteHeader — the default
 

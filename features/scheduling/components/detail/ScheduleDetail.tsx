@@ -5,19 +5,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, Pencil, Plus } from "lucide-react";
+import { Eye, Pencil, Plus, PlayCircle, Power, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import {
-  LoadingTapButton,
-  PlayTapButton,
-  TrashTapButton,
-} from "@/components/icons/tap-buttons";
 import {
   deleteScheduledTask,
   runTaskNowThunk,
@@ -120,35 +114,32 @@ export function ScheduleDetail({ taskId }: Props) {
           { name: "Edit", href: `/schedules/${task.id}/edit`, icon: Pencil },
           { name: "New", href: "/schedules/new", icon: Plus },
         ]}
-        right={
-          <>
-            <label className="mr-1 hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="hidden sm:inline">
-                {task.enabled ? "Enabled" : "Paused"}
-              </span>
-              <Switch
-                checked={task.enabled}
-                onCheckedChange={(enabled) =>
-                  dispatch(toggleTaskEnabled(task.id, enabled)).catch((err) => {
-                    toast.error(err instanceof Error ? err.message : "Failed");
-                  })
-                }
-              />
-            </label>
-            {running ? (
-              <LoadingTapButton ariaLabel="Queuing run" disabled />
-            ) : (
-              <PlayTapButton
-                ariaLabel="Run now"
-                onClick={() => void handleRunNow()}
-              />
-            )}
-            <TrashTapButton
-              ariaLabel="Delete schedule"
-              onClick={() => void handleDelete()}
-            />
-          </>
-        }
+        actions={[
+          {
+            label: "Run now",
+            icon: PlayCircle,
+            onPress: () => void handleRunNow(),
+            primary: true,
+            disabled: running,
+          },
+          {
+            label: task.enabled ? "Pause" : "Enable",
+            icon: Power,
+            onPress: () => {
+              dispatch(toggleTaskEnabled(task.id, !task.enabled)).catch(
+                (err) => {
+                  toast.error(err instanceof Error ? err.message : "Failed");
+                },
+              );
+            },
+          },
+          {
+            label: "Delete",
+            icon: Trash2,
+            onPress: () => void handleDelete(),
+            destructive: true,
+          },
+        ]}
       />
       <div className="space-y-4 max-w-5xl mx-auto">
         {task.description && (
