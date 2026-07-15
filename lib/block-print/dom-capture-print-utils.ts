@@ -108,18 +108,38 @@ function patchGetComputedStyle(isDark: boolean): () => void {
 }
 
 /**
- * Capture a DOM element and export it as a multi-page PDF.
+ * Capture a DOM element and export it as a multi-page PDF download.
  */
 export async function captureToPDF(
   element: HTMLElement,
   options: DomCaptureOptions = {},
 ): Promise<void> {
+  const pdf = await renderElementToPdf(element, options);
+  pdf.save(`${options.filename ?? "ai-response"}.pdf`);
+}
+
+/**
+ * Capture a DOM element and return the multi-page PDF as a Blob — for
+ * callers that upload/persist the PDF instead of downloading it (e.g. the
+ * chat "Save as → PDF Document" action saving into the user's Files).
+ */
+export async function captureToPDFBlob(
+  element: HTMLElement,
+  options: DomCaptureOptions = {},
+): Promise<Blob> {
+  const pdf = await renderElementToPdf(element, options);
+  return pdf.output("blob");
+}
+
+async function renderElementToPdf(
+  element: HTMLElement,
+  options: DomCaptureOptions = {},
+) {
   const {
     paperSize = "a4",
     orientation = "portrait",
     scale = 2,
     background = "#ffffff",
-    filename = "ai-response",
     onProgress,
   } = options;
 
@@ -180,7 +200,7 @@ export async function captureToPDF(
     onProgress?.(page, totalPages);
   }
 
-  pdf.save(`${filename}.pdf`);
+  return pdf;
 }
 
 /**

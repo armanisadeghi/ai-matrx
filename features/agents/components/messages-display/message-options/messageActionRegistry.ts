@@ -435,7 +435,53 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
       icon: Globe,
       iconColor: "text-teal-500 dark:text-teal-400",
       label: "Share as webpage",
-      action: openHtmlPublish,
+      action: async () => {
+        if (
+          !requireAuth(
+            ctx,
+            "share-webpage",
+            "Share as webpage",
+            "Sign in to publish this response as a public webpage.",
+          )
+        )
+          return;
+        onClose();
+        const toastId = toast.loading("Publishing webpage…");
+        try {
+          const { shareMessageAsWebpage } =
+            await import("./shareMessageAsWebpage");
+          const { url } = await shareMessageAsWebpage({
+            content: turnText,
+            title: deriveMessageTitle(ctx) ?? "Shared AI response",
+            messageId,
+            conversationId,
+          });
+          let copied = false;
+          try {
+            await navigator.clipboard.writeText(url);
+            copied = true;
+          } catch {
+            /* clipboard can be blocked; the toast still links the page */
+          }
+          toast.success(
+            copied ? "Public link copied to clipboard" : "Webpage published",
+            {
+              id: toastId,
+              description: url,
+              action: {
+                label: "Open",
+                onClick: () =>
+                  window.open(url, "_blank", "noopener,noreferrer"),
+              },
+            },
+          );
+        } catch (err) {
+          toast.error("Failed to publish webpage", {
+            id: toastId,
+            description: getErrorMessage(err, "Unknown error"),
+          });
+        }
+      },
       category: "Actions",
       showToast: false,
     },
@@ -786,14 +832,62 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
     },
     {
       key: "save-as-pdf",
-      icon: Printer,
+      icon: FileType,
       iconColor: "text-red-500 dark:text-red-400",
       label: "PDF Document",
-      action: () => {
-        // Browser print dialog → "Save as PDF". Same wiring as Print for now;
-        // presented as a save destination.
-        printMarkdownContent(content, deriveMessageTitle(ctx) ?? "Message");
+      action: async () => {
+        if (
+          !requireAuth(
+            ctx,
+            "save-as-pdf",
+            "Save as PDF Document",
+            "Sign in to save this response as a PDF in your files.",
+          )
+        )
+          return;
         onClose();
+        const toastId = toast.loading("Generating PDF…");
+        try {
+          // Markdown → styled offscreen render → multi-page PDF blob.
+          const { markdownToPdfBlob } =
+            await import("@/lib/block-print/markdown-pdf");
+          const blob = await markdownToPdfBlob(content);
+
+          const title = deriveMessageTitle(ctx);
+          const ts = new Date()
+            .toISOString()
+            .replace(/[:.]/g, "-")
+            .slice(0, 19);
+          const name = title ? toSafeFileName(title) : `message-${ts}`;
+          const file = new File([blob], `${name}.pdf`, {
+            type: "application/pdf",
+          });
+          const uploaded = await fileHandler.upload(
+            { kind: "file", file },
+            { folderPath: "Chat Saves" },
+          );
+          const fileId = uploaded.fileId;
+          toast.success("PDF saved to Files", {
+            id: toastId,
+            description: `${name}.pdf in Chat Saves`,
+            action: fileId
+              ? {
+                  label: "Open",
+                  onClick: () =>
+                    window.open(
+                      `/files/f/${fileId}`,
+                      "_blank",
+                      "noopener,noreferrer",
+                    ),
+                }
+              : undefined,
+          });
+        } catch (err) {
+          toast.error("Failed to create PDF", {
+            id: toastId,
+            description: getErrorMessage(err, "Unknown error"),
+          });
+        }
       },
       category: "Save as",
       showToast: false,
@@ -1682,6 +1776,43 @@ export function resumePendingAuthAction(
           }
         })
         .catch(() => toast.error("Failed to create document"));
+    } else if (action === "share-webpage") {
+      import("./shareMessageAsWebpage")
+        .then(({ shareMessageAsWebpage }) =>
+          shareMessageAsWebpage({
+            content: savedContent,
+            title: "Shared AI response",
+            // No live message context on the resume path — publishes without
+            // the per-message idempotency key.
+            messageId: null,
+            conversationId: null,
+          }),
+        )
+        .then(({ url }) => {
+          toast.success("Webpage published", {
+            description: url,
+            action: {
+              label: "Open",
+              onClick: () => window.open(url, "_blank", "noopener,noreferrer"),
+            },
+          });
+        })
+        .catch(() => toast.error("Failed to publish webpage"));
+    } else if (action === "save-as-pdf") {
+      import("@/lib/block-print/markdown-pdf")
+        .then(async ({ markdownToPdfBlob }) => {
+          const blob = await markdownToPdfBlob(savedContent);
+          const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+          const file = new File([blob], `message-${ts}.pdf`, {
+            type: "application/pdf",
+          });
+          await fileHandler.upload(
+            { kind: "file", file },
+            { folderPath: "Chat Saves" },
+          );
+          toast.success("PDF saved to Files");
+        })
+        .catch(() => toast.error("Failed to create PDF"));
     } else if (action === "save-as-file") {
       const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
       const file = new File([savedContent], `message-${ts}.md`, {
