@@ -22841,6 +22841,123 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_entries: {
+        Row: {
+          app: string
+          artifact_sha256: string | null
+          artifact_size_bytes: number | null
+          artifact_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          kind: string
+          min_app_version: string | null
+          notes: string | null
+          payload: Json
+          schema_version: number
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          app: string
+          artifact_sha256?: string | null
+          artifact_size_bytes?: number | null
+          artifact_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          kind: string
+          min_app_version?: string | null
+          notes?: string | null
+          payload: Json
+          schema_version?: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          app?: string
+          artifact_sha256?: string | null
+          artifact_size_bytes?: number | null
+          artifact_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          kind?: string
+          min_app_version?: string | null
+          notes?: string | null
+          payload?: Json
+          schema_version?: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      catalog_entries_history: {
+        Row: {
+          app: string
+          artifact_sha256: string | null
+          artifact_size_bytes: number | null
+          artifact_url: string | null
+          changed_at: string
+          changed_by: string | null
+          entry_id: string
+          id: number
+          is_active: boolean
+          key: string
+          kind: string
+          min_app_version: string | null
+          notes: string | null
+          op: string
+          payload: Json
+          schema_version: number
+          sort_order: number
+        }
+        Insert: {
+          app: string
+          artifact_sha256?: string | null
+          artifact_size_bytes?: number | null
+          artifact_url?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          entry_id: string
+          id?: never
+          is_active: boolean
+          key: string
+          kind: string
+          min_app_version?: string | null
+          notes?: string | null
+          op: string
+          payload: Json
+          schema_version: number
+          sort_order: number
+        }
+        Update: {
+          app?: string
+          artifact_sha256?: string | null
+          artifact_size_bytes?: number | null
+          artifact_url?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          entry_id?: string
+          id?: never
+          is_active?: boolean
+          key?: string
+          kind?: string
+          min_app_version?: string | null
+          notes?: string | null
+          op?: string
+          payload?: Json
+          schema_version?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           admin_notes: string | null
@@ -25548,6 +25665,33 @@ export type Database = {
           ourput_params: Json
         }[]
       }
+      admin_delete_catalog_entry: {
+        Args: { p_app: string; p_key: string; p_kind: string }
+        Returns: {
+          app: string
+          artifact_sha256: string | null
+          artifact_size_bytes: number | null
+          artifact_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          kind: string
+          min_app_version: string | null
+          notes: string | null
+          payload: Json
+          schema_version: number
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "catalog_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_delete_relationship_rule: {
         Args: { p_label?: string; p_source_type: string; p_target_type: string }
         Returns: undefined
@@ -25892,6 +26036,47 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "app_config"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_upsert_catalog_entry: {
+        Args: {
+          p_app: string
+          p_artifact_sha256?: string
+          p_artifact_size_bytes?: number
+          p_artifact_url?: string
+          p_expected_updated_at?: string
+          p_is_active?: boolean
+          p_key: string
+          p_kind: string
+          p_min_app_version?: string
+          p_notes?: string
+          p_payload: Json
+          p_schema_version: number
+          p_sort_order?: number
+        }
+        Returns: {
+          app: string
+          artifact_sha256: string | null
+          artifact_size_bytes: number | null
+          artifact_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          kind: string
+          min_app_version: string | null
+          notes: string | null
+          payload: Json
+          schema_version: number
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "catalog_entries"
           isOneToOne: true
           isSetofReturn: false
         }
