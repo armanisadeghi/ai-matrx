@@ -14,7 +14,7 @@ import {
   withTimeout,
 } from "@/features/pdf/utils/inactivity";
 import { supabase } from "@/utils/supabase/client";
-import { PROCESSED_DOCUMENTS_COLUMNS } from "@/utils/supabase/docprocDb";
+import { docprocDb, PROCESSED_DOCUMENTS_COLUMNS } from "@/utils/supabase/docprocDb";
 import { parseHttpError } from "@/lib/api/errors";
 import { consumeBatchExtractNdjsonStream } from "../service/batchExtractDebugStream";
 import {
@@ -198,8 +198,7 @@ async function fetchProcessedDocument(
 
   const promise = (async () => {
     try {
-      const { data, error } = await (supabase as any)
-        .schema("docproc")
+      const { data, error } = await docprocDb(supabase)
         .from("processed_documents")
         // NEVER select("*") here — storage_uri is server-only (column-grant
         // scheme), so `*` fails with 42501. See docprocDb.ts.
@@ -327,8 +326,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     if (!userId) return;
     setHistoryLoading(true);
     try {
-      const { data, error } = await (supabase as any)
-        .schema("docproc")
+      const { data, error } = await docprocDb(supabase)
         .from("processed_documents")
         // Metadata-only projection. We deliberately do NOT pull `content`,
         // `clean_content`, or `structured_json` here — those columns can be

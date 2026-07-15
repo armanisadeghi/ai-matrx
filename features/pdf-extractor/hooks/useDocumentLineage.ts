@@ -21,6 +21,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { docprocDb } from "@/utils/supabase/docprocDb";
 import { filesDb } from "@/features/files/filesDb";
 
 // ── Shapes returned to the consumer ────────────────────────────────────────
@@ -63,8 +64,8 @@ async function walkProcessingAncestors(
   const out: ProcessingNode[] = [];
   let cursor = startParentId;
   for (let i = 0; cursor && i < MAX_WALK; i++) {
-    const { data, error } = await (supabase as any)
-      .schema("docproc").from("processed_documents")
+    const { data, error } = await docprocDb(supabase)
+      .from("processed_documents")
       .select(
         "id, name, derivation_kind, derivation_metadata, parent_processed_id, created_at",
       )
@@ -89,8 +90,8 @@ async function walkProcessingAncestors(
 async function fetchProcessingChildren(
   docId: string,
 ): Promise<ProcessingNode[]> {
-  const { data, error } = await (supabase as any)
-    .schema("docproc").from("processed_documents")
+  const { data, error } = await docprocDb(supabase)
+    .from("processed_documents")
     .select(
       "id, name, derivation_kind, derivation_metadata, parent_processed_id, created_at",
     )

@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { docprocDb } from "@/utils/supabase/docprocDb";
 import { filesDb } from "@/features/files/filesDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -62,8 +63,7 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
         prev = cur;
         return cur.filter((d) => d.id !== id);
       });
-      const { error: err } = await (supabase as any)
-        .schema("docproc")
+      const { error: err } = await docprocDb(supabase)
         .from("processed_documents")
         .update({ archived_at: new Date().toISOString() })
         .eq("id", id)
@@ -87,8 +87,7 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
     setError(null);
     (async () => {
       try {
-        const { data, error: err } = await (supabase as any)
-          .schema("docproc")
+        const { data, error: err } = await docprocDb(supabase)
           .from("processed_documents")
           .select(
             "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",

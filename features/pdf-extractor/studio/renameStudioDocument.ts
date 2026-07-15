@@ -7,6 +7,7 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { renameFile } from "@/features/files/redux/thunks";
 import { supabase } from "@/utils/supabase/client";
+import { docprocDb } from "@/utils/supabase/docprocDb";
 
 export interface RenameStudioDocumentInput {
   docId: string;
@@ -22,8 +23,7 @@ export async function renameStudioDocument(
   const trimmed = input.newName.trim();
   if (!trimmed) return;
 
-  const { error } = await (supabase as any)
-    .schema("docproc")
+  const { error } = await docprocDb(supabase)
     .from("processed_documents")
     .update({ name: trimmed })
     .eq("id", input.docId);

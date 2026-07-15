@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { docprocDb } from "@/utils/supabase/docprocDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
@@ -120,8 +121,8 @@ async function fetchProcessedDocumentPages(
   if (existing) return existing;
 
   const promise = (async () => {
-    const { data, error } = await (supabase as any)
-      .schema("docproc").from("processed_document_pages")
+    const { data, error } = await docprocDb(supabase)
+      .from("processed_document_pages")
       .select(
         "id, page_index, page_number, width, height, rotation, raw_text, raw_char_count, cleaned_text, cleaned_char_count, section_kind, section_title, is_continuation, used_ocr, extraction_method, extraction_confidence, blocks, words, image_cld_file_id, image_dpi",
       )

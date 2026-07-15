@@ -63,6 +63,7 @@ import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { PdfAiContent } from "../components/PdfAiContent";
 import { saveDerivative } from "@/features/pdf/services/saveDerivative";
 import { supabase } from "@/utils/supabase/client";
+import { docprocDb } from "@/utils/supabase/docprocDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
@@ -1591,13 +1592,15 @@ function PageBlock({
   async function handleSave() {
     setSaving(true);
     setSaveError(null);
-    const col = field === "cleaned" ? "cleaned_text" : "raw_text";
-    const charCol =
-      field === "cleaned" ? "cleaned_char_count" : "raw_char_count";
-    const { error } = await (supabase as any)
-      .schema("docproc")
+    // Literal-keyed update objects (not computed keys) so the typed docproc
+    // client can validate the column names against the generated schema.
+    const patch =
+      field === "cleaned"
+        ? { cleaned_text: editText, cleaned_char_count: editText.length }
+        : { raw_text: editText, raw_char_count: editText.length };
+    const { error } = await docprocDb(supabase)
       .from("processed_document_pages")
-      .update({ [col]: editText, [charCol]: editText.length })
+      .update(patch)
       .eq("id", page.id);
     setSaving(false);
     if (error) {
