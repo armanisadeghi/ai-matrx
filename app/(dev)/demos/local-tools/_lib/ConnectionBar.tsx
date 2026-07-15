@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  Check,
   HeartPulse,
   Loader2,
   RefreshCw,
@@ -28,6 +29,8 @@ export function ConnectionBar({
     baseUrl,
     setBaseUrl,
     status,
+    restOnline,
+    restChecking,
     wsConnected,
     loading,
     discover,
@@ -51,10 +54,16 @@ export function ConnectionBar({
   const [showRequests, setShowRequests] = useState(false);
   const [refreshingHealth, setRefreshingHealth] = useState(false);
   const [showInstanceModal, setShowInstanceModal] = useState(false);
+  const [draftUrlState, setDraftUrlState] = useState({
+    appliedUrl: baseUrl,
+    value: baseUrl,
+  });
 
   const isDiscovering = status === "discovering" || discoveringEngines;
   const isConnecting = status === "connecting";
-  const restOnline = status === "connected" || wsConnected;
+  const draftBaseUrl =
+    draftUrlState.appliedUrl === baseUrl ? draftUrlState.value : baseUrl;
+  const urlDirty = draftBaseUrl.trim().replace(/\/+$/, "") !== baseUrl;
 
   const engineHealthy =
     healthInfo &&
@@ -71,18 +80,25 @@ export function ConnectionBar({
   };
 
   const checkedAgo = healthCheckedAt
-    ? (() => {
-        const secs = Math.round(
-          (Date.now() - healthCheckedAt.getTime()) / 1000,
-        );
-        if (secs < 60) return `${secs}s ago`;
-        return `${Math.round(secs / 60)}m ago`;
-      })()
+    ? healthCheckedAt.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+      })
     : null;
 
   // When an instance is selected from the modal, apply the URLs and reconnect WS
   const handleInstanceSelect = (restUrl: string, wsUrl: string | null) => {
     setBaseUrl(restUrl);
+    disconnectWs();
+    setTimeout(() => connectWs(), 100);
+  };
+
+  const applyDraftUrl = () => {
+    const next = draftBaseUrl.trim().replace(/\/+$/, "");
+    if (!next || next === baseUrl) return;
+    setDraftUrlState({ appliedUrl: next, value: next });
+    setBaseUrl(next);
     disconnectWs();
     setTimeout(() => connectWs(), 100);
   };
@@ -98,12 +114,40 @@ export function ConnectionBar({
             </span>
             <input
               type="text"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              className="h-8 text-xs font-mono flex-1 min-w-0 rounded border px-2.5 bg-background"
+              value={draftBaseUrl}
+              onChange={(e) =>
+                setDraftUrlState({
+                  appliedUrl: baseUrl,
+                  value: e.target.value,
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applyDraftUrl();
+                if (e.key === "Escape") {
+                  setDraftUrlState({ appliedUrl: baseUrl, value: baseUrl });
+                }
+              }}
+              className={`h-8 text-xs font-mono flex-1 min-w-0 rounded border px-2.5 bg-background ${
+                urlDirty ? "border-yellow-500/70" : ""
+              }`}
               spellCheck={false}
               autoComplete="off"
             />
+            <Button
+              size="sm"
+              variant={urlDirty ? "default" : "outline"}
+              onClick={applyDraftUrl}
+              disabled={!urlDirty}
+              className="h-8 px-3 gap-1.5 shrink-0"
+              title={
+                urlDirty
+                  ? "Apply this engine URL"
+                  : "Engine URL is already applied"
+              }
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span className="text-xs">Apply</span>
+            </Button>
           </div>
 
           {/* Instance picker — opens modal with all registered instances */}
@@ -218,7 +262,7 @@ export function ConnectionBar({
           <StatusPill
             label="REST"
             online={restOnline}
-            checking={isDiscovering}
+            checking={restChecking || isDiscovering}
           />
 
           {/* WS pill */}
@@ -292,10 +336,11 @@ export function ConnectionBar({
                         {req.tool}
                       </span>
                       <span className="text-muted-foreground shrink-0">
-                        {Math.round(
-                          (Date.now() - req.startedAt.getTime()) / 1000,
-                        )}
-                        s
+                        {req.startedAt.toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
                       </span>
                       <button
                         onClick={() => cancelRequest(req.id)}

@@ -1,6 +1,7 @@
 import {
   DISCOVERY_TIMEOUT,
   LOCAL_ENGINE_PROFILES,
+  localEnginePrimaryPorts,
   localEngineProfileFromPort,
   localEngineScanPorts,
   type LocalEngineProfile,
@@ -91,15 +92,28 @@ function sortDiscoveries(
   return a.port - b.port;
 }
 
-/** Scan live (22140–22159) and dev (22240–22259) ranges; return every responding engine. */
-export async function discoverAllLocalEngines(): Promise<
-  LocalEngineDiscovery[]
-> {
-  const probes = localEngineScanPorts().map((port) => probePort(port));
+async function discoverEnginesOnPorts(
+  ports: number[],
+): Promise<LocalEngineDiscovery[]> {
+  const probes = ports.map((port) => probePort(port));
   const results = await Promise.all(probes);
   return results
     .filter((entry): entry is LocalEngineDiscovery => entry !== null)
     .sort(sortDiscoveries);
+}
+
+/** Fast startup scan: default live + default dev ports only. */
+export async function discoverPrimaryLocalEngines(): Promise<
+  LocalEngineDiscovery[]
+> {
+  return discoverEnginesOnPorts(localEnginePrimaryPorts());
+}
+
+/** Scan live (22140–22159) and dev (22240–22259) ranges; return every responding engine. */
+export async function discoverAllLocalEngines(): Promise<
+  LocalEngineDiscovery[]
+> {
+  return discoverEnginesOnPorts(localEngineScanPorts());
 }
 
 /** First engine in probe order (live range wins over dev). */

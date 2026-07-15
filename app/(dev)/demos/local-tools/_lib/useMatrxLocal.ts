@@ -12,6 +12,7 @@ import {
 import {
   discoverAllLocalEngines,
   discoverFirstLocalEngine,
+  discoverPrimaryLocalEngines,
   type LocalEngineDiscovery,
 } from "./discoverLocalEngines";
 import type {
@@ -136,6 +137,8 @@ export interface UseMatrxLocalReturn {
   baseUrl: string;
   setBaseUrl: (url: string) => void;
   status: ConnectionStatus;
+  restOnline: boolean;
+  restChecking: boolean;
   wsConnected: boolean;
   loading: string | null;
   logs: LogEntry[];
@@ -199,6 +202,8 @@ export interface UseMatrxLocalReturn {
 export function useMatrxLocal(): UseMatrxLocalReturn {
   const [baseUrl, setBaseUrl] = useState(DEFAULT_LOCAL_URL);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
+  const [restOnline, setRestOnline] = useState(false);
+  const [restChecking, setRestChecking] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -225,12 +230,14 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
   const lastScanSignatureRef = useRef("");
 
   const wsRef = useRef<WebSocket | null>(null);
+  const connectWsRef = useRef<() => Promise<void>>(async () => {});
   const pendingCallbacks = useRef<Map<string, (result: ToolResult) => void>>(
     new Map(),
   );
 
   // Refs for values needed inside stable callbacks (no re-creation on state change)
   const baseUrlRef = useRef(baseUrl);
+  const restOnlineRef = useRef(restOnline);
   const wsConnectedRef = useRef(wsConnected);
   const useWebSocketRef = useRef(useWebSocket);
 
@@ -246,6 +253,9 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
   useEffect(() => {
     baseUrlRef.current = baseUrl;
   }, [baseUrl]);
+  useEffect(() => {
+    restOnlineRef.current = restOnline;
+  }, [restOnline]);
   useEffect(() => {
     wsConnectedRef.current = wsConnected;
   }, [wsConnected]);
@@ -284,23 +294,32 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
   }, []);
 
   const runEngineScan = useCallback(
-    async (options?: { autoPick?: boolean }) => {
+    async (options?: { autoPick?: boolean; fullRange?: boolean }) => {
       setDiscoveringEngines(true);
       setStatus("discovering");
+      let currentEngineFound = false;
+      let scanControlsActiveUrl = false;
       try {
-        const engines = await discoverAllLocalEngines();
+        const engines = options?.fullRange
+          ? await discoverAllLocalEngines()
+          : await discoverPrimaryLocalEngines();
         setDiscoveredEngines(engines);
 
         const currentUrl = baseUrlRef.current;
         const isLocalUrl = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(
           currentUrl,
         );
+        scanControlsActiveUrl = isLocalUrl;
         const currentMatch = engines.find((e) => e.url === currentUrl);
+        currentEngineFound = Boolean(currentMatch);
 
         if (options?.autoPick && isLocalUrl && !initialEnginePickRef.current) {
           initialEnginePickRef.current = true;
           const pick = currentMatch ?? engines[0] ?? null;
-          if (pick) applyDiscoveredEngine(pick);
+          if (pick) {
+            currentEngineFound = true;
+            applyDiscoveredEngine(pick);
+          }
         } else if (currentMatch) {
           if (currentMatch.availableTools.length > 0) {
             setAvailableTools(currentMatch.availableTools);
@@ -333,8 +352,21 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
         }
       } finally {
         setDiscoveringEngines(false);
-        if (wsRef.current?.readyState !== WebSocket.OPEN) {
-          setStatus("disconnected");
+        setRestChecking(false);
+        if (scanControlsActiveUrl) {
+          setRestOnline(currentEngineFound);
+          setStatus(
+            wsRef.current?.readyState === WebSocket.OPEN || currentEngineFound
+              ? "connected"
+              : "disconnected",
+          );
+        } else {
+          setStatus(
+            wsRef.current?.readyState === WebSocket.OPEN ||
+              restOnlineRef.current
+              ? "connected"
+              : "disconnected",
+          );
         }
       }
     },
@@ -342,49 +374,64 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
   );
 
   const discover = useCallback(async () => {
-    await runEngineScan();
-  }, [runEngineScan]);
-
-  useEffect(() => {
-    void runEngineScan({ autoPick: true });
-    const timer = setInterval(() => {
-      void runEngineScan();
-    }, STATUS_POLL_INTERVAL);
-    return () => clearInterval(timer);
+    await runEngineScan({ fullRange: true });
   }, [runEngineScan]);
 
   // ── One-shot REST status check ───────────────────────────────────────────
   // Only runs once per mount (guarded). WS onopen/onclose drives status after that.
 
   const checkRestStatus = useCallback(async () => {
+    setRestChecking(true);
     try {
       const res = await fetch(`${baseUrlRef.current}/health`, {
         signal: AbortSignal.timeout(2000),
       });
-      if (res.ok && wsRef.current?.readyState !== WebSocket.OPEN) {
+      setRestOnline(res.ok);
+      if (res.ok) {
         setStatus("connected");
+      } else if (wsRef.current?.readyState !== WebSocket.OPEN) {
+        setStatus("disconnected");
       }
     } catch {
+      setRestOnline(false);
       if (wsRef.current?.readyState !== WebSocket.OPEN) {
         setStatus("disconnected");
       }
+    } finally {
+      setRestChecking(false);
     }
   }, []);
 
   useEffect(() => {
     if (initialStatusCheckedRef.current) return;
     initialStatusCheckedRef.current = true;
-    checkRestStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void checkRestStatus();
   }, []);
+
+  useEffect(() => {
+    const initialScanTimer = setTimeout(() => {
+      void runEngineScan({ autoPick: true });
+    }, 0);
+    const healthTimer = setInterval(() => {
+      void checkRestStatus();
+    }, STATUS_POLL_INTERVAL);
+    return () => {
+      clearTimeout(initialScanTimer);
+      clearInterval(healthTimer);
+    };
+  }, [checkRestStatus, runEngineScan]);
 
   // Re-check when user manually edits the URL (not on every state change)
   const handleSetBaseUrl = useCallback(
     (url: string) => {
-      setBaseUrl(url);
-      baseUrlRef.current = url;
-      initialStatusCheckedRef.current = false; // allow re-check on new URL
-      checkRestStatus();
+      const normalized = url.trim().replace(/\/+$/, "");
+      if (!normalized) return;
+      setBaseUrl(normalized);
+      baseUrlRef.current = normalized;
+      setHealthInfo(null);
+      setPortInfo(null);
+      setAvailableTools([]);
+      void checkRestStatus();
     },
     [checkRestStatus],
   );
@@ -403,8 +450,10 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
       ]);
       if (healthRes.status === "fulfilled" && healthRes.value.ok) {
         setHealthInfo(await healthRes.value.json());
+        setRestOnline(true);
       } else {
         setHealthInfo(null);
+        setRestOnline(false);
       }
       if (portsRes.status === "fulfilled" && portsRes.value.ok) {
         setPortInfo(await portsRes.value.json());
@@ -418,8 +467,7 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
   useEffect(() => {
     if (healthFetchedRef.current) return;
     healthFetchedRef.current = true;
-    refreshHealth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void refreshHealth();
   }, []);
 
   // ── WebSocket connection ─────────────────────────────────────────────────
@@ -433,7 +481,7 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     const token = await getToken();
     if (!token) {
       addLog("received", { event: "ws_skipped", reason: "no_auth_token" });
-      setStatus("disconnected");
+      setStatus(restOnlineRef.current ? "connected" : "disconnected");
       return;
     }
 
@@ -454,7 +502,8 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
         const data = JSON.parse(event.data) as ToolResult & { id?: string };
         addLog("received", data, data.id ?? undefined);
         if (data.id && pendingCallbacks.current.has(data.id)) {
-          pendingCallbacks.current.get(data.id)!(data);
+          const callback = pendingCallbacks.current.get(data.id);
+          if (callback) callback(data);
           pendingCallbacks.current.delete(data.id);
           setActiveRequests((prev) => prev.filter((r) => r.id !== data.id));
         }
@@ -466,7 +515,7 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     ws.onclose = () => {
       setWsConnected(false);
       wsConnectedRef.current = false;
-      setStatus("disconnected");
+      setStatus(restOnlineRef.current ? "connected" : "disconnected");
       addLog("received", { event: "disconnected" });
       pendingCallbacks.current.clear();
       setActiveRequests([]);
@@ -479,14 +528,16 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
         );
         wsRetryCountRef.current += 1;
         addLog("received", { event: "reconnect_scheduled", delay_ms: delay });
-        wsRetryTimerRef.current = setTimeout(() => connectWs(), delay);
+        wsRetryTimerRef.current = setTimeout(() => {
+          void connectWsRef.current();
+        }, delay);
       }
     };
 
     ws.onerror = () => {
       setWsConnected(false);
       wsConnectedRef.current = false;
-      setStatus("disconnected");
+      setStatus(restOnlineRef.current ? "connected" : "disconnected");
       addLog("received", { event: "error" });
       pendingCallbacks.current.clear();
       setActiveRequests([]);
@@ -495,6 +546,10 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     wsRef.current = ws;
     // addLog is stable (useCallback [])
   }, [addLog]);
+
+  useEffect(() => {
+    connectWsRef.current = connectWs;
+  }, [connectWs]);
 
   const disconnectWs = useCallback(() => {
     wsAutoReconnect.current = false;
@@ -546,11 +601,11 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
 
   // Auto-connect WS on mount — single attempt, small delay to allow token to load
   useEffect(() => {
-    const t = setTimeout(() => connectWsWithReconnect(), 200);
+    const t = setTimeout(() => {
+      void connectWsWithReconnect();
+    }, 200);
     return () => clearTimeout(t);
-    // connectWsWithReconnect is stable — intentionally run once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [connectWsWithReconnect]);
 
   // ── Cancel ───────────────────────────────────────────────────────────────
 
@@ -798,6 +853,8 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     baseUrl,
     setBaseUrl: handleSetBaseUrl,
     status,
+    restOnline,
+    restChecking,
     wsConnected,
     loading,
     logs,

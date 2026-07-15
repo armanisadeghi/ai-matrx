@@ -40,6 +40,11 @@ export function localEngineScanPorts(): number[] {
   ];
 }
 
+/** Fast startup probe: default installed + default dev ports only. */
+export function localEnginePrimaryPorts(): number[] {
+  return [MATRX_LOCAL_LIVE_PORT_START, MATRX_LOCAL_DEV_PORT_START];
+}
+
 export function localEngineProfileFromPort(
   port: number,
 ): LocalEngineProfile | null {
