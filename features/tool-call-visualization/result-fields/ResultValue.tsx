@@ -22,6 +22,7 @@ import { detectResultShape } from "./shape";
 import { ResultScalar } from "./ResultScalar";
 import { ResultMarkdown } from "./ResultMarkdown";
 import { ResultMedia } from "./ResultMedia";
+import { ResultFile } from "./ResultFile";
 import { ResultJson } from "./ResultJson";
 import { UrlChip } from "./UrlChips";
 import { EmptyResult } from "./EmptyResult";
@@ -147,6 +148,9 @@ export const ResultValue: React.FC<ResultValueProps> = ({
 
             case "media":
                 return <ResultMedia refValue={shape.ref} alt={shape.alt} density={density} />;
+
+            case "file":
+                return <ResultFile file={shape.file} density={density} />;
 
             case "text":
                 return shape.markdown ? (

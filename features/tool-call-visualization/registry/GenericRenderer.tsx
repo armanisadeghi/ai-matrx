@@ -75,7 +75,8 @@ function resultWarrantsOverlay(result: unknown): boolean {
     shape.kind === "empty" ||
     shape.kind === "scalar" ||
     shape.kind === "url" ||
-    shape.kind === "uuid"
+    shape.kind === "uuid" ||
+    shape.kind === "file"
   ) {
     return false;
   }

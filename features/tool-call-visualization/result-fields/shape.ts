@@ -27,6 +27,20 @@ export interface TableColumn {
     label: string;
 }
 
+/**
+ * A downloadable, non-media file (docx / pptx / xlsx / pdf / zip / …).
+ * Carries whatever the tool handed us; the renderer resolves a live URL from
+ * `file_id` (self-healing, like images) and falls back to `download_url`/`url`.
+ */
+export interface ResultFileRef {
+    file_id?: string;
+    mime_type?: string;
+    file_name?: string;
+    byte_size?: number;
+    url?: string;
+    download_url?: string;
+}
+
 export type ResultShape =
     | { kind: "empty" }
     | { kind: "scalar"; value: string | number | boolean; type: "string" | "number" | "boolean" }
@@ -34,6 +48,8 @@ export type ResultShape =
     | { kind: "uuid"; value: string }
     | { kind: "url"; value: string }
     | { kind: "media"; ref: MediaRef; alt?: string }
+    /** A non-media file (document, spreadsheet, archive) — rendered as a download card. */
+    | { kind: "file"; file: ResultFileRef }
     | { kind: "list"; items: Array<string | number | boolean | null> }
     /** An array that is entirely UUIDs — NEVER listed out; rendered as a count + copy-all. */
     | { kind: "idList"; ids: string[] }
@@ -102,6 +118,13 @@ export function isUniformObjectArray(arr: unknown[]): TableColumn[] | null {
 const URL_RE = /^https?:\/\/[^\s]+$/i;
 const DATA_URI_RE = /^data:([a-z]+)\/[a-z0-9.+-]+(;base64)?,/i;
 const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|avif|svg|bmp|ico)(\?[^\s]*)?$/i;
+/** Any image/video/audio extension — used to distinguish media from documents. */
+const MEDIA_EXT_RE =
+    /\.(png|jpe?g|gif|webp|avif|svg|bmp|ico|mp4|webm|mov|m4v|ogv|mp3|wav|ogg|m4a|flac|aac)(\?[^\s]*)?$/i;
+/** True when a mime string names image/video/audio (the only "media" families). */
+function isMediaMime(mime: string): boolean {
+    return /^(image|video|audio)\//i.test(mime.trim());
+}
 
 /** A single, whole-string http(s) URL (no surrounding prose). */
 export function looksLikeUrl(value: string): boolean {
@@ -152,17 +175,35 @@ export function looksLikeMarkdown(value: string): boolean {
 
 const MEDIA_KEYS = ["url", "src", "image_url", "imageUrl", "href", "link"] as const;
 
+/** Read a string property from the first matching key, trimmed & non-empty. */
+function readStringKey(obj: Record<string, unknown>, keys: readonly string[]): string | undefined {
+    for (const key of keys) {
+        const v = obj[key];
+        if (typeof v === "string" && v.trim().length > 0) return v.trim();
+    }
+    return undefined;
+}
+
+const MIME_KEYS = ["mime_type", "media_type", "mime"] as const;
+const FILE_NAME_KEYS = ["file_name", "fileName", "filename", "name"] as const;
+const DOWNLOAD_KEYS = ["download_url", "downloadUrl"] as const;
+const FILE_URL_KEYS = ["url", "signed_url", "signedUrl", "cdn_url", "cdnUrl", "href"] as const;
+
 /**
- * Detect a media-bearing value and return a {@link MediaRef} for
- * `<InlineMediaRef>`, else null. Recognizes:
+ * Detect a MEDIA-bearing value (image / video / audio only) and return a
+ * {@link MediaRef} for `<InlineMediaRef>`, else null. Recognizes:
  *   - a data: URI string
  *   - an image-extension URL string
- *   - an object with `{file_id|fileId}` (owned file)
- *   - an object with a url-ish key (`url|src|image_url|...`) when it looks like
- *     an image URL or carries a `media_type|mime|mime_type` hint
+ *   - an object with `{file_id|fileId}` (owned file) whose mime/extension is
+ *     image/video/audio — OR carries NO type signal at all (historical default:
+ *     a bare owned file is treated as an image; non-media docs carry a mime and
+ *     route to {@link coerceFileRef} instead)
+ *   - an object with a url-ish key when it looks like a media URL or carries an
+ *     image/video/audio mime hint
  *
  * NOTE: plain (non-image) http URLs are intentionally NOT media — those render
- * as a `UrlChip`. Only call this when you actually want media detection.
+ * as a `UrlChip`. A file with a document/archive mime is NOT media — it routes
+ * to {@link coerceFileRef}. Only call this when you actually want media detection.
  */
 export function coerceMediaRef(value: unknown): MediaRef | null {
     // Bare string: data URI or image-extension URL.
@@ -175,32 +216,89 @@ export function coerceMediaRef(value: unknown): MediaRef | null {
 
     if (!isPlainObject(value)) return null;
     const obj = value;
+    const mimeHint = readStringKey(obj, MIME_KEYS);
 
-    // Owned-file reference wins.
+    // Owned-file reference wins — but only as MEDIA when the type says so.
     const fileId = obj.file_id ?? obj.fileId;
     if (typeof fileId === "string" && fileId.length > 0) {
-        const ref: MediaRef = { file_id: fileId };
-        const mime = obj.mime_type ?? obj.media_type ?? obj.mime;
-        if (typeof mime === "string") ref.mime_type = mime;
-        return ref;
+        if (mimeHint) {
+            // Explicit type: media only for image/video/audio; a docx/pdf/etc.
+            // mime is NOT media (falls through to coerceFileRef → download card).
+            if (!isMediaMime(mimeHint)) return null;
+            return { file_id: fileId, mime_type: mimeHint };
+        }
+        // No mime. Infer from a filename/url extension when present.
+        const probe = [readStringKey(obj, FILE_NAME_KEYS), readStringKey(obj, [...FILE_URL_KEYS, ...DOWNLOAD_KEYS])]
+            .filter(Boolean)
+            .join(" ");
+        if (MEDIA_EXT_RE.test(probe)) return { file_id: fileId };
+        if (/\.[a-z0-9]{1,5}(\?[^\s]*)?(\s|$)/i.test(probe)) return null; // a non-media extension → file
+        // Zero type signal → historical default: treat a bare owned file as an image.
+        return { file_id: fileId };
     }
 
-    const mimeHint = obj.mime_type ?? obj.media_type ?? obj.mime;
-    const hasMimeHint = typeof mimeHint === "string" && /^(image|video|audio)\b/i.test(mimeHint);
+    const hasMediaMimeHint = mimeHint !== undefined && isMediaMime(mimeHint);
 
     for (const key of MEDIA_KEYS) {
         const candidate = obj[key];
         if (typeof candidate !== "string") continue;
         const s = candidate.trim();
         const isData = DATA_URI_RE.test(s);
-        if (isData || looksLikeImageUrl(s) || (hasMimeHint && looksLikeUrl(s))) {
+        if (isData || looksLikeImageUrl(s) || (hasMediaMimeHint && looksLikeUrl(s))) {
             const ref: MediaRef = { url: s };
-            if (typeof mimeHint === "string") ref.mime_type = mimeHint;
+            if (mimeHint !== undefined) ref.mime_type = mimeHint;
             return ref;
         }
     }
 
     return null;
+}
+
+/**
+ * Detect a NON-media file reference (document / spreadsheet / archive / any
+ * `file_id`-or-`download_url`-bearing object whose mime is NOT image/video/
+ * audio) and return a {@link ResultFileRef}, else null. This is the sibling of
+ * {@link coerceMediaRef}: call it AFTER media detection fails so a docx/pptx/
+ * xlsx/pdf renders as a download card instead of a broken `<img>`.
+ *
+ * Conservative on purpose — a plain object that merely has a `url` field (a
+ * search result, a link) is NOT a file. We require one of:
+ *   - a `file_id`, OR
+ *   - a `download_url`, OR
+ *   - a `url` accompanied by an explicit (non-media) mime hint.
+ */
+export function coerceFileRef(value: unknown): ResultFileRef | null {
+    if (!isPlainObject(value)) return null;
+    const obj = value;
+
+    const mime = readStringKey(obj, MIME_KEYS);
+    // A media mime is handled by coerceMediaRef, never here.
+    if (mime !== undefined && isMediaMime(mime)) return null;
+
+    const fileId = typeof obj.file_id === "string" && obj.file_id.length > 0
+        ? obj.file_id
+        : typeof obj.fileId === "string" && obj.fileId.length > 0
+          ? obj.fileId
+          : undefined;
+
+    const downloadRaw = readStringKey(obj, DOWNLOAD_KEYS);
+    const downloadUrl = downloadRaw && looksLikeUrl(downloadRaw) ? downloadRaw : undefined;
+    const urlRaw = readStringKey(obj, FILE_URL_KEYS);
+    const url = urlRaw && looksLikeUrl(urlRaw) ? urlRaw : undefined;
+
+    const hasFileSignal = Boolean(fileId) || Boolean(downloadUrl) || (Boolean(url) && mime !== undefined);
+    if (!hasFileSignal) return null;
+
+    const ref: ResultFileRef = {};
+    if (fileId) ref.file_id = fileId;
+    if (mime !== undefined) ref.mime_type = mime;
+    const fileName = readStringKey(obj, FILE_NAME_KEYS);
+    if (fileName) ref.file_name = fileName;
+    const sizeRaw = obj.byte_size ?? obj.byteSize ?? obj.file_size ?? obj.fileSize ?? obj.size;
+    if (typeof sizeRaw === "number" && Number.isFinite(sizeRaw) && sizeRaw >= 0) ref.byte_size = sizeRaw;
+    if (url) ref.url = url;
+    if (downloadUrl) ref.download_url = downloadUrl;
+    return ref;
 }
 
 // ─── The classifier ─────────────────────────────────────────────────────────
@@ -234,6 +332,14 @@ export function detectResultShape(value: unknown): ResultShape {
                   ? value.title
                   : undefined;
         return { kind: "media", ref: objectMedia, alt };
+    }
+
+    // 2b. Non-media file (object form) — a docx/pptx/xlsx/pdf/zip payload with a
+    //     file_id/download_url. Check before generic object so it renders as a
+    //     download card, not a key/value grid (and never a broken <img>).
+    const objectFile = isPlainObject(value) ? coerceFileRef(value) : null;
+    if (objectFile) {
+        return { kind: "file", file: objectFile };
     }
 
     // 3. Strings: media URI → uuid → url → markdown text → plain scalar/text.
