@@ -44,6 +44,7 @@ import {
   markToolCardLive,
   wasToolCardLive,
 } from "./toolCardUiSession";
+import { asFsListing, FsBatchCard } from "../renderers/fs/FsInline";
 
 export interface ToolCallBatchProps {
   /** One entry per tool in the run — drives the count + streaming state. */
@@ -134,6 +135,21 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
 
   if (count === 0) return null;
 
+  // ── Consolidation (owner template): a run of uniform, completed `fs_list`
+  // calls becomes ONE card — header + one row per listing, rows expanding
+  // in place. No batch line, no per-call cards, no wrappers at all.
+  if (uniformToolName === "fs_list" && !anyActive) {
+    const listings = entries.map(asFsListing);
+    if (listings.every((l) => l !== null)) {
+      return (
+        <FsBatchCard
+          listings={listings.filter((l) => l !== null)}
+          className={className}
+        />
+      );
+    }
+  }
+
   return (
     <div className={cn("group/toolbatch relative w-full mb-2", className)}>
       <button
@@ -176,9 +192,10 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
           )}
         >
           <div className="overflow-hidden">
-            <div className="mt-1 ml-1 border-l border-border/50 pl-3">
-              {children}
-            </div>
+            {/* FLAT and FULL-WIDTH (owner rule): no left rail, no indent, no
+                grouping box — any offset wrapper deforms the tool cards and
+                reads as nesting. The batch line above is the only grouping. */}
+            <div className="mt-1">{children}</div>
           </div>
         </div>
       )}

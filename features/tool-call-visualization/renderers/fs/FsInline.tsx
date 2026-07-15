@@ -23,10 +23,12 @@
  */
 
 import React from "react";
-import { File, Folder, FolderOpen } from "lucide-react";
+import { ChevronRight, File, Folder, FolderOpen } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+
+import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
@@ -202,6 +204,122 @@ const FsReadCard: React.FC<{ path: string; content: string; size: number | null;
         </div>
     </Card>
 );
+
+// ─── consolidated batch card ─────────────────────────────────────────────────
+
+interface FsListing {
+    path: string;
+    entries: FsEntry[];
+}
+
+/** Narrow a completed fs_list entry into a listing; null when it isn't one. */
+export function asFsListing(entry: ToolLifecycleEntry): FsListing | null {
+    if (entry.toolName !== "fs_list" || entry.status !== "completed") return null;
+    const result = resultAsObject(entry);
+    if (!result || !Array.isArray(result.entries)) return null;
+    const args = (entry.arguments ?? {}) as Record<string, unknown>;
+    const path =
+        (typeof result.path === "string" && result.path) ||
+        (typeof args.path === "string" && args.path) ||
+        "";
+    return {
+        path,
+        entries: (result.entries as unknown[])
+            .map(asFsEntry)
+            .filter((e): e is FsEntry => e !== null),
+    };
+}
+
+/** "3 folders · 2 files" / "Empty". */
+function countsLabel(entries: FsEntry[]): string {
+    const dirs = entries.filter((e) => e.isDir).length;
+    const files = entries.length - dirs;
+    const parts = [
+        dirs > 0 ? `${dirs} ${dirs === 1 ? "folder" : "folders"}` : null,
+        files > 0 ? `${files} ${files === 1 ? "file" : "files"}` : null,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(" · ") : "Empty";
+}
+
+/**
+ * FsBatchCard — a run of consecutive `fs_list` calls consolidated into ONE
+ * card (the owner's template: one header, one row per listing, no batch line,
+ * no per-call cards, no left rail, no nesting). Each row click-expands its
+ * entries as flat sub-rows inside the SAME card.
+ */
+export const FsBatchCard: React.FC<{
+    listings: FsListing[];
+    className?: string;
+}> = ({ listings, className }) => {
+    const [open, setOpen] = React.useState<Record<number, boolean>>({});
+
+    return (
+        <div className={cn("mb-2", className)}>
+            <Card>
+                <CardHeader
+                    icon={
+                        <FolderOpen
+                            className="size-[18px] shrink-0 text-sky-600 dark:text-sky-400"
+                            strokeWidth={2.25}
+                        />
+                    }
+                    title={`Listed ${listings.length} ${listings.length === 1 ? "folder" : "folders"}`}
+                    sub={listings.map((l) => basename(l.path)).join(" · ")}
+                />
+                <div className="border-t border-border/50">
+                    {listings.map((l, i) => (
+                        <React.Fragment key={`${l.path}-${i}`}>
+                            <button
+                                type="button"
+                                onClick={() => setOpen((o) => ({ ...o, [i]: !o[i] }))}
+                                className={cn(
+                                    "flex w-full items-center gap-2.5 px-4 py-1.5 text-left hover:bg-accent/30",
+                                    i > 0 && "border-t border-border/30",
+                                )}
+                            >
+                                <Folder className="size-3.5 shrink-0 text-sky-600/70 dark:text-sky-400/70" />
+                                <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
+                                    {basename(l.path)}
+                                    <span className="ml-2 text-xs text-muted-foreground">{l.path}</span>
+                                </span>
+                                <span className="shrink-0 text-xs text-muted-foreground">
+                                    {countsLabel(l.entries)}
+                                </span>
+                                <ChevronRight
+                                    className={cn(
+                                        "size-3 shrink-0 text-muted-foreground transition-transform",
+                                        open[i] && "rotate-90",
+                                    )}
+                                />
+                            </button>
+                            {open[i] &&
+                                l.entries.map((e, j) => (
+                                    <div
+                                        key={`${e.name}-${j}`}
+                                        className="flex items-center gap-2.5 border-t border-border/20 py-1.5 pl-10 pr-4"
+                                    >
+                                        {e.isDir ? (
+                                            <Folder className="size-3.5 shrink-0 text-sky-600/70 dark:text-sky-400/70" />
+                                        ) : (
+                                            <File className="size-3.5 shrink-0 text-muted-foreground" />
+                                        )}
+                                        <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
+                                            {e.name}
+                                        </span>
+                                        {!e.isDir && e.size !== null && (
+                                            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                                                {humanSize(e.size)}
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                        </React.Fragment>
+                    ))}
+                </div>
+            </Card>
+        </div>
+    );
+};
 
 // ─── dispatcher ──────────────────────────────────────────────────────────────
 

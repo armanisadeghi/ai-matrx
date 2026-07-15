@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
 import { ChatResultColumn } from "@/features/tool-call-visualization/components/ChatResultColumn";
 import { PatchDiffInline } from "@/features/tool-call-visualization/renderers/working-document/PatchDiffInline";
 import { SearchInline } from "@/features/tool-call-visualization/renderers/search/SearchInline";
@@ -975,6 +976,43 @@ const AGENT_CALL_ENTRY = entry({
     },
 });
 
+// A run of consecutive fs_list calls — drives the consolidated FsBatchCard
+// (one card, one row per listing, rows expand in place; no batch line).
+const FS_BATCH_ENTRIES: ToolLifecycleEntry[] = [
+    entry({
+        callId: "fsb-repos",
+        toolName: "fs_list",
+        arguments: { path: "/home/agent/repos" },
+        result: {
+            path: "/home/agent/repos",
+            entries: [
+                { name: "matrx-sandbox", path: "/home/agent/repos/matrx-sandbox", is_dir: true, size: 4096, mtime: 1783466928 },
+                { name: "aidream", path: "/home/agent/repos/aidream", is_dir: true, size: 4096, mtime: 1783712973 },
+                { name: "ai-matrx", path: "/home/agent/repos/ai-matrx", is_dir: true, size: 4096, mtime: 1783713323 },
+            ],
+        },
+    }),
+    entry({
+        callId: "fsb-projects",
+        toolName: "fs_list",
+        arguments: { path: "/home/agent/projects" },
+        result: { path: "/home/agent/projects", entries: [] },
+    }),
+    entry({
+        callId: "fsb-aidream",
+        toolName: "fs_list",
+        arguments: { path: "/home/agent/aidream" },
+        result: {
+            path: "/home/agent/aidream",
+            entries: [
+                { name: "packages", path: "/home/agent/aidream/packages", is_dir: true, size: 4096, mtime: 1783712973 },
+                { name: "pyproject.toml", path: "/home/agent/aidream/pyproject.toml", is_dir: false, size: 1843, mtime: 1783712973 },
+                { name: "README.md", path: "/home/agent/aidream/README.md", is_dir: false, size: 5210, mtime: 1783712973 },
+            ],
+        },
+    }),
+];
+
 // DB-loaded renderer examples — each resolves to its `tool_ui` row (agent-
 // authored code), fetched + compiled at runtime via compileSlotComponent. The
 // codebase ships NONE of these renderers; they live in the DB. This is the
@@ -1616,6 +1654,24 @@ export default function ResultFieldsGalleryPage() {
                 <div>
                     <ToolCallVisualization entries={[AGENT_CALL_ENTRY]} isPersisted hasContent />
                 </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    fs_list BATCH — consecutive calls consolidated into ONE card (no batch line, no nesting)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    A run of 3 `fs_list` calls through `ToolCallBatch`: one card, one row per listing (name · path ·
+                    counts), each row expands its entries in place. The old form — batch line → left rail → per-call
+                    cards — was the owner-flagged triple nest.
+                </p>
+                <ChatResultColumn>
+                    <ToolCallBatch entries={FS_BATCH_ENTRIES} isPersisted>
+                        {FS_BATCH_ENTRIES.map((e) => (
+                            <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
+                        ))}
+                    </ToolCallBatch>
+                </ChatResultColumn>
             </section>
 
             <section className="space-y-4">
