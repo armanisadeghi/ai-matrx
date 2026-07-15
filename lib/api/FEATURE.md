@@ -102,6 +102,13 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-07-15 — Converted 4 files off the raw client (baseline 22 → 18):
+  `features/files/api/pdf-pages.ts` (types now DERIVED from the contract —
+  `FileRef` / `PdfPageSelectionRequest` / `PdfPageSelectionResult` — via `apiPost`
+  + `buildPath`), `features/audio/services/speechApi.ts` (`apiPost` / `apiMultipart`
+  for transcribe / transcribe-url / text-to-speech) + its test (mocks the
+  typed-client boundary), and `features/podcasts/generator/usePodcastCastPreview.ts`
+  (`apiGet` with typed `query`).
 - 2026-07-12 — Created. Built `typed-client.ts` (path-keyed, contract-derived
   wrappers) + contract-test proof. Converted `features/files/api/assets.ts`
   preview types + call as the reference. Fixes the Image Studio Convert 400.

@@ -129,6 +129,11 @@ again.
 
 ## Change Log
 
+- **2026-07-15** — `chain-schema.ts#chainRoot` now strips a leading `void`
+  operator, so a discarded-promise chain (`void docprocDb(supabase)\n.from("processed_documents")`)
+  resolves to its bound schema instead of reading as an unresolved public `.from()`.
+  Fixed a false-positive dead-relations error on
+  `features/pdf-extractor/studio/hooks/useSyncStudioDocNames.ts`.
 - **2026-07-02** — Closed the exact gap that let `page_extraction_jobs`
   (`docproc.page_extraction_jobs`, registered in `dead-relations.json`) 404 in
   prod undetected: `features/page-extraction/api/jobs.ts` held the table name in
