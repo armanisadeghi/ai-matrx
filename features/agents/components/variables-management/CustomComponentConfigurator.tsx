@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type {
-  PicklistBinding,
+  StructuredListBinding,
   VariableComponentType,
   VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
@@ -41,7 +41,7 @@ import {
   type BuildCustomComponentInput,
 } from "@/features/agents/utils/variable-customcomponent";
 import { OptionsEditor } from "./OptionsEditor";
-import { PicklistBindingEditor } from "./PicklistBindingEditor";
+import { StructuredListBindingEditor } from "./StructuredListBindingEditor";
 
 interface CustomComponentConfiguratorProps {
   /** Current custom component config (undefined = bare textarea). */
@@ -59,7 +59,7 @@ export function CustomComponentConfigurator({
   const componentType: VariableComponentType = value?.type ?? "textarea";
   const meta = getComponentTypeMeta(componentType);
   const effective = extractEffectiveValues(value);
-  const isPicklistBound = !!effective.picklist?.listId;
+  const isPicklistBound = !!effective.structuredList?.listId;
 
   const update = (fields: Partial<BuildCustomComponentInput>) => {
     const current = extractEffectiveValues(value);
@@ -77,8 +77,9 @@ export function CustomComponentConfigurator({
   const handleMinChange = (min: number | undefined) => update({ min });
   const handleMaxChange = (max: number | undefined) => update({ max });
   const handleStepChange = (step: number) => update({ step });
-  const handlePicklistChange = (picklist: PicklistBinding | undefined) =>
-    update({ picklist });
+  const handleStructuredListChange = (
+    structuredList: StructuredListBinding | undefined,
+  ) => update({ structuredList });
 
   return (
     <div className="space-y-3">
@@ -107,9 +108,9 @@ export function CustomComponentConfigurator({
       </div>
 
       {/* ── Picklist binding ─────────────────────────────────────────────── */}
-      <PicklistBindingEditor
-        binding={effective.picklist}
-        onChange={handlePicklistChange}
+      <StructuredListBindingEditor
+        binding={effective.structuredList}
+        onChange={handleStructuredListChange}
         allowOther={effective.allowOther}
         onAllowOtherChange={handleAllowOtherChange}
         readonly={readonly}

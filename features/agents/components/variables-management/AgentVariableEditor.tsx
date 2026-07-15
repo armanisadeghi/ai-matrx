@@ -111,7 +111,7 @@ export function AgentVariableEditor({
   const cc = variable.customComponent;
   const componentType: VariableComponentType = cc?.type ?? "textarea";
   const effective = extractEffectiveValues(cc);
-  const isPicklistBound = !!effective.picklist?.listId;
+  const isPicklistBound = !!effective.structuredList?.listId;
 
   const sanitizedDraft = nameDraft.trim()
     ? sanitizeVariableName(nameDraft)
@@ -263,7 +263,7 @@ export function AgentVariableEditor({
         min: effective.min,
         max: effective.max,
         step: effective.step,
-        picklist: { listId },
+        structuredList: { listId },
       });
 
       updateVariable({
@@ -293,7 +293,7 @@ export function AgentVariableEditor({
     min: effective.min,
     max: effective.max,
     step: effective.step,
-    picklist: effective.picklist,
+    structuredList: effective.structuredList,
   });
 
   const defaultValueStr = String(variable.defaultValue ?? "");

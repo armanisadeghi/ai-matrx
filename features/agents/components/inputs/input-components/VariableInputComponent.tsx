@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 import { ToggleInput } from "./ToggleInput";
 import { RadioGroupInput } from "./RadioGroupInput";
 import { CheckboxGroupInput } from "./CheckboxGroupInput";
@@ -108,7 +109,7 @@ export function VariableInputComponent({
   // ```matrx reference fence string (`type:"picklist_item"`), not text. Orthogonal to
   // `type` — the adapter renders the chosen choice component in label space. This single
   // branch covers Inline / Stacked / Cards / Wizard (all route through VariableInputComponent).
-  if (customComponent?.picklist?.listId) {
+  if (customComponent && readStructuredList(customComponent)?.listId) {
     inputComponent = (
       <PicklistVariableInput
         value={value}

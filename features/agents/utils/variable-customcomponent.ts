@@ -11,7 +11,7 @@
  */
 
 import type {
-  PicklistBinding,
+  StructuredListBinding,
   VariableComponentType,
   VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
@@ -95,11 +95,15 @@ export function readStep(cc: VariableCustomComponent | undefined): number {
   return cc?.step ?? cc?.stash?.step ?? 1;
 }
 
-/** The picklist binding, if this variable is bound to a picklist. Top-level only. */
-export function readPicklist(
+/**
+ * The structured-list binding, if this variable is bound to a Structured List. Top-level only.
+ * Reads the canonical `structured_list` key and falls back to the legacy `picklist` key
+ * (read-only back-compat for historical agent definitions — new writes use `structured_list`).
+ */
+export function readStructuredList(
   cc: VariableCustomComponent | undefined,
-): PicklistBinding | undefined {
-  return cc?.picklist;
+): StructuredListBinding | undefined {
+  return cc?.structured_list ?? cc?.picklist;
 }
 
 // ─── Builder ──────────────────────────────────────────────────────────────────
@@ -112,8 +116,8 @@ export interface BuildCustomComponentInput {
   min?: number;
   max?: number;
   step?: number;
-  /** Picklist binding — type-independent, always carried top-level (never stashed). */
-  picklist?: PicklistBinding;
+  /** Structured-list binding — type-independent, always carried top-level (never stashed). */
+  structuredList?: StructuredListBinding;
 }
 
 /**
@@ -173,13 +177,14 @@ export function buildCustomComponent(
     cc.stash = stash;
   }
 
-  // Picklist binding is type-independent: always preserved top-level, regardless of the
+  // Structured-list binding is type-independent: always preserved top-level, regardless of the
   // chosen display component. Its presence also means this is never a bare textarea.
-  if (input.picklist?.listId) {
-    cc.picklist = input.picklist;
+  // Emit the canonical `structured_list` key only (never the legacy `picklist` key).
+  if (input.structuredList?.listId) {
+    cc.structured_list = input.structuredList;
   }
 
-  if (type === "textarea" && !cc.stash && !cc.picklist) return undefined;
+  if (type === "textarea" && !cc.stash && !cc.structured_list) return undefined;
   return cc;
 }
 
@@ -189,9 +194,9 @@ export function buildCustomComponent(
  */
 export function extractEffectiveValues(
   cc: VariableCustomComponent | undefined,
-): Required<Omit<BuildCustomComponentInput, "type" | "picklist">> & {
+): Required<Omit<BuildCustomComponentInput, "type" | "structuredList">> & {
   type: VariableComponentType;
-  picklist: PicklistBinding | undefined;
+  structuredList: StructuredListBinding | undefined;
 } {
   return {
     type: cc?.type ?? "textarea",
@@ -201,7 +206,7 @@ export function extractEffectiveValues(
     min: readMin(cc) as number,
     max: readMax(cc) as number,
     step: readStep(cc),
-    picklist: readPicklist(cc),
+    structuredList: readStructuredList(cc),
   };
 }
 
@@ -222,6 +227,14 @@ export function normalizeCustomComponent(
     next = rest;
   }
 
-  if (next.type === "textarea" && !next.stash && !next.picklist) return undefined;
+  // Preserve a structured-list-bound textarea (canonical or legacy key) — dropping it would
+  // silently unbind the variable.
+  if (
+    next.type === "textarea" &&
+    !next.stash &&
+    !next.structured_list &&
+    !next.picklist
+  )
+    return undefined;
   return next;
 }

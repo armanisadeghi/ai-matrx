@@ -84,13 +84,14 @@ export function isMediaVariableType(
 export type VariableComponentType = (typeof VARIABLE_COMPONENT_TYPES)[number];
 
 /**
- * Binding of a variable to a user picklist (udt_structured_lists). When set, the variable's
- * options are hydrated at runtime from the picklist (labels only — the secret `description`
+ * Binding of a variable to a Structured List (`workbench.udt_structured_lists`). When set, the
+ * variable's options are hydrated at runtime from the list (labels only — the secret `description`
  * never reaches the client) and the emitted value is a ```matrx reference fence string
  * (`kind:"reference"`, `type:"structured_list_item"`), not text. Orthogonal to `type`, so a
- * picklist can render as select / radio / buttons / checkbox.
+ * structured-list-bound variable can render as select / radio / buttons / checkbox (a "picklist"
+ * in the dropdown-projection sense).
  */
-export interface PicklistBinding {
+export interface StructuredListBinding {
   /** udt_structured_lists.id */
   listId: string;
   /** Optional: restrict to a single group; otherwise all groups render as sections. */
@@ -113,12 +114,18 @@ export interface VariableCustomComponent {
   max?: number;
   step?: number;
   /**
-   * Picklist binding. When present, options come from the bound picklist and the variable's
-   * value is a ```matrx reference fence string (one `picklist_item` item for single-select,
-   * N items + any "Other" lines for multi). Kept top-level (not stashable) so it survives
-   * component-type switches.
+   * Structured-list binding. When present, options come from the bound Structured List and the
+   * variable's value is a ```matrx reference fence string (one `structured_list_item` for
+   * single-select, N items + any "Other" lines for multi). Kept top-level (not stashable) so it
+   * survives component-type switches.
    */
-  picklist?: PicklistBinding;
+  structured_list?: StructuredListBinding;
+  /**
+   * @deprecated Legacy key — READ-ONLY. Historical agent definitions store the binding under
+   * `picklist`; readers fall back to it via {@link readStructuredList}. New writes use
+   * `structured_list` only. Do not emit this key.
+   */
+  picklist?: StructuredListBinding;
   /**
    * Preserved config fragments for other component types.
    * Written when the user edits a field that isn't used by the current type

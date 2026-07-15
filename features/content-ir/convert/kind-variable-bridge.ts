@@ -40,6 +40,7 @@ import type {
 } from "@/features/agents/types/agent-definition.types";
 import type { ContextSlot } from "@/features/agents/types/agent-api-types";
 import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
+import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 
 // ---------------------------------------------------------------------------
 // Shared shapes
@@ -331,14 +332,15 @@ function convertVariable(v: VariableDefinition): VariableConversion {
 
   const cc: VariableCustomComponent | undefined = v.customComponent;
 
-  if (cc?.picklist) {
-    const staticOptions = cc.options ?? [];
-    if (staticOptions.length > 0 && !cc.picklist.multiple) {
+  const structuredList = readStructuredList(cc);
+  if (structuredList) {
+    const staticOptions = cc?.options ?? [];
+    if (staticOptions.length > 0 && !structuredList.multiple) {
       return finish({ type: "enum", values: [...staticOptions] });
     }
     lossReasons.push(
-      `picklist-bound (list ${cc.picklist.listId}) — ${
-        cc.picklist.multiple ? "multi-select, " : ""
+      `structured-list-bound (list ${structuredList.listId}) — ${
+        structuredList.multiple ? "multi-select, " : ""
       }options resolve at run time; string in kind space`,
     );
     return finish({ type: "string" });

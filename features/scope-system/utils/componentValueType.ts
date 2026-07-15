@@ -1,4 +1,5 @@
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
 
 /**
@@ -17,7 +18,7 @@ export function componentToValueType(
   if (!cc) return "string";
 
   // Picklist binding emits a ```matrx reference fence string (single or multi) → value_text.
-  if (cc.picklist?.listId) return "string";
+  if (readStructuredList(cc)?.listId) return "string";
 
   switch (cc.type) {
     case "number":

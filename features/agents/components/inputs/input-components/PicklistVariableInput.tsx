@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 import { SelectInput } from "./SelectInput";
 import { RadioGroupInput } from "./RadioGroupInput";
 import { CheckboxGroupInput } from "./CheckboxGroupInput";
@@ -45,7 +46,7 @@ export function PicklistVariableInput({
   wizardMode = false,
   containerWidth = 0,
 }: PicklistVariableInputProps) {
-  const binding = customComponent.picklist;
+  const binding = readStructuredList(customComponent);
   if (!binding) {
     // Caller (VariableInputComponent) only renders this when
     // customComponent.picklist.listId is set — this guards the invariant

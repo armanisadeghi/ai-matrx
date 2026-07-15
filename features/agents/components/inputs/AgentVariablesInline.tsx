@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useRef } from "react";
+import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 import { ChevronRight, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
@@ -173,7 +174,7 @@ export function AgentVariablesInline({
           // Envelope-aware: picklist values render as their public label, never
           // "[object Object]" and never the secret description.
           const displayValue: string = variableValueToDisplay(rawValue);
-          const isPicklistBound = !!variable.customComponent?.picklist?.listId;
+          const isPicklistBound = !!readStructuredList(variable.customComponent)?.listId;
 
           if (isExpanded) {
             return (

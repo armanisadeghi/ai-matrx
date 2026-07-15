@@ -16,11 +16,11 @@ import {
   getStructuredListForSelection,
 } from "@/features/user-lists/service";
 import type { UserList } from "@/features/user-lists/types";
-import type { PicklistBinding } from "@/features/agents/types/agent-definition.types";
+import type { StructuredListBinding } from "@/features/agents/types/agent-definition.types";
 
-interface PicklistBindingEditorProps {
-  binding: PicklistBinding | undefined;
-  onChange: (binding: PicklistBinding | undefined) => void;
+interface StructuredListBindingEditorProps {
+  binding: StructuredListBinding | undefined;
+  onChange: (binding: StructuredListBinding | undefined) => void;
   /**
    * When true, an "Other" option appears in the rendered input that lets the user type a
    * free-text value. The envelope is replaced by that plain string for that selection — so
@@ -38,13 +38,13 @@ const ALL_GROUPS = "__all__";
  * optional group, and single/multi. At run time the consumer sees only labels — the secret
  * item `description` is resolved on the server. Owners author descriptions in the Lists editor.
  */
-export function PicklistBindingEditor({
+export function StructuredListBindingEditor({
   binding,
   onChange,
   allowOther,
   onAllowOtherChange,
   readonly,
-}: PicklistBindingEditorProps) {
+}: StructuredListBindingEditorProps) {
   const [lists, setLists] = useState<UserList[]>([]);
   const [groups, setGroups] = useState<string[]>([]);
   const bound = !!binding?.listId;
