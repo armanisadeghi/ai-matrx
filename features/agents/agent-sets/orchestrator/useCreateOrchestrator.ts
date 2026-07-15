@@ -10,6 +10,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { toast } from "@/lib/toast-service";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
@@ -40,13 +41,21 @@ export function useCreateOrchestrator() {
         // 2) Name it + make it a tool-calling SUPERVISOR (the template ships a
         //    planner prompt that never delegates; runtime delegation projects the
         //    members as tools, so the orchestrator must be told to call them).
-        //    Both non-fatal — the builder can still rename / re-sync.
+        //    Non-fatal — the builder still opens — but LOUD: a failed supervisor
+        //    write leaves the template's PLANNER prompt, which never delegates,
+        //    and "Sync agent listings" won't recover it (it only refills
+        //    <available_agents>). So we scream rather than silently ship a dud.
         await orchestratorService.rename(orchestratorId, args.name.trim() || "Agent Orchestrator");
-        await orchestratorService.setOrchestratorMessages(
+        const promptRes = await orchestratorService.setOrchestratorMessages(
           orchestratorId,
           ORCHESTRATOR_SUPERVISOR_PROMPT,
           ORCHESTRATOR_USER_TEMPLATE,
         );
+        if (!promptRes.ok) {
+          toast.warning(
+            "Orchestrator created, but its supervisor prompt failed to save — it may not delegate to members. Re-open it and re-save the prompt.",
+          );
+        }
 
         // 3) Create the (empty) set. If the marker write fails we STILL route to
         //    the created agent — the builder's "Make an orchestrator" CTA recovers.
