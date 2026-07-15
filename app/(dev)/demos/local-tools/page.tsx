@@ -12,11 +12,12 @@ import {
   FolderOpen,
   Globe,
   Loader2,
+  MessageSquare,
   Monitor,
   Send,
   Settings2,
   Terminal,
-  Wifi,
+  Wrench,
   Zap,
 } from "lucide-react";
 import { LocalToolsPageShell } from "./_lib/LocalToolsPageShell";
@@ -30,6 +31,20 @@ import type { ToolResult } from "./_lib/types";
 // ---------------------------------------------------------------------------
 
 const SUB_PAGES = [
+  {
+    href: "/demos/local-tools/chat",
+    icon: MessageSquare,
+    label: "Chat Streams",
+    description: "OpenAI-compatible and Matrx chat streaming tests",
+    badge: "New",
+  },
+  {
+    href: "/demos/local-tools/delegation",
+    icon: Wrench,
+    label: "Tool Delegation",
+    description: "Resolve realtime tools and execute delegated calls",
+    badge: "New",
+  },
   {
     href: "/demos/local-tools/scraper",
     icon: Globe,

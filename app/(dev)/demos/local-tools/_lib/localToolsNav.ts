@@ -5,14 +5,22 @@ import {
   FolderOpen,
   Globe,
   LayoutGrid,
+  MessageSquare,
   Monitor,
   Settings2,
   Terminal,
+  Wrench,
   Zap,
 } from "lucide-react";
 
 export const LOCAL_TOOLS_NAV_ITEMS: RouteNavItem[] = [
   { name: "Hub", href: "/demos/local-tools", icon: LayoutGrid },
+  { name: "Chat", href: "/demos/local-tools/chat", icon: MessageSquare },
+  {
+    name: "Delegation",
+    href: "/demos/local-tools/delegation",
+    icon: Wrench,
+  },
   { name: "Scraper", href: "/demos/local-tools/scraper", icon: Globe },
   { name: "Files", href: "/demos/local-tools/files", icon: FileText },
   { name: "System", href: "/demos/local-tools/system", icon: Monitor },
