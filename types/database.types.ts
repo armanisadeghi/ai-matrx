@@ -7165,6 +7165,156 @@ export type Database = {
   }
   content_ir: {
     Tables: {
+      _backup_kind_example_20260715: {
+        Row: {
+          captured_at: string | null
+          created_at: string | null
+          created_by: string | null
+          data: Json | null
+          deleted_at: string | null
+          description: string | null
+          id: string | null
+          is_canonical: boolean | null
+          kind_definition_id: string | null
+          kind_version: number | null
+          label: string | null
+          metadata: Json | null
+          organization_id: string | null
+          source: string | null
+          source_ref: Json | null
+          updated_at: string | null
+          updated_by: string | null
+          validated_at: string | null
+          validation_status: string | null
+          version: number | null
+        }
+        Insert: {
+          captured_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_canonical?: boolean | null
+          kind_definition_id?: string | null
+          kind_version?: number | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          source?: string | null
+          source_ref?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string | null
+          version?: number | null
+        }
+        Update: {
+          captured_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_canonical?: boolean | null
+          kind_definition_id?: string | null
+          kind_version?: number | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          source?: string | null
+          source_ref?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      _backup_kind_surface_20260715: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          id: string | null
+          is_active: boolean | null
+          kind_definition_id: string | null
+          metadata: Json | null
+          organization_id: string | null
+          parser_config: Json | null
+          parser_strategy: string | null
+          priority: number | null
+          streaming: boolean | null
+          surface_type: string | null
+          token: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          kind_definition_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          parser_config?: Json | null
+          parser_strategy?: string | null
+          priority?: number | null
+          streaming?: boolean | null
+          surface_type?: string | null
+          token?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          kind_definition_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          parser_config?: Json | null
+          parser_strategy?: string | null
+          priority?: number | null
+          streaming?: boolean | null
+          surface_type?: string | null
+          token?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      admission_config: {
+        Row: {
+          enforce: boolean
+          note: string | null
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          enforce?: boolean
+          note?: string | null
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          enforce?: boolean
+          note?: string | null
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kind_component: {
         Row: {
           component_key: string
@@ -7581,9 +7731,62 @@ export type Database = {
         }
         Relationships: []
       }
+      kind_version_ref: {
+        Row: {
+          as_of: string | null
+          definition_id: string | null
+          emitted_fingerprint: string | null
+          emitted_json_schema: Json | null
+          is_active: boolean | null
+          is_current: boolean | null
+          kind: string | null
+          organization_id: string | null
+          version: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      admission_enforced: { Args: never; Returns: boolean }
+      assert_kind_admission: {
+        Args: {
+          p_context?: string
+          p_kind: string
+          p_organization_id: string
+          p_version?: number
+        }
+        Returns: Json
+      }
+      check_kind_admission: {
+        Args: { p_kind: string; p_organization_id: string; p_version?: number }
+        Returns: Json
+      }
+      compute_example_validation: {
+        Args: { p_data: Json; p_schema: Json }
+        Returns: string
+      }
+      resolve_kind_version: {
+        Args: { p_kind: string; p_organization_id: string; p_version?: number }
+        Returns: {
+          definition_id: string
+          emitted_fingerprint: string
+          emitted_json_schema: Json
+          is_active: boolean
+          is_current: boolean
+          kind: string
+          version: number
+        }[]
+      }
+      revalidate_kind_examples: {
+        Args: { p_kind_definition_id?: string }
+        Returns: {
+          example_id: string
+          kind: string
+          new_status: string
+          old_status: string
+        }[]
+      }
+      strip_kind_deep: { Args: { p: Json }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
@@ -19694,24 +19897,6 @@ export type Database = {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: boolean
       }
-      shared_by_me: {
-        Args: never
-        Returns: {
-          granted_to_organization_id: string
-          granted_to_user_id: string
-          permission_level: Database["public"]["Enums"]["permission_level"]
-          resource_id: string
-          resource_type: string
-        }[]
-      }
-      shared_with_me: {
-        Args: never
-        Returns: {
-          permission_level: Database["public"]["Enums"]["permission_level"]
-          resource_id: string
-          resource_type: string
-        }[]
-      }
       sweep_claim: {
         Args: { p_agent: string; p_schema: string; p_table: string }
         Returns: boolean
@@ -25787,10 +25972,12 @@ export type Database = {
         Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
         Returns: string
       }
-      _edu_can_read_via_assignment: {
-        Args: { p_id: string; p_type: string }
-        Returns: boolean
-      }
+      _edu_can_read_via_assignment:
+        | { Args: { p_id: string; p_type: string }; Returns: boolean }
+        | {
+            Args: { p_id: string; p_type: string; p_user_id: string }
+            Returns: boolean
+          }
       _edu_class: {
         Args: { p_class: string }
         Returns: Database["context"]["Tables"]["scopes"]["Row"]
@@ -25827,10 +26014,6 @@ export type Database = {
       accept_context_item_suggestion: {
         Args: { p_suggestion_id: string }
         Returns: Json
-      }
-      accept_organization_invitation: {
-        Args: { accepting_user_id: string; invitation_token: string }
-        Returns: string
       }
       accept_scope_suggestion: {
         Args: { p_organization_id?: string; p_suggestion_id: string }
@@ -27362,18 +27545,6 @@ export type Database = {
         Args: { org_id: string; user_id: string }
         Returns: boolean
       }
-      auth_is_project_admin: {
-        Args: { p_project_id: string }
-        Returns: boolean
-      }
-      auth_is_project_member: {
-        Args: { p_project_id: string }
-        Returns: boolean
-      }
-      auth_is_project_owner: {
-        Args: { p_project_id: string }
-        Returns: boolean
-      }
       bulk_upsert_broker_values: {
         Args: {
           p_ai_runs_id?: string
@@ -27498,18 +27669,6 @@ export type Database = {
           remaining: number
           reset_at: string
         }[]
-      }
-      check_resource_access: {
-        Args: {
-          p_assignee_id?: string
-          p_organization_id?: string
-          p_owner_id?: string
-          p_project_id?: string
-          p_required_level: Database["public"]["Enums"]["permission_level"]
-          p_resource_id: string
-          p_resource_type: string
-        }
-        Returns: boolean
       }
       check_upload_quota: {
         Args: { p_is_guest?: boolean; p_size_bytes: number; p_user_id: string }
@@ -29563,31 +29722,6 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: Json
       }
-      get_org_invitation_by_token: {
-        Args: { p_token: string }
-        Returns: {
-          created_at: string
-          created_by: string
-          email: string
-          expires_at: string
-          id: string
-          org_created_at: string
-          org_created_by: string
-          org_description: string
-          org_is_personal: boolean
-          org_logo_file_id: string
-          org_logo_url: string
-          org_name: string
-          org_settings: Json
-          org_slug: string
-          org_updated_at: string
-          org_website: string
-          organization_id: string
-          role: string
-          status: string
-          token: string
-        }[]
-      }
       get_org_module_settings: {
         Args: { p_org_id: string }
         Returns: {
@@ -29705,22 +29839,6 @@ export type Database = {
           shortcut_id: string
           shortcut_label: string
           tools: Json
-          variable_defaults: Json
-        }[]
-      }
-      get_prompts_shared_with_me: {
-        Args: never
-        Returns: {
-          created_at: string
-          description: string
-          id: string
-          messages: Json
-          name: string
-          owner_email: string
-          permission_level: string
-          settings: Json
-          updated_at: string
-          user_id: string
           variable_defaults: Json
         }[]
       }
@@ -30348,15 +30466,6 @@ export type Database = {
         Returns: string
       }
       inv_revoke: { Args: { p_invitation_id: string }; Returns: undefined }
-      invite_to_organization: {
-        Args: {
-          email_address: string
-          invited_by_user_id: string
-          member_role: Database["public"]["Enums"]["org_role"]
-          org_id: string
-        }
-        Returns: string
-      }
       is_admin: { Args: never; Returns: boolean }
       is_dm_participant: {
         Args: { p_conversation_id: string; p_user_id: string }
@@ -43031,8 +43140,10 @@ export type Database = {
           node_id: string
           output: Json
           output_kind: string | null
+          output_kind_degraded: string | null
           output_kind_errors: Json | null
           output_kind_ok: boolean | null
+          output_kind_version: number | null
           run_id: string
           sends: Json
           source: string
@@ -43051,8 +43162,10 @@ export type Database = {
           node_id: string
           output?: Json
           output_kind?: string | null
+          output_kind_degraded?: string | null
           output_kind_errors?: Json | null
           output_kind_ok?: boolean | null
+          output_kind_version?: number | null
           run_id: string
           sends?: Json
           source?: string
@@ -43071,8 +43184,10 @@ export type Database = {
           node_id?: string
           output?: Json
           output_kind?: string | null
+          output_kind_degraded?: string | null
           output_kind_errors?: Json | null
           output_kind_ok?: boolean | null
+          output_kind_version?: number | null
           run_id?: string
           sends?: Json
           source?: string
