@@ -26,6 +26,13 @@ import type {
   VersionInfo,
 } from "./types";
 
+interface PendingWsRequest {
+  tool: string;
+  timer: ReturnType<typeof setTimeout>;
+  resolve: (result: ToolResult) => void;
+  reject: (error: Error) => void;
+}
+
 // ---------------------------------------------------------------------------
 // Module-level token cache
 // ---------------------------------------------------------------------------
@@ -95,6 +102,10 @@ async function buildWsUrl(httpUrl: string): Promise<string> {
     return wsBase;
   }
   return `${wsBase}?token=${encodeURIComponent(token)}`;
+}
+
+function redactWsUrl(url: string): string {
+  return url.replace(/([?&]token=)[^&]+/g, "$1***");
 }
 
 // ---------------------------------------------------------------------------
@@ -231,9 +242,7 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
 
   const wsRef = useRef<WebSocket | null>(null);
   const connectWsRef = useRef<() => Promise<void>>(async () => {});
-  const pendingCallbacks = useRef<Map<string, (result: ToolResult) => void>>(
-    new Map(),
-  );
+  const pendingCallbacks = useRef<Map<string, PendingWsRequest>>(new Map());
 
   // Refs for values needed inside stable callbacks (no re-creation on state change)
   const baseUrlRef = useRef(baseUrl);
@@ -282,6 +291,20 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
   );
 
   const clearLogs = useCallback(() => setLogs([]), []);
+
+  const rejectPendingWsRequests = useCallback((reason: string) => {
+    const pendingIds = Array.from(pendingCallbacks.current.keys());
+    for (const [, pending] of pendingCallbacks.current) {
+      clearTimeout(pending.timer);
+      pending.reject(new Error(reason));
+    }
+    pendingCallbacks.current.clear();
+    if (pendingIds.length > 0) {
+      setActiveRequests((prev) =>
+        prev.filter((request) => !pendingIds.includes(request.id)),
+      );
+    }
+  }, []);
 
   // ── Port discovery (live 22140–22159 + dev 22240–22259) ─────────────────
 
@@ -474,7 +497,12 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
   // connectWs is stable (empty deps) — it reads state via refs.
 
   const connectWs = useCallback(async () => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (
+      wsRef.current?.readyState === WebSocket.OPEN ||
+      wsRef.current?.readyState === WebSocket.CONNECTING
+    ) {
+      return;
+    }
     setStatus("connecting");
 
     // Wait for token before attempting WS — prevents the 403 "missing token" errors
@@ -490,20 +518,25 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
+      if (wsRef.current !== ws) return;
       setWsConnected(true);
       wsConnectedRef.current = true;
       setStatus("connected");
       wsRetryCountRef.current = 0;
-      addLog("received", { event: "connected", url: wsUrl });
+      addLog("received", { event: "connected", url: redactWsUrl(wsUrl) });
     };
 
     ws.onmessage = (event) => {
+      if (wsRef.current !== ws) return;
       try {
         const data = JSON.parse(event.data) as ToolResult & { id?: string };
         addLog("received", data, data.id ?? undefined);
         if (data.id && pendingCallbacks.current.has(data.id)) {
-          const callback = pendingCallbacks.current.get(data.id);
-          if (callback) callback(data);
+          const pending = pendingCallbacks.current.get(data.id);
+          if (pending) {
+            clearTimeout(pending.timer);
+            pending.resolve(data);
+          }
           pendingCallbacks.current.delete(data.id);
           setActiveRequests((prev) => prev.filter((r) => r.id !== data.id));
         }
@@ -513,12 +546,12 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     };
 
     ws.onclose = () => {
+      if (wsRef.current !== ws) return;
       setWsConnected(false);
       wsConnectedRef.current = false;
       setStatus(restOnlineRef.current ? "connected" : "disconnected");
       addLog("received", { event: "disconnected" });
-      pendingCallbacks.current.clear();
-      setActiveRequests([]);
+      rejectPendingWsRequests("WebSocket disconnected");
 
       if (wsAutoReconnect.current) {
         // Exponential backoff: 2s, 4s, 8s … max 30s
@@ -535,17 +568,17 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     };
 
     ws.onerror = () => {
+      if (wsRef.current !== ws) return;
       setWsConnected(false);
       wsConnectedRef.current = false;
       setStatus(restOnlineRef.current ? "connected" : "disconnected");
       addLog("received", { event: "error" });
-      pendingCallbacks.current.clear();
-      setActiveRequests([]);
+      rejectPendingWsRequests("WebSocket error");
     };
 
     wsRef.current = ws;
     // addLog is stable (useCallback [])
-  }, [addLog]);
+  }, [addLog, rejectPendingWsRequests]);
 
   useEffect(() => {
     connectWsRef.current = connectWs;
@@ -557,9 +590,13 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
       clearTimeout(wsRetryTimerRef.current);
       wsRetryTimerRef.current = null;
     }
-    wsRef.current?.close();
+    const ws = wsRef.current;
     wsRef.current = null;
-  }, []);
+    rejectPendingWsRequests("WebSocket disconnected");
+    ws?.close();
+    setWsConnected(false);
+    wsConnectedRef.current = false;
+  }, [rejectPendingWsRequests]);
 
   const connectWsWithReconnect = useCallback(async () => {
     wsAutoReconnect.current = true;
@@ -614,17 +651,21 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     if (ws?.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ action: "cancel_all" }));
     }
-    pendingCallbacks.current.clear();
-    setActiveRequests([]);
+    rejectPendingWsRequests("Cancelled");
     setLoading(null);
     addLog("sent", { action: "cancel_all" });
-  }, [addLog]);
+  }, [addLog, rejectPendingWsRequests]);
 
   const cancelRequest = useCallback(
     (id: string) => {
       const ws = wsRef.current;
       if (ws?.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ id, action: "cancel" }));
+      }
+      const pending = pendingCallbacks.current.get(id);
+      if (pending) {
+        clearTimeout(pending.timer);
+        pending.reject(new Error("Cancelled"));
       }
       pendingCallbacks.current.delete(id);
       setActiveRequests((prev) => prev.filter((r) => r.id !== id));
@@ -655,19 +696,28 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
         ]);
 
         const timer = setTimeout(() => {
-          if (pendingCallbacks.current.has(reqId)) {
-            pendingCallbacks.current.delete(reqId);
-            setActiveRequests((prev) => prev.filter((r) => r.id !== reqId));
-            reject(new Error(`Timeout (${timeoutMs / 1000}s)`));
-          }
+          const pending = pendingCallbacks.current.get(reqId);
+          if (!pending) return;
+          pendingCallbacks.current.delete(reqId);
+          setActiveRequests((prev) => prev.filter((r) => r.id !== reqId));
+          pending.reject(new Error(`Timeout (${timeoutMs / 1000}s)`));
         }, timeoutMs);
 
-        pendingCallbacks.current.set(reqId, (result) => {
-          clearTimeout(timer);
-          resolve(result);
+        pendingCallbacks.current.set(reqId, {
+          tool,
+          timer,
+          resolve,
+          reject,
         });
 
-        wsRef.current.send(JSON.stringify(msg));
+        try {
+          wsRef.current.send(JSON.stringify(msg));
+        } catch (err) {
+          clearTimeout(timer);
+          pendingCallbacks.current.delete(reqId);
+          setActiveRequests((prev) => prev.filter((r) => r.id !== reqId));
+          reject(err instanceof Error ? err : new Error("WebSocket send failed"));
+        }
       });
     },
     [addLog],
