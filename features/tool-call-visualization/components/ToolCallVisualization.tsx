@@ -377,6 +377,8 @@ const ToolCallVisualizationInner: React.FC<{
           conversationId={conversationId}
           peekExpanded={isExpanded}
           onTogglePeek={toggleExpand}
+          onOpenOverlay={handleOpenOverlay}
+          onOpenWindowPanel={handleOpenWindowPanel}
         />
       ) : cardMode && headerTool && HeaderInline ? (
         // Self-headed entity card — no fold line; the card's own header carries
@@ -504,7 +506,12 @@ const ToolCallVisualizationInner: React.FC<{
                 Content fades in rather than slamming into place. */}
             <div
               ref={bodyScrollRef}
-              className="mt-0.5 max-h-[26rem] space-y-1 overflow-y-auto overscroll-contain bg-transparent animate-in fade-in duration-300"
+              className={cn(
+                "max-h-[26rem] space-y-1 overflow-y-auto overscroll-contain bg-transparent animate-in fade-in duration-300",
+                // Artifact mode: the body attaches seamlessly to the header
+                // bar (zero gap — the renderer continues the header's sheet).
+                artifact ? "mt-0" : "mt-0.5",
+              )}
             >
               {entries.map((entry) => {
                 const groupDisplayName = getToolDisplayName(entry.toolName);
@@ -540,6 +547,7 @@ const ToolCallVisualizationInner: React.FC<{
                         isPersisted={isPersisted}
                         conversationId={conversationId}
                         requestId={requestId}
+                        attached={!!artifact}
                       />
                     )}
                   </div>

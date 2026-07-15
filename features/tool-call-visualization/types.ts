@@ -101,6 +101,15 @@ export interface ToolRendererProps {
    */
   expanded?: boolean;
   onToggleExpanded?: () => void;
+
+  /**
+   * True when the shell renders this body directly beneath an
+   * `ArtifactResultBar` header. A renderer that draws its own "paper" surface
+   * (e.g. PatchDiffInline) should square its top corners and drop its top
+   * border so header + document read as ONE continuous sheet. Renderers
+   * without a surface can ignore it.
+   */
+  attached?: boolean;
 }
 
 /**

@@ -1680,6 +1680,25 @@ export default function ResultFieldsGalleryPage() {
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    ArtifactResultBar — the official &quot;known pretty data&quot; header (working document)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    A completed working-document patch through the REAL shell path: one full-width header, click
+                    anywhere to collapse/expand, Open is a bordered dropdown (Canvas · Edit · Window Panel · Tool
+                    Admin), and the expanded document attaches seamlessly beneath the header — one sheet.
+                </p>
+                <ChatResultColumn>
+                    <ToolCallVisualization
+                        entries={CTX_ENTRIES.filter((e) => e.callId === "ctx-patch-overwrite")}
+                        conversationId="demo-conversation"
+                        isPersisted
+                        hasContent
+                    />
+                </ChatResultColumn>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     Database / SQL renderers — sql / db_query / db_schema (click a row to expand)
                 </h2>
                 <div>

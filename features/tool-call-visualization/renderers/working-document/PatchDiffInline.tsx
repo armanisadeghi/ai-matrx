@@ -31,6 +31,8 @@
 
 import React, { useMemo, useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -84,8 +86,18 @@ function isEffectivelyRewrite(before: string, after: string): boolean {
  * tone + hairline border, full conversation width, and DOCUMENT-scale type
  * (13px — quieter than the message text around it, never louder).
  */
-const Paper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="max-h-96 w-full overflow-auto rounded-xl border border-border/50 bg-card px-5 py-4 shadow-xs">
+const Paper: React.FC<{ attached?: boolean; children: React.ReactNode }> = ({
+  attached,
+  children,
+}) => (
+  <div
+    className={cn(
+      "max-h-96 w-full overflow-auto border border-border/50 bg-card px-5 py-4 shadow-xs",
+      // Attached: this sheet continues the ArtifactResultBar header above it —
+      // square top, no top border, one continuous surface.
+      attached ? "rounded-b-xl rounded-t-none border-t-0" : "rounded-xl",
+    )}
+  >
     {children}
   </div>
 );
@@ -94,7 +106,7 @@ const Paper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const PAPER_TEXT = "text-[13px] leading-relaxed";
 
 export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
-  const { entry, isPersisted, conversationId, requestId } = props;
+  const { entry, isPersisted, conversationId, requestId, attached } = props;
 
   const key = (getArg<string>(entry, "key") ?? "").trim();
   const command = (getArg<string>(entry, "command") ?? "").trim() || null;
@@ -170,7 +182,7 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
   const rewrite = isEffectivelyRewrite(before as string, after as string);
 
   return (
-    <Paper>
+    <Paper attached={attached}>
       {rewrite ? (
         // Full rewrite (or fresh body): the final document, no highlights.
         <div className={`whitespace-pre-wrap break-words text-foreground ${PAPER_TEXT}`}>
