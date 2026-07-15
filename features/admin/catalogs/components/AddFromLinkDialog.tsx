@@ -161,16 +161,25 @@ export function AddFromLinkDialog({
     result: ResolveLinkResult,
     file: ResolvedFile,
   ): EntryPrefill => {
-    // Prefer the resolver's own suggestion for this exact file.
-    const suggestion = result.suggestions.find(
-      (s) => s.artifact_url === file.download_url,
-    );
+    // Prefer the resolver's own suggestion for this exact file. Suggestions
+    // with a null artifact_url (artifact-less kinds / skeletons) can't match
+    // by URL — fall back to matching by kind (hint first), attaching the
+    // selected file as the artifact.
+    const suggestion =
+      result.suggestions.find((s) => s.artifact_url === file.download_url) ??
+      result.suggestions.find(
+        (s) =>
+          s.artifact_url === null &&
+          (resolvedKindHint === null || s.kind === resolvedKindHint),
+      ) ??
+      result.suggestions.find((s) => s.artifact_url === null) ??
+      null;
     if (suggestion) {
       return {
         kind: suggestion.kind,
         key: suggestion.key,
         payload: suggestion.payload,
-        artifact_url: suggestion.artifact_url,
+        artifact_url: suggestion.artifact_url ?? file.download_url,
         artifact_sha256: suggestion.artifact_sha256 ?? file.sha256 ?? null,
         artifact_size_bytes:
           suggestion.artifact_size_bytes ?? file.size_bytes ?? null,

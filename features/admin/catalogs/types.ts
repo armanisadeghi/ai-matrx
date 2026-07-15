@@ -39,7 +39,10 @@ export interface ResolverSuggestion {
   kind: string;
   key: string;
   payload: Record<string, unknown>;
-  artifact_url: string;
+  /** null for kinds without a downloadable artifact (e.g. image_gen_model
+   *  suggestions) and for skeleton suggestions — the server legitimately
+   *  emits null here. */
+  artifact_url: string | null;
   artifact_sha256?: string | null;
   artifact_size_bytes?: number | null;
   notes?: string | null;

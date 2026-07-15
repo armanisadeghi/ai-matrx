@@ -26,88 +26,254 @@ const loose = <T extends z.ZodRawShape>(shape: T) =>
   z.object(shape).catchall(z.unknown());
 
 const ratingSchema = z.number().int().min(0).max(5);
+const intSchema = z.number().int();
 
 // ── Per-kind payload schemas (matrx-local, schema_version 1) ────────────────
+//
+// Each schema below is the Zod twin of a Pydantic payload class in
+// aidream/aidream/services/catalogs/schemas.py — the server release gate.
+// The twins MUST move together: a field added/renamed/retyped in the Pydantic
+// class must land here in the same change, or the editor's dual-gate and the
+// server gate will disagree on which rows are valid. Requiredness mirrors
+// Pydantic exactly: fields with defaults are .optional() here; `X | None`
+// fields are .nullable().optional().
 
+/** Twin of `LlmModelVariantPayload` — one quantization variant. */
+export const llmModelVariantSchema = loose({
+  label: z.string(),
+  quant: z.string(),
+  filename: z.string(),
+  disk_size_gb: z.number(),
+  ram_required_gb: z.number(),
+  hf_url: z.string(),
+  hf_parts: z.array(z.string()).optional(),
+  expected_size_bytes: intSchema.optional(),
+  hf_part_sizes: z.array(intSchema).optional(),
+  mmproj_filename: z.string().optional(),
+  mmproj_url: z.string().optional(),
+  mmproj_expected_size_bytes: intSchema.optional(),
+});
+
+/** Twin of `LlmModelPayload` (Rust `LlmModelInfo`, snake_case). */
 export const llmModelSchema = loose({
-  name: z.string().min(1),
-  repo_id: z.string().min(1),
-});
-
-export const whisperModelSchema = loose({
-  name: z.string().min(1),
-});
-
-export const imageGenModelSchema = loose({
-  model_id: z.string().min(1),
-  name: z.string().min(1),
-  provider: z.string().min(1),
-  pipeline_type: z.string().min(1),
-  vram_gb: z.number().nonnegative().optional(),
-  ram_gb: z.number().nonnegative().optional(),
-  quality_rating: ratingSchema.optional(),
-  speed_rating: ratingSchema.optional(),
-});
-
-export const videoGenModelSchema = loose({
-  model_id: z.string().min(1),
-  name: z.string().min(1),
-  provider: z.string().min(1),
-  pipeline_type: z.string().min(1),
-  supports_image_to_video: z.boolean().optional(),
-});
-
-export const loraSchema = loose({
-  repo_id: z.string().min(1),
-  weight_name: z.string().min(1),
-  base_family: z.string().min(1),
-});
-
-export const workflowPresetSchema = loose({
-  preset_id: z.string().min(1),
-  name: z.string().min(1),
+  tier: z.string(),
+  name: z.string(),
+  provider: z.string(),
+  filename: z.string(),
+  disk_size_gb: z.number(),
+  ram_required_gb: z.number(),
+  text_rating: ratingSchema,
+  code_rating: ratingSchema,
+  vision_rating: ratingSchema,
+  tool_calling_rating: ratingSchema,
+  speed: z.string(),
   description: z.string(),
-  prompt_template: z.string().min(1),
-  suggested_model_id: z.string().optional(),
-  steps: z.number().int().positive().optional(),
-  guidance: z.number().nonnegative().optional(),
+  knowledge_cutoff: z.string(),
+  hf_model_card_url: z.string(),
+  is_uncensored: z.boolean().optional(),
+  is_server_grade: z.boolean().optional(),
+  hf_url: z.string(),
+  hf_parts: z.array(z.string()).optional(),
+  context_length: intSchema,
+  expected_size_bytes: intSchema.optional(),
+  hf_part_sizes: z.array(intSchema).optional(),
+  mmproj_filename: z.string().optional(),
+  mmproj_url: z.string().optional(),
+  mmproj_expected_size_bytes: intSchema.optional(),
+  variants: z.array(llmModelVariantSchema).optional(),
 });
 
+/** Twin of `WhisperModelPayload` — STT tiers plus the role="vad" artifact
+ *  (ggml-silero), which has no tier/speed/accuracy semantics. */
+export const whisperModelSchema = loose({
+  filename: z.string(),
+  description: z.string(),
+  role: z.enum(["transcription", "vad"]).optional(),
+  tier: z.string().nullable().optional(),
+  download_size_mb: intSchema.nullable().optional(),
+  ram_required_mb: intSchema.nullable().optional(),
+  relative_speed: z.string().nullable().optional(),
+  accuracy: z.string().nullable().optional(),
+});
+
+/** Twin of `ImageGenModelPayload` (`ImageGenModel` dataclass). */
+export const imageGenModelSchema = loose({
+  model_id: z.string(),
+  name: z.string(),
+  provider: z.string(),
+  pipeline_type: z.string(),
+  vram_gb: z.number(),
+  ram_gb: z.number(),
+  description: z.string(),
+  quality_rating: ratingSchema,
+  speed_rating: ratingSchema,
+  recommended_steps: intSchema,
+  recommended_guidance: z.number(),
+  supports_negative_prompt: z.boolean(),
+  model_card_url: z.string(),
+  default_width: intSchema.optional(),
+  default_height: intSchema.optional(),
+  download_size_gb: z.number().optional(),
+  load_variant: z.string().nullable().optional(),
+  requires_hf_token: z.boolean().optional(),
+  supports_img2img: z.boolean().optional(),
+  img2img_strength: z.boolean().optional(),
+  lora_family: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  format: z.string().optional(),
+  weight_name: z.string().nullable().optional(),
+});
+
+/** Twin of `VideoGenModelPayload` (`VideoGenModel` dataclass). */
+export const videoGenModelSchema = loose({
+  model_id: z.string(),
+  name: z.string(),
+  provider: z.string(),
+  pipeline_type: z.string(),
+  vram_gb: z.number(),
+  ram_gb: z.number(),
+  description: z.string(),
+  quality_rating: ratingSchema,
+  speed_rating: ratingSchema,
+  recommended_steps: intSchema,
+  recommended_guidance: z.number(),
+  default_width: intSchema,
+  default_height: intSchema,
+  default_num_frames: intSchema,
+  default_fps: intSchema,
+  supports_image_to_video: z.boolean(),
+  supports_negative_prompt: z.boolean(),
+  model_card_url: z.string(),
+  license_name: z.string(),
+  max_num_frames: intSchema,
+  download_size_gb: z.number().optional(),
+  load_variant: z.string().nullable().optional(),
+  requires_hf_token: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+/** Twin of `LoraPayload` — `repo_id` is an HF repo id or the canonical
+ *  Civitai short ref `civitai:<modelId>@<versionId>`. */
+export const loraSchema = loose({
+  repo_id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  weight_name: z.string(),
+  base_family: z.enum(["sdxl", "sd15", "flux", "flux2", "qwen", "z-image", "unknown"]),
+  license: z.string(),
+  source: z.enum(["hf", "civitai"]),
+  unverified: z.boolean().optional(),
+});
+
+/** Twin of `WorkflowPresetPayload` (`WorkflowPreset` dataclass). */
+export const workflowPresetSchema = loose({
+  preset_id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  prompt_template: z.string(),
+  negative_prompt: z.string(),
+  suggested_model_id: z.string(),
+  steps: intSchema,
+  guidance: z.number(),
+  width: intSchema,
+  height: intSchema,
+  tags: z.array(z.string()).optional(),
+});
+
+/** Twin of `SystemPromptPayload` — the real prompt text lives in `content`;
+ *  `id` mirrors the desktop source field name. */
 export const systemPromptSchema = loose({
-  name: z.string().min(1),
-  prompt: z.string().min(1),
+  id: z.string(),
+  name: z.string(),
+  content: z.string(),
+  category: z.string().optional(),
 });
 
+/** Twin of `TtsVoicePayload` (Kokoro `TtsVoice`). */
 export const ttsVoiceSchema = loose({
-  voice_id: z.string().min(1),
-  name: z.string().min(1),
-  gender: z.enum(["female", "male"]).optional(),
-  language: z.string().optional(),
-  lang_code: z.string().optional(),
+  voice_id: z.string(),
+  name: z.string(),
+  gender: z.enum(["female", "male"]),
+  language: z.string(),
+  lang_code: z.string(),
+  quality_grade: z.string(),
+  traits: z.array(z.string()).optional(),
+  is_default: z.boolean().optional(),
 });
 
+/** Twin of `TtsLanguagePayload` (Kokoro `TtsLanguage`). */
 export const ttsLanguageSchema = loose({
-  lang_code: z.string().min(1),
-  name: z.string().min(1),
+  lang_code: z.string(),
+  name: z.string(),
+  flag: z.string(),
+  espeak_fallback: z.string(),
 });
 
+/** Twin of `TtsModelFilePayload` — the URL/size/sha live in the row's
+ *  artifact_* columns; the payload names the file and its role. */
+export const ttsModelFileSchema = loose({
+  filename: z.string(),
+  role: z.enum(["onnx_model", "voices_bin"]),
+});
+
+/** Twin of `NerModelPayload` (`NerModelSpec`) — `estimated_ram_mb` is the
+ *  source's (typical, peak) tuple serialized as a 2-element list. */
 export const nerModelSchema = loose({
-  model_id: z.string().min(1),
-  repo_id: z.string().min(1),
-  display_name: z.string().min(1),
-  backend: z.string().optional(),
-  tier: z.string().optional(),
+  model_id: z.string(),
+  repo_id: z.string(),
+  display_name: z.string(),
+  backend: z.enum(["gliner", "gliner2"]),
+  tier: z.enum(["edge", "base", "large", "xxl"]),
+  description: z.string(),
+  license: z.string(),
+  estimated_disk_mb: intSchema,
+  estimated_ram_mb: z.array(intSchema).length(2),
+  default: z.boolean().optional(),
+  hardware_gate: z.string().nullable().optional(),
 });
 
+/** Twin of `NerPiiLabelsPayload` — one row carrying the whole PII label set. */
+export const nerPiiLabelsSchema = loose({
+  labels: z.array(z.string()).min(1),
+});
+
+/** Twin of `WakeWordModelPayload` — the download URL lives in the row's
+ *  artifact_url; `name` is the short registry key (e.g. 'hey_jarvis'). */
 export const wakeWordModelSchema = loose({
-  name: z.string().min(1),
-  filename: z.string().min(1),
+  name: z.string(),
+  size_mb: z.number(),
+  description: z.string(),
+  built_in: z.boolean().optional(),
+  bundled: z.boolean().optional(),
 });
 
+/** Twin of `ApiKeyProviderPayload` — either a provider pattern (`names` +
+ *  `label`; `names[0]` is the canonical provider ID) or the ONE global
+ *  strip-lists row (key='global-strip-lists', strip_prefixes/strip_suffixes),
+ *  matching the Pydantic `_one_shape` model validator. */
 export const apiKeyProviderSchema = loose({
-  provider: z.string().min(1),
-  name: z.string().min(1),
-  pattern: z.string().optional(),
+  // Pattern shape
+  names: z.array(z.string()).nullable().optional(),
+  env_var_names: z.array(z.string()).optional(),
+  label: z.string().nullable().optional(),
+  // Strip-lists shape (the one global row)
+  strip_prefixes: z.array(z.string()).nullable().optional(),
+  strip_suffixes: z.array(z.string()).nullable().optional(),
+}).superRefine((payload, ctx) => {
+  const isPattern =
+    Array.isArray(payload.names) &&
+    payload.names.length > 0 &&
+    typeof payload.label === "string";
+  const isStrip =
+    (payload.strip_prefixes !== null && payload.strip_prefixes !== undefined) ||
+    (payload.strip_suffixes !== null && payload.strip_suffixes !== undefined);
+  if (!isPattern && !isStrip) {
+    ctx.addIssue({
+      code: "custom",
+      message:
+        "must be either a provider pattern (names + label) or the global strip-lists row (strip_prefixes/strip_suffixes)",
+    });
+  }
 });
 
 // ── Kind registry ────────────────────────────────────────────────────────────
@@ -186,11 +352,25 @@ export const CATALOG_KINDS: readonly CatalogKindDef[] = [
     hasArtifact: false,
   },
   {
+    slug: "tts_model_file",
+    label: "TTS model files",
+    description: "Kokoro model artifacts (kokoro onnx + voices bin) — URL/size/sha live in the artifact columns.",
+    schema: ttsModelFileSchema,
+    hasArtifact: true,
+  },
+  {
     slug: "ner_model",
     label: "NER models",
     description: "Local NER / information-extraction models (GLiNER tiers, disk/RAM estimates).",
     schema: nerModelSchema,
     hasArtifact: true,
+  },
+  {
+    slug: "ner_pii_labels",
+    label: "NER PII labels",
+    description: "The PII label set for local NER redaction — one row carrying the whole list.",
+    schema: nerPiiLabelsSchema,
+    hasArtifact: false,
   },
   {
     slug: "wake_word_model",

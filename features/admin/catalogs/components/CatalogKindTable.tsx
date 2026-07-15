@@ -3,8 +3,9 @@
 // features/admin/catalogs/components/CatalogKindTable.tsx
 //
 // Entries for one (app, kind): key, name from payload, artifact size,
-// min_app_version, is_active toggle (confirm + live artifact HEAD probe —
-// the dual-gate moment), inline-editable sort_order, provenance. All writes
+// min_app_version, is_active toggle (confirm + live artifact probe via
+// probeArtifactUrl: aidream resolver first, browser HEAD fallback — the
+// dual-gate moment), inline-editable sort_order, provenance. All writes
 // go through admin_upsert_catalog_entry with p_expected_updated_at; a 40001
 // conflict toasts and refreshes.
 
@@ -26,12 +27,17 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAccessToken } from "@/lib/redux/slices/userSlice";
+import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import {
   isConflictError,
   rpcErrorMessage,
 } from "@/features/admin/shared/admin-rpc-errors";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
-import { formatBytes, probeUrl } from "@/features/admin/shared/UrlProbeField";
+import { formatBytes } from "@/features/admin/shared/UrlProbeField";
+import { probeArtifactUrl } from "@/features/admin/catalogs/resolver";
+import type { ArtifactProbeResult } from "@/features/admin/catalogs/resolver";
 import { upsertArgsFromRow, upsertCatalogEntry } from "@/features/admin/catalogs/rpc";
 import {
   kindDef,
@@ -61,9 +67,7 @@ interface PendingToggle {
 type ActivationProbe =
   | { status: "none" }
   | { status: "probing" }
-  | { status: "ok"; httpStatus: number }
-  | { status: "fail"; detail: string }
-  | { status: "cors" };
+  | ArtifactProbeResult;
 
 export function CatalogKindTable({
   app,
@@ -76,6 +80,8 @@ export function CatalogKindTable({
   onChanged,
 }: CatalogKindTableProps) {
   const { toast } = useToast();
+  const accessToken = useAppSelector(selectAccessToken);
+  const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const adminEmails = useAdminEmails();
   const def = kindDef(kind);
 
@@ -91,7 +97,8 @@ export function CatalogKindTable({
   const [savingSortId, setSavingSortId] = useState<string | null>(null);
 
   // Dual-gate probe: activating an entry with an artifact URL live-probes it
-  // (HEAD) while the confirm dialog is open. Warn loudly; allow override.
+  // while the confirm dialog is open (resolver-first via probeArtifactUrl,
+  // browser HEAD fallback). Warn loudly; allow override.
   const probeTarget =
     pendingToggle?.next && pendingToggle.row.artifact_url
       ? pendingToggle.row.artifact_url
@@ -99,26 +106,21 @@ export function CatalogKindTable({
   useEffect(() => {
     if (!probeTarget) return;
     let cancelled = false;
-    void probeUrl(probeTarget, "head").then((result) => {
+    const controller = new AbortController();
+    void probeArtifactUrl({
+      baseUrl: baseUrl ?? null,
+      accessToken: accessToken ?? null,
+      url: probeTarget,
+      signal: controller.signal,
+    }).then((result) => {
       if (cancelled) return;
-      if (result.status === "ok") {
-        setProbeDone({
-          url: probeTarget,
-          result: { status: "ok", httpStatus: result.httpStatus },
-        });
-      } else if (result.status === "fail") {
-        setProbeDone({
-          url: probeTarget,
-          result: { status: "fail", detail: result.detail },
-        });
-      } else if (result.status === "cors") {
-        setProbeDone({ url: probeTarget, result: { status: "cors" } });
-      }
+      setProbeDone({ url: probeTarget, result });
     });
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [probeTarget]);
+  }, [probeTarget, baseUrl, accessToken]);
 
   const probe: ActivationProbe = !probeTarget
     ? { status: "none" }
@@ -426,13 +428,13 @@ export function CatalogKindTable({
                   {probe.status === "probing" ? (
                     <p className="flex items-center gap-1 text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" /> Probing
-                      artifact URL (HEAD)…
+                      artifact URL…
                     </p>
                   ) : null}
                   {probe.status === "ok" ? (
                     <p className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Artifact
-                      reachable — HEAD returned {probe.httpStatus}
+                      reachable — {probe.detail}
                     </p>
                   ) : null}
                   {probe.status === "fail" ? (

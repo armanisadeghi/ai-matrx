@@ -10,6 +10,7 @@
 
 import { createAuthenticatedClient } from "@/lib/api/backend-client";
 import { BackendApiError } from "@/lib/api/errors";
+import { formatBytes, probeUrl } from "@/features/admin/shared/UrlProbeField";
 import type {
   ResolveLinkResult,
   ResolvedFile,
@@ -74,16 +75,17 @@ function parseResolveResult(data: unknown): ResolveLinkResult | null {
       if (
         typeof raw.kind !== "string" ||
         typeof raw.key !== "string" ||
-        typeof raw.artifact_url !== "string" ||
         !isPlainObject(raw.payload)
       ) {
         continue;
       }
+      // artifact_url is legitimately null for artifact-less kinds (e.g.
+      // image_gen_model) and skeleton suggestions — keep those suggestions.
       suggestions.push({
         kind: raw.kind,
         key: raw.key,
         payload: raw.payload,
-        artifact_url: raw.artifact_url,
+        artifact_url: asOptionalString(raw.artifact_url),
         artifact_sha256: asOptionalString(raw.artifact_sha256),
         artifact_size_bytes: asOptionalNumber(raw.artifact_size_bytes),
         notes: asOptionalString(raw.notes),
@@ -148,4 +150,59 @@ export async function resolveCatalogLink(params: {
     // (same admin action either way: deploy/point at a live aidream).
     return { status: "not_deployed", message: NOT_DEPLOYED_MESSAGE };
   }
+}
+
+// ── Activation artifact probe (shared by both activation confirms) ──────────
+
+export type ArtifactProbeResult =
+  | { status: "ok"; detail: string }
+  | { status: "fail"; detail: string }
+  | { status: "cors" };
+
+/**
+ * Probe an artifact URL for the dual-gate activation confirm. Prefers the
+ * aidream resolver — its "direct" branch HEAD-probes server-side, immune to
+ * browser CORS, and returns size/filename — treating a successful resolve as
+ * probe-ok. When the resolver is not deployed (404 / unreachable) it falls
+ * back to the browser HEAD probe with its honest CORS labeling.
+ */
+export async function probeArtifactUrl(params: {
+  baseUrl: string | null;
+  accessToken: string | null;
+  url: string;
+  signal?: AbortSignal;
+}): Promise<ArtifactProbeResult> {
+  if (params.baseUrl && params.accessToken) {
+    const outcome = await resolveCatalogLink({
+      baseUrl: params.baseUrl,
+      accessToken: params.accessToken,
+      url: params.url,
+      kindHint: null,
+      signal: params.signal,
+    });
+    if (outcome.status === "ok") {
+      const size = outcome.result.files[0]?.size_bytes ?? null;
+      return {
+        status: "ok",
+        detail: `verified server-side by the aidream resolver${
+          size !== null ? ` (${formatBytes(size)})` : ""
+        }`,
+      };
+    }
+    if (outcome.status === "error") {
+      return { status: "fail", detail: `resolver: ${outcome.message}` };
+    }
+    // not_deployed → fall back to the browser HEAD probe below.
+  }
+  const result = await probeUrl(params.url, "head");
+  if (result.status === "ok") {
+    return {
+      status: "ok",
+      detail: `HEAD returned ${result.httpStatus} (browser probe)`,
+    };
+  }
+  if (result.status === "fail") {
+    return { status: "fail", detail: result.detail };
+  }
+  return { status: "cors" };
 }

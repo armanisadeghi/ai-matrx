@@ -13,9 +13,11 @@
 // destructive confirm showing the full entry JSON.
 //
 // Dual-gate activation: saving with is_active=true requires a valid payload,
-// and the confirm dialog live-probes the artifact URL (HEAD) — an unreachable
-// artifact warns loudly but can be overridden (CORS makes some healthy hosts
-// unverifiable from a browser).
+// and the confirm dialog live-probes the artifact URL. The probe prefers the
+// aidream resolver (POST /api/catalog-resolver/resolve — its "direct" branch
+// HEAD-probes server-side, immune to browser CORS); when the resolver is not
+// deployed it falls back to a browser HEAD with honest CORS labeling. An
+// unreachable artifact warns loudly but can be overridden.
 
 import { useEffect, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
@@ -46,13 +48,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAccessToken } from "@/lib/redux/slices/userSlice";
+import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { createClient } from "@/utils/supabase/client";
 import JsonFieldEditor from "@/features/ai-models/components/JsonFieldEditor";
 import {
   isConflictError,
   rpcErrorMessage,
 } from "@/features/admin/shared/admin-rpc-errors";
-import { UrlProbeField, formatBytes, probeUrl } from "@/features/admin/shared/UrlProbeField";
+import { UrlProbeField, formatBytes } from "@/features/admin/shared/UrlProbeField";
+import { probeArtifactUrl } from "@/features/admin/catalogs/resolver";
+import type { ArtifactProbeResult } from "@/features/admin/catalogs/resolver";
 import { CatalogHistoryPanel } from "@/features/admin/catalogs/components/CatalogHistoryPanel";
 import {
   CATALOG_KEY_REGEX,
@@ -104,9 +111,7 @@ interface PendingSave {
 type ArtifactProbe =
   | { status: "idle" }
   | { status: "probing" }
-  | { status: "ok"; httpStatus: number }
-  | { status: "fail"; detail: string }
-  | { status: "cors" };
+  | ArtifactProbeResult;
 
 function pendingSnapshotJson(app: string, pending: PendingSave): string {
   return entrySnapshotJson({
@@ -135,6 +140,8 @@ export function CatalogEntryEditor({
   onDeleted,
 }: CatalogEntryEditorProps) {
   const { toast } = useToast();
+  const accessToken = useAppSelector(selectAccessToken);
+  const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const isNew = row === null;
   const seed = isNew ? (prefill ?? null) : null;
 
@@ -189,7 +196,10 @@ export function CatalogEntryEditor({
   const payloadValidation = validatePayload(kind, payload);
 
   // Dual-gate probe: while the save confirm is open for an ACTIVE entry with
-  // an artifact URL, HEAD-probe it and surface the outcome inside the dialog.
+  // an artifact URL, probe it and surface the outcome inside the dialog.
+  // Prefers the aidream resolver (server-side HEAD, no browser CORS limits);
+  // resolver 404 / unreachable falls back to the browser HEAD probe with its
+  // honest CORS labeling.
   const probeTargetUrl =
     pendingSave && pendingSave.isActive && pendingSave.artifactUrl
       ? pendingSave.artifactUrl
@@ -197,26 +207,21 @@ export function CatalogEntryEditor({
   useEffect(() => {
     if (!probeTargetUrl) return;
     let cancelled = false;
-    void probeUrl(probeTargetUrl, "head").then((result) => {
+    const controller = new AbortController();
+    void probeArtifactUrl({
+      baseUrl: baseUrl ?? null,
+      accessToken: accessToken ?? null,
+      url: probeTargetUrl,
+      signal: controller.signal,
+    }).then((result) => {
       if (cancelled) return;
-      if (result.status === "ok") {
-        setProbeDone({
-          url: probeTargetUrl,
-          result: { status: "ok", httpStatus: result.httpStatus },
-        });
-      } else if (result.status === "fail") {
-        setProbeDone({
-          url: probeTargetUrl,
-          result: { status: "fail", detail: result.detail },
-        });
-      } else if (result.status === "cors") {
-        setProbeDone({ url: probeTargetUrl, result: { status: "cors" } });
-      }
+      setProbeDone({ url: probeTargetUrl, result });
     });
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [probeTargetUrl]);
+  }, [probeTargetUrl, baseUrl, accessToken]);
 
   const artifactProbe: ArtifactProbe = !probeTargetUrl
     ? { status: "idle" }
@@ -905,13 +910,13 @@ export function CatalogEntryEditor({
                   {artifactProbe.status === "probing" ? (
                     <p className="flex items-center gap-1 text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" /> Probing
-                      artifact URL (HEAD)…
+                      artifact URL…
                     </p>
                   ) : null}
                   {artifactProbe.status === "ok" ? (
                     <p className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Artifact
-                      reachable — HEAD returned {artifactProbe.httpStatus}
+                      reachable — {artifactProbe.detail}
                     </p>
                   ) : null}
                   {artifactProbe.status === "fail" ? (
