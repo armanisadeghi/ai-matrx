@@ -53,6 +53,16 @@ export default function AdminEmailPage() {
     msg: string;
   } | null>(null);
 
+  // Preselect a user when arriving from the Accounts "Email user" action
+  // (?userId=<id>). Read from the URL directly to avoid a Suspense refactor.
+  useEffect(() => {
+    const preId = new URLSearchParams(window.location.search).get("userId");
+    if (preId) {
+      setRecipientMode("selected");
+      setSelectedUserIds([preId]);
+    }
+  }, []);
+
   // Fetch templates and config on mount
   useEffect(() => {
     fetch("/api/admin/email")
