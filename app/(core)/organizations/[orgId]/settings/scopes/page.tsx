@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import { useOrganization, useUserRole } from "@/features/organizations/hooks";
 import { ScopeManagerPage } from "@/features/agent-context/components/scope-admin/ScopeManagerPage";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
@@ -122,10 +123,20 @@ export default function OrganizationScopesPage() {
   }
 
   return (
-    <ScopeManagerPage
-      organizationId={organization.id}
-      organizationName={organization.name}
-      isPersonal={organization.isPersonal}
-    />
+    <>
+      <CrumbTrailHeader
+        backHref={`/organizations/${orgId}/settings`}
+        trail={[
+          { label: organization.name, href: `/organizations/${orgId}` },
+          { label: "Settings", href: `/organizations/${orgId}/settings` },
+          { label: "Scopes" },
+        ]}
+      />
+      <ScopeManagerPage
+        organizationId={organization.id}
+        organizationName={organization.name}
+        isPersonal={organization.isPersonal}
+      />
+    </>
   );
 }

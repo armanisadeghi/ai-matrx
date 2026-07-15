@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Menu, Puzzle } from "lucide-react";
+import { Menu, Puzzle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { useProject } from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { getProjectBySlug, getProject } from "@/features/projects/service";
@@ -60,54 +61,50 @@ export function OrgProjectSettingsLayoutClient({
   const orgParam = orgSlug || orgId;
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] w-full bg-textured overflow-hidden flex flex-col">
-      <div className="flex-shrink-0 border-b border-border bg-card">
-        <div className="h-12 px-3 md:px-4 flex items-center gap-3">
-          <Link
-            href={`/organizations/${orgParam}/projects`}
-            className="flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Back to Projects"
-          >
-            <ArrowLeft size={18} />
-          </Link>
-
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Puzzle className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-            <h1 className="text-base font-semibold truncate">
-              {project?.name ?? "Project Settings"}
-            </h1>
+    <>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton
+              href={`/organizations/${orgParam}/projects`}
+              ariaLabel="Back to projects"
+            />
+            <span className="flex min-w-0 items-center gap-1.5 px-1.5">
+              <Puzzle className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="truncate max-w-[55vw] sm:max-w-[220px] text-sm font-medium text-foreground">
+                {project?.name ?? "Project Settings"}
+              </span>
+            </span>
+          </>
+        }
+        right={
+          isMobile && resolvedOrgId ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          ) : undefined
+        }
+      />
+      {isMobile && resolvedOrgId && (
+        <MatrxDynamicPanelHost
+          open={mobileMenuOpen}
+          onOpenChange={setMobileMenuOpen}
+          title="Projects"
+          position="left"
+          defaultSize={72}
+          contentClassName="overflow-y-auto"
+        >
+          <div onClick={() => setMobileMenuOpen(false)}>
+            <ProjectSidebar organizationId={resolvedOrgId} orgSlug={orgParam} />
           </div>
-
-          {isMobile && resolvedOrgId && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-full"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-              <MatrxDynamicPanelHost
-                open={mobileMenuOpen}
-                onOpenChange={setMobileMenuOpen}
-                title="Projects"
-                position="left"
-                defaultSize={72}
-                contentClassName="overflow-y-auto"
-              >
-                <div onClick={() => setMobileMenuOpen(false)}>
-                  <ProjectSidebar
-                    organizationId={resolvedOrgId}
-                    orgSlug={orgParam}
-                  />
-                </div>
-              </MatrxDynamicPanelHost>
-            </>
-          )}
-        </div>
-      </div>
-
+        </MatrxDynamicPanelHost>
+      )}
+      <div className="h-full w-full bg-textured overflow-hidden flex flex-col">
       <div className="flex flex-1 overflow-hidden">
         {resolvedOrgId && (
           <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-border bg-card overflow-y-auto">
@@ -121,6 +118,7 @@ export function OrgProjectSettingsLayoutClient({
         )}
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

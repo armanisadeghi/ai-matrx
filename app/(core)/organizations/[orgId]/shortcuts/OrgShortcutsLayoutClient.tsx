@@ -107,7 +107,7 @@ export function OrgShortcutsLayoutClient({
 
   if (loading) {
     return (
-      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured">
+      <div className="h-full flex items-center justify-center bg-textured">
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading organization…
@@ -118,7 +118,7 @@ export function OrgShortcutsLayoutClient({
 
   if (error || !organization || !role) {
     return (
-      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured p-4">
+      <div className="h-full flex items-center justify-center bg-textured p-4">
         <Card className="max-w-lg w-full p-8 border-destructive/30">
           <div className="flex flex-col items-center text-center space-y-4">
             <div className="p-3 bg-destructive/10 rounded-full">
@@ -174,67 +174,26 @@ export function OrgShortcutsLayoutClient({
 
   const navItems = getNavItems(navOrgId);
 
-  const handleNavigate = (href: string) => {
-    if (pathname === href || isPending) return;
-    setPendingHref(href);
-    startTransition(() => {
-      router.push(href);
-    });
-  };
-
   return (
     <OrgShortcutsProvider value={ctxValue}>
-      <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
-        <div className="border-b border-border px-4 bg-card flex items-center gap-2 flex-wrap">
-          <Link
-            href={`/organizations/${navOrgId}`}
-            className="text-muted-foreground hover:text-foreground transition-colors p-2 -ml-2"
+      <RouteHeader
+        left={<ChevronLeftTapButton href={`/organizations/${navOrgId}`} ariaLabel="Back" />}
+        center={<RouteModeNav items={navItems} />}
+        right={
+          <Badge
+            variant="outline"
+            className="text-[11px] capitalize hidden sm:inline-flex items-center gap-1"
           >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <nav className="flex items-center h-12 gap-1 flex-1 min-w-0 overflow-x-auto">
-            {navItems.map((item) => {
-              const active = isActive(pathname, item.href, item.exact);
-              const navigating = isPending && pendingHref === item.href;
-              return (
-                <button
-                  key={item.href}
-                  type="button"
-                  onClick={() => handleNavigate(item.href)}
-                  disabled={isPending}
-                  className={cn(
-                    "inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap",
-                    active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
-                  )}
-                >
-                  {navigating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <item.icon className="w-4 h-4" />
-                  )}
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-          <div className="flex items-center gap-2 pr-1">
-            <Badge
-              variant="outline"
-              className="text-[11px] capitalize inline-flex items-center gap-1"
-            >
-              {canWrite ? (
-                <Shield className="h-3 w-3" />
-              ) : (
-                <Eye className="h-3 w-3" />
-              )}
-              {role}
-            </Badge>
-          </div>
-        </div>
-        <div className="flex-1 overflow-hidden">{children}</div>
-      </div>
+            {canWrite ? (
+              <Shield className="h-3 w-3" />
+            ) : (
+              <Eye className="h-3 w-3" />
+            )}
+            {role}
+          </Badge>
+        }
+      />
+      <div className="h-full overflow-hidden bg-textured">{children}</div>
     </OrgShortcutsProvider>
   );
 }

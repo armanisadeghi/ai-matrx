@@ -230,7 +230,7 @@ export function OrgWorkspace() {
 
   return (
     <div className="h-dvh overflow-y-auto bg-textured">
-      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-12 pb-12 space-y-5">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-[var(--shell-header-h)] pb-12 space-y-5">
         {/* ─── Hero ─────────────────────────────────────────────────── */}
         <Card className="p-5 md:p-6 relative overflow-hidden">
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
