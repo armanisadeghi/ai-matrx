@@ -6,24 +6,23 @@ Status of the base system: **structure + builder UI shipped** (see [`AGENT_SETS.
 
 ---
 
-## The load-bearing gap: the server can't read a set
+## The load-bearing gap: the server can't read a set — CLOSED ✅
 
-Today **only the frontend** reads set membership (`agent_set_list()` + `assoc_for_sources` via `agentSetsService`). aidream has no way to resolve "orchestrator X → its ordered members + config." **Every runtime phase depends on closing this first.**
-
-- **P0 — server-side set reader (aidream).** A Python query (or a service-role RPC the server calls) against `platform.associations`: given `orchestrator_id`, return the `matrx_set` marker (mode/config) + `member` edges (target agent id, `label` = role title, `position`, `metadata`). Mirror the FE `load()` logic in `agentSetsService.ts`. This is the seam everything hangs off.
+- **P0 — server-side set reader (aidream). DONE** (commit `153ad4291`, live after aidream deploys). `aidream/services/agent_sets/set_reader.py#read_orchestrator_set(orchestrator_id, ctx)` reads the `matrx_set` marker (mode/config) + ordered `member` edges via the `platform.associations` ORM under `acting_as_user(ctx)` → `OrchestratorSet`. No RPC needed — the ORM + RLS cover it.
 
 ---
 
-## Phase 1 — Runtime delegation MVP (member-as-tool supervisor)
+## Phase 1 — Runtime delegation MVP (member-as-tool supervisor) — MOSTLY DONE
 
 Goal: run the orchestrator; it can call its members as tools and weave their outputs into one answer.
 
-- **DB — set run config.** Extend the `matrx_set` marker `metadata` with `mode` (`supervisor` for P1) and a routing hint. No schema change — it's jsonb. Optionally add per-member edge `metadata.handoff` (a one-line instruction) + `metadata.member_version_id` (pin a version for reproducible runs, like shortcuts/apps do — see [`AGENT_VERSIONING.md`](./AGENT_VERSIONING.md)).
-- **aidream — member-as-tool.** When a run's agent is an orchestrator (has a `matrx_set` marker), the executor synthesizes one **tool per member** (name = role title/`label`, description = the member's description/gap, input schema = the member's `variable_definitions`). A tool call executes that member agent as a nested run and returns its output. This reuses the existing tool-call + agent-run pipeline (`agent_run` / `agent_run_stage` live in the `chat` schema — see [[project_agent_run_chat_move]]) — **nest member runs as child stages** of the orchestrator run so history + observability come for free.
-- **FE — "Run set".** Add a Run entry on the set card + builder header. Launch via the canonical `ConversationInvocation` (see [`conversation-invocation-reference.md`](../conversation-invocation-reference.md)) with a flag/marker telling the server this is an orchestrated run. No new run surface needed for P1 — reuse the agent runner/chat.
-- **FE — live member highlight.** Subscribe to the run's stage state (Broadcast or the stream) and light up the active member node on the canvas (the War Room live-watch layer is the reference — [[project_war_room]]). Members already render as nodes; add an "active/running/done" ring per node.
+- **aidream — member-as-tool. DONE** (commit `153ad4291`). `build_orchestrator_member_specs` projects one `AgentToolSpec(result_mode="inline")` per member onto `request.tools` at the `apply_unified_tools` seam — reusing the EXISTING agent-as-tool pipeline (`resolve_agent_specs` → `executor.py` `ToolType.AGENT` → nested child run → recursion guard + cost spine). NO bespoke executor was needed; sub-runs nest with history/observability for free. `mode` gate: only `supervisor` (default) injects; `sequential`/`parallel`/`dag` reserved for Phase 2.
+- **Supervisor prompt. DONE.** The template `b06689e3` is a PLANNER (emits a JSON dispatch plan, never calls tools) — incompatible with member-as-tool. Generated orchestrators get `ORCHESTRATOR_SUPERVISOR_PROMPT` (tool-calling supervisor, keeps `<available_agents>` marker) via `setOrchestratorMessages`. User's template untouched.
+- **FE — "Run set". DONE.** Run entry on the builder header (`SetBuilder`) + set-card hover (`AgentSetCard`) → canonical runner `/agents/:id/run`. No new run surface.
+- **FE — live member highlight. NOT DONE** (only remaining Phase-1 piece). Light up the active member node during a run (War Room live-watch is the reference — [[project_war_room]]). **Open design question:** the builder canvas isn't mounted while the runner runs (Run navigates away), so this needs either (a) an embedded run panel inside the builder that lights up the canvas, or (b) the highlight rendered ON the runner beside a mini-set view. Pick before building — see the handoff doc.
+- **Optional (deferred):** per-member edge `metadata.handoff` / `member_version_id` (pin a version for reproducible runs). `AgentToolSpec` already supports `handoff` + `reference`/`inline_once` result modes for future use.
 
-**Done when:** clicking Run on the flashcard set produces one orchestrated answer that visibly delegates to members, with each member's sub-run nested in the run history.
+**Done when:** clicking Run on the flashcard set produces one orchestrated answer that visibly delegates to members (verifiable once aidream deploys — smoke-test via the AI Dream MCP `agent_run`), with each member's sub-run nested in the run history. Live-highlight is a separate follow-up.
 
 ---
 

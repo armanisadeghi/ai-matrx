@@ -36,6 +36,16 @@ Agents load ONCE across the whole surface via `useEnsureAgentsLoaded` (the canon
 
 **Future — auto-add agents (documented, NOT built):** when a user creates a member agent FROM a template, auto-generate that agent's `<agent>` entry and append it to every orchestrator whose set it joins. See [`AGENT_SETS_ROADMAP.md`](./AGENT_SETS_ROADMAP.md).
 
+## Runtime delegation — member-as-tool supervisor (P0+P1)
+
+Running an orchestrator makes it **call its members as tools** and weave their outputs into one answer (the industry supervisor/worker pattern). This reuses aidream's EXISTING agent-as-tool pipeline end-to-end — no bespoke executor.
+
+- **Server (aidream `services/agent_sets/`)** — `read_orchestrator_set()` resolves the set from `platform.associations` (marker + ordered members) via the ORM under `acting_as_user(ctx)`; `build_orchestrator_member_specs(agent_id, ctx)` returns one `AgentToolSpec(result_mode="inline")` per member (description = `role_title — gap`), or `[]` for a normal agent / empty set / non-`supervisor` mode. `prepare_agent_run` (`ai_execution/agent_run.py`) calls it right before `apply_unified_tools` and concatenates the specs onto `request.tools`. From there it's the standard `agent_projection.resolve_agent_specs` → `executor.py` `ToolType.AGENT` → nested child run → `inline` result path, with the existing recursion guard + cost spine. See `aidream/services/agent_sets/FEATURE.md`.
+- **The orchestrator must be a tool-CALLING supervisor**, not the template's planner (which only emits a JSON dispatch plan and never delegates). So the **Generate orchestrator** flow overwrites a generated agent's messages with `ORCHESTRATOR_SUPERVISOR_PROMPT` + `ORCHESTRATOR_USER_TEMPLATE` (`orchestrator/constants.ts`, applied by `setOrchestratorMessages` in `useCreateOrchestrator`). The supervisor prompt keeps the `<available_agents>` marker so **Sync agent listings** still fills it. The user's template `b06689e3` is left untouched.
+- **FE — Run.** A **Run** entry on the builder header (`SetBuilder`) + set-card hover row (`AgentSetCard`) routes to the canonical runner `/agents/:id/run` — no bespoke run surface (roadmap P1: "reuse the agent runner/chat").
+- **Not yet built:** the live member-highlight on the canvas (light up the active member node during a run) — Phase 1's last bullet. Requires a run co-mounted with the canvas (or highlight on the runner); see the roadmap.
+- **Deploy gate:** the aidream half ships in commit `153ad4291` but is **only live after aidream deploys**. The AI Dream MCP `agent_run` tool can smoke-test an orchestrator once deployed.
+
 ## Files
 
 - `agent-sets/service/agentSetsService.ts` — thin service over the association chokepoint + `agent_set_list()`. **Owns no new mutation path.**
@@ -49,6 +59,6 @@ Agents load ONCE across the whole surface via `useEnsureAgentsLoaded` (the canon
 - **No `agent_set` table, ever.** Membership is association edges. New write → reuse `associationsService`, never a bespoke RPC.
 - **React Flow (`@xyflow/react`) lives ONLY in `SetBuilderCanvasImpl.tsx`**, reached via the `SetBuilderCanvas` `next/dynamic({ ssr:false })` wrapper. A static import anywhere else is a build-time leak — guarded by `reactFlowStaticImportBan` in `eslint.config.mjs`. See the `code-splitting` skill.
 - **`agent` is a curated `ASSOCIATION_TARGET_TYPES` member** (`features/scopes/types.ts`) so agent→agent is a permitted edge.
-- **Phase 1 = structure + UI.** Runtime delegation (the orchestrator actually invoking members) is designed-for via `role`/`metadata` and lands later as an aidream contract — not built yet. The full prioritized path (P0 server-side set reader → member-as-tool supervisor → pipelines/DAG → hardening → polish) is in [`AGENT_SETS_ROADMAP.md`](./AGENT_SETS_ROADMAP.md).
+- **Runtime delegation (P0+P1) is BUILT** (member-as-tool supervisor) — see the section below. Pipelines/DAG (Phase 2+) are still designed-for via `role`/`metadata`, not built. The full prioritized path is in [`AGENT_SETS_ROADMAP.md`](./AGENT_SETS_ROADMAP.md).
 - **The library rail reuses the canonical agent filter** (`useAgentConsumer` + `makeSelectFilteredOwned/SharedAgents` + `<DesktopFilterPanel>`), never a bespoke list. Peek is **non-blocking**: `AgentPeekButton` opens `AgentSneakPeekContent` in a draggable `WindowPanel` (`AgentPeekWindow`, `dynamic()`-imported so `WindowPanel` stays behind the lazy boundary) — never a blocking modal. The inspector lazy-loads the full definition (`fetchFullAgent`) to show inputs + output type.
 - **The canvas uses React Flow's own `useNodesState`** (a drag mutates only the dragged node — never re-derive the whole node list from a position-override map, which re-renders every node per drag tick); external changes reconcile via a `sig`-keyed effect. Click/drag bumps a monotonic `zIndex` so the active/expanded node rises above the rest. Controls are themed for dark mode in `set-builder-canvas.css`.
