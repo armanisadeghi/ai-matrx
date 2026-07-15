@@ -384,8 +384,21 @@ begin
 end;
 $$;
 
+-- ── creator_public_handles (anon + authenticated) ───────────────────────────
+-- Every published creator handle — powers the sitemap. Kept as a public RPC so
+-- callers never depend on the `users` schema being PostgREST-exposed.
+create or replace function public.creator_public_handles()
+returns table(handle text, updated_at timestamptz)
+language sql stable security definer set search_path = public, users
+as $$
+  select creator_handle, updated_at
+  from users.profiles
+  where creator_public = true and deleted_at is null and creator_handle is not null;
+$$;
+
 -- ── Grants ───────────────────────────────────────────────────────────────────
 grant execute on function public.creator_normalize_handle(text) to authenticated, service_role;
+grant execute on function public.creator_public_handles() to anon, authenticated, service_role;
 grant execute on function public.creator_get_mine() to authenticated, service_role;
 grant execute on function public.creator_handle_available(text) to authenticated, service_role;
 grant execute on function public.creator_claim_handle(text, text) to authenticated, service_role;

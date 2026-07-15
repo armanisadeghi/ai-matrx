@@ -79,23 +79,21 @@ export async function getCreatorPublicPage(
   };
 }
 
-/** Every published creator handle — for the sitemap. Service read, RLS-bypassing. */
+/**
+ * Every published creator handle — for the sitemap. Reads via the anon-safe
+ * `creator_public_handles` RPC so it never depends on the `users` schema being
+ * PostgREST-exposed.
+ */
 export async function listPublicCreatorHandles(): Promise<
   { handle: string; updatedAt: string | null }[]
 > {
   const sb = getScriptSupabaseClient();
-  const { data, error } = await sb
-    .schema("users")
-    .from("profiles")
-    .select("creator_handle, updated_at")
-    .eq("creator_public", true)
-    .is("deleted_at", null)
-    .not("creator_handle", "is", null);
+  const { data, error } = await sb.rpc("creator_public_handles");
   if (error) {
     throw new Error(`[creators] handle list failed: ${error.message}`);
   }
-  return (data ?? []).flatMap((r) => {
-    const h = (r as { creator_handle: string | null }).creator_handle;
-    return h ? [{ handle: h, updatedAt: (r as { updated_at: string | null }).updated_at }] : [];
-  });
+  const rows = (data ?? []) as { handle: string | null; updated_at: string | null }[];
+  return rows.flatMap((row) =>
+    row.handle ? [{ handle: row.handle, updatedAt: row.updated_at }] : [],
+  );
 }

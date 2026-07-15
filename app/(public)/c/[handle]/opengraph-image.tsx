@@ -16,9 +16,10 @@ export const alt = "AI Matrx creator";
 export default async function CreatorOgImage({
   params,
 }: {
-  params: { handle: string };
+  params: Promise<{ handle: string }>;
 }) {
-  const page = await getCreatorPublicPage(params.handle);
+  const { handle } = await params;
+  const page = await getCreatorPublicPage(handle);
   if (!page) {
     return renderEduOgImage({
       eyebrow: "Creator",

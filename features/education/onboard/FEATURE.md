@@ -50,6 +50,13 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
   deck; what was/wasn't preserved is surfaced honestly (Anki media + review history are not yet
   mapped — stated, not silently dropped).
 - **Pledge** (`DataOwnershipPage`): every line is backed by a real button on the page.
+- **Data rights (FERPA/COPPA)** (`data/dataRightsService.ts`, extends `useDataOwnership`): the
+  page is now **"Your data & privacy"** — the per-deck exporter is joined by a full study-spine
+  **export** (`edu_export_study_data`: sessions/attempts/mastery/plans/media/assessments/decks/
+  quizzes → one JSON archive) and a gated, auditable, **reversible-window delete** (`edu_delete_
+  study_data`, undo 30d via `edu_restore_study_data`). Age-band + COPPA status via
+  `AgeBandPrivacyCard` (`features/education/compliance`). Migration
+  `migrations/edu_data_rights_export_delete.sql`.
 
 ## Invariants
 
@@ -160,6 +167,11 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
 
 ## Change log
 
+- **2026-07-15** — `/education/data` → **"Your data & privacy"**: full study-spine export +
+  reversible-window delete/restore (FERPA/COPPA data rights) via `data/dataRightsService.ts` +
+  the `edu_export_study_data`/`edu_delete_study_data`/`edu_restore_study_data` RPCs
+  (`migrations/edu_data_rights_export_delete.sql`, applied + ledgered); age-band + COPPA status
+  card (`features/education/compliance`).
 - **2026-07-14** — Office documents (DOCX/PPTX/XLSX) → REAL extraction. New service
   `officeExtract.ts` (`extractOfficeText`) drives aidream's content-processing orchestrator
   (`POST /content-processing/{cld_file_id}`, `content_type: "office"` — the same pipeline PDFs get
