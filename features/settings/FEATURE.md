@@ -185,6 +185,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-07-15` — Updated the TTS preference choices/default to the catalog-backed Groq voice set; the speech request seam now discards retired persisted PlayAI values and falls back to the server-owned default.
+
 - `2026-07-14` — **Admin desktop app dev override.** Added `adminPreferences.desktopTargetInstanceId` beside the localhost-server override and surfaced it in the admin-only Server environment tab as **Desktop app (dev override)**. The selector loads registered desktop instances from aidream `GET /desktop-instances` (`id`, `name`, `live`, `dev`, `last_seen`, `app_instance_id`, `platform`), stores `null` for Auto/no target, and feeds agent turn assembly with `target_instance_id` only when an admin pins a specific desktop engine.
 - `2026-07-13` — **Shape-drift backfill system (no more console-flooding "self-heals on next save").**
   25/26 `users.user_preferences` rows carried retired shape values (legacy `defaultModel` seed

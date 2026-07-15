@@ -376,6 +376,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalogs/{app}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get App Catalog */
+        get: operations["get_app_catalog_catalogs__app__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalogs/{app}/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get App Catalog Kind */
+        get: operations["get_app_catalog_kind_catalogs__app___kind__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog-resolver/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve */
+        post: operations["resolve_catalog_resolver_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dictionary/publish": {
         parameters: {
             query?: never;
@@ -1559,6 +1610,57 @@ export interface paths {
          * @description Run a saved prompt on the spine — identical pipeline to `/api/ai/prompts/{prompt_id}`.
          */
         post: operations["start_prompt_v2_v2_ai_prompts__prompt_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audio/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transcribe Upload */
+        post: operations["transcribe_upload_audio_transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audio/transcribe-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transcribe Url */
+        post: operations["transcribe_url_audio_transcribe_url_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audio/text-to-speech": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Text To Speech */
+        post: operations["text_to_speech_audio_text_to_speech_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3654,7 +3756,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Crawl Page Detail */
+        /**
+         * Crawl Page Detail
+         * @deprecated
+         */
         get: operations["crawl_page_detail_scraper_admin_crawl__run_id__pages__page_id__get"];
         put?: never;
         post?: never;
@@ -3869,8 +3974,9 @@ export interface paths {
          * @description One-shot Search Console pull for every successful page in a run.
          *
          *     Streams typed events: gsc_bulk_started → gsc_page_done / gsc_page_failed /
-         *     gsc_page_no_data → gsc_bulk_completed. Bounded by `concurrency` so we
-         *     stay inside Search Console's per-minute quota.
+         *     gsc_page_no_data → gsc_bulk_completed. A property-level authorization
+         *     failure emits one gsc_bulk_warning and stops before page fan-out. Bounded
+         *     by `concurrency` so we stay inside Search Console's per-minute quota.
          */
         post: operations["refresh_gsc_bulk_scraper_admin_crawl__run_id__refresh_gsc_bulk_post"];
         delete?: never;
@@ -7720,6 +7826,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rag/library/{processed_document_id}/derive/{kind}/rebuild-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Prepare Derivation Rebuild
+         * @description Inspect the work a rebuild would discard and issue a short-lived,
+         *     snapshot-bound confirmation token. This request never changes output.
+         */
+        post: operations["prepare_derivation_rebuild_rag_library__processed_document_id__derive__kind__rebuild_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rag/library/{processed_document_id}/derive/{kind}": {
         parameters: {
             query?: never;
@@ -7735,10 +7862,10 @@ export interface paths {
          *     progress. Inserts a `derive_runs` row so the operation is observable and
          *     cancelable (POST .../derive-runs/{run_id}/cancel).
          *
-         *     `reset` (query param) only affects the resumable LLM derivations
-         *     (section_summary / synthetic_qa): default False RESUMES — already-persisted
-         *     sections are skipped (no re-spend); True clears the set once then rebuilds.
-         *     Ignored by the other 4 runners, which don't accept it.
+         *     Default ``reset=False`` RESUMES — already-persisted paid work is skipped.
+         *     ``reset=True`` is rejected unless the body carries the fresh token returned
+         *     by ``POST .../rebuild-preview``. The token is bound to the user, document,
+         *     derivation kind, expiry, and inspected output snapshot.
          */
         post: operations["derive_stream_rag_library__processed_document_id__derive__kind__post"];
         delete?: never;
@@ -9498,14 +9625,13 @@ export interface paths {
         };
         /**
          * Get Run Cost
-         * @description Per-run cost summary — the real spend, including per-node conversations.
+         * @description Per-run cost summary from first-class execution attribution.
          *
-         *     Aggregates chat.request rows across EVERY conversation the run touched
-         *     (the run's own conversation_id plus each AI node's — every
-         *     ai.agent.start opens its OWN conversation), falling back to the run's
-         *     durable node_cost events when the join finds nothing. Returns zeros
-         *     only for a genuinely LLM-free run. Costs are already USD; straight
-         *     sums, never re-priced. Computation lives in
+         *     New runs aggregate chat.request rows by their indexed
+         *     execution_kind/execution_id pointer. Historical incomplete runs use
+         *     durable node_cost events, then their legacy run conversation only when
+         *     no event exists. Returns zeros only for a genuinely LLM-free run. Costs
+         *     are already USD; straight sums, never re-priced. Computation lives in
          *     ``aidream/services/runtime/workflow_cost.py`` — shared with the terminal
          *     run-completion callback so both surfaces report identical numbers.
          */
@@ -9529,12 +9655,9 @@ export interface paths {
          * Get Workflow Cost Rollup
          * @description Time-windowed cost rollup for one workflow definition.
          *
-         *     Aggregates cost across every run of the definition in the last
-         *     ``range`` days. Per run: chat.request rows joined on the run's
-         *     conversation_id when any exist, otherwise the run's durable node_cost
-         *     events (AI nodes open their OWN conversations, so the conversation
-         *     join alone under-reports agent workflows — same truth model as
-         *     ``compute_run_cost``). Returns a per-day breakdown the UI can chart.
+         *     Aggregates cost across every run of the definition in the last ``range``
+         *     days using the exact same direct-attribution/completeness fallback rule as
+         *     ``compute_run_cost``. Returns a per-day breakdown the UI can chart.
          */
         get: operations["get_workflow_cost_rollup_workflows__definition_id__cost_rollup_get"];
         put?: never;
@@ -9839,6 +9962,46 @@ export interface paths {
          * @description Return the agents available to the authenticated user (owned + public).
          */
         get: operations["list_agents_for_user_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/{agent_id}/execution-definition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Agent Execution Definition
+         * @description Return the complete canonical definition for an authorized execution host.
+         */
+        get: operations["get_agent_execution_definition_agents__agent_id__execution_definition_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/versions/{version_id}/execution-definition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Agent Version Execution Definition
+         * @description Return one immutable, ownership-scoped agent-version definition.
+         */
+        get: operations["get_agent_version_execution_definition_agents_versions__version_id__execution_definition_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10758,6 +10921,26 @@ export interface paths {
          *     against the COPYING USER's quota (the new file is owned by the caller).
          */
         post: operations["copy_file_files__file_id__copy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/pdf-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Select Pdf Pages
+         * @description Create or reuse one PDF containing the requested source pages.
+         */
+        post: operations["select_pdf_pages_files__file_id__pdf_pages_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11923,6 +12106,23 @@ export interface paths {
          * @description Drain pending ``mtx_media_heal_queue`` rows (flip public + rewrite column).
          */
         post: operations["drain_media_heal_queue_media_heal_drain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/podcast/cast-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cast Preview Endpoint */
+        get: operations["cast_preview_endpoint_podcast_cast_preview_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -14556,6 +14756,11 @@ export interface components {
             settings?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            /**
+             * Tools
+             * @description The agent's executable tools as canonical NAMES — rendered from the authoritative agent.definition.tools column the executor reads (NOT from tool_config, which never assigns tools).
+             */
+            tools?: string[];
             /** Tool Config */
             tool_config?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -16471,6 +16676,20 @@ export interface components {
              */
             file_path: string;
         };
+        /** Body_transcribe_upload_audio_transcribe_post */
+        Body_transcribe_upload_audio_transcribe_post: {
+            /** File */
+            file: string;
+            /** Language */
+            language?: string | null;
+            /** Prompt */
+            prompt?: string | null;
+            /**
+             * Model
+             * @default stt-default
+             */
+            model?: string;
+        };
         /** Body_upload_asset_assets_post */
         Body_upload_asset_assets_post: {
             /** File */
@@ -17158,6 +17377,65 @@ export interface components {
             mode: "graceful" | "immediate";
             /** Task Cancelled */
             task_cancelled: boolean;
+        };
+        /** CatalogEntryResponse */
+        CatalogEntryResponse: {
+            /** Id */
+            id: string;
+            /** App */
+            app: string;
+            /** Kind */
+            kind: string;
+            /** Key */
+            key: string;
+            /** Schema Version */
+            schema_version: number;
+            /** Payload */
+            payload: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Artifact Url */
+            artifact_url: string | null;
+            /** Artifact Sha256 */
+            artifact_sha256: string | null;
+            /** Artifact Size Bytes */
+            artifact_size_bytes: number | null;
+            /** Min App Version */
+            min_app_version: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Sort Order */
+            sort_order: number;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CatalogSuggestion
+         * @description A best-guess catalog entry. Either the payload validates against its
+         *     kind schema, or `notes` explains exactly what is missing.
+         */
+        CatalogSuggestion: {
+            /** Kind */
+            kind: string;
+            /** Key */
+            key: string;
+            /** Payload */
+            payload: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Artifact Url */
+            artifact_url?: string | null;
+            /** Artifact Sha256 */
+            artifact_sha256?: string | null;
+            /** Artifact Size Bytes */
+            artifact_size_bytes?: number | null;
+            /** Notes */
+            notes?: string | null;
         };
         /**
          * CatalogTree
@@ -18757,6 +19035,11 @@ export interface components {
              * @default
              */
             model_guidance?: string;
+            /**
+             * Tools
+             * @description Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.
+             */
+            tools?: string[];
         };
         /** CreateArgs */
         CreateArgs: {
@@ -19582,6 +19865,11 @@ export interface components {
              * @default 0
              */
             rag_boost?: number;
+        };
+        /** DeriveRequest */
+        DeriveRequest: {
+            /** Rebuild Confirmation Token */
+            rebuild_confirmation_token?: string | null;
         };
         /** DesktopInstanceSummary */
         DesktopInstanceSummary: {
@@ -20602,6 +20890,70 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * ExecutionAgentDefinition
+         * @description Complete, portable agent definition consumed by every execution host.
+         */
+        ExecutionAgentDefinition: {
+            /** Definition Id */
+            definition_id: string;
+            /** Agent Id */
+            agent_id: string;
+            /**
+             * Is Version
+             * @default false
+             */
+            is_version?: boolean;
+            /** Version Number */
+            version_number?: number | null;
+            /** Revision */
+            revision?: string | null;
+            /** Definition Hash */
+            definition_hash?: string | null;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /** Model Id */
+            model_id: string;
+            /** Messages */
+            messages: unknown[];
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** Tools */
+            tools?: string[];
+            /** Custom Tools */
+            custom_tools?: unknown[];
+            /** Mcp Servers */
+            mcp_servers?: string[];
+            /** Variable Definitions */
+            variable_definitions?: {
+                [key: string]: unknown;
+            }[];
+            /** Context Slots */
+            context_slots?: {
+                [key: string]: unknown;
+            }[];
+            /** Tool Config */
+            tool_config?: {
+                [key: string]: unknown;
+            };
+            /** Output Schema */
+            output_schema?: {
+                [key: string]: unknown;
+            } | null;
+            /** Matrx Actions */
+            matrx_actions?: {
+                [key: string]: unknown;
+            } | null;
+            /** Skill Config */
+            skill_config?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * ExecutionError
          * @description Structured error captured on a non-success terminal transition. Mirrors the
          *     repo's `describe_db_exception` shape — never a bare string in a status column.
@@ -20649,6 +21001,10 @@ export interface components {
             event_count: number;
             /** Events */
             events: components["schemas"]["ExecutionEvent"][];
+            /** Request Summary */
+            request_summary?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * ExecutionStatus
@@ -21850,6 +22206,89 @@ export interface components {
             signed_url?: string | null;
             /** Download Url */
             download_url?: string | null;
+        };
+        /**
+         * FileRef
+         * @description The ONE lean, client-facing reference to a single stored file.
+         *
+         *     This is what any client (frontend, another service, an embedded
+         *     attachment) receives when it needs to *point at* a file — as opposed
+         *     to the richer file-browser row (``FileRecord`` in aidream) or the
+         *     multi-variant ``Asset`` envelope. It carries only what a client can
+         *     actually act on:
+         *
+         *       1. ``file_id``  — the ID. From it, everything else is fetchable, and
+         *                         it round-trips straight back as ``MediaRef.file_id``.
+         *       2. ``url``      — ALWAYS renderable (CDN when public, signed-inline
+         *                         otherwise). Bind to <img>/<video> directly.
+         *       3. ``cdn_url``  — permanent public CDN URL (public files only).
+         *       4. ``signed_url`` + ``signed_url_expires_at`` — the expiring link and
+         *                         the ms-epoch it dies, so the client refreshes ahead
+         *                         of expiry without parsing X-Amz params.
+         *       5. ``download_url`` — attachment-disposition signed URL (Download btn).
+         *       6. display metadata the client renders: ``file_name``, ``mime_type``,
+         *          ``size_bytes``, ``visibility``, ``thumbnail_url``.
+         *
+         *     🚫 What it DELIBERATELY OMITS — the whole point of this shape:
+         *       - ``storage_uri`` / ``file_uri`` — the native ``s3://bucket/owner/key``
+         *         location. A client can do NOTHING with it; exposing it is pure
+         *         info-disclosure. It is a server-only column and MUST NEVER cross a
+         *         client boundary. Enforced at the DB (column REVOKE + a realtime
+         *         publication that excludes it) and by ``scripts/audit_api_types.py``.
+         *       - ``file_path`` (the virtual folder path) — belongs on the file-browser
+         *         row, not on a bare reference; navigation shapes carry it, refs don't.
+         *       - internals: ``owner_id``, ``checksum``, ``current_version``,
+         *         ``parent_folder_id``, lineage/derivation fields, raw ``metadata``.
+         *
+         *     Populate via ``SyncEngine.build_urls_for_record_async`` for the URL
+         *     flavours — never hand-mint URLs. Lives in matrx-utils so every host
+         *     consumes the identical contract.
+         */
+        FileRef: {
+            /**
+             * File Id
+             * @description cld_files row id — the only identifier a client needs.
+             */
+            file_id: string;
+            /**
+             * Visibility
+             * @default private
+             * @enum {string}
+             */
+            visibility?: "public" | "private" | "shared";
+            /** File Name */
+            file_name?: string | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /**
+             * Url
+             * @description Always-renderable URL (CDN if public, signed-inline otherwise).
+             */
+            url?: string | null;
+            /**
+             * Cdn Url
+             * @description Permanent CDN URL — public files only.
+             */
+            cdn_url?: string | null;
+            /**
+             * Signed Url
+             * @description Signed inline URL with TTL — non-public files.
+             */
+            signed_url?: string | null;
+            /**
+             * Signed Url Expires At
+             * @description ms epoch when signed_url expires; None for CDN-only public.
+             */
+            signed_url_expires_at?: number | null;
+            /**
+             * Download Url
+             * @description Attachment-disposition signed URL (Download button).
+             */
+            download_url?: string | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
         };
         /**
          * FileRefreshRequest
@@ -25745,12 +26184,63 @@ export interface components {
             /** Source Feature */
             source_feature?: string | null;
         };
+        /** PdfOutputPageMap */
+        PdfOutputPageMap: {
+            /** Output Page */
+            output_page: number;
+            /** Source Page */
+            source_page: number;
+        };
         /** PdfPageRange */
         PdfPageRange: {
             /** Start */
             start: number;
             /** End */
             end: number;
+        };
+        /**
+         * PdfPageSelectionRequest
+         * @description Ordered 1-based pages/ranges to package into one derivative PDF.
+         */
+        PdfPageSelectionRequest: {
+            /** Pages */
+            pages?: number[] | null;
+            /** Page Ranges */
+            page_ranges?: components["schemas"]["PdfPageRange"][] | null;
+            /**
+             * Signed Ttl
+             * @default 3600
+             */
+            signed_ttl?: number;
+        };
+        /**
+         * PdfPageSelectionResult
+         * @description One selected-page PDF plus lineage and transfer diagnostics.
+         */
+        PdfPageSelectionResult: {
+            /** Source File Id */
+            source_file_id: string;
+            /** Source Pages */
+            source_pages: number[];
+            /** Output Page Map */
+            output_page_map: components["schemas"]["PdfOutputPageMap"][];
+            /** Source Page Count */
+            source_page_count: number;
+            /** Source Size Bytes */
+            source_size_bytes?: number | null;
+            /**
+             * Source Bytes Fetched
+             * @default 0
+             */
+            source_bytes_fetched?: number;
+            /**
+             * Source Fetch Strategy
+             * @enum {string}
+             */
+            source_fetch_strategy: "cache_hit" | "full_object_stream_to_disk";
+            /** Cache Hit */
+            cache_hit: boolean;
+            file: components["schemas"]["FileRef"];
         };
         /** PdfPipelineOptions */
         PdfPipelineOptions: {
@@ -26212,6 +26702,19 @@ export interface components {
             is_public?: boolean | null;
             /** Public Read */
             public_read?: boolean | null;
+        };
+        /**
+         * PodcastAudioProvider
+         * @enum {string}
+         */
+        PodcastAudioProvider: "google" | "elevenlabs";
+        /** PodcastCastPreview */
+        PodcastCastPreview: {
+            /** Host Count */
+            host_count: number;
+            provider: components["schemas"]["PodcastAudioProvider"];
+            /** Speakers */
+            speakers: components["schemas"]["SpeakerSpec"][];
         };
         /** PodcastGenerateRequest */
         PodcastGenerateRequest: {
@@ -27737,6 +28240,46 @@ export interface components {
         ResolvePathArgs: {
             /** Path */
             path: string;
+        };
+        /** ResolveRequest */
+        ResolveRequest: {
+            /** Url */
+            url: string;
+            /** Kind Hint */
+            kind_hint?: string | null;
+        };
+        /** ResolveResult */
+        ResolveResult: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "huggingface" | "civitai" | "direct";
+            /** Canonical Url */
+            canonical_url: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** License */
+            license?: string | null;
+            /** Files */
+            files?: components["schemas"]["ResolvedFile"][];
+            /** Suggestions */
+            suggestions?: components["schemas"]["CatalogSuggestion"][];
+        };
+        /** ResolvedFile */
+        ResolvedFile: {
+            /** Filename */
+            filename: string;
+            /** Download Url */
+            download_url: string;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /** Sha256 */
+            sha256?: string | null;
+            /** Label */
+            label?: string | null;
         };
         /** ResolvedPath */
         ResolvedPath: {
@@ -29558,6 +30101,40 @@ export interface components {
              */
             gender?: string;
         };
+        /** SpeechRequest */
+        SpeechRequest: {
+            /** Text */
+            text: string;
+            /**
+             * Model
+             * @default tts-default
+             */
+            model?: string;
+            /** Voice */
+            voice?: string | null;
+            /**
+             * Format
+             * @default wav
+             */
+            format?: string;
+            /**
+             * Quality
+             * @default fast
+             * @enum {string}
+             */
+            quality?: "fast" | "high_quality";
+        };
+        /** SpeechResponse */
+        SpeechResponse: {
+            /** File Id */
+            file_id: string;
+            /** Url */
+            url: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Model */
+            model: string;
+        };
         /** SplitPartRequest */
         SplitPartRequest: {
             /** Pages */
@@ -31198,6 +31775,70 @@ export interface components {
             /** Is Header Only */
             is_header_only: boolean;
         };
+        /** TranscriptionMeta */
+        TranscriptionMeta: {
+            /** Attempts */
+            attempts: number;
+            /** Hallucinations Filtered */
+            hallucinations_filtered: number;
+            /** Model */
+            model: string;
+        };
+        /** TranscriptionResponse */
+        TranscriptionResponse: {
+            /**
+             * Success
+             * @default true
+             * @constant
+             */
+            success?: true;
+            /** Text */
+            text: string;
+            /** Language */
+            language?: string | null;
+            /** Duration */
+            duration?: number | null;
+            /** Segments */
+            segments?: components["schemas"]["TranscriptionSegment"][];
+            meta: components["schemas"]["TranscriptionMeta"];
+        };
+        /** TranscriptionSegment */
+        TranscriptionSegment: {
+            /** Id */
+            id?: number | null;
+            /** Seek */
+            seek?: number | null;
+            /** Start */
+            start?: number | null;
+            /** End */
+            end?: number | null;
+            /** Text */
+            text: string;
+            /** Tokens */
+            tokens?: number[];
+            /** Temperature */
+            temperature?: number | null;
+            /** Avg Logprob */
+            avg_logprob?: number | null;
+            /** Compression Ratio */
+            compression_ratio?: number | null;
+            /** No Speech Prob */
+            no_speech_prob?: number | null;
+        };
+        /** TranscriptionUrlRequest */
+        TranscriptionUrlRequest: {
+            /** Url */
+            url: string;
+            /** Language */
+            language?: string | null;
+            /** Prompt */
+            prompt?: string | null;
+            /**
+             * Model
+             * @default stt-default
+             */
+            model?: string;
+        };
         /**
          * TrashFileEntry
          * @description Soft-deleted file as projected by the ``list_trash`` RPC.
@@ -31504,6 +32145,11 @@ export interface components {
             settings?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+            /**
+             * Tools
+             * @description Executable tools, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). REPLACES the agent's whole tool set — the authoritative agent.definition.tools column the executor reads. Validated against the live registry (unknown/inactive tools rejected loudly). Semantics: omitted/None = leave unchanged; [] = remove ALL tools. tool_config does NOT assign tools.
+             */
+            tools?: string[] | null;
             /** Tool Config */
             tool_config?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -33388,6 +34034,102 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_app_catalog_catalogs__app__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogEntryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_app_catalog_kind_catalogs__app___kind__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogEntryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_catalog_resolver_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveResult"];
                 };
             };
             /** @description Validation Error */
@@ -35407,6 +36149,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_upload_audio_transcribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_transcribe_upload_audio_transcribe_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_url_audio_transcribe_url_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranscriptionUrlRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    text_to_speech_audio_text_to_speech_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpeechRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeechResponse"];
                 };
             };
             /** @description Validation Error */
@@ -38914,6 +39755,7 @@ export interface operations {
     run_link_graph_scraper_admin_runs__run_id__link_graph_get: {
         parameters: {
             query?: {
+                max_nodes?: number;
                 max_edges?: number;
             };
             header?: never;
@@ -46889,6 +47731,38 @@ export interface operations {
             };
         };
     };
+    prepare_derivation_rebuild_rag_library__processed_document_id__derive__kind__rebuild_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     derive_stream_rag_library__processed_document_id__derive__kind__post: {
         parameters: {
             query?: {
@@ -46901,7 +47775,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeriveRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -50350,6 +51228,68 @@ export interface operations {
             };
         };
     };
+    get_agent_execution_definition_agents__agent_id__execution_definition_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutionAgentDefinition"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_agent_version_execution_definition_agents_versions__version_id__execution_definition_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutionAgentDefinition"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_user_conversations_cx_conversations_get: {
         parameters: {
             query?: never;
@@ -51915,6 +52855,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FileUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    select_pdf_pages_files__file_id__pdf_pages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PdfPageSelectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PdfPageSelectionResult"];
                 };
             };
             /** @description Validation Error */
@@ -54150,6 +55125,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DrainResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cast_preview_endpoint_podcast_cast_preview_get: {
+        parameters: {
+            query: {
+                host_count: number;
+                show_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodcastCastPreview"];
                 };
             };
             /** @description Validation Error */

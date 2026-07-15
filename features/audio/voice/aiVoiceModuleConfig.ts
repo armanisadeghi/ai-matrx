@@ -1,12 +1,17 @@
 // modules/aiVoice/aiVoiceModuleConfig.ts
 
 import {AiAudioConfig, AiAudioData, AiAudioSchema, AiAudioUserPreferences} from "@/types/aiAudioTypes";
+import {
+    ASSISTANT_VOICE_ID,
+    READING_VOICE_ID,
+    TTS_MODEL_ID,
+} from "@/lib/cartesia/config";
 
 export const aiAudioConfig: AiAudioConfig = {
-    model_id: "sonic-english",
+    model_id: TTS_MODEL_ID,
     voice: {
         mode: "id",
-        id: "156fb8d2-335b-4950-9cb3-a2d33befec77",
+        id: ASSISTANT_VOICE_ID,
         __experimental_controls: {
             speed: "normal",
             emotion: [
@@ -18,12 +23,12 @@ export const aiAudioConfig: AiAudioConfig = {
     transcript: "text",
     defaultVoices: [
         {
-            id: "156fb8d2-335b-4950-9cb3-a2d33befec77",
+            id: READING_VOICE_ID,
             name: "Ms. Matrx",
             description: "This aiAudio is friendly and conversational, designed for customer support agents and casual conversations"
         },
         {
-            id: "ee7ea9f8-c0c1-498c-9279-764d6b56d189",
+            id: ASSISTANT_VOICE_ID,
             name: "Mr. Matrx",
             description: "This aiAudio is polite and conversational, with a slight accent, designed for customer support and casual conversations"
         }
@@ -32,7 +37,7 @@ export const aiAudioConfig: AiAudioConfig = {
 
 export const aiAudioUserPreferences: AiAudioUserPreferences = {
     audio: {
-        voiceId: '156fb8d2-335b-4950-9cb3-a2d33befec77',
+        voiceId: ASSISTANT_VOICE_ID,
         language: 'en',
         speed: "normal",
         emotion: 'happy',

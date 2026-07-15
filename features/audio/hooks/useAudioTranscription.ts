@@ -9,6 +9,7 @@
 import { useState, useCallback } from "react";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
 import { toAudioFile } from "../utils/audio-mime";
+import { transcribeAudioFile } from "../services/speechApi";
 
 export function useAudioTranscription() {
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -28,13 +29,9 @@ export function useAudioTranscription() {
         // `audio/*` MIME type + matching extension so the server never
         // misclassifies the recording as video (empty/`video/webm`/`;codecs=`
         // types all sniff to video otherwise).
-        const formData = new FormData();
-        formData.append("file", toAudioFile(audioBlob, { prefix: "audio" }));
+        const audioFile = toAudioFile(audioBlob, { prefix: "audio" });
 
         // Add optional parameters
-        if (options?.language) {
-          formData.append("language", options.language);
-        }
         // Explicit prompt wins; otherwise apply Custom Dictionary biasing. By
         // default the bias follows the ONE global active context; a caller may
         // scope it to a specific surface via dictionarySurfaceKey. Best-effort,
@@ -57,21 +54,10 @@ export function useAudioTranscription() {
             prompt = "";
           }
         }
-        if (prompt) {
-          formData.append("prompt", prompt);
-        }
-
-        // Call transcription API
-        const response = await fetch("/api/audio/transcribe", {
-          method: "POST",
-          body: formData,
+        const data = await transcribeAudioFile(audioFile, {
+          language: options?.language,
+          prompt,
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Transcription failed");
-        }
 
         setResult(data);
         return data;

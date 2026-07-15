@@ -22,8 +22,12 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 ## Data flow
 
 1. `GeneratorForm` collects a `PodcastGenerateRequest` (`generator/types.ts`) —
-   incl. `host_count` (1–20), `format`, `theme`, and optional `speakers[]`
-   (`{name, voice}`; voice catalogs in `generator/voices.ts`).
+   incl. `host_count` (1–20), `format`, `theme`, and optional `speakers[]`.
+   Before customization it fetches `GET {base}/podcast/cast-preview`; the
+   generation server returns the exact provider and default cast. The form only
+   overlays user edits, so it never reimplements provider routing or voice
+   defaults. If preview loading fails, it omits `speakers` and generation uses
+   the same server-owned defaults.
 2. A `pc_studio_runs` row is created (`studio/runs/service.ts`); route → run page.
 3. `useStudioRun` POSTs to **`{base}/podcast/generate`** (NDJSON stream; NOT
    under `/api/`), folds events via `generator/reduce.ts`, persists milestones to
@@ -87,6 +91,7 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-07-15 — **Server-owned cast preview removed duplicated provider routing.** Added the typed `GET /podcast/cast-preview` contract and `usePodcastCastPreview`; `GeneratorForm` now renders and submits the server's exact provider/default cast with user edits layered on top. Removed the frontend `hostCount <= 2` routing branch and hardcoded Gemini default-voice order. Preview failure safely omits `speakers`, leaving generation to resolve its native defaults. Focused cast tests, ESLint, and full TypeScript validation pass.
 - 2026-07-06 — **Per-asset endpoints migrated to NDJSON streams.** `POST /podcast/runs/{id}/assets/regenerate|add` no longer return blocking JSON; `studio/runs/runsApi.ts` now consumes them via the shared `postNdjson` (`lib/python-client.ts`), resolving the unchanged `Promise<RunAsset>` from the terminal `podcast_asset_result` event (status `"failed"` + error resolves normally, like the old graceful-failure JSON; in-stream `error` events throw). Signature change: the `api` (useBackendApi) param is gone — `postNdjson` handles auth + base URL; optional `onEvent` tap added. `useStudioRun` callsites updated; `RunAsset` stays the strict durable DTO, normalized from the generated `PodcastAssetResultEvent`.
 - 2026-07-05 — **`PodcastRunState.audioFileId` — durable file_id now captured from the stream.** `reduce.ts`'s `audio_stream_end` handler previously only stored `audioUrl` (the render-time URL/CDN link); it now also captures `data.file_id` into a new `audioFileId` field. Any consumer that needs to PERSIST a run's audio (not just play it back in the moment) must read `audioFileId`, never `audioUrl` — per the media-durability doctrine, a stored raw/signed URL expires while a file_id doesn't. First consumer: flashcards' "Generate audio overview" (`features/flashcards/components/set-detail/AudioOverviewSection.tsx`), which writes it to `fc_set.audio_overview_file_id` (falling back to `fileIdFromUserFilesUrl(audioUrl)` if the backend didn't report a file_id, and refusing to persist at all if neither resolves).
 - 2026-06-28 — **DB: `pc_*` canonicalized + moved `public → podcast` schema.** All 5 tables (`pc_shows`, `pc_episodes`, `pc_articles`, `pc_studio_runs`, `pc_studio_run_assets`) brought onto the platform base entity (visibility/org/created_by/satellites) and relocated to the `podcast` schema (exposed via PostgREST). Public content stays anon-readable via `visibility='public'`; studio runs are owner-private. FE now uses `.schema('podcast').from('pc_*')` everywhere; `mapPcShowRow` accepts the display-column subset. **Show editing is now owner/org-gated** (was open to any authed user); the 4 existing ownerless shows were assigned their episode owner. aidream ORM config staged but needs a `generate.py` run. See `docs/db_rebuild/CHANGEOVER_PROGRESS.md` → `podcast` schema.
@@ -98,9 +103,9 @@ is easy to fill in.
   `voiceSamplesManifest.ts`, the generated `public/voice-samples/` mp3s, and
   `scripts/generate-voice-samples.mjs` — the old ElevenLabs IDs were stale (wrong
   genders / dead voices); the table is the single source of truth. `voices.ts`
-  keeps the cast helpers (`buildCast`/`resolveSpeaker`/`defaultVoiceFor`) but
-  data-driven off the live `Voice[]`; the picker groups by real gender, plays the
-  CDN sample, and shows loading/error/retry. (`fetchVoices` casts to an untyped
+  keeps `buildCast`/`resolveSpeaker`/`voicesForProvider`, applying user edits to
+  the server preview against the live `Voice[]`; the picker groups by real
+  gender, plays the CDN sample, and shows loading/error/retry. (`fetchVoices` casts to an untyped
   client until `voices` lands in the generated `database.types.ts` — re-run
   `pnpm db-types`.) **Run Truth inspector** (`studio/components/RunTruthInspector.tsx`,
   on the run page): an advanced, read-only panel showing the ABSOLUTE durable
@@ -115,19 +120,11 @@ is easy to fill in.
   one card per host (always synced to host count), each with a name input, a
   gender select, and a searchable voice picker grouped by gender with a play-
   sample button per voice (`useVoiceSamplePlayer.ts`, one-at-a-time playback).
-  Provider band follows host count (≤2 Google Gemini, ≥3 ElevenLabs). The
-  catalog (`generator/voices.ts`) gained `gender` (ElevenLabs genders are
-  authoritative from the server pool; Gemini from Google AI Studio grouping) +
-  `VOICE_SAMPLE_URLS` (seeded with the 4 resolvable ElevenLabs previews; the
-  rest populated by aidream `scripts/generate_voice_samples.py`). The form now
-  ALWAYS sends a complete explicit cast via `buildCast` — `PodcastSpeaker` gained
-  `gender`; the server already honors pinned voices + genders and logs the
-  received cast loudly. Voices with no sample yet show a disabled "preview
-  unavailable" button (never a broken player). Static samples for all 20
-  ElevenLabs voices are generated by `scripts/generate-voice-samples.mjs` and
-  committed under `public/voice-samples/` (manifest: `generator/voiceSamplesManifest.ts`);
-  the 30 Gemini samples need a valid `GOOGLE_GENERATIVE_AI_API_KEY` — re-run the
-  script to add them (the dev key was expired).
+  Provider and untouched defaults now come from `/podcast/cast-preview`; the
+  frontend does not infer the provider from host count. `PodcastSpeaker` carries
+  `gender`, and `buildCast` sends a complete cast only after a valid preview;
+  otherwise generation chooses its own defaults. Voices with no catalog sample
+  show a disabled "preview unavailable" button (never a broken player).
 - 2026-06-16 — **Merged "official" episode video wired end-to-end.** The backend already stitches every clip + still into one crossfaded MP4 (square stills get blurred-fill sides) and sets it as the episode's primary `video_url`, but the frontend ignored it. Now: modeled the `podcast_official_video` stream event + `official_video_url` on `podcast_complete` (`generator/types.ts`), added `officialVideoUrl` to `PodcastRunState` + the reducer (`generator/reduce.ts`) + durable-record rehydration (`studio/runs/mapping.ts`) + an episode-level fallback from `pc_episodes.video_url` (`studio/runs/useStudioRun.ts`), and surfaced it as a prominent "Episode video" hero in `studio/components/StudioRunView.tsx` (with a loud "couldn't assemble" note when a finished multi-asset run has none). `ResultActions` display-mode default now follows the backend (video when present). Backend (aidream) hardened in the same change: compose skip/failure is logged loudly and surfaced via a new `official_video_error` field on the complete event. NOTE: the compose step needs ffmpeg (`imageio-ffmpeg`) + the cloud file manager present in the deployed env — if the merged video is still missing in prod, verify those.
 - 2026-06-16 — **Studio media units now use the canonical media renderers.** Done image/video slots in `generator/components/AssetCard.tsx` render through `UnifiedImageBlockRenderer` / the new `UnifiedVideoBlockRenderer` (built in `features/files/blocks/video/`), restoring expand → fullscreen, the single "…" menu (download / copy-link / share / open-in-new-tab), right-click context menu, and mobile long-press — replacing the bare `InlineMediaRef` + custom Enlarge button + podcast-only `AssetActionsMenu` overlay. Podcast actions (Use as cover, Regenerate, per-model Regenerate) ride in via the renderers' new `extraActions` slot so there is ONE menu per asset. Blocks are built from `podcastMediaRef(url)` via the new generic `blockFromMediaRef` adapter (`features/files/blocks/adapters/from-media-ref.ts`). `AssetActionsMenu` is kept only for non-done slots (model picker / edit-description); the grid-level `InlineMediaRef` lightbox in `MediaOptionsGrid.tsx` was removed (the canonical Expand is now the only fullscreen path).
 - 2026-06-16 — **Mobile title/layout squish fix.** `PodcastEpisodePage` (all three display modes) and `PodcastShowPage` now scale titles responsively (`text-lg`/`text-xl` base → `sm:text-2xl`/`sm:text-3xl`), wrap (`break-words`, `min-w-0` on flex children), and use responsive padding (`px-4 sm:px-6`) with `max-w-*` content centering — titles no longer cramp on ~360px screens.

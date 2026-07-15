@@ -107,7 +107,7 @@ export interface ImageBlock {
  *     Google Gemini supports native audio. OpenAI and Anthropic do NOT —
  *     those providers will silently skip this block unless you set auto_transcribe=true.
  *
- *   auto_transcribe=true: transcribed server-side via Groq Whisper first,
+ *   auto_transcribe=true: transcribed server-side through catalog STT first,
  *     then sent as a text block to any provider. Works everywhere.
  */
 export interface AudioBlock {
@@ -122,11 +122,11 @@ export interface AudioBlock {
   mime_type?: string;
   /**
    * Default false.
-   * true → transcribe via Groq Whisper then send as text (works with all providers).
+   * true → transcribe through catalog STT then send as text (works with all providers).
    * false → send native audio bytes (Google only).
    */
   auto_transcribe?: boolean;
-  /** Whisper model to use when auto_transcribe=true. Default "whisper-large-v3-turbo". */
+  /** Catalog model/alias used when auto_transcribe=true. Default "stt-default". */
   transcription_model?: string;
   /** ISO-639-1 language hint e.g. "en", "es". Auto-detected if omitted. */
   transcription_language?: string;

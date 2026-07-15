@@ -4,6 +4,7 @@ import {
   __resetLocalEngineCacheForTests,
   LOCAL_ENGINE_PORT_START,
   LOCAL_ENGINE_PORT_COUNT,
+  supportsLocalAgentExecution,
 } from "../discovery";
 
 function mockFetchEngineOn(port: number, version = "1.4.0"): jest.Mock {
@@ -12,7 +13,11 @@ function mockFetchEngineOn(port: number, version = "1.4.0"): jest.Mock {
     if (url === `http://127.0.0.1:${port}/health`) {
       return {
         ok: true,
-        json: async () => ({ status: "ok", version }),
+        json: async () => ({
+          status: "ok",
+          version,
+          capabilities: ["agent_execution_v1"],
+        }),
       } as unknown as Response;
     }
     throw new Error("connection refused");
@@ -40,6 +45,8 @@ describe("local-engine discovery", () => {
     expect(found?.baseUrl).toBe(`http://127.0.0.1:${port}`);
     expect(found?.port).toBe(port);
     expect(found?.version).toBe("1.4.0");
+    expect(found?.capabilities).toContain("agent_execution_v1");
+    expect(found && supportsLocalAgentExecution(found)).toBe(true);
 
     // Sync cache read — this is what resolveBackendForConversation uses.
     const cached = getCachedLocalEngine();
@@ -53,6 +60,18 @@ describe("local-engine discovery", () => {
     const again = await discoverLocalEngine();
     expect(again?.port).toBe(port);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not infer saved-agent execution support from reachability", () => {
+    expect(
+      supportsLocalAgentExecution({
+        baseUrl: "http://127.0.0.1:22140",
+        port: 22140,
+        version: "legacy",
+        capabilities: [],
+        discoveredAt: Date.now(),
+      }),
+    ).toBe(false);
   });
 
   it("returns null (and caches the miss) when no engine responds", async () => {

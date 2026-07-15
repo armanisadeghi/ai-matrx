@@ -34,7 +34,7 @@ export const defaultUserPreferences: UserPreferences = {
     wakeWord: "Hey Matrix",
   },
   textToSpeech: {
-    preferredVoice: "Cheyenne-PlayAI",
+    preferredVoice: "troy",
     autoPlay: false,
     processMarkdown: true,
   },

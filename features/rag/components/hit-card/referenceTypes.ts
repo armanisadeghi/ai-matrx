@@ -1,9 +1,5 @@
 export type RagReferenceKind =
-  | "document"
-  | "clean"
-  | "image"
-  | "table"
-  | "custom";
+  "document" | "clean" | "image" | "table" | "custom";
 
 export interface RagReferenceAvailability {
   document: boolean;

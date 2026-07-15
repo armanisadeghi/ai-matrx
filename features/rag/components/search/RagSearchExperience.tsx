@@ -284,7 +284,7 @@ function RichHitCard({
       defaultExpanded={defaultExpanded}
       expanded={expanded}
       onExpandedChange={onExpandedChange}
-      expandedContent={(snippet) =>
+      expandedContent={(snippet, resources) =>
         hit.source_kind === "cld_file" || hit.source_kind === "library_doc" ? (
           <RagPageReferences
             sourceKind={hit.source_kind}
@@ -292,6 +292,8 @@ function RichHitCard({
             pageNumber={view.pageNumber}
             pageNumbers={view.pageNumbers}
             onOpenPdf={openHit}
+            resourceRequest={resources.request}
+            onAvailabilityChange={resources.onAvailabilityChange}
           >
             {snippet}
           </RagPageReferences>

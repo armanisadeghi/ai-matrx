@@ -68,6 +68,9 @@ All transcription surfaces (window panels above, all 4 Transcript Studio columns
 
 ### Podcasts
 - Generate / persist / play podcast episodes
+- Podcast provider selection and default casts are server policy. The studio
+  reads `GET /podcast/cast-preview` and must not derive a provider from host
+  count or keep a fallback voice roster in frontend code.
 - Service layer handles creation pipeline
 - Episode model + playback state
 
@@ -144,7 +147,11 @@ All in-app Cartesia text-to-speech routes through **`lib/cartesia/config.ts`** �
 
 **Imperative read-aloud modal:** `showAudioModal({ text, title, description })` from `utils/audio/audioModal.ts` opens a dynamic modal that auto-plays the text via the canonical `useCartesiaSpeaker` (through `SpeakerGroupCore`). The single host `<AudioModalHost />` is mounted in `app/Providers.tsx` (alongside `ConfirmDialogHost`), so the helper is callable app-wide with nothing TTS-related loaded until first use. Used by the flashcard read-aloud buttons (`hooks/flashcard-app/useFlashcard.ts`).
 
-**Known legacy not yet migrated (tracked):** `components/voice/TextToSpeechPlayer.tsx` (still live via fast-fire `hooks/ai/useDynamicVoiceAiProcessing`), the voice-assistant server actions (`actions/ai-actions/*`), and `app/api/voice*` routes still reference `sonic-english`. Migrate them to the config when next touched. (The `components/audio` + `hooks/tts` `TextToSpeechPlayer` copies and the `flash-cards/audio` demo routes were deleted in the 2026-05-23 consolidation below.)
+## Catalog-routed speech and transcription
+
+Batch STT and durable TTS use `features/audio/services/speechApi.ts`, which calls the authenticated aidream routes `/audio/transcribe`, `/audio/transcribe-url`, and `/audio/text-to-speech`. Aidream resolves the `stt-default` and `tts-default` catalog aliases, owns provider retries and metering, filters likely Whisper silence hallucinations, and returns typed durable media references. Components and hooks must never import provider SDKs or pin STT/TTS model IDs for these flows. Old persisted PlayAI voice values are dropped at this boundary so the current catalog default can take over.
+
+The retired Next middle-tier routes under `app/api/audio/*` and `app/api/voice*` no longer exist. Legacy development voice-assistant URLs redirect to `/voice/playground`; their compatibility actions fail closed and contain no provider credentials or calls. Browser-realtime Cartesia and xAI voice-agent transports remain separate low-latency systems and follow their own documented config/token seams.
 
 ## Recorded audio MIME — single source of truth (never send a raw recorder type)
 
@@ -152,7 +159,7 @@ WebM and MP4 are *containers*: identical magic bytes carry audio or video. When 
 
 `MediaRecorder` needs `;codecs=opus` to record, and the assembled `Blob.type` is often empty — so the recorder MIME is never safe to forward verbatim. The browser sets a multipart part's Content-Type from `File.type`, so a clean `audio/*` `File.type` is the strongest portable signal.
 
-**Invariant:** every boundary where an audio `Blob` becomes a `File` that leaves the browser (Groq transcription routes, cld_files upload, the URL-based fallback) MUST go through **`features/audio/utils/audio-mime.ts`** — `toAudioFile(blob, { prefix })` (clean type + matching extension) or `normalizeAudioContentType(type, name)` when only the string is needed. Never hand-build `new File([audioBlob], name, { type })` at a send/upload site. This is independent of (and survives) any server-side sniffer fix.
+**Invariant:** every boundary where an audio `Blob` becomes a `File` that leaves the browser (aidream transcription routes, cld_files upload, the URL-based fallback) MUST go through **`features/audio/utils/audio-mime.ts`** — `toAudioFile(blob, { prefix })` (clean type + matching extension) or `normalizeAudioContentType(type, name)` when only the string is needed. Never hand-build `new File([audioBlob], name, { type })` at a send/upload site. This is independent of (and survives) any server-side sniffer fix.
 
 ## Audio device + permission system — pick your mic/speaker, once
 
@@ -168,6 +175,8 @@ The canonical "what mic/speaker is selected and is the mic permission granted" s
 
 ## Change log
 
+- `2026-07-15` — **D41 batch audio routing completed.** Added the typed `speechApi` client for authenticated aidream STT/TTS, moved recording, signed-URL transcription, queued speech, one-shot speech, and narration onto catalog aliases, updated the current Groq voice set/default, normalized stale persisted voice values, removed the obsolete Next provider routes and dead direct-provider components, and redirected retired development voice demos to `/voice/playground`.
+- `2026-07-15` — **Podcast cast routing made server-owned.** The studio now consumes the typed `/podcast/cast-preview` response for provider/default voices and only applies user edits; all frontend host-count provider branches and hardcoded default voice order were removed.
 - `2026-07-08` — **Eager chunk journal — cross-device recovery layer for the chunked recorder (buildable half of FOUND_DEFECTS D7).** New `services/audioChunkJournal.ts`: `useChunkedRecordAndTranscribe.transcribeBlob` fire-and-forgets every chunk (right after its IndexedDB save — the safety net is untouched) to `cld_files` under hidden `.matrx-tmp/transcripts` staging (`ephemeral: true` metadata) and journals it in `transcripts.studio_recording_chunks` keyed by `safety_id`. Per-cycle sequential queue, 3-attempt backoff, LOUD console on persistent failure, guest no-op, skipped during page-hide. `assembleJournaledAudio` reassembles a stranded recording on any device (index-order Blob concat, same as the live path); `discardChunkJournal` sweeps rows + staging files once the durable full upload lands (recorder auto-persist, studio `uploadRecordingAudioThunk`), the card is deleted, or the recovery banner is dismissed (`AudioRecoveryProvider`). Consumer recovery lives in `reconcileStuckRecordingsThunk` (transcript-studio).
 - `2026-06-28` — **Every remaining audio path closed at the source (Wave 4) — the unification is complete.** Rather than migrate each legacy read-aloud surface, the low-level hooks now self-register: `useCartesiaSpeaker` (cx-chat menu, Scribe header) via the new `usePlaybackSessionController` (declarative register + lock + status for WebPlayer/phase hooks), and `useTextToSpeech` (the Groq `AudioPlayerButton`) via `useMediaElementPlaybackSession`. So all three previously-invisible read-aloud surfaces are now visible in the Audio panel + arbitrated by `playbackLock`, with zero per-consumer changes and no double-registration (the queue's adapters are independent "imperative twins" of these hooks). The flashcard recorders (`useAudioRecorder`, `useFastFireFlashcards`) register one coarse "Flashcard practice" recording session per run. With this, EVERY playback and recording path in the app flows through the registry. (The one-shot hooks are now safe to use directly, so their ESLint ban was intentionally not added; the queue stays preferred for bulk/sequential speech.)
 - `2026-06-28` — **Recording lane joined the panel (Wave 3).** Every mic capture now registers a recording session (`beginRecordingSession`) so the Audio panel's **Recording** tab shows it live and keeps it in history: `GlobalRecordingProvider` (studio / field / voice-pad / dictation — session opens on begin, moves to history at capture-stop so the red "recording" pulse doesn't linger through background transcription) and `useSimpleRecorder` (voice messages, quick transcripts — ends in `cleanup`, the single exit for every path; `onstop` now also syncs `isRecording` so the panel's Stop control works). The panel renders the rich live view (level + duration from `state.recordings`) for the global recorder and a simple labelled row for raw recorders — `captureLock` guarantees one active capture, so there's never a duplicate. (Last holdout: the flashcard recorders — Wave 4, with the recording-side runtime bypass guard.)

@@ -18,7 +18,7 @@ const CAPABILITIES: ModuleCapability[] = [
     icon: Volume2,
     title: "Production-grade text-to-speech",
     description:
-      "Stream natural speech with Cartesia, Groq PlayAI, and more — tuned for chat read-aloud, long documents, and agent responses.",
+      "Stream natural speech with realtime Cartesia and catalog-routed providers — tuned for chat read-aloud, long documents, and agent responses.",
   },
   {
     icon: SlidersHorizontal,

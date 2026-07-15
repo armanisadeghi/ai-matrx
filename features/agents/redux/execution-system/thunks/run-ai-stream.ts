@@ -165,6 +165,43 @@ export interface RunAiStreamResult {
   conversationId: string;
 }
 
+export interface UnprocessableErrorClassification {
+  prefix:
+    | "Tool injection failed"
+    | "Invalid conversation ID"
+    | "Agent execution failed"
+    | "Request rejected";
+  isToolError: boolean;
+}
+
+/** Classify HTTP 422s by server code; message text is legacy fallback only. */
+export function classifyUnprocessableError(
+  errorCode: string | null,
+  serverMessage: string,
+): UnprocessableErrorClassification {
+  const lower = serverMessage.toLowerCase();
+  const isToolError =
+    errorCode === "tool_not_found" ||
+    errorCode === "tool_merge_error" ||
+    lower.startsWith("client capability") ||
+    lower.includes("toolmergeerror") ||
+    lower.includes("conflicting tool") ||
+    (lower.includes("tool") &&
+      (lower.includes("merge") || lower.includes("capability")));
+  if (isToolError)
+    return { prefix: "Tool injection failed", isToolError: true };
+  if (errorCode === "invalid_uuid") {
+    return { prefix: "Invalid conversation ID", isToolError: false };
+  }
+  if (
+    errorCode === "agent_definition_invalid" ||
+    errorCode === "agent_model_missing"
+  ) {
+    return { prefix: "Agent execution failed", isToolError: false };
+  }
+  return { prefix: "Request rejected", isToolError: false };
+}
+
 export async function runAiStream(
   args: RunAiStreamArgs,
 ): Promise<RunAiStreamResult> {
@@ -305,15 +342,21 @@ export async function runAiStream(
         } else if (typeof detail === "string") {
           serverMessage = detail;
         } else if (errBody && typeof errBody === "object") {
-          if (typeof errBody.message === "string") serverMessage = errBody.message;
+          if (typeof errBody.message === "string")
+            serverMessage = errBody.message;
           if (typeof errBody.error === "string") errorCode = errBody.error;
         }
         // Message-prefix fallback ("resume_conflict: …") — covers an envelope
         // that passes message but maps `error` to a generic status word.
-        if (!errorCode || errorCode === "conflict" || errorCode === "not_found") {
-          const m = /^(resume_conflict|not_resumable|outstanding_delegated_calls|user_request_not_found):/.exec(
-            serverMessage,
-          );
+        if (
+          !errorCode ||
+          errorCode === "conflict" ||
+          errorCode === "not_found"
+        ) {
+          const m =
+            /^(resume_conflict|not_resumable|outstanding_delegated_calls|user_request_not_found):/.exec(
+              serverMessage,
+            );
           if (m) errorCode = m[1];
         }
       } catch {
@@ -358,26 +401,18 @@ export async function runAiStream(
       } else if (code === 404) {
         throw new Error(`Conversation not found: ${serverMessage}`);
       } else if (code === 422) {
-        // 422 covers two distinct shapes from the backend:
+        // 422 covers several distinct shapes from the backend:
         //   • Tool injection errors — capability resolution failed,
         //     unknown capability, ToolMergeError. Message starts with
         //     "client capability" or "tool". Surface as toast so the
         //     user sees what actually broke instead of a generic banner.
-        //   • Validation errors — bad conversation id, schema mismatch.
-        //     Throw as before.
-        const lower =
-          typeof serverMessage === "string" ? serverMessage.toLowerCase() : "";
-        if (
-          lower.startsWith("client capability") ||
-          lower.includes("toolmergeerror") ||
-          lower.includes("conflicting tool") ||
-          (lower.includes("tool") &&
-            (lower.includes("merge") || lower.includes("capability")))
-        ) {
+        //   • Validation errors — classify by the structured code. Never
+        //     relabel an agent/model/preparation failure as a conversation ID.
+        const classified = classifyUnprocessableError(errorCode, serverMessage);
+        if (classified.isToolError) {
           toast.error("Tool injection failed", { description: serverMessage });
-          throw new Error(`Tool injection failed: ${serverMessage}`);
         }
-        throw new Error(`Invalid conversation ID: ${serverMessage}`);
+        throw new Error(`${classified.prefix}: ${serverMessage}`);
       }
       throw new Error(`API error: ${serverMessage}`);
     }
@@ -537,9 +572,8 @@ export async function runAiStream(
     // next-message draft the user started while this send was in flight is left
     // untouched (no false violation scream). Resume passes false here.
     if (clearInputOnError) {
-      const { clearComposerIfUnsubmitted } = await import(
-        "../instance-user-input/clear-composer.thunk"
-      );
+      const { clearComposerIfUnsubmitted } =
+        await import("../instance-user-input/clear-composer.thunk");
       dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
     }
 

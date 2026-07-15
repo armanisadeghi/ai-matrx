@@ -1153,6 +1153,7 @@ export interface AnalysisComplete {
   agent_type: string;
   model_id: string | null;
   result_length: number;
+  cost_usd: number | null;
 }
 
 export interface AnalysisFailed {
@@ -1193,6 +1194,7 @@ export interface SynthesisComplete {
   result_length: number;
   model_id: string | null;
   version: number;
+  cost_usd: number | null;
 }
 
 export interface SynthesisFailed {

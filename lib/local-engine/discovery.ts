@@ -38,6 +38,8 @@ export interface LocalEngineInfo {
   baseUrl: string;
   port: number;
   version: string | null;
+  /** Explicit execution contracts supported by this engine build. */
+  capabilities: string[];
   /** Epoch ms of the successful health check. */
   discoveredAt: number;
 }
@@ -45,6 +47,7 @@ export interface LocalEngineInfo {
 interface HealthBody {
   status?: string;
   version?: string;
+  capabilities?: unknown;
 }
 
 let cached: LocalEngineInfo | null = null;
@@ -63,6 +66,11 @@ async function probePort(port: number): Promise<LocalEngineInfo | null> {
       baseUrl,
       port,
       version: body.version ?? null,
+      capabilities: Array.isArray(body.capabilities)
+        ? body.capabilities.filter(
+            (value): value is string => typeof value === "string",
+          )
+        : [],
       discoveredAt: Date.now(),
     };
   } catch {
@@ -90,6 +98,11 @@ export function getCachedLocalEngine(): LocalEngineInfo | null {
     return cached;
   }
   return null;
+}
+
+/** Reachability is insufficient: saved-agent routing requires definition parity. */
+export function supportsLocalAgentExecution(engine: LocalEngineInfo): boolean {
+  return engine.capabilities.includes("agent_execution_v1");
 }
 
 /**

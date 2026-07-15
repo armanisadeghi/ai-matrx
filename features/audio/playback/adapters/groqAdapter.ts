@@ -1,13 +1,14 @@
 /**
- * Groq / PlayAI playback adapter.
+ * Catalog-routed durable speech playback adapter (legacy queue key: "groq").
  *
- * Imperative twin of `useTextToSpeech`: POST text → WAV blob → HTMLAudioElement.
+ * Imperative twin of `useTextToSpeech`: POST text → durable URL → HTMLAudioElement.
  * Routes through the selected output device via `applySinkToMediaElement`
  * (HTMLMediaElement.setSinkId, Chromium) and supports live playback-rate change.
  */
 
 import { applySinkToMediaElement } from "@/features/audio/audioOutputSink";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { generateSpeech } from "@/features/audio/services/speechApi";
 import type {
   ActivePlayback,
   PlaybackAdapter,
@@ -33,22 +34,8 @@ export const groqAdapter: PlaybackAdapter = {
       throw new Error("Nothing to speak");
     }
 
-    const res = await fetch("/api/audio/text-to-speech", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text: processed,
-        voice: item.groq?.voice,
-        model: item.groq?.model || "playai-tts",
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `Speech generation failed: ${res.status}`);
-    }
-
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+    const speech = await generateSpeech(processed, { voice: item.groq?.voice });
+    const url = speech.url;
 
     const audio = new Audio(url);
     audio.playbackRate = rate;
@@ -64,7 +51,6 @@ export const groqAdapter: PlaybackAdapter = {
         /* noop */
       }
       audio.src = "";
-      URL.revokeObjectURL(url);
     };
 
     audio.addEventListener("ended", () => {

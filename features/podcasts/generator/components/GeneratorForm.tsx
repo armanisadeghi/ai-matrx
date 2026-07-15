@@ -84,11 +84,11 @@ import {
 } from "../constants";
 import {
   buildCast,
-  providerForHostCount,
-  voicesForBand,
+  voicesForProvider,
   type SpeakerDraft,
 } from "../voices";
 import { useVoices } from "../useVoices";
+import { usePodcastCastPreview } from "../usePodcastCastPreview";
 import { SpeakerCastEditor } from "./SpeakerCastEditor";
 import type {
   PodcastGenerateRequest,
@@ -217,6 +217,7 @@ export function GeneratorForm({
   const { voices, loading: voicesLoading, error: voicesError, reload: reloadVoices } =
     useVoices();
   const [showId, setShowId] = useState<string | null>(null);
+  const castPreview = usePodcastCastPreview(hostCount, showId);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [advancedHostsOpen, setAdvancedHostsOpen] = useState(false);
@@ -239,7 +240,10 @@ export function GeneratorForm({
   );
   const [firstShowInfo, setFirstShowInfo] = useState("");
 
-  const activeSource = SOURCE_OPTIONS.find((o) => o.kind === sourceKind)!;
+  const activeSource = SOURCE_OPTIONS.find((o) => o.kind === sourceKind);
+  if (!activeSource) {
+    throw new Error(`Unknown podcast source kind: ${sourceKind}`);
+  }
   const cleanUrls = urls.map((u) => u.trim()).filter(Boolean);
   const isRtl = isRtlLanguage(language);
 
@@ -266,11 +270,18 @@ export function GeneratorForm({
       show_id: showId,
     };
     if (theme.trim()) body.theme = theme.trim();
-    // The studio ALWAYS sends a complete, explicit cast — name + gender + voice
-    // for every host — filled from the user's choices or the matching
-    // server-mirrored defaults. The server honors pinned voices/genders and
-    // fills any gaps from its own palette.
-    body.speakers = buildCast(hostCount, speakerDrafts, voices);
+    // The server owns provider routing and the exact default cast. Apply only
+    // the user's edits to that preview; if preview is unavailable, send no
+    // cast and let the generation server resolve it natively.
+    if (castPreview.preview) {
+      body.speakers = buildCast(
+        hostCount,
+        speakerDrafts,
+        voices,
+        castPreview.preview.provider,
+        castPreview.preview.speakers,
+      );
+    }
     if (activeSource.control === "urls") {
       body.file_urls = cleanUrls;
     } else if (activeSource.control === "resolve") {
@@ -650,11 +661,19 @@ export function GeneratorForm({
               onChange={(i, patch) =>
                 setSpeakerDrafts((d) => ({ ...d, [i]: { ...d[i], ...patch } }))
               }
-              voices={voicesForBand(voices, hostCount)}
-              provider={providerForHostCount(hostCount)}
-              loading={voicesLoading}
-              error={voicesError}
-              onReload={reloadVoices}
+              defaults={castPreview.preview?.speakers ?? []}
+              voices={
+                castPreview.preview
+                  ? voicesForProvider(voices, castPreview.preview.provider)
+                  : []
+              }
+              provider={castPreview.preview?.provider ?? null}
+              loading={voicesLoading || castPreview.loading}
+              error={castPreview.error ?? voicesError}
+              onReload={() => {
+                castPreview.reload();
+                reloadVoices();
+              }}
             />
           </CollapsibleContent>
         </Collapsible>

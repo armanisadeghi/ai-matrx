@@ -43,6 +43,7 @@ import {
   resumeSharedAudioContext,
 } from "../audioContext";
 import { toAudioFile } from "../utils/audio-mime";
+import { transcribeAudioFile } from "../services/speechApi";
 
 /**
  * The capture constraints for a recording. Shared by `startRecording` and
@@ -127,7 +128,7 @@ export function useChunkedRecordAndTranscribe({
   const pendingRef = useRef(0);
   const isStoppingRef = useRef(false);
   const mimeTypeRef = useRef("audio/webm");
-  const rotationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rotationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(0);
   const pausedAtRef = useRef(0);
@@ -204,7 +205,7 @@ export function useChunkedRecordAndTranscribe({
 
   const cleanup = useCallback(() => {
     if (rotationTimerRef.current) {
-      clearTimeout(rotationTimerRef.current as any);
+      clearTimeout(rotationTimerRef.current);
       rotationTimerRef.current = null;
     }
     if (durationTimerRef.current) {
@@ -493,14 +494,11 @@ export function useChunkedRecordAndTranscribe({
 
       try {
         const opts = transcriptionOptionsRef.current;
-        const form = new FormData();
         // Clean `audio/*` type + matching extension so the server classifies
         // the chunk as audio, not video (recorder blobs carry `;codecs=opus`
         // or an empty type, both of which sniff to `video/webm`).
-        form.append("file", toAudioFile(blobToSend, { prefix: "chunk" }));
-        if (opts?.language) form.append("language", opts.language);
+        const audioFile = toAudioFile(blobToSend, { prefix: "chunk" });
         const effectivePrompt = opts?.prompt || dictPromptRef.current;
-        if (effectivePrompt) form.append("prompt", effectivePrompt);
 
         // Bound the request: on bad networks a chunk fetch can hang
         // indefinitely, leaving `pendingRef` > 0 forever so `maybeFireFinal`
@@ -512,20 +510,15 @@ export function useChunkedRecordAndTranscribe({
           () => ctrl.abort(),
           AUDIO_LIMITS.CHUNK_FETCH_TIMEOUT_MS,
         );
-        let res: Response;
+        let data: TranscriptionResult;
         try {
-          res = await fetch(AUDIO_API_ROUTES.TRANSCRIBE, {
-            method: "POST",
-            body: form,
-            signal: ctrl.signal,
-          });
+          data = await transcribeAudioFile(
+            audioFile,
+            { language: opts?.language, prompt: effectivePrompt },
+            ctrl.signal,
+          );
         } finally {
           clearTimeout(timeoutId);
-        }
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || data.details || `HTTP ${res.status}`);
         }
 
         if (data.success && data.text?.trim()) {
@@ -695,7 +688,7 @@ export function useChunkedRecordAndTranscribe({
     }, 100);
   }, []);
 
-  scheduleNextRotationRef.current = () => {
+  const scheduleNextRotation = useCallback(() => {
     if (isStoppingRef.current) return;
     const currentIdx = chunkIndexRef.current;
     let delay = 10000;
@@ -706,8 +699,15 @@ export function useChunkedRecordAndTranscribe({
     rotationTimerRef.current = setTimeout(() => {
       rotateChunk();
       scheduleNextRotationRef.current?.();
-    }, delay) as any;
-  };
+    }, delay);
+  }, [rotateChunk]);
+
+  useEffect(() => {
+    scheduleNextRotationRef.current = scheduleNextRotation;
+    return () => {
+      scheduleNextRotationRef.current = null;
+    };
+  }, [scheduleNextRotation]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -831,7 +831,7 @@ export function useChunkedRecordAndTranscribe({
     isStoppingRef.current = true;
 
     if (rotationTimerRef.current) {
-      clearTimeout(rotationTimerRef.current as any);
+      clearTimeout(rotationTimerRef.current);
       rotationTimerRef.current = null;
     }
     if (durationTimerRef.current) {
@@ -900,7 +900,7 @@ export function useChunkedRecordAndTranscribe({
       return;
 
     if (rotationTimerRef.current) {
-      clearTimeout(rotationTimerRef.current as any);
+      clearTimeout(rotationTimerRef.current);
       rotationTimerRef.current = null;
     }
     if (durationTimerRef.current) {

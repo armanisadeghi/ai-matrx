@@ -10,6 +10,7 @@ import { useState, useCallback, useRef } from 'react';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
 import { useMediaElementPlaybackSession } from '@/features/audio/session/useMediaElementPlaybackSession';
 import type { TTSOptions, EnglishVoice } from '../types';
+import { generateSpeech as requestSpeech } from '@/features/audio/services/speechApi';
 
 export interface UseTextToSpeechProps {
   defaultVoice?: EnglishVoice;
@@ -21,7 +22,7 @@ export interface UseTextToSpeechProps {
 }
 
 export function useTextToSpeech({
-  defaultVoice = 'Cheyenne-PlayAI',
+  defaultVoice = 'troy',
   autoPlay = false,
   processMarkdown = true,
   onPlaybackStart,
@@ -63,10 +64,10 @@ export function useTextToSpeech({
       audioRef.current.src = '';
       audioRef.current = null;
     }
-    if (audioUrl) {
+    if (audioUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(audioUrl);
-      setAudioUrl(null);
     }
+    setAudioUrl(null);
     setIsPlaying(false);
     setIsPaused(false);
     setCurrentTime(0);
@@ -92,32 +93,11 @@ export function useTextToSpeech({
 
       // Get voice
       const voice = options?.voice || currentVoiceRef.current;
-      const model = options?.model || 'playai-tts';
-
-      // Call TTS API
-      const response = await fetch('/api/audio/text-to-speech', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: processedText,
-          voice,
-          model,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Speech generation failed');
-      }
-
-      // Get audio blob
-      const audioBlob = await response.blob();
-      const url = URL.createObjectURL(audioBlob);
+      const speech = await requestSpeech(processedText, { voice });
+      const url = speech.url;
 
       // Cleanup old audio
-      if (audioUrl) {
+      if (audioUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(audioUrl);
       }
 
@@ -182,6 +162,11 @@ export function useTextToSpeech({
           onError?.(errorMsg);
           cleanup();
         });
+      } else if (audioRef.current.src !== audioSrc) {
+        audioRef.current.pause();
+        audioRef.current.src = audioSrc;
+        audioRef.current.currentTime = 0;
+        audioRef.current.load();
       }
 
       await audioRef.current.play();
@@ -251,4 +236,3 @@ export function useTextToSpeech({
     cleanup,
   };
 }
-

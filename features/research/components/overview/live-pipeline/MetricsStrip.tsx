@@ -76,7 +76,7 @@ export function MetricsStrip({ state, derived, authoritativeCostUsd }: Props) {
 
   const cost =
     authoritativeCostUsd != null ? authoritativeCostUsd : derived.runningCostUsd;
-  const isEstimate = authoritativeCostUsd == null && state.completedAt == null;
+  const isLiveCost = authoritativeCostUsd == null && state.completedAt == null;
 
   return (
     <div className="flex items-center flex-wrap gap-x-4 gap-y-1.5 px-3 py-2 border-b border-border/30 bg-card/30">
@@ -124,8 +124,8 @@ export function MetricsStrip({ state, derived, authoritativeCostUsd }: Props) {
       <MetricChip
         icon={DollarSign}
         iconColor="text-green-500"
-        label={isEstimate ? "spent (est.)" : "spent"}
-        value={formatCost(cost)}
+        label={isLiveCost ? "spent so far" : "spent"}
+        value={cost == null ? "—" : formatCost(cost)}
       />
       {errors > 0 && (
         <MetricChip

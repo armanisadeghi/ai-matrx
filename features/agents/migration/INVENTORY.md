@@ -181,6 +181,7 @@ Prompt-adjacent surfaces discovered during later phases that are **out of the cu
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-15 | codex | Retired the isolated legacy development voice-assistant/debate provider actions and redirected their demo routes to `/voice/playground`; no agent migration boundary or active recipe conversion was introduced. |
 | 2026-07-15 | codex | D31 audit found two surviving legacy-named prompt-app RPCs backed by canonical `app.definition`/`agent.definition`; added them to the Phase-19 inventory and hardened their visibility/editor boundaries without extending the legacy system. |
 | 2026-07-14 | codex | D47 Notes integration follow-up: removed the orphaned rich-document remote-surface ID from `NotesView`; preview/split actions are inline again. No prompt/agent surface inventory or Phase 5 boundary changed. |
 | 2026-07-15 | codex | D50 type-safety sweep repaired legacy `features/applet/` and its transitional/dev consumers without changing the Phase 10 migration boundary or adding new legacy surfaces. Full raw TypeScript compilation is green. |

@@ -25,7 +25,7 @@ import {
   FileText,
   ImageIcon,
   PanelRight,
-  Sparkles,
+  Puzzle,
   Table2,
   TriangleAlert,
 } from "lucide-react";
@@ -76,7 +76,7 @@ const REFERENCE_ICONS = [
   { kind: "clean", label: "Clean text", icon: BookOpenText },
   { kind: "image", label: "Image", icon: ImageIcon },
   { kind: "table", label: "Table", icon: Table2 },
-  { kind: "custom", label: "Custom content", icon: Sparkles },
+  { kind: "custom", label: "Custom content", icon: Puzzle },
 ] as const;
 
 const CHUNK_KIND_LABELS: Record<string, string> = {
@@ -109,7 +109,9 @@ function inferredReferenceAvailability(
   return {
     document: isDocument,
     clean: isDocument && view.pageNumber != null,
-    image: /(^|\s|_)(image|page_image|page_image_caption)(\s|_|$)/.test(identity),
+    image: /(^|\s|_)(image|page_image|page_image_caption)(\s|_|$)/.test(
+      identity,
+    ),
     table:
       /(^|\s|_)table(_row)?(\s|_|$)/.test(identity) ||
       typeof view.metadata["table_rows"] === "number" ||
@@ -552,8 +554,7 @@ export function RagHitCard({
     view.title ?? (isDoc ? "Filename unavailable" : `${kg.label} source`);
   const inferredAvailability = inferredReferenceAvailability(view);
   const referenceAvailability: RagReferenceAvailability = {
-    document:
-      inferredAvailability.document || resolvedAvailability.document,
+    document: inferredAvailability.document || resolvedAvailability.document,
     clean: inferredAvailability.clean || resolvedAvailability.clean,
     image: inferredAvailability.image || resolvedAvailability.image,
     table: inferredAvailability.table || resolvedAvailability.table,
@@ -705,7 +706,7 @@ export function RagHitCard({
             {view.snippet}
           </div>
           <div className="border-t border-border pt-2">
-            <HitBreakdown view={view} topScore={top} tier={tier} />
+            <HitBreakdown view={view} topScore={top} tier={tier} showChunkId />
           </div>
           <div className="flex items-center gap-2 border-t border-border pt-2">
             <button

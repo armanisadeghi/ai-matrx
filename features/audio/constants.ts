@@ -2,21 +2,8 @@
  * Audio Transcription Constants
  *
  * Single source of truth for all audio recording and transcription limits.
- * Based on Groq Developer Plan + Vercel Pro Plan actual constraints.
+ * Provider limits and model selection live in the backend catalog.
  */
-
-// ── Groq Developer Plan limits ──────────────────────────────────────────────
-export const GROQ_LIMITS = {
-  MAX_DIRECT_UPLOAD_BYTES: 25 * 1024 * 1024, // 25 MB — direct file upload
-  MAX_URL_UPLOAD_BYTES: 100 * 1024 * 1024, // 100 MB — via URL parameter
-  RPM: 20, // requests per minute
-  RPD: 2_000, // requests per day
-  AUDIO_SECONDS_PER_HOUR: 7_200, // 2 hours of audio per hour wall-time
-  AUDIO_SECONDS_PER_DAY: 28_800, // 8 hours of audio per day
-  MIN_BILLED_SECONDS: 10, // minimum billed per request
-  OPTIMAL_SEGMENT_SECONDS: 30, // model-optimized segment length
-  MODEL: "whisper-large-v3-turbo" as const,
-} as const;
 
 // ── Vercel Pro Plan limits ──────────────────────────────────────────────────
 export const VERCEL_LIMITS = {
@@ -47,8 +34,8 @@ export const RETRY_CONFIG = {
 
 // ── API routes ──────────────────────────────────────────────────────────────
 export const AUDIO_API_ROUTES = {
-  TRANSCRIBE: "/api/audio/transcribe",
-  TRANSCRIBE_URL: "/api/audio/transcribe-url",
+  TRANSCRIBE: "/audio/transcribe",
+  TRANSCRIBE_URL: "/audio/transcribe-url",
   LOG_ERROR: "/api/audio/log-error",
 } as const;
 

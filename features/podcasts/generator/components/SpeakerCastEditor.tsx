@@ -8,12 +8,12 @@
 // with an audio SAMPLE you can play for any voice (the row's CDN `sample_url`).
 // Up to 20 hosts.
 //
-// Provider band follows the server's audio routing: ≤2 hosts → Google, ≥3 →
-// ElevenLabs. The caller passes the band-filtered live voices + loading/error.
+// Provider routing and the complete default cast come from the generation
+// server's preview endpoint. The caller passes its provider-filtered live
+// voices plus loading/error state.
 //
-// Nothing here is "optional draft": whatever the user leaves untouched shows the
-// exact DEFAULT the request will send (see resolveSpeaker / buildCast in
-// ../voices), so the form always transmits a complete, explicit cast.
+// Whatever the user leaves untouched shows the exact default that generation
+// will use (see resolveSpeaker / buildCast in ../voices).
 
 import { useState } from "react";
 import {
@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/command";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import type { PodcastSpeakerGender } from "../types";
+import type { PodcastSpeaker, PodcastSpeakerGender } from "../types";
 import type { Voice, VoiceProvider } from "../voiceCatalog";
 import {
   type SpeakerDraft,
@@ -67,9 +67,11 @@ interface SpeakerCastEditorProps {
   hostCount: number;
   drafts: Record<number, SpeakerDraft>;
   onChange: (index: number, patch: SpeakerDraft) => void;
-  /** Live voices for the current provider band (already filtered by host count). */
+  /** Exact default cast returned by the generation server. */
+  defaults: PodcastSpeaker[];
+  /** Live voices for the server-selected provider. */
   voices: Voice[];
-  provider: VoiceProvider;
+  provider: VoiceProvider | null;
   loading: boolean;
   error: string | null;
   onReload: () => void;
@@ -252,19 +254,19 @@ function VoicePicker({
 function HostCard({
   index,
   draft,
+  defaultSpeaker,
   voices,
-  provider,
   player,
   onChange,
 }: {
   index: number;
   draft: SpeakerDraft;
+  defaultSpeaker: PodcastSpeaker;
   voices: Voice[];
-  provider: VoiceProvider;
   player: VoiceSamplePlayer;
   onChange: (index: number, patch: SpeakerDraft) => void;
 }) {
-  const effective = resolveSpeaker(index, draft, voices, provider);
+  const effective = resolveSpeaker(draft, defaultSpeaker, voices);
   const selectedVoice = voiceByValue(voices, effective.voice);
 
   return (
@@ -344,6 +346,7 @@ export function SpeakerCastEditor({
   hostCount,
   drafts,
   onChange,
+  defaults,
   voices,
   provider,
   loading,
@@ -357,7 +360,7 @@ export function SpeakerCastEditor({
       <div className="flex items-center justify-between px-0.5">
         <p className="text-[11px] text-muted-foreground">
           {hostCount} {hostCount === 1 ? "host" : "hosts"} ·{" "}
-          {PROVIDER_LABEL[provider] ?? provider} voices
+          {provider ? (PROVIDER_LABEL[provider] ?? provider) : "Server-selected"} voices
           {!loading && !error ? ` · ${voices.length} available` : ""}
         </p>
         <p className="text-[11px] text-muted-foreground">
@@ -369,8 +372,8 @@ export function SpeakerCastEditor({
         <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-            Couldn&apos;t load voices. You can still set names &amp; genders; the
-            server will pick voices.
+            Couldn&apos;t load the server&apos;s cast. Generation will still use server
+            defaults; retry to customize hosts.
           </span>
           <button
             type="button"
@@ -388,13 +391,13 @@ export function SpeakerCastEditor({
           ? Array.from({ length: Math.min(hostCount, 4) }, (_, i) => (
               <Skeleton key={i} className="h-[136px] w-full rounded-xl" />
             ))
-          : Array.from({ length: hostCount }, (_, i) => (
+          : defaults.map((defaultSpeaker, i) => (
               <HostCard
                 key={i}
                 index={i}
                 draft={drafts[i] ?? {}}
+                defaultSpeaker={defaultSpeaker}
                 voices={voices}
-                provider={provider}
                 player={player}
                 onChange={onChange}
               />

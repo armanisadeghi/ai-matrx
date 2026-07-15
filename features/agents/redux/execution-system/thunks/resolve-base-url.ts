@@ -14,13 +14,11 @@ import {
 import {
   discoverLocalEngine,
   getCachedLocalEngine,
+  supportsLocalAgentExecution,
 } from "@/lib/local-engine/discovery";
 
 export type BackendChannel =
-  | "global"
-  | "override"
-  | "ec2-dedicated"
-  | "local-runtime";
+  "global" | "override" | "ec2-dedicated" | "local-runtime";
 
 /**
  * Dedicated aidream server for EC2 (slim) sandbox conversations — close to the
@@ -97,6 +95,12 @@ function localEngineUrlForConversation(
   if (ref?.kind !== "local-pc") return null;
   const engine = getCachedLocalEngine();
   if (!engine) return null;
+  if (!supportsLocalAgentExecution(engine)) {
+    console.warn(
+      `[local-engine] ${engine.baseUrl} is reachable but does not advertise agent_execution_v1 — routing this saved-agent turn through AIDream instead of risking an incomplete local definition.`,
+    );
+    return null;
+  }
   return engine.baseUrl;
 }
 

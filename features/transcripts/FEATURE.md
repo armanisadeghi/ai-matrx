@@ -36,7 +36,7 @@ Every route under `app/(core)/transcripts/` stores through exactly **two record 
 - **Conversion between the two record stores goes ONLY through** `features/transcript-studio/service/transcriptBridge.ts` (`promoteTranscriptToStudio` / `saveStudioAsTranscript`). Both directions live in one file so the rules can't drift; sessions and transcripts cross-reference via `studio_sessions.transcript_id`.
 - **`audio_file_path` / `video_file_path` / `studio_recording_segments.audio_path` hold `cld_files` UUIDs, NOT bucket paths.** Upload via `saveAudioToStorage`, play via `useFileSrc` / `getSignedUrl`, delete via `deleteAudioFromStorage`. No `supabase.storage` anywhere (ESLint enforces repo-wide).
 - **A new transcription surface consumes one of the two record stores.** Need session-shaped data → `studio_sessions` with a new `source` value (see `features/transcription-cleanup/FEATURE.md` for the pattern). Need a finished document → `transcripts`. Inventing a third store is the failure class this contract exists to kill.
-- Transcription compute (Groq Whisper) runs via `/api/audio/transcribe` + `/api/audio/transcribe-url` and the `features/audio` hooks (`useRecordAndTranscribe`, `useChunkedRecordAndTranscribe`) — never a parallel pipeline.
+- Transcription compute runs through aidream's authenticated, catalog-routed `/audio/transcribe` + `/audio/transcribe-url` endpoints and the `features/audio` hooks (`useRecordAndTranscribe`, `useChunkedRecordAndTranscribe`) — never a parallel pipeline.
 - **Eager chunk journal (recovery staging, NOT a third store):** while a recording is live, every chunk is also mirrored to `cld_files` and journaled in `transcripts.studio_recording_chunks` keyed by `safety_id` (`features/audio/services/audioChunkJournal.ts`) so a recording whose full upload never lands is recoverable from ANY device. Ephemeral — swept the moment the durable full-audio upload succeeds. Never read it for playback; `audio_path` remains the only durable audio pointer.
 
 ---
@@ -84,7 +84,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 **Record → draft → finalize (processor):** `RecordingInterface` records → `saveAudioToStorage` uploads to `cld_files` → transcription via `features/audio` hooks → `saveDraftTranscript` (`is_draft=true`) → user reviews in `RecordingPreview` → `finalizeDraft`.
 
-**Upload & transcribe:** `CreateTranscriptModal` → `saveAudioToStorage` → `getAudioUrl` (signed URL) → `/api/audio/transcribe-url` (Groq Whisper) → `createTranscript` with segments + `audio_file_path = fileId`.
+**Upload & transcribe:** `CreateTranscriptModal` → `saveAudioToStorage` → `getAudioUrl` (signed URL) → aidream `/audio/transcribe-url` (catalog STT) → `createTranscript` with segments + `audio_file_path = fileId`.
 
 **Delete:** `DeleteTranscriptDialog` → `deleteTranscript` → hard-deletes audio/video from `cld_files` via the handler, then soft-deletes the row (`is_deleted=true`).
 
@@ -119,6 +119,8 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 ---
 
 ## Change log
+
+- `2026-07-15` — Routed upload and recording transcription through aidream's authenticated catalog STT endpoints; removed the duplicate Next Groq middle tier.
 
 - `2026-07-10` — **Header Surface Agents chrome: live scope.** `TranscriptViewer` mounts `SurfaceRuntimeProvider` (`matrx-user/transcripts`); Run uses editor scope while body-editing, otherwise viewer scope.
 - `2026-07-08` — **Cross-device audio recovery via eager chunk upload (FOUND_DEFECTS D7).** New `features/audio/services/audioChunkJournal.ts`: while recording, `useChunkedRecordAndTranscribe` fire-and-forgets each chunk to `cld_files` (hidden `.matrx-tmp/transcripts` staging, `ephemeral: true`) and journals it in `transcripts.studio_recording_chunks` keyed by `safety_id` (migration `migrations/studio_recording_chunks.sql`, applied + ledgered + db-types regenerated; owner-only canonical RLS via `iam.apply_rls`). `reconcileStuckRecordingsThunk` gains a second recovery layer: when a segment has `audio_path IS NULL` and the blob is NOT in this device's IndexedDB, it reassembles the audio from the journaled chunks (index-order concat, byte-identical to the live full-blob assembly) and re-uploads via `uploadRecordingAudioThunk`. Journal is swept on durable upload success, card delete, and recovery-banner dismiss. IndexedDB safety net untouched — the journal is an additional layer.

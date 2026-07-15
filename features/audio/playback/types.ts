@@ -31,7 +31,7 @@ export interface PlaybackRequest {
   dictionarySurfaceKey?: string;
   /** Cartesia voice params, resolved by the consumer from Redux prefs. */
   cartesia?: { voiceId: string; language: string; speed: number };
-  /** Groq/PlayAI voice params. */
+  /** Catalog speech voice params (legacy queue provider key: `groq`). */
   groq?: { voice: string; model?: string };
 }
 

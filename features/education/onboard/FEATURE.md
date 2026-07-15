@@ -82,7 +82,7 @@ routes to an **existing** platform pipeline — we wire, we don't build extracto
 |---|---|---|
 | PDF | ✅ | pdf-extractor stream (`streamPdfExtractText`) — native text + Tesseract OCR for scans |
 | Image (png/jpg/jpeg/webp/gif/bmp/tiff) | ✅ | **same** pdf-extractor stream (it accepts images) — Tesseract OCR |
-| Audio (mp3/wav/m4a/aac/ogg/flac/opus) | ✅ | Groq-Whisper via `transcribeSignedUrl` → `/api/audio/transcribe-url` |
+| Audio (mp3/wav/m4a/aac/ogg/flac/opus) | ✅ | Catalog STT via `transcribeSignedUrl` → aidream `/audio/transcribe-url` |
 | Video (mp4/mov/webm/m4v) | ✅ | **same** Groq-Whisper URL route (it demuxes the container) |
 | Text / Markdown / CSV / TSV / JSON / HTML / RTF | ✅ | read inline |
 | Paste | ✅ | anchored as a durable `.md` |

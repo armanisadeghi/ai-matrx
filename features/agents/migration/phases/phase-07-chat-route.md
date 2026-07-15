@@ -68,6 +68,7 @@ Per user: "the single most important feature we'll ever build for our applicatio
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-14 | codex | Direct local-PC saved-agent turns now require the explicit `agent_execution_v1` health capability and otherwise remain on AIDream; 422 UI errors classify by structured code so agent preparation failures are no longer mislabeled as invalid conversation ids. |
 | 2026-07-15 | codex | Restored live `/chat` pasted-image and ordinary attachment uploads by gating the premature direct-browser `matrx-files` route; the existing durable `file_id` resource-attachment flow remains unchanged and browser bytes stay on aidream until authenticated CORS preflight passes. |
 | 2026-07-14 | codex | `/chat/new` now first-paints with the landing composer silhouette instead of a blank/missing input, and the same cold bottom-first conversation loading path was extended to `/agents/[id]/run?conversationId=...` so runner deep-links land at the bottom without visible transcript assembly. |
 | 2026-07-14 | codex | Cold `/chat/[conversationId]` deep-links now render at the real scroll bottom: transcript skeleton until bundle hydration, latest user + assistant groups first, prior four groups auto-revealed above while `scrollTop === scrollHeight - clientHeight`, then older loaded groups revealed two at a time before paged DB fetches. Live URL-promotion streams bypass the cold path. |

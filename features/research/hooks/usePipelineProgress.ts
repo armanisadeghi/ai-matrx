@@ -40,6 +40,7 @@ export interface WorkItemMetadata {
   agent_type?: string;
   char_count?: number;
   result_length?: number;
+  cost_usd?: number | null;
   is_good_scrape?: boolean;
   page_count?: number;
   pages_completed?: number;
@@ -66,6 +67,21 @@ export interface WorkItem {
   startedAt: number;
   updatedAt: number;
   completedAt: number | null;
+}
+
+export function sumCompletedAiCosts(
+  items: Array<Pick<WorkItem, "status" | "metadata">>,
+): number | null {
+  const completed = items.filter((item) => item.status === "success");
+  if (
+    completed.some((item) => typeof item.metadata.cost_usd !== "number")
+  ) {
+    return null;
+  }
+  return completed.reduce(
+    (sum, item) => sum + (item.metadata.cost_usd ?? 0),
+    0,
+  );
 }
 
 export interface StageState {
@@ -545,6 +561,7 @@ function reduceData(
           agent_type: e.agent_type,
           model_id: e.model_id,
           result_length: e.result_length,
+          cost_usd: e.cost_usd,
         },
         startedAt: existing?.startedAt ?? ts,
         updatedAt: ts,
@@ -643,6 +660,7 @@ function reduceData(
           model_id: e.model_id,
           result_length: e.result_length,
           version: e.version,
+          cost_usd: e.cost_usd,
         },
         startedAt: existing?.startedAt ?? ts,
         updatedAt: ts,
@@ -834,51 +852,6 @@ function reducer(state: PipelineState, action: Action): PipelineState {
 }
 
 // ============================================================================
-// Cost estimation (coarse, in-flight)
-// ============================================================================
-
-/**
- * Per-1k-token rough cost estimates by model family. Used only for the
- * in-flight running-cost number; the authoritative cost arrives from the
- * backend's cost_summary after pipeline_complete and replaces this value.
- */
-const MODEL_COST_PER_1K = {
-  claude_input: 0.003,
-  claude_output: 0.015,
-  gpt_input: 0.0025,
-  gpt_output: 0.01,
-  gemini_input: 0.00125,
-  gemini_output: 0.005,
-  default_input: 0.002,
-  default_output: 0.008,
-};
-
-function estimateAnalysisCost(modelId: string | null | undefined, resultLength: number): number {
-  if (!modelId) {
-    // Generic fallback: assume ~3000 input tokens, derive output from chars.
-    const outTokens = Math.max(1, Math.round(resultLength / 4));
-    return (3000 / 1000) * MODEL_COST_PER_1K.default_input +
-      (outTokens / 1000) * MODEL_COST_PER_1K.default_output;
-  }
-  const m = modelId.toLowerCase();
-  let inputRate = MODEL_COST_PER_1K.default_input;
-  let outputRate = MODEL_COST_PER_1K.default_output;
-  if (m.includes("claude")) {
-    inputRate = MODEL_COST_PER_1K.claude_input;
-    outputRate = MODEL_COST_PER_1K.claude_output;
-  } else if (m.includes("gpt")) {
-    inputRate = MODEL_COST_PER_1K.gpt_input;
-    outputRate = MODEL_COST_PER_1K.gpt_output;
-  } else if (m.includes("gemini")) {
-    inputRate = MODEL_COST_PER_1K.gemini_input;
-    outputRate = MODEL_COST_PER_1K.gemini_output;
-  }
-  // Assume avg 4000 input tokens per analysis (page summary), output from chars.
-  const outTokens = Math.max(1, Math.round(resultLength / 4));
-  return 4 * inputRate + (outTokens / 1000) * outputRate;
-}
-
-// ============================================================================
 // Hook
 // ============================================================================
 
@@ -896,12 +869,8 @@ export interface PipelineDerived {
   uniqueAgents: string[];
   /** "5 analyses serving 7 keywords (35 → 5 deduped)" or null when not applicable */
   dedupLabel: string | null;
-  /**
-   * Coarse running-cost estimate during the run.
-   * After `pipeline_complete`, the consumer should refetch the topic
-   * and replace this with the authoritative `cost_summary.total_estimated_cost_usd`.
-   */
-  runningCostUsd: number;
+  /** Catalog-derived spend streamed by completed AI operations. */
+  runningCostUsd: number | null;
 }
 
 export interface UsePipelineProgressResult {
@@ -1022,28 +991,16 @@ export function usePipelineProgress(opts?: {
       }
     }
 
-    // Running cost — coarse estimate from analyze stage.
-    let runningCostUsd = 0;
-    for (const item of Object.values(stages.analyze.items)) {
-      if (item.status === "success" && item.metadata.result_length) {
-        runningCostUsd += estimateAnalysisCost(
-          item.metadata.model_id,
-          item.metadata.result_length,
-        );
-      }
-    }
-    for (const item of Object.values(stages.synthesize.items)) {
-      if (item.status === "success" && item.metadata.result_length) {
-        // Synthesis prompts are larger — rough 8k input tokens.
-        const out = Math.max(1, Math.round(item.metadata.result_length / 4));
-        runningCostUsd += 8 * MODEL_COST_PER_1K.default_input +
-          (out / 1000) * MODEL_COST_PER_1K.default_output;
-      }
-    }
+    // Running spend comes only from the server's catalog-priced usage. If a
+    // completed AI operation has no cost, show unknown instead of guessing.
+    const runningCostUsd = sumCompletedAiCosts([
+      ...Object.values(stages.analyze.items),
+      ...Object.values(stages.synthesize.items),
+    ]);
 
     // Rate from active stage
     const active = state.activeStage ? stages[state.activeStage] : null;
-    const now = Date.now();
+    const now = active?.recentCompletions.at(-1) ?? 0;
     const recent = active ? pruneRecent(active.recentCompletions, now) : [];
     const rate = recent.length > 1 ? recent.length / 30 : 0;
 

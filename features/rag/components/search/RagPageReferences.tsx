@@ -457,7 +457,40 @@ export function RagPageReferences({
   ].sort(
     (left, right) => previewPriority(left.key) - previewPriority(right.key),
   );
+  const pageImageId = page?.imageCldFileId ?? null;
+  const groupKeys = new Set(groups.map((group) => group.key));
+  const documentAvailable = Boolean(ids.fileId);
+  const cleanAvailable = Boolean(page?.cleanedText);
+  const imageAvailable =
+    Boolean(pageImageId) || groupKeys.has("page_image_caption");
+  const tableAvailable = groupKeys.has("table_row");
+  const customAvailable =
+    Boolean(loaded?.extractionTotal) ||
+    HEADER_REFERENCE_PREVIEW_KEYS.custom.some((key) => groupKeys.has(key));
+
+  useEffect(() => {
+    onAvailabilityChange?.({
+      document: documentAvailable,
+      clean: cleanAvailable,
+      image: imageAvailable,
+      table: tableAvailable,
+      custom: customAvailable,
+    });
+  }, [
+    onAvailabilityChange,
+    documentAvailable,
+    cleanAvailable,
+    imageAvailable,
+    tableAvailable,
+    customAvailable,
+  ]);
+
+  const headerRequestedPreview =
+    resourceRequest && resourceRequest.nonce !== observedRequestNonce
+      ? previewKeyForHeaderRequest(resourceRequest.kind, previewOptions)
+      : null;
   const selectedPreview =
+    previewOptions.find((option) => option.key === headerRequestedPreview) ??
     previewOptions.find((option) => option.key === requestedPreview) ??
     previewOptions[0] ??
     null;
@@ -465,7 +498,6 @@ export function RagPageReferences({
     (group) => group.key === selectedPreview?.key,
   );
   const SelectedPreviewIcon = selectedPreview?.icon ?? FileScan;
-  const pageImageId = page?.imageCldFileId ?? null;
 
   if (!isCldFile && !isLibrary) return null;
 
@@ -513,7 +545,10 @@ export function RagPageReferences({
               detail={option.detail}
               icon={option.icon}
               active={selectedPreview?.key === option.key}
-              onClick={() => setRequestedPreview(option.key)}
+              onClick={() => {
+                setRequestedPreview(option.key);
+                setObservedRequestNonce(resourceRequest?.nonce ?? 0);
+              }}
             />
           ))}
         </div>

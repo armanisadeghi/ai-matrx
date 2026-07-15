@@ -9,30 +9,12 @@ import { useSetting } from "../hooks/useSetting";
 import type { GroqTtsVoice } from "@/lib/redux/preferences/userPreferencesSlice";
 
 const groqVoices: GroqTtsVoice[] = [
-  "Arista-PlayAI",
-  "Atlas-PlayAI",
-  "Basil-PlayAI",
-  "Briggs-PlayAI",
-  "Calum-PlayAI",
-  "Celeste-PlayAI",
-  "Cheyenne-PlayAI",
-  "Chip-PlayAI",
-  "Cillian-PlayAI",
-  "Deedee-PlayAI",
-  "Fritz-PlayAI",
-  "Gail-PlayAI",
-  "Indigo-PlayAI",
-  "Mamaw-PlayAI",
-  "Mason-PlayAI",
-  "Mikail-PlayAI",
-  "Mitch-PlayAI",
-  "Quinn-PlayAI",
-  "Thunder-PlayAI",
+  "autumn", "diana", "hannah", "austin", "daniel", "troy",
 ];
 
 const voiceOptions = groqVoices.map((v) => ({
   value: v,
-  label: v.replace("-PlayAI", ""),
+  label: v.charAt(0).toUpperCase() + v.slice(1),
 }));
 
 export default function TextToSpeechTab() {
@@ -57,7 +39,7 @@ export default function TextToSpeechTab() {
       <SettingsSection title="Playback">
         <SettingsSelect<GroqTtsVoice>
           label="Voice"
-          description="Groq PlayAI voice used for spoken responses."
+          description="Voice used by the catalog-selected speech model."
           value={voice}
           onValueChange={setVoice}
           options={voiceOptions}

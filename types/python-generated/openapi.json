@@ -686,6 +686,148 @@
         }
       }
     },
+    "/catalogs/{app}": {
+      "get": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Get App Catalog",
+        "operationId": "get_app_catalog_catalogs__app__get",
+        "parameters": [
+          {
+            "name": "app",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogEntryResponse"
+                  },
+                  "title": "Response Get App Catalog Catalogs  App  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/catalogs/{app}/{kind}": {
+      "get": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Get App Catalog Kind",
+        "operationId": "get_app_catalog_kind_catalogs__app___kind__get",
+        "parameters": [
+          {
+            "name": "app",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogEntryResponse"
+                  },
+                  "title": "Response Get App Catalog Kind Catalogs  App   Kind  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/catalog-resolver/resolve": {
+      "post": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Resolve",
+        "operationId": "resolve_catalog_resolver_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/dictionary/publish": {
       "post": {
         "tags": [
@@ -3527,6 +3669,129 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audio/transcribe": {
+      "post": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Transcribe Upload",
+        "operationId": "transcribe_upload_audio_transcribe_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_transcribe_upload_audio_transcribe_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audio/transcribe-url": {
+      "post": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Transcribe Url",
+        "operationId": "transcribe_url_audio_transcribe_url_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptionUrlRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audio/text-to-speech": {
+      "post": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Text To Speech",
+        "operationId": "text_to_speech_audio_text_to_speech_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeechRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeechResponse"
+                }
               }
             }
           },
@@ -8598,6 +8863,18 @@
             }
           },
           {
+            "name": "max_nodes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 50,
+              "default": 1000,
+              "title": "Max Nodes"
+            }
+          },
+          {
             "name": "max_edges",
             "in": "query",
             "required": false,
@@ -9158,6 +9435,7 @@
         ],
         "summary": "Crawl Page Detail",
         "operationId": "crawl_page_detail_scraper_admin_crawl__run_id__pages__page_id__get",
+        "deprecated": true,
         "parameters": [
           {
             "name": "run_id",
@@ -9783,7 +10061,7 @@
           "Scraper Admin"
         ],
         "summary": "Refresh Gsc Bulk",
-        "description": "One-shot Search Console pull for every successful page in a run.\n\nStreams typed events: gsc_bulk_started → gsc_page_done / gsc_page_failed /\ngsc_page_no_data → gsc_bulk_completed. Bounded by `concurrency` so we\nstay inside Search Console's per-minute quota.",
+        "description": "One-shot Search Console pull for every successful page in a run.\n\nStreams typed events: gsc_bulk_started → gsc_page_done / gsc_page_failed /\ngsc_page_no_data → gsc_bulk_completed. A property-level authorization\nfailure emits one gsc_bulk_warning and stops before page fan-out. Bounded\nby `concurrency` so we stay inside Search Console's per-minute quota.",
         "operationId": "refresh_gsc_bulk_scraper_admin_crawl__run_id__refresh_gsc_bulk_post",
         "parameters": [
           {
@@ -20718,13 +20996,63 @@
         }
       }
     },
+    "/rag/library/{processed_document_id}/derive/{kind}/rebuild-preview": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Prepare Derivation Rebuild",
+        "description": "Inspect the work a rebuild would discard and issue a short-lived,\nsnapshot-bound confirmation token. This request never changes output.",
+        "operationId": "prepare_derivation_rebuild_rag_library__processed_document_id__derive__kind__rebuild_preview_post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rag/library/{processed_document_id}/derive/{kind}": {
       "post": {
         "tags": [
           "RAG"
         ],
         "summary": "Derive Stream",
-        "description": "Run one Knowledge-Asset derivation over the doc, streaming live\nprogress. Inserts a `derive_runs` row so the operation is observable and\ncancelable (POST .../derive-runs/{run_id}/cancel).\n\n`reset` (query param) only affects the resumable LLM derivations\n(section_summary / synthetic_qa): default False RESUMES — already-persisted\nsections are skipped (no re-spend); True clears the set once then rebuilds.\nIgnored by the other 4 runners, which don't accept it.",
+        "description": "Run one Knowledge-Asset derivation over the doc, streaming live\nprogress. Inserts a `derive_runs` row so the operation is observable and\ncancelable (POST .../derive-runs/{run_id}/cancel).\n\nDefault ``reset=False`` RESUMES — already-persisted paid work is skipped.\n``reset=True`` is rejected unless the body carries the fresh token returned\nby ``POST .../rebuild-preview``. The token is bound to the user, document,\nderivation kind, expiry, and inspected output snapshot.",
         "operationId": "derive_stream_rag_library__processed_document_id__derive__kind__post",
         "parameters": [
           {
@@ -20756,6 +21084,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DeriveRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -25525,7 +25870,7 @@
           "Workflow"
         ],
         "summary": "Get Run Cost",
-        "description": "Per-run cost summary — the real spend, including per-node conversations.\n\nAggregates chat.request rows across EVERY conversation the run touched\n(the run's own conversation_id plus each AI node's — every\nai.agent.start opens its OWN conversation), falling back to the run's\ndurable node_cost events when the join finds nothing. Returns zeros\nonly for a genuinely LLM-free run. Costs are already USD; straight\nsums, never re-priced. Computation lives in\n``aidream/services/runtime/workflow_cost.py`` — shared with the terminal\nrun-completion callback so both surfaces report identical numbers.",
+        "description": "Per-run cost summary from first-class execution attribution.\n\nNew runs aggregate chat.request rows by their indexed\nexecution_kind/execution_id pointer. Historical incomplete runs use\ndurable node_cost events, then their legacy run conversation only when\nno event exists. Returns zeros only for a genuinely LLM-free run. Costs\nare already USD; straight sums, never re-priced. Computation lives in\n``aidream/services/runtime/workflow_cost.py`` — shared with the terminal\nrun-completion callback so both surfaces report identical numbers.",
         "operationId": "get_run_cost_runs__run_id__cost_get",
         "parameters": [
           {
@@ -25568,7 +25913,7 @@
           "Workflow"
         ],
         "summary": "Get Workflow Cost Rollup",
-        "description": "Time-windowed cost rollup for one workflow definition.\n\nAggregates cost across every run of the definition in the last\n``range`` days. Per run: chat.request rows joined on the run's\nconversation_id when any exist, otherwise the run's durable node_cost\nevents (AI nodes open their OWN conversations, so the conversation\njoin alone under-reports agent workflows — same truth model as\n``compute_run_cost``). Returns a per-day breakdown the UI can chart.",
+        "description": "Time-windowed cost rollup for one workflow definition.\n\nAggregates cost across every run of the definition in the last ``range``\ndays using the exact same direct-attribution/completeness fallback rule as\n``compute_run_cost``. Returns a per-day breakdown the UI can chart.",
         "operationId": "get_workflow_cost_rollup_workflows__definition_id__cost_rollup_get",
         "parameters": [
           {
@@ -26420,6 +26765,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{agent_id}/execution-definition": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get Agent Execution Definition",
+        "description": "Return the complete canonical definition for an authorized execution host.",
+        "operationId": "get_agent_execution_definition_agents__agent_id__execution_definition_get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionAgentDefinition"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/versions/{version_id}/execution-definition": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get Agent Version Execution Definition",
+        "description": "Return one immutable, ownership-scoped agent-version definition.",
+        "operationId": "get_agent_version_execution_definition_agents_versions__version_id__execution_definition_get",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionAgentDefinition"
                 }
               }
             }
@@ -28904,6 +29335,59 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FileUploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/pdf-pages": {
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Select Pdf Pages",
+        "description": "Create or reuse one PDF containing the requested source pages.",
+        "operationId": "select_pdf_pages_files__file_id__pdf_pages_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfPageSelectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfPageSelectionResult"
                 }
               }
             }
@@ -32245,6 +32729,64 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DrainResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/podcast/cast-preview": {
+      "get": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Cast Preview Endpoint",
+        "operationId": "cast_preview_endpoint_podcast_cast_preview_get",
+        "parameters": [
+          {
+            "name": "host_count",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Host Count"
+            }
+          },
+          {
+            "name": "show_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Show Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PodcastCastPreview"
                 }
               }
             }
@@ -40344,6 +40886,14 @@
             "type": "object",
             "title": "Settings"
           },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "The agent's executable tools as canonical NAMES — rendered from the authoritative agent.definition.tools column the executor reads (NOT from tool_config, which never assigns tools)."
+          },
           "tool_config": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
@@ -45277,6 +45827,47 @@
         ],
         "title": "Body_put_file_cloud_files_put_put"
       },
+      "Body_transcribe_upload_audio_transcribe_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "stt-default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_transcribe_upload_audio_transcribe_post"
+      },
       "Body_upload_asset_assets_post": {
         "properties": {
           "file": {
@@ -46978,6 +47569,194 @@
           "task_cancelled"
         ],
         "title": "CancelRunResponse"
+      },
+      "CatalogEntryResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "app": {
+            "type": "string",
+            "title": "App"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version"
+          },
+          "payload": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Payload"
+          },
+          "artifact_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Url"
+          },
+          "artifact_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Sha256"
+          },
+          "artifact_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Size Bytes"
+          },
+          "min_app_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min App Version"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "app",
+          "kind",
+          "key",
+          "schema_version",
+          "payload",
+          "artifact_url",
+          "artifact_sha256",
+          "artifact_size_bytes",
+          "min_app_version",
+          "is_active",
+          "sort_order",
+          "notes",
+          "updated_at"
+        ],
+        "title": "CatalogEntryResponse"
+      },
+      "CatalogSuggestion": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "payload": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Payload"
+          },
+          "artifact_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Url"
+          },
+          "artifact_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Sha256"
+          },
+          "artifact_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Size Bytes"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "key",
+          "payload"
+        ],
+        "title": "CatalogSuggestion",
+        "description": "A best-guess catalog entry. Either the payload validates against its\nkind schema, or `notes` explains exactly what is missing."
       },
       "CatalogTree": {
         "properties": {
@@ -51923,6 +52702,14 @@
             "title": "Model Guidance",
             "description": "Model preference/guidance, e.g. cost vs speed vs intelligence.",
             "default": ""
+          },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads."
           }
         },
         "type": "object",
@@ -54277,6 +55064,24 @@
           "derivation_kind"
         ],
         "title": "DerivativeRequest"
+      },
+      "DeriveRequest": {
+        "properties": {
+          "rebuild_confirmation_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rebuild Confirmation Token"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DeriveRequest"
       },
       "DesktopInstanceSummary": {
         "properties": {
@@ -56934,6 +57739,155 @@
         "title": "ExecuteNodeRequest",
         "description": "Body for POST /runs/{id}/nodes/{nid}/execute — run exactly this node."
       },
+      "ExecutionAgentDefinition": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version",
+            "default": false
+          },
+          "version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Number"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "definition_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Hash"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "messages": {
+            "items": {},
+            "type": "array",
+            "minItems": 1,
+            "title": "Messages"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings"
+          },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "custom_tools": {
+            "items": {},
+            "type": "array",
+            "title": "Custom Tools"
+          },
+          "mcp_servers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Mcp Servers"
+          },
+          "variable_definitions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Variable Definitions"
+          },
+          "context_slots": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Context Slots"
+          },
+          "tool_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tool Config"
+          },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema"
+          },
+          "matrx_actions": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matrx Actions"
+          },
+          "skill_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Skill Config"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "definition_id",
+          "agent_id",
+          "model_id",
+          "messages"
+        ],
+        "title": "ExecutionAgentDefinition",
+        "description": "Complete, portable agent definition consumed by every execution host."
+      },
       "ExecutionError": {
         "properties": {
           "error_type": {
@@ -57056,6 +58010,18 @@
             },
             "type": "array",
             "title": "Events"
+          },
+          "request_summary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Summary"
           }
         },
         "type": "object",
@@ -60490,6 +61456,135 @@
           "file_name"
         ],
         "title": "FileRecord"
+      },
+      "FileRef": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "cld_files row id — the only identifier a client needs."
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private",
+              "shared"
+            ],
+            "title": "Visibility",
+            "default": "private"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url",
+            "description": "Always-renderable URL (CDN if public, signed-inline otherwise)."
+          },
+          "cdn_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdn Url",
+            "description": "Permanent CDN URL — public files only."
+          },
+          "signed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url",
+            "description": "Signed inline URL with TTL — non-public files."
+          },
+          "signed_url_expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed Url Expires At",
+            "description": "ms epoch when signed_url expires; None for CDN-only public."
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url",
+            "description": "Attachment-disposition signed URL (Download button)."
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id"
+        ],
+        "title": "FileRef",
+        "description": "The ONE lean, client-facing reference to a single stored file.\n\nThis is what any client (frontend, another service, an embedded\nattachment) receives when it needs to *point at* a file — as opposed\nto the richer file-browser row (``FileRecord`` in aidream) or the\nmulti-variant ``Asset`` envelope. It carries only what a client can\nactually act on:\n\n  1. ``file_id``  — the ID. From it, everything else is fetchable, and\n                    it round-trips straight back as ``MediaRef.file_id``.\n  2. ``url``      — ALWAYS renderable (CDN when public, signed-inline\n                    otherwise). Bind to <img>/<video> directly.\n  3. ``cdn_url``  — permanent public CDN URL (public files only).\n  4. ``signed_url`` + ``signed_url_expires_at`` — the expiring link and\n                    the ms-epoch it dies, so the client refreshes ahead\n                    of expiry without parsing X-Amz params.\n  5. ``download_url`` — attachment-disposition signed URL (Download btn).\n  6. display metadata the client renders: ``file_name``, ``mime_type``,\n     ``size_bytes``, ``visibility``, ``thumbnail_url``.\n\n🚫 What it DELIBERATELY OMITS — the whole point of this shape:\n  - ``storage_uri`` / ``file_uri`` — the native ``s3://bucket/owner/key``\n    location. A client can do NOTHING with it; exposing it is pure\n    info-disclosure. It is a server-only column and MUST NEVER cross a\n    client boundary. Enforced at the DB (column REVOKE + a realtime\n    publication that excludes it) and by ``scripts/audit_api_types.py``.\n  - ``file_path`` (the virtual folder path) — belongs on the file-browser\n    row, not on a bare reference; navigation shapes carry it, refs don't.\n  - internals: ``owner_id``, ``checksum``, ``current_version``,\n    ``parent_folder_id``, lineage/derivation fields, raw ``metadata``.\n\nPopulate via ``SyncEngine.build_urls_for_record_async`` for the URL\nflavours — never hand-mint URLs. Lives in matrx-utils so every host\nconsumes the identical contract."
       },
       "FileRefreshRequest": {
         "properties": {
@@ -71309,6 +72404,26 @@
         "type": "object",
         "title": "PdfFullPipelineRequest"
       },
+      "PdfOutputPageMap": {
+        "properties": {
+          "output_page": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Output Page"
+          },
+          "source_page": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Source Page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "output_page",
+          "source_page"
+        ],
+        "title": "PdfOutputPageMap"
+      },
       "PdfPageRange": {
         "properties": {
           "start": {
@@ -71328,6 +72443,121 @@
           "end"
         ],
         "title": "PdfPageRange"
+      },
+      "PdfPageSelectionRequest": {
+        "properties": {
+          "pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages"
+          },
+          "page_ranges": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PdfPageRange"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Ranges"
+          },
+          "signed_ttl": {
+            "type": "integer",
+            "maximum": 604800,
+            "minimum": 60,
+            "title": "Signed Ttl",
+            "default": 3600
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PdfPageSelectionRequest",
+        "description": "Ordered 1-based pages/ranges to package into one derivative PDF."
+      },
+      "PdfPageSelectionResult": {
+        "properties": {
+          "source_file_id": {
+            "type": "string",
+            "title": "Source File Id"
+          },
+          "source_pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Source Pages"
+          },
+          "output_page_map": {
+            "items": {
+              "$ref": "#/components/schemas/PdfOutputPageMap"
+            },
+            "type": "array",
+            "title": "Output Page Map"
+          },
+          "source_page_count": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Source Page Count"
+          },
+          "source_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Size Bytes"
+          },
+          "source_bytes_fetched": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Source Bytes Fetched",
+            "default": 0
+          },
+          "source_fetch_strategy": {
+            "type": "string",
+            "enum": [
+              "cache_hit",
+              "full_object_stream_to_disk"
+            ],
+            "title": "Source Fetch Strategy"
+          },
+          "cache_hit": {
+            "type": "boolean",
+            "title": "Cache Hit"
+          },
+          "file": {
+            "$ref": "#/components/schemas/FileRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_file_id",
+          "source_pages",
+          "output_page_map",
+          "source_page_count",
+          "source_fetch_strategy",
+          "cache_hit",
+          "file"
+        ],
+        "title": "PdfPageSelectionResult",
+        "description": "One selected-page PDF plus lineage and transfer diagnostics."
       },
       "PdfPipelineOptions": {
         "properties": {
@@ -72573,6 +73803,39 @@
         },
         "type": "object",
         "title": "PicklistUpdate"
+      },
+      "PodcastAudioProvider": {
+        "type": "string",
+        "enum": [
+          "google",
+          "elevenlabs"
+        ],
+        "title": "PodcastAudioProvider"
+      },
+      "PodcastCastPreview": {
+        "properties": {
+          "host_count": {
+            "type": "integer",
+            "title": "Host Count"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/PodcastAudioProvider"
+          },
+          "speakers": {
+            "items": {
+              "$ref": "#/components/schemas/SpeakerSpec"
+            },
+            "type": "array",
+            "title": "Speakers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "host_count",
+          "provider",
+          "speakers"
+        ],
+        "title": "PodcastCastPreview"
       },
       "PodcastGenerateRequest": {
         "properties": {
@@ -76360,6 +77623,147 @@
           "path"
         ],
         "title": "ResolvePathArgs"
+      },
+      "ResolveRequest": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url"
+          },
+          "kind_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Hint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ResolveRequest"
+      },
+      "ResolveResult": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "huggingface",
+              "civitai",
+              "direct"
+            ],
+            "title": "Source"
+          },
+          "canonical_url": {
+            "type": "string",
+            "title": "Canonical Url"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/ResolvedFile"
+            },
+            "type": "array",
+            "title": "Files"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogSuggestion"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "canonical_url",
+          "name"
+        ],
+        "title": "ResolveResult"
+      },
+      "ResolvedFile": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "download_url": {
+            "type": "string",
+            "title": "Download Url"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "download_url"
+        ],
+        "title": "ResolvedFile"
       },
       "ResolvedPath": {
         "properties": {
@@ -80951,6 +82355,80 @@
         "title": "SpeakerSpec",
         "description": "One requested speaker. `voice` is provider-appropriate: a Gemini\nprebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for\n3+ hosts (dialogue TTS). Empty voice → filled from the default palette.\n\n`gender` (\"male\" | \"female\" | \"neutral\" | \"\") drives gender-matched voice\nselection on the ElevenLabs (3+) path. It is normally declared by the script\nagent in its ``<speaker_settings>`` block (name + gender, never voice) so the\nserver owns voice selection and can rotate the pool across episodes. Empty →\ntreated as neutral (any voice eligible)."
       },
+      "SpeechRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "tts-default"
+          },
+          "voice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "default": "wav"
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "fast",
+              "high_quality"
+            ],
+            "title": "Quality",
+            "default": "fast"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "SpeechRequest"
+      },
+      "SpeechResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "url",
+          "mime_type",
+          "model"
+        ],
+        "title": "SpeechResponse"
+      },
       "SplitPartRequest": {
         "properties": {
           "pages": {
@@ -85531,6 +87009,231 @@
         "title": "TraceFileSummary",
         "description": "One entry in the ``GET /admin/debug-traces/files`` listing."
       },
+      "TranscriptionMeta": {
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "hallucinations_filtered": {
+            "type": "integer",
+            "title": "Hallucinations Filtered"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "attempts",
+          "hallucinations_filtered",
+          "model"
+        ],
+        "title": "TranscriptionMeta"
+      },
+      "TranscriptionResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true,
+            "title": "Success",
+            "default": true
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptionSegment"
+            },
+            "type": "array",
+            "title": "Segments"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/TranscriptionMeta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "meta"
+        ],
+        "title": "TranscriptionResponse"
+      },
+      "TranscriptionSegment": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "seek": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seek"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "tokens": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Tokens"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "avg_logprob": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Logprob"
+          },
+          "compression_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compression Ratio"
+          },
+          "no_speech_prob": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Speech Prob"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "TranscriptionSegment"
+      },
+      "TranscriptionUrlRequest": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "stt-default"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "TranscriptionUrlRequest"
+      },
       "TrashFileEntry": {
         "properties": {
           "id": {
@@ -86481,6 +88184,21 @@
               }
             ],
             "title": "Settings"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "Executable tools, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). REPLACES the agent's whole tool set — the authoritative agent.definition.tools column the executor reads. Validated against the live registry (unknown/inactive tools rejected loudly). Semantics: omitted/None = leave unchanged; [] = remove ALL tools. tool_config does NOT assign tools."
           },
           "tool_config": {
             "anyOf": [

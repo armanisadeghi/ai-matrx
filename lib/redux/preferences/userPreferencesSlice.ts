@@ -46,27 +46,14 @@ export interface VoicePreferences {
   wakeWord: string;
 }
 
-// Text-to-Speech preferences (Groq PlayAI TTS) - separate from Voice service
+// Text-to-Speech preferences (catalog default Groq Orpheus voices)
 export type GroqTtsVoice =
-  | "Arista-PlayAI"
-  | "Atlas-PlayAI"
-  | "Basil-PlayAI"
-  | "Briggs-PlayAI"
-  | "Calum-PlayAI"
-  | "Celeste-PlayAI"
-  | "Cheyenne-PlayAI"
-  | "Chip-PlayAI"
-  | "Cillian-PlayAI"
-  | "Deedee-PlayAI"
-  | "Fritz-PlayAI"
-  | "Gail-PlayAI"
-  | "Indigo-PlayAI"
-  | "Mamaw-PlayAI"
-  | "Mason-PlayAI"
-  | "Mikail-PlayAI"
-  | "Mitch-PlayAI"
-  | "Quinn-PlayAI"
-  | "Thunder-PlayAI";
+  | "autumn"
+  | "diana"
+  | "hannah"
+  | "austin"
+  | "daniel"
+  | "troy";
 
 export interface TextToSpeechPreferences {
   preferredVoice: GroqTtsVoice;
@@ -726,7 +713,7 @@ export const initializeUserPreferencesState = (
       wakeWord: "Hey Matrix",
     },
     textToSpeech: {
-      preferredVoice: "Cheyenne-PlayAI",
+      preferredVoice: "troy",
       autoPlay: false,
       processMarkdown: true,
     },

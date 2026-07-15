@@ -271,16 +271,16 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
 
   apiRoutes: [
     {
-      url: "/api/audio/transcribe",
+      url: "/audio/transcribe",
       method: "POST",
-      description: "Upload an audio file → Groq Whisper STT.",
-      filePath: "app/api/audio/transcribe/route.ts",
+      description: "Authenticated aidream upload → catalog-routed STT.",
+      filePath: "../aidream/aidream/api/routers/audio.py",
     },
     {
-      url: "/api/audio/transcribe-url",
+      url: "/audio/transcribe-url",
       method: "POST",
-      description: "Transcribe an audio URL (no upload).",
-      filePath: "app/api/audio/transcribe-url/route.ts",
+      description: "Authenticated aidream transcription of an allowlisted media URL.",
+      filePath: "../aidream/aidream/api/routers/audio.py",
     },
     {
       url: "/api/audio/log-error",

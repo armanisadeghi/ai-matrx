@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-06-19`
+**Last updated:** `2026-07-15`
 
 ---
 
@@ -54,6 +54,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 - **Run pipeline** — overview `Run pipeline` → `api.runPipeline` (empty body) → `useResearchStream.startStream` → events `dispatch`ed into `usePipelineProgress`. `onEnd` calls `pipeline.finalize()` + `refresh()`. Document is NOT produced here.
 - **Live render** — `PipelineOrchestra` (graph) + `LivePipelineActivity`: finished stages → `StageStatSquare` rail (click to expand inline detail; external-link opens results route), active stage(s) → large card, writing streams via `StreamingTextPanel` (MarkdownStream). Completed keywords / scrape+analyze item batches / source feed auto-fold via `FoldableSection`; when the run finishes the whole drawer (metrics + stages + activity log) collapses together — user can reopen.
+- **Live cost** — each `analysis_complete` / `synthesis_complete` event carries the backend's catalog-priced `cost_usd`; `usePipelineProgress` sums only those authoritative values. If any completed AI operation has unknown pricing, the live metric shows unknown instead of guessing from provider/model names. The persisted `cost_summary` replaces the live total after completion.
 - **Document** — `/document` → `DocumentViewer` auto-generates (`api.generateDocument`, streams `chunk`+`document_complete`) when report-ready and none exists; persists to `rs_document`.
 - **Tags** — Tags page: create tag + consolidate. Source detail: `SourceTagPicker` assigns sources to tags (`assignTagsToSource`/`removeSourceTag`); consolidation synthesizes over a tag's sources.
 - **Curate** — `/curate` (`CurationTable`): `getCurationData` joins each source with importance + per-keyword rank + scraped content size + analysis state + tags in one shape; filter/sort/group by keyword or tag (incl. **sort by Authority**); select across groups → batch include/exclude (`bulkUpdateSources`) to clean the set before the final synthesis. Casual browsing stays on `sources`/`content` (shared `SourceResultsTable`).
@@ -74,6 +75,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - **"Sources discovered" = `stored_count ?? sources_found` summed**, identical in `usePipelineProgress.derived` and `SearchStageView`. Keep the formula in one shape so one screen never shows two totals.
 - **Authority ≠ importance — three distinct axes, never conflate.** `authority_*` = AI-judged source *trustworthiness* (domain-led, written by the ranker agent). `importance`/`rank` = search-position salience (`ranking.ts`). Both surface side by side; they answer different questions. `AuthorityTierBadge` is the ONE renderer for authority everywhere — never hand-roll a score pill. It tolerates an out-of-contract tier (derives from score) so a stray agent value never breaks a row.
 - **Streaming contract:** `app/(core)/research/RESEARCH_STREAMING_GUIDE.md`. Backend source of truth: aidream `research/stream_events.py` (authority events: `authority_rank_start`/`authority_rank_batch`/`authority_rank_complete`).
+- **Cost is server-owned.** Never infer dollars from model/provider names or token-count heuristics in the client. Live events carry catalog-derived `cost_usd`; absent pricing stays unknown.
 
 ---
 
@@ -98,6 +100,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
+- `2026-07-15` — **Authoritative live research cost.** Backend completion events now carry catalog-derived `cost_usd`; `usePipelineProgress` deleted its Claude/GPT/Gemini substring price table and sums only server values. Unknown pricing renders as unknown, while the terminal persisted `cost_summary` remains authoritative.
 - `2026-06-28` — **Moved to the `research` schema (clean cut).** All 12 `rs_*` tables + the `rs_source_keywords` view moved `public` → `research` (`research_canon_05`); registry `schema_name` updated; 8 functions repointed (4 hardcoded + 4 bare-ref incl. `get_topic_overview`/`get_user_hierarchy`). FE repointed to `.schema('research')` (55 calls + 3 type refs across 4 files); `research` added to `db-types`; types regenerated; dead-relations + `platform.deprecated_relations` registered. Verified: PostgREST serves `research.rs_topic` (200), `public.rs_topic` 404s (clean cut), counts preserved, `get_topic_overview` runs. aidream already modeled on `research` (one raw-SQL repoint in matrx-rag).
 - `2026-06-28` — **DB canonicalization (platform standard).** All 13 `rs_*` relations brought onto the canonical model: `rs_topic`/`rs_template` as entities (tokens `research_topic`/`research_template`), the other 10 tables as components of `research_topic`. Non-canonical project-cascade RLS replaced by `iam.apply_rls`; legacy `set_updated_at` triggers dropped; all 12 tables verify zero FAIL / zero WARN; owner-impersonation confirmed no data hidden. Existing topics set to `visibility='internal'`; system templates `public`.
 - `2026-06-24` — **Matrx entryway prefill.** `/research/topics/new?mode=ai&topic=...` now seeds the AI subject textarea as well as the draft topic name, allowing the new `/demos/matrx-entry` route to hand users into the existing research project-selection and AI topic-shaping flow without creating a parallel pipeline.

@@ -47,7 +47,7 @@ export function AudioPlayerButton({
   // Get user's preferred voice from userPreferences
   const preferredVoice = useAppSelector(
     (state) =>
-      state.userPreferences?.textToSpeech?.preferredVoice || "Cheyenne-PlayAI",
+      state.userPreferences?.textToSpeech?.preferredVoice || "troy",
   );
   const shouldProcessMarkdown = useAppSelector(
     (state) => state.userPreferences?.textToSpeech?.processMarkdown ?? true,

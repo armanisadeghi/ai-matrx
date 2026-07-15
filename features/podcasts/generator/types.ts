@@ -93,8 +93,9 @@ export type PodcastSpeakerGender = "male" | "female" | "neutral";
 /** One requested speaker. `voice` is provider-appropriate: a Gemini prebuilt
  *  voice name for 1–2 hosts, an ElevenLabs voice_id for 3+ hosts. `gender`
  *  drives the server's gender-matched voice assignment and is declared to the
- *  script agents. The studio now ALWAYS sends a complete cast (length =
- *  host_count) — empty `voice` still falls back to the server palette. */
+ *  script agents. When the server preview is available, the studio sends a
+ *  complete cast (length = host_count); otherwise it omits the cast and lets
+ *  generation apply the same server-owned defaults. */
 export interface PodcastSpeaker {
   name: string;
   voice: string;
