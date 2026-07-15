@@ -12,7 +12,7 @@ import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import { educationEntityRoute } from "@/features/education/data/entityRoutes";
-import { CLASS_CONTENT_TOKENS } from "../constants";
+import { ASSIGNMENT_EDGE_ROLE, CLASS_CONTENT_TOKENS } from "../constants";
 import type { ClassContentItem } from "../types";
 
 export interface ClassContentGroup {
@@ -42,8 +42,13 @@ export function useClassContent(
   });
 
   // Flatten every incoming edge across the education content tokens. Each
-  // ContainerLink already carries its `token`.
-  const rows = CLASS_CONTENT_TOKENS.flatMap((token) => links.linksFor(token));
+  // ContainerLink already carries its `token`. Assignment edges (role='assignment')
+  // are a DIFFERENT concern (the teacher-tools assignments surface reads them via
+  // the edu_class_assignments RPC) — exclude them so an assigned deck doesn't
+  // double-list here as plain tagged content.
+  const rows = CLASS_CONTENT_TOKENS.flatMap((token) => links.linksFor(token)).filter(
+    (r) => r.role !== ASSIGNMENT_EDGE_ROLE,
+  );
 
   const { titleFor, loading: titlesLoading } = useEntityTitles(
     rows.map((r) => ({ token: r.token, id: r.resourceId, label: r.label })),
@@ -87,7 +92,8 @@ export function useClassContent(
 
   return {
     groups,
-    totalCount: links.totalCount,
+    // Count only the content edges we actually surface (assignment edges excluded).
+    totalCount: rows.length,
     loading: links.status === "loading" || titlesLoading,
     attach: links.attach,
     detach: links.detach,

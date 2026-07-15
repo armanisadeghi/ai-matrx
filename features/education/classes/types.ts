@@ -126,6 +126,57 @@ export interface StudyClass {
   raw: Scope;
 }
 
+// ─── Assignments + class analytics (Convergence C — teacher tools) ────────────
+//
+// An assignment is a platform.associations edge (role='assignment') from a
+// resource → the class scope, with a due date in metadata. Completion + scores
+// are DERIVED from the shared study spine, never stored. See
+// migrations/edu_class_assignments_analytics.sql + the edu_class_assign*/progress
+// RPC family. Teacher reads are class-scoped by consent (enrolment).
+
+/** The resource tokens a class owner can assign: a deck or a quiz/practice-test. */
+export type AssignableToken = "fc_set" | "assessment";
+
+/** One assignment on a class (an edu_class_assignments row). */
+export interface ClassAssignment {
+  token: string;
+  resourceId: string;
+  /** ISO date (YYYY-MM-DD) the assignment is due, or null for no due date. */
+  dueDate: string | null;
+  assignedAt: string | null;
+  assignedBy: string | null;
+}
+
+/** A student's completion of ONE assigned resource, derived from the study spine. */
+export type AssignmentStatus = "not_started" | "in_progress" | "completed";
+
+export interface AssignmentProgress {
+  token: string;
+  resourceId: string;
+  dueDate: string | null;
+  status: AssignmentStatus;
+  /** 0-100 accuracy/score for this resource, or null if never attempted. */
+  scorePct: number | null;
+  attempts: number;
+  correct: number;
+  lastActivity: string | null;
+}
+
+/** One student row in the class progress grid (edu_class_progress_overview). */
+export interface ClassProgressStudent {
+  userId: string;
+  email: string | null;
+  name: string | null;
+  /** Per-assignment completion cells, aligned to the overview's assignments. */
+  cells: AssignmentProgress[];
+}
+
+/** The owner's class progress grid: assignments (columns) × students (rows). */
+export interface ClassProgressOverview {
+  assignments: ClassAssignment[];
+  students: ClassProgressStudent[];
+}
+
 /** One piece of study content surfaced on a class hub (a resolved edge). */
 export interface ClassContentItem {
   /** The association edge id (stable key + removal handle). */

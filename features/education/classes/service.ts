@@ -19,6 +19,13 @@
 //   edu_class_purchase(p_class)           → STUB purchase → entitled (real Stripe Connect pending)
 //   edu_class_set_access(p_class, mode)   → owner sets access_mode + ensures owner membership
 //   edu_my_classes()                      → MyClass[] the caller owns / joined / requested
+//
+// Teacher tools (migrations/edu_class_assignments_analytics.sql):
+//   edu_class_assignments(p_class)              → ClassAssignment[] (owner or active member)
+//   edu_class_assign(p_class, token, res, due)  → owner assigns a deck/quiz (+ due date)
+//   edu_class_unassign(p_class, token, res)     → owner removes an assignment
+//   edu_class_student_progress(p_class, p_user) → AssignmentProgress[] (owner or self; class-scoped)
+//   edu_class_progress_overview(p_class)        → ClassProgressOverview (owner grid + rollup)
 
 "use client";
 
@@ -26,9 +33,15 @@ import { createClient } from "@/utils/supabase/client";
 import { parseClassSettings, parseAccessMode } from "./settings";
 import type {
   AccessMode,
+  AssignableToken,
+  AssignmentProgress,
+  AssignmentStatus,
   ClassAccessState,
+  ClassAssignment,
   ClassJoinResult,
   ClassJoinStatus,
+  ClassProgressOverview,
+  ClassProgressStudent,
   ClassRole,
   ClassRosterMember,
   ClassStatus,
@@ -90,6 +103,63 @@ function coerceRoster(data: unknown): ClassRosterMember[] {
       createdAt: str(o.created_at) ?? "",
     };
   });
+}
+
+function num(v: unknown): number {
+  return typeof v === "number" ? v : 0;
+}
+function numOrNull(v: unknown): number | null {
+  return typeof v === "number" ? v : null;
+}
+function assignStatus(v: unknown): AssignmentStatus {
+  return v === "in_progress" || v === "completed" ? v : "not_started";
+}
+
+function coerceAssignments(data: unknown): ClassAssignment[] {
+  if (!Array.isArray(data)) return [];
+  return data.map((row) => {
+    const o = rec(row);
+    return {
+      token: str(o.token) ?? "",
+      resourceId: str(o.resource_id) ?? "",
+      dueDate: str(o.due_date),
+      assignedAt: str(o.assigned_at),
+      assignedBy: str(o.assigned_by),
+    };
+  });
+}
+
+function coerceProgress(data: unknown): AssignmentProgress[] {
+  if (!Array.isArray(data)) return [];
+  return data.map((row) => {
+    const o = rec(row);
+    return {
+      token: str(o.token) ?? "",
+      resourceId: str(o.resource_id) ?? "",
+      dueDate: str(o.due_date),
+      status: assignStatus(o.status),
+      scorePct: numOrNull(o.score_pct),
+      attempts: num(o.attempts),
+      correct: num(o.correct),
+      lastActivity: str(o.last_activity),
+    };
+  });
+}
+
+function coerceOverview(data: unknown): ClassProgressOverview {
+  const o = rec(data);
+  const students: ClassProgressStudent[] = Array.isArray(o.students)
+    ? o.students.map((row) => {
+        const s = rec(row);
+        return {
+          userId: str(s.user_id) ?? "",
+          email: str(s.email),
+          name: str(s.name),
+          cells: coerceProgress(s.cells),
+        };
+      })
+    : [];
+  return { assignments: coerceAssignments(o.assignments), students };
 }
 
 function coerceMyClasses(data: unknown): MyClass[] {
@@ -212,6 +282,83 @@ export async function setAccessMode(
     p_access_mode: mode,
   });
   if (error) throw new Error(error.message);
+}
+
+// ─── Assignments + class analytics (teacher tools) ──────────────────────────────
+//
+// Assignments live as platform.associations edges (role='assignment'); completion
+// is DERIVED from the study spine. All five RPCs re-check the caller's owner/member
+// role server-side (mirrors edu_class_roster + guardian_assert_access). A teacher's
+// read is class-scoped by consent — enrolment authorizes seeing progress on THIS
+// class's assignments, and nothing else.
+
+/** Owner OR active member: the class's assignment list. */
+export async function getClassAssignments(
+  classId: string,
+): Promise<ClassAssignment[]> {
+  const { data, error } = await createClient().rpc("edu_class_assignments", {
+    p_class: classId,
+  });
+  if (error) throw new Error(error.message);
+  return coerceAssignments(data);
+}
+
+/** Owner: assign a deck/quiz to the class (optional ISO due date). */
+export async function assignResource(
+  classId: string,
+  token: AssignableToken,
+  resourceId: string,
+  dueDate?: string | null,
+): Promise<void> {
+  const { error } = await createClient().rpc("edu_class_assign", {
+    p_class: classId,
+    p_token: token,
+    p_resource: resourceId,
+    ...(dueDate ? { p_due: dueDate } : {}),
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Owner: remove an assignment. */
+export async function unassignResource(
+  classId: string,
+  token: string,
+  resourceId: string,
+): Promise<void> {
+  const { error } = await createClient().rpc("edu_class_unassign", {
+    p_class: classId,
+    p_token: token,
+    p_resource: resourceId,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Owner (any member) OR the subject themselves: one member's completion of THIS
+ * class's assignments. Never the student's full spine — class-scoped by consent.
+ */
+export async function getClassStudentProgress(
+  classId: string,
+  userId: string,
+): Promise<AssignmentProgress[]> {
+  const { data, error } = await createClient().rpc(
+    "edu_class_student_progress",
+    { p_class: classId, p_user: userId },
+  );
+  if (error) throw new Error(error.message);
+  return coerceProgress(data);
+}
+
+/** Owner: the roster × assignment progress grid + class-wide rollup. */
+export async function getClassProgressOverview(
+  classId: string,
+): Promise<ClassProgressOverview> {
+  const { data, error } = await createClient().rpc(
+    "edu_class_progress_overview",
+    { p_class: classId },
+  );
+  if (error) throw new Error(error.message);
+  return coerceOverview(data);
 }
 
 // ─── Paid gate (STUB) ──────────────────────────────────────────────────────────

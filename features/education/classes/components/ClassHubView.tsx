@@ -29,11 +29,15 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClasses } from "../hooks/useClasses";
 import { useClassContent } from "../hooks/useClassContent";
 import { useClassAccess } from "../hooks/useClassAccess";
+import { useClassAssignments } from "../hooks/useClassAssignments";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AddClassContentSheet } from "./AddClassContentSheet";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { ClassAccessPanel } from "./ClassAccessPanel";
 import { ClassRosterPanel } from "./ClassRosterPanel";
+import { ClassAssignmentsPanel } from "./ClassAssignmentsPanel";
+import { ClassProgressPanel } from "./ClassProgressPanel";
+import { AssignedToYouPanel } from "./AssignedToYouPanel";
 import { daysUntil } from "../settings";
 import type { StudyClass } from "../types";
 
@@ -140,6 +144,7 @@ function ClassHubBody({
 }) {
   const router = useRouter();
   const content = useClassContent(cls.id, orgId);
+  const assignments = useClassAssignments(cls.id);
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const today = todayIso();
@@ -284,6 +289,20 @@ function ClassHubBody({
         onChanged={access.refresh}
       />
 
+      {/* Assignments (owner-managed) — a deck/quiz assigned to the whole roster. */}
+      <ClassAssignmentsPanel
+        classId={cls.id}
+        className={cls.name}
+        assignments={assignments}
+      />
+
+      {/* Class progress — who has completed each assignment. Remounts when the
+          set of assignments changes so a new assignment appears as a column. */}
+      <ClassProgressPanel
+        key={assignments.assignments.length}
+        classId={cls.id}
+      />
+
       {/* Study content */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
@@ -386,6 +405,7 @@ function MemberClassView({
             isOwner={false}
             onChanged={access.refresh}
           />
+          <AssignedToYouPanel classId={state.classId} />
           <section className="space-y-3">
             <h2 className="text-sm font-medium text-foreground">
               Study content

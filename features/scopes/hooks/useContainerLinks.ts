@@ -36,6 +36,8 @@ export interface ContainerLink {
   resourceId: string;
   /** The attached resource's entity token (the edge source type). */
   token: string;
+  /** The edge role, or null for a plain (role-less) association. */
+  role: string | null;
   label: string | null;
   /** Per-edge props from `platform.associations.metadata` (e.g. representation). */
   metadata: Json;
@@ -98,6 +100,7 @@ export function useContainerLinks(
         edgeId: e.id,
         resourceId: e.otherId,
         token: e.otherType,
+        role: e.role ?? null,
         label: e.label ?? null,
         metadata: e.metadata ?? {},
       }));

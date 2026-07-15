@@ -42,6 +42,22 @@ export const CLASS_CONTENT_TOKENS: EntityTypeToken[] = [
   "file",
 ];
 
+/**
+ * The `platform.associations` edge role that marks an edge as a class ASSIGNMENT
+ * (a deck/quiz assigned to the class with a due date) rather than a plain
+ * content-tag edge (role=null). The class content hub excludes this role so an
+ * assignment doesn't double-list as generic tagged content.
+ */
+export const ASSIGNMENT_EDGE_ROLE = "assignment" as const;
+
+/**
+ * The resource tokens a class owner can ASSIGN — a deck (fc_set) or a
+ * quiz/practice-test (assessment). A subset of CLASS_CONTENT_TOKENS (only the
+ * study-spine-backed, completable resources). Kept in sync with the DB
+ * `_edu_is_assignable_token` guard.
+ */
+export const ASSIGNABLE_TOKENS: EntityTypeToken[] = ["fc_set", "assessment"];
+
 /** Keys used inside a class scope's `settings` JSONB. Pure metadata — no table. */
 export const CLASS_SETTINGS_KEYS = {
   examDates: "exam_dates",

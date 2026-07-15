@@ -25416,11 +25416,20 @@ export type Database = {
         Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
         Returns: undefined
       }
+      _edu_is_active_member: {
+        Args: { p_scope: string; p_user: string }
+        Returns: boolean
+      }
+      _edu_is_assignable_token: { Args: { p_token: string }; Returns: boolean }
       _edu_is_owner: {
         Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
         Returns: boolean
       }
       _edu_is_scope_member: { Args: { p_scope: string }; Returns: boolean }
+      _edu_resource_progress: {
+        Args: { p_resource: string; p_token: string; p_user: string }
+        Returns: Json
+      }
       _library_assert_super_admin: {
         Args: { p_actor: string }
         Returns: undefined
@@ -27871,12 +27880,23 @@ export type Database = {
         Args: { p_class: string; p_user: string }
         Returns: Json
       }
+      edu_class_assign: {
+        Args: {
+          p_class: string
+          p_due?: string
+          p_resource: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      edu_class_assignments: { Args: { p_class: string }; Returns: Json }
       edu_class_grant: {
         Args: { p_class: string; p_user: string }
         Returns: Json
       }
       edu_class_join: { Args: { p_class: string }; Returns: Json }
       edu_class_leave: { Args: { p_class: string }; Returns: Json }
+      edu_class_progress_overview: { Args: { p_class: string }; Returns: Json }
       edu_class_purchase: { Args: { p_class: string }; Returns: Json }
       edu_class_remove: {
         Args: { p_class: string; p_user: string }
@@ -27889,6 +27909,14 @@ export type Database = {
         Returns: Json
       }
       edu_class_state: { Args: { p_class: string }; Returns: Json }
+      edu_class_student_progress: {
+        Args: { p_class: string; p_user: string }
+        Returns: Json
+      }
+      edu_class_unassign: {
+        Args: { p_class: string; p_resource: string; p_token: string }
+        Returns: Json
+      }
       edu_coppa_gate: { Args: never; Returns: Json }
       edu_delete_study_data: { Args: never; Returns: Json }
       edu_export_study_data: { Args: never; Returns: Json }
