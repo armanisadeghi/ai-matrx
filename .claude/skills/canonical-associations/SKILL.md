@@ -27,6 +27,8 @@ When a newly-canonicalized entity must be "added to all the places we have assoc
 
 If a relationship answers *"who is allowed to see/do this?"* → it's `iam.*`, not associations. If it answers *"what content/containers is this attached to?"* → it's `platform.associations`. When unsure, ask; do not guess and migrate a permissions grant into an association edge.
 
+**Where the two meet — contextual access.** An association edge can *convey* access: `association_types.conveys_max` + `container_side` feed `platform.reachability`, so a thing attached to a container the user can reach becomes readable *through that container* (`iam.has_access_for`) — but it must NEVER become discoverable in that thing's own lists/search (`iam.is_discoverable`, which skips conveyance). Before registering a pair with a non-null `conveys_max`, or building any list/search over an entity that can be attached, read `/Users/armanisadeghi/code/aidream/docs/access/CONTEXTUAL_ACCESS.md` (the reads-use-has_access / lists-use-is_discoverable rule + the per-surface leak gotcha).
+
 ## Non-negotiable token rule (this caused the original disaster)
 
 Every `sourceType`/`targetType` MUST be a **canonical `EntityTypeToken`** — generated 1:1 from `platform.entity_types` into `types/generated/entity-types.generated.ts`. **ZERO legacy/guessed names.** `associationGuards` rejects non-canonical tokens and non-UUID ids at the call site, so a wrong token throws in code, not at Postgres.
