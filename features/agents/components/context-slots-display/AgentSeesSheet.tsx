@@ -5,12 +5,18 @@
  * turn" view.
  *
  * The context system is powerful but opaque: the rail shows one-word pills, and
- * a user can't tell what is ACTUALLY going to the model vs. what isn't. This
- * sheet answers that directly. It reads the SAME source the request is built
- * from (`selectInstanceContextEntries` → the wire payload) and renders each
- * piece in human terms — what it is, whether the agent can edit it, a preview
- * of the real value, and its size — plus the always-present baseline. One
- * authoritative place to see "here is everything the agent gets."
+ * a user can't tell what they've ATTACHED to the model vs. what they haven't.
+ * This sheet answers that. It reads the SAME slice the request payload is built
+ * from (`selectInstanceContextEntries` — identical to `selectContextPayload`)
+ * plus the active scope layers, and renders each piece in human terms: what it
+ * is, whether the agent can edit it, a preview of the value, and its size.
+ *
+ * SCOPE (deliberately honest, not overclaimed): this shows the CONTEXT ATTACHED
+ * to the chat — documents, scopes, and context items. It is NOT the full raw
+ * model payload: files you attach, the agent's tools + instructions, and its
+ * saved memory are ALSO sent every turn (noted as the baseline), and a few
+ * server-side unions (personal-org fallback, conversation-tagged scopes) resolve
+ * behind the scenes. Never tell the user "nothing else is sent."
  *
  * Read-only + additive: it does not change what's sent, only makes it legible.
  */
@@ -36,10 +42,7 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
-import {
-  WORKING_DOCUMENT_CONTEXT_KEY,
-  USER_SCRATCHPAD_CONTEXT_KEY,
-} from "@/features/agents/utils/workingDocumentContext";
+import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { cn } from "@/lib/utils";
 
@@ -77,20 +80,24 @@ function describeEntry(e: InstanceContextEntry): SeenItem {
   const title = e.label?.trim() || e.key;
   const base = { key: e.key, preview, chars: preview.length };
 
-  if (e.key === WORKING_DOCUMENT_CONTEXT_KEY) {
+  // Canonical doc detection — covers the working doc, the primary scratchpad,
+  // AND extra attached scratchpads (user_scratchpad_<id>), so extras are
+  // correctly shown as read-only, not generic attachments.
+  const docKind = docKindForContextKey(e.key);
+  if (docKind === "working") {
     return {
       ...base,
       icon: FileText,
-      title: "Working document",
+      title: title || "Working document",
       kindLine: "The shared document — the agent reads it AND edits it each turn.",
       tone: "primary",
     };
   }
-  if (e.key === USER_SCRATCHPAD_CONTEXT_KEY) {
+  if (docKind === "scratch") {
     return {
       ...base,
       icon: Lock,
-      title: "Scratchpad",
+      title: title || "Scratchpad",
       kindLine: "Your private notes — the agent reads them but never edits them.",
       readOnly: true,
     };
@@ -126,12 +133,10 @@ export function AgentSeesSheet({
   // them, not just the published context entries.
   const layers = useActiveContextLayerItems(conversationId);
 
+  // Show EVERY published entry (matches the wire payload, which sends them all —
+  // including empty ones); never silently drop something that is actually sent.
   const items = useMemo(
-    () =>
-      entries
-        .map(describeEntry)
-        .filter((i) => i.chars > 0)
-        .sort((a, b) => b.chars - a.chars),
+    () => entries.map(describeEntry).sort((a, b) => b.chars - a.chars),
     [entries],
   );
   const totalChars = items.reduce((n, i) => n + i.chars, 0);
@@ -149,7 +154,7 @@ export function AgentSeesSheet({
             What the agent sees
           </SheetTitle>
           <SheetDescription className="text-xs">
-            Exactly what goes to the model this turn — nothing hidden.
+            The context attached to this chat right now.
           </SheetDescription>
         </SheetHeader>
 
@@ -159,10 +164,11 @@ export function AgentSeesSheet({
             <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0">
               <div className="text-sm font-medium text-foreground">
-                Your conversation + the agent&apos;s instructions
+                The baseline — always sent
               </div>
               <div className="text-xs text-muted-foreground">
-                Always sent. This is the baseline every agent gets.
+                Your messages, the agent&apos;s instructions + its tools, any
+                files you attach, and its saved memory. Every agent gets these.
               </div>
             </div>
           </div>
@@ -235,10 +241,16 @@ export function AgentSeesSheet({
                         {item.kindLine}
                       </div>
                       <div className="mt-1.5 max-h-24 overflow-hidden rounded-md border border-border/60 bg-muted/40 px-2 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
-                        <span className="line-clamp-4 whitespace-pre-wrap break-words">
-                          {item.preview.slice(0, 600)}
-                          {item.preview.length > 600 ? "…" : ""}
-                        </span>
+                        {item.preview ? (
+                          <span className="line-clamp-4 whitespace-pre-wrap break-words">
+                            {item.preview.slice(0, 600)}
+                            {item.preview.length > 600 ? "…" : ""}
+                          </span>
+                        ) : (
+                          <span className="italic opacity-70">
+                            (empty — sent, but has no content yet)
+                          </span>
+                        )}
                       </div>
                     </li>
                   );
@@ -251,9 +263,9 @@ export function AgentSeesSheet({
         {items.length > 0 && (
           <div className="shrink-0 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">
-              {items.length} item{items.length === 1 ? "" : "s"}
+              {items.length} attached item{items.length === 1 ? "" : "s"}
             </span>{" "}
-            · {totalChars.toLocaleString()} characters of extra context
+            · ~{totalChars.toLocaleString()} characters of content
           </div>
         )}
       </SheetContent>
