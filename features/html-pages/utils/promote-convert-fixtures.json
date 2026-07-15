@@ -135,6 +135,92 @@
         "was_full_document": true,
         "warnings": []
       }
+    },
+    {
+      "name": "lock_control_char_not_tag_whitespace",
+      "input_html": "<html\u001c><head><title>A</title></head><body>x</body></html>",
+      "$note": "F1 lock: \\x1c is Python-\\s but not JS-\\s — neither twin may treat it as tag whitespace; the doc is a FRAGMENT.",
+      "expected": {
+        "body": "<html\u001c><head><title>A</title></head><body>x</body></html>",
+        "css": null,
+        "js": null,
+        "extracted_title": "A",
+        "extracted_description": null,
+        "was_full_document": false,
+        "warnings": []
+      }
+    },
+    {
+      "name": "lock_bom_not_tag_whitespace",
+      "input_html": "<html﻿><head><title>B</title></head><body>x</body></html>",
+      "$note": "F1 lock: BOM is JS-\\s but not Python-\\s — neither twin may treat it as tag whitespace.",
+      "expected": {
+        "body": "<html﻿><head><title>B</title></head><body>x</body></html>",
+        "css": null,
+        "js": null,
+        "extracted_title": "B",
+        "extracted_description": null,
+        "was_full_document": false,
+        "warnings": []
+      }
+    },
+    {
+      "name": "lock_long_s_is_not_style",
+      "input_html": "<html><head><ſtyle>h1{color:red}</ſtyle></head><body><p>x</p></body></html>",
+      "$note": "F2 lock: Unicode case folding banned — <ſtyle> is NOT a <style> tag in either twin.",
+      "expected": {
+        "body": "<p>x</p>",
+        "css": null,
+        "js": null,
+        "extracted_title": null,
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "lock_long_s_is_not_script",
+      "input_html": "<html><head><ſcript>alert(1)</ſcript></head><body>x</body></html>",
+      "$note": "F2 lock: <ſcript> is NOT a <script> tag.",
+      "expected": {
+        "body": "x",
+        "css": null,
+        "js": null,
+        "extracted_title": null,
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "lock_nel_is_not_trimmed",
+      "input_html": "<html><head><title>padded</title></head><body> B </body></html>",
+      "$note": "F3 lock: NEL (\\x85) is Python-strip whitespace but not JS-trim — ASCII-only trimming keeps it.",
+      "expected": {
+        "body": " B ",
+        "css": null,
+        "js": null,
+        "extracted_title": "padded",
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "lock_ascii_word_boundary_for_src",
+      "input_html": "<html><head><script ésrc=\"evil.js\">var a=1;</script></head><body>x</body></html>",
+      "$note": "F3 lock: ASCII \\b — é is a non-word char, so 'src' matches and the script is treated as external in BOTH twins.",
+      "expected": {
+        "body": "x",
+        "css": null,
+        "js": null,
+        "extracted_title": null,
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": [
+          "dropped external head script: evil.js"
+        ]
+      }
     }
   ]
 }

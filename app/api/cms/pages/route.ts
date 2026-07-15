@@ -21,6 +21,7 @@ import {
   splitHtmlDocument,
   slugifyTitle,
   SLUG_RE,
+  MAX_PROMOTE_HTML_BYTES,
 } from "@/features/html-pages/utils/promoteConvert";
 
 /** Summary columns for list view (no HTML content blobs) */
@@ -279,6 +280,19 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Adversarial F4, second layer: the converter is linear and never
+        // throws, but a pathological multi-MB document is refused up front
+        // (largest live row ≈ 200 KB; cap = 2 MB). Twin of promote.py.
+        const rawBytes = Buffer.byteLength(source.html_content ?? "", "utf8");
+        if (rawBytes > MAX_PROMOTE_HTML_BYTES) {
+          return NextResponse.json(
+            {
+              error: `html_content is too large to promote (${rawBytes} bytes > ${MAX_PROMOTE_HTML_BYTES})`,
+            },
+            { status: 413 },
+          );
+        }
+
         const conversion = splitHtmlDocument(source.html_content ?? "");
 
         // DB values ALWAYS win over extracted ones (the /p/ renderer's rule).
@@ -362,28 +376,23 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Reverse provenance on the source html_page (append-only).
-        const contextMetadata =
-          (source.context_metadata as Record<string, unknown> | null) ?? {};
-        const priorPromotions = Array.isArray(contextMetadata.promotions)
-          ? contextMetadata.promotions
-          : [];
-        const { error: reverseError } = await db
-          .from("html_pages")
-          .update({
-            context_metadata: {
-              ...contextMetadata,
-              promotions: [
-                ...priorPromotions,
-                {
-                  client_page_id: created.id,
-                  client_site_id: siteId,
-                  promoted_at: new Date().toISOString(),
-                },
-              ],
+        // Reverse provenance on the source html_page — ATOMIC at the DB
+        // (adversarial F6): a JS read-modify-write loses entries under
+        // concurrent promotes of the same html_page to different sites.
+        // `append_html_page_promotion` (CMS migration 0014, service_role-only)
+        // does the jsonb append in one UPDATE; aidream's promote_service
+        // calls the same function.
+        const { error: reverseError } = await db.rpc(
+          "append_html_page_promotion",
+          {
+            page_uuid: htmlPageId,
+            entry: {
+              client_page_id: created.id,
+              client_site_id: siteId,
+              promoted_at: new Date().toISOString(),
             },
-          })
-          .eq("id", htmlPageId);
+          },
+        );
         if (reverseError) {
           // The page exists — don't fail the promote, but scream: the reverse
           // provenance link did not land.
