@@ -15,12 +15,14 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Users,
   UserPlus,
   ShieldCheck,
+  ShieldAlert,
+  BadgeCheck,
   Inbox,
   Clock,
   ChevronRight,
@@ -36,7 +38,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { familyService } from "../familyService";
 import { useGuardianStudents } from "../useGuardianStudents";
+import { needsConsentVerification } from "../types";
 import type { GuardianLinkView } from "../types";
+import { GuardianConsentVerifyDialog } from "./GuardianConsentVerifyDialog";
 
 function displayName(link: GuardianLinkView): string {
   return link.counterpart_name?.trim() || link.counterpart_email || "Learner";
@@ -44,11 +48,32 @@ function displayName(link: GuardianLinkView): string {
 
 export function FamilyDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { buckets, loading, error, reload } = useGuardianStudents();
   const [navigating, startNav] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
   const [studentEmail, setStudentEmail] = useState("");
   const [guardianEmail, setGuardianEmail] = useState("");
+  const [verifyTarget, setVerifyTarget] = useState<GuardianLinkView | null>(null);
+
+  // Returning from the Stripe card step. Verification is confirmed by the webhook,
+  // not this redirect — so we just inform + reload (the badge flips once it lands).
+  useEffect(() => {
+    const consent = searchParams.get("consent");
+    if (consent === "verifying") {
+      toast.success(
+        "Thanks — we're confirming your card. Consent shows as verified here within a few seconds.",
+      );
+      router.replace("/education/family");
+      const t = setTimeout(reload, 4000);
+      return () => clearTimeout(t);
+    }
+    if (consent === "cancelled") {
+      toast.info("Verification cancelled. You can try again anytime.");
+      router.replace("/education/family");
+    }
+    return undefined;
+  }, [searchParams, router, reload]);
 
   const openStudent = (studentId: string) =>
     startNav(() => router.push(`/education/family/${studentId}`));
@@ -100,14 +125,18 @@ export function FamilyDashboard() {
       return null;
     });
 
-  const removeLink = (link: GuardianLinkView) =>
+  const removeLink = (link: GuardianLinkView, wasVerified = false) =>
     run(`remove-${link.id}`, async () => {
       const res = await familyService.unlink(
         link.guardian_user_id,
         link.student_user_id,
       );
       if (res.error) return res.error;
-      toast.success("Removed.");
+      toast.success(
+        wasVerified
+          ? "Consent revoked. This account is blocked from AI again."
+          : "Removed.",
+      );
       return null;
     });
 
@@ -200,46 +229,76 @@ export function FamilyDashboard() {
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {buckets.students.map((link) => (
-              <li key={link.id}>
-                <div
-                  className={cn(
-                    "group flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5 transition-colors hover:border-primary/40",
-                    navigating && "opacity-60",
+            {buckets.students.map((link) => {
+              const needsVerify = needsConsentVerification(link);
+              const isVerified = Boolean(link.verified_at);
+              return (
+                <li key={link.id}>
+                  <div
+                    className={cn(
+                      "group flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5 transition-colors hover:border-primary/40",
+                      navigating && "opacity-60",
+                      needsVerify && "rounded-b-none border-b-0",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      disabled={navigating}
+                      onClick={() => openStudent(link.counterpart_user_id)}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold uppercase text-primary">
+                        {displayName(link).charAt(0)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {displayName(link)}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {link.relationship ? `${link.relationship} · ` : ""}
+                          {link.counterpart_email}
+                        </span>
+                      </span>
+                    </button>
+                    {isVerified && (
+                      <span className="hidden shrink-0 items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-600 dark:text-green-500 sm:inline-flex">
+                        <BadgeCheck className="h-3.5 w-3.5" />
+                        Consent verified
+                      </span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 text-xs text-muted-foreground"
+                      disabled={busy === `remove-${link.id}`}
+                      onClick={() => removeLink(link, isVerified)}
+                    >
+                      {isVerified ? "Revoke" : "Remove"}
+                    </Button>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </div>
+                  {needsVerify && (
+                    <div className="flex flex-col gap-2 rounded-b-lg border border-t-0 border-amber-500/40 bg-amber-500/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="flex items-start gap-2 text-xs text-foreground">
+                        <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                        <span>
+                          This account is under 13. Verify your parental consent to
+                          unlock AI features — the account stays blocked until you do.
+                        </span>
+                      </p>
+                      <Button
+                        size="sm"
+                        className="h-8 shrink-0 gap-1.5"
+                        onClick={() => setVerifyTarget(link)}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Verify consent
+                      </Button>
+                    </div>
                   )}
-                >
-                  <button
-                    type="button"
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                    disabled={navigating}
-                    onClick={() => openStudent(link.counterpart_user_id)}
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold uppercase text-primary">
-                      {displayName(link).charAt(0)}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-foreground">
-                        {displayName(link)}
-                      </span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {link.relationship ? `${link.relationship} · ` : ""}
-                        {link.counterpart_email}
-                      </span>
-                    </span>
-                  </button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 px-2 text-xs text-muted-foreground"
-                    disabled={busy === `remove-${link.id}`}
-                    onClick={() => removeLink(link)}
-                  >
-                    Remove
-                  </Button>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Section>
@@ -340,6 +399,15 @@ export function FamilyDashboard() {
           </Button>
         </form>
       </Section>
+
+      {verifyTarget && (
+        <GuardianConsentVerifyDialog
+          open={verifyTarget !== null}
+          onOpenChange={(o) => !o && setVerifyTarget(null)}
+          studentUserId={verifyTarget.counterpart_user_id}
+          studentName={displayName(verifyTarget)}
+        />
+      )}
     </div>
   );
 }

@@ -24,6 +24,9 @@ aidream feedback `e89a15cb` (critical): the in-flight B4 param-shaping work make
 ### 5. Authorize the Supabase MCP for Claude Code (one-time, ~30s)
 The Supabase MCP now requires OAuth and non-interactive sessions can't complete it — DB verification steps silently degrade without it. In an interactive Claude Code session in this repo, run `/mcp` and complete the Supabase auth flow.
 
+### 6. COPPA verifiable parental consent — legal + Stripe webhook + vendor pick
+The **code is built and live-verified** (card auth-and-void via Stripe test). To turn it on for real families, complete the runbook: `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`. Quick wins: (1) set `STRIPE_WEBHOOK_SECRET` in prod + register the `/api/stripe/webhook` endpoint (the card method needs it); (2) legal: which method(s) to require + auth-and-void vs charge+refund; (3) pick the gov-ID/KBA vendor (Stripe Identity / PRIVO / Persona). Then agents wire the vendor + signed-form upload.
+
 ## Pending Arman review
 
 _(none — current asks are all in Active)_

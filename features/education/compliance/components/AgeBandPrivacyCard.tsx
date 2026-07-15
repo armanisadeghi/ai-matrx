@@ -40,6 +40,7 @@ export function AgeBandPrivacyCard() {
 
   const current = gate.gate?.ageBand ?? null;
   const blocked = gate.gate ? !gate.gate.aiAllowed : false;
+  const pendingVerify = gate.gate?.reason === "guardian_verification_pending";
 
   return (
     <section className="rounded-xl border border-border bg-card p-4">
@@ -76,14 +77,30 @@ export function AgeBandPrivacyCard() {
         <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-foreground">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
           <div className="space-y-1">
-            <p className="font-medium">A parent must approve before AI features unlock.</p>
-            <p className="text-muted-foreground">
-              Set up parent approval on the{" "}
-              <Link href="/education/family" className="text-primary hover:underline">
-                Family page
-              </Link>
-              . It unlocks automatically once they approve.
-            </p>
+            {pendingVerify ? (
+              <>
+                <p className="font-medium">Waiting for a parent to verify consent.</p>
+                <p className="text-muted-foreground">
+                  A parent is linked but still needs to complete a verifiable-consent
+                  step (COPPA). Ask them to tap <strong>Verify consent</strong> on the{" "}
+                  <Link href="/education/family" className="text-primary hover:underline">
+                    Family page
+                  </Link>
+                  . It unlocks automatically once they do.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium">A parent must approve before AI features unlock.</p>
+                <p className="text-muted-foreground">
+                  Set up parent approval on the{" "}
+                  <Link href="/education/family" className="text-primary hover:underline">
+                    Family page
+                  </Link>
+                  . It unlocks once they approve and verify.
+                </p>
+              </>
+            )}
           </div>
         </div>
       ) : current ? (

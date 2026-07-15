@@ -2,7 +2,7 @@
 
 **Status:** `live`
 **Tier:** `2` — a study-hub compliance sub-feature
-**Last updated:** `2026-07-14`
+**Last updated:** `2026-07-15`
 **Why:** [`docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md`](../../../docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md) §Compliance + [`docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md`](../../../docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md). Keeps the Education Hub installable on school devices (never banned by Apple/Google education review or district IT).
 
 ---
@@ -23,12 +23,17 @@ state, never a silent failure.
 - **RPCs (public, SECURITY DEFINER, authenticated-only):**
   - `edu_set_age_band(band)` — validated single write path for the caller's own band.
   - `edu_coppa_gate()` — the authoritative verdict `{age_band, requires_consent,
-    has_active_guardian, ai_allowed, reason}`. Reads the RLS-guarded
-    `education.guardian_link` server-side (only a definer RPC can), so
-    `has_active_guardian` is trustworthy. `ai_allowed = false` (reason
-    `guardian_consent_required`) only for an under-13 with no active inbound
-    guardian link. Undeclared band → allowed (existing users aren't broken) +
-    `age_undeclared` so the UI can nudge.
+    has_active_guardian, has_verified_guardian, ai_allowed, reason}`. Reads the
+    RLS-guarded `education.guardian_link` server-side (only a definer RPC can), so
+    both guardian signals are trustworthy. For an under-13, **`ai_allowed` requires
+    a VERIFIED link** (`has_verified_guardian` — an active link with `verified_at`
+    set by a COPPA verifiable-consent method), NOT merely an active one. Two
+    distinct blocks: `guardian_consent_required` (no active link — ask a parent)
+    and `guardian_verification_pending` (active link, parent hasn't completed the
+    verifiable step — "waiting for a parent to verify"). Undeclared band → allowed
+    (existing users aren't broken) + `age_undeclared` so the UI can nudge. The
+    verifiable-consent flow itself lives on the guardian system — see
+    [`../family/FEATURE.md`](../family/FEATURE.md) §Verifiable parental consent.
 
 ## Entry points
 
@@ -73,8 +78,10 @@ no entry point to gate there.
 
 ## Invariants
 
-- **Reuse the guardian system for consent.** The under-13 unblock is an active
-  `education.guardian_link` (student = the child). Never build a second consent store.
+- **Reuse the guardian system for consent.** The under-13 unblock is an active +
+  **VERIFIED** `education.guardian_link` (student = the child) — a mere active link
+  (consent captured, not yet verifiable) still blocks. Never build a second consent
+  store. The verifiable step lives on the guardian system (`../family/FEATURE.md`).
 - **COPPA gate runs BEFORE the entitlement gate.** Entitlements answer "can this plan
   afford it?"; this answers "is this account legally allowed to collect data at all?".
 - **Never a silent failure.** A block always renders the "a parent must approve" dialog.
@@ -89,13 +96,28 @@ no entry point to gate there.
   A refusal arrives as a stream `fatal_error` with
   **`error_type === "education_coppa_consent_required"`** (+ a safe `user_message`); surface
   it as the consent-required state (same as the client gate), routing to `/education/family`.
-  Contract + wire shape: aidream `services/education_compliance/FEATURE.md`. **Still open
-  (Arman/legal):** `age_band` is self-declared (an under-13 can call
-  `edu_set_age_band('adult')`) and "guardian approves from their own account" is not a
-  legally *verifiable* consent method — both tracked in `FOUND_DEFECTS.md` D57.
+  Contract + wire shape: aidream `services/education_compliance/FEATURE.md`.
+  **Verifiable consent is now BUILT** — an under-13 is unblocked only by a VERIFIED
+  guardian link, and `edu_coppa_gate.ai_allowed` already encodes it, so aidream's
+  gate-reading enforcement inherits verification for free. If aidream ever reads
+  `guardian_link` directly instead of the gate, it MUST require
+  `verified_at IS NOT NULL` (not just `status='active'`). **Still open (Arman/legal):**
+  `age_band` is self-declared (an under-13 can call `edu_set_age_band('adult')`); and
+  Arman must choose which verifiable method(s) to require + the gov-ID vendor + the
+  legal sign-off — see `../family/FEATURE.md` §Verifiable parental consent + the runbook
+  `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`.
 
 ## Change log
 
+- `2026-07-15` — **Verifiable parental consent (COPPA §312.5) built** on the guardian
+  system. `edu_coppa_gate` now unblocks an under-13 only on a **VERIFIED** active link
+  (new `has_verified_guardian` + `guardian_verification_pending` reason); the two child
+  states ("ask a parent" vs "waiting for a parent to verify") render distinctly
+  (`AiConsentRequiredDialog`, `AgeBandPrivacyCard`). The verification flow, methods
+  (card live / signed-form scaffold / vendor stub), and schema live in
+  `../family/FEATURE.md`. Because aidream's enforcement reads the same gate, the server
+  boundary inherits verification. Live-verified (Supabase MCP + Stripe test webhook):
+  block → card-verify → allow → revoke → block. `migrations/edu_guardian_verifiable_consent.sql`.
 - `2026-07-15` — D57 **server enforcement DONE** (aidream). The agent-execution funnel now
   independently refuses education generation for an unconsented under-13
   (`enforce_education_coppa`, scoped by `source_feature=education-*`, fails closed), returning

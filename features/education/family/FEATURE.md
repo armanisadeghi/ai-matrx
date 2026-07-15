@@ -3,7 +3,7 @@
 **Status:** `live`
 **Tier:** `2` — a study-hub sub-feature
 **Route:** `/education/family` (+ `/education/family/[studentId]`)
-**Last updated:** `2026-07-14`
+**Last updated:** `2026-07-15`
 **Vision:** [`app/(core)/education/VISION-education-hub.md`](../../../app/(core)/education/VISION-education-hub.md) §14 + "Features Coming Soon — Parent and guardian dashboard (K-8)"; §16 Progress Analytics.
 
 ---
@@ -46,19 +46,71 @@ new entity (a consent relationship with its own lifecycle), NOT a row in the
 resource-scoped `permissions` system (there is no physical "all my study data" resource
 to point a grant at). Columns: `guardian_user_id`, `student_user_id`,
 `status` (`pending|active|revoked`), `relationship`, `requested_by` (`student|guardian`),
-`created_by`, timestamps. `unique(guardian_user_id, student_user_id)`; RLS: each party
-SELECTs only their own rows; **all writes go through the RPCs** (no write policies).
+`created_by`, timestamps, plus the **verifiable-consent columns**
+`consent_method` (`card|signed_form|vendor_id`), `verified_at`, `verification_ref`
+(`migrations/edu_guardian_verifiable_consent.sql`). `unique(guardian_user_id,
+student_user_id)`; RLS: each party SELECTs only their own rows; **all writes go through
+the RPCs** (no write policies). The row IS the auditable consent record (who = guardian,
+method, when = `verified_at`, ref = `verification_ref`; revoke = `status=revoked` +
+`revoked_at`).
 
 **RPCs (public schema, all SECURITY DEFINER):**
 - Consent — `guardian_grant(email, relationship?)`, `guardian_request_student(email, relationship?)`,
   `guardian_respond(guardian_user_id, approve)`, `guardian_unlink(guardian_user_id, student_user_id)`.
+  `guardian_grant` **resets** `verified_at`/`consent_method`/`verification_ref` when it
+  re-establishes a non-active link (a revoked→re-granted consent needs FRESH verification).
+- Verify — `guardian_confirm_verification(link_id, method, ref)` — **service_role ONLY**
+  (revoked from anon+authenticated). The one server-side verified-write path; called by
+  the Stripe webhook (card) and secret-token admin routes (signed form). A child can never
+  reach it.
 - Listing — `guardian_list_links()` (every link the caller is in, with computed `role` +
-  counterpart identity), `guardian_can_view(student_id)`.
+  counterpart identity + `verified_at` + `consent_method` + `student_age_band` so the
+  guardian UI knows which under-13 children still need verification), `guardian_can_view(student_id)`.
 - Gated reads (each `perform guardian_assert_access(student_id)` first) —
   `guardian_student_mastery`, `guardian_student_attempts(_, since)`,
   `guardian_student_sessions`, `guardian_student_streak`, `guardian_student_gain`,
   `guardian_student_card_topics(_, card_ids)`. Each returns the SETOF the matching
   `education.*` table (typed rows in the generated types).
+
+---
+
+## Verifiable parental consent (COPPA §312.5)
+
+Consent capture ("a parent said yes" = an active link) is NOT the same as *verifiable*
+consent. COPPA requires an operator to verify the consenting party is an adult (credit-card
+transaction, signed form, or gov-ID/KBA) **before** an under-13's data is collected. This
+is built ON the same `guardian_link` — verification is columns on the link, never a forked
+consent table.
+
+**The flow:** under-13 (or a guardian request) → an active link → the guardian picks a
+verification method → completes it → a SERVICE path stamps `verified_at` → `edu_coppa_gate`
+(`features/education/compliance`) flips the child to allowed. Revoke re-blocks.
+
+**Methods** (`GuardianConsentVerifyDialog`):
+- **(a) Card — LIVE (self-serve).** A $0.50 Stripe Checkout in **manual-capture** mode: a
+  successful authorization proves an adult cardholder, and we **void it immediately** (cancel
+  the PaymentIntent) so $0 ever settles. Route `POST /api/education/coppa-verification`
+  (guardian-auth'd, validates an active link) creates the session; the **Stripe webhook**
+  (`app/api/stripe/webhook` → `consent/verificationSync.confirmCoppaVerification`) voids the
+  auth and marks the link verified. Reuses the existing `lib/stripe/server` client +
+  `billing.customer` mapping; kept in files SEPARATE from subscription checkout + creator
+  payouts. Uses Stripe TEST keys in dev (`STRIPE_TEST_MODE_SECRET_KEY`).
+- **(b) Signed form — scaffold.** A parent downloads/e-signs a consent form and uploads it;
+  an admin reviews and confirms via `guardian_confirm_verification(link, 'signed_form', file_id)`
+  (secret-token admin route + the service RPC). The dialog option + method are wired; the
+  upload + admin-review UI is the remaining build (runbook).
+- **(c) Government ID / KBA — stub.** A vendor (e.g. Persona, Stripe Identity, Veratad,
+  PRIVO) verifies identity. Dialog option present + disabled; **vendor is Arman's decision**
+  (runbook `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`).
+
+**A child can NEVER self-verify.** `guardian_confirm_verification` is `service_role`-only; the
+only callers are the signature-verified Stripe webhook and secret-token admin routes — never
+the browser. The parent's post-Checkout redirect is cosmetic; the webhook is the source of truth.
+
+**Coordination (aidream server enforcement):** aidream's `enforce_education_coppa` reads
+`edu_coppa_gate`, whose `ai_allowed` now requires a VERIFIED link for under-13 — so a verified
+`guardian_link` is exactly what flips the SERVER gate to allow. If aidream ever reads
+`guardian_link` directly, "verified" = `status='active' AND verified_at IS NOT NULL`.
 
 ---
 
@@ -76,9 +128,18 @@ SELECTs only their own rows; **all writes go through the RPCs** (no write polici
 - `useGuardianStudentAnalytics.ts` — fetches a student's spine via `familyService` and
   folds it with the SHARED `computeAnalytics` + `buildGainReport`.
 - `components/FamilyDashboard.tsx` — the hub (guardian roster, request-access, consent
-  inbox, student-side grant).
+  inbox, student-side grant). Under-13 links show a "Verify consent" CTA + "Consent
+  verified" badge + revoke; reads `?consent=` on return from Stripe.
 - `components/StudentProgressView.tsx` — read-only `StudyAnalyticsView` for one student.
-- `types.ts` — row types derived from the generated types.
+- `components/GuardianConsentVerifyDialog.tsx` — the verifiable-consent method chooser.
+- `../compliance/consent/consentVerificationService.ts` — client wrapper that starts card
+  verification (POSTs the route, redirects to Stripe). *(Lives under `compliance/` — COPPA
+  verifiable consent is a compliance concern operating on the family link.)*
+- `../compliance/consent/verificationSync.ts` — server-side webhook confirm
+  (`confirmCoppaVerification`): void the auth + `guardian_confirm_verification`.
+- `app/api/education/coppa-verification/route.ts` — the guardian-auth'd checkout-session route.
+- `types.ts` — row types derived from the generated types; `needsConsentVerification(link)`
+  + `consentMethodLabel(method)` helpers.
 
 ---
 
@@ -107,9 +168,32 @@ SELECTs only their own rows; **all writes go through the RPCs** (no write polici
   ("If an account with that email exists…").
 - **Read-only.** The guardian view mutates nothing on the student's data — `StudyAnalyticsView`
   is passed `readOnly` and no write RPC targets student study rows.
+- **A child never self-verifies.** `guardian_confirm_verification` is `service_role`-only.
+  Verification is confirmed server-side (Stripe webhook / secret-token admin route) from a
+  successful real transaction — never a client claim, never the parent's redirect. Never add
+  an authenticated/anon grant on that RPC.
+- **Verification resets on re-consent.** A revoked→re-granted link is a NEW consent and must
+  re-earn verification — `guardian_grant` clears `verified_at`/`consent_method`/`verification_ref`
+  unless the link was already active. Never carry an old verification across a revoke.
+- **One Stripe webhook, separated flows.** COPPA verification branches on
+  `metadata.purpose='coppa_verification'` FIRST in the shared webhook; class purchases key on
+  `metadata.kind`, subscriptions on `session.subscription`. Never route by `session.mode` alone
+  (COPPA + class both use `mode:'payment'`).
 
 ## Change log
 
+- `2026-07-15` — **Verifiable parental consent (COPPA §312.5)** built on the guardian system.
+  Added verification columns to `guardian_link` (`consent_method`/`verified_at`/`verification_ref`)
+  + `guardian_confirm_verification` (service-only) + verification signals on `guardian_list_links`
+  + `guardian_grant` verification-reset; `edu_coppa_gate` now unblocks an under-13 only on a
+  VERIFIED link (`migrations/edu_guardian_verifiable_consent.sql`, applied + ledgered + types
+  regenerated). Card method LIVE end-to-end (`POST /api/education/coppa-verification` →
+  $0.50 auth-and-void Stripe Checkout → webhook `confirmCoppaVerification`); signed-form scaffolded;
+  gov-ID vendor stubbed. `GuardianConsentVerifyDialog` + verify/verified/revoke UI on the dashboard;
+  child sees "waiting for a parent to verify". **Live-verified** (Supabase MCP + real Stripe TEST
+  webhook, signed): block → card-verify (PI authorized → voided, $0 settled) → allow → revoke →
+  block; route returns a real `cs_test_` session. Arman runbook:
+  `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`.
 - `2026-07-15` — **D52 fix (school-safe hardening).** Closed the email-enumeration oracle in
   `guardian_grant` / `guardian_request_student` (identical neutral jsonb response regardless of
   email existence) + added a per-requester consent-request rate limit (8/min via

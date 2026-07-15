@@ -112,8 +112,14 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
   }, []);
 
   const Gate = useCallback(
-    () => <AiConsentRequiredDialog open={open} onOpenChange={setOpen} />,
-    [open],
+    () => (
+      <AiConsentRequiredDialog
+        open={open}
+        onOpenChange={setOpen}
+        reason={gate?.reason}
+      />
+    ),
+    [open, gate?.reason],
   );
 
   return {

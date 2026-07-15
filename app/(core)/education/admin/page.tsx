@@ -405,8 +405,9 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(core)/education/family/page.tsx",
       status: "Live",
       notes: [
-        "Feature: features/education/family/** (FamilyDashboard · StudentProgressView · familyService · useGuardianStudents · useGuardianStudentAnalytics) — see features/education/family/FEATURE.md",
-        "DB: education.guardian_link (consent link, status pending/active/revoked) + public.guardian_* SECURITY DEFINER RPCs (migrations/edu_guardian_link.sql)",
+        "Feature: features/education/family/** (FamilyDashboard · StudentProgressView · GuardianConsentVerifyDialog · familyService · useGuardianStudents · useGuardianStudentAnalytics) — see features/education/family/FEATURE.md",
+        "DB: education.guardian_link (consent link, status pending/active/revoked + verifiable-consent cols consent_method/verified_at/verification_ref) + public.guardian_* SECURITY DEFINER RPCs (migrations/edu_guardian_link.sql, edu_guardian_verifiable_consent.sql)",
+        "Verifiable parental consent (COPPA §312.5): a guardian verifies an under-13 link via card ($0.50 auth-and-void, Stripe) → guardian_confirm_verification (service-only, via the Stripe webhook) stamps verified_at → edu_coppa_gate flips to allow. Revoke re-blocks.",
         "Reuse: read-only consumer of the P5 StudyAnalyticsView + computeAnalytics + learningGainService.buildGainReport — NO parallel analytics engine",
       ],
     },
@@ -610,6 +611,14 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
+      name: "GuardianConsentVerifyDialog",
+      filePath:
+        "features/education/family/components/GuardianConsentVerifyDialog.tsx",
+      description:
+        "COPPA §312.5 verifiable-parental-consent method chooser (guardian-side, for an under-13 linked child): card ($0.50 auth-and-void, live via Stripe test) · signed form (scaffold, admin-reviewed) · gov-ID/KBA vendor (stub, Arman vendor pick). Verification is confirmed server-side (Stripe webhook), never by this dialog — a child can never self-verify.",
+      tier: "official",
+    },
+    {
       name: "NarrativeCard",
       filePath:
         "features/education/study/analytics/components/NarrativeCard.tsx",
@@ -720,6 +729,16 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       description:
         "P10 — the healthy-streak surface: current/longest, banked freezes, planned rest-day picker (anti-Duolingo).",
       tier: "internal",
+    },
+  ],
+
+  apiRoutes: [
+    {
+      url: "/api/education/coppa-verification",
+      method: "POST",
+      description:
+        "Start COPPA card-verification for a linked under-13 child. Auth'd guardian only; validates an active guardian_link, then creates a $0.50 Stripe Checkout session (manual capture = auth-and-void). The Stripe webhook (app/api/stripe/webhook) confirms it server-side via guardian_confirm_verification. Distinct from subscription checkout + creator payouts.",
+      filePath: "app/api/education/coppa-verification/route.ts",
     },
   ],
 

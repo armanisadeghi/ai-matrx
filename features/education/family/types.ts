@@ -38,6 +38,35 @@ export interface GuardianConsentResult {
   status: GuardianConsentStatus;
 }
 
+/**
+ * True when this link (seen from the guardian side) is an under-13 child whose
+ * consent has NOT yet been verifiably confirmed (COPPA §312.5) — the guardian
+ * must complete a verification method before the child is unblocked. Verified
+ * links (verified_at set) and non-under-13 links do not need this step.
+ */
+export function needsConsentVerification(link: GuardianLinkView): boolean {
+  return (
+    link.role === "guardian" &&
+    link.status === "active" &&
+    link.student_age_band === "under_13" &&
+    !link.verified_at
+  );
+}
+
+/** Human label for a verifiable-consent method. */
+export function consentMethodLabel(method: string | null): string {
+  switch (method) {
+    case "card":
+      return "card verification";
+    case "signed_form":
+      return "signed consent form";
+    case "vendor_id":
+      return "identity verification";
+    default:
+      return "verification";
+  }
+}
+
 /** Bucketed view of the caller's links, ready for the dashboard sections. */
 export interface GuardianLinkBuckets {
   /** Students who granted me access — the viewable roster (role=guardian, active). */
