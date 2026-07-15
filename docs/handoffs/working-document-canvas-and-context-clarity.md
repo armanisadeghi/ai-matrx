@@ -64,13 +64,27 @@ doc → confirm `binding.kind` (it should be `cx_working_document`); if it's `no
 the hydration in the association-open path. Building agent-edit history headlessly is
 fiddly (the default chat agent won't always ctx_patch the working doc).
 
-## OPEN #2 — apply adversarial-review findings on the context panel
+## OPEN #2 — "What the agent sees" follow-ups (review done, critical fixes shipped)
 
-A subagent adversarially reviewed `AgentSeesSheet.tsx` + the rail changes for ACCURACY
-(does it truly reflect the model payload?) and edge cases. Read its findings from this
-turn and apply any real bugs (e.g. missing context sources, misleading empty state,
-huge-value handling). The panel's accuracy is load-bearing — a wrong "what the agent
-sees" is worse than none.
+Adversarially reviewed for ACCURACY. Confirmed: the panel reads the SAME slice as the
+real payload (`selectInstanceContextEntries` = `selectContextPayload`), so context
+entries stay in lockstep; the scratchpad `showDiff` fix is correct (no regression).
+**Shipped fixes (`c27634100`):** honest reframe (dropped the false "nothing hidden"
+completeness claim), baseline now names always-sent legs, extra-scratchpad labeling via
+`docKindForContextKey`, empty-but-sent entries shown, honest char label.
+
+**Remaining follow-ups (to make it fully complete, not just honest):**
+- **Itemize the always-sent legs** instead of one baseline line: attachments/resource
+  payloads (files/images/code — `resourcePayloads` in `execute-instance.thunk.ts` ~L140-152),
+  `request.variables`, observational memory (~L202-229), and injected tool defs. These are
+  often the BIGGEST thing the agent sees.
+- **Personal-org fallback:** the panel's org layer uses `selectActiveOrganizationId` (no
+  fallback); the request uses `selectEffectiveOrganizationId` (falls back to
+  personal_organization_id). Switch the panel to the effective org so an unselected-org
+  user still sees the org whose cells are actually sent.
+- **Conversation-tagged scopes:** `resolve_full_context` unions active selections with the
+  conversation's persisted scope tags; the panel shows only active selections. Add the
+  conversation tags (or a caveat).
 
 ## Vision — what's next (roadmap, in priority order)
 
