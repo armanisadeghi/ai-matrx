@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getJson } from "@/lib/python-client";
+import { apiGet } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 import type { PodcastSpeaker } from "./types";
 import type { VoiceProvider } from "./voiceCatalog";
@@ -52,11 +52,10 @@ export function usePodcastCastPreview(
 
   useEffect(() => {
     const controller = new AbortController();
-    const query = new URLSearchParams({ host_count: String(hostCount) });
-    if (showId) query.set("show_id", showId);
 
-    void getJson<PodcastCastPreviewWire>(`/podcast/cast-preview?${query}`, {
+    void apiGet("/podcast/cast-preview", {
       signal: controller.signal,
+      query: { host_count: hostCount, show_id: showId },
     })
       .then(({ data }) =>
         setResult({ key: requestKey, preview: normalizePreview(data), error: null }),

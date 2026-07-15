@@ -1,50 +1,14 @@
-import {
-  postJson,
-  type RequestOptions,
-  type ResponseMeta,
-} from "@/lib/python-client";
+import { apiPost, buildPath } from "@/lib/api/typed-client";
+import type { RequestOptions, ResponseMeta } from "@/lib/python-client";
+import type { components } from "@/types/python-generated/api-types";
 
-export interface PdfPageRange {
-  start: number;
-  end: number;
-}
-
-export interface PdfPageSelectionRequest {
-  pages?: number[];
-  page_ranges?: PdfPageRange[];
-  signed_ttl?: number;
-}
-
-export interface PdfOutputPageMap {
-  output_page: number;
-  source_page: number;
-}
-
-export interface SelectedPdfFileRef {
-  file_id: string;
-  visibility: "public" | "private" | "shared";
-  file_name: string | null;
-  mime_type: string | null;
-  size_bytes: number | null;
-  url: string | null;
-  cdn_url: string | null;
-  signed_url: string | null;
-  signed_url_expires_at: number | null;
-  download_url: string | null;
-  thumbnail_url: string | null;
-}
-
-export interface PdfPageSelectionResult {
-  source_file_id: string;
-  source_pages: number[];
-  output_page_map: PdfOutputPageMap[];
-  source_page_count: number;
-  source_size_bytes: number | null;
-  source_bytes_fetched: number;
-  source_fetch_strategy: "cache_hit" | "full_object_stream_to_disk";
-  cache_hit: boolean;
-  file: SelectedPdfFileRef;
-}
+// Types DERIVED from the OpenAPI contract — never hand-mirrored. A backend
+// rename lights up every callsite in the same `pnpm sync-types` PR.
+export type PdfPageRange = components["schemas"]["PdfPageRange"];
+export type PdfPageSelectionRequest = components["schemas"]["PdfPageSelectionRequest"];
+export type PdfOutputPageMap = components["schemas"]["PdfOutputPageMap"];
+export type SelectedPdfFileRef = components["schemas"]["FileRef"];
+export type PdfPageSelectionResult = components["schemas"]["PdfPageSelectionResult"];
 
 /** Build or reuse one PDF containing only the requested physical source pages. */
 export function selectPdfPages(
@@ -52,8 +16,8 @@ export function selectPdfPages(
   request: PdfPageSelectionRequest,
   opts: RequestOptions = {},
 ): Promise<{ data: PdfPageSelectionResult; meta: ResponseMeta }> {
-  return postJson<PdfPageSelectionResult, PdfPageSelectionRequest>(
-    `/files/${encodeURIComponent(fileId)}/pdf-pages`,
+  return apiPost(
+    buildPath("/files/{file_id}/pdf-pages", { file_id: fileId }),
     request,
     opts,
   );

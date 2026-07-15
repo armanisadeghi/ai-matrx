@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import {
-  ArrowLeft,
   ChevronDown,
   ChevronUp,
   Copy,
@@ -17,7 +15,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
-import { ConnectionBar } from "../_lib/ConnectionBar";
+import { LocalToolsPageShell } from "../_lib/LocalToolsPageShell";
 import { MessageLog } from "../_lib/ResultPanel";
 import { useMatrxLocalContext } from "../_lib/MatrxLocalContext";
 import type { UseMatrxLocalReturn } from "../_lib/useMatrxLocal";
@@ -74,9 +72,7 @@ function ScrapePanel({ local }: { local: UseMatrxLocalReturn }) {
 
     const meta =
       (result.metadata as unknown as
-        | BatchScrapeMetadata
-        | ScrapeResultMeta
-        | null) ?? null;
+        BatchScrapeMetadata | ScrapeResultMeta | null) ?? null;
     setResults({ output: result.output, meta });
   };
 
@@ -1001,30 +997,9 @@ export default function ScraperPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("scrape");
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
-      <div className="flex-1 overflow-y-auto p-6">
+    <LocalToolsPageShell>
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3">
         <div className="max-w-screen-2xl mx-auto space-y-4">
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <Link href="/demos/local-tools">
-              <Button variant="ghost" size="sm" className="gap-1 h-7 text-xs">
-                <ArrowLeft className="w-3.5 h-3.5" /> Dashboard
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                Scraper Engine
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Multi-strategy scraping with residential IP, bot-bypass, and
-                deep research
-              </p>
-            </div>
-          </div>
-
-          <ConnectionBar hook={local} />
-
           {/* Tabs (desktop) / Vertical sections (mobile handled via overflow scroll) */}
           <div className="border rounded-lg bg-card overflow-hidden">
             <div className="flex border-b bg-muted/30 overflow-x-auto">
@@ -1054,6 +1029,6 @@ export default function ScraperPage() {
           <MessageLog logs={local.logs} onClear={local.clearLogs} />
         </div>
       </div>
-    </div>
+    </LocalToolsPageShell>
   );
 }

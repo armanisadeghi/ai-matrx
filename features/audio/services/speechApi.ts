@@ -1,4 +1,4 @@
-import { postJson, postMultipart } from "@/lib/python-client";
+import { apiMultipart, apiPost } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 import type { TranscriptionOptions, TranscriptionResult } from "../types";
 
@@ -44,9 +44,7 @@ export async function transcribeAudioFile(
   form.append("file", file);
   if (options?.language) form.append("language", options.language);
   if (options?.prompt) form.append("prompt", options.prompt);
-  const { data } = await postMultipart<TranscriptionWire>("/audio/transcribe", form, {
-    signal,
-  });
+  const { data } = await apiMultipart("/audio/transcribe", form, { signal });
   return normalizeTranscription(data);
 }
 
@@ -54,7 +52,7 @@ export async function transcribeAudioUrl(
   url: string,
   options?: TranscriptionOptions,
 ): Promise<TranscriptionResult> {
-  const { data } = await postJson<TranscriptionWire>("/audio/transcribe-url", {
+  const { data } = await apiPost("/audio/transcribe-url", {
     url,
     language: options?.language,
     prompt: options?.prompt,
@@ -69,7 +67,7 @@ export async function generateSpeech(
   // Preferences persisted before the catalog migration can still contain a
   // retired PlayAI voice. Omit it so the backend's current catalog default wins.
   const voice = options.voice?.toLowerCase();
-  const { data } = await postJson<SpeechWire>("/audio/text-to-speech", {
+  const { data } = await apiPost("/audio/text-to-speech", {
     text,
     voice: voice && CATALOG_TTS_VOICES.has(voice) ? voice : undefined,
     quality: options.quality ?? "fast",

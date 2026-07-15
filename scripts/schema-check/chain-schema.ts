@@ -65,6 +65,7 @@ export function explicitChainSchema(lines: string[], chainStart: number, i: numb
 export function chainRoot(lines: string[], chainStart: number): { ident: string; isCall: boolean } | null {
   const root = lines[chainStart]
     .replace(/^\s*(?:export\s+)?(?:const|let|var)\s+[\w{}\[\],\s:]+=\s*/, "")
+    .replace(/^\s*void\s+/, "") // `void docprocDb(supabase)` — discarded-promise chain
     .replace(/^\s*(?:return|await|=>)\s*/g, "")
     .replace(/^\(\s*/, "") // strip a leading cast paren: "(supabase as any).from(...)"
     .trimStart();

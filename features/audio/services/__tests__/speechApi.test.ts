@@ -1,21 +1,21 @@
-import { postJson } from "@/lib/python-client";
+import { apiPost } from "@/lib/api/typed-client";
 import { generateSpeech, transcribeAudioUrl } from "../speechApi";
 
-jest.mock("@/lib/python-client", () => ({
-  postJson: jest.fn(),
-  postMultipart: jest.fn(),
+jest.mock("@/lib/api/typed-client", () => ({
+  apiPost: jest.fn(),
+  apiMultipart: jest.fn(),
 }));
 
-const postJsonMock = jest.mocked(postJson);
+const apiPostMock = jest.mocked(apiPost);
 const responseMeta = { requestId: "request-1", status: 200, serverRequestId: null };
 
 describe("speechApi", () => {
   beforeEach(() => {
-    postJsonMock.mockReset();
+    apiPostMock.mockReset();
   });
 
   it("normalizes optional segment fields at the frontend boundary", async () => {
-    postJsonMock.mockResolvedValueOnce({
+    apiPostMock.mockResolvedValueOnce({
       data: {
         text: "Hello",
         segments: [{ text: "Hello" }],
@@ -45,7 +45,7 @@ describe("speechApi", () => {
   });
 
   it("drops retired persisted voices so the catalog default wins", async () => {
-    postJsonMock.mockResolvedValueOnce({
+    apiPostMock.mockResolvedValueOnce({
       data: {
         file_id: "file-1",
         url: "https://cdn.matrxserver.com/audio.wav",
@@ -57,7 +57,7 @@ describe("speechApi", () => {
 
     await generateSpeech("Hello", { voice: "Cheyenne-PlayAI" });
 
-    expect(postJsonMock).toHaveBeenCalledWith("/audio/text-to-speech", {
+    expect(apiPostMock).toHaveBeenCalledWith("/audio/text-to-speech", {
       text: "Hello",
       voice: undefined,
       quality: "fast",
