@@ -47,12 +47,17 @@
   education, ChromeOS, district IT) requires + our posture, so we're never surprise-banned.
 - **DUA / policy text + the actual legal review** = Arman/legal, not code.
 
-## Decisions surfaced to Arman (do NOT guess)
+## Decisions — RESOLVED (Arman, 2026-07-15)
 
-1. **Creator payouts** — Stripe Connect marketplace + revenue-share %? (Access-gating built now regardless.)
-2. **Subdomain** — do the creator-public + school-safe surfaces need their own subdomain (e.g.
-   `learn.` / `teach.`) to satisfy reviews or brand separation? (Infra/DNS = Arman.)
-3. **FERPA/COPPA** — the legal DUA templates + policy language (code affordances built now).
+1. **Creator payouts — Stripe Connect Express.** Marketplace payouts to creators; build checkout →
+   application_fee split → transfer to the creator's Connect account → payout. Test mode first; Arman
+   enables Connect + provides keys/webhook secret.
+2. **Subdomain — `learn.aimatrx.com`** (free, instant on Vercel; a dedicated education-only origin for
+   school/store reviews). Code uses a configurable public education origin for canonicals/OG/sitemap;
+   Arman adds the domain in Vercel + points DNS.
+3. **COPPA — enforce server-side + verifiable parental consent** ("biggest of all"). Build server-side
+   gate at the aidream generation boundary + a verifiable-consent flow on the guardian system; produce a
+   precise Arman runbook for the legal/consent-method/store steps only he can do.
 
 ## Fleet contracts (so nobody waits)
 
