@@ -530,8 +530,8 @@ async function build(): Promise<BuildResult> {
   const liveKind = (slug: string): { family: string | null; isActive: boolean } | undefined =>
     db.kinds.get(slug);
 
-  for (const name of [...sourcesByName.keys()].sort((a, b) => a.localeCompare(b))) {
-    const sources = [...(sourcesByName.get(name) ?? [])].sort((a, b) => a.localeCompare(b));
+  for (const name of [...sourcesByName.keys()].sort((a, b) => a.localeCompare(b, "en"))) {
+    const sources = [...(sourcesByName.get(name) ?? [])].sort((a, b) => a.localeCompare(b, "en"));
     const live = liveKind(name);
     const base = { name, sources, family: live?.family ?? null };
 
@@ -621,7 +621,7 @@ async function build(): Promise<BuildResult> {
   for (const row of rows) totals[row.classification] += 1;
 
   const sortedInputs = Object.fromEntries(
-    Object.entries(inputs).sort(([a], [b]) => a.localeCompare(b)),
+    Object.entries(inputs).sort(([a], [b]) => a.localeCompare(b, "en")),
   );
   const hashCore = JSON.stringify({ inputs: sortedInputs, rows });
   const stamp = `${rows.length}-items+${createHash("sha256").update(hashCore).digest("hex").slice(0, 12)}`;
