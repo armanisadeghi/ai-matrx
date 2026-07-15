@@ -30,7 +30,7 @@ build plan this feature is part of (project P5).
 - `app/(admin)/administration/cms-agents/page.tsx` — **agent visibility surface** (super-admin gated by the `(admin)` layout): live activity feed, per-site page tree, agent-write-policy editor, validation-exception approvals queue
 
 **Services**
-- `features/cms/services/cmsService.ts` — `CmsSiteService` / `CmsPageService` / `CmsVersionService` / `CmsComponentService` / `CmsApprovalsService`, all POST `{action}` dispatch against `/api/cms/*`
+- `features/cms/services/cmsService.ts` — `CmsSiteService` / `CmsPageService` / `CmsVersionService` / `CmsComponentService` / `CmsApprovalsService` / `CmsAssetService`, all POST `{action}` dispatch against `/api/cms/*` (`CmsAssetService.deleteAsset` throws `AssetInUseError` carrying the live usage detail on a 409)
 
 **Hooks**
 - `features/cms/hooks/useCmsSites.ts`, `useCmsPages.ts`, `useCmsVersions.ts` — owner-scoped CRUD hooks
@@ -42,10 +42,11 @@ build plan this feature is part of (project P5).
 - `POST /api/cms/components` — `list/get/create/update/delete` (owner-scoped)
 - `POST /api/cms/versions` — `list/get` (read-only, owner-scoped)
 - `POST /api/cms/approvals` — `list/approve/reject` (requireSuperAdmin) — F3 exception queue, degrades gracefully until P1's store table exists
+- `POST /api/cms/assets` — `list/get/create/update/usage/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). W2-B asset library over `client_assets`. **Bytes never pass through this route** — the client uploads through the canonical `fileHandler.upload({preset:'web', visibility:'public'})` → aidream `POST /assets` (durable public CDN URL), then `create` registers the metadata row. `create` re-enforces the durability doctrine (second layer): refuses a `file_path` that isn't absolute https or that carries a signed/expiring-link signature (`isSignedExpiringUrl`, mirrors aidream's validator). `delete` LIVE-scans pages+components (live + draft columns) and returns 409 `asset_in_use` with the exact reference list unless `force`; `usage` returns the same scan and re-syncs `used_in_pages`. aidream twin: `services/cms_assets/`.
 - `POST /api/html-pages` — standalone `html_pages` CRUD (see `features/html-pages/README.md`)
 
 **Shared server helpers**
-- `app/api/cms/_lib/cmsDb.ts` — `getCmsClient()`, `verifySiteOwnership`, `verifyPageOwnership`, `verifyComponentOwnership`
+- `app/api/cms/_lib/cmsDb.ts` — `getCmsClient()`, `verifySiteOwnership`, `verifyPageOwnership`, `verifyComponentOwnership`, `verifyAssetOwnership`
 - `app/api/cms/_lib/activityLog.ts` — `logCmsActivity()`, the C6 contract writer
 
 **Redux slice(s)**
@@ -117,7 +118,7 @@ Supabase MCP at the wrong project for this feature.
   Don't trust this list — ask the DB: `select * from platform.versioning_audit()`. Not reachable
   over PostgREST directly — see the version RPCs below. Legacy `client_page_versions` was retired
   (migration `0004`) and archived as `graveyard.client_page_versions`.
-- `client_assets` — schema only, no service (Wave 2, out of scope here).
+- `client_assets` — the asset library (W2-B, shipped 2026-07-15). `file_path` = durable public CDN URL, `file_id` = main-project `cld_files` id (migration `cms/0013`). Service: `CmsAssetService` (`features/cms/services/cmsService.ts`) → `/api/cms/assets`; UI: `AssetsPanel` tab on `/administration/cms-agents`. aidream owns the agent path (`cms_asset` tool + `services/cms_assets/`).
 - `client_activity_log` — the C6 contract. Every mutation writes one row; `changes` jsonb always carries `actor: "agent"|"human"|"system"` + optional `metadata` (e.g. `capture_media_refs[]` from P4's verification loop).
 - `html_pages` — standalone quick-publish pages, no site/draft concept.
 - `client_content_exceptions` — **does not exist yet.** P1 owns creating it (schema shape: P3's `matrx_content_guard.models.ContentException` + `Violation`, `packages/matrx-content-guard/matrx_content_guard/models.py`). `/api/cms/approvals` and `ApprovalsQueuePanel` are built against that shape and self-report `available: false` until the table lands.
@@ -257,6 +258,14 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-15` — **W2-B asset library shipped.** New `/api/cms/assets` route (see API list) +
+  `CmsAssetService` + `AssetsPanel` tab on `/administration/cms-agents` (upload via
+  `fileHandler.upload({preset:'web', visibility:'public'})` → durable CDN URL, grid, alt-text edit,
+  copy-URL, delete-with-usage-guard dialog that lists exactly which pages break). C6 `entityType`
+  union (`activityLog.ts`) + the Activity Feed filter gained `asset`; the feed's Media column renders
+  asset thumbnails via `InlineMediaRef` for free. `ClientAsset` gained `file_id`; added `AssetUsage`
+  types. Twin of aidream's `services/cms_assets/` + `cms_asset` tool. Browser-verified end-to-end
+  (upload, delete-guard listing the referencing page, activity rows with thumbnails).
 - `2026-07-15` — **W2-A "Promote to site" bridge shipped.** New `promote` action on `/api/cms/pages`
   (see API list above) + `CmsPageService.promoteFromHtmlPage` + `PromoteToSiteDialog`
   (`features/html-pages/components/`), launched from the html-pages list row menu ("Promote to
