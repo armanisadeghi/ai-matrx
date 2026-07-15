@@ -10,19 +10,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { createClient } from "@/utils/supabase/server";
 import { ONBOARDING_METADATA_KEY } from "@/utils/onboarding";
+import type { AdminUserRow } from "@/features/admin/users/types";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50; // hard ceiling: 50k users
-
-interface UserRow {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-  created_at: string | null;
-  last_sign_in_at: string | null;
-  onboarding_completed: boolean;
-}
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
@@ -34,7 +27,20 @@ function errorResponse(error: unknown) {
   return NextResponse.json({ error: message }, { status });
 }
 
-// GET /api/admin/users — list every auth user with their onboarding flag.
+function metaString(
+  meta: Record<string, unknown>,
+  ...keys: string[]
+): string | null {
+  for (const k of keys) {
+    if (typeof meta[k] === "string" && (meta[k] as string).trim())
+      return meta[k] as string;
+  }
+  return null;
+}
+
+// GET /api/admin/users — the FULL roster: auth facts + profile (display name /
+// avatar) + admin level. An admin surface must not hide data, so we surface
+// every useful field, one value per column.
 export async function GET() {
   try {
     await requireSuperAdmin();
@@ -43,38 +49,77 @@ export async function GET() {
   }
 
   const admin = createAdminClient();
-  const rows: UserRow[] = [];
 
+  // 1. auth roster (paginated)
+  type AuthUser = Awaited<
+    ReturnType<typeof admin.auth.admin.listUsers>
+  >["data"]["users"][number];
+  const authUsers: AuthUser[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
     const { data, error } = await admin.auth.admin.listUsers({
       page,
       perPage: PER_PAGE,
     });
-    if (error) {
+    if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
     const users = data?.users ?? [];
-    for (const u of users) {
-      const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
-      const fullName =
-        typeof meta.full_name === "string"
-          ? meta.full_name
-          : typeof meta.name === "string"
-            ? meta.name
-            : null;
-      rows.push({
-        id: u.id,
-        email: u.email ?? null,
-        full_name: fullName,
-        created_at: u.created_at ?? null,
-        last_sign_in_at: u.last_sign_in_at ?? null,
-        onboarding_completed: meta[ONBOARDING_METADATA_KEY] === true,
-      });
-    }
-
+    authUsers.push(...users);
     if (users.length < PER_PAGE) break;
   }
+
+  // 2. profiles (display name / avatar) — users.profiles is one row per user.
+  const { data: profiles } = await admin
+    .schema("users")
+    .from("profiles")
+    .select("id, display_name, avatar_url, is_online, last_seen_at");
+  const profileById = new Map(
+    (profiles ?? []).map((p) => [p.id as string, p]),
+  );
+
+  // 3. admin levels — admin_list() runs SECURITY DEFINER gated on the caller's
+  // super-admin session, so call it with the session client (auth.uid()), not
+  // the service-role client (which has no uid).
+  const session = await createClient();
+  const { data: admins } = await session.rpc("admin_list");
+  const levelByUser = new Map(
+    (admins ?? []).map((a: { user_id: string; level: string }) => [
+      a.user_id,
+      a.level,
+    ]),
+  );
+
+  const rows: AdminUserRow[] = authUsers.map((u) => {
+    const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+    const appMeta = (u.app_metadata ?? {}) as Record<string, unknown>;
+    const profile = profileById.get(u.id);
+    const providers = Array.isArray(appMeta.providers)
+      ? (appMeta.providers as string[])
+      : typeof appMeta.provider === "string"
+        ? [appMeta.provider as string]
+        : [];
+    return {
+      id: u.id,
+      email: u.email ?? null,
+      display_name:
+        (profile?.display_name as string | null) ??
+        metaString(meta, "full_name", "name"),
+      full_name: metaString(meta, "full_name", "name"),
+      avatar_url: (profile?.avatar_url as string | null) ?? null,
+      phone: u.phone ?? null,
+      providers,
+      email_confirmed: Boolean(u.email_confirmed_at),
+      phone_confirmed: Boolean(u.phone_confirmed_at),
+      is_anonymous: Boolean(u.is_anonymous),
+      banned: Boolean(
+        (u as { banned_until?: string | null }).banned_until &&
+          new Date((u as { banned_until: string }).banned_until) > new Date(),
+      ),
+      admin_level: levelByUser.get(u.id) ?? null,
+      onboarding_completed: meta[ONBOARDING_METADATA_KEY] === true,
+      created_at: u.created_at ?? null,
+      last_sign_in_at: u.last_sign_in_at ?? null,
+    };
+  });
 
   return NextResponse.json({ users: rows });
 }
