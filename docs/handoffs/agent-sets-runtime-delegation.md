@@ -35,7 +35,7 @@ The endgame: click **Run** on a set and the orchestrator visibly delegates to it
 
 ## Done
 
-- Server set reader + member-as-tool projection — `aidream/services/agent_sets/` + the `agent_run.py` seam (commit `153ad4291`, live after deploy).
+- Server set reader + member-as-tool projection on BOTH the new-conversation and continue paths (turn 2+ re-injects — adversarial-review HIGH fix) — `aidream/services/agent_sets/` + the `agent_run.py` seams (commits `153ad4291` + `ce852fcaa`, live after deploy).
 - Supervisor prompt on generated orchestrators (`ORCHESTRATOR_SUPERVISOR_PROMPT` via `setOrchestratorMessages`) + Run entries on builder header & set card — matrx-frontend HEAD.
 - Builder UI, canonical rail, non-blocking peek, generate-orchestrator + Sync agent listings — see `AGENT_SETS.md`.
 

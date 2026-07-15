@@ -44,7 +44,8 @@ Running an orchestrator makes it **call its members as tools** and weave their o
 - **The orchestrator must be a tool-CALLING supervisor**, not the template's planner (which only emits a JSON dispatch plan and never delegates). So the **Generate orchestrator** flow overwrites a generated agent's messages with `ORCHESTRATOR_SUPERVISOR_PROMPT` + `ORCHESTRATOR_USER_TEMPLATE` (`orchestrator/constants.ts`, applied by `setOrchestratorMessages` in `useCreateOrchestrator`). The supervisor prompt keeps the `<available_agents>` marker so **Sync agent listings** still fills it. The user's template `b06689e3` is left untouched.
 - **FE — Run.** A **Run** entry on the builder header (`SetBuilder`) + set-card hover row (`AgentSetCard`) routes to the canonical runner `/agents/:id/run` — no bespoke run surface (roadmap P1: "reuse the agent runner/chat").
 - **Not yet built:** the live member-highlight on the canvas (light up the active member node during a run) — Phase 1's last bullet. Requires a run co-mounted with the canvas (or highlight on the runner); see the roadmap.
-- **Deploy gate:** the aidream half ships in commit `153ad4291` but is **only live after aidream deploys**. The AI Dream MCP `agent_run` tool can smoke-test an orchestrator once deployed.
+- **Multi-turn:** the projection re-runs on EVERY turn (both the new-conversation and continue paths) — the persisted config keeps only the member tool *names*, not their agent-projection definitions, so turn 2+ must re-inject or members drop out.
+- **Deploy gate:** the aidream half ships in commits `153ad4291` + `ce852fcaa` but is **only live after aidream deploys**. The AI Dream MCP `agent_run` tool can smoke-test an orchestrator once deployed (send a 2nd message to confirm members persist).
 
 ## Files
 
