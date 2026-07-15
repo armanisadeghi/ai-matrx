@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { CmsPageService, CmsSiteService } from '../../services/cmsService';
+import { CmsPageService } from '../../services/cmsService';
 import { clientPageUrl, clientSiteRootUrl } from '../../utils/pageUrls';
 import type { ClientPageSummary, ClientSite } from '../../types';
 import {
@@ -14,14 +14,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ExternalLink, Eye, Loader2, RefreshCw, Camera, FileText } from 'lucide-react';
+import { ExternalLink, Eye, Loader2, RefreshCw, FileText } from 'lucide-react';
 
 type AdminPage = ClientPageSummary & { client_id: string };
 
 export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
     const [siteId, setSiteId] = useState<string>(sites[0]?.id ?? '');
     const [pages, setPages] = useState<AdminPage[]>([]);
-    const [captureRefsByPage, setCaptureRefsByPage] = useState<Record<string, string[]>>({});
     const [isLoading, setIsLoading] = useState(true);
 
     const site = sites.find((s) => s.id === siteId);
@@ -34,20 +33,10 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
         }
         setIsLoading(true);
         try {
-            const [data, activity] = await Promise.all([
-                CmsPageService.adminListPages(siteId),
-                CmsSiteService.adminListActivity({ siteId, entityType: 'page', limit: 200 }),
-            ]);
-            setPages(data);
-
-            const refs: Record<string, string[]> = {};
-            for (const row of activity) {
-                const captured = row.changes?.metadata?.capture_media_refs;
-                if (row.entity_id && captured?.length && !refs[row.entity_id]) {
-                    refs[row.entity_id] = captured;
-                }
-            }
-            setCaptureRefsByPage(refs);
+            // Verification screenshots (capture_media_refs) live on the Activity
+            // Feed as clickable media link-outs — not here (they are events, not
+            // page state).
+            setPages(await CmsPageService.adminListPages(siteId));
         } finally {
             setIsLoading(false);
         }
@@ -113,7 +102,6 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
                             </TableRow>
                         )}
                         {sorted.map((page) => {
-                            const refs = captureRefsByPage[page.id];
                             return (
                                 <TableRow key={page.id} className="text-xs">
                                     <TableCell className="py-1.5 font-medium max-w-[220px] truncate">
@@ -166,15 +154,6 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSite[] }) {
                                                     )}
                                                 </>
                                             )}
-                                            {refs?.length ? (
-                                                <span
-                                                    className="inline-flex items-center gap-1 text-muted-foreground"
-                                                    title={`${refs.length} verification screenshot(s)`}
-                                                >
-                                                    <Camera className="h-3.5 w-3.5" />
-                                                    {refs.length}
-                                                </span>
-                                            ) : null}
                                         </div>
                                     </TableCell>
                                 </TableRow>

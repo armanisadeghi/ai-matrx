@@ -15,12 +15,40 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Workflow, User, Cog, RefreshCw, Loader2, AlertCircle, Activity } from 'lucide-react';
+import { InlineMediaRef } from '@/features/files/components/inline/InlineMediaRef';
+import { openFilePreview } from '@/features/files/components/preview/openFilePreview';
 
 const ACTOR_META = {
     agent: { label: 'Agent', icon: Workflow, className: 'bg-primary/15 text-primary border-primary/30' },
     human: { label: 'Human', icon: User, className: 'bg-muted text-muted-foreground border-border' },
     system: { label: 'System', icon: Cog, className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' },
 } as const;
+
+/**
+ * Clickable screenshot link-outs for a row's `changes.metadata.capture_media_refs`
+ * (C6 — cms_verify screenshots). Each thumbnail resolves through the canonical
+ * file handler (InlineMediaRef re-mints signed URLs) and opens the standard
+ * file-preview WindowPanel on click.
+ */
+function CaptureMediaLinks({ fileIds }: { fileIds: string[] | undefined }) {
+    if (!fileIds?.length) return null;
+    return (
+        <div className="flex items-center gap-1">
+            {fileIds.map((fileId) => (
+                <button
+                    key={fileId}
+                    type="button"
+                    onClick={() => openFilePreview(fileId)}
+                    className="rounded border border-border overflow-hidden hover:ring-1 hover:ring-primary focus-visible:ring-1 focus-visible:ring-primary outline-none"
+                    title="Open verification screenshot"
+                    aria-label="Open verification screenshot"
+                >
+                    <InlineMediaRef ref={fileId} size={{ width: 44, height: 28 }} fit="cover" fallback="icon" />
+                </button>
+            ))}
+        </div>
+    );
+}
 
 function ActorBadge({ actor }: { actor: string | undefined }) {
     const meta = ACTOR_META[actor as keyof typeof ACTOR_META];
@@ -76,6 +104,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSite[] }) {
                         <SelectItem value="all">All entities</SelectItem>
                         <SelectItem value="site">Site</SelectItem>
                         <SelectItem value="page">Page</SelectItem>
+                        <SelectItem value="html_page">HTML page</SelectItem>
                         <SelectItem value="component">Component</SelectItem>
                         <SelectItem value="version">Version</SelectItem>
                         <SelectItem value="exception">Exception</SelectItem>
@@ -118,13 +147,14 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSite[] }) {
                             <TableHead className="h-8 text-xs">Site</TableHead>
                             <TableHead className="h-8 text-xs">Type</TableHead>
                             <TableHead className="h-8 text-xs">Description</TableHead>
+                            <TableHead className="h-8 text-xs">Media</TableHead>
                             <TableHead className="h-8 text-xs">By</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {activity.length === 0 && !isLoading && (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs">
+                                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground text-xs">
                                     <div className="flex flex-col items-center gap-2">
                                         <Activity className="h-6 w-6 opacity-30" />
                                         No activity yet — mutations from any site will appear here within {8}s.
@@ -145,6 +175,9 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSite[] }) {
                                     {row.activity_type}
                                 </TableCell>
                                 <TableCell className="py-1.5 max-w-[420px] truncate">{row.description}</TableCell>
+                                <TableCell className="py-1.5">
+                                    <CaptureMediaLinks fileIds={row.changes?.metadata?.capture_media_refs} />
+                                </TableCell>
                                 <TableCell className="py-1.5 max-w-[160px] truncate text-muted-foreground">
                                     {row.user_email ?? row.user_id ?? '—'}
                                 </TableCell>

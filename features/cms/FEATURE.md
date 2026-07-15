@@ -333,3 +333,15 @@ UI-complete here but only take effect once P1's service layer reads them.
   400. Verified live end-to-end: site/page/component/html_page history reads, a raw-snapshot `get`,
   and 403 on every entity for rows the caller does not own. Also graveyarded the orphan CMS
   `dashboard_saved_views` (0 rows; the real one is on the main project).
+
+- `2026-07-14` — Convergence punch item 4 (MediaRef link-outs): verification screenshots
+  (`changes.metadata.capture_media_refs`) moved from a non-clickable count span on the Sites & Pages
+  tree to the Activity Feed where they belong — a new Media column renders each ref as a clickable
+  thumbnail (`InlineMediaRef`, canonical file handler) that opens the standard file-preview
+  WindowPanel (`openFilePreview`). `SitePageTreePanel` no longer fetches activity at all. Also:
+  `LogCmsActivityParams.entityType` + the feed filter gained `html_page`, completing the normalized
+  C6 vocabulary (site|page|component|version|exception|html_page — see aidream
+  `services/cms/CONTRACT.md`; historical `client_page` rows backfilled by CMS migration `0007`).
+  Verified live in the browser as admin: 24 thumbnails on the feed, click opens preview; approvals
+  queue approve flow also verified end-to-end against the new `client_content_exceptions` store
+  (aidream CMS migration `0011`).
