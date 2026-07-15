@@ -118,6 +118,40 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
             duration_ms: 14,
         },
     },
+    {
+        label: "file — office .docx (download card, non-media FileRef)",
+        value: {
+            action: "create",
+            file_id: "b7f3c2a1-4d5e-4a6b-8c9d-0e1f2a3b4c5d",
+            url: "https://cdn.example.com/files/quarterly-report.docx",
+            signed_url: "https://s3.example.com/owner/quarterly-report.docx?X-Amz-Signature=abc&Expires=123",
+            download_url: "https://server.app.matrxserver.com/files/b7f3c2a1/download",
+            cdn_url: "https://cdn.example.com/files/quarterly-report.docx",
+            mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            visibility: "private",
+            file_name: "Quarterly Report.docx",
+            byte_size: 48213,
+            office_kind: "docx",
+        },
+    },
+    {
+        label: "file — pdf via download_url only (no file_id)",
+        value: {
+            download_url: "https://server.app.matrxserver.com/files/xyz/download",
+            mime_type: "application/pdf",
+            file_name: "invoice-2026-07.pdf",
+            byte_size: 20480,
+        },
+    },
+    {
+        label: "media — image FileRef (REGRESSION: must still render as <img>)",
+        value: {
+            file_id: "a1b2c3d4-1111-2222-3333-444455556666",
+            mime_type: "image/png",
+            file_name: "chart.png",
+            url: "https://cdn.example.com/files/chart.png",
+        },
+    },
     { label: "empty (null)", value: null },
     { label: "empty (empty object)", value: {} },
 ];
