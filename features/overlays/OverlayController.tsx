@@ -61,6 +61,10 @@ import type {
   TaskPrePopulate,
 } from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import type {
+  RagAiCopyBundle,
+  RagAiSectionKey,
+} from "@/features/rag/components/search/ragAiCopy";
 
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -354,6 +358,10 @@ const ChatDebugWindow = lazyOverlay(
 );
 const RunControlsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/RunControlsWindow"),
+  { ssr: false },
+);
+const RagAiCopyWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/rag/RagAiCopyWindow"),
   { ssr: false },
 );
 const CloudFilesWindow = lazyOverlay(
@@ -971,6 +979,9 @@ export default function OverlayController() {
     runControlsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "runControlsWindow"),
     ),
+    ragAiCopyWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "ragAiCopyWindow"),
+    ),
     cloudFilesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "cloudFilesWindow"),
     ),
@@ -1258,6 +1269,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     runControlsWindow: useAppSelector((s) =>
       selectOverlayData(s, "runControlsWindow"),
+    ) as Record<string, unknown> | null,
+    ragAiCopyWindow: useAppSelector((s) =>
+      selectOverlayData(s, "ragAiCopyWindow"),
     ) as Record<string, unknown> | null,
     cloudFilesWindow: useAppSelector((s) =>
       selectOverlayData(s, "cloudFilesWindow"),
@@ -2716,6 +2730,31 @@ export default function OverlayController() {
             includeAttach={data?.includeAttach === true}
             initialTab={
               typeof data?.initialTab === "string" ? data.initialTab : null
+            }
+          />
+        );
+      })()}
+
+      {/* ragAiCopyWindow */}
+      {(() => {
+        const isOpen = isOpenById.ragAiCopyWindow;
+        const data = dataById.ragAiCopyWindow as
+          | {
+              bundle?: RagAiCopyBundle;
+              initialSections?: RagAiSectionKey[] | null;
+            }
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <RagAiCopyWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "ragAiCopyWindow" }))
+            }
+            bundle={data?.bundle ?? null}
+            initialSections={
+              Array.isArray(data?.initialSections) ? data.initialSections : null
             }
           />
         );

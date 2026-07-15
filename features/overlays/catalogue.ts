@@ -580,6 +580,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  ragAiCopyWindow: {
+    label: "Copy RAG Result for AI",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   resourcePickerWindow: {
     label: "Resource Picker Window",
     instanceMode: "singleton",

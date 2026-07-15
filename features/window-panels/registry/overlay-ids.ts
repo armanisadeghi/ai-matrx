@@ -127,6 +127,7 @@ export const OVERLAY_IDS = [
   "quickTasks",
   "quickTasksWindow",
   "quickUtilities",
+  "ragAiCopyWindow",
   "resourcePickerWindow",
   "runControlsWindow",
   "saveToCode",

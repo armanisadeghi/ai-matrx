@@ -5143,6 +5143,8 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           error: Json | null
+          execution_id: string | null
+          execution_kind: string | null
           finish_reason: string | null
           id: string
           input_tokens: number | null
@@ -5171,6 +5173,8 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           error?: Json | null
+          execution_id?: string | null
+          execution_kind?: string | null
           finish_reason?: string | null
           id?: string
           input_tokens?: number | null
@@ -5199,6 +5203,8 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           error?: Json | null
+          execution_id?: string | null
+          execution_kind?: string | null
           finish_reason?: string | null
           id?: string
           input_tokens?: number | null
@@ -42870,6 +42876,7 @@ export type Database = {
           parent_run_id: string | null
           project_id: string | null
           recovery_retry_count: number
+          request_attribution_complete: boolean
           started_at: string | null
           status: string
           steps_executed: number
@@ -42904,6 +42911,7 @@ export type Database = {
           parent_run_id?: string | null
           project_id?: string | null
           recovery_retry_count?: number
+          request_attribution_complete?: boolean
           started_at?: string | null
           status?: string
           steps_executed?: number
@@ -42938,6 +42946,7 @@ export type Database = {
           parent_run_id?: string | null
           project_id?: string | null
           recovery_retry_count?: number
+          request_attribution_complete?: boolean
           started_at?: string | null
           status?: string
           steps_executed?: number

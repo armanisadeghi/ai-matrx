@@ -30,9 +30,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
-import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { FileIcon } from "@/features/files";
 import type { ToolAccent } from "@/features/tool-call-visualization/types";
 import { ToolGlyph } from "@/features/tool-call-visualization/renderers/_shared-entity/ToolGlyph";
 import { PartPeekPopover } from "@/features/tool-call-visualization/renderers/_shared-entity/PartPeekPopover";
@@ -40,7 +39,14 @@ import { scoreTier, relativeStrength, type RelevanceTier } from "./scoreTier";
 import { kindGlyph } from "./kindGlyph";
 import { type RagHitView, isEntityOnly } from "./types";
 import { getQueryHighlightSegments } from "./query-highlighting";
-import { factsOnlyMetadata } from "./copyMetadata";
+import {
+  RagAiCopyButton,
+  RagContentActions,
+} from "@/features/rag/components/search/RagContentActions";
+import {
+  createRagAiCopyBundle,
+  type RagAiCopyBundle,
+} from "@/features/rag/components/search/ragAiCopy";
 import {
   EMPTY_RAG_REFERENCE_AVAILABILITY,
   type RagReferenceAvailability,
@@ -125,65 +131,7 @@ function inferredReferenceAvailability(
 export interface RagHitResourceControls {
   request: RagReferenceRequest | null;
   onAvailabilityChange: (availability: RagReferenceAvailability) => void;
-}
-
-function sourceAgentPayload(
-  view: RagHitView,
-  title: string,
-  typeLabel: string,
-  href: string,
-) {
-  const resultType = chunkKindLabel(view.chunkKind);
-  return {
-    kind: "rag-result-reference",
-    location: "AI Matrx — RAG search results",
-    description:
-      "Identifying and retrieval facts for one RAG result; document content is intentionally excluded.",
-    attributes: {
-      source_kind: view.sourceKind,
-      page_number: view.pageNumber,
-    },
-    context: {
-      source_id: view.sourceId,
-      chunk_id: view.chunkId,
-      field_id: view.fieldId,
-      parent_chunk_id: view.parentChunkId,
-    },
-    summary: `Source: ${title}\nType: ${typeLabel}${
-      resultType ? `\nResult type: ${resultType}` : ""
-    }${view.pageNumber != null ? `\nPage: ${view.pageNumber}` : ""}`,
-    data: {
-      source: {
-        name: title,
-        kind: view.sourceKind,
-        type_label: typeLabel,
-        id: view.sourceId,
-        file_id: view.sourceKind === "cld_file" ? view.sourceId : null,
-        processed_document_id:
-          view.sourceKind === "library_doc" ? view.sourceId : null,
-        library_short_code: view.libraryShortCode,
-        href,
-      },
-      retrieval: {
-        chunk_id: view.chunkId,
-        field_id: view.fieldId,
-        parent_chunk_id: view.parentChunkId,
-        chunk_kind: view.chunkKind,
-        type_label: resultType,
-        page_number: view.pageNumber,
-        page_numbers: view.pageNumbers,
-      },
-      ranking: {
-        score: view.score,
-        vector_rank: view.vectorRank,
-        lexical_rank: view.lexicalRank,
-        rerank_score: view.rerankScore,
-        entity_rank: view.entityRank,
-        entities: view.entities,
-      },
-      metadata: factsOnlyMetadata(view.metadata),
-    },
-  };
+  aiBundle: RagAiCopyBundle;
 }
 
 export interface RagHitCardProps {
@@ -359,13 +307,13 @@ function SourceIdentity({
   view,
   title,
   typeLabel,
-  href,
+  aiBundle,
   compact = false,
 }: {
   view: RagHitView;
   title: string;
   typeLabel: string;
-  href: string;
+  aiBundle: RagAiCopyBundle;
   compact?: boolean;
 }) {
   const resultType = chunkKindLabel(view.chunkKind);
@@ -393,12 +341,9 @@ function SourceIdentity({
           value={view.sourceId}
           label={`${typeLabel} source ID`}
           trailing={
-            <CopyForAiButton
+            <RagAiCopyButton
               label={`${title} result reference`}
-              agent={() => sourceAgentPayload(view, title, typeLabel, href)}
-              icon={CopyForAiIcon}
-              compact
-              className="h-4 w-4"
+              bundle={aiBundle}
             />
           }
         />
@@ -439,6 +384,35 @@ function SourceIdentity({
         ) : null}
       </div>
     </div>
+  );
+}
+
+function SourceGlyph({
+  view,
+  title,
+  icon,
+  accent,
+  compact = false,
+}: {
+  view: RagHitView;
+  title: string;
+  icon: typeof FileText;
+  accent: ToolAccent;
+  compact?: boolean;
+}) {
+  const filenameBearing =
+    ["cld_file", "library_doc", "code_file"].includes(view.sourceKind) &&
+    /\.[a-z0-9]{1,12}$/i.test(title);
+  if (filenameBearing) {
+    return <FileIcon fileName={title} size={compact ? 18 : 22} />;
+  }
+  return (
+    <ToolGlyph
+      icon={icon}
+      accent={accent}
+      size={compact ? "md" : "lg"}
+      className={compact ? undefined : "h-5 w-5"}
+    />
   );
 }
 
@@ -552,6 +526,7 @@ export function RagHitCard({
   const entityOnly = isEntityOnly(view);
   const title =
     view.title ?? (isDoc ? "Filename unavailable" : `${kg.label} source`);
+  const aiBundle = createRagAiCopyBundle(view, title, kg.label, href);
   const inferredAvailability = inferredReferenceAvailability(view);
   const referenceAvailability: RagReferenceAvailability = {
     document: inferredAvailability.document || resolvedAvailability.document,
@@ -593,13 +568,18 @@ export function RagHitCard({
               {rank}
             </span>
           ) : null}
-          <ToolGlyph icon={Icon} accent={kg.accent} size="md" />
+          <SourceGlyph
+            view={view}
+            title={title}
+            icon={Icon}
+            accent={kg.accent}
+          />
           <div className="min-w-0 flex-1">
             <SourceIdentity
               view={view}
               title={title}
               typeLabel={kg.label}
-              href={href}
+              aiBundle={aiBundle}
             />
           </div>
           {entityOnly ? <EntityOnlyBadge /> : null}
@@ -656,14 +636,25 @@ export function RagHitCard({
                 {
                   request: referenceRequest,
                   onAvailabilityChange: setResolvedAvailability,
+                  aiBundle,
                 },
               )
             ) : (
-              <div className="whitespace-pre-wrap break-words px-3 py-2.5 text-sm leading-relaxed text-foreground">
-                <HighlightedSnippet
-                  text={view.snippet}
-                  query={highlightQuery}
-                />
+              <div className="px-3 py-2.5">
+                <div className="mb-1 flex justify-end">
+                  <RagContentActions
+                    humanText={view.snippet}
+                    label="retrieved content"
+                    bundle={aiBundle}
+                    initialSections={["retrieved"]}
+                  />
+                </div>
+                <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                  <HighlightedSnippet
+                    text={view.snippet}
+                    query={highlightQuery}
+                  />
+                </div>
               </div>
             )}
 
@@ -688,7 +679,13 @@ export function RagHitCard({
       headerClassName={HEADER_WASH[kg.accent] ?? "bg-muted/40"}
       header={
         <span className="flex items-center gap-1.5 normal-case">
-          <ToolGlyph icon={Icon} accent={kg.accent} size="sm" />
+          <SourceGlyph
+            view={view}
+            title={title}
+            icon={Icon}
+            accent={kg.accent}
+            compact
+          />
           <span className="truncate font-medium text-foreground">{title}</span>
         </span>
       }
@@ -698,12 +695,25 @@ export function RagHitCard({
             view={view}
             title={title}
             typeLabel={kg.label}
-            href={href}
+            aiBundle={aiBundle}
             compact
           />
           <div className="border-t border-border" />
-          <div className="max-h-56 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-foreground">
-            {view.snippet}
+          <div>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Retrieved content
+              </span>
+              <RagContentActions
+                humanText={view.snippet}
+                label="retrieved content"
+                bundle={aiBundle}
+                initialSections={["retrieved"]}
+              />
+            </div>
+            <div className="max-h-56 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-foreground">
+              {view.snippet}
+            </div>
           </div>
           <div className="border-t border-border pt-2">
             <HitBreakdown view={view} topScore={top} tier={tier} showChunkId />
@@ -737,13 +747,13 @@ export function RagHitCard({
         data-rag-source-id={view.sourceId}
         data-rag-chunk-id={view.chunkId}
       >
-        <ToolGlyph icon={Icon} accent={kg.accent} size="md" />
+        <SourceGlyph view={view} title={title} icon={Icon} accent={kg.accent} />
         <div className="min-w-0 flex-1">
           <SourceIdentity
             view={view}
             title={title}
             typeLabel={kg.label}
-            href={href}
+            aiBundle={aiBundle}
             compact
           />
         </div>

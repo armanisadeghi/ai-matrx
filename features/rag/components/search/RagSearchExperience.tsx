@@ -294,6 +294,7 @@ function RichHitCard({
             onOpenPdf={openHit}
             resourceRequest={resources.request}
             onAvailabilityChange={resources.onAvailabilityChange}
+            aiBundle={resources.aiBundle}
           >
             {snippet}
           </RagPageReferences>

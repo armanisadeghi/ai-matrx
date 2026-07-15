@@ -17,6 +17,16 @@ import {
 } from "lucide-react";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import {
+  RagAiCopyButton,
+  RagContentActions,
+} from "@/features/rag/components/search/RagContentActions";
+import {
+  withRagAiSections,
+  type RagAiCopyBundle,
+  type RagAiCopySection,
+  type RagAiSectionKey,
+} from "@/features/rag/components/search/ragAiCopy";
+import {
   InlineMediaRef,
   selectPdfPages,
   type PdfPageSelectionResult,
@@ -26,7 +36,10 @@ import {
   fetchDerivations,
   type DerivativeChunkRow,
 } from "@/features/rag/api/derivations";
-import { usePageBundle } from "@/features/rag/components/source-inspector/usePageBundle";
+import {
+  usePageBundle,
+  type PageBundle,
+} from "@/features/rag/components/source-inspector/usePageBundle";
 import { usePdfSurfaceLinks } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { listResultsForFilePage } from "@/features/page-extraction/api/runs";
@@ -51,6 +64,114 @@ interface LoadedReferences {
   extractionRows: PageExtractionResult[];
   extractionTotal: number;
   partialFailures: number;
+}
+
+const CUSTOM_DERIVATION_KEYS = new Set([
+  "synthetic_qa",
+  "section_summary",
+  "agent_extract",
+  "agent_summary",
+  "agent_structured_json",
+]);
+
+function visibleDerivativeChunks(group: DerivativePageGroup) {
+  return group.chunks.slice(0, group.key === "table_row" ? 25 : 12);
+}
+
+function derivativeGroupData(group: DerivativePageGroup) {
+  return {
+    kind: group.key,
+    label: group.label,
+    description: group.description,
+    shown: visibleDerivativeChunks(group).length,
+    total: group.total,
+    chunks: visibleDerivativeChunks(group).map((chunk) => ({
+      id: chunk.id,
+      chunk_index: chunk.chunk_index,
+      chunk_kind: chunk.chunk_kind,
+      parent_chunk_id: chunk.parent_chunk_id,
+      page_numbers: chunk.page_numbers,
+      token_count: chunk.token_count,
+      content_text: chunk.content_text,
+      metadata: chunk.metadata,
+    })),
+  };
+}
+
+function derivativeGroupText(group: DerivativePageGroup): string {
+  if (group.key === "table_row") return tableGroupToTsv(group);
+  return visibleDerivativeChunks(group)
+    .map((chunk) => chunk.content_text)
+    .join("\n\n");
+}
+
+function tableGroupToTsv(group: DerivativePageGroup): string {
+  const rows = visibleDerivativeChunks(group).map((chunk) => {
+    const metadata = chunk.metadata ?? {};
+    const header = Array.isArray(metadata.header)
+      ? metadata.header.map((value) => String(value ?? ""))
+      : [];
+    const cells = Array.isArray(metadata.cells)
+      ? metadata.cells.map((value) => String(value ?? ""))
+      : [];
+    return { header, cells, fallback: chunk.content_text };
+  });
+  const header = rows.find((row) => row.header.length)?.header ?? [];
+  const lines = header.length ? [header.join("\t")] : [];
+  for (const row of rows) {
+    lines.push((row.cells.length ? row.cells : [row.fallback]).join("\t"));
+  }
+  return lines.join("\n");
+}
+
+function extractionRowsData(rows: PageExtractionResult[], total: number) {
+  const visible = rows.slice(0, 12);
+  return {
+    shown: visible.length,
+    total,
+    rows: visible.map((row) => ({
+      id: row.id,
+      run_id: row.run_id,
+      page_run_id: row.page_run_id,
+      job_id: row.job_id,
+      file_id: row.file_id,
+      source_pages: row.source_pages,
+      canonical_page: row.canonical_page,
+      payload: row.payload,
+    })),
+  };
+}
+
+function extractionRowsText(rows: PageExtractionResult[]): string {
+  return JSON.stringify(
+    rows.slice(0, 12).map((row) => row.payload),
+    null,
+    2,
+  );
+}
+
+function verificationData(page: PageBundle) {
+  return {
+    verified_at: page.verifiedAt,
+    flags: page.verificationFlags,
+    extraction_method: page.extractionMethod,
+    extraction_confidence: page.extractionConfidence,
+    used_ocr: page.usedOcr,
+  };
+}
+
+function verificationText(page: PageBundle): string {
+  return [
+    `Verified: ${page.verifiedAt ?? "not verified"}`,
+    `Method: ${page.extractionMethod ?? (page.usedOcr ? "OCR" : "Text extraction")}`,
+    `Used OCR: ${page.usedOcr ? "yes" : "no"}`,
+    page.extractionConfidence != null
+      ? `Confidence: ${page.extractionConfidence.toFixed(2)}`
+      : null,
+    `Flags: ${page.verificationFlags.length ? page.verificationFlags.join(", ") : "none"}`,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
 }
 
 const referenceCache = new Map<string, Promise<LoadedReferences>>();
@@ -290,6 +411,7 @@ export function RagPageReferences({
   onOpenPdf,
   resourceRequest,
   onAvailabilityChange,
+  aiBundle,
   children,
 }: {
   sourceKind: string;
@@ -299,6 +421,7 @@ export function RagPageReferences({
   onOpenPdf: () => void;
   resourceRequest?: RagReferenceRequest | null;
   onAvailabilityChange?: (availability: RagReferenceAvailability) => void;
+  aiBundle: RagAiCopyBundle;
   children: ReactNode;
 }) {
   const isCldFile = sourceKind === "cld_file";
@@ -499,6 +622,186 @@ export function RagPageReferences({
   );
   const SelectedPreviewIcon = selectedPreview?.icon ?? FileScan;
 
+  const tableGroups = groups.filter((group) => group.key === "table_row");
+  const imageGroups = groups.filter(
+    (group) => group.key === "page_image_caption",
+  );
+  const customGroups = groups.filter((group) =>
+    CUSTOM_DERIVATION_KEYS.has(group.key),
+  );
+  const derivedGroups = groups.filter(
+    (group) =>
+      group.key !== "table_row" &&
+      group.key !== "page_image_caption" &&
+      !CUSTOM_DERIVATION_KEYS.has(group.key),
+  );
+  const extraSections: RagAiCopySection[] = [];
+  if (ids.fileId && selectedSourcePages.length) {
+    extraSections.push({
+      key: "document",
+      label: "Physical document",
+      description: "Source file reference and exact page selection.",
+      humanText: `File ID: ${ids.fileId}\nSource pages: ${selectedSourcePages.join(", ")}`,
+      data: {
+        file_id: ids.fileId,
+        source_pages: selectedSourcePages,
+      },
+      count: selectedSourcePages.length,
+      total: selectedSourcePages.length,
+    });
+  }
+  if (page?.cleanedText) {
+    extraSections.push({
+      key: "clean",
+      label: "Clean text",
+      description: "Cleaned page text shown in the page reference preview.",
+      humanText: page.cleanedText,
+      data: {
+        text: page.cleanedText,
+        char_count: page.cleanedCharCount,
+        section_kind: page.sectionKind,
+        section_title: page.sectionTitle,
+      },
+    });
+  }
+  if (page?.rawText) {
+    extraSections.push({
+      key: "raw",
+      label: "Raw text",
+      description: "Raw extracted or OCR page text before cleanup.",
+      humanText: page.rawText,
+      data: { text: page.rawText, char_count: page.rawCharCount },
+    });
+  }
+  if (tableGroups.length) {
+    extraSections.push({
+      key: "tables",
+      label: "Tables",
+      description: "Structured table rows currently loaded for this page.",
+      humanText: tableGroups.map(tableGroupToTsv).join("\n\n"),
+      data: tableGroups.map(derivativeGroupData),
+      count: tableGroups.reduce(
+        (sum, group) => sum + visibleDerivativeChunks(group).length,
+        0,
+      ),
+      total: tableGroups.reduce((sum, group) => sum + group.total, 0),
+    });
+  }
+  if (pageImageId || imageGroups.length) {
+    const imageReference = pageImageId
+      ? `Image file ID: ${pageImageId}${pageNumber != null ? `\nPage: ${pageNumber}` : ""}`
+      : "";
+    extraSections.push({
+      key: "images",
+      label: "Images + image analysis",
+      description:
+        "Rendered-page image references and vision-derived descriptions.",
+      humanText: [imageReference, ...imageGroups.map(derivativeGroupText)]
+        .filter(Boolean)
+        .join("\n\n"),
+      data: {
+        page_image: pageImageId
+          ? { file_id: pageImageId, page_number: pageNumber }
+          : null,
+        analysis: imageGroups.map(derivativeGroupData),
+      },
+      count: imageGroups.reduce(
+        (sum, group) => sum + visibleDerivativeChunks(group).length,
+        pageImageId ? 1 : 0,
+      ),
+      total: imageGroups.reduce(
+        (sum, group) => sum + group.total,
+        pageImageId ? 1 : 0,
+      ),
+    });
+  }
+  if (customGroups.length || loaded?.extractionRows.length) {
+    const extractionText = loaded?.extractionRows.length
+      ? extractionRowsText(loaded.extractionRows)
+      : "";
+    extraSections.push({
+      key: "custom",
+      label: "Custom content",
+      description:
+        "User/agent-generated extractions, Q&A, summaries, and structured output.",
+      humanText: [extractionText, ...customGroups.map(derivativeGroupText)]
+        .filter(Boolean)
+        .join("\n\n"),
+      data: {
+        extractions: loaded
+          ? extractionRowsData(loaded.extractionRows, loaded.extractionTotal)
+          : null,
+        derivations: customGroups.map(derivativeGroupData),
+      },
+      count:
+        (loaded?.extractionRows.slice(0, 12).length ?? 0) +
+        customGroups.reduce(
+          (sum, group) => sum + visibleDerivativeChunks(group).length,
+          0,
+        ),
+      total:
+        (loaded?.extractionTotal ?? 0) +
+        customGroups.reduce((sum, group) => sum + group.total, 0),
+    });
+  }
+  if (derivedGroups.length) {
+    extraSections.push({
+      key: "derived",
+      label: "Related derived content",
+      description:
+        "Fine, coarse, and alternate passages derived from this page.",
+      humanText: derivedGroups.map(derivativeGroupText).join("\n\n"),
+      data: derivedGroups.map(derivativeGroupData),
+      count: derivedGroups.reduce(
+        (sum, group) => sum + visibleDerivativeChunks(group).length,
+        0,
+      ),
+      total: derivedGroups.reduce((sum, group) => sum + group.total, 0),
+    });
+  }
+  if (page?.verifiedAt) {
+    extraSections.push({
+      key: "verification",
+      label: "Verification",
+      description:
+        "Extraction method, confidence, OCR status, and verification flags.",
+      humanText: verificationText(page),
+      data: verificationData(page),
+    });
+  }
+  const pageAiBundle = withRagAiSections(
+    {
+      ...aiBundle,
+      source: {
+        ...aiBundle.source,
+        fileId: ids.fileId ?? aiBundle.source.fileId,
+        processedDocumentId:
+          ids.processedDocumentId ?? aiBundle.source.processedDocumentId,
+      },
+    },
+    extraSections,
+  );
+  let selectedCopySection: RagAiSectionKey | null = null;
+  if (selectedPreview?.key === "physical_pdf") selectedCopySection = "document";
+  else if (
+    selectedPreview?.key === "page_image" ||
+    selectedPreview?.key === "page_image_caption"
+  )
+    selectedCopySection = "images";
+  else if (selectedPreview?.key === "clean") selectedCopySection = "clean";
+  else if (selectedPreview?.key === "raw") selectedCopySection = "raw";
+  else if (selectedPreview?.key === "verification")
+    selectedCopySection = "verification";
+  else if (selectedPreview?.key === "table_row") selectedCopySection = "tables";
+  else if (selectedPreview?.key === "custom-extractions")
+    selectedCopySection = "custom";
+  else if (selectedPreview && CUSTOM_DERIVATION_KEYS.has(selectedPreview.key))
+    selectedCopySection = "custom";
+  else if (selectedGroup) selectedCopySection = "derived";
+  const selectedCopy = selectedCopySection
+    ? pageAiBundle.sections[selectedCopySection]
+    : null;
+
   if (!isCldFile && !isLibrary) return null;
 
   return (
@@ -511,6 +814,14 @@ export function RagPageReferences({
               ? `Page ${pageNumber} references`
               : "Document references"}
           </span>
+          <RagAiCopyButton
+            label={
+              pageNumber != null
+                ? `page ${pageNumber} references`
+                : "document references"
+            }
+            bundle={pageAiBundle}
+          />
         </div>
         {busy ? (
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -555,8 +866,16 @@ export function RagPageReferences({
       </div>
       <div className="grid min-w-0 md:grid-cols-2 md:divide-x md:divide-border">
         <section className="min-w-0 p-3">
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Retrieved chunk
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Retrieved chunk
+            </span>
+            <RagContentActions
+              humanText={aiBundle.sections.retrieved?.humanText ?? ""}
+              label="retrieved chunk"
+              bundle={pageAiBundle}
+              initialSections={["retrieved"]}
+            />
           </div>
           {children}
         </section>
@@ -571,6 +890,15 @@ export function RagPageReferences({
                 <span className="text-[10px] text-muted-foreground">
                   {selectedPreview.detail}
                 </span>
+                {selectedCopy ? (
+                  <RagContentActions
+                    humanText={selectedCopy.humanText}
+                    label={selectedPreview.label.toLowerCase()}
+                    bundle={pageAiBundle}
+                    initialSections={[selectedCopy.key]}
+                    className="ml-auto"
+                  />
+                ) : null}
               </>
             ) : (
               <span className="text-xs font-semibold text-foreground">
