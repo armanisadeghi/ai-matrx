@@ -82,7 +82,8 @@ See [`CONVERGENCE_C_CREATORS.md`](./CONVERGENCE_C_CREATORS.md) + [`SCHOOL_SAFE_C
 - ✅ **Classes: open / closed / paid** + teacher ownership + roster (`iam.memberships`, no new table) + `edu_class_join` family. `/education/classes`.
 - ✅ **Creator profiles + public landing pages** (`/c/[handle]`, SEO/JSON-LD/OG, YouTube + free tools + enroll CTA) — the growth engine.
 - ✅ **Teacher tools** — assignments (association edges + due dates) + class analytics + **assignment confers read-visibility** so students can study an assigned private deck.
-- ✅ **FERPA/COPPA code affordances** — D52 fix, COPPA age-gate (fail-closed, on all 9 AI entries), student data export/delete/restore, guardian consent. Server-side gate enforcement + verifiable consent = open (D57 remainder).
+- ✅ **COPPA enforced for real (2026-07-15)** — browser gate (fail-closed, 9 AI entries) + **aidream server gate (deployed to prod)** + **verifiable parental consent** (card auth-and-void, live e2e; service-role-only) + one audited `age_band` write path (trigger-guarded). Plus D52, student data export/delete/restore. Security-reviewed: **consent can't be forged.** Open = the *verifiable-age policy* + legal/policy text (see the launch runbook).
+  Launch steps: [`CONVERGENCE_C_LAUNCH_RUNBOOK.md`](./CONVERGENCE_C_LAUNCH_RUNBOOK.md) + [`COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`](./COPPA_VERIFIABLE_CONSENT_RUNBOOK.md).
 - 🟡 **Paid gate + creator payouts — REAL money movement built (Stripe Connect Express), 2026-07-15.** Paid-class checkout is a Connect **destination charge** (20% platform / 80% creator, config in `lib/stripe/connect.ts`); the enrolment is conferred **webhook-only** via the service_role-only `edu_class_confer_purchase` (the bypassable `edu_class_purchase` stub is deleted). Price in `scope.settings.price_cents`; real "Enroll — $X" checkout on the class hub + `/c/[handle]`; refund/chargeback revokes access; creator earnings panel links to the Stripe Express dashboard. Grant/revoke path verified live. **Blocked on Arman:** enable Connect on the Stripe account (+ platform profile) and set `STRIPE_WEBHOOK_SECRET` — then the money paths verify end-to-end in test mode. See `features/entitlements/FEATURE.md` §Creator payouts.
 - 🔲 Class rooms & real-time co-study; card-level discussion threads.
 - 🔲 LMS — Google Classroom / Canvas, LTI 1.3 / OneRoster.
@@ -111,6 +112,12 @@ See [`CONVERGENCE_C_CREATORS.md`](./CONVERGENCE_C_CREATORS.md) + [`SCHOOL_SAFE_C
   release ships both. Blocked only by others' uncommitted aidream work (won't stash).
 
 ## Change log
+- **2026-07-15 (wave E — monetization + school-safe launch prep)** — Stripe Connect Express creator payouts +
+  real paid-class checkout (webhook-only, 20/80); `learn.` subdomain code support; COPPA server-side
+  enforcement (aidream, deployed) + verifiable parental consent (card auth-and-void) + audited age_band write
+  guard. Adversarial security review: money-without-paying = NO, consent-forgery = NO. Launch runbook written
+  ([`CONVERGENCE_C_LAUNCH_RUNBOOK.md`](./CONVERGENCE_C_LAUNCH_RUNBOOK.md)). Open decisions: Stripe dashboard
+  enable + webhook secret, Vercel subdomain, verifiable-age policy + legal/privacy text.
 - **2026-07-14 (wave 3 — Convergence C / creators)** — Classes open/closed/paid + roster + join; creator
   profiles + `/c/[handle]` landing pages; teacher tools (assignments + analytics + assignment-confers-read);
   school-safe compliance (COPPA gate on all AI entries, data rights, D52); DOCX/PPTX ingestion wired to the
