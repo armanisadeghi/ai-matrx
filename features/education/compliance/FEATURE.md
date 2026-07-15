@@ -81,15 +81,28 @@ no entry point to gate there.
 - **Age band is server-validated** via `edu_set_age_band` (whitelist); the gate reads it
   server-side. (Tamper-resistance beyond self-declaration is a policy/verification layer —
   Arman/legal, tracked in the checklist.)
-- **The client gate is a first fail-closed layer, NOT the boundary (D57 open).** aidream's
-  education-generation seam does NOT yet re-check `edu_coppa_gate`, so a client bypass
-  (devtools / direct API) still reaches AI generation, and `age_band` is self-declared
-  (an under-13 can call `edu_set_age_band('adult')`). Server-side enforcement at the
-  aidream compute boundary + a verifiable-consent path (not self-attestation) remain the
-  real child-safety work — tracked in `FOUND_DEFECTS.md` D57 (decides: Arman/legal).
+- **The client gate is a first fail-closed layer; the server is now the boundary (D57
+  server enforcement DONE).** aidream independently re-checks COPPA at the
+  agent-execution funnel (`enforce_education_coppa` in `prepare_agent_run` /
+  `_prepare_continue_run`), scoped to education runs by `source_feature` (`education-*`),
+  failing CLOSED — so a client bypass (devtools / direct API) is now refused server-side.
+  A refusal arrives as a stream `fatal_error` with
+  **`error_type === "education_coppa_consent_required"`** (+ a safe `user_message`); surface
+  it as the consent-required state (same as the client gate), routing to `/education/family`.
+  Contract + wire shape: aidream `services/education_compliance/FEATURE.md`. **Still open
+  (Arman/legal):** `age_band` is self-declared (an under-13 can call
+  `edu_set_age_band('adult')`) and "guardian approves from their own account" is not a
+  legally *verifiable* consent method — both tracked in `FOUND_DEFECTS.md` D57.
 
 ## Change log
 
+- `2026-07-15` — D57 **server enforcement DONE** (aidream). The agent-execution funnel now
+  independently refuses education generation for an unconsented under-13
+  (`enforce_education_coppa`, scoped by `source_feature=education-*`, fails closed), returning
+  a stream `fatal_error` `error_type="education_coppa_consent_required"`. This closes the
+  client-bypass hole; the FE surfaces that error as the consent-required state. Contract:
+  aidream `services/education_compliance/FEATURE.md`. Self-declared `age_band` +
+  verifiable-consent *method* remain open (Arman/legal).
 - `2026-07-15` — D57: `ensureAllowed()` no longer fails OPEN on a resolver error. It now
   fails CLOSED for the minor path (signed-in + no prior allowed verdict → blocked), while
   preserving the softer fail-open for already-resolved adults/teens and not-signed-in
