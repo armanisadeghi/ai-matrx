@@ -38,7 +38,7 @@ build plan this feature is part of (project P5).
 
 **API endpoints** (all single-POST `{action, ...}` dispatch, secret key `SUPABASE_HTML_SECRET_KEY` bypasses RLS — ownership enforced in app code)
 - `POST /api/cms/sites` — `list/get/create/update/delete` (owner-scoped) + `admin_list_sites/admin_update_policy/admin_list_activity` (requireSuperAdmin)
-- `POST /api/cms/pages` — `list/get/create/update/save-draft/publish/discard-draft/rollback/delete` (owner-scoped) + `admin_list` (requireSuperAdmin)
+- `POST /api/cms/pages` — `list/get/create/promote/update/save-draft/publish/discard-draft/rollback/delete` (owner-scoped) + `admin_list` (requireSuperAdmin). `promote` (W2-A) copies an owned `html_pages` row onto an owned site as a NEW draft page: converter split per the my-matrx `/p/[id]` renderer via `features/html-pages/utils/promoteConvert.ts` (TS twin of aidream `services/cms/convert.py`; both test byte-identically against the shared `promote-convert-fixtures.json` — change semantics ⇒ change both), content lands ONLY in `_draft` twins (never auto-published), provenance both directions (`client_pages.source_*` cols, CMS migration 0008 / `html_pages.context_metadata.promotions[]`), idempotent per `(client_id, source_html_page_id)` unless `forceNew`.
 - `POST /api/cms/components` — `list/get/create/update/delete` (owner-scoped)
 - `POST /api/cms/versions` — `list/get` (read-only, owner-scoped)
 - `POST /api/cms/approvals` — `list/approve/reject` (requireSuperAdmin) — F3 exception queue, degrades gracefully until P1's store table exists
@@ -256,6 +256,14 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-07-15` — **W2-A "Promote to site" bridge shipped.** New `promote` action on `/api/cms/pages`
+  (see API list above) + `CmsPageService.promoteFromHtmlPage` + `PromoteToSiteDialog`
+  (`features/html-pages/components/`), launched from the html-pages list row menu ("Promote to
+  site…") and the editor toolbar (`UploadTapButton`). `ClientPage` gained the four `source_*`
+  provenance fields; success view links the CMS page editor + the public `?preview=true` URL.
+  Browser-verified end-to-end. Twin of aidream's `promote_service`. NOTE: like every other FE CMS
+  write, `promote` does NOT run P3 content validation (aidream-only enforcement).
 
 - `2026-07-13` — **Whole CMS route family on the gold-standard header** (round 2 of the `core-route-headers` reference fix). Hub level: `CmsHubHeader` (`features/cms/components/CmsHubHeader.tsx`) injects `RouteHeader` + `RouteModeNav` **Sites | Pages** on both `/cms` and `/cms/html-pages` — no title text, New Site / New Page are right-slot tap targets. Site level: `SiteLayoutClient` now injects the layout-level header — back chevron + `CmsSiteSwitcher` (agents-style entity dropdown, keeps sub-view on switch) + **Pages | Components | Settings** center nav + open-live/new-page tap targets; deleted the bordered in-body breadcrumb bar, the dashboard's stacked sub-header (Settings/Components/"+ New Page" buttons), and the settings/components in-body `<h2>` title rows; all `h-[calc(100dvh-…)]` → `h-full` + `pt-[var(--shell-header-h)]`. Also fixed `RouteModeNav` (w-full measurement trap: compact first paint locked it in "menu" forever).
 - `2026-07-10` — CMS Surfaces Rollout gap-closing: (1) `/cms/html-pages` LIST route now mounts the

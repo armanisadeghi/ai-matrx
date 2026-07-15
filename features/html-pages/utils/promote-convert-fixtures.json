@@ -1,0 +1,140 @@
+{
+  "$comment": "W2-A promote-bridge conversion fixtures — the language-neutral spec for splitting an html_pages document into client_pages {body, css, js}. Spec source: my-matrx/pages/p/[id].js style/body split branch. TWO implementations test against THIS file and must both pass byte-identically: aidream/services/cms/convert.py (aidream/services/cms/tests/test_cms_convert.py) and matrx-frontend features/html-pages/utils/promoteConvert.ts (its colocated test). Change a case here → run both suites. Null means the field is absent/None.",
+  "cases": [
+    {
+      "name": "full_doc_basic",
+      "input_html": "<!DOCTYPE html>\n<html>\n<head>\n<title>Hello World</title>\n<meta name=\"description\" content=\"A test page\">\n<style>\nbody { color: red; }\n</style>\n</head>\n<body>\n<h1>Hello</h1>\n</body>\n</html>",
+      "expected": {
+        "body": "<h1>Hello</h1>",
+        "css": "body { color: red; }",
+        "js": null,
+        "extracted_title": "Hello World",
+        "extracted_description": "A test page",
+        "was_full_document": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "fragment_passthrough_untouched",
+      "input_html": "<div class=\"card\"><style>.card{border:1px solid}</style><p>Hi</p></div>",
+      "expected": {
+        "body": "<div class=\"card\"><style>.card{border:1px solid}</style><p>Hi</p></div>",
+        "css": null,
+        "js": null,
+        "extracted_title": null,
+        "extracted_description": null,
+        "was_full_document": false,
+        "warnings": []
+      }
+    },
+    {
+      "name": "styles_collected_from_whole_document_and_stripped_from_body",
+      "input_html": "<html><head><title>T</title><style>h1{color:blue}</style></head><body><style>p{margin:0}</style><h1>A</h1><p>B</p></body></html>",
+      "expected": {
+        "body": "<h1>A</h1><p>B</p>",
+        "css": "h1{color:blue}\n\np{margin:0}",
+        "js": null,
+        "extracted_title": "T",
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "head_scripts_inline_preserved_external_warned",
+      "input_html": "<html><head><title>S</title><script>window.APP = {ready: true};</script><script src=\"https://cdn.example.com/lib.js\"></script><link rel=\"stylesheet\" href=\"https://cdn.example.com/theme.css\"></head><body><p>x</p><script>console.log('body script stays');</script></body></html>",
+      "expected": {
+        "body": "<p>x</p><script>console.log('body script stays');</script>",
+        "css": null,
+        "js": "window.APP = {ready: true};",
+        "extracted_title": "S",
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": [
+          "dropped external head script: https://cdn.example.com/lib.js",
+          "dropped external head stylesheet: https://cdn.example.com/theme.css"
+        ]
+      }
+    },
+    {
+      "name": "full_doc_without_body_tag_carries_everything",
+      "input_html": "<html><head><title>Loose</title></head><p>no body tag here</p></html>",
+      "expected": {
+        "body": "<html><head><title>Loose</title></head><p>no body tag here</p></html>",
+        "css": null,
+        "js": null,
+        "extracted_title": "Loose",
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": [
+          "full document without a matched <body>...</body> — the entire document was carried into html_content unchanged"
+        ]
+      }
+    },
+    {
+      "name": "uppercase_tags",
+      "input_html": "<HTML><HEAD><TITLE>Caps</TITLE><STYLE>a{text-decoration:none}</STYLE></HEAD><BODY><A href=\"#\">x</A></BODY></HTML>",
+      "expected": {
+        "body": "<A href=\"#\">x</A>",
+        "css": "a{text-decoration:none}",
+        "js": null,
+        "extracted_title": "Caps",
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "head_and_body_with_attributes",
+      "input_html": "<html lang=\"en\"><head prefix=\"og: https://ogp.me/ns#\"><title>Attrs</title></head><body class=\"dark\" data-x=\"1\"><main>ok</main></body></html>",
+      "expected": {
+        "body": "<main>ok</main>",
+        "css": null,
+        "js": null,
+        "extracted_title": "Attrs",
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "empty_input",
+      "input_html": "",
+      "expected": {
+        "body": "",
+        "css": null,
+        "js": null,
+        "extracted_title": null,
+        "extracted_description": null,
+        "was_full_document": false,
+        "warnings": []
+      }
+    },
+    {
+      "name": "meta_description_single_quotes",
+      "input_html": "<html><head><title>Q</title><meta name='description' content='single quoted desc'></head><body>b</body></html>",
+      "expected": {
+        "body": "b",
+        "css": null,
+        "js": null,
+        "extracted_title": "Q",
+        "extracted_description": "single quoted desc",
+        "was_full_document": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "style_with_attributes",
+      "input_html": "<html><head><title>SA</title><style type=\"text/css\" media=\"screen\">.x{gap:2px}</style></head><body><i>y</i></body></html>",
+      "expected": {
+        "body": "<i>y</i>",
+        "css": ".x{gap:2px}",
+        "js": null,
+        "extracted_title": "SA",
+        "extracted_description": null,
+        "was_full_document": true,
+        "warnings": []
+      }
+    }
+  ]
+}

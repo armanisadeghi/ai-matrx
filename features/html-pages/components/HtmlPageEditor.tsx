@@ -12,7 +12,9 @@ import {
   ExternalLinkTapButton,
   LoadingTapButton,
   SaveTapButton,
+  UploadTapButton,
 } from "@/components/icons/tap-buttons";
+import { PromoteToSiteDialog } from "@/features/html-pages/components/PromoteToSiteDialog";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -103,6 +105,7 @@ export default function HtmlPageEditor({
   const [isIndexable, setIsIndexable] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
   const [dirty, setDirty] = useState(false);
+  const [promoteOpen, setPromoteOpen] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [pendingNavHref, setPendingNavHref] = useState<string | null>(null);
   const [nav, setNav] = useState(() =>
@@ -504,6 +507,11 @@ export default function HtmlPageEditor({
               href={page.url}
               target="_blank"
             />
+            <UploadTapButton
+              variant="transparent"
+              ariaLabel="Promote to site"
+              onClick={() => setPromoteOpen(true)}
+            />
             {isSaving ? (
               <LoadingTapButton ariaLabel="Saving" disabled />
             ) : (
@@ -609,6 +617,10 @@ export default function HtmlPageEditor({
           setPendingNavHref(null);
           router.push(href);
         }}
+      />
+      <PromoteToSiteDialog
+        htmlPage={promoteOpen ? { id: page.id, meta_title: metaTitle || page.meta_title } : null}
+        onOpenChange={(open) => setPromoteOpen(open)}
       />
     </>
   );

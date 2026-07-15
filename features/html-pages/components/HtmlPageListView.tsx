@@ -9,6 +9,7 @@ import HtmlPageGridView, {
   formatRelativeDate,
 } from "@/features/html-pages/components/HtmlPageGridView";
 import { HtmlPagesContextMenu } from "@/features/html-pages/components/HtmlPagesContextMenu";
+import { PromoteToSiteDialog } from "@/features/html-pages/components/PromoteToSiteDialog";
 import { setHtmlPagesNavOrder } from "@/features/html-pages/utils/nav-order";
 import {
   HTML_PAGES_GRID_INITIAL,
@@ -48,6 +49,7 @@ import {
   Check,
   LayoutGrid,
   List,
+  Rocket,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -94,6 +96,8 @@ export default function HtmlPageListView({
   } = listState;
 
   const [deleteTarget, setDeleteTarget] =
+    React.useState<HtmlPageSummary | null>(null);
+  const [promoteTarget, setPromoteTarget] =
     React.useState<HtmlPageSummary | null>(null);
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
   const [busyDelete, setBusyDelete] = React.useState(false);
@@ -547,6 +551,12 @@ export default function HtmlPageListView({
                             )}
                             Copy URL
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setPromoteTarget(page)}
+                          >
+                            <Rocket className="h-3.5 w-3.5 mr-2" />
+                            Promote to site…
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
@@ -600,6 +610,12 @@ export default function HtmlPageListView({
           } finally {
             setBusyDelete(false);
           }
+        }}
+      />
+      <PromoteToSiteDialog
+        htmlPage={promoteTarget}
+        onOpenChange={(open) => {
+          if (!open) setPromoteTarget(null);
         }}
       />
     </div>

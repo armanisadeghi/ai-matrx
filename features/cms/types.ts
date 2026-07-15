@@ -78,6 +78,26 @@ export interface ClientPage {
   tags: string[] | null;
   created_at: string;
   updated_at: string;
+  /**
+   * W2-A promote provenance (CMS migration 0008) — set only on pages promoted
+   * from an `html_pages` quick-publish row. No FK: survives source deletion.
+   * Reverse direction lives in `html_pages.context_metadata.promotions[]`.
+   */
+  source_html_page_id: string | null;
+  source_artifact_id: string | null;
+  source_message_id: string | null;
+  source_conv_id: string | null;
+}
+
+/** Result of the `promote` action on /api/cms/pages (html_page → draft page). */
+export interface PromoteFromHtmlPageResult {
+  success: boolean;
+  /** True when this html_page was already promoted onto the site — `page` is the existing row. */
+  reused: boolean;
+  page: ClientPage;
+  conversionWarnings: string[];
+  /** Null when `reused` (no conversion ran). */
+  wasFullDocument: boolean | null;
 }
 
 /** Compact listing used in the dashboard table */

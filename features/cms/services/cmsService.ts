@@ -11,6 +11,7 @@ import type {
     ClientSite,
     ClientPage,
     ClientPageSummary,
+    PromoteFromHtmlPageResult,
     CmsEntityType,
     ClientEntityVersion,
     ClientEntityVersionDetail,
@@ -170,6 +171,23 @@ export const CmsPageService = {
     }): Promise<ClientPage> {
         const res = await callApi<{ page: ClientPage }>('pages', 'create', params);
         return res.page;
+    },
+
+    /**
+     * W2-A promote bridge: copy an `html_pages` quick page onto a site as a
+     * NEW draft page (content in the `_draft` twins, never auto-published;
+     * provenance recorded both directions). Re-promoting to the same site
+     * returns the existing page (`reused: true`) unless `forceNew`.
+     */
+    async promoteFromHtmlPage(params: {
+        htmlPageId: string;
+        siteId: string;
+        slug?: string;
+        title?: string;
+        category?: string;
+        forceNew?: boolean;
+    }): Promise<PromoteFromHtmlPageResult> {
+        return callApi<PromoteFromHtmlPageResult>('pages', 'promote', params);
     },
 
     async updatePage(pageId: string, updates: Record<string, unknown>): Promise<ClientPage> {

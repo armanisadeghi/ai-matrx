@@ -10,8 +10,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { getCmsClient, verifySiteOwnership, verifyPageOwnership } from "../_lib/cmsDb";
+import {
+  getCmsClient,
+  verifySiteOwnership,
+  verifyPageOwnership,
+  verifyHtmlPageOwnership,
+} from "../_lib/cmsDb";
 import { logCmsActivity } from "../_lib/activityLog";
+import {
+  splitHtmlDocument,
+  slugifyTitle,
+  SLUG_RE,
+} from "@/features/html-pages/utils/promoteConvert";
 
 /** Summary columns for list view (no HTML content blobs) */
 const LIST_COLUMNS = `
@@ -207,6 +217,215 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json({ success: true, page: data });
+      }
+
+      // ── Promote an html_page → NEW draft page on a site (W2-A) ──────
+      // Converted content lands ONLY in the _draft twins (has_draft=true,
+      // never auto-published); provenance recorded both directions. The
+      // /p/{id} original stays live. Twin of aidream's promote_service
+      // (services/cms/promote.py) — same converter spec, same idempotency
+      // key (client_id, source_html_page_id).
+      case "promote": {
+        const { htmlPageId, siteId, slug, title, category, forceNew } = params;
+
+        if (!htmlPageId || !siteId) {
+          return NextResponse.json(
+            { error: "htmlPageId and siteId are required" },
+            { status: 400 },
+          );
+        }
+        if (!(await verifyHtmlPageOwnership(db, htmlPageId, user.id))) {
+          return NextResponse.json(
+            { error: "HTML page not found or access denied" },
+            { status: 403 },
+          );
+        }
+        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+          return NextResponse.json(
+            { error: "Site not found or access denied" },
+            { status: 403 },
+          );
+        }
+
+        const { data: source, error: sourceError } = await db
+          .from("html_pages")
+          .select("*")
+          .eq("id", htmlPageId)
+          .single();
+        if (sourceError || !source) {
+          return NextResponse.json(
+            { error: "HTML page not found" },
+            { status: 404 },
+          );
+        }
+
+        // Idempotency: same html_page already promoted onto this site → reuse.
+        if (!forceNew) {
+          const { data: existing } = await db
+            .from("client_pages")
+            .select("*")
+            .eq("client_id", siteId)
+            .eq("source_html_page_id", htmlPageId)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (existing && existing.length > 0) {
+            return NextResponse.json({
+              success: true,
+              reused: true,
+              page: existing[0],
+              conversionWarnings: [],
+              wasFullDocument: null,
+            });
+          }
+        }
+
+        const conversion = splitHtmlDocument(source.html_content ?? "");
+
+        // DB values ALWAYS win over extracted ones (the /p/ renderer's rule).
+        const metaTitle = source.meta_title || conversion.extractedTitle;
+        const metaDescription =
+          source.meta_description || conversion.extractedDescription;
+        const resolvedTitle =
+          (typeof title === "string" && title.trim()) ||
+          metaTitle ||
+          "Untitled Page";
+        const resolvedCategory =
+          (typeof category === "string" && category.trim()) || "general";
+
+        // Slug: explicit (validated, must be free) or derived + uniquified.
+        const { data: siblingRows } = await db
+          .from("client_pages")
+          .select("slug")
+          .eq("client_id", siteId);
+        const taken = new Set((siblingRows ?? []).map((r) => r.slug));
+        let resolvedSlug: string;
+        if (typeof slug === "string" && slug.trim()) {
+          resolvedSlug = slug.trim();
+          if (!SLUG_RE.test(resolvedSlug)) {
+            return NextResponse.json(
+              { error: "slug must be lowercase letters/digits/hyphens" },
+              { status: 400 },
+            );
+          }
+          if (taken.has(resolvedSlug)) {
+            return NextResponse.json(
+              { error: `slug "${resolvedSlug}" already exists on this site` },
+              { status: 409 },
+            );
+          }
+        } else {
+          const base = slugifyTitle(resolvedTitle);
+          resolvedSlug = base;
+          for (let n = 2; taken.has(resolvedSlug); n++) {
+            resolvedSlug = `${base}-${n}`;
+          }
+        }
+
+        const insertRow: Record<string, unknown> = {
+          client_id: siteId,
+          slug: resolvedSlug,
+          title: resolvedTitle,
+          category: resolvedCategory,
+          // Live columns stay EMPTY — a promote never publishes.
+          html_content: null,
+          css_content: null,
+          js_content: null,
+          is_published: false,
+          show_in_nav: false,
+          // Converted content + carried SEO land in the draft twins.
+          has_draft: true,
+          html_content_draft: conversion.body,
+          css_content_draft: conversion.css,
+          js_content_draft: conversion.js,
+          meta_title_draft: metaTitle,
+          meta_description_draft: metaDescription,
+          meta_keywords_draft: source.meta_keywords,
+          og_image_draft: source.og_image,
+          canonical_url_draft: source.canonical_url,
+          // Forward provenance (CMS migration 0008).
+          source_html_page_id: source.id,
+          source_artifact_id: source.artifact_id,
+          source_message_id: source.source_message_id,
+          source_conv_id: source.source_conv_id,
+        };
+
+        const { data: created, error: createError } = await db
+          .from("client_pages")
+          .insert(insertRow)
+          .select()
+          .single();
+        if (createError) {
+          console.error("[cms/pages] promote error:", createError);
+          return NextResponse.json(
+            { error: createError.message },
+            { status: 500 },
+          );
+        }
+
+        // Reverse provenance on the source html_page (append-only).
+        const contextMetadata =
+          (source.context_metadata as Record<string, unknown> | null) ?? {};
+        const priorPromotions = Array.isArray(contextMetadata.promotions)
+          ? contextMetadata.promotions
+          : [];
+        const { error: reverseError } = await db
+          .from("html_pages")
+          .update({
+            context_metadata: {
+              ...contextMetadata,
+              promotions: [
+                ...priorPromotions,
+                {
+                  client_page_id: created.id,
+                  client_site_id: siteId,
+                  promoted_at: new Date().toISOString(),
+                },
+              ],
+            },
+          })
+          .eq("id", htmlPageId);
+        if (reverseError) {
+          // The page exists — don't fail the promote, but scream: the reverse
+          // provenance link did not land.
+          console.error(
+            "[cms/pages] promote: reverse-provenance write FAILED for",
+            htmlPageId,
+            reverseError,
+          );
+        }
+
+        await logCmsActivity(db, {
+          siteId,
+          activityType: "page.promote",
+          entityType: "page",
+          entityId: created.id,
+          description: `Promoted html_page ${htmlPageId} → "${resolvedTitle}" (${resolvedSlug})`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: {
+            source_html_page_id: htmlPageId,
+            was_full_document: conversion.wasFullDocument,
+            conversion_warnings: conversion.warnings,
+          },
+        });
+        await logCmsActivity(db, {
+          siteId,
+          activityType: "html_page.promote",
+          entityType: "html_page",
+          entityId: htmlPageId,
+          description: `Promoted to site as page ${created.id}`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { client_page_id: created.id },
+        });
+
+        return NextResponse.json({
+          success: true,
+          reused: false,
+          page: created,
+          conversionWarnings: conversion.warnings,
+          wasFullDocument: conversion.wasFullDocument,
+        });
       }
 
       // ── Update page ──────────────────────────────────────────────
