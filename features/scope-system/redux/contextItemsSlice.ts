@@ -198,6 +198,7 @@ export const createContextItem = createAsyncThunk(
     allowed_reference_types?: string[];
     max_items?: number;
     allowed_scope_type_ids?: string[];
+    reference_source?: ReferenceSource | null;
   }) => {
     const { data, error } = await supabase.rpc("create_context_item", {
       p_scope_type_id: params.scope_type_id,
@@ -214,6 +215,7 @@ export const createContextItem = createAsyncThunk(
       p_allowed_reference_types: params.allowed_reference_types ?? undefined,
       p_max_items: params.max_items ?? undefined,
       p_allowed_scope_type_ids: params.allowed_scope_type_ids ?? undefined,
+      p_reference_source: params.reference_source ?? undefined,
     });
     if (error) throw error;
     return data as ContextItem;

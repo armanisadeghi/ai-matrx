@@ -10,7 +10,10 @@
  * docs/handoffs/dimensional-reference-values.md.
  */
 
-export type ReferenceContainerType = "dataset" | "structured_list";
+export type ReferenceContainerType =
+  | "dataset"
+  | "structured_list"
+  | "dataset_template";
 
 /**
  * What part of the container is the value.
@@ -31,8 +34,8 @@ export interface ReferenceSourceFilter {
   value: string;
 }
 
-export interface ReferenceSource {
-  container_type: ReferenceContainerType;
+export interface BoundContainerReferenceSource {
+  container_type: "dataset" | "structured_list";
   /** The fixed dataset table_id / structured-list list_id. */
   container_id: string;
   dimension: ReferenceDimension;
@@ -42,14 +45,36 @@ export interface ReferenceSource {
   filter?: ReferenceSourceFilter | null;
 }
 
+/** One immutable-shape dataset is provisioned automatically for every scope. */
+export interface DatasetTemplateReferenceSource {
+  container_type: "dataset_template";
+  template_id: string;
+  dimension: "whole";
+  provision: "per_scope";
+}
+
+export type ReferenceSource =
+  | BoundContainerReferenceSource
+  | DatasetTemplateReferenceSource;
+
 /** Narrow unknown JSON (DB/RPC gives `reference_source` as `Json | null`) to a ReferenceSource. */
 export function parseReferenceSource(raw: unknown): ReferenceSource | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  if (typeof o.container_type !== "string" || typeof o.container_id !== "string") {
-    return null;
+  if (o.container_type === "dataset_template") {
+    if (typeof o.template_id !== "string") return null;
+    return {
+      container_type: "dataset_template",
+      template_id: o.template_id,
+      dimension: "whole",
+      provision: "per_scope",
+    };
   }
-  if (o.container_type !== "dataset" && o.container_type !== "structured_list") {
+  if (
+    (o.container_type !== "dataset" &&
+      o.container_type !== "structured_list") ||
+    typeof o.container_id !== "string"
+  ) {
     return null;
   }
   const dimension =
@@ -77,5 +102,5 @@ export function parseReferenceSource(raw: unknown): ReferenceSource | null {
 
 /** True when the value is resolved by a filter (no per-scope value is set). */
 export function isDynamicReferenceSource(src: ReferenceSource | null): boolean {
-  return !!src?.filter;
+  return !!src && "filter" in src && !!src.filter;
 }

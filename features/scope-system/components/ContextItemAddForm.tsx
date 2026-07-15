@@ -111,6 +111,7 @@ export function ContextItemAddForm({
   );
   const [maxItems, setMaxItems] = useState("1");
   const [allowedScopeTypeIds, setAllowedScopeTypeIds] = useState<string[]>([]);
+  const [datasetTemplateId, setDatasetTemplateId] = useState<string | null>(null);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
@@ -145,6 +146,14 @@ export function ContextItemAddForm({
     setAllowedScopeTypeIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+  }
+  function selectDatasetTemplate(templateId: string | null) {
+    setDatasetTemplateId(templateId);
+    if (templateId) {
+      setAllowedReferenceTypes(["dataset"]);
+      setMaxItems("1");
+      setAllowedScopeTypeIds([]);
+    }
   }
 
   // Org scope types, for the "scope" reference type's allowed-scope-type filter.
@@ -183,6 +192,7 @@ export function ContextItemAddForm({
     setAllowedReferenceTypes([]);
     setMaxItems("1");
     setAllowedScopeTypeIds([]);
+    setDatasetTemplateId(null);
     setFetchHint("on_demand");
     setSensitivity("internal");
     setSortOrder("");
@@ -218,6 +228,15 @@ export function ContextItemAddForm({
           allowed_scope_type_ids:
             isReference && allowedReferenceTypes.includes("scope")
               ? allowedScopeTypeIds
+              : undefined,
+          reference_source:
+            isReference && datasetTemplateId
+              ? {
+                  container_type: "dataset_template",
+                  template_id: datasetTemplateId,
+                  dimension: "whole",
+                  provision: "per_scope",
+                }
               : undefined,
         }),
       ).unwrap();
@@ -326,6 +345,9 @@ export function ContextItemAddForm({
               allowedScopeTypeIds={allowedScopeTypeIds}
               onToggleAllowedScopeType={toggleAllowedScopeType}
               orgScopeTypes={orgScopeTypes}
+              organizationId={orgId}
+              datasetTemplateId={datasetTemplateId}
+              onDatasetTemplateChange={selectDatasetTemplate}
               disabled={busy}
               className="space-y-3"
             />

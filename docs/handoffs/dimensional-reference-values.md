@@ -6,6 +6,12 @@ repos: [matrx-frontend, aidream]
 
 # Dimensional reference values — datasets & structured lists as containers with a settable dimension
 
+> 2026-07-15 update: the per-scope table-template case is now first-class. Use
+> `container_type: "dataset_template"`, `template_id`, `dimension: "whole"`,
+> and `provision: "per_scope"`. The database provisions and schema-locks one
+> dataset per scope via `context.scope_dataset_instances`; the stored cell is a
+> normal `dataset` reference fence. The shared-container cases below remain valid.
+
 A context-item (or agent-variable) value can reference a **container** and set a
 **dimension** within it. Datasets and Structured Lists are the same shape. Backend
 reference resolution for the static dataset dimensions already exists; the work is

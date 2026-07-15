@@ -7942,6 +7942,54 @@ export type Database = {
           },
         ]
       }
+      scope_dataset_instances: {
+        Row: {
+          context_item_id: string
+          created_at: string
+          created_by: string | null
+          dataset_id: string
+          id: string
+          scope_id: string
+          template_id: string
+          template_version: number
+        }
+        Insert: {
+          context_item_id: string
+          created_at?: string
+          created_by?: string | null
+          dataset_id: string
+          id?: string
+          scope_id: string
+          template_id: string
+          template_version: number
+        }
+        Update: {
+          context_item_id?: string
+          created_at?: string
+          created_by?: string | null
+          dataset_id?: string
+          id?: string
+          scope_id?: string
+          template_id?: string
+          template_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_dataset_instances_context_item_id_fkey"
+            columns: ["context_item_id"]
+            isOneToOne: false
+            referencedRelation: "context_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scope_dataset_instances_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scope_types: {
         Row: {
           color: string
@@ -8273,8 +8321,16 @@ export type Database = {
         Returns: undefined
       }
       parse_reference_fence: { Args: { p_value_text: string }; Returns: Json }
+      provision_scope_dataset: {
+        Args: { p_item_id: string; p_scope_id: string }
+        Returns: string
+      }
       reference_item_ref_key: {
         Args: { p_item: Json; p_type: string }
+        Returns: string
+      }
+      validate_dataset_template_source: {
+        Args: { p_org_id: string; p_source: Json }
         Returns: string
       }
       validate_reference_value: {
@@ -27590,6 +27646,7 @@ export type Database = {
           p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
           p_key: string
           p_max_items?: number
+          p_reference_source?: Json
           p_scope_type_id: string
           p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
           p_slug?: string
@@ -30411,6 +30468,7 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: Json
       }
+      list_udt_dataset_templates: { Args: { p_org_id: string }; Returns: Json }
       list_wizard_archetypes: { Args: never; Returns: Json }
       log_client_error: {
         Args: {
@@ -31156,6 +31214,14 @@ export type Database = {
         Returns: undefined
       }
       schema_truth_snapshot: { Args: never; Returns: Json }
+      scope_system_apply: {
+        Args: { p_operations: Json; p_org_id: string }
+        Returns: Json
+      }
+      scope_system_inspect: {
+        Args: { p_include_values?: boolean; p_org_id: string }
+        Returns: Json
+      }
       search_files: {
         Args: {
           p_limit?: number
@@ -41964,6 +42030,95 @@ export type Database = {
           },
         ]
       }
+      udt_dataset_template_fields: {
+        Row: {
+          created_at: string
+          data_type: Database["public"]["Enums"]["field_data_type"]
+          default_value: Json | null
+          display_name: string
+          field_name: string
+          field_order: number
+          id: string
+          is_required: boolean
+          template_id: string
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          data_type?: Database["public"]["Enums"]["field_data_type"]
+          default_value?: Json | null
+          display_name: string
+          field_name: string
+          field_order?: number
+          id?: string
+          is_required?: boolean
+          template_id: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          data_type?: Database["public"]["Enums"]["field_data_type"]
+          default_value?: Json | null
+          display_name?: string
+          field_name?: string
+          field_order?: number
+          id?: string
+          is_required?: boolean
+          template_id?: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_dataset_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "udt_dataset_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_dataset_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       udt_datasets: {
         Row: {
           created_at: string
@@ -41977,6 +42132,8 @@ export type Database = {
           sheet_index: number | null
           table_name: string
           task_id: string | null
+          template_id: string | null
+          template_version: number | null
           updated_at: string
           updated_by: string | null
           user_id: string
@@ -41996,6 +42153,8 @@ export type Database = {
           sheet_index?: number | null
           table_name: string
           task_id?: string | null
+          template_id?: string | null
+          template_version?: number | null
           updated_at?: string
           updated_by?: string | null
           user_id: string
@@ -42015,6 +42174,8 @@ export type Database = {
           sheet_index?: number | null
           table_name?: string
           task_id?: string | null
+          template_id?: string | null
+          template_version?: number | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string
@@ -42023,6 +42184,13 @@ export type Database = {
           workbook_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "udt_datasets_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "udt_dataset_templates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "udt_datasets_workbook_id_fkey"
             columns: ["workbook_id"]

@@ -57,6 +57,7 @@ import {
 } from "@/features/scopes/components/reference/EntryModeToggle";
 import { ReferenceConfigFields } from "@/features/scopes/components/reference/ReferenceConfigFields";
 import { ContextItemCurrentValues } from "./ContextItemCurrentValues";
+import { parseReferenceSource } from "@/features/scopes/utils/referenceSource";
 
 interface ContextItemSettingsFormProps {
   itemId: string;
@@ -126,6 +127,7 @@ export function ContextItemSettingsForm({
   );
   const [maxItems, setMaxItems] = useState("1");
   const [allowedScopeTypeIds, setAllowedScopeTypeIds] = useState<string[]>([]);
+  const [datasetTemplateId, setDatasetTemplateId] = useState<string | null>(null);
   const isReference = entryMode === "reference";
 
   useEffect(() => {
@@ -151,6 +153,10 @@ export function ContextItemSettingsForm({
     setAllowedReferenceTypes(item.allowed_reference_types ?? []);
     setMaxItems(item.max_items != null ? String(item.max_items) : "1");
     setAllowedScopeTypeIds(item.allowed_scope_type_ids ?? []);
+    const source = parseReferenceSource(item.reference_source);
+    setDatasetTemplateId(
+      source?.container_type === "dataset_template" ? source.template_id : null,
+    );
   }, [item]);
 
   // Org scope types, for the "scope" reference type's allowed-scope-type filter.
@@ -177,6 +183,15 @@ export function ContextItemSettingsForm({
     setAllowedScopeTypeIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+  }
+
+  function selectDatasetTemplate(templateId: string | null) {
+    setDatasetTemplateId(templateId);
+    if (templateId) {
+      setAllowedReferenceTypes(["dataset"]);
+      setMaxItems("1");
+      setAllowedScopeTypeIds([]);
+    }
   }
 
   function addTag() {
@@ -238,6 +253,15 @@ export function ContextItemSettingsForm({
           allowed_scope_type_ids:
             isReference && allowedReferenceTypes.includes("scope")
               ? allowedScopeTypeIds
+              : null,
+          reference_source:
+            isReference && datasetTemplateId
+              ? {
+                  container_type: "dataset_template",
+                  template_id: datasetTemplateId,
+                  dimension: "whole",
+                  provision: "per_scope",
+                }
               : null,
         }),
       ).unwrap();
@@ -372,6 +396,9 @@ export function ContextItemSettingsForm({
             allowedScopeTypeIds={allowedScopeTypeIds}
             onToggleAllowedScopeType={toggleAllowedScopeType}
             orgScopeTypes={orgScopeTypes}
+            organizationId={orgId}
+            datasetTemplateId={datasetTemplateId}
+            onDatasetTemplateChange={selectDatasetTemplate}
             disabled={busy}
             className="space-y-3"
           />

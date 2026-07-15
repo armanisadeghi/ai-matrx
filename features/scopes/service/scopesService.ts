@@ -72,6 +72,24 @@ export interface EntityScopeTag {
   scope_type: string;
 }
 
+export interface DatasetTemplateField {
+  id: string;
+  field_name: string;
+  display_name: string;
+  data_type: string;
+  field_order: number;
+  is_required: boolean;
+}
+
+export interface DatasetTableTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string;
+  version: number;
+  fields: DatasetTemplateField[];
+}
+
 // ─── helpers ────────────────────────────────────────────────────────
 
 function err(
@@ -107,6 +125,22 @@ function mapPgError(e: unknown): ScopesRpcError {
 // ─── service ────────────────────────────────────────────────────────
 
 export const scopesService = {
+  /** Organization-scoped immutable schemas available for per-scope table values. */
+  async listTableTemplates(
+    organizationId: string,
+  ): Promise<ScopesRpcResult<DatasetTableTemplate[]>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc(
+        "list_udt_dataset_templates",
+        { p_org_id: organizationId },
+      );
+      if (error) return err(...mapPgErrorPair(error));
+      return ok((Array.isArray(data) ? data : []) as DatasetTableTemplate[]);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
   // ──────────────────────────────────────────────────────────────────
   //  READ — TREE
   // ──────────────────────────────────────────────────────────────────

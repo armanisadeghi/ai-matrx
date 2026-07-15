@@ -1,10 +1,21 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/official/Field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  scopesService,
+  type DatasetTableTemplate,
+} from "@/features/scopes/service/scopesService";
 import {
   CONTEXT_REFERENCE_TYPE_OPTIONS,
   referenceTypeLabel,
@@ -23,6 +34,9 @@ export interface ReferenceConfigFieldsProps {
   allowedScopeTypeIds: string[];
   onToggleAllowedScopeType: (id: string) => void;
   orgScopeTypes: ReferenceConfigOrgScopeType[];
+  organizationId?: string | null;
+  datasetTemplateId?: string | null;
+  onDatasetTemplateChange?: (templateId: string | null) => void;
   disabled?: boolean;
   className?: string;
   /**
@@ -53,6 +67,9 @@ export function ReferenceConfigFields({
   allowedScopeTypeIds,
   onToggleAllowedScopeType,
   orgScopeTypes,
+  organizationId,
+  datasetTemplateId,
+  onDatasetTemplateChange,
   disabled,
   className,
   typeOptions,
@@ -62,6 +79,22 @@ export function ReferenceConfigFields({
   const typesId = `${uid}-types`;
   const maxId = `${uid}-max`;
   const scopesId = `${uid}-scopes`;
+  const templateId = `${uid}-table-template`;
+  const [templates, setTemplates] = useState<DatasetTableTemplate[]>([]);
+
+  useEffect(() => {
+    if (!organizationId || !onDatasetTemplateChange) {
+      return;
+    }
+    let cancelled = false;
+    void scopesService.listTableTemplates(organizationId).then((result) => {
+      if (cancelled) return;
+      setTemplates(result.ok ? result.data : []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId, onDatasetTemplateChange]);
 
   return (
     <div className={className ? className : "space-y-3"}>
@@ -75,7 +108,7 @@ export function ReferenceConfigFields({
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={disabled}
+                disabled={disabled || !!datasetTemplateId}
                 onClick={() => onToggleReferenceType(t)}
                 aria-pressed={active}
                 className={
@@ -109,7 +142,7 @@ export function ReferenceConfigFields({
           value={maxItems}
           onChange={(e) => onMaxItemsChange(e.target.value)}
           style={{ fontSize: "16px" }}
-          disabled={disabled}
+          disabled={disabled || !!datasetTemplateId}
           className="h-7 w-28 px-2 text-xs"
         />
       </Field>
@@ -148,6 +181,41 @@ export function ReferenceConfigFields({
                 );
               })}
             </div>
+          )}
+        </Field>
+      )}
+
+      {onDatasetTemplateChange && (
+        <Field
+          label="Per-scope table template"
+          htmlFor={templateId}
+          description="Optional. Creates one table for every scope and locks its columns to this template."
+        >
+          <Select
+            value={datasetTemplateId ?? "__none__"}
+            onValueChange={(value) =>
+              onDatasetTemplateChange(value === "__none__" ? null : value)
+            }
+            disabled={disabled || !organizationId}
+          >
+            <SelectTrigger id={templateId} size="sm" className="max-w-md">
+              <SelectValue
+                placeholder="No template"
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No template</SelectItem>
+              {templates.map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {template.name} ({template.fields.length} columns)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {datasetTemplateId && (
+            <p className="text-xs text-muted-foreground">
+              The table value is provisioned automatically; users edit rows, not columns.
+            </p>
           )}
         </Field>
       )}
