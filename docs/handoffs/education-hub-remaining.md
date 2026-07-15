@@ -17,6 +17,22 @@
 2. **Push matrx-frontend `main`** (deploys aimatrx.com) once Arman has clicked through the new tools —
    ~15 education commits are ready and education-area type-check is clean.
 
+## Convergence-C / creators (shipped 2026-07-14 — see CONVERGENCE_C_CREATORS.md)
+
+Built: open/closed/paid classes + roster + join; creator profiles + `/c/[handle]` public landing pages;
+teacher tools (assignments + analytics + assignment-confers-read-visibility); COPPA gate on all AI entries +
+student data rights + D52 fix; DOCX/PPTX ingestion. A security review found + fixed a **critical anon-bypass**
+of every owner-gated `edu_class_*`/`creator_*` write RPC. **Remaining on this frontier:**
+- **Stripe Connect creator payouts** — `edu_class_purchase` is a payment-free stub (D58); paid classes are
+  currently free. Build after Arman confirms the payout/revenue-share model.
+- **D57 server-side COPPA enforcement + verifiable consent** — the gate is client-side (fails closed now) but
+  aidream's generation seam doesn't re-check it, and age is self-declared. Needs an aidream-side gate + a
+  real (non-self-declared) consent/age mechanism before a genuine school launch.
+- **Class rooms / real-time co-study / discussion threads**, **LMS (Classroom/Canvas, LTI 1.3/OneRoster)**,
+  **live classroom quiz mode**, **community library at scale + moderation** — not yet built.
+- Small: `edu_class_roster` email now owner-only; a pre-existing `assoc_members_visible` org-branch returns
+  card-membership *edges* (not content) to org members — flagged, not filed.
+
 ## Decisions needed from Arman (see the turn's decision list)
 
 - Free-tier numbers + whether to flip any capability `enforced:true` (all permissive today; needs the

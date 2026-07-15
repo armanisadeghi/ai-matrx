@@ -77,11 +77,15 @@ monetization) and B (the connected study loop) are done.
 - 🔲 Study songs / musical mnemonics (audio) — *may need a music model; decision pending.*
 - 🟡 Standardized exam content libraries — **starter seed live (2026-07-14):** 9 certified curated decks (SAT Math·AP Biology·GRE Verbal, 128 cards) + 3 study guides, real-agent-generated, marked Certified, on each exam-prep page (`ExamCuratedLibrary`) + community library. AI starters pending human verification; ACT/IB/MCAT/LSAT/GMAT follow the same recipe.
 
-### Tier 3 — Convergence C (institutional frontier, largely un-started)
-- 🔲 Teacher tools (assignment, distribution, auto-grade, class analytics).
+### Tier 3 — Convergence C (institutional + creator frontier) — **wave 3 shipped 2026-07-14**
+See [`CONVERGENCE_C_CREATORS.md`](./CONVERGENCE_C_CREATORS.md) + [`SCHOOL_SAFE_CHECKLIST.md`](./SCHOOL_SAFE_CHECKLIST.md).
+- ✅ **Classes: open / closed / paid** + teacher ownership + roster (`iam.memberships`, no new table) + `edu_class_join` family. `/education/classes`.
+- ✅ **Creator profiles + public landing pages** (`/c/[handle]`, SEO/JSON-LD/OG, YouTube + free tools + enroll CTA) — the growth engine.
+- ✅ **Teacher tools** — assignments (association edges + due dates) + class analytics + **assignment confers read-visibility** so students can study an assigned private deck.
+- ✅ **FERPA/COPPA code affordances** — D52 fix, COPPA age-gate (fail-closed, on all 9 AI entries), student data export/delete/restore, guardian consent. Server-side gate enforcement + verifiable consent = open (D57 remainder).
+- 🟡 **Paid gate** — access-gating live; `edu_class_purchase` is a payment-free STUB (D58). Real payouts = **Stripe Connect, pending Arman**.
 - 🔲 Class rooms & real-time co-study; card-level discussion threads.
 - 🔲 LMS — Google Classroom / Canvas, LTI 1.3 / OneRoster.
-- 🔲 FERPA / COPPA compliance + DUA.
 - 🔲 Live classroom quiz mode (P10 fan-out).
 - 🔲 Community/certified library at scale + moderation.
 
@@ -107,6 +111,13 @@ monetization) and B (the connected study loop) are done.
   release ships both. Blocked only by others' uncommitted aidream work (won't stash).
 
 ## Change log
+- **2026-07-14 (wave 3 — Convergence C / creators)** — Classes open/closed/paid + roster + join; creator
+  profiles + `/c/[handle]` landing pages; teacher tools (assignments + analytics + assignment-confers-read);
+  school-safe compliance (COPPA gate on all AI entries, data rights, D52); DOCX/PPTX ingestion wired to the
+  office extractor. Adversarial security review found + fixed a CRITICAL anon-bypass of every owner-gated
+  `edu_class_*`/`creator_*` write RPC (NULL-owner + default PUBLIC grant); D56 roster-email privacy + D57
+  gate-fail-closed remediated. Migration ledger reconciled; education type-check clean. **Open decisions:
+  Stripe Connect payouts (D58), subdomain, D57 server-side enforcement + verifiable consent.**
 - **2026-07-14 (wave 2)** — Parallel fleet: tutor per-turn structured trust, flashcards meters, cross-surface
   session recovery, pronunciation mode, parent/guardian dashboard (+security review), per-class hub (W2),
   exam content-library starter seed, YouTube-transcript wiring. Education type-check clean.
