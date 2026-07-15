@@ -45,6 +45,12 @@ target scope type; self-reference = target type is the same type). It is another
 container-type in the model below (`scope` / `scope_type`), and it is NOT new work —
 only surfacing it as a first-class, discoverable authoring choice is.
 
+On the employee-review use case (the driving example for the dynamic filter):
+> "we will have an employee review system where the user gets a row in the reviews each time they get one and their context item for 'reviews' points to the table and with employee id = their id."
+
+On data structure + immediate priority:
+> "The concept is correct. The data structure is not but it will be something like this. For now, let's get the core information for the templates done." — i.e. ship the templates' core scope references first (Departments, Team Members: Department + Reports To), then the review-system dynamic filter.
+
 On Structured Lists (his answer — the load-bearing reframe):
 > "we are using one feature for two completely different things in this case. The way you have seen lists used is actually not the way they were originally created. A Structured list has two flavors.. a list of things such as a Grocery list or a list of employees. Alternatively, it can take on one more dimension and be a list of employees grouped by department or a list of things to buy from target and costco. It just so happens that structured lists also make good readonly dropdowns but they are not read only and before they were used for picking things, they were lists."
 
@@ -70,6 +76,43 @@ item **definition**, and a **dimension** set per scope (or dynamically):
 - **Resolution runs everywhere the value is shown or needed** — UI display AND agent
   context (`resolve_full_context`), not only at agent time.
 - **Agents must be able to write** every dimension (writeback path).
+
+## Reference taxonomy — the COMPLETE wishlist
+
+Every kind of thing a context-item value can reference. `[DONE]` = works today;
+`[author]` = backend resolves it, needs FE authoring; `[NEW]` = net-new.
+
+**A. Target kinds**
+1. Scope instance — a specific scope, constrained to a scope type; self-reference allowed (Reports To). `[DONE]`
+2. Scope type — the dimension itself ("Departments"). `[author]` (backend `scope_type` ref exists)
+3. Dataset — whole table. `[author]`
+4. Dataset row — a specific row. `[author]` (`table_row`)
+5. Dataset column — a column. `[author]` (`table_column`)
+6. Dataset cell — one cell. `[author]` (`table_cell`)
+7. Structured list — whole list. `[author]`
+8. Structured list group — a group in a grouped list. `[author]`
+9. Structured list item — pick one item (the dropdown/"picklist" trick). `[DONE]`
+10. Other Matrx entity — file, url, note, document, agent, project, task, transcript, workbook, org, … `[DONE]`
+
+**B. Binding mode** (orthogonal to target)
+- Static — the value is picked per scope. `[DONE for scope/entity; author for dataset/list]`
+- Dynamic — a filter resolves the element wherever the value is shown or needed (the reviews case). `[NEW]`
+
+**C. Dynamic-filter token vocabulary** — the RHS of a filter; the load-bearing new decision. `[NEW]`
+- `$scope.id`, `$scope.name`
+- `$scope.<field_key>` — another context-item value on the SAME scope (in-place traversal: filter a table by the employee's Department value)
+- `$user.id`, `$org.id`, `$project.id`, `$task.id`
+- `$parent_scope.id` — nested scope types
+- literal constants
+
+**D. Filter operators** `[NEW]` — at least `=`; likely `!=`, `in`, `>`, `<`, `contains`, date-range.
+
+**E. Cardinality** — single | many (`max_items`). `[DONE]`
+
+**F. Advanced (decide in/out; flagged so a later data-model change isn't needed)**
+- Cross-scope traversal (graph hop) — reference a FIELD on a referenced scope ("my Department's billing rate" = follow Department ref → read its Billing Rate cell). `[NEW]`
+- Reverse references — the computed inverse ("who reports to me"); reverse index exists (`context_value_refs`), surfacing it as a value/display is new. `[NEW]`
+- Aggregates over a dynamic filter — count/sum/avg of matching rows ("# of reviews", "avg score"). `[NEW]`
 
 ## Resources
 
