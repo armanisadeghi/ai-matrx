@@ -86,6 +86,7 @@ import { CtxBatchInline } from "../renderers/ctx/CtxBatchInline";
 import { CtxPatchInline } from "../renderers/ctx/CtxPatchInline";
 import { ContextActionInline } from "../renderers/ctx/ContextActionInline";
 import { SqlInline } from "../renderers/sql/SqlInline";
+import { FsInline } from "../renderers/fs/FsInline";
 import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
 
@@ -1023,6 +1024,43 @@ export const toolRendererRegistry: ToolRegistry = {
     getHeaderSubtitle: (entry) => {
       const table = getArg<string>(entry, "table");
       return typeof table === "string" && table ? table : null;
+    },
+  },
+
+  // Filesystem tools (sandbox / local agent). Static entries deliberately
+  // OVERRIDE the DB-authored tool_ui renderers — those produced the generic
+  // is_dir/mtime table dump the owner flagged. FsInline is the clean card.
+  fs_list: {
+    toolName: "fs_list",
+    displayName: "Files",
+    phaseLabels: {
+      running: "Listing files",
+      complete: "Listed files",
+      errorPrefix: "Couldn't list files",
+    },
+    resultsLabel: "Entries",
+    InlineComponent: FsInline,
+    OverlayComponent: FsInline,
+    getHeaderSubtitle: (entry) => {
+      const path = getArg<string>(entry, "path");
+      return typeof path === "string" && path ? path : null;
+    },
+  },
+
+  fs_read: {
+    toolName: "fs_read",
+    displayName: "Files",
+    phaseLabels: {
+      running: "Reading file",
+      complete: "Read file",
+      errorPrefix: "Couldn't read file",
+    },
+    resultsLabel: "Content",
+    InlineComponent: FsInline,
+    OverlayComponent: FsInline,
+    getHeaderSubtitle: (entry) => {
+      const path = getArg<string>(entry, "path");
+      return typeof path === "string" && path ? path : null;
     },
   },
 
