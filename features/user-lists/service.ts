@@ -12,7 +12,7 @@ import type {
   UserListWithItems,
   CreateListInput,
   UpdateListInput,
-  PicklistForSelection,
+  StructuredListForSelection,
 } from "./types";
 import { normalizeUserList } from "./types";
 
@@ -67,14 +67,14 @@ export async function getListWithItems(
  * works even for a private list bound to an agent the caller is running. Use this
  * — never getListWithItems — anywhere a non-owner can see the result.
  */
-export async function getPicklistForSelection(
+export async function getStructuredListForSelection(
   listId: string,
-): Promise<PicklistForSelection | null> {
+): Promise<StructuredListForSelection | null> {
   const { data, error } = await supabase.rpc("get_structured_list_for_selection", {
     p_list_id: listId,
   });
   if (error) throw new Error(`Failed to load picklist: ${error.message}`);
-  return (data as unknown as PicklistForSelection) ?? null;
+  return (data as unknown as StructuredListForSelection) ?? null;
 }
 
 // ─── Create ────────────────────────────────────────────────────────────────────

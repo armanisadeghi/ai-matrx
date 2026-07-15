@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPicklistForSelection } from "@/features/user-lists/service";
+import { getStructuredListForSelection } from "@/features/user-lists/service";
 import type {
-  PicklistForSelection,
+  StructuredListForSelection,
   PicklistSelectionItem,
 } from "@/features/user-lists/types";
 
@@ -12,7 +12,7 @@ export interface PicklistSelectionGroup {
   items: PicklistSelectionItem[];
 }
 
-export interface UsePicklistForSelectionResult {
+export interface UseStructuredListForSelectionResult {
   /** Flat, ordered list of items (across all groups). */
   items: PicklistSelectionItem[];
   /** Ordered groups for sectioned rendering. Single "Ungrouped" bucket when ungrouped. */
@@ -24,9 +24,9 @@ export interface UsePicklistForSelectionResult {
 
 // Module-level cache keyed by listId — labels are public and rarely change within a session.
 // Mirrors the in-memory cache pattern used by useStructuredLists (@/features/structured-lists).
-const _cache = new Map<string, PicklistForSelection | null>();
+const _cache = new Map<string, StructuredListForSelection | null>();
 
-function flatten(data: PicklistForSelection | null): {
+function flatten(data: StructuredListForSelection | null): {
   items: PicklistSelectionItem[];
   groups: PicklistSelectionGroup[];
 } {
@@ -52,11 +52,11 @@ function flatten(data: PicklistForSelection | null): {
  * Lazily load a picklist's selectable items (LABELS ONLY — never the secret description)
  * for rendering a bound variable's input. Caches per listId for the session.
  */
-export function usePicklistForSelection(
+export function useStructuredListForSelection(
   listId: string | null | undefined,
   groupName?: string,
-): UsePicklistForSelectionResult {
-  const [data, setData] = useState<PicklistForSelection | null | undefined>(
+): UseStructuredListForSelectionResult {
+  const [data, setData] = useState<StructuredListForSelection | null | undefined>(
     listId ? _cache.get(listId) : null,
   );
   const [loading, setLoading] = useState(false);
@@ -76,7 +76,7 @@ export function usePicklistForSelection(
     let cancelled = false;
     setLoading(true);
     setErrored(false);
-    getPicklistForSelection(listId)
+    getStructuredListForSelection(listId)
       .then((result) => {
         if (cancelled) return;
         _cache.set(listId, result);

@@ -100,7 +100,7 @@ export interface PicklistSelectionItem {
   icon_name: string | null;
 }
 
-export interface PicklistForSelection {
+export interface StructuredListForSelection {
   list_id: string;
   list_name: string;
   description: string | null; // list-level metadata (not the secret item description)

@@ -11,7 +11,7 @@ import {
   buildPicklistItemFence,
   readPicklistSelection,
 } from "@/features/matrx-envelope/referenceFence";
-import { usePicklistForSelection } from "@/features/user-lists/hooks/usePicklistForSelection";
+import { useStructuredListForSelection } from "@/features/user-lists/hooks/useStructuredListForSelection";
 
 interface PicklistVariableInputProps {
   value: unknown;
@@ -60,7 +60,7 @@ export function PicklistVariableInput({
   const multiple = !!binding.multiple;
   const allowOther = customComponent.allowOther;
 
-  const { items, loading, unavailable } = usePicklistForSelection(
+  const { items, loading, unavailable } = useStructuredListForSelection(
     listId,
     binding.groupName,
   );

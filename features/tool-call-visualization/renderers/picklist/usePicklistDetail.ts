@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import {
   getListWithItems,
-  getPicklistForSelection,
+  getStructuredListForSelection,
 } from "@/features/user-lists/service";
 import type {
   UserListWithItems,
   GroupedItem,
-  PicklistForSelection,
+  StructuredListForSelection,
 } from "@/features/user-lists/types";
 
 /**
@@ -18,14 +18,14 @@ import type {
  *
  * Tries the owner read first (`getListWithItems` — full, includes the secret
  * item descriptions the owner is allowed to see). Falls back to the
- * consumer-safe `getPicklistForSelection` (labels only) when the caller is not
+ * consumer-safe `getStructuredListForSelection` (labels only) when the caller is not
  * the owner, so a shared/agent-bound list still renders. Caches per listId for
  * the session — a just-created list doesn't change underneath us.
  */
 
 const _cache = new Map<string, UserListWithItems | null>();
 
-function selectionToWithItems(p: PicklistForSelection): UserListWithItems {
+function selectionToWithItems(p: StructuredListForSelection): UserListWithItems {
   const grouped: Record<string, GroupedItem[]> = {};
   for (const [group, items] of Object.entries(p.items_grouped ?? {})) {
     grouped[group] = (items ?? []).map((it) => ({
@@ -57,7 +57,7 @@ async function loadList(listId: string): Promise<UserListWithItems | null> {
     // Not the owner (or RLS-denied) — fall through to the consumer-safe read.
   }
   try {
-    const selection = await getPicklistForSelection(listId);
+    const selection = await getStructuredListForSelection(listId);
     return selection ? selectionToWithItems(selection) : null;
   } catch {
     return null;

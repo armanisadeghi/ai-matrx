@@ -13,7 +13,7 @@ import {
 import { ExternalLink } from "lucide-react";
 import {
   getAccessibleLists,
-  getPicklistForSelection,
+  getStructuredListForSelection,
 } from "@/features/user-lists/service";
 import type { UserList } from "@/features/user-lists/types";
 import type { PicklistBinding } from "@/features/agents/types/agent-definition.types";
@@ -82,7 +82,7 @@ export function PicklistBindingEditor({
   useEffect(() => {
     if (!binding?.listId) return undefined;
     let cancelled = false;
-    getPicklistForSelection(binding.listId)
+    getStructuredListForSelection(binding.listId)
       .then((data) => {
         if (cancelled) return;
         const keys = Object.keys(data?.items_grouped ?? {}).filter(
