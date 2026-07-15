@@ -12,6 +12,7 @@ import {
   Loader2,
   Mail,
   MailPlus,
+  Megaphone,
   ShieldCheck,
   SlidersHorizontal,
   Users,
@@ -54,6 +55,11 @@ const NAV_ITEMS = [
     label: "Email",
     href: "/administration/users/email",
     icon: Mail,
+  },
+  {
+    label: "Announcements",
+    href: "/administration/users/announcements",
+    icon: Megaphone,
   },
 ];
 

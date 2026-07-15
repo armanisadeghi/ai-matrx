@@ -732,10 +732,18 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "Send",
         link: "/administration/users/email",
       },
+      {
+        title: "Announcements",
+        description:
+          "System-wide announcements broadcast to every user on next login (info / warning / critical / update). Managed alongside accounts and DMs — distinct from the feedback bug tracker.",
+        iconName: "Megaphone",
+        link: "/administration/users/announcements",
+        isNew: true,
+      },
     ],
   },
   {
-    name: "Feedback & Announcements",
+    name: "Feedback",
     iconName: "MessageSquare",
     iconColor: "text-orange-600",
     features: [

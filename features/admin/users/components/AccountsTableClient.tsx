@@ -14,8 +14,10 @@ import {
   BadgeCheck,
   Gauge,
   KeyRound,
+  Loader2,
   Mail,
   MailPlus,
+  MessageSquare,
   MoreHorizontal,
   ShieldCheck,
   SlidersHorizontal,
@@ -25,6 +27,14 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -143,6 +153,47 @@ export function AccountsTableClient() {
     },
     [],
   );
+
+  // In-app DM: create/find the direct conversation with the user, then send.
+  const [dmTarget, setDmTarget] = useState<AdminUserRow | null>(null);
+  const [dmContent, setDmContent] = useState("");
+  const [dmSending, setDmSending] = useState(false);
+
+  const sendDm = useCallback(async () => {
+    if (!dmTarget || !dmContent.trim()) return;
+    setDmSending(true);
+    try {
+      const convRes = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "direct", participant_ids: [dmTarget.id] }),
+      });
+      const convJson = await convRes.json();
+      if (!convRes.ok || !convJson.success)
+        throw new Error(convJson.msg ?? "Could not open conversation");
+      const conversationId = convJson.data?.ConversationID as string;
+      const msgRes = await fetch(`/api/messages/${conversationId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: dmContent.trim() }),
+      });
+      const msgJson = await msgRes.json();
+      if (!msgRes.ok || !msgJson.success)
+        throw new Error(msgJson.msg ?? "Could not send message");
+      toast.success(`Message sent to ${dmTarget.display_name ?? dmTarget.email}`, {
+        action: {
+          label: "Open thread",
+          onClick: () => router.push("/messages"),
+        },
+      });
+      setDmTarget(null);
+      setDmContent("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to send message");
+    } finally {
+      setDmSending(false);
+    }
+  }, [dmTarget, dmContent, router]);
 
   const columns = useMemo((): MatrxColumnDef<AdminUserRow>[] => {
     return [
@@ -350,6 +401,15 @@ export function AccountsTableClient() {
                 >
                   <Mail className="mr-2 h-4 w-4" /> Email user
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setDmTarget(row);
+                    setDmContent("");
+                  }}
+                  disabled={row.is_anonymous}
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" /> Send in-app message
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() =>
@@ -384,6 +444,46 @@ export function AccountsTableClient() {
           )}
         />
       </div>
+
+      <Dialog
+        open={dmTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setDmTarget(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              In-app message to {dmTarget?.display_name ?? dmTarget?.email}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Sends a direct message from you into the user&apos;s in-app inbox (the
+            DM system). They see it in Messages.
+          </p>
+          <Textarea
+            value={dmContent}
+            onChange={(e) => setDmContent(e.target.value)}
+            placeholder="Write your message…"
+            rows={5}
+            className="resize-none"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDmTarget(null)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void sendDm()} disabled={dmSending || !dmContent.trim()}>
+              {dmSending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <MessageSquare className="mr-2 h-4 w-4" />
+              )}
+              Send message
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
