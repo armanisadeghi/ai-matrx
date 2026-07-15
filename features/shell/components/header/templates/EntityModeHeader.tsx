@@ -31,6 +31,7 @@ import {
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import {
   TapTargetButton,
+  TapTargetButtonDestructive,
   TapTargetButtonSolid,
 } from "@/components/icons/TapTargetButton";
 import {
@@ -84,24 +85,20 @@ function DesktopAction({ action }: { action: EntityHeaderAction }) {
   const Icon = action.icon;
   const shared = {
     icon: <Icon className="h-4 w-4" />,
-    ariaLabel: action.label,
     onClick: action.onPress,
     href: action.href,
     disabled: action.disabled,
   };
+  // Primary + destructive show their NAME inline (like the demo's Send /
+  // Delete pills); plain glass actions stay icon-only with a tooltip
+  // (tap targets tooltip automatically from ariaLabel when no label).
   if (action.destructive) {
-    return (
-      <TapTargetButtonSolid
-        {...shared}
-        bgColor="bg-destructive"
-        hoverBgColor="hover:bg-destructive/90"
-      />
-    );
+    return <TapTargetButtonDestructive {...shared} label={action.label} />;
   }
   if (action.primary) {
-    return <TapTargetButtonSolid {...shared} />;
+    return <TapTargetButtonSolid {...shared} label={action.label} />;
   }
-  return <TapTargetButton {...shared} />;
+  return <TapTargetButton {...shared} ariaLabel={action.label} />;
 }
 
 export function EntityModeHeader({

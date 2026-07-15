@@ -557,6 +557,32 @@ export const TapTargetButtonSolid = forwardRef<
   });
 });
 
+/** Solid destructive pill — delete/remove actions. White-on-red like the
+ *  primary solid is white-on-blue (see /demos/button-demo). Use THIS, never
+ *  hand-pass bg-destructive with the default (dark) icon color. */
+export const TapTargetButtonDestructive = forwardRef<
+  HTMLButtonElement,
+  TapTargetButtonSolidProps & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(function TapTargetButtonDestructive(
+  {
+    bgColor = "bg-destructive",
+    iconColor = "text-destructive-foreground",
+    hoverBgColor = "hover:bg-destructive/90",
+    ...rest
+  },
+  ref,
+) {
+  return (
+    <TapTargetButtonSolid
+      ref={ref}
+      bgColor={bgColor}
+      iconColor={iconColor}
+      hoverBgColor={hoverBgColor}
+      {...rest}
+    />
+  );
+});
+
 export const TapTargetButtonForGroup = forwardRef<
   HTMLButtonElement,
   TapTargetButtonProps & ButtonHTMLAttributes<HTMLButtonElement>
