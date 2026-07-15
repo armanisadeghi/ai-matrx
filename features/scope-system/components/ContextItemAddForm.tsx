@@ -224,8 +224,10 @@ export function ContextItemAddForm({
 
       onAdded?.(item);
 
+      // A reference value is a `matrx` fence string; buildScopeValuePayload routes
+      // it to value_text and write_context_value validates it against the item's
+      // just-saved allowed_reference_types.
       const hasValue =
-        valueType !== "reference" &&
         value != null &&
         (typeof value !== "string" || value.trim() !== "");
       if (scopeId && hasValue) {
@@ -407,25 +409,41 @@ export function ContextItemAddForm({
         </Field>
       </div>
 
-      {scopeId && valueType === "reference" && (
-        <p className="text-xs text-muted-foreground">
-          Reference fields are configured and set from the item&apos;s own page
-          once it&apos;s created.
-        </p>
-      )}
-      {scopeId && valueType !== "reference" && (
+      {scopeId && (
         <Field label="Value for this one" htmlFor={ids.value} optional>
-          <ContextValueInput
-            id={ids.value}
-            valueType={valueType}
-            value={value}
-            onChange={setValue}
-            placeholder="Leave blank to fill later"
-            disabled={busy}
-            compact
-            minHeight={28}
-            maxHeight={200}
-          />
+          {isReference && allowedReferenceTypes.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Choose at least one reference type above to set a value here.
+            </p>
+          ) : (
+            <ContextValueInput
+              id={ids.value}
+              valueType={valueType}
+              value={value}
+              onChange={setValue}
+              onCommit={setValue}
+              referenceConfig={
+                isReference
+                  ? {
+                      allowed_reference_types: allowedReferenceTypes,
+                      max_items: Math.max(1, Number(maxItems) || 1),
+                      allowed_scope_type_ids: allowedReferenceTypes.includes(
+                        "scope",
+                      )
+                        ? allowedScopeTypeIds
+                        : null,
+                    }
+                  : null
+              }
+              scopeId={scopeId}
+              displayName={name || "Value"}
+              placeholder="Leave blank to fill later"
+              disabled={busy}
+              compact
+              minHeight={28}
+              maxHeight={200}
+            />
+          )}
         </Field>
       )}
 

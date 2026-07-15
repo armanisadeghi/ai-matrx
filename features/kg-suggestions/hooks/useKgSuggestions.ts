@@ -42,6 +42,7 @@ import {
   listKgSuggestions,
   rejectKgSuggestion,
 } from "@/features/kg-suggestions/service/kgSuggestionsService";
+import { getScopeContext } from "@/features/scope-system/redux/scopeValuesSlice";
 import {
   isHeavyHitter,
   kgFilterKey,
@@ -151,6 +152,17 @@ export function useKgSuggestions(
       try {
         if (row.stage === "value") {
           await acceptValueSuggestion(row);
+          // The write went straight to the DB via scopesService; patch the
+          // scope-values cache so any open scope/value surface reflects it
+          // immediately instead of showing the stale cell until a reload.
+          if (row.target.scope_id) {
+            void dispatch(
+              getScopeContext({
+                scope_id: row.target.scope_id,
+                include_empty: true,
+              }),
+            );
+          }
         } else {
           await acceptAssociationSuggestion(row);
         }

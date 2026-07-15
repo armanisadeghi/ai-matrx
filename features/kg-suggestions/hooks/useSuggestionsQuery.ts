@@ -32,6 +32,7 @@ import {
   setKgSuggestionStarred,
   type KgSuggestionStat,
 } from "@/features/kg-suggestions/service/kgSuggestionsService";
+import { getScopeContext } from "@/features/scope-system/redux/scopeValuesSlice";
 import {
   resolveSourceTitles,
   sourceRefKey,
@@ -351,10 +352,21 @@ export function useSuggestionsQuery(
             "Heavy-hitter suggestions are accepted by creating a scope.",
           );
         }
-        if (row.stage === "value") await acceptValueSuggestion(row);
-        else await acceptAssociationSuggestion(row);
+        if (row.stage === "value") {
+          await acceptValueSuggestion(row);
+          // Patch the scope-values cache so an open scope surface updates now
+          // (the write bypassed Redux — went straight through scopesService).
+          if (row.target.scope_id) {
+            void dispatch(
+              getScopeContext({
+                scope_id: row.target.scope_id,
+                include_empty: true,
+              }),
+            );
+          }
+        } else await acceptAssociationSuggestion(row);
       }),
-    [runDecision],
+    [runDecision, dispatch],
   );
 
   const reject = useCallback(
