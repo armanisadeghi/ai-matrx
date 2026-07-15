@@ -24,6 +24,17 @@ import { getCmsClient, verifySiteOwnership, verifyAssetOwnership } from "../_lib
 import { logCmsActivity } from "../_lib/activityLog";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 
+// Durable public hosts a library asset URL may live on (the assets pipeline
+// returns cdn.matrxserver.com; public Supabase storage is the other durable
+// public form). Anything else — an arbitrary external https URL — is refused so
+// an owner can't register a tracking/phishing pixel as a site asset
+// (adversarial finding W2-B #3).
+const DURABLE_PUBLIC_URL_MARKERS = ["cdn.matrxserver.com", "/storage/v1/object/public/"] as const;
+
+function isDurablePublicUrl(url: string): boolean {
+  return DURABLE_PUBLIC_URL_MARKERS.some((m) => url.includes(m));
+}
+
 // Metadata-only columns `update` may touch. file_path/file_id are immutable —
 // a new image is a new upload.
 const UPDATABLE_FIELDS = new Set(["file_name", "alt_text", "folder", "tags", "is_active"]);
@@ -228,14 +239,21 @@ export async function POST(request: NextRequest) {
         if (!(await verifySiteOwnership(db, siteId, user.id))) {
           return NextResponse.json({ error: "Site not found or access denied" }, { status: 403 });
         }
-        if (!/^https:\/\//i.test(filePath) || isSignedExpiringUrl(filePath)) {
+        if (
+          !/^https:\/\//i.test(filePath) ||
+          isSignedExpiringUrl(filePath) ||
+          !isDurablePublicUrl(filePath)
+        ) {
           // Media-durability doctrine, second layer: the library only holds
-          // durable public URLs — a signed link here would rot inside page HTML.
+          // durable public URLs on OUR CDN — a signed link would rot inside
+          // page HTML, and an arbitrary external URL would let an owner smuggle
+          // a tracking/phishing pixel into their own public pages.
           return NextResponse.json(
             {
               error:
-                "filePath must be a durable public https URL (never a signed/expiring link). " +
-                "Upload through the assets pipeline with visibility=public and pass the returned cdn_url.",
+                "filePath must be a durable public URL on the Matrx CDN (never a signed/expiring " +
+                "or external link). Upload through the assets pipeline with visibility=public and " +
+                "pass the returned cdn_url.",
             },
             { status: 400 },
           );
