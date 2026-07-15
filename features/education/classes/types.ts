@@ -70,7 +70,10 @@ export interface ClassAccessState {
 /** One row of a class roster (edu_class_roster). */
 export interface ClassRosterMember {
   userId: string;
+  /** Owner-only: peer emails are nulled server-side (D56, school-safe privacy). */
   email: string | null;
+  /** Non-PII display identity shown to every co-member. */
+  displayName: string | null;
   role: ClassRole;
   status: ClassStatus;
   createdAt: string;

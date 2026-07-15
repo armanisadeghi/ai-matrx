@@ -15,6 +15,12 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClassRoster } from "../hooks/useClassRoster";
 import type { ClassRosterMember } from "../types";
 
+// Owner sees the email; a co-member sees the display name (peer emails are
+// nulled server-side — D56). Fall back to the id only if neither is present.
+function memberLabel(m: ClassRosterMember): string {
+  return m.email ?? m.displayName ?? m.userId;
+}
+
 function StatusChip({ member }: { member: ClassRosterMember }) {
   if (member.role === "owner") {
     return (
@@ -67,7 +73,7 @@ export function ClassRosterPanel({
   }
   async function remove(m: ClassRosterMember) {
     const ok = await confirm({
-      title: `Remove ${m.email ?? "this member"}?`,
+      title: `Remove ${m.email ?? m.displayName ?? "this member"}?`,
       description: "They lose access to this class. They can re-join or re-request later.",
       confirmLabel: "Remove",
       variant: "destructive",
@@ -114,7 +120,7 @@ export function ClassRosterPanel({
                     className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2"
                   >
                     <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                      {m.email ?? m.userId}
+                      {memberLabel(m)}
                     </span>
                     <div className="flex shrink-0 items-center gap-1">
                       <Button
@@ -151,7 +157,7 @@ export function ClassRosterPanel({
                 className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2"
               >
                 <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                  {m.email ?? m.userId}
+                  {memberLabel(m)}
                 </span>
                 <div className="flex shrink-0 items-center gap-2">
                   <StatusChip member={m} />

@@ -24,6 +24,24 @@ export const coppaService = {
     }
   },
 
+  /**
+   * Is there a signed-in (non-guest) session? Local read, no network. Used by the
+   * COPPA gate to decide fail-closed vs fail-open on a resolver error: a signed-in
+   * account of unknown age is treated as a potential minor (fail closed); a
+   * not-signed-in visitor is not the COPPA gate's subject (fail open). Returns
+   * false on any error — the safe default is "treat as anonymous", which combined
+   * with the gate's own fail-closed keeps a minor blocked.
+   */
+  async isSignedIn(): Promise<boolean> {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      return Boolean(user) && user?.is_anonymous !== true;
+    } catch {
+      return false;
+    }
+  },
+
   /** Set the caller's own age band (validated server-side to the allowed set). */
   async setAgeBand(band: AgeBand): Promise<StudyResult<AgeBand>> {
     try {

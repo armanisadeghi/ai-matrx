@@ -35,8 +35,13 @@ state, never a silent failure.
 - `coppaService.ts` — typed wrappers over the two RPCs (`StudyResult<T>`).
 - `useAiComplianceGate.tsx` — **THE reusable gate primitive.** `ensureAllowed()`
   (server-truth pre-action check; opens the consent dialog + returns false on a
-  block) + `<gate.Gate />` + reactive `gate`/`blocked`. Fails OPEN on a resolver
-  blip (never break an adult's flow; the block is a positive under-13 signal).
+  block) + `<gate.Gate />` + reactive `gate`/`blocked`. On a resolver error it
+  **fails CLOSED for the minor path** (D57): a signed-in account with no
+  already-resolved allowed verdict is treated as a potential under-13 and blocked;
+  an already-resolved adult/13-17/consented-under-13 keeps the softer allow, and a
+  not-signed-in visitor (not the gate's subject) is allowed. Always loud
+  (`console.error`). `coppaService.isSignedIn()` (local session read) draws the
+  signed-in vs anonymous line.
 - `components/AiConsentRequiredDialog.tsx` — the "a parent must approve" state,
   routing to `/education/family` (the guardian flow).
 - `components/AgeBandPrivacyCard.tsx` — declare age band + see live COPPA status;
@@ -76,9 +81,21 @@ no entry point to gate there.
 - **Age band is server-validated** via `edu_set_age_band` (whitelist); the gate reads it
   server-side. (Tamper-resistance beyond self-declaration is a policy/verification layer —
   Arman/legal, tracked in the checklist.)
+- **The client gate is a first fail-closed layer, NOT the boundary (D57 open).** aidream's
+  education-generation seam does NOT yet re-check `edu_coppa_gate`, so a client bypass
+  (devtools / direct API) still reaches AI generation, and `age_band` is self-declared
+  (an under-13 can call `edu_set_age_band('adult')`). Server-side enforcement at the
+  aidream compute boundary + a verifiable-consent path (not self-attestation) remain the
+  real child-safety work — tracked in `FOUND_DEFECTS.md` D57 (decides: Arman/legal).
 
 ## Change log
 
+- `2026-07-15` — D57: `ensureAllowed()` no longer fails OPEN on a resolver error. It now
+  fails CLOSED for the minor path (signed-in + no prior allowed verdict → blocked), while
+  preserving the softer fail-open for already-resolved adults/teens and not-signed-in
+  visitors. Added `coppaService.isSignedIn()`. Live-verified the gate verdicts (under-13
+  no-guardian → `ai_allowed:false`; adult → `true`; consented under-13 → `true`).
+  Server-side enforcement + verifiable consent remain open (FOUND_DEFECTS D57).
 - `2026-07-14` — Rollout completed to every remaining AI-generation entry point (memory,
   quizzes/practice tests, handwritten grading, spoken practice, audio study, mind maps,
   convert/note fan-out, tutor). `engage/` confirmed to have no AI trigger (deck/SRS-only).

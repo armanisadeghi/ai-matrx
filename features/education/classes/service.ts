@@ -98,6 +98,7 @@ function coerceRoster(data: unknown): ClassRosterMember[] {
     return {
       userId: str(o.user_id) ?? "",
       email: str(o.email),
+      displayName: str(o.display_name),
       role: role(o.role) ?? "member",
       status: status(o.status) ?? "active",
       createdAt: str(o.created_at) ?? "",

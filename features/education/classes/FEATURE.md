@@ -45,7 +45,7 @@ Consumed by the class hub AND the creator landing page. TS wrappers: [`service.t
 | `edu_class_approve(p_class, p_user)` | owner | pending→active (`approved`). |
 | `edu_class_leave(p_class)` | member | soft-removes own membership (`left`). |
 | `edu_class_remove(p_class, p_user)` | owner | removes a member / declines a request (`removed`). |
-| `edu_class_roster(p_class)` | owner (all) / member (active) | `[{user_id, email, role, status, created_at}]`. Self-heals the owner membership. |
+| `edu_class_roster(p_class)` | owner (all) / member (active) | `[{user_id, email, display_name, role, status, created_at}]`. **`email` is owner-only** — nulled for non-owner callers so peers never see each other's addresses (D56, school-safe); everyone gets non-PII `display_name`. Self-heals the owner membership. |
 | `edu_class_grant(p_class, p_user)` | owner | comps the paid grant → `entitled`. |
 | `edu_class_purchase(p_class)` | authed | **STUB** — confers the caller the paid grant (`entitled`). Real Stripe Connect payouts PENDING (Arman). |
 | `edu_class_set_access(p_class, mode)` | owner | sets `settings.access_mode` + ensures the owner membership row. |
