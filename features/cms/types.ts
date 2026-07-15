@@ -236,6 +236,12 @@ export interface ContentException {
 export interface ClientAsset {
   id: string;
   client_id: string;
+  /**
+   * Main-project cld_files id minted by the canonical assets pipeline
+   * (CMS migration 0013). Cross-DB linkage — resolvable via InlineMediaRef.
+   * `file_path` carries the durable public CDN URL page HTML references.
+   */
+  file_id: string | null;
   file_name: string;
   file_path: string;
   file_type: string;
@@ -251,6 +257,30 @@ export interface ClientAsset {
   uploaded_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** One page referencing an asset's URL (live usage scan). */
+export interface AssetPageUsage {
+  page_id: string;
+  slug: string;
+  title: string | null;
+  fields: string[];
+}
+
+export interface AssetComponentUsage {
+  component_id: string;
+  component_type: string;
+  name: string | null;
+  fields: string[];
+}
+
+/** "What breaks if I delete this" — the live scan result from /api/cms/assets `usage`. */
+export interface AssetUsage {
+  asset_id: string;
+  url: string;
+  used_in_pages: AssetPageUsage[];
+  used_in_components: AssetComponentUsage[];
+  in_use: boolean;
 }
 
 // ─── Activity (C6 — master plan §5) ─────────────────────────────────────

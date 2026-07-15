@@ -20,6 +20,10 @@ import type {
     AgentWritePolicy,
     ContentException,
     ContentExceptionStatus,
+    ClientAsset,
+    AssetUsage,
+    AssetPageUsage,
+    AssetComponentUsage,
 } from '../types';
 
 export class SiteNotEmptyError extends Error {
@@ -289,6 +293,95 @@ export const CmsComponentService = {
 
     async deleteComponent(componentId: string): Promise<void> {
         await callApi('components', 'delete', { componentId });
+    },
+};
+
+// ── Assets (W2-B asset library over client_assets) ───────────────────────────
+
+/** Thrown by deleteAsset when content still references the asset (409 asset_in_use). */
+export class AssetInUseError extends Error {
+    usedInPages: AssetPageUsage[];
+    usedInComponents: AssetComponentUsage[];
+    constructor(message: string, usedInPages: AssetPageUsage[], usedInComponents: AssetComponentUsage[]) {
+        super(message);
+        this.name = 'AssetInUseError';
+        this.usedInPages = usedInPages;
+        this.usedInComponents = usedInComponents;
+    }
+}
+
+export const CmsAssetService = {
+    async listAssets(
+        siteId: string,
+        params: { folder?: string; fileType?: string; includeInactive?: boolean } = {},
+    ): Promise<ClientAsset[]> {
+        const res = await callApi<{ assets: ClientAsset[] }>('assets', 'list', { siteId, ...params });
+        return res.assets;
+    },
+
+    /** Fleet-wide listing for the admin surface (super-admin gated server-side). */
+    async adminListAssets(siteId?: string): Promise<ClientAsset[]> {
+        const res = await callApi<{ assets: ClientAsset[] }>('assets', 'admin_list', siteId ? { siteId } : {});
+        return res.assets;
+    },
+
+    async getAsset(assetId: string): Promise<ClientAsset> {
+        const res = await callApi<{ asset: ClientAsset }>('assets', 'get', { assetId });
+        return res.asset;
+    },
+
+    /**
+     * Register an already-uploaded PUBLIC file as a site asset. Upload the
+     * bytes FIRST through the canonical `fileHandler.upload(source, { preset,
+     * visibility: "public" })` path and pass the durable `cdn_url` here —
+     * never a signed URL (the route refuses them).
+     */
+    async createAsset(params: {
+        siteId: string;
+        fileId?: string | null;
+        filePath: string;
+        fileName: string;
+        fileType: string;
+        mimeType?: string | null;
+        fileSize?: number | null;
+        width?: number | null;
+        height?: number | null;
+        altText?: string | null;
+        folder?: string;
+        tags?: string[] | null;
+    }): Promise<ClientAsset> {
+        const res = await callApi<{ asset: ClientAsset }>('assets', 'create', params);
+        return res.asset;
+    },
+
+    async updateAsset(
+        assetId: string,
+        updates: Partial<Pick<ClientAsset, 'file_name' | 'alt_text' | 'folder' | 'tags' | 'is_active'>>,
+    ): Promise<ClientAsset> {
+        const res = await callApi<{ asset: ClientAsset }>('assets', 'update', { assetId, updates });
+        return res.asset;
+    },
+
+    /** Live usage scan — what breaks if this asset is deleted. */
+    async assetUsage(assetId: string): Promise<AssetUsage> {
+        const res = await callApi<{ usage: AssetUsage }>('assets', 'usage', { assetId });
+        return res.usage;
+    },
+
+    /** Throws AssetInUseError (with the live usage detail) unless force. */
+    async deleteAsset(assetId: string, force = false): Promise<void> {
+        const response = await fetch('/api/cms/assets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', assetId, force }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            if (response.status === 409 && data.code === 'asset_in_use') {
+                throw new AssetInUseError(data.error, data.used_in_pages ?? [], data.used_in_components ?? []);
+            }
+            throw new Error(data.error || `CMS API error: ${response.status}`);
+        }
     },
 };
 

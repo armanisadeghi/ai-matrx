@@ -9,6 +9,7 @@ import ActivityFeedPanel from './ActivityFeedPanel';
 import SitePageTreePanel from './SitePageTreePanel';
 import PolicyEditorPanel from './PolicyEditorPanel';
 import ApprovalsQueuePanel from './ApprovalsQueuePanel';
+import AssetsPanel from './AssetsPanel';
 
 export default function CmsAgentsAdminClient() {
     const [sites, setSites] = useState<ClientSite[]>([]);
@@ -82,6 +83,9 @@ export default function CmsAgentsAdminClient() {
                     <TabsTrigger value="approvals" className="text-xs">
                         Approvals Queue
                     </TabsTrigger>
+                    <TabsTrigger value="assets" className="text-xs">
+                        Assets
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="activity" className="flex-1 min-h-0 mt-2">
@@ -95,6 +99,9 @@ export default function CmsAgentsAdminClient() {
                 </TabsContent>
                 <TabsContent value="approvals" className="flex-1 min-h-0 mt-2">
                     <ApprovalsQueuePanel />
+                </TabsContent>
+                <TabsContent value="assets" className="flex-1 min-h-0 mt-2">
+                    <AssetsPanel sites={sites} />
                 </TabsContent>
             </Tabs>
         </div>
