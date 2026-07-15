@@ -655,19 +655,12 @@ export function getWordPressCSS(): string {
 }
 
 /**
- * Load WordPress CSS from file with fallback to embedded CSS
- * Use this for async loading scenarios
+ * Async accessor for the WordPress CSS, kept for the existing await-shaped
+ * call sites. Previously this fetch()ed `/features/html-pages/utils/…​.ts` —
+ * a source path that is never served (404 + console.warn on every call in
+ * prod, and TS source injected as "CSS" had any dev proxy answered 200).
+ * The embedded stylesheet IS the source of truth; return it directly.
  */
 export async function loadWordPressCSS(): Promise<string> {
-    try {
-        const response = await fetch('/features/html-pages/utils/markdown-wordpress-utils.ts');
-        if (response.ok) {
-            return await response.text();
-        }
-    } catch (error) {
-        console.warn('Could not load WordPress CSS file, using embedded styles');
-    }
-    
-    // Fallback to embedded CSS
     return getWordPressCSS();
 }

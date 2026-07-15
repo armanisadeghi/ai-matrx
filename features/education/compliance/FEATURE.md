@@ -20,8 +20,18 @@ state, never a silent failure.
 - **`users.profiles.age_band`** (`under_13 | 13_17 | adult`, nullable = undeclared).
   A single per-user attribute on the canonical profile row — a column, not a new
   table (reuse-first). Migration `migrations/edu_compliance_age_band_coppa.sql`.
+  **Single audited write path (D57, `migrations/edu_age_band_write_guard.sql`):** a
+  `BEFORE UPDATE` trigger (`users._guard_age_band_change()`) blocks any direct
+  `UPDATE users.profiles SET age_band=...` that doesn't go through
+  `edu_set_age_band()` (or a genuine `service_role` caller) — `errcode 42501`. Every
+  other profile column is unguarded. Every `age_band` change is audited to
+  `education.data_rights_event` (`action='age_band_change'`); a self-declared
+  `under_13 → adult` transition sets `detail.review_signal=true` + a loud
+  `RAISE WARNING` (detectability signal, not a block — the hard-block-or-not policy
+  call is Arman/legal's, see FOUND_DEFECTS D57).
 - **RPCs (public, SECURITY DEFINER, authenticated-only):**
-  - `edu_set_age_band(band)` — validated single write path for the caller's own band.
+  - `edu_set_age_band(band)` — the ONLY validated write path for the caller's own
+    band (DB-enforced by the trigger above); writes the audit row.
   - `edu_coppa_gate()` — the authoritative verdict `{age_band, requires_consent,
     has_active_guardian, has_verified_guardian, ai_allowed, reason}`. Reads the
     RLS-guarded `education.guardian_link` server-side (only a definer RPC can), so
@@ -101,14 +111,26 @@ no entry point to gate there.
   guardian link, and `edu_coppa_gate.ai_allowed` already encodes it, so aidream's
   gate-reading enforcement inherits verification for free. If aidream ever reads
   `guardian_link` directly instead of the gate, it MUST require
-  `verified_at IS NOT NULL` (not just `status='active'`). **Still open (Arman/legal):**
-  `age_band` is self-declared (an under-13 can call `edu_set_age_band('adult')`); and
-  Arman must choose which verifiable method(s) to require + the gov-ID vendor + the
-  legal sign-off — see `../family/FEATURE.md` §Verifiable parental consent + the runbook
+  `verified_at IS NOT NULL` (not just `status='active'`). **`age_band` write-tamper —
+  CODE DONE (D57):** the column has exactly one audited write path (see Data model
+  above); a direct table write is DB-blocked. **Still open (Arman/legal, not code):**
+  `age_band` remains *self-declared* — the audited RPC will still let an under-13 set
+  `adult` (now flagged as a review signal, not blocked); and Arman must choose whether
+  to require a harder verifiable-age step, plus which guardian verifiable method(s) to
+  require + the gov-ID vendor + legal sign-off — see `../family/FEATURE.md` §Verifiable
+  parental consent + the runbook
   `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`.
 
 ## Change log
 
+- `2026-07-15` — **D57 `age_band` write-tamper CODE gap closed.** Single audited write
+  path: a `BEFORE UPDATE` trigger on `users.profiles` blocks any direct `age_band`
+  write outside `edu_set_age_band()` (or `service_role`); every change is now audited
+  to `education.data_rights_event`, with a loud review-signal flag on a self-declared
+  `under_13 → adult` transition. `migrations/edu_age_band_write_guard.sql`,
+  live-verified (Supabase MCP): direct write blocked (42501); RPC succeeds + audits;
+  unrelated column edits unaffected. `AgeBandPrivacyCard.tsx` already called the RPC —
+  no FE change needed. Self-declared-age policy remains open (Arman/legal).
 - `2026-07-15` — **Verifiable parental consent (COPPA §312.5) built** on the guardian
   system. `edu_coppa_gate` now unblocks an under-13 only on a **VERIFIED** active link
   (new `has_verified_guardian` + `guardian_verification_pending` reason); the two child

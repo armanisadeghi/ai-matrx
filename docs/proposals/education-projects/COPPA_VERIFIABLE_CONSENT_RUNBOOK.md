@@ -15,6 +15,21 @@
 > - `edu_coppa_gate` unblocks an under-13 only on a **verified** link; aidream's server-side
 >   enforcement reads the same gate, so verification enforces on both sides.
 > - **Live-verified:** block → card-verify (real PI authorized then voided) → allow → revoke → block.
+> - **`age_band` write-tamper hardening — CODE DONE (2026-07-15, FOUND_DEFECTS D57):**
+>   `users.profiles.age_band` is now changeable **only** through the audited
+>   `public.edu_set_age_band()` RPC — a `BEFORE UPDATE` trigger on `users.profiles`
+>   (`users._guard_age_band_change()`) blocks any direct `UPDATE ... SET age_band=...`
+>   (PostgREST/SQL) that doesn't go through the RPC, `errcode 42501`. Every change is
+>   audited to `education.data_rights_event` (`action='age_band_change'`,
+>   `old_band`/`new_band`/`via`), and a self-declared `under_13 → adult` transition sets
+>   `detail.review_signal = true` + a loud `RAISE WARNING` — a detectability signal, not
+>   an enforcement decision. `migrations/edu_age_band_write_guard.sql`, live-verified
+>   (direct write blocked; RPC works + audits; unrelated column edits unaffected).
+>   **What this does NOT fix (item below, unchanged):** `age_band` is still
+>   **self-declared** — an under-13 can still legitimately call
+>   `edu_set_age_band('adult')` and it will succeed (now just audited + flagged). Whether
+>   to hard-block that transition (require a verifiable-age step first) vs. allow it
+>   audited is the still-open legal call in item 1's last checkbox.
 
 ---
 
@@ -32,7 +47,23 @@ COPPA §312.5(b) lists acceptable verifiable methods. The ones we can support:
 - [ ] Which method(s) do we **offer**, and which is the **default**? (Recommend: card default + signed-form fallback; add vendor later.)
 - [ ] Is the **$0.50 auth-and-void** acceptable, or do you want a **charge+refund**? (Both are "monetary transaction"; auth-and-void costs the family nothing.)
 - [ ] Consent **scope + retention**: the `guardian_link` row is the consent record (who/method/when/ref). Confirm retention duration + whether we need a separate immutable audit ledger for revoked/re-verified history (currently the row + `revoked_at` capture current state; a `guardian_consent_event` ledger is a small add if legal wants full history).
-- [ ] **Age-change re-consent policy:** `age_band` is self-declared; today re-granting consent resets verification, but changing age from under_13→adult isn't re-verified. Decide the policy (code can enforce once decided).
+- [ ] **Age-change re-consent / self-declared-age policy (D57):** `age_band` is now
+      write-guarded to one **audited** path (`edu_set_age_band` RPC only; direct writes
+      DB-blocked — see the "Built" note above), but it is still **self-declared** — an
+      under-13 can legitimately call the RPC to set `adult` and it succeeds (now
+      audited + flagged `review_signal:true` + a loud warning, not blocked). Two
+      coherent end states, Arman/legal picks:
+      **(A) Neutral age screening + audited changes** (COPPA-standard, what most
+      consumer apps do) — ask age once at signup/first-declare, accept the
+      self-attestation, rely on the audit trail (`education.data_rights_event`) to catch
+      abuse patterns after the fact; today's state already gets you here. **(B) Hard
+      verifiable-age step** — require one of §1's verifiable methods (or a lighter
+      age-verification vendor) before an under_13→adult (or any) age_band change is
+      allowed to take effect; heavier, optional, needs its own vendor/UX decision
+      distinct from the *guardian*-verification vendor in §3. Also separately decide:
+      does re-granting/changing age reset an already-verified guardian link's
+      `verified_at`? (Code can enforce either end state once decided — the trigger +
+      RPC are the single choke point to add a hard block in.)
 
 ## 2. Stripe — turn on the webhook (the card method depends on it)
 
@@ -80,4 +111,9 @@ verified_at IS NOT NULL` — NOT merely `status='active'`.
 ---
 
 **Change log**
+- `2026-07-15` — `age_band` write-tamper CODE gap closed (FOUND_DEFECTS D57): single
+  audited write path (`edu_set_age_band` RPC only, DB trigger blocks direct writes) +
+  full audit trail + loud review-signal flag on under_13→adult. Self-declared-age
+  *policy* (item 1's last checkbox) remains open — Arman/legal picks neutral audited
+  self-attestation vs. a hard verifiable-age step.
 - `2026-07-15` — Created alongside the built card-verification flow (frontend). Open items are Arman/legal/procurement only.

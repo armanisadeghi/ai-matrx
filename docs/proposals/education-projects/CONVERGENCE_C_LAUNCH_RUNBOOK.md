@@ -54,9 +54,14 @@ and D52 are done. What's left is not code:
    Recommendation: card auth-and-void as the default self-serve method + a signed-form fallback; add a vendor
    later only if a partner demands it. Wiring a chosen vendor is a small follow-up [CODE→].
 2. **[YOU — LEGAL] Age declaration is self-declared** (standard COPPA "age screening"). This is normal
-   practice, BUT it means someone can declare "adult" to skip both gates. Decide your policy: neutral age
-   screening + act on any under-13 signal is the industry norm; if you want stronger, that's a verifiable-age
-   step (heavier). Document the choice in your privacy policy.
+   practice, BUT it means someone can declare "adult" to skip both gates. **CODE DONE (D57, 2026-07-15):**
+   `age_band` now has exactly ONE write path (`edu_set_age_band` RPC — a DB trigger blocks any direct
+   `users.profiles` update to that column, live-verified) and every change is audited to
+   `education.data_rights_event` with a loud flag on a self-declared `under_13 → adult` transition. What's
+   still open is the *policy*, not the mechanism: neutral age screening + audited self-declared changes is
+   the industry norm (you already have this now); if you want stronger, that's a verifiable-age step
+   (heavier — needs its own vendor/UX, separate from the guardian-verification vendor in item 1). Decide, then
+   document the choice in your privacy policy. Detail: `COPPA_VERIFIABLE_CONSENT_RUNBOOK.md` §1's last item.
 3. **[YOU — LEGAL] Privacy policy + DPA/DUA + data-safety labels** — the written COPPA/FERPA privacy policy,
    a District Data Use Agreement template, and the Apple/Google data-safety form answers. See
    [`SCHOOL_SAFE_CHECKLIST.md`](./SCHOOL_SAFE_CHECKLIST.md) for the itemized posture (what's code-satisfied vs

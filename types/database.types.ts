@@ -28226,7 +28226,6 @@ export type Database = {
       edu_class_join: { Args: { p_class: string }; Returns: Json }
       edu_class_leave: { Args: { p_class: string }; Returns: Json }
       edu_class_progress_overview: { Args: { p_class: string }; Returns: Json }
-      edu_class_purchase: { Args: { p_class: string }; Returns: Json }
       edu_class_remove: {
         Args: { p_class: string; p_user: string }
         Returns: Json
