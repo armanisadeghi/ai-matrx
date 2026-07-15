@@ -22,18 +22,33 @@
  *     `inline_object` still gets a distinct, collision-free edge.
  *   - `inline_object` is structural: its `fields` is an ordered array, it never
  *     becomes a registry row and never carries `__kind`. Its nested refs DO get
- *     edges (path-prefixed) so cascade/pinning see every dependency.
+ *     edges (path-prefixed) so cascade/pinning see every dependency. Its
+ *     `open` flag persists on the element (losing it is the open-empty-object
+ *     defect).
+ *   - `union.kinds` refs externalize to edges exactly like `array.itemKinds`;
+ *     the stored element keeps `hasKinds: true` so lost edges scream on read.
+ *   - A NON-OBJECT ROOT (`KindSchema.root`) stores as ONE reserved element
+ *     named `ROOT_STORAGE_NAME` ("__root") — the only element allowed in that
+ *     kind's `data`. Real fields may never use the reserved name.
  *
  * NO imports of supabase / the DB — this is pure and unit-tested by round-trip
  * (`__tests__/kind-storage-transform.test.ts`).
  */
 
 import type {
-  ArrayItemScalarType,
   FieldSchema,
   KindSchema,
+  RecordValueType,
   ScalarFieldType,
 } from "../core/kind-schema.types";
+
+/**
+ * Reserved `data[]` element name for a NON-OBJECT ROOT form (`KindSchema.root`).
+ * A root-form kind stores exactly one element under this name; the read
+ * direction reconstructs `{ root }` instead of a field map. The write
+ * direction rejects any REAL field with this name — the name is the marker.
+ */
+export const ROOT_STORAGE_NAME = "__root";
 
 // ---------------------------------------------------------------------------
 // Stored shapes (mirror content_ir.kind_definition.data + content_ir.kind_edge)
@@ -49,14 +64,22 @@ type StoredFieldBase = {
 export type StoredFieldElement =
   | (StoredFieldBase & { type: ScalarFieldType })
   | (StoredFieldBase & { type: "string[]" | "number[]" | "boolean[]" })
+  | (StoredFieldBase & { type: "json" })
+  | (StoredFieldBase & { type: "json[]" })
   | (StoredFieldBase & { type: "array" }) // ref array — targets live in edges
   | (StoredFieldBase & { type: "object" }) // single ref — target lives in edges
-  | (StoredFieldBase & { type: "inline_object"; fields: StoredFieldElement[] })
-  | (StoredFieldBase & { type: "record"; values: ArrayItemScalarType })
+  | (StoredFieldBase & {
+      type: "inline_object";
+      fields: StoredFieldElement[];
+      open?: boolean;
+    })
+  | (StoredFieldBase & { type: "record"; values: RecordValueType })
   | (StoredFieldBase & { type: "enum"; values: string[] })
   | (StoredFieldBase & {
       type: "union";
       scalars: Array<"string" | "number" | "boolean">;
+      /** Marker that this union's kind refs live in edges (positions ordered). */
+      hasKinds?: boolean;
     });
 
 /** One `content_ir.kind_edge` row (child resolved to an id at insert time). */
@@ -118,6 +141,8 @@ function storeField(
     case "string[]":
     case "number[]":
     case "boolean[]":
+    case "json":
+    case "json[]":
       return { ...b, type: field.type };
 
     case "record":
@@ -126,8 +151,18 @@ function storeField(
     case "enum":
       return { ...b, type: "enum", values: [...field.values] };
 
-    case "union":
+    case "union": {
+      // Object-union members are refs → edges (positions ordered), exactly
+      // like array itemKinds. `hasKinds` marks the element so the read
+      // direction can scream about lost edges instead of silently narrowing.
+      if (field.kinds && field.kinds.length > 0) {
+        field.kinds.forEach((childKind, position) => {
+          edges.push({ fieldPath: path, childKind, position });
+        });
+        return { ...b, type: "union", scalars: [...field.scalars], hasKinds: true };
+      }
       return { ...b, type: "union", scalars: [...field.scalars] };
+    }
 
     case "object":
       // Single ref → exactly one edge, no position.
@@ -155,7 +190,11 @@ function storeField(
           ),
         );
       }
-      return { ...b, type: "inline_object", fields };
+      // `open` persists on the element — losing it is the open-empty-object
+      // defect (an open {} materializing as CLOSED).
+      return field.open
+        ? { ...b, type: "inline_object", fields, open: true }
+        : { ...b, type: "inline_object", fields };
     }
   }
 }
@@ -169,7 +208,25 @@ function storeField(
 export function kindSchemaToStorage(schema: KindSchema): KindStorageShape {
   const data: StoredFieldElement[] = [];
   const edges: KindEdgeSpec[] = [];
+
+  if (schema.root) {
+    // Non-object root form: exactly one reserved element carries the root
+    // field; a field map alongside it would be two contradictory shapes.
+    if (Object.keys(schema.fields).length > 0) {
+      throw new KindStorageError(
+        `kind "${schema.kind}": root form and a non-empty fields map are mutually exclusive.`,
+      );
+    }
+    data.push(storeField(ROOT_STORAGE_NAME, schema.root, ROOT_STORAGE_NAME, edges));
+    return { data, edges };
+  }
+
   for (const [name, field] of Object.entries(schema.fields)) {
+    if (name === ROOT_STORAGE_NAME) {
+      throw new KindStorageError(
+        `kind "${schema.kind}": field name "${ROOT_STORAGE_NAME}" is reserved for the non-object root form.`,
+      );
+    }
     data.push(storeField(name, field, name, edges));
   }
   return { data, edges };
@@ -206,6 +263,8 @@ function restoreField(
     case "string[]":
     case "number[]":
     case "boolean[]":
+    case "json":
+    case "json[]":
       return { ...b, type: element.type };
 
     case "record":
@@ -214,8 +273,26 @@ function restoreField(
     case "enum":
       return { ...b, type: "enum", values: [...element.values] };
 
-    case "union":
+    case "union": {
+      const list = byPath.get(path) ?? [];
+      if (element.hasKinds) {
+        if (list.length === 0) {
+          throw new KindStorageError(
+            `union field "${path}" declares kind members (hasKinds) but has no edges.`,
+          );
+        }
+        const kinds = [...list]
+          .sort((a, z) => (a.position ?? 0) - (z.position ?? 0))
+          .map((e) => e.childKind);
+        return { ...b, type: "union", scalars: [...element.scalars], kinds };
+      }
+      if (list.length > 0) {
+        throw new KindStorageError(
+          `union field "${path}" has ${list.length} edge(s) but does not declare hasKinds.`,
+        );
+      }
       return { ...b, type: "union", scalars: [...element.scalars] };
+    }
 
     case "object": {
       const list = byPath.get(path) ?? [];
@@ -255,7 +332,9 @@ function restoreField(
           byPath,
         );
       }
-      return { ...b, type: "inline_object", fields };
+      return element.open
+        ? { ...b, type: "inline_object", fields, open: true }
+        : { ...b, type: "inline_object", fields };
     }
   }
 }
@@ -266,8 +345,29 @@ export function storageToKindSchema(
   shape: KindStorageShape,
 ): KindSchema {
   const byPath = indexEdges(shape.edges);
+
+  // Non-object root form: the single reserved element IS the root field.
+  const [first] = shape.data;
+  if (first && first.name === ROOT_STORAGE_NAME) {
+    if (shape.data.length !== 1) {
+      throw new KindStorageError(
+        `kind "${kind}": a "${ROOT_STORAGE_NAME}" element must be the only data element (found ${shape.data.length}).`,
+      );
+    }
+    return {
+      kind,
+      fields: {},
+      root: restoreField(first, ROOT_STORAGE_NAME, byPath),
+    };
+  }
+
   const fields: Record<string, FieldSchema> = {};
   for (const element of shape.data) {
+    if (element.name === ROOT_STORAGE_NAME) {
+      throw new KindStorageError(
+        `kind "${kind}": "${ROOT_STORAGE_NAME}" must be the first and only data element.`,
+      );
+    }
     fields[element.name] = restoreField(element, element.name, byPath);
   }
   return { kind, fields };

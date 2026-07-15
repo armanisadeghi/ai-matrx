@@ -75,11 +75,11 @@ function fieldTypeSummary(field: FieldSchema): string {
     case "enum":
       return `enum(${field.values.join(" | ")})`;
     case "union":
-      return `union(${field.scalars.join(" | ")})`;
+      return `union(${[...field.scalars, ...(field.kinds ?? [])].join(" | ")})`;
     case "record":
       return `record<string, ${field.values}>`;
     case "inline_object":
-      return `inline_object (${Object.keys(field.fields).length} fields)`;
+      return `inline_object (${Object.keys(field.fields).length} fields${field.open ? ", open" : ""})`;
     case "object":
       return "object →";
     case "array":
@@ -92,6 +92,7 @@ function fieldTypeSummary(field: FieldSchema): string {
 function fieldKindRefs(field: FieldSchema): string[] {
   if (field.type === "object") return [field.kind];
   if (field.type === "array") return field.itemKinds;
+  if (field.type === "union") return field.kinds ?? [];
   return [];
 }
 

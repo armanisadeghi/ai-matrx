@@ -26,9 +26,13 @@ export function emptyValueForFieldSchema(field: FieldSchema): unknown {
       return 0;
     case "boolean":
       return false;
+    case "json":
+      // Any JSON value — null is the honest "nothing arrived yet" member.
+      return null;
     case "string[]":
     case "number[]":
     case "boolean[]":
+    case "json[]":
     case "array":
       return [];
     case "object":
@@ -40,7 +44,9 @@ export function emptyValueForFieldSchema(field: FieldSchema): unknown {
     case "union":
       if (field.scalars.includes("string")) return "";
       if (field.scalars.includes("number")) return 0;
-      return false;
+      if (field.scalars.includes("boolean")) return false;
+      // Kinds-only object union — an empty object is the least-wrong stub.
+      return {};
     default:
       return null;
   }

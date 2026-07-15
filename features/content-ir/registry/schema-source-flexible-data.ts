@@ -275,6 +275,12 @@ function parseFieldSchema(raw: unknown, context: string): FieldSchema {
   }
 
   switch (raw.type) {
+    case "json":
+      return { ...base, type: "json" };
+
+    case "json[]":
+      return { ...base, type: "json[]" };
+
     case "array": {
       if (!Array.isArray(raw.itemKinds)) {
         throw new FlexibleDataError(
@@ -311,16 +317,17 @@ function parseFieldSchema(raw: unknown, context: string): FieldSchema {
       for (const [name, fieldRaw] of Object.entries(raw.fields)) {
         fields[name] = parseFieldSchema(fieldRaw, `${context}.${name}`);
       }
-      return { ...base, type: "inline_object", fields };
+      return raw.open === true
+        ? { ...base, type: "inline_object", fields, open: true }
+        : { ...base, type: "inline_object", fields };
     }
 
     case "record": {
-      const values = parseScalarType(
-        typeof raw.values === "string" ? raw.values : "",
-      );
+      const rawValues = typeof raw.values === "string" ? raw.values : "";
+      const values = rawValues === "json" ? "json" : parseScalarType(rawValues);
       if (!values) {
         throw new FlexibleDataError(
-          `${context}: record field requires scalar "values" (string | number | boolean).`,
+          `${context}: record field requires "values" (string | number | boolean | json).`,
         );
       }
       return { ...base, type: "record", values };
@@ -357,6 +364,24 @@ function parseFieldSchema(raw: unknown, context: string): FieldSchema {
         throw new FlexibleDataError(
           `${context}: union "scalars" must be string | number | boolean.`,
         );
+      }
+      if (raw.kinds !== undefined) {
+        if (!Array.isArray(raw.kinds)) {
+          throw new FlexibleDataError(
+            `${context}: union "kinds" must be a string array.`,
+          );
+        }
+        const kinds = raw.kinds.filter(
+          (item): item is string => typeof item === "string",
+        );
+        if (kinds.length !== raw.kinds.length) {
+          throw new FlexibleDataError(
+            `${context}: union "kinds" must contain only strings.`,
+          );
+        }
+        if (kinds.length > 0) {
+          return { ...base, type: "union", scalars, kinds };
+        }
       }
       return { ...base, type: "union", scalars };
     }

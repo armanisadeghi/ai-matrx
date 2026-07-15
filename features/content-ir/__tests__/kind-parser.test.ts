@@ -215,3 +215,97 @@ describe("KindStreamParser goldens (flashcard fixture)", () => {
     expect(events.some((e) => e.type === "block_snapshot")).toBe(true);
   });
 });
+
+describe("KindStreamParser — json-any opaque descent (2026-07-15 expressivity)", () => {
+  const HTTPISH_SCHEMAS = {
+    httpish: {
+      kind: "httpish",
+      fields: {
+        status: { type: "number" as const, required: true },
+        body: { type: "json" as const },
+        matches: { type: "json[]" as const },
+        outputs: { type: "record" as const, values: "json" as const },
+      },
+    },
+  };
+
+  const HTTPISH_JSON = JSON.stringify({
+    __kind: "httpish",
+    status: 200,
+    body: { unknown: { nested: [1, null, "x"] }, __kind: "not-a-kind" },
+    matches: ["m1", { group: "m2" }, ["p1"]],
+    outputs: { node_a: { deep: [true] }, node_b: null },
+  });
+
+  function parseHttpish(seed?: number): KindStreamEvent[] {
+    const events: KindStreamEvent[] = [];
+    const parser = createKindStreamParser({
+      schemas: HTTPISH_SCHEMAS,
+      onEvent: (e) => events.push(e),
+    });
+    if (seed === undefined) {
+      parser.push(HTTPISH_JSON);
+    } else {
+      for (const chunk of chunkText(HTTPISH_JSON, seed)) parser.push(chunk);
+    }
+    parser.end();
+    return events;
+  }
+
+  it("completes the typed object with zero raw_object / pending_kind noise in json-any subtrees", () => {
+    const events = parseHttpish();
+
+    expect(events.filter((e) => e.type === "raw_object")).toEqual([]);
+    // Root-level pending_kind (no expectedRootKind) is normal; the json-any
+    // SUBTREES must never go pending.
+    expect(
+      events.filter((e) => e.type === "pending_kind" && e.path.length > 0),
+    ).toEqual([]);
+    // The __kind string INSIDE the opaque body is data, not a discriminator.
+    const identified = events.filter((e) => e.type === "kind_identified");
+    expect(identified).toHaveLength(1);
+    expect(identified[0]).toMatchObject({ kind: "httpish" });
+
+    const complete = events.find((e) => e.type === "complete");
+    expect(complete).toMatchObject({ kind: "httpish" });
+    expect(
+      complete && complete.type === "complete"
+        ? (complete.value as Record<string, unknown>).body
+        : null,
+    ).toEqual({ unknown: { nested: [1, null, "x"] }, __kind: "not-a-kind" });
+  });
+
+  it("is chunking-invariant across seeds", () => {
+    const oneShot = withoutAt(parseHttpish());
+    for (const seed of [1, 7, 42]) {
+      expect(withoutAt(parseHttpish(seed))).toEqual(oneShot);
+    }
+  });
+
+  it("surfaces json-any subtree roots as ordinary field events on the typed parent", () => {
+    const events = parseHttpish();
+    const fieldKeys = events
+      .filter((e) => e.type === "field")
+      .map((e) => (e.type === "field" ? e.key : ""));
+    expect(fieldKeys).toEqual(
+      expect.arrayContaining(["status", "body", "matches", "outputs"]),
+    );
+  });
+
+  it("refuses a __kind object claiming a ROOT-FORM kind (data-only shapes are not stream-typable)", () => {
+    const events: KindStreamEvent[] = [];
+    const parser = createKindStreamParser({
+      schemas: {
+        text: { kind: "text", fields: {}, root: { type: "string" as const } },
+      },
+      onEvent: (e) => events.push(e),
+    });
+    parser.push(JSON.stringify({ __kind: "text", anything: 1 }));
+    parser.end();
+
+    const raw = events.find((e) => e.type === "raw_object");
+    expect(raw).toMatchObject({
+      reason: expect.stringContaining("non-object root form"),
+    });
+  });
+});

@@ -29,12 +29,13 @@ import { JsonStreamTokenizer, type JsonToken } from "./json-tokenizer";
 import type { IrPath, IrResidue } from "./ir-types";
 import {
   KIND_KEY,
+  isJsonAnyField,
   isScalarArrayType,
   readObjectKind,
   scalarArrayItemType,
-  type ArrayItemScalarType,
   type FieldSchema,
   type KindSchema,
+  type RecordValueType,
 } from "./kind-schema.types";
 import { buildCompliantKindSnapshot } from "./kind-snapshot";
 
@@ -184,8 +185,16 @@ export class KindStreamParser {
     string,
     Record<string, FieldSchema>
   >();
-  private readonly recordSchemas = new Map<string, ArrayItemScalarType>();
+  private readonly recordSchemas = new Map<string, RecordValueType>();
   private readonly rawObjectPaths = new Set<string>();
+  /**
+   * Subtrees whose value domain is "any JSON" by schema (`json` / `json[]`
+   * fields, `record` with `values:"json"` members). OPAQUE by contract: no
+   * kind identification, no pending_kind, no raw_object degradation — unknown
+   * structure here is the declared shape, not a failure. Propagates to every
+   * descendant compound.
+   */
+  private readonly opaquePaths = new Set<string>();
   private readonly deferredFields = new Map<
     string,
     Array<{ key: string; value: unknown; at: number }>
@@ -397,11 +406,32 @@ export class KindStreamParser {
 
   private beginCompound(kind: "object" | "array", at: number): void {
     const value = kind === "object" ? {} : [];
+    // The frame this value lands in — read BEFORE placeValue/push mutate it.
+    const container = this.currentFrame();
     const path = this.placeValue(value, kind, at, false);
     if (!path || this.failed) return;
 
+    // OPAQUE DESCENT: a compound under a json-any placement (or inside an
+    // already-opaque subtree) is schema-legal unknown structure. Mark it and
+    // skip ALL kind machinery below.
+    const opaque =
+      (container !== undefined &&
+        this.opaquePaths.has(this.pathKey(container.path))) ||
+      this.isJsonAnyPlacement(path);
+    if (opaque) this.opaquePaths.add(this.pathKey(path));
+
     if (kind === "object") {
       this.emit({ type: "object_start", path, at });
+      if (opaque) {
+        this.stack.push({
+          kind: "object",
+          path,
+          value: value as Record<string, unknown>,
+          expecting: "keyOrEnd",
+          keyCount: 0,
+        });
+        return;
+      }
       this.registerObjectContext(path);
       const pathKey = this.pathKey(path);
 
@@ -464,7 +494,7 @@ export class KindStreamParser {
   private resolveSpeculativeKind(path: JsonPath): string | null {
     if (path.length === 0) {
       const expected = this.options.expectedRootKind;
-      return expected && this.lookupSchema(expected) ? expected : null;
+      return expected && this.lookupObjectSchema(expected) ? expected : null;
     }
 
     const last = path[path.length - 1];
@@ -473,7 +503,7 @@ export class KindStreamParser {
       const fieldSchema = this.resolveParentFieldSchema(path);
       if (
         fieldSchema?.type === "object" &&
-        this.lookupSchema(fieldSchema.kind)
+        this.lookupObjectSchema(fieldSchema.kind)
       ) {
         return fieldSchema.kind;
       }
@@ -493,10 +523,19 @@ export class KindStreamParser {
       fieldSchema?.type === "array" && fieldSchema.itemKinds.length === 1
         ? fieldSchema.itemKinds[0]
         : undefined;
-    if (soleItemKind !== undefined && this.lookupSchema(soleItemKind)) {
+    if (soleItemKind !== undefined && this.lookupObjectSchema(soleItemKind)) {
       return soleItemKind;
     }
     return null;
+  }
+
+  /**
+   * A schema usable for OBJECT speculation/snapshots — root-form kinds
+   * (non-object data-only shapes) are never a valid object commitment.
+   */
+  private lookupObjectSchema(kind: string): KindSchema | undefined {
+    const schema = this.lookupSchema(kind);
+    return schema && !schema.root ? schema : undefined;
   }
 
   private beginScalar(value: unknown, at: number): void {
@@ -657,10 +696,39 @@ export class KindStreamParser {
     this.onValueFinalized(frame.path, frame.value, at);
   }
 
+  /**
+   * True when a value placed at `path` sits directly under a json-any
+   * placement: a `json`/`json[]` FIELD, or a member of a `record` whose
+   * values are `"json"`. (Deeper descendants inherit via `opaquePaths`.)
+   */
+  private isJsonAnyPlacement(path: JsonPath): boolean {
+    const fieldSchema = this.resolveParentFieldSchema(path);
+    if (fieldSchema && isJsonAnyField(fieldSchema)) return true;
+
+    const last = path[path.length - 1];
+    if (typeof last === "string") {
+      const parentKey = this.pathKey(path.slice(0, -1));
+      if (this.recordSchemas.get(parentKey) === "json") return true;
+    }
+    return false;
+  }
+
   private onValueFinalized(path: JsonPath, value: unknown, at: number): void {
     if (this.failed) return;
 
     const pathKey = this.pathKey(path);
+
+    // Opaque subtree: the value is schema-legal by contract; no kind
+    // identification, no snapshots, no raw degradation.
+    const parentIsOpaque =
+      path.length > 0 && this.opaquePaths.has(this.pathKey(path.slice(0, -1)));
+    if (this.opaquePaths.has(pathKey)) {
+      // The subtree ROOT sits on a typed parent's json-any field — surface it
+      // as an ordinary field event (and parent snapshot) like any scalar.
+      if (!parentIsOpaque) this.emitFieldIfReady(path, value, at);
+      return;
+    }
+    if (parentIsOpaque) return;
 
     if (this.isKindFieldPath(path)) {
       if (typeof value !== "string") {
@@ -1165,7 +1233,8 @@ export class KindStreamParser {
     const kind = this.getDirectObjectKind(objectPath);
     if (!kind) return;
 
-    const schema = this.lookupSchema(kind);
+    // Root-form kinds have no object field map — nothing to snapshot.
+    const schema = this.lookupObjectSchema(kind);
     if (!schema) return;
 
     const partial = complete
@@ -1240,6 +1309,7 @@ export class KindStreamParser {
 
     const recordValueType = this.recordSchemas.get(parentPathKey);
     if (recordValueType) {
+      if (recordValueType === "json") return null; // any member value is legal
       if (valueKind !== "scalar") {
         return `Record field "${fieldKey}" must be a scalar.`;
       }
@@ -1283,6 +1353,15 @@ export class KindStreamParser {
     const optionalMissing: string[] = [];
     const extraFields: string[] = [];
     const emptyOutcome = { optionalMissing, extraFields };
+
+    // Root-form kinds are data-only (scalar/array/json roots): a __kind
+    // object claiming one is a contradiction, never a trivial pass.
+    if (schema.root) {
+      return {
+        error: `Kind "${schema.kind}" has a non-object root form and cannot be a "${KIND_KEY}" object.`,
+        ...emptyOutcome,
+      };
+    }
 
     const kind = readObjectKind(objectValue);
     if (kind !== schema.kind) {
@@ -1337,6 +1416,21 @@ export class KindStreamParser {
     fieldName: string,
     objectKind: string,
   ): string | null {
+    // Any JSON value is legal — including null, objects, arrays.
+    if (fieldSchema.type === "json") return null;
+
+    if (fieldSchema.type === "json[]") {
+      if (value === null) {
+        return fieldSchema.nullable
+          ? null
+          : `Field "${fieldName}" on kind "${objectKind}" cannot be null.`;
+      }
+      if (!Array.isArray(value)) {
+        return `Field "${fieldName}" on kind "${objectKind}" must be an array.`;
+      }
+      return null;
+    }
+
     if (isScalarArrayType(fieldSchema.type)) {
       if (!Array.isArray(value)) {
         return `Field "${fieldName}" on kind "${objectKind}" must be an array.`;
@@ -1405,12 +1499,38 @@ export class KindStreamParser {
       );
     }
 
+    if (fieldSchema.type === "union") {
+      // Object union member — the value must be one of the declared kinds.
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        const kinds = fieldSchema.kinds ?? [];
+        if (kinds.length === 0) {
+          return `Field "${fieldName}" on kind "${objectKind}" must be ${fieldSchema.scalars.join(" | ")}.`;
+        }
+        const memberKind = readObjectKind(value as Record<string, unknown>);
+        if (!memberKind || !kinds.includes(memberKind)) {
+          return `Field "${fieldName}" on kind "${objectKind}" must be one of kinds: ${kinds.join(", ")}.`;
+        }
+        const memberSchema = this.lookupSchema(memberKind);
+        if (!memberSchema) {
+          return `Unknown union member kind "${memberKind}" on field "${fieldName}".`;
+        }
+        return this.validateObjectAgainstSchema(
+          value as Record<string, unknown>,
+          memberSchema,
+        ).error;
+      }
+      return this.validateScalarField(fieldSchema, value, fieldName);
+    }
+
     if (
       fieldSchema.type === "string" ||
       fieldSchema.type === "number" ||
       fieldSchema.type === "boolean" ||
-      fieldSchema.type === "enum" ||
-      fieldSchema.type === "union"
+      fieldSchema.type === "enum"
     ) {
       return this.validateScalarField(fieldSchema, value, fieldName);
     }
@@ -1424,7 +1544,11 @@ export class KindStreamParser {
     value: unknown,
     fieldName: string,
   ): string | null {
-    if (fieldSchema.type === "array") {
+    if (fieldSchema.type === "json") {
+      // Any placement is legal for a json-any field.
+      return null;
+    }
+    if (fieldSchema.type === "array" || fieldSchema.type === "json[]") {
       return valueKind === "array"
         ? null
         : `Field "${fieldName}" must be an array.`;
@@ -1446,6 +1570,10 @@ export class KindStreamParser {
       return valueKind === "array"
         ? null
         : `Field "${fieldName}" must be an array.`;
+    }
+    if (fieldSchema.type === "union" && (fieldSchema.kinds?.length ?? 0) > 0) {
+      // Object union members arrive as objects; scalars stay scalar-checked.
+      if (valueKind === "object") return null;
     }
     if (valueKind !== "scalar") {
       return `Field "${fieldName}" must be a scalar.`;
@@ -1508,10 +1636,11 @@ export class KindStreamParser {
   }
 
   private validateRecordScalar(
-    valueType: ArrayItemScalarType,
+    valueType: RecordValueType,
     value: unknown,
     fieldName: string,
   ): string | null {
+    if (valueType === "json") return null;
     if (typeof value !== valueType) {
       return `Record field "${fieldName}" must be ${valueType}.`;
     }
@@ -1520,8 +1649,9 @@ export class KindStreamParser {
 
   private validateRecordObject(
     objectValue: Record<string, unknown>,
-    valueType: ArrayItemScalarType,
+    valueType: RecordValueType,
   ): string | null {
+    if (valueType === "json") return null;
     for (const [key, entry] of Object.entries(objectValue)) {
       if (typeof entry !== valueType) {
         return `Record key "${key}" must be ${valueType}.`;

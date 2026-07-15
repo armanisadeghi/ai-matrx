@@ -69,6 +69,12 @@ export type BlockSchemaDraft = {
   slug: string;
   label: string;
   fields: Record<string, FieldSchema>;
+  /**
+   * NON-OBJECT ROOT form (KindSchema.root): the kind's value is this field's
+   * shape at the top level (scalar / array / json / OPEN object). When set,
+   * `fields` is empty — mirror of `KindSchema.root`.
+   */
+  root?: FieldSchema;
 };
 
 export type ArrayItemKindBinding = {
@@ -126,7 +132,6 @@ const METADATA_KEYS = new Set([
   "maxItems",
   "pattern",
   "const",
-  "additionalProperties",
   "$schema",
   "$id",
   "deprecated",
@@ -156,7 +161,11 @@ function fieldSchemaSummary(field: FieldSchema): string {
     return `object:${field.kind}${field.required ? "*" : ""}`;
   }
   if (field.type === "union") {
-    return `union(${field.scalars.join("|")})${field.required ? "*" : ""}`;
+    const members = [...field.scalars, ...(field.kinds ?? [])];
+    return `union(${members.join("|")})${field.required ? "*" : ""}`;
+  }
+  if (field.type === "record") {
+    return `record(${field.values})${field.required ? "*" : ""}`;
   }
   return `${field.type}${field.required ? "*" : ""}${field.nullable ? "?" : ""}`;
 }
@@ -304,6 +313,15 @@ export function buildAgentSchemaWithRenderBlockSupport(
   const normalized = normalizeAiSchemaInput(input);
   if (!normalized.rootSchema) return null;
 
+  // Non-object roots (root-form kinds) cannot carry a __kind discriminator —
+  // the agent schema passes through unchanged.
+  if (
+    normalized.rootSchema.type !== "object" &&
+    !isRecord(normalized.rootSchema.properties)
+  ) {
+    return deepClone(input);
+  }
+
   const updatedRoot = injectKindsIntoRootSchema(
     normalized.rootSchema,
     rootKindSlug,
@@ -347,6 +365,65 @@ type ConvertContext = {
   arrayBindings: ArrayItemKindBinding[];
 };
 
+/**
+ * A schema node whose value domain is "any JSON value": no type, no enum, no
+ * properties, no items, no combinators. (`{}`, or metadata-only nodes like
+ * pydantic's bare `Any` fields — `{title, default, description}`.)
+ */
+function isAnyValueSchema(node: JsonSchemaNode): boolean {
+  return (
+    node.type === undefined &&
+    node.enum === undefined &&
+    node.const === undefined &&
+    node.properties === undefined &&
+    node.items === undefined &&
+    node.additionalProperties === undefined &&
+    node.anyOf === undefined &&
+    node.oneOf === undefined &&
+    node.allOf === undefined &&
+    node.$ref === undefined
+  );
+}
+
+/**
+ * An object variant that DECLARES its kind (`__kind` const/enum) becomes a
+ * savable draft — same discipline as array items, so union members and
+ * anyOf-array items are first-class kinds, not dangling refs.
+ */
+function registerDeclaredKindDraft(
+  declaredKind: string,
+  objectNode: JsonSchemaNode,
+  path: string,
+  ctx: ConvertContext,
+): void {
+  if (ctx.blockSchemas.some((draft) => draft.slug === declaredKind)) return;
+  if (!isRecord(objectNode.properties)) return;
+
+  const memberRequired = new Set(
+    Array.isArray(objectNode.required)
+      ? objectNode.required.filter((k): k is string => typeof k === "string")
+      : [],
+  );
+  const fields: Record<string, FieldSchema> = {};
+  for (const [propName, propNode] of Object.entries(objectNode.properties)) {
+    if (!isRecord(propNode)) continue;
+    if (propName === KIND_KEY) continue;
+    const converted = convertProperty(
+      propName,
+      propNode,
+      memberRequired.has(propName),
+      `${path}.${propName}`,
+      ctx,
+    );
+    if (converted) fields[propName] = converted;
+  }
+  ctx.blockSchemas.push({
+    slug: declaredKind,
+    label: formatBlockLabel(declaredKind),
+    fields,
+  });
+}
+
 function convertProperty(
   fieldName: string,
   node: JsonSchemaNode,
@@ -368,37 +445,116 @@ function convertProperty(
   if (Array.isArray(node.anyOf) || Array.isArray(node.oneOf)) {
     const variants = (node.anyOf ?? node.oneOf) as JsonSchemaNode[];
     const scalarTypes = new Set<"string" | "number" | "boolean">();
+    const memberKinds: string[] = [];
+    const anonymousObjects: JsonSchemaNode[] = [];
+    let sawNull = false;
+    let unsupported = false;
+
     for (const variant of variants) {
+      if (!isRecord(variant)) {
+        unsupported = true;
+        continue;
+      }
+      if (typeof variant.$ref === "string") {
+        ctx.problems.push({
+          severity: "error",
+          path,
+          message: `$ref inside anyOf/oneOf is not supported ("${variant.$ref}"). Inline the schema manually.`,
+        });
+        unsupported = true;
+        continue;
+      }
       const { type, nullable } = resolvePrimaryType(variant);
+      if (nullable) sawNull = true;
+      if (type === "null") {
+        sawNull = true;
+        continue;
+      }
       if (type === "string" || type === "number" || type === "boolean") {
         scalarTypes.add(type);
+        continue;
       }
-      if (nullable) {
-        return {
-          ...requiredNullableFlags(required, true),
-          type: "string",
-        };
+      if (type === "object" && isRecord(variant.properties)) {
+        const declared = readBlockKindFromProperties(variant.properties);
+        if (declared) {
+          memberKinds.push(declared);
+          registerDeclaredKindDraft(declared, variant, `${path}<${declared}>`, ctx);
+        } else {
+          anonymousObjects.push(variant);
+        }
+        continue;
+      }
+      unsupported = true;
+    }
+
+    if (unsupported) {
+      ctx.problems.push({
+        severity: "error",
+        path,
+        message:
+          "anyOf/oneOf with unsupported variants cannot be converted automatically.",
+      });
+      return null;
+    }
+
+    // Exactly one anonymous object (+ optional null) — a nullable inline object,
+    // not a union. This is the explicit-nullability fix: the old converter
+    // flattened ANY nullable anyOf to `string`.
+    if (
+      anonymousObjects.length === 1 &&
+      scalarTypes.size === 0 &&
+      memberKinds.length === 0
+    ) {
+      const [sole] = anonymousObjects;
+      const converted = sole
+        ? convertProperty(fieldName, sole, required, path, ctx)
+        : null;
+      if (!converted) return null;
+      return sawNull ? { ...converted, nullable: true } : converted;
+    }
+    if (anonymousObjects.length > 0) {
+      ctx.problems.push({
+        severity: "error",
+        path,
+        message:
+          "anyOf/oneOf mixing anonymous objects with other variants cannot be converted — declare __kind on each object variant.",
+      });
+      return null;
+    }
+
+    // Single scalar (+ optional null) — the scalar itself, nullability kept.
+    if (scalarTypes.size === 1 && memberKinds.length === 0) {
+      const [scalar] = [...scalarTypes];
+      if (scalar) {
+        return { ...requiredNullableFlags(required, sawNull), type: scalar };
       }
     }
-    if (scalarTypes.size > 0) {
+
+    if (scalarTypes.size > 0 || memberKinds.length > 0) {
       ctx.problems.push({
         severity: "warning",
         path,
-        message: `Converted anyOf/oneOf to union of scalars: ${[...scalarTypes].join(", ")}.`,
+        message: `Converted anyOf/oneOf to union of: ${[
+          ...scalarTypes,
+          ...memberKinds,
+        ].join(", ")}.`,
       });
       return {
-        ...requiredNullableFlags(required),
+        ...requiredNullableFlags(required, sawNull),
         type: "union",
         scalars: [...scalarTypes],
+        ...(memberKinds.length > 0 ? { kinds: memberKinds } : {}),
       };
     }
+
+    // Nothing but null variants — degrade to json-any (null is a member),
+    // loudly.
     ctx.problems.push({
-      severity: "error",
+      severity: "warning",
       path,
-      message:
-        "anyOf/oneOf with non-scalar variants cannot be converted automatically.",
+      message: "anyOf/oneOf carried only null variants — widened to json (any value).",
     });
-    return null;
+    return { ...requiredNullableFlags(required), type: "json" };
   }
 
   if (Array.isArray(node.allOf)) {
@@ -413,6 +569,17 @@ function convertProperty(
     if (objectBranch) {
       return convertProperty(fieldName, objectBranch, required, path, ctx);
     }
+  }
+
+  // Typeless schema = "any JSON value" in JSON Schema semantics (pydantic
+  // bare `Any`, `{}`). This is the declared contract, not a fallback.
+  if (isAnyValueSchema(node)) {
+    ctx.problems.push({
+      severity: "info",
+      path,
+      message: `Typeless schema at "${path || "(root)"}" — any JSON value (json).`,
+    });
+    return { ...requiredNullableFlags(required), type: "json" };
   }
 
   const { type, nullable } = resolvePrimaryType(node);
@@ -474,6 +641,54 @@ function convertProperty(
         message: "Array items schema must be an object.",
       });
       return null;
+    }
+
+    // items: {} — an array of ANY JSON values (pydantic list[Any]).
+    if (isAnyValueSchema(itemNode)) {
+      return {
+        ...requiredNullableFlags(required, nullable),
+        type: "json[]",
+      };
+    }
+
+    // items: {anyOf: [...]} — every variant must DECLARE its kind; the array
+    // becomes a multi-itemKind ref array (union items), each member drafted.
+    const itemVariants = Array.isArray(itemNode.anyOf)
+      ? (itemNode.anyOf as JsonSchemaNode[])
+      : Array.isArray(itemNode.oneOf)
+        ? (itemNode.oneOf as JsonSchemaNode[])
+        : null;
+    if (itemVariants) {
+      const itemKinds: string[] = [];
+      for (const variant of itemVariants) {
+        if (!isRecord(variant) || !isRecord(variant.properties)) {
+          ctx.problems.push({
+            severity: "error",
+            path: `${path}[]`,
+            message:
+              "Array items anyOf/oneOf variants must be inline objects declaring __kind.",
+          });
+          return null;
+        }
+        const declared = readBlockKindFromProperties(variant.properties);
+        if (!declared) {
+          ctx.problems.push({
+            severity: "error",
+            path: `${path}[]`,
+            message:
+              "Array items anyOf/oneOf variant is missing a __kind const/enum declaration.",
+          });
+          return null;
+        }
+        itemKinds.push(declared);
+        registerDeclaredKindDraft(declared, variant, `${path}[]<${declared}>`, ctx);
+        ctx.arrayBindings.push({ arrayField: fieldName, itemKindSlug: declared });
+      }
+      return {
+        ...requiredNullableFlags(required, nullable),
+        type: "array",
+        itemKinds,
+      };
     }
 
     const itemType = resolvePrimaryType(itemNode).type;
@@ -570,42 +785,113 @@ function convertProperty(
     return null;
   }
 
-  if (type === "object" && isRecord(node.properties)) {
-    const nestedRequired = new Set(
-      Array.isArray(node.required)
-        ? node.required.filter((k): k is string => typeof k === "string")
-        : [],
-    );
-    const nestedFields: Record<string, FieldSchema> = {};
+  if (type === "object") {
+    const ap = node.additionalProperties;
+    const apIsOpen = ap === true || (isRecord(ap) && isAnyValueSchema(ap));
 
-    for (const [propName, propNode] of Object.entries(node.properties)) {
-      if (!isRecord(propNode)) continue;
-      const converted = convertProperty(
-        propName,
-        propNode,
-        nestedRequired.has(propName),
-        `${path}.${propName}`,
-        ctx,
+    if (isRecord(node.properties)) {
+      const nestedRequired = new Set(
+        Array.isArray(node.required)
+          ? node.required.filter((k): k is string => typeof k === "string")
+          : [],
       );
-      if (converted) {
-        nestedFields[propName] = converted;
+      const nestedFields: Record<string, FieldSchema> = {};
+
+      for (const [propName, propNode] of Object.entries(node.properties)) {
+        if (!isRecord(propNode)) continue;
+        if (propName === KIND_KEY) continue;
+        const converted = convertProperty(
+          propName,
+          propNode,
+          nestedRequired.has(propName),
+          `${path}.${propName}`,
+          ctx,
+        );
+        if (converted) {
+          nestedFields[propName] = converted;
+        }
       }
-    }
 
-    const referencedKind = readBlockKindFromProperties(node.properties);
+      const referencedKind = readBlockKindFromProperties(node.properties);
 
-    if (referencedKind) {
+      if (referencedKind) {
+        return {
+          ...requiredNullableFlags(required, nullable),
+          type: "object",
+          kind: referencedKind,
+        };
+      }
+
+      // additionalProperties is now HONORED, not dropped metadata:
+      //   true / {}       → open inline_object (the open-empty-object fix)
+      //   typed schema    → not representable beside declared props — widen
+      //                     to open, loudly
+      //   false / absent  → closed (record the explicit false as dropped —
+      //                     closed is our default reading either way)
+      let open = apIsOpen;
+      if (!apIsOpen && isRecord(ap)) {
+        ctx.problems.push({
+          severity: "warning",
+          path,
+          message:
+            "Typed additionalProperties alongside declared properties is not representable — treated as an OPEN object (extra values unconstrained).",
+        });
+        open = true;
+      } else if (ap === false) {
+        ctx.droppedMetadata.push({
+          path,
+          dropped: { additionalProperties: false },
+        });
+      }
+
       return {
         ...requiredNullableFlags(required, nullable),
-        type: "object",
-        kind: referencedKind,
+        type: "inline_object",
+        fields: nestedFields,
+        ...(open ? { open: true } : {}),
       };
     }
 
+    // Properties-less object shapes → record family.
+    if (apIsOpen || ap === undefined) {
+      if (ap === undefined) {
+        ctx.problems.push({
+          severity: "info",
+          path,
+          message: `Bare object schema at "${path || "(root)"}" — record of any JSON values.`,
+        });
+      }
+      return {
+        ...requiredNullableFlags(required, nullable),
+        type: "record",
+        values: "json",
+      };
+    }
+    if (isRecord(ap)) {
+      const apType = resolvePrimaryType(ap).type;
+      if (apType === "string" || apType === "number" || apType === "boolean") {
+        return {
+          ...requiredNullableFlags(required, nullable),
+          type: "record",
+          values: apType,
+        };
+      }
+      ctx.problems.push({
+        severity: "warning",
+        path,
+        message: `Record value schema at "${path}" is not scalar — widened to record of any JSON values.`,
+      });
+      return {
+        ...requiredNullableFlags(required, nullable),
+        type: "record",
+        values: "json",
+      };
+    }
+    // additionalProperties: false with no properties — the closed empty object.
     return {
       ...requiredNullableFlags(required, nullable),
       type: "inline_object",
-      fields: nestedFields,
+      fields: {},
     };
   }
 
@@ -663,7 +949,15 @@ export function normalizeAiSchemaInput(input: unknown): {
     };
   }
 
-  if (input.type === "object" || input.properties) {
+  // Any typed root — object, scalar, or array (root-form kinds). A fully
+  // empty `{}` root is only accepted through the named wrapper forms above
+  // (it is indistinguishable from a non-schema object here).
+  if (
+    typeof input.type === "string" ||
+    Array.isArray(input.type) ||
+    input.properties ||
+    input.items
+  ) {
     const name =
       typeof input.name === "string"
         ? input.name
@@ -708,13 +1002,39 @@ export function convertAiSchemaToBlockFields(
 
   ctx.droppedMetadata.push(...collectDropped(rootSchema, ""));
 
-  if (rootSchema.type !== "object" && !rootSchema.properties) {
-    ctx.problems.push({
-      severity: "error",
-      path: "",
-      message: "Root schema must be type object with properties.",
+  const rootAp = rootSchema.additionalProperties;
+  const rootIsOpen =
+    rootAp === true || (isRecord(rootAp) && isAnyValueSchema(rootAp));
+  const properties = rootSchema.properties;
+
+  // NON-OBJECT ROOT FORM: scalars, arrays, json-any, records, and OPEN objects
+  // all convert through convertProperty into a single root FieldSchema
+  // (KindSchema.root). Only a CLOSED object with declared properties takes the
+  // classic field-map path below.
+  if (!isRecord(properties) || rootIsOpen) {
+    const rootField = convertProperty("$root", rootSchema, false, "$root", ctx);
+    if (!rootField) {
+      ctx.problems.push({
+        severity: "error",
+        path: "",
+        message:
+          "Root schema could not be converted (see problems above) — expected an object with properties, a scalar/array/json root, or an open object.",
+      });
+      return emptyConversionResult(schemaName, strict, ctx);
+    }
+    ctx.blockSchemas.unshift({
+      slug: schemaName,
+      label: formatBlockLabel(schemaName),
+      fields: {},
+      root: rootField,
     });
-    return emptyConversionResult(schemaName, strict, ctx);
+    return {
+      schemaName,
+      strict,
+      blockSchemas: ctx.blockSchemas,
+      problems: ctx.problems,
+      droppedMetadata: ctx.droppedMetadata,
+    };
   }
 
   const required = new Set(
@@ -724,15 +1044,6 @@ export function convertAiSchemaToBlockFields(
   );
 
   const convertedFields: Record<string, FieldSchema> = {};
-  const properties = rootSchema.properties;
-  if (!isRecord(properties)) {
-    ctx.problems.push({
-      severity: "error",
-      path: "",
-      message: "Root schema is missing properties.",
-    });
-    return emptyConversionResult(schemaName, strict, ctx);
-  }
 
   for (const [fieldName, fieldNode] of Object.entries(properties)) {
     if (!isRecord(fieldNode)) continue;

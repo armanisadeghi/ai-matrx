@@ -16,6 +16,7 @@
 import { kindRegistry } from "../registry/kind-registry";
 import {
   collectReferencedKinds,
+  collectSchemaReferencedKinds,
   kindSchemaToJsonSchema,
   type KindJsonSchemaExport,
 } from "../convert/kind-to-json-schema";
@@ -410,5 +411,164 @@ describe("round-trip: exporter output → runSchemaConversion → KindSchemas", 
     expect(mustGet(bySlug, "math_solution_step").fields).toEqual(
       compiled.math_solution_step.fields,
     );
+  });
+});
+
+describe("kindSchemaToJsonSchema — 2026-07-15 expressivity constructs", () => {
+  it("emits json as the empty schema and json[] as items:{}", () => {
+    const schemas: Record<string, KindSchema> = {
+      carrier: {
+        kind: "carrier",
+        fields: {
+          body: { type: "json" },
+          matches: { type: "json[]", required: true },
+        },
+      },
+    };
+    const exported = kindSchemaToJsonSchema("carrier", (k) => schemas[k], {
+      injectKind: false,
+    });
+    expect(exported?.schema).toEqual({
+      type: "object",
+      properties: {
+        body: {},
+        matches: { type: "array", items: {} },
+      },
+      required: ["matches"],
+    });
+  });
+
+  it("emits record-of-json as additionalProperties:true", () => {
+    const schemas: Record<string, KindSchema> = {
+      carrier: {
+        kind: "carrier",
+        fields: { outputs: { type: "record", values: "json" } },
+      },
+    };
+    const exported = kindSchemaToJsonSchema("carrier", (k) => schemas[k], {
+      injectKind: false,
+    });
+    expect(exported?.schema).toMatchObject({
+      properties: { outputs: { type: "object", additionalProperties: true } },
+    });
+  });
+
+  it("keeps an OPEN inline_object open even in strict mode (open-empty-object fix)", () => {
+    const schemas: Record<string, KindSchema> = {
+      proposal: {
+        kind: "proposal",
+        fields: {
+          draft: { type: "inline_object", open: true, fields: {} },
+          closed: { type: "inline_object", fields: {} },
+        },
+      },
+    };
+    const exported = kindSchemaToJsonSchema("proposal", (k) => schemas[k], {
+      strict: true,
+      injectKind: false,
+    });
+    const properties = (exported?.schema as { properties: Record<string, unknown> })
+      .properties;
+    expect(properties.draft).toMatchObject({ additionalProperties: true });
+    expect(properties.closed).toMatchObject({ additionalProperties: false });
+  });
+
+  it("emits union kind members as $refs in anyOf, collected into $defs", () => {
+    const schemas: Record<string, KindSchema> = {
+      carrier: {
+        kind: "carrier",
+        fields: {
+          payload: {
+            type: "union",
+            scalars: ["string"],
+            kinds: ["alpha"],
+            nullable: true,
+          },
+        },
+      },
+      alpha: {
+        kind: "alpha",
+        fields: { name: { type: "string", required: true } },
+      },
+    };
+    const exported = kindSchemaToJsonSchema("carrier", (k) => schemas[k], {
+      injectKind: false,
+    });
+    expect(exported?.unresolved).toEqual([]);
+    expect(exported?.schema).toMatchObject({
+      properties: {
+        payload: {
+          anyOf: [
+            { type: "string" },
+            { $ref: "#/$defs/alpha" },
+            { type: "null" },
+          ],
+        },
+      },
+    });
+    expect((exported?.schema as { $defs: Record<string, unknown> }).$defs.alpha).toBeDefined();
+  });
+
+  it("emits a ROOT-FORM kind as its root shape with no __kind injection", () => {
+    const cases: Array<[KindSchema, unknown]> = [
+      [
+        { kind: "text", fields: {}, root: { type: "string" } },
+        { type: "string" },
+      ],
+      [{ kind: "json", fields: {}, root: { type: "json" } }, {}],
+      [
+        { kind: "string_list", fields: {}, root: { type: "string[]" } },
+        { type: "array", items: { type: "string" } },
+      ],
+      [
+        {
+          kind: "branch_result",
+          fields: {},
+          root: {
+            type: "inline_object",
+            open: true,
+            fields: {
+              value: { type: "json" },
+              direction: { type: "string", required: true },
+            },
+          },
+        },
+        {
+          type: "object",
+          properties: { value: {}, direction: { type: "string" } },
+          required: ["direction"],
+          additionalProperties: true,
+        },
+      ],
+    ];
+    for (const [schema, expected] of cases) {
+      const exported = kindSchemaToJsonSchema(
+        schema.kind,
+        (k) => (k === schema.kind ? schema : undefined),
+        { strict: true }, // injectKind defaults true — root forms must ignore it
+      );
+      expect(exported?.schema).toEqual(expected);
+    }
+  });
+
+  it("collects refs carried by a root form (collectSchemaReferencedKinds)", () => {
+    const schemas: Record<string, KindSchema> = {
+      wrapper: {
+        kind: "wrapper",
+        fields: {},
+        root: { type: "array", itemKinds: ["alpha"] },
+      },
+      alpha: { kind: "alpha", fields: { name: { type: "string" } } },
+    };
+    expect(collectSchemaReferencedKinds(schemas.wrapper as KindSchema)).toEqual([
+      "alpha",
+    ]);
+    const exported = kindSchemaToJsonSchema("wrapper", (k) => schemas[k], {
+      injectKind: false,
+    });
+    expect(exported?.unresolved).toEqual([]);
+    expect(
+      (exported?.schema as { $defs?: Record<string, unknown> }).$defs?.alpha,
+    ).toBeDefined();
   });
 });

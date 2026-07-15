@@ -13,18 +13,17 @@
  * Round-trip contract — output fed through `runSchemaConversion`
  * (openai-schema-converter.ts) reproduces the source KindSchemas for the
  * root and every array-item child (enforced by
- * __tests__/kind-to-json-schema.test.ts). Known, accepted asymmetries:
- * - `record` fields emit `additionalProperties: {type}`; the forward
- *   converter has no `record` target and rejects a properties-less object,
- *   so records do not round-trip. (In strict mode a record keeps its typed
- *   additionalProperties — it cannot also be `false`.)
- * - arrays with MULTIPLE itemKinds emit `items: {anyOf: [$refs]}`; the
- *   forward converter cannot read an items-anyOf, so multi-kind arrays do
- *   not round-trip.
- * - a NULLABLE union emits `anyOf: [...scalars, {type:"null"}]` and a
- *   nullable object-ref emits `anyOf: [$ref, {type:"null"}]`; the forward
- *   converter collapses nullable anyOf variants, so the nullable flag (and
- *   for unions the member list) degrades on the way back.
+ * __tests__/kind-to-json-schema.test.ts). The 2026-07-15 expressivity
+ * extension closed the three historical asymmetries: `record` now has a
+ * forward target (properties-less objects → record scalar/json), multi-
+ * itemKind arrays read back through items-anyOf when each variant declares
+ * its `__kind`, and nullable anyOf preserves the member list + nullable flag
+ * instead of flattening to `string`. Remaining accepted narrowings:
+ * - multi-kind array items emitted as $refs (not inline __kind objects)
+ *   still cannot be read back — the forward converter rejects $ref.
+ * - a nullable object-REF (`anyOf: [$ref, {type:"null"}]`) degrades for the
+ *   same $ref reason.
+ * - JSON Schema `integer` narrows to `number` (the map_result precedent).
  */
 
 import {
@@ -88,6 +87,8 @@ export function collectReferencedKinds(
       add(field.kind);
     } else if (field.type === "array") {
       field.itemKinds.forEach(add);
+    } else if (field.type === "union") {
+      (field.kinds ?? []).forEach(add);
     } else if (field.type === "inline_object") {
       Object.values(field.fields).forEach(visit);
     }
@@ -95,6 +96,19 @@ export function collectReferencedKinds(
   Object.values(fields).forEach(visit);
   return out;
 }
+
+/**
+ * Schema-level referenced kinds — field-map refs PLUS the refs a non-object
+ * root form carries. Use this (not `collectReferencedKinds(schema.fields)`)
+ * whenever the schema in hand may be root-form.
+ */
+export function collectSchemaReferencedKinds(schema: KindSchema): string[] {
+  if (!schema.root) return collectReferencedKinds(schema.fields);
+  return collectReferencedKinds({ [ROOT_REF_FIELD]: schema.root });
+}
+
+/** Synthetic field key used only to reuse the field-walker for root forms. */
+const ROOT_REF_FIELD = "__root";
 
 export function kindSchemaToJsonSchema(
   kind: string,
@@ -112,7 +126,7 @@ export function kindSchemaToJsonSchema(
   const defsOrder: string[] = [];
   const resolvedDefs = new Map<string, KindSchema>();
   const unresolved: string[] = [];
-  const queue = collectReferencedKinds(rootSchema.fields);
+  const queue = collectSchemaReferencedKinds(rootSchema);
   while (queue.length > 0) {
     const next = queue.shift() as string;
     if (visited.has(next)) continue;
@@ -124,7 +138,7 @@ export function kindSchemaToJsonSchema(
       continue;
     }
     resolvedDefs.set(next, schema);
-    queue.push(...collectReferencedKinds(schema.fields));
+    queue.push(...collectSchemaReferencedKinds(schema));
   }
 
   const refFor = (slug: string): JsonSchemaNode =>
@@ -140,12 +154,23 @@ export function kindSchemaToJsonSchema(
       case "boolean":
         return { type: withNull(field.type, field.nullable) };
 
+      case "json":
+        // Any JSON value — the empty schema. (Nullable is inherent: null IS
+        // a JSON value.)
+        return {};
+
       case "string[]":
       case "number[]":
       case "boolean[]":
         return {
           type: withNull("array", field.nullable),
           items: { type: scalarArrayItemType(field.type) },
+        };
+
+      case "json[]":
+        return {
+          type: withNull("array", field.nullable),
+          items: {},
         };
 
       case "enum":
@@ -158,6 +183,9 @@ export function kindSchemaToJsonSchema(
         const variants: JsonSchemaNode[] = field.scalars.map((scalar) => ({
           type: scalar,
         }));
+        for (const memberKind of field.kinds ?? []) {
+          variants.push(refFor(memberKind));
+        }
         if (field.nullable) variants.push({ type: "null" });
         return { anyOf: variants };
       }
@@ -165,7 +193,8 @@ export function kindSchemaToJsonSchema(
       case "record":
         return {
           type: withNull("object", field.nullable),
-          additionalProperties: { type: field.values },
+          additionalProperties:
+            field.values === "json" ? true : { type: field.values },
         };
 
       case "inline_object": {
@@ -175,11 +204,18 @@ export function kindSchemaToJsonSchema(
           properties[name] = fieldToJsonSchema(child);
           if (child.required) required.push(name);
         }
+        // `open` ALWAYS wins over strict: pinning an open object with
+        // additionalProperties:false is the open-empty-object defect (an open
+        // {} that rejects every real payload).
         return {
           type: withNull("object", field.nullable),
           properties,
           required,
-          ...(strict ? { additionalProperties: false } : {}),
+          ...(field.open
+            ? { additionalProperties: true }
+            : strict
+              ? { additionalProperties: false }
+              : {}),
         };
       }
 
@@ -200,6 +236,11 @@ export function kindSchemaToJsonSchema(
   }
 
   function kindObjectSchema(schema: KindSchema): JsonSchemaNode {
+    // Root-form kind: the value IS the root field's shape — no __kind
+    // discriminator (a scalar/array/any root cannot carry one).
+    if (schema.root) {
+      return fieldToJsonSchema(schema.root);
+    }
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
     for (const [name, field] of Object.entries(schema.fields)) {

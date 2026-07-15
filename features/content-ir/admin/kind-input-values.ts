@@ -218,7 +218,9 @@ export function coerceInputValueToKindValue(
     case "object":
     case "inline_object":
     case "record":
-    case "union": {
+    case "union":
+    case "json":
+    case "json[]": {
       if (typeof raw !== "string") return { status: "ok", value: raw };
       try {
         return { status: "ok", value: JSON.parse(raw) as unknown };
@@ -299,7 +301,7 @@ export function fieldTypeLabel(field: FieldSchema): string {
     case "enum":
       return `enum(${field.values.join(" | ")})`;
     case "union":
-      return `union(${field.scalars.join(" | ")})`;
+      return `union(${[...field.scalars, ...(field.kinds ?? [])].join(" | ")})`;
     case "record":
       return `record<string, ${field.values}>`;
     case "object":

@@ -1,0 +1,284 @@
+{
+  "_readme": "The Python-owned kind_definition rows whose emitted_json_schema could NOT be represented by KindSchema before the 2026-07-15 expressivity extension (non-object roots, json-any, json[], record-of-json, open objects). Schemas captured VERBATIM from live content_ir.kind_definition (project txzxabzwovsujtloxrus, 2026-07-15). Per kind: `instances.valid` must validate under BOTH the original schema and the KindSchema round-trip re-emission; `instances.invalid` must fail under BOTH. Known accepted narrowing: JSON Schema `integer` converts to KindSchema `number` (established by map_result/wf_012), so instances avoid the fractional-integer edge. Consumed by __tests__/python-kind-roundtrip.test.ts (twinned to aidream).",
+  "kinds": [
+    {
+      "kind": "boolean",
+      "emitted_json_schema": { "type": "boolean" },
+      "instances": {
+        "valid": [true, false],
+        "invalid": ["true", 1, null, {}]
+      }
+    },
+    {
+      "kind": "number",
+      "emitted_json_schema": { "type": "number" },
+      "instances": {
+        "valid": [0, 1.5, -3],
+        "invalid": ["1", null, [], {}]
+      }
+    },
+    {
+      "kind": "text",
+      "emitted_json_schema": { "type": "string" },
+      "instances": {
+        "valid": ["", "hello"],
+        "invalid": [1, null, {}, []]
+      }
+    },
+    {
+      "kind": "json",
+      "emitted_json_schema": {},
+      "instances": {
+        "valid": [null, 1, "x", true, {}, [], { "a": [1, { "b": null }] }],
+        "invalid": []
+      }
+    },
+    {
+      "kind": "string_list",
+      "emitted_json_schema": { "type": "array", "items": { "type": "string" } },
+      "instances": {
+        "valid": [[], ["a", "b"]],
+        "invalid": [["a", 1], "a", null, {}]
+      }
+    },
+    {
+      "kind": "branch_result",
+      "emitted_json_schema": {
+        "type": "object",
+        "title": "BranchOutput",
+        "required": ["direction"],
+        "properties": {
+          "value": {
+            "title": "Value",
+            "default": null,
+            "description": "The input value, passed through so downstream steps still receive it."
+          },
+          "direction": {
+            "type": "string",
+            "title": "Direction",
+            "description": "Which handle the run took — 'true' or 'false'."
+          }
+        },
+        "additionalProperties": true
+      },
+      "instances": {
+        "valid": [
+          { "direction": "true" },
+          { "direction": "false", "value": { "nested": [1, null] }, "extra_key": "allowed" }
+        ],
+        "invalid": [{}, { "direction": 1 }, "direction", null]
+      }
+    },
+    {
+      "kind": "gather_result",
+      "emitted_json_schema": {
+        "type": "object",
+        "title": "GatherOutput",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0,
+            "description": "How many values were gathered."
+          },
+          "values": {
+            "type": "array",
+            "items": {},
+            "title": "Values",
+            "description": "The values collected from the channel."
+          }
+        },
+        "additionalProperties": false
+      },
+      "instances": {
+        "valid": [
+          {},
+          { "count": 2, "values": [1, "a", { "deep": [] }, null] }
+        ],
+        "invalid": [
+          { "count": "2" },
+          { "values": "nope" },
+          { "unknown_key": 1 },
+          null
+        ]
+      }
+    },
+    {
+      "kind": "http_response",
+      "emitted_json_schema": {
+        "type": "object",
+        "title": "HttpResponse",
+        "required": ["status", "url"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The final URL the request resolved to, after any redirects."
+          },
+          "body": {
+            "title": "Body",
+            "default": null,
+            "description": "Parsed JSON when the content-type is JSON-like; the decoded text otherwise. Use this for structured downstream steps."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": "",
+            "description": "Raw response body as text, truncated to the max_bytes cap."
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status",
+            "description": "HTTP status code (e.g. 200, 404)."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Headers",
+            "description": "Response headers, with lower-cased keys.",
+            "additionalProperties": { "type": "string" }
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "title": "Elapsed Ms",
+            "default": 0,
+            "description": "Wall-clock time for the request, in milliseconds."
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type",
+            "default": "",
+            "description": "The response's Content-Type header value."
+          }
+        },
+        "description": "Canonical HTTP response payload emitted by http.* nodes.",
+        "additionalProperties": false
+      },
+      "instances": {
+        "valid": [
+          { "status": 200, "url": "https://example.com" },
+          {
+            "status": 404,
+            "url": "https://example.com/missing",
+            "body": { "error": { "code": 404 } },
+            "text": "not found",
+            "headers": { "content-type": "application/json" },
+            "elapsed_ms": 12,
+            "content_type": "application/json"
+          },
+          { "status": 200, "url": "https://example.com", "body": null },
+          { "status": 200, "url": "https://example.com", "body": [1, 2, 3] }
+        ],
+        "invalid": [
+          { "url": "https://example.com" },
+          { "status": "200", "url": "https://example.com" },
+          { "status": 200, "url": "https://example.com", "headers": { "x": 1 } },
+          { "status": 200, "url": "https://example.com", "surprise": true }
+        ]
+      }
+    },
+    {
+      "kind": "regex_extract_result",
+      "emitted_json_schema": {
+        "type": "object",
+        "title": "RegexExtractOutput",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0,
+            "description": "How many matches were found."
+          },
+          "first": {
+            "title": "First",
+            "default": null,
+            "description": "The first match, or null when none — for a quick found/not-found branch without indexing."
+          },
+          "matches": {
+            "type": "array",
+            "items": {},
+            "title": "Matches",
+            "description": "All matches — one entry per match: the full match string (no groups), a dict (named groups), or a list (positional groups). Named groups take precedence if a pattern mixes both."
+          }
+        },
+        "additionalProperties": false
+      },
+      "instances": {
+        "valid": [
+          {},
+          { "count": 0, "first": null, "matches": [] },
+          { "count": 2, "first": "m1", "matches": ["m1", { "group": "m2" }, ["p1", "p2"]] }
+        ],
+        "invalid": [
+          { "count": "0" },
+          { "matches": "m1" },
+          { "extra": true }
+        ]
+      }
+    },
+    {
+      "kind": "workflow_run_result",
+      "emitted_json_schema": {
+        "type": "object",
+        "title": "SubgraphCallOutput",
+        "required": ["run_id"],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id",
+            "description": "The child run's id (for looking up its events/checkpoints)."
+          },
+          "last_outputs": {
+            "type": "object",
+            "title": "Last Outputs",
+            "description": "The child run's terminal node outputs, keyed by node id.",
+            "additionalProperties": true
+          },
+          "channel_values": {
+            "type": "object",
+            "title": "Channel Values",
+            "description": "The child run's final channel (shared-state) values, keyed by channel name.",
+            "additionalProperties": true
+          }
+        },
+        "description": "Success payload (Node Result System).",
+        "additionalProperties": false
+      },
+      "instances": {
+        "valid": [
+          { "run_id": "r-1" },
+          {
+            "run_id": "r-2",
+            "last_outputs": { "node_a": { "anything": [1, null] }, "node_b": "text" },
+            "channel_values": { "chan": null, "other": [true] }
+          }
+        ],
+        "invalid": [
+          {},
+          { "run_id": 7 },
+          { "run_id": "r", "last_outputs": "not-an-object" },
+          { "run_id": "r", "extra": 1 }
+        ]
+      }
+    },
+    {
+      "kind": "map_result",
+      "emitted_json_schema": {
+        "type": "object",
+        "title": "MapOutput",
+        "required": ["dispatched"],
+        "properties": {
+          "dispatched": {
+            "type": "integer",
+            "title": "Dispatched",
+            "description": "How many child invocations were dispatched (one per item)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "instances": {
+        "valid": [{ "dispatched": 3 }],
+        "invalid": [{}, { "dispatched": "3" }, { "dispatched": 3, "extra": 1 }]
+      }
+    }
+  ]
+}

@@ -189,6 +189,8 @@ function fieldToVariableDefinition(
     case "inline_object":
     case "record":
     case "union":
+    case "json":
+    case "json[]":
       return {
         name,
         defaultValue: JSON.stringify(fieldStubValue(field), null, 2),
@@ -201,7 +203,16 @@ function fieldToVariableDefinition(
 
 type StructuredField = Extract<
   FieldSchema,
-  { type: "array" | "object" | "inline_object" | "record" | "union" }
+  {
+    type:
+      | "array"
+      | "object"
+      | "inline_object"
+      | "record"
+      | "union"
+      | "json"
+      | "json[]";
+  }
 >;
 
 /** The `<kind or shape>` label inside the structured-JSON helpText. */
@@ -216,7 +227,11 @@ function structuredShapeLabel(field: StructuredField): string {
     case "record":
       return `record of ${field.values}`;
     case "union":
-      return field.scalars.join(" | ");
+      return [...field.scalars, ...(field.kinds ?? [])].join(" | ");
+    case "json":
+      return "any JSON value";
+    case "json[]":
+      return "array of any JSON values";
   }
 }
 
@@ -237,6 +252,10 @@ function fieldStubValue(field: FieldSchema): unknown {
       return [];
     case "array":
       return field.itemKinds.map((kind) => ({ [KIND_KEY]: kind }));
+    case "json":
+      return null;
+    case "json[]":
+      return [];
     case "object":
       return { [KIND_KEY]: field.kind };
     case "inline_object":
@@ -248,8 +267,13 @@ function fieldStubValue(field: FieldSchema): unknown {
       );
     case "record":
       return {};
-    case "union":
-      return scalarZero(field.scalars[0] ?? "string");
+    case "union": {
+      const [firstScalar] = field.scalars;
+      if (firstScalar) return scalarZero(firstScalar);
+      const [firstKind] = field.kinds ?? [];
+      if (firstKind) return { [KIND_KEY]: firstKind };
+      return "";
+    }
   }
 }
 
