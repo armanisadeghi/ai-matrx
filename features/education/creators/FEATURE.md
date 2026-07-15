@@ -49,6 +49,20 @@ Migration: [`migrations/education_creator_profiles.sql`](../../../migrations/edu
 - **OG image:** per-creator branded card via the shared education OG renderer.
 - **Sitemap:** `/c/<handle>` for every published creator (priority 0.7), added to the education sitemap. The authed `/education/creator` manage route is explicitly excluded (noindex).
 
+## Public education origin (`learn.aimatrx.com`)
+
+**Status:** code ready, domain not yet added (Arman's Vercel/DNS step below). A dedicated, school-safe origin serving ONLY the education/creator/public/auth surface — no admin, no builder app.
+
+**Single source of truth:** `EDU_ORIGIN` in `features/education/constants.ts`, driven by `NEXT_PUBLIC_EDU_ORIGIN` (default `https://www.aimatrx.com` — unset env, zero behavior change). Every public education/creator canonical, OG image, and JSON-LD `url`/`sameAs` routes through it: `/c/[handle]` metadata (`app/(public)/c/[handle]/page.tsx`, via `metadataBase` override), `CreatorLandingPage` JSON-LD, `LearnArticle`/`AxisDetail` JSON-LD, `axisDetailMetadata`/`toolMetadata` (`features/education/route-helpers.ts`), the learn-doc route (`app/(core)/education/learn/[...slug]/page.tsx`), and the sitemap `<loc>` entries for the whole Education Hub incl. creator pages (`app/sitemap.xml/route.ts`). `createDynamicRouteMetadata` (`utils/route-metadata.ts`) grew an optional `metadataBase` param for this — omit it and every other route is unaffected.
+
+**Host gate (`proxy.ts`):** when the request `Host` matches `NEXT_PUBLIC_EDU_ORIGIN`'s host, `/` rewrites to `/education` and every path outside the allowlist (`/education`, `/c/`, `/p/`, `/auth`, auth pages, legal/contact) 302s to the main host instead of rendering — the admin/builder app (`/dashboard`, `/agents`, `/administration`, `/files`, `/chat`, …) never serves on the edu host. Additive: `EDU_HOST` is `null` when the env is unset, and the gate no-ops if `EDU_HOST` ever equals the main host (misconfiguration guard).
+
+**To flip `www.aimatrx.com` → `learn.aimatrx.com` (Arman):**
+1. Vercel dashboard → this project → Settings → Domains → add `learn.aimatrx.com`.
+2. DNS: add a `CNAME learn → cname.vercel-dns.com` (or per Vercel's shown instructions) at the domain registrar.
+3. Set `NEXT_PUBLIC_EDU_ORIGIN=https://learn.aimatrx.com` in the Vercel project env (Production, and Preview if desired) and redeploy.
+4. **Cookie domain:** Supabase's auth cookie is host-only by default — a session on `www.aimatrx.com` will NOT appear signed-in on `learn.aimatrx.com` (and vice versa) until the cookie is issued with `domain: ".aimatrx.com"`. Until that's done both hosts work correctly in isolation, they just don't share a session — acceptable for launch (anon visitors are the primary edu-host audience), but worth doing before pushing existing users to sign in on `learn.` and expecting it to "stick" app-wide.
+
 ## The anonymous funnel (acquisition loop)
 
 A logged-out visitor on `/c/[handle]`:
@@ -81,4 +95,5 @@ A logged-out visitor on `/c/[handle]`:
 
 ## Change log
 
+- **2026-07-15** — `learn.aimatrx.com` code readiness: `EDU_ORIGIN` (`features/education/constants.ts`) centralizes the public education origin behind `NEXT_PUBLIC_EDU_ORIGIN`; every public canonical/OG/JSON-LD/sitemap URL builder repointed; `proxy.ts` host gate serves only the education/creator/public/auth surface on the edu host. See "Public education origin" above. Domain not yet added in Vercel — code-only.
 - **2026-07-14** — Created (Convergence C). Extended `users.profiles` with creator columns (zero new tables) + 8 creator RPCs (`migrations/education_creator_profiles.sql`); public SEO landing page at `/c/[handle]` (server-rendered, Person/Course JSON-LD, OG, sitemap); authed dashboard at `/education/creator` (claim handle, feature videos/tools/classes, publish); anon funnel reuses `/p/e` + `DuplicateToEditButton`; `EnrollButton` consumes the documented `edu_class_join` contract (stubbed until landed). Registered `creator` in `EDU_TOOLS` + the education admin map.
