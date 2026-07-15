@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * PicklistManager (Notion-style)
+ * StructuredListManagerV3 (Notion-style)
  *
  * Clean, document-feel editor for udt_structured_lists / udt_structured_list_items.
  *
@@ -320,7 +320,7 @@ export type PicklistManagerProps = {
   userId: string;
 };
 
-export function PicklistManager({ supabase, userId }: PicklistManagerProps) {
+export function StructuredListManagerV3({ supabase, userId }: PicklistManagerProps) {
   const [lists, setLists] = React.useState<Picklist[]>([]);
   const [items, setItems] = React.useState<PicklistItem[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);

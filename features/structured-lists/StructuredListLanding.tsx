@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  *   /lists       → this landing
  *   /lists/v1    → StructuredListManagerV1 (sidebar + spreadsheet)
  *   /lists/v2    → StructuredListManagerV2 (compact switcher + flat table)
- *   /lists/v3    → PicklistManager (Notion-style document) — current primary
+ *   /lists/v3    → StructuredListManagerV3 (Notion-style document) — current primary
  */
 
 const FEATURES = [

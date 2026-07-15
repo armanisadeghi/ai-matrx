@@ -4,11 +4,11 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { PicklistManager } from "./structured-list-manager-v3";
+import { StructuredListManagerV3 } from "./structured-list-manager-v3";
 
 /**
  * Thin client wrapper that injects the browser Supabase client and the
- * Redux-backed user id into the Notion-style `PicklistManager` (v3). Use this
+ * Redux-backed user id into the Notion-style `StructuredListManagerV3` (v3). Use this
  * from any route, window panel, or modal that doesn't already have those
  * values in scope. Mirrors `StructuredListManagerV1Client`.
  */
@@ -24,5 +24,5 @@ export function StructuredListManagerV3Client() {
     );
   }
 
-  return <PicklistManager supabase={supabase} userId={userId} />;
+  return <StructuredListManagerV3 supabase={supabase} userId={userId} />;
 }

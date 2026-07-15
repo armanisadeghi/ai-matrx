@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * PicklistManager
+ * StructuredListManagerV3
  *
  * Spreadsheet-style editor for udt_structured_lists / udt_structured_list_items.
  *
