@@ -292,6 +292,7 @@ export function extractFlatText(
       }>)
     : [];
   let out = "";
+  let prevWasText = false;
   for (const b of blocks) {
     if (!includeThinking && b.type && NON_ANSWER_BLOCK_TYPES.has(b.type)) {
       continue;
@@ -306,8 +307,17 @@ export function extractFlatText(
       if (b.type === "text" && b.metadata) {
         seedPersistedEnvelopeCache(b.metadata);
       }
-      if (out.length > 0) out += "\n";
+      // Provider contract (Anthropic/OpenAI alike): consecutive `text`
+      // blocks in one message are SEGMENTS of one continuous string —
+      // citation-cited spans arrive as their own blocks mid-sentence
+      // (`"…ratios"`, `", and "`, `"AMA whole person…"`). They must be
+      // concatenated directly; inserting a separator breaks words and
+      // punctuation onto new lines. Non-text block types keep the
+      // newline separator.
+      const isText = b.type === "text" || b.type === undefined;
+      if (out.length > 0 && !(isText && prevWasText)) out += "\n";
       out += b.text;
+      prevWasText = isText;
     }
   }
   if (!includeThinking && out.length > 0) {
