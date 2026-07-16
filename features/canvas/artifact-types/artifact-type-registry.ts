@@ -244,6 +244,13 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   // text). table is tabular data (your UDT-tables insight); transcript syncs to
   // the transcription system; tree is a hierarchy; structured_info = transcript
   // + tasks. Two-way domain sync is the adapter layer on top — see FEATURE.md.
+  //
+  // NO `kinds` facades for transcript / structured_info (registered kinds
+  // `transcript` / `structured_info`) or tasks (`task_list`) — deliberate:
+  // their artifact renderers consume STRING content (or the bridge's
+  // `{ content }` markdown projection via `data`) and never read serverData,
+  // so a structured `content.data` value object would rehydrate blank.
+  // Facades follow once those renderers resolve through the kind bridge.
   {
     canvasType: "table",
     aliases: ["table"],
