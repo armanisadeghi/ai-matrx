@@ -58,6 +58,12 @@ import { buildAmbientContext } from "@/features/agents/ui-first-tools/redux/buil
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
+  selectEffectiveOrganizationId,
+  selectProjectId,
+  selectScopeSelectionsContext,
+  selectTaskId,
+} from "@/lib/redux/slices/appContextSlice";
+import {
   createRequest,
   setRequestStatus,
 } from "../active-requests/active-requests.slice";
@@ -189,6 +195,17 @@ export const resumeInstance = createAsyncThunk<
           : undefined;
       const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
 
+      // Conversation identity — same contract as continue turns. Resume used
+      // to send org only inside ambient `context.organization`, which the
+      // server did not lift onto AppContext → personal-org default + Titanium
+      // scope tools "not found".
+      const organization_id = selectEffectiveOrganizationId(state) ?? undefined;
+      const project_id = selectProjectId(state) ?? undefined;
+      const task_id = selectTaskId(state) ?? undefined;
+      const scope_ids = Object.values(
+        selectScopeSelectionsContext(state) ?? {},
+      ).filter((id): id is string => typeof id === "string" && id.length > 0);
+
       const body: Record<string, unknown> = {
         user_request_id: userRequestId,
         ...(context && { context }),
@@ -201,6 +218,10 @@ export const resumeInstance = createAsyncThunk<
         ...(desktopTargetInstanceId && {
           target_instance_id: desktopTargetInstanceId,
         }),
+        ...(organization_id && { organization_id }),
+        ...(project_id && { project_id }),
+        ...(task_id && { task_id }),
+        ...(scope_ids.length > 0 && { scope_ids }),
         ...(debug && { debug: true }),
       };
       // ResumeRequest does NOT declare a top-level `sandbox` (unlike the
