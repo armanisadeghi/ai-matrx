@@ -6,7 +6,9 @@
  * Enumerates EVERY named content vocabulary item across the platform —
  *   · aidream BlockType enum (matrx_ai processing blocks)
  *   · generated TypedRenderBlock union (types/python-generated/stream-events.ts)
- *   · ClientOnly / ServerOnly render blocks (types/python-generated/missing-types.ts)
+ *   · ClientOnly render blocks (components/mardown-display/markdown-classification/
+ *     processors/utils/client-blocks.ts) + generated ServerOnly unions
+ *     (stream-events.ts, from aidream data_render_blocks.py)
  *   · artifact type registry (canvasTypes + aliases + kind facades)
  *   · frozen detector literals (stream-block-accumulator, content-prefilter,
  *     content-splitter-v2 — via the shared shape-doctor extraction)
