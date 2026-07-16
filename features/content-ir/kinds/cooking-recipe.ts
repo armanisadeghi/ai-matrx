@@ -94,7 +94,7 @@ export const COOKING_RECIPE_SCHEMA: KindSchema = {
       required: true,
     },
     notes: { type: "string" },
-    additionalDetails: { type: "inline_object", fields: {} },
+    additionalDetails: { type: "inline_object", open: true, fields: {} },
   },
 };
 

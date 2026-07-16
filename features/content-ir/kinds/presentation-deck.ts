@@ -109,7 +109,7 @@ export const presentationDeckKindSchema: KindSchema = {
         preset: { type: "enum", values: [...PRESENTATION_PRESET_KEYS] },
       },
     },
-    additionalDetails: { type: "inline_object", fields: {} },
+    additionalDetails: { type: "inline_object", open: true, fields: {} },
   },
 };
 

@@ -232,7 +232,7 @@ export const TRANSCRIPT_KIND_DEFINITIONS: KindDefinition[] = [
           itemKinds: ["transcript_segment"],
           required: true,
         },
-        additionalDetails: { type: "inline_object", fields: {} },
+        additionalDetails: { type: "inline_object", open: true, fields: {} },
       },
     },
   },

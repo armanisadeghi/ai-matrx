@@ -136,7 +136,7 @@ export const RESEARCH_REPORT_KIND_SCHEMAS: Record<string, KindSchema> = {
           biasAssessment: { type: "string" },
         },
       },
-      additionalDetails: { type: "inline_object", fields: {} },
+      additionalDetails: { type: "inline_object", open: true, fields: {} },
     },
   },
   research_section: {
