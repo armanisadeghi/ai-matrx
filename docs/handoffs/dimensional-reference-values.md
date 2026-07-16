@@ -18,6 +18,31 @@ reference resolution for the static dataset dimensions already exists; the work 
 frontend authoring, the net-new **dynamic filter**, agent **writeback**, and
 reconciling the `feed_type='dataset'` naming collision.
 
+## Architecture directive (Arman, 2026-07-15) — READ FIRST
+
+**Everything routes through `content_ir` (the Shape System) — ONE canonical system, nothing else.**
+> "all of our references need to use the already established content_ir structure so we have a single canonical system … our goal is for everything to use that one system and nothing else. If that structure directly works, then great!"
+
+- References are `content_ir` kinds, not a parallel envelope taxonomy. `content_ir` already
+  ships a reference-chip kind (`item_presentation`) and the whole kind registry — build on it.
+- **DB may store a different form + convert**, that's allowed: "if for database purposes, we
+  want to store a different version and then do a conversion, that's fine." Canonical =
+  content_ir; a storage projection (e.g. the ```matrx fence) is fine as long as it converts.
+- **Reverse references and aggregates ALSO go through content_ir — don't get ahead of it.**
+  > "The key is to build that system so if we don't have those things and we can build them now, that's fantastic … but we can't get ahead of that system."
+  So: if content_ir can express reverse/aggregate now, build them there; otherwise they wait
+  on content_ir, never bolted on beside it.
+- Read `features/content-ir/FEATURE.md` + `docs/SHAPE_SYSTEM.md` BEFORE designing the reference
+  data model. The reference_source JSONB (below) is still the interim binding for the *authoring
+  config*; the *value representation* must be a content_ir kind.
+
+**Clickability rule (non-negotiable):** every reference the UI shows MUST link to the thing it
+references so the user can open it — in a WindowPanel if one exists for that entity, and/or a new
+tab (ideally both).
+> "all references must be linked to the thing they reference so that the user can open that thing with a window panel component … or click to open in a new tab (ideally both)"
+Today's reference chips render via `MatrxEnvelopeBlock` (clickable); any NEW dataset/list/row
+display MUST preserve this — a row/cell/list chip has to open its record.
+
 ## Vision — Arman's words
 
 > "right now, we say that the VALUE is going to be a table. that means the entire table IS the value. But then, we might say, we have a table and a row (id) is the value. In this case, we DEFINE the exact table and when you set the value, you choose a row."
