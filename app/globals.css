@@ -1267,20 +1267,20 @@
      in the app, edit HERE — nowhere else.
 
      Structure per button:
-       .matrx-tap-target — outer 44px invisible touch target = the interactive
+       .matrx-tap-target — outer 40px invisible touch target = the interactive
                            element (<button>/<a>/<label>). It owns the tap
                            hygiene (touch-action + tap-highlight) so it applies
                            to the WHOLE 44px target AND to the link variants —
                            the iOS gray flash paints on the anchor, not the
                            inner pill, so putting it on the pill never worked.
-       .matrx-tap-pill   — inner 32px visible pill. Geometry + press feedback.
+       .matrx-tap-pill   — inner 28px visible pill. Geometry + press feedback.
                            Each variant layers ONLY its decoration on top (glass
                            border / solid fill / hover bg) — the size is identical
                            across glass / transparent / solid, guaranteed here.
-       .matrx-tap-icon   — 16px icon.
+       .matrx-tap-icon   — 14px icon.
        .matrx-tap-*-inline — wider auto-width geometry when `label` is set on
                               TapTargetButton (icon + caption on one row).
-     The `-sm` classes (36 / 24px) are the slimmer geometry used inside groups.
+     The `-sm` classes (32 / 20px) are the slimmer geometry used inside groups.
      ========================================================================= */
   .matrx-tap-target {
     display: flex;

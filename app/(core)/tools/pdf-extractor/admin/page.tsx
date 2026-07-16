@@ -164,6 +164,14 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
+      name: "PdfNamedSurfaceSwitcher",
+      filePath: "features/pdf/components/PdfNamedSurfaceSwitcher.tsx",
+      description:
+        "Switcher + document identity: small PDF icon + truncated editable filename (EditableLabel) + the switcher tap group. Demo: /demos/pdf-named-switcher.",
+      status: "Live",
+      tier: "internal",
+    },
+    {
       name: "usePdfSurfaceLinks",
       filePath: "features/pdf/hooks/usePdfSurfaceLinks.ts",
       description:
@@ -500,6 +508,13 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
   ],
 
   demoRoutes: [
+    {
+      url: "/demos/pdf-named-switcher",
+      label: "Named surface switcher",
+      description:
+        "PdfNamedSurfaceSwitcher — editable filename + PDF icon + switcher; live rename via the files thunk, truncation stress rows.",
+      filePath: "app/(dev)/demos/pdf-named-switcher/page.dev.tsx",
+    },
     {
       url: "/demos/pdf-processing",
       label: "PDF processing index",
