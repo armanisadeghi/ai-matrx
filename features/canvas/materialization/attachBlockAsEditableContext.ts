@@ -23,8 +23,7 @@ import type {
 } from "@/features/public-chat/types/cx-tables";
 import { reconstructBlockMarkdown } from "@/features/agents/redux/execution-system/utils/assemble-cx-content-blocks";
 import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { refetchSingleMessage } from "@/features/agents/redux/execution-system/message-crud/refetch-single-message.thunk";
+import { flipMessageToDbRender } from "./flipMessageToDbRender";
 import { buildCanvasItemContextValue } from "@/features/agents/utils/canvasItemContext";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import {
@@ -422,36 +421,10 @@ export async function attachBlockAsEditableContext(
   }
 
   // ── 3. Flip in-session render to by-id (version history visible) ────────
-  // Clear _streamRequestId on EVERY message that shares this request — a
-  // multi-iteration agentic turn collapses by requestId, and clearing only
-  // one row would duplicate the answer.
+  // Shared helper: refetch the row + clear _streamRequestId on the whole
+  // request cohort (multi-iteration turns collapse by requestId).
   steps.push("refetchSingleMessage + clear _streamRequestId cohort");
-  await deps.dispatch(refetchSingleMessage({ conversationId, messageId }));
-  const afterState = deps.getState();
-  const entry = afterState.messages.byConversationId[conversationId];
-  const streamReqId = entry?.byId?.[messageId]?._streamRequestId;
-  if (streamReqId && entry) {
-    for (const mid of entry.orderedIds) {
-      const rec = entry.byId[mid];
-      if (rec?._streamRequestId === streamReqId) {
-        deps.dispatch(
-          updateMessageRecord({
-            conversationId,
-            messageId: mid,
-            patch: { _streamRequestId: undefined },
-          }),
-        );
-      }
-    }
-  } else {
-    deps.dispatch(
-      updateMessageRecord({
-        conversationId,
-        messageId,
-        patch: { _streamRequestId: undefined },
-      }),
-    );
-  }
+  await flipMessageToDbRender({ conversationId, messageId }, deps);
   invalidateCanvasItemCache(artifactId);
   if (typeof window !== "undefined") {
     window.dispatchEvent(

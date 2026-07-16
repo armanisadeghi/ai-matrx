@@ -409,11 +409,18 @@ export const canvasArtifactService = {
    * chain root, takes MAX(version)+1 atomically, and inserts with
    * source_type='user_created', source_message_id NULL, artifact_index NULL
    * (respects the (source_message_id, artifact_index) partial unique).
+   *
+   * `content` accepts a STRING (text-payload types: mermaid, code) or a
+   * STRUCTURED value object (kind-IR types: a NEW zero-loss `content.data`
+   * object self-describing via `__kind` — never mutate the prior version's
+   * object in place). Both persist under the same `{data, type, metadata}`
+   * envelope; `ArtifactRefBlock` rehydrates objects via
+   * `kindServerDataFromStoredValue` with no re-parse.
    */
   async saveUserVersion(input: {
     canvasId: string;
     title?: string | null;
-    content: string;
+    content: string | Record<string, unknown>;
     type: string;
     metadata?: Record<string, unknown>;
   }): Promise<CanvasArtifactRow | null> {

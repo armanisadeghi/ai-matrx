@@ -89,6 +89,8 @@ import { createNotesEditorExtraSections } from "@/features/notes/agent-context/n
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import type { ContentSource } from "@/features/rich-document/types";
+import { UnbindSurfaceContext } from "@/features/canvas/materialization/UnbindSurfaceContext";
+import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterialization";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -532,6 +534,19 @@ export function NoteContentEditor({
     [localContent, handleChangeFlush],
   );
 
+  // ── Artifact materialization surface ─────────────────────────────
+  // Notes as a materialization surface (features/canvas/docs/TWO_WAY_BINDING.md):
+  // explicit convert-blocks action + the unbind ("Detach as text") provider for
+  // artifact refs rendered in the preview. All writes go through
+  // handleChangeFlush + saveNote — the same canonical path as content cleanup.
+  const { materializeNoteArtifacts, unbindSurface } =
+    useNoteArtifactMaterialization({
+      noteId,
+      getContent: () => localContentRef.current,
+      applyContent: handleChangeFlush,
+      readOnly: access.loading || readOnly,
+    });
+
   // Notes-specific menu items wired to the REAL handlers above (no stubs).
   const notesExtras = createNotesEditorExtraSections({
     isDirty,
@@ -549,6 +564,9 @@ export function NoteContentEditor({
     onCloseTab: handleCloseTab,
     onCloseOtherTabs: handleCloseOtherTabs,
     onCloseAllTabs: handleCloseAllTabs,
+    onConvertBlocksToArtifacts: unbindSurface
+      ? () => void materializeNoteArtifacts()
+      : undefined,
     onDelete: handleDelete,
     isSuperAdmin,
     onPermanentDelete: handlePermanentDelete,
@@ -678,6 +696,10 @@ export function NoteContentEditor({
         />
       )}
 
+      {/* Artifact refs rendered in the preview get their unbind path from
+          this provider (null while read-only / access loading — the Detach
+          chrome then simply doesn't render). */}
+      <UnbindSurfaceContext.Provider value={unbindSurface}>
       <EditableContextMenu
         {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
         extraSections={notesExtras}
@@ -797,6 +819,7 @@ export function NoteContentEditor({
             )}
         </div>
       </EditableContextMenu>
+      </UnbindSurfaceContext.Provider>
 
       <MoveNoteDialog
         open={moveDialogOpen}

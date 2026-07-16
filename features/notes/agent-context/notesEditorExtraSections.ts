@@ -7,6 +7,7 @@ import {
   FolderInput,
   FolderClosed,
   FolderPlus,
+  Shapes,
   X,
   Trash2,
 } from "lucide-react";
@@ -46,6 +47,12 @@ export interface NotesEditorExtraSectionsConfig {
   onCloseTab: () => void;
   onCloseOtherTabs: () => void;
   onCloseAllTabs: () => void;
+  /**
+   * Convert the note's materializable blocks (fences / kind-JSON /
+   * `<artifact>` tags) into persisted canvas artifacts and rewrite the body
+   * to `<artifact id>` refs. Omitted for read-only / unpersisted notes.
+   */
+  onConvertBlocksToArtifacts?: () => void;
   onDelete: () => void;
   /** Super-admin only — hard delete (bypasses soft-delete). Omitted otherwise. */
   isSuperAdmin?: boolean;
@@ -71,6 +78,7 @@ export function createNotesEditorExtraSections(
     onCloseTab,
     onCloseOtherTabs,
     onCloseAllTabs,
+    onConvertBlocksToArtifacts,
     onDelete,
     isSuperAdmin,
     onPermanentDelete,
@@ -167,6 +175,17 @@ export function createNotesEditorExtraSections(
       icon: ClipboardCopy,
       onSelect: onShareClipboard,
     },
+    ...(onConvertBlocksToArtifacts
+      ? ([
+          {
+            kind: "item",
+            id: "convert-artifacts",
+            label: "Convert blocks to artifacts",
+            icon: Shapes,
+            onSelect: onConvertBlocksToArtifacts,
+          },
+        ] as ContextMenuExtraItem[])
+      : []),
     {
       kind: "submenu",
       id: "move",

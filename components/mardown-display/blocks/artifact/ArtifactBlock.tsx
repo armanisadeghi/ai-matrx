@@ -1,9 +1,11 @@
 "use client";
 
 import React, { Suspense, lazy, useMemo } from "react";
-import { Copy, Maximize2 } from "lucide-react";
+import { Copy, Maximize2, Unlink } from "lucide-react";
 import { toast } from "sonner";
+import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { artifactContentToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
+import { useUnbindArtifact } from "@/features/canvas/materialization/useUnbindArtifact";
 import { ArtifactVersionHistory } from "@/features/canvas/components/ArtifactVersionHistory";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
@@ -131,6 +133,34 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     } catch {
       toast.error("Couldn't copy to clipboard");
     }
+  };
+
+  /**
+   * "Detach as text" — the UNBIND leg (features/canvas/docs/TWO_WAY_BINDING.md
+   * § b). Replaces this ref with the artifact's markdown export in the source
+   * surface (chat message, or a note via UnbindSurfaceContext); the saved
+   * artifact row is KEPT in the canvas library. Inertness-gated inside the
+   * primitive — types that would re-materialize refuse with a toast.
+   */
+  const {
+    canUnbind,
+    busy: unbindBusy,
+    unbind,
+    surfaceNoun,
+  } = useUnbindArtifact({
+    artifactId: isMaterializedArtifactId(artifactId) ? artifactId : null,
+    messageId,
+    conversationId,
+  });
+
+  const handleUnbind = async () => {
+    const ok = await confirm({
+      title: "Detach as text?",
+      description: `Replaces this artifact with plain Markdown in the ${surfaceNoun}. The saved artifact stays in your canvas library.`,
+      confirmLabel: "Detach",
+    });
+    if (!ok) return;
+    await unbind();
   };
 
   const handleOpenCanvas = () => {
@@ -262,6 +292,17 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
               canvasItemId={artifactId}
               triggerClassName="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100 data-[state=open]:opacity-100"
             />
+          )}
+          {canUnbind && (
+            <button
+              onClick={() => void handleUnbind()}
+              disabled={unbindBusy}
+              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100 disabled:opacity-50"
+              title="Detach as text"
+              aria-label="Detach as text"
+            >
+              <Unlink className="h-3.5 w-3.5" />
+            </button>
           )}
           {isComplete && content.trim() !== "" && (
             <button
