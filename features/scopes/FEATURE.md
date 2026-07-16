@@ -4,7 +4,7 @@
 **Tier:** `1` — foundational for every agent invocation and every feature that filters, tags, or resolves by user-defined dimensions.
 **Last updated:** `2026-07-15`
 
-> This doc is the single source of truth for **scopes**. If something contradicts it (an existing slice, an old hook, a stale README), the doc wins and the code is wrong. Read this end-to-end before touching anything in `features/scopes/`, `features/agent-context/`, `features/scope-system/`, `app/(authenticated)/scopes/`, or any consumer that picks/tags/filters by scope.
+> **The cross-repo canonical model lives in `common-docs/scope-context-system/FEATURE.md`** — built strictly from the product owner's own statements; read it FIRST. This doc is the frontend source of truth for **scopes**. If something contradicts it (an existing slice, an old hook, a stale README), the doc wins and the code is wrong. Read this end-to-end before touching anything in `features/scopes/`, `features/agent-context/`, `features/scope-system/`, `app/(authenticated)/scopes/`, or any consumer that picks/tags/filters by scope.
 
 ---
 
