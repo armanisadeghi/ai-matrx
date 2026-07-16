@@ -25996,6 +25996,10 @@ export type Database = {
         Args: { p_actor: string }
         Returns: undefined
       }
+      _scope_system_resolve_type_id: {
+        Args: { p_kind: string; p_op: Json; p_org_id: string }
+        Returns: string
+      }
       _version_diff_json: { Args: { a: Json; b: Json }; Returns: Json }
       accept_context_item_suggestion: {
         Args: { p_suggestion_id: string }
