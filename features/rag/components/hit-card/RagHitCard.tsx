@@ -28,6 +28,7 @@ import {
   Puzzle,
   Table2,
   TriangleAlert,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
@@ -153,6 +154,8 @@ export interface RagHitCardProps {
   expanded?: boolean;
   /** Notifies controlled callers and individual-card toggles. */
   onExpandedChange?: (expanded: boolean) => void;
+  /** Opens the source-grounded Review & Repair workspace for this result. */
+  onReviewRepair?: () => void;
   /** Replaces the default snippet body while preserving its highlighted node. */
   expandedContent?: (
     snippet: React.ReactNode,
@@ -509,6 +512,7 @@ export function RagHitCard({
   defaultExpanded = true,
   expanded: controlledExpanded,
   onExpandedChange,
+  onReviewRepair,
   expandedContent,
 }: RagHitCardProps) {
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
@@ -589,6 +593,20 @@ export function RagHitCard({
             requested={referenceRequest}
             onSelect={selectReference}
           />
+          {onReviewRepair ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onReviewRepair();
+              }}
+              title="Review and repair this result from the physical PDF"
+              aria-label="Review and repair this result from the physical PDF"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-primary/75 transition-colors hover:bg-primary/10 hover:text-primary"
+            >
+              <Wrench className="h-4 w-4" />
+            </button>
+          ) : null}
           <OpenButton view={view} onOpen={onOpen} />
           <a
             href={href}

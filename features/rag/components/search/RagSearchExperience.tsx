@@ -87,6 +87,11 @@ import {
 } from "@/features/rag/components/hit-card/adapters";
 import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
 import { RagPageReferences } from "@/features/rag/components/search/RagPageReferences";
+import { RagReviewRepairWorkspace } from "@/features/rag/components/search/RagReviewRepairWorkspace";
+import {
+  buildRagReviewPages,
+  pageCountFromRagHit,
+} from "@/features/rag/components/search/ragReviewPages";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
@@ -236,6 +241,7 @@ function RichHitCard({
   defaultExpanded,
   expanded,
   onExpandedChange,
+  onReviewRepair,
   sourceName,
 }: {
   rank: number;
@@ -245,6 +251,7 @@ function RichHitCard({
   defaultExpanded?: boolean;
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  onReviewRepair?: () => void;
   sourceName?: string | null;
   /** Retained for call-site compatibility; the expanded canonical card always
    *  shows the full chunk + breakdown. */
@@ -284,6 +291,7 @@ function RichHitCard({
       defaultExpanded={defaultExpanded}
       expanded={expanded}
       onExpandedChange={onExpandedChange}
+      onReviewRepair={onReviewRepair}
       expandedContent={(snippet, resources) =>
         hit.source_kind === "cld_file" || hit.source_kind === "library_doc" ? (
           <RagPageReferences
@@ -734,7 +742,13 @@ function QueryTermCoverage({
   );
 }
 
-function SearchTab({ scope }: { scope: Scope }) {
+function SearchTab({
+  scope,
+  onReviewModeChange,
+}: {
+  scope: Scope;
+  onReviewModeChange?: (active: boolean) => void;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const initialQuery = params?.get("q") ?? "";
@@ -744,6 +758,8 @@ function SearchTab({ scope }: { scope: Scope }) {
   const [response, setResponse] = useState<RagSearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedHits, setExpandedHits] = useState<Record<string, boolean>>({});
+  const [reviewHit, setReviewHit] = useState<RagSearchHit | null>(null);
+  const openCitation = useOpenCitation();
   // Guards against a slow earlier search resolving after a newer one and
   // overwriting it (the `disabled={running}` button guard isn't synchronous).
   const seqRef = useRef(0);
@@ -768,6 +784,8 @@ function SearchTab({ scope }: { scope: Scope }) {
     setRunning(true);
     setError(null);
     setResponse(null);
+    setReviewHit(null);
+    onReviewModeChange?.(false);
     try {
       const r = await ragSearch({
         query: trimmed,
@@ -803,7 +821,7 @@ function SearchTab({ scope }: { scope: Scope }) {
     } finally {
       if (seq === seqRef.current) setRunning(false);
     }
-  }, [query, scope, router, searchContext]);
+  }, [query, scope, router, searchContext, onReviewModeChange]);
 
   // Arriving with a `?q=` deep link (e.g. from the document viewer's "AI
   // search — everything" hand-off) auto-runs the search once, so the user
@@ -885,6 +903,54 @@ function SearchTab({ scope }: { scope: Scope }) {
     resultExpansionStates.length > 0 &&
     resultExpansionStates.every((expanded) => !expanded);
 
+  if (reviewHit) {
+    const reviewView = hitViewFromSearchHit(reviewHit, {
+      name: response
+        ? canonicalSourceNameForHit(reviewHit, response.hits)
+        : undefined,
+    });
+    const sourceName =
+      (response ? canonicalSourceNameForHit(reviewHit, response.hits) : null) ??
+      reviewView.title ??
+      "Document";
+    const reviewPages = buildRagReviewPages(
+      reviewView.pageNumbers,
+      reviewView.pageNumber,
+      pageCountFromRagHit(reviewHit),
+    );
+    const href = citationHrefFor(
+      reviewHit.source_kind,
+      reviewHit.source_id,
+      reviewView.pageNumber,
+      reviewHit.chunk_id,
+    );
+    return (
+      <RagReviewRepairWorkspace
+        hit={reviewHit}
+        sourceName={sourceName}
+        reviewPages={reviewPages}
+        onClose={() => {
+          setReviewHit(null);
+          onReviewModeChange?.(false);
+        }}
+        onOpenSource={() =>
+          openCitation({
+            sourceKind: reviewHit.source_kind,
+            sourceId: reviewHit.source_id,
+            href,
+            chunkId: reviewHit.chunk_id,
+            pageNumber: reviewView.pageNumber,
+            pageNumbers: reviewView.pageNumbers,
+            snippet: reviewView.snippet,
+            fileName: sourceName,
+            score: reviewView.score,
+            query: response?.query ?? null,
+          })
+        }
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <header className="border-b p-3">
@@ -916,6 +982,8 @@ function SearchTab({ scope }: { scope: Scope }) {
                 setQuery("");
                 setResponse(null);
                 setExpandedHits({});
+                setReviewHit(null);
+                onReviewModeChange?.(false);
               }}
               autoFocus
             />
@@ -1083,6 +1151,19 @@ function SearchTab({ scope }: { scope: Scope }) {
                           ...current,
                           [h.chunk_id]: expanded,
                         }))
+                      }
+                      onReviewRepair={
+                        h.source_kind === "cld_file" &&
+                        buildRagReviewPages(
+                          hitViewFromSearchHit(h).pageNumbers,
+                          hitViewFromSearchHit(h).pageNumber,
+                          pageCountFromRagHit(h),
+                        ).length
+                          ? () => {
+                              setReviewHit(h);
+                              onReviewModeChange?.(true);
+                            }
+                          : undefined
                       }
                     />
                   </motion.div>
@@ -2354,13 +2435,14 @@ export function RagSearchExperience() {
     : "search";
   const isMobile = useIsMobile();
   const [scopeOpen, setScopeOpen] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
 
   return (
     <>
       <RagHubHeader />
       <div className="flex h-full flex-col overflow-hidden bg-background md:flex-row">
         {/* Desktop persistent sidebar — collapses out on mobile in favour of the Drawer */}
-        {!isMobile && <ScopeSidebar scope={scope} />}
+        {!isMobile && !reviewMode && <ScopeSidebar scope={scope} />}
 
         <Tabs
           defaultValue={initialTab}
@@ -2368,7 +2450,7 @@ export function RagSearchExperience() {
         >
           <div className="border-b px-2 pt-[calc(var(--shell-header-h)+0.5rem)] pb-1 flex items-center gap-2 md:px-4 md:gap-3">
             {/* Mobile-only: scope drawer trigger sits where the sidebar would be */}
-            {isMobile && (
+            {isMobile && !reviewMode && (
               <Button
                 type="button"
                 variant="ghost"
@@ -2406,7 +2488,7 @@ export function RagSearchExperience() {
 
           <div className="flex-1 overflow-hidden min-h-0">
             <TabsContent value="search" className="h-full mt-0">
-              <SearchTab scope={scope} />
+              <SearchTab scope={scope} onReviewModeChange={setReviewMode} />
             </TabsContent>
             <TabsContent value="agent-sim" className="h-full mt-0">
               <AgentSimulationTab scope={scope} />
