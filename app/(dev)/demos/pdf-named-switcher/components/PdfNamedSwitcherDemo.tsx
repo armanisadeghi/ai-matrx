@@ -101,6 +101,7 @@ const STRESS_NAMES = [
 export function PdfNamedSwitcherDemo() {
   const { rows, error } = useNewestPdfs(3);
   const first = rows?.[0] ?? null;
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <div className="space-y-10 p-8">
@@ -172,6 +173,31 @@ export function PdfNamedSwitcherDemo() {
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {first && (
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Search option</h2>
+          <p className="text-sm text-muted-foreground">
+            Pass <code className="text-xs">onSearchChange</code> to add the
+            search control. Activating it overlays the field across the
+            pill&apos;s content — the width never changes (macOS style). X
+            clears then closes; Esc closes.
+          </p>
+          <PdfNamedSurfaceSwitcher
+            current="file-viewer"
+            fileId={first.id}
+            fileName={first.fileName}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Find in document"
+          />
+          <p className="text-xs text-muted-foreground">
+            Live query:{" "}
+            <span className="font-mono text-foreground">
+              {searchQuery || "(empty)"}
+            </span>
+          </p>
         </section>
       )}
 
