@@ -167,11 +167,18 @@ export function kindSchemaToJsonSchema(
         return { type: withNull(field.type, field.nullable) };
 
       case "number":
+        // Numeric bounds are OpenAI-strict-unsupported (minimum / maximum /
+        // multipleOf) — the aidream twin strips exactly these on its OpenAI
+        // paths (matrx_ai tools/models.py strip_openai_unsupported), so the
+        // strict export must not emit them either (2026-07-15 review F1).
+        // Non-strict exports keep them: they are honest JSON Schema.
         return {
           type: withNull("number", field.nullable),
-          ...(field.min !== undefined ? { minimum: field.min } : {}),
-          ...(field.max !== undefined ? { maximum: field.max } : {}),
-          ...(field.step !== undefined ? { multipleOf: field.step } : {}),
+          ...(!strict && field.min !== undefined ? { minimum: field.min } : {}),
+          ...(!strict && field.max !== undefined ? { maximum: field.max } : {}),
+          ...(!strict && field.step !== undefined
+            ? { multipleOf: field.step }
+            : {}),
         };
 
       case "json":
