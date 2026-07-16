@@ -109,6 +109,7 @@ describe("shape doctor", () => {
             kindDefinitionId: "k1",
             surfaceType: "xml_tag",
             token: "flashcards",
+            isActive: true,
           },
         ],
         renderBlockSkills: [
@@ -485,7 +486,13 @@ describe("shape doctor — n/a classification", () => {
           makeKind({ id: "child", kind: "flashcard" }),
         ],
         surfaces: [
-          { id: "s1", kindDefinitionId: "child", surfaceType: "xml_tag", token: "flashcard" },
+          {
+            id: "s1",
+            kindDefinitionId: "child",
+            surfaceType: "xml_tag",
+            token: "flashcard",
+            isActive: true,
+          },
         ],
         edges: [edge("root", "child", "cards")],
       }),
@@ -667,7 +674,13 @@ describe("shape doctor — coverage gates", () => {
           { token: "thinking", surfaceType: "xml_tag", source: "test#SET" },
         ],
         surfaces: [
-          { id: "s1", kindDefinitionId: "k1", surfaceType: "fence_lang", token: "mystery_fence" },
+          {
+            id: "s1",
+            kindDefinitionId: "k1",
+            surfaceType: "fence_lang",
+            token: "mystery_fence",
+            isActive: true,
+          },
         ],
         crosswalkNames: new Set(["known_kind"]),
       }),
@@ -842,5 +855,106 @@ describe("shape doctor — schema-side __kind strip", () => {
       required: ["keep"],
       $defs: { Inner: { properties: {}, required: [] } },
     });
+  });
+});
+
+describe("registry↔host surface reconciliation (surface-token-undetectable)", () => {
+  const hostSurfaceTokens = {
+    xml_tag: new Set(["flashcards"]),
+    fence_lang: new Set(["mermaid"]),
+    json_root_key: new Set(["quiz_title"]),
+  };
+
+  it("flags an ACTIVE surface token no host literal can fire", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [makeKind({ id: "k1", kind: "flashcard_set" })],
+        surfaces: [
+          {
+            id: "s1",
+            kindDefinitionId: "k1",
+            surfaceType: "xml_tag",
+            token: "ghost_tag",
+            isActive: true,
+          },
+        ],
+        hostSurfaceTokens,
+      }),
+    );
+    const reds = report.findings.filter((f) => f.code === "surface-token-undetectable");
+    expect(reds).toHaveLength(1);
+    expect(reds[0].severity).toBe("red");
+    expect(reds[0].message).toContain('"ghost_tag"');
+  });
+
+  it("passes host-covered tokens and skips inactive + tool_name surfaces", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [makeKind({ id: "k1", kind: "flashcard_set" })],
+        surfaces: [
+          {
+            id: "s1",
+            kindDefinitionId: "k1",
+            surfaceType: "xml_tag",
+            token: "flashcards",
+            isActive: true,
+          },
+          {
+            id: "s2",
+            kindDefinitionId: "k1",
+            surfaceType: "fence_lang",
+            token: "mermaid",
+            isActive: true,
+          },
+          {
+            id: "s3",
+            kindDefinitionId: "k1",
+            surfaceType: "json_root_key",
+            token: "quiz_title",
+            isActive: true,
+          },
+          // Deactivated: SHOULD be undetectable — never a finding.
+          {
+            id: "s4",
+            kindDefinitionId: "k1",
+            surfaceType: "xml_tag",
+            token: "questionnaire",
+            isActive: false,
+          },
+          // tool_name has no markdown host — out of scope for this check.
+          {
+            id: "s5",
+            kindDefinitionId: "k1",
+            surfaceType: "tool_name",
+            token: "make_flashcards",
+            isActive: true,
+          },
+        ],
+        hostSurfaceTokens,
+      }),
+    );
+    expect(
+      report.findings.filter((f) => f.code === "surface-token-undetectable"),
+    ).toHaveLength(0);
+  });
+
+  it("emits nothing when host tokens are not supplied (degraded runtimes)", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [makeKind({ id: "k1", kind: "flashcard_set" })],
+        surfaces: [
+          {
+            id: "s1",
+            kindDefinitionId: "k1",
+            surfaceType: "xml_tag",
+            token: "ghost_tag",
+            isActive: true,
+          },
+        ],
+      }),
+    );
+    expect(
+      report.findings.filter((f) => f.code === "surface-token-undetectable"),
+    ).toHaveLength(0);
   });
 });

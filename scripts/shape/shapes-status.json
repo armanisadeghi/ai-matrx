@@ -1,5 +1,5 @@
 {
-  "generated_for": "714-kinds+d2135877ebe7",
+  "generated_for": "714-kinds+5ef5ba2e2311",
   "columns": [
     "definition",
     "example",
@@ -4184,12 +4184,12 @@
     },
     {
       "kind": "schema_proposal",
-      "is_active": false,
+      "is_active": true,
       "family": null,
       "assets": {
         "definition": "ok",
         "example": "ok",
-        "gate_structural": "warn",
+        "gate_structural": "ok",
         "component": "ok",
         "skill": "ok",
         "content_block": "ok",

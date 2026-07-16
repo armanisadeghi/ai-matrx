@@ -11,10 +11,10 @@
 
 import type { KindSurfaceEntry, KindSurfaceType } from "./system-surfaces";
 
-export const KIND_SURFACE_BOOTSTRAP_STAMP = "21-surfaces+e59b476f5337";
+export const KIND_SURFACE_BOOTSTRAP_STAMP = "23-surfaces+fb652b821627";
 
 /** Canonical cross-runtime payload — compare byte-for-byte with the Python twin. */
-export const KIND_SURFACE_BOOTSTRAP_JSON = '[{"surface_type":"fence_lang","token":"cooking_recipe","kind":"cooking_recipe","parser_strategy":"cooking_recipe_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"flashcards","kind":"flashcard_set","parser_strategy":"flashcards_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"mermaid","kind":"mermaid_diagram","parser_strategy":"mermaid_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"mmd","kind":"mermaid_diagram","parser_strategy":"mermaid_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"structured_info","kind":"structured_info","parser_strategy":"structured_info_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"tasks","kind":"task_list","parser_strategy":"tasks_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"transcript","kind":"transcript","parser_strategy":"transcript_legacy_text","streaming":true},{"surface_type":"json_root_key","token":"comparison","kind":"comparison_set","parser_strategy":"comparison_table_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"decision_tree","kind":"decision_tree","parser_strategy":"decision_tree_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"diagram","kind":"diagram_spec","parser_strategy":"diagram_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"item_presentation","kind":"item_presentation","parser_strategy":"item_presentation_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"math_problem","kind":"math_problem","parser_strategy":"math_problem_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"presentation","kind":"presentation_deck","parser_strategy":"presentation_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"quiz_title","kind":"quiz_set","parser_strategy":"quiz_legacy_json","streaming":false},{"surface_type":"xml_tag","token":"cooking_recipe","kind":"cooking_recipe","parser_strategy":"cooking_recipe_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"flashcards","kind":"flashcard_set","parser_strategy":"flashcards_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"progress_tracker","kind":"progress_tracker","parser_strategy":"progress_tracker_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"research","kind":"research_report","parser_strategy":"research_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"resources","kind":"resource_collection","parser_strategy":"resources_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"timeline","kind":"timeline","parser_strategy":"timeline_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"troubleshooting","kind":"troubleshooting_guide","parser_strategy":"troubleshooting_legacy_text","streaming":true}]';
+export const KIND_SURFACE_BOOTSTRAP_JSON = '[{"surface_type":"fence_lang","token":"cooking_recipe","kind":"cooking_recipe","parser_strategy":"cooking_recipe_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"flashcards","kind":"flashcard_set","parser_strategy":"flashcards_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"mermaid","kind":"mermaid_diagram","parser_strategy":"mermaid_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"mmd","kind":"mermaid_diagram","parser_strategy":"mermaid_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"questionnaire","kind":"questionnaire","parser_strategy":"questionnaire_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"structured_info","kind":"structured_info","parser_strategy":"structured_info_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"tasks","kind":"task_list","parser_strategy":"tasks_legacy_text","streaming":true},{"surface_type":"fence_lang","token":"transcript","kind":"transcript","parser_strategy":"transcript_legacy_text","streaming":true},{"surface_type":"json_root_key","token":"comparison","kind":"comparison_set","parser_strategy":"comparison_table_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"decision_tree","kind":"decision_tree","parser_strategy":"decision_tree_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"diagram","kind":"diagram_spec","parser_strategy":"diagram_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"item_presentation","kind":"item_presentation","parser_strategy":"item_presentation_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"math_problem","kind":"math_problem","parser_strategy":"math_problem_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"presentation","kind":"presentation_deck","parser_strategy":"presentation_legacy_json","streaming":false},{"surface_type":"json_root_key","token":"quiz_title","kind":"quiz_set","parser_strategy":"quiz_legacy_json","streaming":false},{"surface_type":"xml_tag","token":"cooking_recipe","kind":"cooking_recipe","parser_strategy":"cooking_recipe_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"flashcards","kind":"flashcard_set","parser_strategy":"flashcards_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"progress_tracker","kind":"progress_tracker","parser_strategy":"progress_tracker_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"questionnaire","kind":"questionnaire","parser_strategy":"questionnaire_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"research","kind":"research_report","parser_strategy":"research_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"resources","kind":"resource_collection","parser_strategy":"resources_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"timeline","kind":"timeline","parser_strategy":"timeline_legacy_text","streaming":true},{"surface_type":"xml_tag","token":"troubleshooting","kind":"troubleshooting_guide","parser_strategy":"troubleshooting_legacy_text","streaming":true}]';
 
 export const GENERATED_SURFACE_ENTRIES: readonly KindSurfaceEntry[] = [
   {
@@ -43,6 +43,13 @@ export const GENERATED_SURFACE_ENTRIES: readonly KindSurfaceEntry[] = [
     token: "mmd",
     kind: "mermaid_diagram",
     parserStrategy: "mermaid_legacy_text",
+    streaming: true,
+  },
+  {
+    surfaceType: "fence_lang",
+    token: "questionnaire",
+    kind: "questionnaire",
+    parserStrategy: "questionnaire_legacy_text",
     streaming: true,
   },
   {
@@ -134,6 +141,13 @@ export const GENERATED_SURFACE_ENTRIES: readonly KindSurfaceEntry[] = [
     token: "progress_tracker",
     kind: "progress_tracker",
     parserStrategy: "progress_tracker_legacy_text",
+    streaming: true,
+  },
+  {
+    surfaceType: "xml_tag",
+    token: "questionnaire",
+    kind: "questionnaire",
+    parserStrategy: "questionnaire_legacy_text",
     streaming: true,
   },
   {

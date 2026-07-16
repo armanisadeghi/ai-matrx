@@ -44,6 +44,8 @@ import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
   extractDetectorTokensFromTexts,
+  extractHostSurfaceTokensFromTexts,
+  type HostSurfaceTokens,
 } from "@/features/content-ir/registry/shape-doctor-extract";
 
 // ─── Code-derived inputs (fs, loud-degrade) ─────────────────────────────────
@@ -67,6 +69,9 @@ function readSource(relPath: string): string | null {
 
 interface CodeInputs {
   detectorTokens: DoctorDetectorToken[];
+  /** Host detection-token surface for the registry↔host reconciliation;
+   * null when the sources are unreadable (finding omitted, warned). */
+  hostSurfaceTokens: HostSurfaceTokens | null;
   compiledKinds: string[];
   artifactKinds: string[];
   /** Columns whose live value depends on unavailable sources — excluded from
@@ -82,12 +87,19 @@ function gatherCodeInputs(): CodeInputs {
   const accumulatorText = readSource(SOURCE_FILES.accumulator);
   const splitterText = readSource(SOURCE_FILES.splitter);
   let detectorTokens: DoctorDetectorToken[] = [];
+  let hostSurfaceTokens: HostSurfaceTokens | null = null;
   if (accumulatorText && splitterText) {
     const { tokens, failures } = extractDetectorTokensFromTexts({
       accumulatorText,
       splitterText,
     });
     detectorTokens = tokens;
+    const hostExtraction = extractHostSurfaceTokensFromTexts({
+      accumulatorText,
+      splitterText,
+    });
+    hostSurfaceTokens = hostExtraction.tokens;
+    failures.push(...hostExtraction.failures);
     for (const f of failures) {
       warnings.push(
         `Frozen detector literal ${f.literal} not found in ${f.file} — the detector census is blind for it (run pnpm check:shapes for the CLI red).`,
@@ -118,6 +130,7 @@ function gatherCodeInputs(): CodeInputs {
 
   return {
     detectorTokens,
+    hostSurfaceTokens,
     compiledKinds,
     artifactKinds,
     excludedFromDrift: [...excluded],
@@ -330,6 +343,7 @@ export async function runLiveShapeDoctor(): Promise<LiveDoctorRun> {
     renderBlockSkills: db.renderBlockSkills,
     contentBlocks: db.contentBlocks,
     detectorTokens: code.detectorTokens,
+    hostSurfaceTokens: code.hostSurfaceTokens ?? undefined,
     codeRenderPaths: {
       compiledKinds: code.compiledKinds,
       artifactKinds: code.artifactKinds,

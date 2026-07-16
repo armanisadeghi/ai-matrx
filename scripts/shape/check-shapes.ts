@@ -49,7 +49,9 @@ import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
   extractDetectorTokensFromTexts,
+  extractHostSurfaceTokensFromTexts,
   type DetectorExtractFailure,
+  type HostSurfaceExtraction,
 } from "../../features/content-ir/registry/shape-doctor-extract";
 import { parseContractManifestSnapshot } from "./contract-manifest-format";
 
@@ -104,6 +106,13 @@ function extractDetectorTokens(): {
   failures: DetectorExtractFailure[];
 } {
   return extractDetectorTokensFromTexts({
+    accumulatorText: readFileSync(ACCUMULATOR_PATH, "utf8"),
+    splitterText: readFileSync(SPLITTER_PATH, "utf8"),
+  });
+}
+
+function extractHostSurfaceTokens(): HostSurfaceExtraction {
+  return extractHostSurfaceTokensFromTexts({
     accumulatorText: readFileSync(ACCUMULATOR_PATH, "utf8"),
     splitterText: readFileSync(SPLITTER_PATH, "utf8"),
   });
@@ -232,6 +241,7 @@ interface KindSurfaceRow {
   kind_definition_id: string;
   surface_type: string;
   token: string;
+  is_active: boolean;
 }
 interface SkillRow {
   skill_id: string;
@@ -282,7 +292,7 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
       supabase
         .schema("content_ir")
         .from("kind_surface")
-        .select("id,kind_definition_id,surface_type,token")
+        .select("id,kind_definition_id,surface_type,token,is_active")
         .is("deleted_at", null),
       // The nesting graph — required to tell a nested-only child kind (whose
       // component/surface/skill/block cells are structurally `n/a`) from a root
@@ -364,6 +374,7 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
         kindDefinitionId: r.kind_definition_id,
         surfaceType: r.surface_type,
         token: r.token,
+        isActive: r.is_active,
       }),
     ),
     renderBlockSkills: skillRows.map(
@@ -651,6 +662,8 @@ async function main(): Promise<number> {
 
   const db = await fetchDbInputs();
   const { tokens: detectorTokens, failures: extractFailures } = extractDetectorTokens();
+  const { tokens: hostSurfaceTokens, failures: hostExtractFailures } = extractHostSurfaceTokens();
+  extractFailures.push(...hostExtractFailures);
   const crosswalk = loadCrosswalkNames();
   const manifest = loadContractManifest();
 
@@ -663,6 +676,7 @@ async function main(): Promise<number> {
     },
     crosswalkNames: crosswalk.names,
     contractManifest: manifest.contracts,
+    hostSurfaceTokens,
   });
 
   // Coverage inputs are load-bearing for the strict gate — a missing/corrupt

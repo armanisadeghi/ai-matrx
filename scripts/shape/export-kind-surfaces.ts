@@ -83,8 +83,11 @@ async function fetchLiveSurfaces(): Promise<ExportedSurfaceRow[]> {
   if (error) fail(`read content_ir.kind_surface: ${error.message}`);
 
   const rows: ExportedSurfaceRow[] = [];
-  for (const row of data ?? []) {
-    const kind = row.kind_definition?.kind;
+  for (const raw of (data ?? []) as unknown[]) {
+    // Ingress narrowing (untyped service-key client): checks, never assertions.
+    const row = raw as Record<string, unknown>;
+    const kindRef = row.kind_definition as Record<string, unknown> | null | undefined;
+    const kind = kindRef?.kind;
     if (
       typeof row.surface_type !== "string" ||
       typeof row.token !== "string" ||
