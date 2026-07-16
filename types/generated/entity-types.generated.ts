@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 243 active entity tokens. A token here is FK-valid for
+// 266 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -39,6 +39,7 @@ export interface EntityTypeMeta {
 export type EntityTypeToken =
   | "activity"
   | "agent"
+  | "agent_card"
   | "agent_definition_version"
   | "agent_drift_alert"
   | "agent_run"
@@ -55,6 +56,7 @@ export type EntityTypeToken =
   | "ai_offering"
   | "ai_provider"
   | "ai_setting"
+  | "analysis_recipes"
   | "app"
   | "app_definition_version"
   | "app_error"
@@ -130,10 +132,17 @@ export type EntityTypeToken =
   | "feature_doc"
   | "field_component"
   | "file"
+  | "file_analysis"
+  | "file_entities"
+  | "file_overrides"
+  | "file_page_annotations"
+  | "file_pages"
   | "file_version"
+  | "flashcard_data"
   | "flashcard_history"
   | "flashcard_review"
   | "flashcard_set"
+  | "flashcard_sets"
   | "flexible_data"
   | "folder"
   | "game_badge"
@@ -181,6 +190,7 @@ export type EntityTypeToken =
   | "project"
   | "prompt"
   | "quiz_session"
+  | "redaction_mapping"
   | "research_analysis"
   | "research_content"
   | "research_document"
@@ -201,6 +211,10 @@ export type EntityTypeToken =
   | "scope_item_value_suggestion"
   | "scope_suggestion"
   | "scope_type"
+  | "scraper_preset"
+  | "scraper_run"
+  | "scraper_schedule"
+  | "scraper_site"
   | "share_link"
   | "shared_canvas_item"
   | "shortcut_category"
@@ -215,8 +229,12 @@ export type EntityTypeToken =
   | "sms_notification_preference"
   | "sms_phone_number"
   | "structured_list"
+  | "studio_documents"
+  | "studio_recording_chunks"
+  | "studio_recording_segments"
   | "studio_run"
   | "studio_session"
+  | "studio_session_settings"
   | "study_attempt"
   | "study_goal"
   | "study_media"
@@ -239,7 +257,10 @@ export type EntityTypeToken =
   | "tool_ui_incident"
   | "tool_ui_version"
   | "transcript"
+  | "udt_dataset_fields"
+  | "udt_dataset_rows"
   | "udt_document"
+  | "udt_structured_list_items"
   | "ui_surface_agent_pref"
   | "ui_surface_config"
   | "user_achievement"
@@ -251,6 +272,7 @@ export type EntityTypeToken =
   | "user_markdown_sample"
   | "user_memory"
   | "user_preference"
+  | "user_profile"
   | "user_stat"
   | "user_surface_state"
   | "voice"
@@ -265,6 +287,7 @@ export type EntityTypeToken =
   | "wc_impairment_definition"
   | "wc_injury"
   | "wc_report"
+  | "wf_node_data_slot"
   | "window_session"
   | "workbook"
   | "workflow"
@@ -283,6 +306,7 @@ export type EntityTypeToken =
 
 /** Tokens flagged `is_component` — child/detail rows, not standalone entities. */
 export type ComponentEntityToken =
+  | "agent_card"
   | "agent_definition_version"
   | "agent_drift_alert"
   | "agent_run_stage"
@@ -318,6 +342,11 @@ export type ComponentEntityToken =
   | "dm_participant"
   | "fc_detail"
   | "field_component"
+  | "file_analysis"
+  | "file_entities"
+  | "file_overrides"
+  | "file_page_annotations"
+  | "file_pages"
   | "file_version"
   | "global_execution"
   | "global_execution_checkpoint"
@@ -326,6 +355,7 @@ export type ComponentEntityToken =
   | "message"
   | "pc_studio_run_asset"
   | "processed_document_page"
+  | "redaction_mapping"
   | "research_analysis"
   | "research_content"
   | "research_document"
@@ -339,15 +369,22 @@ export type ComponentEntityToken =
   | "sch_trigger"
   | "sms_message"
   | "sms_message_media"
+  | "studio_documents"
+  | "studio_recording_segments"
+  | "studio_session_settings"
   | "tool_call"
   | "tool_definition_version"
   | "tool_test_sample"
   | "tool_ui"
   | "tool_ui_incident"
   | "tool_ui_version"
+  | "udt_dataset_fields"
+  | "udt_dataset_rows"
+  | "udt_structured_list_items"
   | "wc_impairment_definition"
   | "wc_injury"
   | "wc_report"
+  | "wf_node_data_slot"
   | "workflow_checkpoint"
   | "workflow_definition_version"
   | "workflow_idempotency"
@@ -361,6 +398,7 @@ export type ComponentEntityToken =
 export type ScopeableEntityToken =
   | "activity"
   | "agent"
+  | "agent_card"
   | "agent_definition_version"
   | "agent_drift_alert"
   | "agent_run"
@@ -377,6 +415,7 @@ export type ScopeableEntityToken =
   | "ai_offering"
   | "ai_provider"
   | "ai_setting"
+  | "analysis_recipes"
   | "app"
   | "app_definition_version"
   | "app_error"
@@ -436,9 +475,16 @@ export type ScopeableEntityToken =
   | "feature_doc"
   | "field_component"
   | "file"
+  | "file_analysis"
+  | "file_entities"
+  | "file_overrides"
+  | "file_page_annotations"
+  | "file_pages"
+  | "flashcard_data"
   | "flashcard_history"
   | "flashcard_review"
   | "flashcard_set"
+  | "flashcard_sets"
   | "flexible_data"
   | "folder"
   | "game_badge"
@@ -486,6 +532,7 @@ export type ScopeableEntityToken =
   | "project"
   | "prompt"
   | "quiz_session"
+  | "redaction_mapping"
   | "research_analysis"
   | "research_content"
   | "research_document"
@@ -506,6 +553,10 @@ export type ScopeableEntityToken =
   | "scope_item_value_suggestion"
   | "scope_suggestion"
   | "scope_type"
+  | "scraper_preset"
+  | "scraper_run"
+  | "scraper_schedule"
+  | "scraper_site"
   | "shared_canvas_item"
   | "shortcut_category"
   | "skill"
@@ -519,8 +570,12 @@ export type ScopeableEntityToken =
   | "sms_notification_preference"
   | "sms_phone_number"
   | "structured_list"
+  | "studio_documents"
+  | "studio_recording_chunks"
+  | "studio_recording_segments"
   | "studio_run"
   | "studio_session"
+  | "studio_session_settings"
   | "study_attempt"
   | "study_goal"
   | "study_media"
@@ -543,7 +598,10 @@ export type ScopeableEntityToken =
   | "tool_ui_incident"
   | "tool_ui_version"
   | "transcript"
+  | "udt_dataset_fields"
+  | "udt_dataset_rows"
   | "udt_document"
+  | "udt_structured_list_items"
   | "ui_surface_agent_pref"
   | "ui_surface_config"
   | "user_achievement"
@@ -555,6 +613,7 @@ export type ScopeableEntityToken =
   | "user_markdown_sample"
   | "user_memory"
   | "user_preference"
+  | "user_profile"
   | "user_stat"
   | "user_surface_state"
   | "voice"
@@ -569,6 +628,7 @@ export type ScopeableEntityToken =
   | "wc_impairment_definition"
   | "wc_injury"
   | "wc_report"
+  | "wf_node_data_slot"
   | "window_session"
   | "workbook"
   | "workflow"
@@ -613,6 +673,7 @@ export type ModuleEntityToken =
 export const ENTITY_TYPE_METADATA = {
   "activity": { token: "activity", schema: "platform", table: "activity_log", label: "Activity Log Entry", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "agent": { token: "agent", schema: "agent", table: "definition", label: "Agent", baseTier: 1, isComponent: false, isModule: true, isListed: true, scopeable: true, category: "Agents" },
+  "agent_card": { token: "agent_card", schema: "agent", table: "card", label: "Agent Card", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "agent_definition_version": { token: "agent_definition_version", schema: "agent", table: "definition_version", label: "Agent Definition Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents" },
   "agent_drift_alert": { token: "agent_drift_alert", schema: "agent", table: "drift_alert", label: "Agent Drift Alert", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents" },
   "agent_run": { token: "agent_run", schema: "chat", table: "agent_run", label: "Agent Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -629,6 +690,7 @@ export const ENTITY_TYPE_METADATA = {
   "ai_offering": { token: "ai_offering", schema: "ai", table: "offering", label: "AI Offering", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "ai_provider": { token: "ai_provider", schema: "ai", table: "provider", label: "AI Provider", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "ai_setting": { token: "ai_setting", schema: "ai", table: "setting", label: "AI Setting", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
+  "analysis_recipes": { token: "analysis_recipes", schema: "public", table: "analysis_recipes", label: "Analysis Recipe", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "app": { token: "app", schema: "app", table: "definition", label: "App", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Apps" },
   "app_definition_version": { token: "app_definition_version", schema: "app", table: "definition_version", label: "App Definition Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Apps" },
   "app_error": { token: "app_error", schema: "app", table: "error", label: "App Error", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Apps" },
@@ -704,10 +766,17 @@ export const ENTITY_TYPE_METADATA = {
   "feature_doc": { token: "feature_doc", schema: "admin", table: "feature_docs", label: "Feature Doc", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "documentation" },
   "field_component": { token: "field_component", schema: "public", table: "field_components", label: "Field Component", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "file": { token: "file", schema: "files", table: "files", label: "File", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources" },
+  "file_analysis": { token: "file_analysis", schema: "files", table: "analysis", label: "File Analysis", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "file_entities": { token: "file_entities", schema: "files", table: "entities", label: "File Entity", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "file_overrides": { token: "file_overrides", schema: "files", table: "overrides", label: "File Override", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "file_page_annotations": { token: "file_page_annotations", schema: "files", table: "page_annotations", label: "Page Annotation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "file_pages": { token: "file_pages", schema: "files", table: "pages", label: "File Page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "file_version": { token: "file_version", schema: "files", table: "file_versions", label: "File Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Sources" },
+  "flashcard_data": { token: "flashcard_data", schema: "education", table: "flashcard_data", label: "Flashcard", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "flashcard_history": { token: "flashcard_history", schema: "education", table: "flashcard_history", label: "Flashcard History", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "flashcard_review": { token: "flashcard_review", schema: "users", table: "user_flashcard_reviews", label: "Flashcard Review", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "flashcard_set": { token: "flashcard_set", schema: "users", table: "user_flashcard_sets", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "flashcard_sets": { token: "flashcard_sets", schema: "education", table: "flashcard_sets", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "flexible_data": { token: "flexible_data", schema: "public", table: "flexible_data", label: "Flexible Data", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "folder": { token: "folder", schema: "files", table: "folders", label: "Folder", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources" },
   "game_badge": { token: "game_badge", schema: "education", table: "game_badge", label: "Game Badge", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -755,6 +824,7 @@ export const ENTITY_TYPE_METADATA = {
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces" },
   "prompt": { token: "prompt", schema: "public", table: "prompts", label: "Prompt", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "quiz_session": { token: "quiz_session", schema: "education", table: "quiz_sessions", label: "Quiz Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "redaction_mapping": { token: "redaction_mapping", schema: "pdf", table: "redaction_mapping", label: "Redaction Mapping", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_analysis": { token: "research_analysis", schema: "research", table: "rs_analysis", label: "Research Analysis", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_content": { token: "research_content", schema: "research", table: "rs_content", label: "Research Content", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_document": { token: "research_document", schema: "research", table: "rs_document", label: "Research Document", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
@@ -775,7 +845,11 @@ export const ENTITY_TYPE_METADATA = {
   "scope_item_value_suggestion": { token: "scope_item_value_suggestion", schema: "reg", table: "scope_item_value_suggestions", label: "Scope Item Value Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "scope_suggestion": { token: "scope_suggestion", schema: "reg", table: "scope_suggestions", label: "Scope Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "scope_type": { token: "scope_type", schema: "context", table: "scope_types", label: "Scope Type", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
-  "share_link": { token: "share_link", schema: "files", table: "share_links", label: "Share Link", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "System" },
+  "scraper_preset": { token: "scraper_preset", schema: "scraper", table: "crawl_presets", label: "Crawl Preset", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "scraper_run": { token: "scraper_run", schema: "scraper", table: "crawl_runs", label: "Crawl Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "scraper_schedule": { token: "scraper_schedule", schema: "scraper", table: "crawl_schedules", label: "Crawl Schedule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "scraper_site": { token: "scraper_site", schema: "scraper", table: "sites", label: "Tracked Website", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "share_link": { token: "share_link", schema: "graveyard", table: "files_share_links", label: "Share Link", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "System" },
   "shared_canvas_item": { token: "shared_canvas_item", schema: "canvas", table: "shared_canvas_items", label: "Shared Canvas Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "shortcut_category": { token: "shortcut_category", schema: "graveyard", table: "shortcut_categories_legacy", label: "Shortcut Category", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "skill": { token: "skill", schema: "skill", table: "definition", label: "Skill", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Skills" },
@@ -789,8 +863,12 @@ export const ENTITY_TYPE_METADATA = {
   "sms_notification_preference": { token: "sms_notification_preference", schema: "communication", table: "sms_notification_preferences", label: "SMS Notification Preference", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "sms_phone_number": { token: "sms_phone_number", schema: "communication", table: "sms_phone_numbers", label: "SMS Phone Number", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "structured_list": { token: "structured_list", schema: "workbench", table: "udt_structured_lists", label: "Structured List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
+  "studio_documents": { token: "studio_documents", schema: "transcripts", table: "studio_documents", label: "Studio Document", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "studio_recording_chunks": { token: "studio_recording_chunks", schema: "transcripts", table: "studio_recording_chunks", label: "Studio Recording Chunk", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "studio_recording_segments": { token: "studio_recording_segments", schema: "transcripts", table: "studio_recording_segments", label: "Studio Recording Segment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "studio_run": { token: "studio_run", schema: "transcripts", table: "studio_runs", label: "Studio Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "studio_session": { token: "studio_session", schema: "transcripts", table: "studio_sessions", label: "Audio Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "studio_session_settings": { token: "studio_session_settings", schema: "transcripts", table: "studio_session_settings", label: "Studio Session Settings", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "study_attempt": { token: "study_attempt", schema: "education", table: "study_attempt", label: "Study Attempt", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "study_goal": { token: "study_goal", schema: "education", table: "study_goal", label: "Study Goal", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "study_media": { token: "study_media", schema: "education", table: "study_media", label: "Study Media", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -813,7 +891,10 @@ export const ENTITY_TYPE_METADATA = {
   "tool_ui_incident": { token: "tool_ui_incident", schema: "tool", table: "ui_incident", label: "Tool UI Incident", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Tools" },
   "tool_ui_version": { token: "tool_ui_version", schema: "tool", table: "ui_version", label: "Tool UI Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Tools" },
   "transcript": { token: "transcript", schema: "transcripts", table: "transcripts", label: "Transcript", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources" },
+  "udt_dataset_fields": { token: "udt_dataset_fields", schema: "workbench", table: "udt_dataset_fields", label: "Dataset Field", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "udt_dataset_rows": { token: "udt_dataset_rows", schema: "workbench", table: "udt_dataset_rows", label: "Dataset Row", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "udt_document": { token: "udt_document", schema: "workbench", table: "udt_documents", label: "Document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "udt_structured_list_items": { token: "udt_structured_list_items", schema: "workbench", table: "udt_structured_list_items", label: "Structured List Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "ui_surface_agent_pref": { token: "ui_surface_agent_pref", schema: "ui", table: "ui_surface_agent_pref", label: "UI Surface Agent Pref", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "ui_surface_config": { token: "ui_surface_config", schema: "ui", table: "ui_surface_config", label: "UI Surface Config", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "user_achievement": { token: "user_achievement", schema: "users", table: "user_achievements", label: "User Achievement", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -825,6 +906,7 @@ export const ENTITY_TYPE_METADATA = {
   "user_markdown_sample": { token: "user_markdown_sample", schema: "users", table: "user_markdown_samples", label: "User Markdown Sample", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "user_memory": { token: "user_memory", schema: "users", table: "user_memory", label: "User Memory", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "user_preference": { token: "user_preference", schema: "users", table: "user_preferences", label: "User Preference", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "user_profile": { token: "user_profile", schema: "users", table: "profiles", label: "User Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "user_stat": { token: "user_stat", schema: "users", table: "user_stats", label: "User Stats", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "user_surface_state": { token: "user_surface_state", schema: "users", table: "user_surface_state", label: "User Surface State", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "voice": { token: "voice", schema: "ai", table: "voices", label: "Voice", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -839,6 +921,7 @@ export const ENTITY_TYPE_METADATA = {
   "wc_impairment_definition": { token: "wc_impairment_definition", schema: "legal", table: "wc_impairment_definition", label: "WC Impairment Definition", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "wc_injury": { token: "wc_injury", schema: "legal", table: "wc_injury", label: "WC Injury", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "wc_report": { token: "wc_report", schema: "legal", table: "wc_report", label: "WC Report", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "wf_node_data_slot": { token: "wf_node_data_slot", schema: "workflow", table: "node_data_slot", label: "Workflow Node Data Slot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "window_session": { token: "window_session", schema: "public", table: "window_sessions", label: "Window Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "workbook": { token: "workbook", schema: "workbench", table: "udt_workbooks", label: "Workbook", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "workflow": { token: "workflow", schema: "workflow", table: "definition", label: "Workflow", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -860,6 +943,7 @@ export const ENTITY_TYPE_METADATA = {
 export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "activity",
   "agent",
+  "agent_card",
   "agent_definition_version",
   "agent_drift_alert",
   "agent_run",
@@ -876,6 +960,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "ai_offering",
   "ai_provider",
   "ai_setting",
+  "analysis_recipes",
   "app",
   "app_definition_version",
   "app_error",
@@ -951,10 +1036,17 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "feature_doc",
   "field_component",
   "file",
+  "file_analysis",
+  "file_entities",
+  "file_overrides",
+  "file_page_annotations",
+  "file_pages",
   "file_version",
+  "flashcard_data",
   "flashcard_history",
   "flashcard_review",
   "flashcard_set",
+  "flashcard_sets",
   "flexible_data",
   "folder",
   "game_badge",
@@ -1002,6 +1094,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "project",
   "prompt",
   "quiz_session",
+  "redaction_mapping",
   "research_analysis",
   "research_content",
   "research_document",
@@ -1022,6 +1115,10 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "scope_item_value_suggestion",
   "scope_suggestion",
   "scope_type",
+  "scraper_preset",
+  "scraper_run",
+  "scraper_schedule",
+  "scraper_site",
   "share_link",
   "shared_canvas_item",
   "shortcut_category",
@@ -1036,8 +1133,12 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "sms_notification_preference",
   "sms_phone_number",
   "structured_list",
+  "studio_documents",
+  "studio_recording_chunks",
+  "studio_recording_segments",
   "studio_run",
   "studio_session",
+  "studio_session_settings",
   "study_attempt",
   "study_goal",
   "study_media",
@@ -1060,7 +1161,10 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "tool_ui_incident",
   "tool_ui_version",
   "transcript",
+  "udt_dataset_fields",
+  "udt_dataset_rows",
   "udt_document",
+  "udt_structured_list_items",
   "ui_surface_agent_pref",
   "ui_surface_config",
   "user_achievement",
@@ -1072,6 +1176,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "user_markdown_sample",
   "user_memory",
   "user_preference",
+  "user_profile",
   "user_stat",
   "user_surface_state",
   "voice",
@@ -1086,6 +1191,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "wc_impairment_definition",
   "wc_injury",
   "wc_report",
+  "wf_node_data_slot",
   "window_session",
   "workbook",
   "workflow",

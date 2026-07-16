@@ -9,6 +9,9 @@ export default function SkillsIngestAdminPage() {
   return (
     <SkillIngestPanel
       onBack={() => router.push("/administration/skills")}
+      onViewSkill={(skillId) =>
+        router.push(`/administration/skills?open=${encodeURIComponent(skillId)}`)
+      }
     />
   );
 }

@@ -4,35 +4,54 @@ import React, { useMemo, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
+  CircleDot,
+  Database,
+  ExternalLink,
   FolderSearch,
+  Info,
   Loader2,
+  PencilLine,
   Play,
+  ShieldCheck,
   Upload,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 
 import { useSkillsIngest } from "../hooks/useSkillsIngest";
+import { useSkillCategories } from "../hooks/useSkillCategories";
+import type { IngestSkillStatus } from "../types";
 
 interface SkillIngestPanelProps {
   onBack: () => void;
+  /** Open a just-ingested skill in the registry editor. Receives the
+   * skill's business key (`skill_id`) — `useSkill` resolves either that
+   * or a UUID. Omit to hide the "View" action (e.g. no host surface to
+   * navigate within). */
+  onViewSkill?: (skillId: string) => void;
 }
 
 /** Admin-only filesystem ingest. Takes one or more absolute paths (each
  * can be a leaf skills directory OR a repo root — the server auto-walks
  * the six conventional `<repo>/.X/skills` locations), shows a dry-run
  * preview, and applies on confirm. */
-export function SkillIngestPanel({ onBack }: SkillIngestPanelProps) {
+export function SkillIngestPanel({ onBack, onViewSkill }: SkillIngestPanelProps) {
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const { report, status, error, preview, apply, reset, appliedAt } =
     useSkillsIngest();
+  const { categories } = useSkillCategories();
+
+  const categoryLabelByKey = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const c of categories) map[c.categoryKey] = c.label;
+    return map;
+  }, [categories]);
 
   const [pathsText, setPathsText] = useState("");
 
@@ -112,6 +131,28 @@ export function SkillIngestPanel({ onBack }: SkillIngestPanelProps) {
               auto-finds `.claude/skills`, `.cursor/skills`,
               `.agent/skills`, `.agents/skills`, `.matrx/skills`, and
               `skills/` inside it) OR a leaf skills directory.
+            </p>
+          </div>
+
+          <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+              Where this goes
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Each <span className="font-mono text-foreground/90">SKILL.md</span>{" "}
+              is parsed and upserted into the platform skill registry
+              (<span className="font-mono text-foreground/90">skill.definition</span>
+              ), flagged <span className="font-mono text-foreground/90">is_system = true</span>.
+              Matching is by <span className="font-mono text-foreground/90">skill_id</span>{" "}
+              (folder or file name, or a frontmatter <span className="font-mono text-foreground/90">name:</span>{" "}
+              override) — same id twice re-uses the row: unchanged body ⇒ skipped, changed
+              body ⇒ updated in place, new id ⇒ created. A frontmatter{" "}
+              <span className="font-mono text-foreground/90">category:</span> slug files it
+              under that category; no match leaves it uncategorized. Once applied, every
+              skill is immediately visible platform-wide in the{" "}
+              <span className="font-medium text-foreground/90">Agent Skills Registry</span> —
+              use "Dry run" first to preview with nothing written.
             </p>
           </div>
 
@@ -222,23 +263,50 @@ export function SkillIngestPanel({ onBack }: SkillIngestPanelProps) {
 
               {report.skills.length > 0 && (
                 <div className="space-y-1">
-                  <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Skills (
-                    {appliedAt ? "applied" : "dry run preview"})
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Skills ({appliedAt ? "written to skill.definition" : "dry run preview — nothing written"})
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Database className="h-3 w-3" />
+                      skill.definition
+                    </div>
                   </div>
-                  <ul className="text-xs space-y-0.5 max-h-64 overflow-y-auto scrollbar-thin">
+                  <ul className="text-xs divide-y divide-border/50 rounded-md border border-border/60 overflow-hidden">
                     {report.skills.map((s) => (
                       <li
                         key={s.skillId}
-                        className="flex items-center gap-2 py-0.5"
+                        className="flex items-center gap-2 py-1.5 px-2 hover:bg-muted/40"
                       >
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500/80 shrink-0" />
-                        <span className="font-mono text-foreground">
+                        <IngestStatusIcon status={s.status} />
+                        <span className="font-mono text-foreground shrink-0">
                           {s.skillId}
                         </span>
-                        <span className="text-muted-foreground/70 truncate">
+                        <IngestStatusBadge status={s.status} />
+                        {s.category && (
+                          <Badge
+                            variant="outline"
+                            className="font-normal text-[10px] px-1.5 py-0 shrink-0"
+                          >
+                            {categoryLabelByKey[s.category] ?? s.category}
+                          </Badge>
+                        )}
+                        <span className="text-muted-foreground/70 truncate flex-1">
                           {s.sourcePath}
                         </span>
+                        {onViewSkill &&
+                          (s.status === "created" ||
+                            s.status === "updated" ||
+                            s.status === "unchanged") && (
+                            <button
+                              type="button"
+                              onClick={() => onViewSkill(s.skillId)}
+                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline shrink-0"
+                            >
+                              View
+                              <ExternalLink className="h-3 w-3" />
+                            </button>
+                          )}
                       </li>
                     ))}
                   </ul>
@@ -268,11 +336,60 @@ function Header({ onBack }: { onBack: () => void }) {
       </button>
       <div className="flex items-center gap-2">
         <Upload className="h-4 w-4 text-muted-foreground" />
-        <div className="text-sm font-semibold text-foreground">
-          Filesystem ingest
+        <div>
+          <div className="text-sm font-semibold text-foreground leading-tight">
+            Filesystem ingest
+          </div>
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground leading-tight">
+            <ShieldCheck className="h-3 w-3" />
+            System skills · platform-wide visibility
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function IngestStatusIcon({ status }: { status: IngestSkillStatus }) {
+  switch (status) {
+    case "created":
+      return <CheckCircle2 className="h-3 w-3 text-emerald-500/80 shrink-0" />;
+    case "updated":
+      return <PencilLine className="h-3 w-3 text-sky-500/80 shrink-0" />;
+    case "unchanged":
+      return <CircleDot className="h-3 w-3 text-muted-foreground/60 shrink-0" />;
+    case "error":
+      return <XCircle className="h-3 w-3 text-destructive shrink-0" />;
+    case "pending":
+    default:
+      return <CircleDot className="h-3 w-3 text-muted-foreground/40 shrink-0" />;
+  }
+}
+
+function IngestStatusBadge({ status }: { status: IngestSkillStatus }) {
+  const label =
+    status === "pending"
+      ? "would apply"
+      : status === "created"
+        ? "new"
+        : status;
+  const tone =
+    status === "created"
+      ? "text-emerald-600 border-emerald-500/40 bg-emerald-500/10"
+      : status === "updated"
+        ? "text-sky-600 border-sky-500/40 bg-sky-500/10"
+        : status === "error"
+          ? "text-destructive border-destructive/40 bg-destructive/10"
+          : "text-muted-foreground border-border bg-muted/40";
+  return (
+    <span
+      className={cn(
+        "text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded border shrink-0",
+        tone,
+      )}
+    >
+      {label}
+    </span>
   );
 }
 

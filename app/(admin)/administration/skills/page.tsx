@@ -8,7 +8,8 @@
  * toggle on the editor.
  */
 
-import React, { useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Brain,
   FolderTree,
@@ -31,9 +32,30 @@ import { SkillCategoryTreeEditor } from "@/features/skills/components/SkillCateg
 type Mode = "list" | "detail" | "create" | "ingest" | "categories";
 
 export default function SkillsAdminPage() {
+  return (
+    <Suspense fallback={null}>
+      <SkillsAdminPageInner />
+    </Suspense>
+  );
+}
+
+// useSearchParams (the ?open= deep link from the ingest panel) requires a
+// Suspense boundary in the App Router — see official-components/page.tsx
+// for the same pattern.
+function SkillsAdminPageInner() {
   const allSkills = useAppSelector(selectAllSkills);
   const [mode, setMode] = useState<Mode>("list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  // Deep link from the ingest panel's "View" action: /administration/skills?open=<skillId|uuid>
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (openId) {
+      setSelectedId(openId);
+      setMode("detail");
+    }
+  }, [searchParams]);
 
   const stats = useMemo(() => {
     let system = 0;
@@ -144,7 +166,15 @@ export default function SkillsAdminPage() {
           <SkillDetailEditor skillId="" isNew onBack={goList} />
         )}
 
-        {mode === "ingest" && <SkillIngestPanel onBack={goList} />}
+        {mode === "ingest" && (
+          <SkillIngestPanel
+            onBack={goList}
+            onViewSkill={(skillId) => {
+              setSelectedId(skillId);
+              setMode("detail");
+            }}
+          />
+        )}
 
         {mode === "categories" && <SkillCategoryTreeEditor onBack={goList} />}
       </div>

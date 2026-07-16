@@ -11,6 +11,7 @@ import type {
   CategoryRowWire,
   IngestReport,
   IngestReportWire,
+  IngestSkillStatus,
   SkillCreateWire,
   SkillDraft,
   SkillPatchWire,
@@ -18,6 +19,20 @@ import type {
   SkillRowWire,
   SkillType,
 } from "../types";
+
+const INGEST_SKILL_STATUSES: readonly IngestSkillStatus[] = [
+  "created",
+  "updated",
+  "unchanged",
+  "error",
+  "pending",
+];
+
+function toIngestSkillStatus(value: string | undefined): IngestSkillStatus {
+  return (INGEST_SKILL_STATUSES as readonly string[]).includes(value ?? "")
+    ? (value as IngestSkillStatus)
+    : "pending";
+}
 
 /** Aliased row shape returned by the `platform.categories` select used in
  * `fetchSkillCategories` / `createCategoryThunk` / `updateCategoryThunk`.
@@ -239,6 +254,9 @@ export function wireToIngestReport(wire: IngestReportWire): IngestReport {
     skills: (wire.skills ?? []).map((s) => ({
       skillId: s.skill_id,
       sourcePath: s.source_path,
+      category: s.category ?? "",
+      status: toIngestSkillStatus(s.status),
+      id: s.id ?? null,
     })),
     roots: wire.roots ?? [],
   };

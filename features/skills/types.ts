@@ -98,7 +98,16 @@ export interface IngestReportWire {
   updated: number;
   unchanged: number;
   errors: string[];
-  skills: Array<{ skill_id: string; source_path: string }>;
+  skills: Array<{
+    skill_id: string;
+    source_path: string;
+    /** Slug (`platform.categories.slug`, dimension="skill"); "" if none. */
+    category?: string;
+    /** "created" | "updated" | "unchanged" | "error" | "pending" (dry run). */
+    status?: string;
+    /** Resulting `skill.definition.id` (UUID); absent on dry run or error. */
+    id?: string;
+  }>;
   roots: string[];
 }
 
@@ -229,13 +238,29 @@ export interface CategoryRow {
   metadata?: Record<string, unknown> | null;
 }
 
+export type IngestSkillStatus =
+  | "created"
+  | "updated"
+  | "unchanged"
+  | "error"
+  /** Dry run — the write hasn't happened, so the real outcome is unknown. */
+  | "pending";
+
 export interface IngestReport {
   parsed: number;
   created: number;
   updated: number;
   unchanged: number;
   errors: string[];
-  skills: Array<{ skillId: string; sourcePath: string }>;
+  skills: Array<{
+    skillId: string;
+    sourcePath: string;
+    /** Category slug from frontmatter; "" if none was set. */
+    category: string;
+    status: IngestSkillStatus;
+    /** Resulting `skill.definition.id`; null on dry run or error. */
+    id: string | null;
+  }>;
   roots: string[];
 }
 
