@@ -14,6 +14,15 @@ export async function RouteHeaderData({
   moduleName,
   children,
 }: RouteHeaderDataProps) {
+  // `/demos/**` now owns one route-tree breadcrumb in its root layout. A number
+  // of older demo folders still use this helper for their index-page wrapper;
+  // letting them inject their legacy module header would create a competing
+  // portal and a second in-body header. Keep those layouts harmless while
+  // preserving RouteHeaderData's established behavior everywhere else.
+  if (directory.includes("app/(dev)/demos")) {
+    return children;
+  }
+
   const routes = await scanRoutes(directory);
   routes.sort();
   const pages = toModulePages(routes, moduleHome);

@@ -106,6 +106,7 @@ delete yours and extend ours.
 | Long-form text input (voice, stats, agent hooks) | `ProTextarea` | `components/official/ProTextarea.tsx` |
 | Single-line labeled input | `ProInput` | `components/official/ProInput.tsx` |
 | Agent chat / run input (all surfaces) | `SmartAgentInput` | `features/agents/components/inputs/smart-input/SmartAgentInput.tsx` |
+| Compact active-context picker (popover/menu) | `ActiveContextTree` (+ `ContextTree`) | `features/scopes/components/active-context/ActiveContextTree.tsx` |
 | Overflow / hierarchical action menu | `AdvancedMenu` | `components/official/AdvancedMenu.tsx` |
 | Resolve Lucide / custom icon by name | `IconResolver` | `components/official/icons/IconResolver.tsx` |
 | 44×44 icon tap targets | `TapTargetButton` + `tap-buttons` | `components/icons/TapTargetButton.tsx`, `components/icons/tap-buttons.tsx` |

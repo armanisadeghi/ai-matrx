@@ -22,9 +22,9 @@ canonical component set. The consolidation pass MUST read this file.
 
 | Piece | Verdict |
 |---|---|
-| The full trigger set (all 7) | **KEEP — near perfect and complete set, keep regardless** |
+| The full trigger set (all 7) | **KEEP — near perfect and complete set, keep regardless** · T2 Lens Chip **promoted** 2026-07-16 → `features/scopes/components/active-context/{LensChip,ActiveContextLensChip}.tsx` (chat header + Block 1.6) |
 | Drill Deck | **KEEP** — "PERFECT for so many things, AMAZING" |
-| Command Quick-Pick | Fix interaction: click anywhere on a row = go FORWARD (drill); only a direct checkbox click selects. As-is, useless because any click becomes a check |
+| Command Quick-Pick | **promoted** 2026-07-16 with Lens Chip host → `active-context/quick-pick/` (interaction law: row = forward, checkbox = select). Demo files re-export the canonical modules. |
 | Token Composer | **KEEP** — "Mind blown. Keeper for sure" — and should probably become a canonical component for many OTHER things beyond context |
 | Miller Columns | **KEEP after fix** — bug: doesn't handle both click and checkmark; any click should check/uncheck like Drill Deck, AND multi-selection in a column must OR-merge — next column shows the union of children of all selected |
 | Context Matrix | **KEEP — repurposed.** Not right for the picker, but an amazing VISUALIZATION view: user's landing page for all organizations (show everything) → one org → one scope type → one scope. Great for seeing what you have and what's missing. (Fix "Context Matrx" spelling in the demo… although the typo admittedly knows its audience) |

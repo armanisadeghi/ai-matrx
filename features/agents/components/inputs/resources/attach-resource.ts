@@ -44,6 +44,7 @@ import {
 } from "@/features/files/api/document-lookup";
 import {
   cleanDocumentLabel,
+  documentAttachLabelFromState,
   resolveConversationOrgId,
   type AttachedDocumentMetadata,
   type AttachedDocumentToken,
@@ -298,7 +299,7 @@ export function useAttachResource(
     const getState = () => store.getState() as RootState;
     const baseBlockType = resourceTypeToBlockType(resource.type);
     const blockType = refineBlockType(baseBlockType, resource.data);
-    const label = cleanDocumentLabel(resourceLabel(resource));
+    const resourcePreviewLabel = cleanDocumentLabel(resourceLabel(resource));
 
     // A real (non-media) file → a durable association edge to the conversation.
     // NOTE (fast-submit window): attach is fire-and-forget with no optimistic
@@ -309,6 +310,11 @@ export function useAttachResource(
     if (blockType === "document") {
       const fileId = extractFileId(resource.data);
       if (fileId) {
+        const label = documentAttachLabelFromState(
+          getState(),
+          fileId,
+          resourcePreviewLabel,
+        );
         const cached = peekFileDocument(fileId);
         if (cached?.kind === "found") {
           const representation: DocumentRepresentation = cached.doc
@@ -370,6 +376,12 @@ export function useAttachResource(
       }
     }
 
-    attachBinary(dispatch, conversationId, blockType, resource.data, label);
+    attachBinary(
+      dispatch,
+      conversationId,
+      blockType,
+      resource.data,
+      resourcePreviewLabel,
+    );
   };
 }

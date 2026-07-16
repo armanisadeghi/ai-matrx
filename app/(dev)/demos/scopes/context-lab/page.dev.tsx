@@ -96,6 +96,7 @@ import { ContextSummaryChips } from "@/features/scopes/components/context-assign
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ClearContextButton } from "@/features/scopes/components/active-context/ClearContextButton";
 import type {
   OrgNode,
@@ -1779,7 +1780,8 @@ export default function ContextLabPage() {
           title="The pieces every surface drops in"
           intro={
             <>
-              The rollout kit: Surface-A <code>ActiveContextButton</code>, rose{" "}
+              The rollout kit: Surface-A <code>ActiveContextButton</code>,{" "}
+              <code>ActiveContextLensChip</code> (chat-header face), rose{" "}
               <code>ClearContextButton</code> (Eraser + &quot;Context&quot;),{" "}
               <code>ContextSummaryChips</code>, amber/green{" "}
               <code>ContextStatusButton</code>, and{" "}
@@ -1794,6 +1796,15 @@ export default function ContextLabPage() {
                 </span>
                 <ActiveContextButton size="sm" />
                 <ActiveContextButton size="xs" />
+              </div>
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
+                <span className="w-40 shrink-0 text-xs text-muted-foreground">
+                  ActiveContextLensChip
+                </span>
+                <ActiveContextLensChip />
+                <span className="text-[11px] text-muted-foreground">
+                  Lens Chip → ContextTree · chat header default
+                </span>
               </div>
               <div className="flex items-center gap-3 rounded-lg border border-border p-3">
                 <span className="w-40 shrink-0 text-xs text-muted-foreground">

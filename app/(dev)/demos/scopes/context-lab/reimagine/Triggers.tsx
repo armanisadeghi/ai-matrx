@@ -6,18 +6,13 @@
 // decides which inside they open.
 
 import React from "react";
-import {
-  ChevronsUpDown,
-  Layers,
-  Plus,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
+import { Layers, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
 } from "@/components/icons/TapTargetButton";
+import { LensChip as CanonicalLensChip } from "@/features/scopes/components/active-context/LensChip";
 import { nodeKey, summarizeSelection, type PickNode } from "./engine";
 import { KindGlyph } from "./parts";
 
@@ -63,40 +58,20 @@ export function TapTargetTrigger({ nodes, onClick, buttonRef }: TriggerProps) {
   );
 }
 
-/* ── T2 · Lens chip — colored dots + count summary, one compact pill ─────── */
+/* ── T2 · Lens chip — canonical component (Surface-A host elsewhere) ─────── */
 
 export function LensChip({ nodes, onClick, buttonRef }: TriggerProps) {
-  const dots = swatches(nodes);
+  // Demo adapter: PickNode → the thin LensChipNode the canonical face needs.
+  // Production hosts use ActiveContextLensChip (live appContextSlice).
   return (
-    <button
-      ref={buttonRef}
-      type="button"
+    <CanonicalLensChip
+      buttonRef={buttonRef}
       onClick={onClick}
-      className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-xs text-foreground hover:bg-muted"
-    >
-      {nodes.length === 0 ? (
-        <>
-          <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">Set context</span>
-        </>
-      ) : (
-        <>
-          <span className="flex items-center -space-x-0.5">
-            {dots.map((s) => (
-              <span
-                key={s}
-                className={cn(
-                  "h-2 w-2 rounded-full ring-1 ring-card",
-                  s,
-                )}
-              />
-            ))}
-          </span>
-          <span>{summarizeSelection(nodes)}</span>
-        </>
-      )}
-      <ChevronsUpDown className="h-3 w-3 text-muted-foreground" />
-    </button>
+      nodes={nodes.map((n) => ({
+        kind: n.kind,
+        colorSwatch: n.color?.swatch,
+      }))}
+    />
   );
 }
 
@@ -219,9 +194,7 @@ export function CommandBarTrigger({ nodes, onClick, buttonRef }: TriggerProps) {
     >
       <Search className="h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0 flex-1 truncate text-left">
-        {nodes.length === 0
-          ? "Search context…"
-          : summarizeSelection(nodes)}
+        {nodes.length === 0 ? "Search context…" : summarizeSelection(nodes)}
       </span>
       <kbd className="shrink-0 rounded border border-border bg-background px-1 py-0.5 text-[9px]">
         Ctrl K

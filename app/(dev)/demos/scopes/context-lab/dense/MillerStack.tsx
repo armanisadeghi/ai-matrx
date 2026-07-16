@@ -8,16 +8,17 @@
 // A slim breadcrumb header drills back; touch-height rows (36px).
 // Projects/tasks/fields all fetch lazily on first drill.
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
 import {
+  buildAncestryMap,
   isSelected,
   itemRef,
   summarizeSelection,
-  toggleNode,
+  toggleNodeCascaded,
   type DenseNodeKind,
   type DenseSelection,
   type SelectMode,
@@ -108,8 +109,13 @@ export function MillerStack({
 }) {
   const [level, setLevel] = useState<Level>({ at: "root" });
 
+  const ancestry = useMemo(
+    () => buildAncestryMap(data.organizations, data.projects, data.tasks),
+    [data.organizations, data.projects, data.tasks],
+  );
+
   const toggle = (kind: DenseNodeKind, id: string) =>
-    onChange(toggleNode(selection, kind, id, mode));
+    onChange(toggleNodeCascaded(selection, kind, id, mode, ancestry));
 
   const org =
     "orgId" in level
@@ -183,7 +189,10 @@ export function MillerStack({
         </div>
       </div>
 
-      <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto" style={{ height }}>
+      <div
+        className="scrollbar-thin min-h-0 flex-1 overflow-y-auto"
+        style={{ height }}
+      >
         {loading ? (
           <div className="space-y-1.5 p-2">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -198,7 +207,9 @@ export function MillerStack({
               <Row
                 key={o.id}
                 label={o.name}
-                meta={o.is_personal ? "personal" : `${o.scope_types.length} types`}
+                meta={
+                  o.is_personal ? "personal" : `${o.scope_types.length} types`
+                }
                 tone="font-medium"
                 drillable
                 selectable
@@ -404,7 +415,9 @@ export function MillerStack({
       </div>
 
       <div className="flex h-6 shrink-0 items-center border-t border-border bg-muted/30 px-2 text-[10px] text-muted-foreground">
-        <span className="min-w-0 truncate">{summarizeSelection(selection)}</span>
+        <span className="min-w-0 truncate">
+          {summarizeSelection(selection)}
+        </span>
       </div>
     </div>
   );

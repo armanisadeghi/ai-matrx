@@ -24,6 +24,7 @@ import MobileMenuPathSync from "@/features/shell/components/MobileMenuPathSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
+import { ElevatedShellUserMenuRoot } from "@/components/matrx/resizable/ElevatedShellUserMenu";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
 
@@ -73,6 +74,8 @@ export default function AppShell({
 
       <GlassPortal>
         <MobileDock isAuthenticated={isAuthenticated} />
+        {/* Stand-in avatar while MatrxDynamicPanel covers the header corner */}
+        <ElevatedShellUserMenuRoot />
       </GlassPortal>
 
       <NavActiveSync />

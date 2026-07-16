@@ -42,7 +42,8 @@ export function isProcessedDocumentSource(
     typeof source === "object" &&
     source !== null &&
     (source as { kind?: unknown }).kind === "processed_document" &&
-    typeof (source as ProcessedDocumentSource).processed_document_id === "string"
+    typeof (source as ProcessedDocumentSource).processed_document_id ===
+      "string"
   );
 }
 
@@ -97,4 +98,55 @@ const REPRESENTATION_LABEL: Record<DocumentRepresentation, string> = {
 
 export function representationLabel(rep: DocumentRepresentation): string {
   return REPRESENTATION_LABEL[rep];
+}
+
+/** How an attached document is wired into agent context. */
+export type AttachedDocumentMode = "file" | DocumentRepresentation;
+
+export function attachedDocumentModeLabel(mode: AttachedDocumentMode): string {
+  if (mode === "file") return "File";
+  return representationLabel(mode);
+}
+
+/** One row in the unified attached-document chip menu. */
+export interface AttachedDocumentModeOption {
+  mode: AttachedDocumentMode;
+  label: string;
+  hint: string;
+  disabled?: boolean;
+}
+
+/** File + Clean + Raw options for the combined composer chip. */
+export function attachedDocumentModeOptions(params: {
+  hasProcessedDocument: boolean;
+  hasCleanContent: boolean;
+  hasOriginFile: boolean;
+}): AttachedDocumentModeOption[] {
+  const { hasProcessedDocument, hasCleanContent, hasOriginFile } = params;
+  const options: AttachedDocumentModeOption[] = [];
+
+  if (hasOriginFile) {
+    options.push({
+      mode: "file",
+      label: "File",
+      hint: "Original binary file attachment",
+    });
+  }
+  if (hasProcessedDocument) {
+    options.push(
+      {
+        mode: "clean",
+        label: "Clean text",
+        hint: "AI-cleaned, readable text (recommended)",
+        disabled: !hasCleanContent,
+      },
+      {
+        mode: "raw",
+        label: "Raw text",
+        hint: "Original extracted / OCR text",
+      },
+    );
+  }
+
+  return options;
 }

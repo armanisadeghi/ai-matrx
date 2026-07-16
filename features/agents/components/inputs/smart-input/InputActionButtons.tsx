@@ -199,7 +199,7 @@ export function InputActionButtons({
 
         {/* Shown only while a matrx-local desktop engine is online — this
             turn will declare the `desktop-native` capability. */}
-        <DesktopPresenceIndicator />
+        <DesktopPresenceIndicator conversationId={conversationId} />
 
         {shouldShowVariables && showVariableIcon && (
           <InputButton

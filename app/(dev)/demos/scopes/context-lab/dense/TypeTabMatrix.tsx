@@ -18,11 +18,12 @@ import { cn } from "@/lib/utils";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
 import {
+  buildAncestryMap,
   isSelected,
   itemRef,
   resolveSelection,
   selectionCount,
-  toggleNode,
+  toggleNodeCascaded,
   type DenseNodeKind,
   type DenseSelection,
   type SelectMode,
@@ -61,8 +62,13 @@ export function TypeTabMatrix({
     tab ?? (firstType ? { kind: "type", ...firstType } : null);
   const [fieldScopeId, setFieldScopeId] = useState<string | null>(null);
 
+  const ancestry = useMemo(
+    () => buildAncestryMap(data.organizations, data.projects, data.tasks),
+    [data.organizations, data.projects, data.tasks],
+  );
+
   const toggle = (kind: DenseNodeKind, id: string) =>
-    onChange(toggleNode(selection, kind, id, mode));
+    onChange(toggleNodeCascaded(selection, kind, id, mode, ancestry));
 
   const resolved = useMemo(
     () =>

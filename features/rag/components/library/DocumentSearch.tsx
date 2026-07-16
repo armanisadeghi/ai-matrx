@@ -18,11 +18,15 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Loader2, Search as SearchIcon, Telescope, X, FileText } from "lucide-react";
+import {
+  Loader2,
+  Search as SearchIcon,
+  Telescope,
+  FileText,
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/lib/utils";
 import { HighlightedText } from "@/components/text/HighlightedText";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
@@ -76,60 +80,31 @@ export function DocumentSearchBar({
   })();
 
   return (
-    <div
-      className={cn(
-        "border-b bg-muted/20 px-3 py-2 flex items-center gap-2 flex-wrap",
-        className,
-      )}
-    >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSubmit();
-        }}
-        className="flex items-center gap-2 flex-1 min-w-[240px]"
-      >
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-          <Input
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Find in this document…"
-            className="h-8 pl-8 pr-8"
-            aria-label="Search within this document"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={onClear}
-              aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-        <Button
-          type="submit"
-          size="sm"
-          className="h-8 shrink-0"
-          disabled={!query.trim() || loading}
-        >
-          {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <SearchIcon className="h-3.5 w-3.5" />
-          )}
-          <span className="ml-1 hidden sm:inline">Search</span>
-        </Button>
-      </form>
+    <div className={cn("p-1 flex items-center gap-2 flex-wrap", className)}>
+      {/* No wrapping <form> — ProInput owns submit (Enter + send tap) and the
+          mic controls must never be implicit form submit buttons. */}
+      <ProInput
+        value={query}
+        onChange={(e) => onQueryChange(e.target.value)}
+        placeholder="Find in this document…"
+        aria-label="Search within this document"
+        startIcon={<SearchIcon className="h-3.5 w-3.5" />}
+        clearable
+        onClear={onClear}
+        onSubmit={onSubmit}
+        submitOnEnter
+        submitLabel="Search"
+        isSubmitting={loading}
+        wrapperClassName="flex-1 min-w-[240px]"
+        className="h-8"
+      />
 
       {resultLabel && (
         <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
           {resultLabel}
         </span>
       )}
-
+      {rightSlot}
       {/* The clearly-labeled escape hatch to the real search. The in-doc find
           is literal text in ONE document; the link goes to semantic AI search
           across everything the user has indexed. */}
@@ -141,11 +116,9 @@ export function DocumentSearchBar({
         title="Open AI semantic search across all your documents, notes, and code"
       >
         <Telescope className="h-3.5 w-3.5" />
-        AI search — everything
+        Knowledge search
         <span aria-hidden>↗</span>
       </Link>
-
-      {rightSlot}
     </div>
   );
 }
@@ -203,9 +176,7 @@ export function DocumentSearchSummary({
   return (
     <div className="border-b bg-muted/10 px-3 py-2 space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap text-xs">
-        <span className="font-medium text-foreground">
-          “{activeQuery}”
-        </span>
+        <span className="font-medium text-foreground">“{activeQuery}”</span>
         <span className="text-muted-foreground tabular-nums">
           {summary.segmentCount}{" "}
           {summary.segmentCount === 1 ? "match" : "matches"} ·{" "}

@@ -1811,6 +1811,110 @@ details[open] > summary .shell-mobile-admin-caret {
 }
 
 /* ---------------------------------------------------------------------------
+   Dynamic panel avatar cover — MatrxDynamicPanel sits in #glass-layer at
+   z-100, above the entire .shell-root stacking context. Padding in the panel
+   header cannot win that fight. While any panel claims cover, hide the shell
+   avatar and show ElevatedShellUserMenuRoot (z-110+) in the glass layer.
+   Reuses #shell-user-menu so menu-item close labels keep working.
+   --------------------------------------------------------------------------- */
+
+:root[data-dynamic-panel-avatar-cover="true"]
+  .shell-header
+  .shell-user-menu-wrapper {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.elevated-shell-user-menu-root {
+  position: fixed;
+  top: var(--shell-safe-area-top, 0px);
+  right: 0;
+  z-index: 110;
+  pointer-events: auto;
+}
+
+.elevated-shell-user-menu-wrapper {
+  position: relative;
+  z-index: 112;
+}
+
+.elevated-shell-user-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 111;
+  display: none;
+  cursor: default;
+}
+
+:root[data-dynamic-panel-avatar-cover="true"]:has(#shell-user-menu:checked)
+  .elevated-shell-user-menu-backdrop {
+  display: block;
+}
+
+.elevated-shell-user-menu-panel {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.375rem;
+  z-index: 112;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
+    transform var(--shell-duration-fast) var(--shell-ease-smooth),
+    visibility 0s linear var(--shell-duration-fast);
+  max-height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+:root[data-dynamic-panel-avatar-cover="true"]:has(#shell-user-menu:checked)
+  .elevated-shell-user-menu-panel {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
+    transform var(--shell-duration-fast) var(--shell-ease-smooth),
+    visibility 0s linear 0s;
+}
+
+@media (max-width: 1023px) {
+  .elevated-shell-user-menu-panel {
+    position: fixed;
+    right: 0.375rem;
+    left: 0.375rem;
+    top: auto;
+    bottom: calc(
+      var(--shell-dock-h) + var(--shell-dock-bottom) +
+        env(safe-area-inset-bottom, 0px) + 0.5rem
+    );
+    margin-top: 0;
+    transform: translateY(0.5rem);
+    max-height: calc(
+      100dvh - var(--shell-dock-h) - var(--shell-dock-bottom) -
+        env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) - 3.5rem
+    );
+  }
+
+  body:not(:has(.shell-show-dock)) .elevated-shell-user-menu-panel {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+    max-height: calc(
+      100dvh - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) -
+        3.5rem
+    );
+  }
+
+  :root[data-dynamic-panel-avatar-cover="true"]:has(#shell-user-menu:checked)
+    .elevated-shell-user-menu-panel {
+    transform: translateY(0);
+  }
+}
+
+/* ---------------------------------------------------------------------------
    16. Dashboard Specific Styles
    --------------------------------------------------------------------------- */
 

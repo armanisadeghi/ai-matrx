@@ -36,11 +36,15 @@ import {
   type EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useCloudTree, useFileMutation } from "@/features/files";
-import { searchFiles } from "@/features/files/api/files";
+import {
+  getFilePreviewProfile,
+  useCloudTree,
+  useFileMutation,
+} from "@/features/files";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
-import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
+import { filesDb, FILES_TABLE_COLUMNS } from "@/features/files/filesDb";
+import { dbRowToCloudFile } from "@/features/files/redux/converters";
 import { truncateFilename } from "@/features/files/utils/format";
 import {
   EMPTY_TREE_CHILDREN,
@@ -56,16 +60,29 @@ import {
 import { loadFolderContents } from "@/features/files/redux/thunks";
 import { isExcludedFromRecents } from "@/features/files/utils/folder-conventions";
 import type { CloudFileRecord, CloudFolderRecord } from "@/features/files";
+import { supabase } from "@/utils/supabase/client";
 
 /** Same cap as `buildRows` recents filter in the files list. */
-const RECENTS_CAP = 100;
+/** Two viewports worth of rows; never mount a 100-item thumbnail fan-out. */
+const RECENTS_CAP = 20;
 
 type PickerViewMode = "list" | "grid";
-type FileFilter = "all" | "pdf-extractor" | "images" | "documents" | "audio" | "video";
+type FileFilter =
+  | "all"
+  | "pdf-extractor"
+  | "pdfs"
+  | "text"
+  | "markdown"
+  | "code"
+  | "photos"
+  | "videos"
+  | "audio"
+  | "data"
+  | "other";
 type FileSort = "updated" | "name" | "size";
 
 const SEARCH_DEBOUNCE_MS = 350;
-const SEARCH_RESULT_LIMIT = 100;
+const SEARCH_RESULT_LIMIT = 20;
 
 // ---------------------------------------------------------------------------
 // Types (preserve the legacy surface)
@@ -108,34 +125,52 @@ interface FilesResourcePickerProps {
 // ---------------------------------------------------------------------------
 
 function isPdfExtractorFile(file: CloudFileRecord) {
-  const name = file.fileName.toLowerCase();
   return (
     file.mimeType === "application/pdf" ||
-    file.mimeType?.startsWith("image/") === true ||
-    name.endsWith(".pdf")
+    file.mimeType?.startsWith("image/") === true
   );
 }
 
 function matchesFileFilter(file: CloudFileRecord, filter: FileFilter) {
-  const mime = file.mimeType ?? "";
+  const { previewKind } = getFilePreviewProfile(
+    file.fileName,
+    file.mimeType,
+    file.fileSize,
+  );
   switch (filter) {
     case "pdf-extractor":
-      // Mirrors the PDF Extractor file input: accept=".pdf,image/*".
+      // Identical to `usePdfExtractor.addFiles`: PDF MIME or image MIME.
       return isPdfExtractorFile(file);
-    case "images":
-      return mime.startsWith("image/");
-    case "documents":
-      return (
-        mime === "application/pdf" ||
-        mime.startsWith("text/") ||
-        mime.includes("document") ||
-        mime.includes("spreadsheet") ||
-        mime.includes("presentation")
-      );
+    case "pdfs":
+      return previewKind === "pdf";
+    case "text":
+      return previewKind === "text" || previewKind === "html";
+    case "markdown":
+      return previewKind === "markdown";
+    case "code":
+      return previewKind === "code";
+    case "photos":
+      return previewKind === "image" || previewKind === "svg";
     case "audio":
-      return mime.startsWith("audio/");
-    case "video":
-      return mime.startsWith("video/");
+      return previewKind === "audio";
+    case "videos":
+      return previewKind === "video";
+    case "data":
+      return previewKind === "data" || previewKind === "spreadsheet";
+    case "other":
+      return ![
+        "pdf",
+        "text",
+        "html",
+        "markdown",
+        "code",
+        "image",
+        "svg",
+        "audio",
+        "video",
+        "data",
+        "spreadsheet",
+      ].includes(previewKind);
     default:
       return true;
   }
@@ -169,6 +204,8 @@ function FileRow({ file, onSelect }: FileRowProps) {
         file={file}
         iconSize={14}
         rounded="rounded-md"
+        preferAssetThumbnail={false}
+        allowSourceFallback={false}
         className="h-10 w-10 shrink-0 border border-border/50"
       />
       <div className="flex-1 min-w-0">
@@ -207,6 +244,8 @@ function FileGridTile({ file, onSelect }: FileGridTileProps) {
           file={file}
           iconSize={24}
           rounded="rounded-none"
+          preferAssetThumbnail={false}
+          allowSourceFallback={false}
           className="absolute inset-0 h-full w-full"
         />
       </div>
@@ -359,7 +398,8 @@ function FolderNode({
               <Loader2 className="h-3 w-3 animate-spin" />
               Loading files…
             </div>
-          ) : children.folderIds.length === 0 && children.fileIds.length === 0 ? (
+          ) : children.folderIds.length === 0 &&
+            children.fileIds.length === 0 ? (
             <div
               className="text-[10px] text-gray-500 dark:text-gray-400 py-1"
               style={{ paddingLeft: `${(level + 1) * 1.25}rem` }}
@@ -451,22 +491,36 @@ export function FilesResourcePicker({
 
     const controller = new AbortController();
 
-    void searchFiles(
-      { q: debouncedSearchQuery, limit: SEARCH_RESULT_LIMIT },
-      { signal: controller.signal },
-    )
-      .then(({ data }) => {
-        setSearchResults(data.results.map(apiFileRecordToCloudFile));
+    // Metadata only: Supabase RLS supplies the caller's accessible file rows.
+    // This intentionally avoids the Python /files search endpoint, which
+    // resolves URL/thumbnail data the picker has not asked to render.
+    const searchPattern = `%${debouncedSearchQuery.replace(/[%_,()]/g, "\\$&")}%`;
+    void (async () => {
+      try {
+        const { data, error } = await filesDb(supabase)
+          .from("files")
+          .select(FILES_TABLE_COLUMNS)
+          .is("deleted_at", null)
+          .or(
+            `file_name.ilike.${searchPattern},file_path.ilike.${searchPattern}`,
+          )
+          .order("updated_at", { ascending: false })
+          .range(0, SEARCH_RESULT_LIMIT - 1)
+          .abortSignal(controller.signal);
+        if (error) throw error;
+        setSearchResults(
+          (data ?? []).map((row) => dbRowToCloudFile(row) as CloudFileRecord),
+        );
         setSearchError(null);
         setSettledSearchQuery(debouncedSearchQuery);
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         if (controller.signal.aborted) return;
         console.error("Cloud file search failed:", error);
         setSearchResults([]);
         setSearchError("Search failed. Please try again.");
         setSettledSearchQuery(debouncedSearchQuery);
-      });
+      }
+    })();
 
     return () => controller.abort();
   }, [debouncedSearchQuery]);
@@ -538,6 +592,9 @@ export function FilesResourcePicker({
 
       const enhancedDetails: EnhancedFileDetails = {
         ...baseDetails,
+        // Canonical name from the cld_files row — never the signed-URL tail
+        // (getFileDetailsByUrl can produce `pdf&AWSAccessKeyId=…` garbage).
+        filename: file.fileName,
         // `bucket` is legacy — we map it to the parent folder path so
         // downstream code that reads it still has a meaningful value.
         bucket: file.parentFolderId
@@ -651,10 +708,15 @@ export function FilesResourcePicker({
         >
           <option value="all">All file types</option>
           <option value="pdf-extractor">PDF Extractor (PDFs & images)</option>
-          <option value="images">Images</option>
-          <option value="documents">Documents</option>
+          <option value="pdfs">PDFs</option>
+          <option value="text">Text</option>
+          <option value="markdown">Markdown</option>
+          <option value="code">Code</option>
+          <option value="photos">Photos</option>
+          <option value="videos">Videos</option>
           <option value="audio">Audio</option>
-          <option value="video">Video</option>
+          <option value="data">Data</option>
+          <option value="other">Other</option>
         </select>
         <label className="sr-only" htmlFor="cloud-files-sort">
           Sort files
@@ -663,9 +725,9 @@ export function FilesResourcePicker({
           id="cloud-files-sort"
           value={fileSort}
           onChange={(event) => setFileSort(event.target.value as FileSort)}
-          className="h-5 max-w-24 bg-transparent text-[10px] text-muted-foreground outline-none"
+          className="h-5 w-16 shrink-0 bg-transparent pr-3 text-[10px] text-muted-foreground outline-none"
         >
-          <option value="updated">Recently updated</option>
+          <option value="updated">Recent</option>
           <option value="name">Name</option>
           <option value="size">Size</option>
         </select>

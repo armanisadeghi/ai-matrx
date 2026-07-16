@@ -63,6 +63,17 @@ function parseMetadata(raw: string): Record<string, unknown> | null {
   }
 }
 
+function extractRendered(raw: string): string | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    const rendered = (parsed as Record<string, unknown>).rendered;
+    return typeof rendered === "string" ? rendered : null;
+  } catch {
+    return null;
+  }
+}
+
 function metadataValue(value: unknown): string {
   if (value === null) return "null";
   if (value === undefined) return "—";
@@ -138,7 +149,7 @@ export default function ContextInspectorPage() {
       const bytes = await result.arrayBuffer();
       const raw = new TextDecoder("utf-8").decode(bytes);
       const renderedResponse = {
-        raw,
+        raw: result.ok ? (extractRendered(raw) ?? raw) : raw,
         byteLength: bytes.byteLength,
         status: result.status,
         contentType: result.headers.get("content-type"),
@@ -263,7 +274,7 @@ export default function ContextInspectorPage() {
             <div>
               <CardTitle className="text-sm">Renderer response</CardTitle>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                HTTP {response.status} · {response.byteLength.toLocaleString()} bytes · {response.contentType ?? "unknown content type"}
+                HTTP {response.status} · {response.byteLength.toLocaleString()} transport bytes · {response.contentType ?? "unknown content type"}
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={copyRaw} className="gap-1.5">

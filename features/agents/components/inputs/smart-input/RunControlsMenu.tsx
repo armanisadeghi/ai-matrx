@@ -56,6 +56,13 @@ export interface RunControlsMenuProps {
   includeAttach?: boolean;
   align?: "start" | "end";
   side?: "top" | "bottom";
+  /**
+   * Compact chrome (single-row / landing): fold Documents & context + the
+   * toggles that stacked shows as dedicated buttons into the `+` menu.
+   * Never set this on stacked — those affordances already have their own
+   * toolbar buttons and must not be duplicated.
+   */
+  foldToolbarExtras?: boolean;
 }
 
 export function RunControlsMenu({
@@ -64,6 +71,7 @@ export function RunControlsMenu({
   includeAttach = variant === "plus",
   align = variant === "plus" ? "start" : "end",
   side = variant === "plus" ? "top" : "bottom",
+  foldToolbarExtras = false,
 }: RunControlsMenuProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
@@ -103,7 +111,8 @@ export function RunControlsMenu({
   // An overlay window can't serve a composer hosted inside a modal Dialog
   // (windows sit below the dialog layer) or a popped-out window (overlays
   // render in the main browser window). Those hosts keep the anchored popover.
-  const useWindowPresentation = !isMobile && !dialogContainer && !popoutContainer;
+  const useWindowPresentation =
+    !isMobile && !dialogContainer && !popoutContainer;
 
   const TriggerIcon = variant === "plus" ? Plus : SlidersHorizontal;
 
@@ -149,6 +158,7 @@ export function RunControlsMenu({
           trigger={triggerButton}
           align={align}
           side={side}
+          foldToolbarExtras={foldToolbarExtras}
         />
       );
     }

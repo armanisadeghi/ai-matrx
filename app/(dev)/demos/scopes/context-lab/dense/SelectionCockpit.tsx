@@ -12,10 +12,11 @@ import React, { useMemo } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  buildAncestryMap,
   isEmptySelection,
   resolveSelection,
   selectionCount,
-  toggleNode,
+  toggleNodeCascaded,
   type DenseNodeKind,
   type DenseSelection,
   type SelectMode,
@@ -94,8 +95,13 @@ export function SelectionCockpit({
     [selection, data],
   );
 
+  const ancestry = useMemo(
+    () => buildAncestryMap(data.organizations, data.projects, data.tasks),
+    [data.organizations, data.projects, data.tasks],
+  );
+
   const remove = (kind: DenseNodeKind, id: string) =>
-    onChange(toggleNode(selection, kind, id, "multi"));
+    onChange(toggleNodeCascaded(selection, kind, id, "multi", ancestry));
 
   return (
     <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">

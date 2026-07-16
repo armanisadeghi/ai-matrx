@@ -9,8 +9,8 @@
 import { Eraser } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { clearContext } from "@/lib/redux/slices/appContextSlice";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
+import { clearWorkingContext } from "./context-tree/applyDenseSelection";
 import {
   CLEAR_CONTEXT_ICON_CLASS,
   CLEAR_CONTEXT_LABEL_CLASS,
@@ -48,7 +48,7 @@ export function ClearContextButton({
     e.preventDefault();
     e.stopPropagation();
     if (onClick) onClick();
-    else dispatch(clearContext());
+    else clearWorkingContext(dispatch);
     onCleared?.();
   }
 

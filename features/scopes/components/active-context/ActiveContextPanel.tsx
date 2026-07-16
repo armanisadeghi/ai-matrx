@@ -6,6 +6,10 @@
 // as ActiveContextButton's popover, without the trigger chrome. Use inside
 // tab panels (RunControlsMenu), drawers, or any host that already provides
 // the shell.
+//
+// WRITE PATH: setFullContext WITHOUT conversation_id (same contract as
+// applyDenseSelectionToRedux). Never use setOrganization here — it cascade-
+// clears conversation_id and breaks the chat route.
 
 import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -14,11 +18,7 @@ import {
   selectScopeSelectionsContext,
   selectProjectId,
   selectTaskId,
-  setOrganization,
-  setScopeSelections,
-  setProject,
-  setTask,
-  clearContext,
+  setFullContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import {
@@ -30,6 +30,7 @@ import {
   fetchAssignableProjects,
   fetchAssignableTasks,
 } from "@/features/scopes/components/context-assignment/data";
+import { clearWorkingContext } from "./context-tree/applyDenseSelection";
 import { cn } from "@/lib/utils";
 
 export interface ActiveContextPanelProps {
@@ -75,18 +76,22 @@ export function ActiveContextPanel({
     const org = sel.organizationId
       ? organizations.find((o) => o.id === sel.organizationId)
       : null;
-    dispatch(
-      setOrganization({ id: sel.organizationId, name: org?.name ?? null }),
-    );
     const byScope: Record<string, string | null> = {};
     for (const sid of sel.scopeIds) byScope[sid] = sid;
-    dispatch(setScopeSelections(byScope));
     const pid = sel.projectIds[0] ?? null;
-    dispatch(
-      setProject({ id: pid, name: pid ? (projectNames[pid] ?? null) : null }),
-    );
     const tid = sel.taskIds[0] ?? null;
-    dispatch(setTask({ id: tid, name: tid ? (taskNames[tid] ?? null) : null }));
+    dispatch(
+      setFullContext({
+        organization_id: sel.organizationId,
+        organization_name: org?.name ?? null,
+        scope_selections: byScope,
+        project_id: pid,
+        project_name: pid ? (projectNames[pid] ?? null) : null,
+        task_id: tid,
+        task_name: tid ? (taskNames[tid] ?? null) : null,
+        // conversation_id omitted — never wipe the chat pointer
+      }),
+    );
   }
 
   return (
@@ -104,7 +109,7 @@ export function ActiveContextPanel({
         taskIds: taskId ? [taskId] : [],
       }}
       onApplyActive={apply}
-      onClearActive={() => dispatch(clearContext())}
+      onClearActive={() => clearWorkingContext(dispatch)}
     />
   );
 }

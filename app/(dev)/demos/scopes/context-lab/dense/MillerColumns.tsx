@@ -17,10 +17,11 @@ import { cn } from "@/lib/utils";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
 import {
+  buildAncestryMap,
   isSelected,
   itemRef,
   summarizeSelection,
-  toggleNode,
+  toggleNodeCascaded,
   type DenseSelection,
   type SelectMode,
 } from "./model";
@@ -124,9 +125,7 @@ export function MillerColumns({
   const [typeId, setTypeId] = useState<string | null>(null);
   const [scopeId, setScopeId] = useState<string | null>(null);
   // Projects/tasks are STRICTLY lazy: nothing fetches until a tab is clicked.
-  const [bottomTab, setBottomTab] = useState<"projects" | "tasks" | null>(
-    null,
-  );
+  const [bottomTab, setBottomTab] = useState<"projects" | "tasks" | null>(null);
 
   const org = data.organizations.find((o) => o.id === orgId) ?? null;
   const type = org?.scope_types.find((t) => t.id === typeId) ?? null;
@@ -134,8 +133,13 @@ export function MillerColumns({
   const items = type ? (data.itemsByType[type.id] ?? null) : null;
   const itemsLoading = type ? data.itemsLoading.has(type.id) : false;
 
-  const toggle = (kind: Parameters<typeof toggleNode>[1], id: string) =>
-    onChange(toggleNode(selection, kind, id, mode));
+  const ancestry = useMemo(
+    () => buildAncestryMap(data.organizations, data.projects, data.tasks),
+    [data.organizations, data.projects, data.tasks],
+  );
+
+  const toggle = (kind: Parameters<typeof toggleNodeCascaded>[1], id: string) =>
+    onChange(toggleNodeCascaded(selection, kind, id, mode, ancestry));
 
   const loading =
     data.treeStatus === "loading" && data.organizations.length === 0;

@@ -231,7 +231,8 @@ function ScratchRow({
   );
 }
 
-function ContextDocsMenuBody({
+/** Shared body — also folded into PlusAttachMenu on compact (single-row) chrome. */
+export function ContextDocsMenuBody({
   conversationId,
   onClose,
 }: ContextDocsMenuProps & { onClose?: () => void }) {

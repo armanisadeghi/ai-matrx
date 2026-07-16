@@ -79,6 +79,7 @@ This is a live implementation checklist for the Chat Options (`runControlsWindow
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-16 | codex | Replaced the SmartAgentInput passive desktop-presence indicator with a live compute-target picker: it lists only ready local PCs and sandboxes, visibly distinguishes a verified binding, and supports connect/disconnect through the existing binding path. |
 | 2026-07-16 | codex | Hardened the shared manual AIDream request assembler against legacy `settings.model_id`: `/v2/ai/manual` now receives only the canonical `ai_model_id` sourced from the agent definition, while valid flattened LLM settings continue through unchanged. Added a focused regression test. |
 | 2026-07-16 | codex | Documented the active Chat Options/Quickset refinement checklist before implementation, including geometry, prompt-preview retention, shared-state constraints, settings cleanup, and every requested Quickset row. |
 | 2026-07-16 | codex | Completed the Chat Options refinement: the 480px window opens 72px from the left edge, Memory and prompt preview retain it, Quickset is the first/default shared-state tab, Settings has compact controls with a bottom reference, canonical build model selection is reused for overrides, and picker controls are compact popovers. |

@@ -255,7 +255,11 @@ export function NewChatLandingInput({
           className="[grid-area:leading]"
           onClick={(e) => e.stopPropagation()}
         >
-          <RunControlsMenu conversationId={conversationId} variant="plus" />
+          <RunControlsMenu
+            conversationId={conversationId}
+            variant="plus"
+            foldToolbarExtras
+          />
         </div>
 
         {/* Primary — textarea, wrapped in the chat surface's right-click agent

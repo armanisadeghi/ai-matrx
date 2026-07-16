@@ -1,5 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import type { RootState } from "@/lib/redux/store";
+import { getFile } from "@/features/files/api/files";
+import {
+  getFileFromState,
+  selectFileName,
+} from "@/features/files/redux/selectors";
+
 /**
  * attached-documents — the shared vocabulary for a document attached to a chat.
  *
@@ -29,10 +38,7 @@ import type { Json } from "@/types/database.types";
  * leads with the raw file. The backend resolver handles both — the difference is
  * only what it leads with. Ordered default-first for stable chip render order.
  */
-export const ATTACHED_DOCUMENT_TOKENS = [
-  "processed_document",
-  "file",
-] as const;
+export const ATTACHED_DOCUMENT_TOKENS = ["processed_document", "file"] as const;
 
 export type AttachedDocumentToken = (typeof ATTACHED_DOCUMENT_TOKENS)[number];
 
@@ -67,15 +73,26 @@ export function parseAttachedDocumentMetadata(
   return { representation, file_id: fileId };
 }
 
+/** True when a string looks like a signed-URL tail (SigV2 or SigV4), not a filename. */
+export function looksLikeSignedUrlCredentialFragment(
+  value: string | null | undefined,
+): boolean {
+  const v = (value ?? "").trim();
+  if (!v) return false;
+  return /(?:^|[?&])(?:AWSAccessKeyId|X-Amz-(?:Credential|Algorithm|Signature|Date|Expires)|Signature|Expires)=/i.test(
+    v,
+  );
+}
+
 /**
- * A URL-PROOF display name. The label bug: the chip once showed a signed-URL
- * fragment (`…?X-Amz-Signature=…`). Source the name from the file's real
- * filename; if a caller only has a URL, take the last path segment WITHOUT the
- * query string, never the raw tail. Empty → "Document".
+ * Legacy URL sanitizer for edge labels written before we sourced names from
+ * `files.files.file_name`. Prefer {@link resolveAttachedDocumentDisplayName}
+ * everywhere we have a `file_id`.
  */
 export function cleanDocumentLabel(raw: string | null | undefined): string {
   const value = (raw ?? "").trim();
   if (!value) return "Document";
+  if (looksLikeSignedUrlCredentialFragment(value)) return "Document";
   // Looks like a URL (or has a query string) → keep only the basename of the path.
   if (/^https?:\/\//i.test(value) || value.includes("?")) {
     try {
@@ -83,14 +100,90 @@ export function cleanDocumentLabel(raw: string | null | undefined): string {
       const path = url.pathname;
       const seg = path.slice(path.lastIndexOf("/") + 1);
       const name = decodeURIComponent(seg || "");
+      if (looksLikeSignedUrlCredentialFragment(name)) return "Document";
       return name || "Document";
     } catch {
       const beforeQuery = value.split("?")[0];
       const seg = beforeQuery.slice(beforeQuery.lastIndexOf("/") + 1);
+      if (looksLikeSignedUrlCredentialFragment(seg)) return "Document";
       return seg || "Document";
     }
   }
   return value;
+}
+
+/**
+ * Canonical display name for an attached document chip / drawer title.
+ *
+ * Order: cloud-files `file_name` (by `file_id`) → sane edge label → "Document".
+ * Never show signed-URL credential fragments when we know the file id.
+ */
+export function resolveAttachedDocumentDisplayName(args: {
+  fileName: string | null | undefined;
+  edgeLabel: string | null | undefined;
+}): string {
+  const fromFile = args.fileName?.trim();
+  if (fromFile) return fromFile;
+  const cleaned = cleanDocumentLabel(args.edgeLabel);
+  if (cleaned !== "Document") return cleaned;
+  return "Document";
+}
+
+/**
+ * Label to persist on a new `platform.associations` edge at attach time.
+ * Uses the cloud-files row already in Redux when the user picked from the picker.
+ */
+export function documentAttachLabelFromState(
+  state: RootState,
+  fileId: string,
+  resourceFilenameFallback: string,
+): string {
+  const fromStore = getFileFromState(state, fileId)?.fileName?.trim();
+  if (fromStore) return fromStore;
+  const fallback = cleanDocumentLabel(resourceFilenameFallback);
+  return fallback === "Document" ? "Document" : fallback;
+}
+
+/**
+ * Resolve the human filename for a durable attachment edge. Reads Redux first
+ * (picker / files tree already hydrated the row); if missing, one GET by
+ * `file_id` — we always have the canonical id on the edge metadata.
+ */
+export function useAttachedDocumentDisplayName(
+  fileId: string | null | undefined,
+  edgeLabel: string | null | undefined,
+): string {
+  const fileNameFromStore = useAppSelector((s) =>
+    fileId ? selectFileName(s, fileId) : null,
+  );
+  const [fetchedName, setFetchedName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!fileId || fileNameFromStore) {
+      setFetchedName(null);
+      return undefined;
+    }
+    let cancelled = false;
+    void getFile(fileId)
+      .then(({ data }) => {
+        if (!cancelled) {
+          setFetchedName(
+            typeof data.file_name === "string" ? data.file_name : null,
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFetchedName(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileId, fileNameFromStore]);
+
+  return resolveAttachedDocumentDisplayName({
+    fileName: fileNameFromStore ?? fetchedName,
+    edgeLabel,
+  });
 }
 
 /**

@@ -14,7 +14,9 @@
  *                             off for this chat (same as the docs-menu switch).
  *   • Scratchpad            → same canvas toggle + X (per-conversation gate).
  *   • Agent lists           → plan / tasks / todos (the `TaskPanel` drawer).
- *   • Active context layers → org / scope(s) / project / task (the layer drawer).
+ *   • Working context       → `ActiveContextLensChip` (Lens Chip → ContextTree
+ *                             popover; same host as the chat header — never a
+ *                             layers drawer).
  *   • Any other live context entry the agent or user set (slot / ad-hoc) —
  *     click opens the detail sheet; X removes the entry from context.
  *
@@ -23,14 +25,14 @@
  *
  * It is the ONE rail — adding a future source (artifacts, canvas items, …) is a
  * single push into `items`, never a new bespoke strip. It reuses the existing
- * openers (`ContextSlotDetailSheet`, `ContextItemDrawer`, `TaskPanel`) — it does
- * not reinvent any detail surface.
+ * openers (`ContextSlotDetailSheet`, `TaskPanel`, `ActiveContextLensChip`) — it
+ * does not reinvent any detail surface.
  *
  * Mobile-friendly: the most important pills stay inline; the rest collapse into
  * a clean "…" overflow menu so the rail never wraps or crowds the composer.
  *
- * Renders nothing (null) when the conversation has no surfaceable context, so
- * it is safe to mount inside every SmartAgentInput everywhere.
+ * Always mounts Eye + Lens Chip (working context). Other pills appear only when
+ * the conversation has surfaceable attachments — safe in every SmartAgentInput.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -38,7 +40,6 @@ import {
   FileText,
   ListChecks,
   Loader2,
-  Layers,
   MoreHorizontal,
   NotebookPen,
   Code2,
@@ -102,10 +103,8 @@ import {
   unsubscribeAgentLists,
 } from "@/features/agents/ui-first-tools/redux/agent-lists.thunks";
 import { TaskPanel } from "@/features/agents/ui-first-tools/ui/lists/TaskPanel";
-import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
-import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
-import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
 import { AgentSeesSheet } from "@/features/agents/components/context-slots-display/AgentSeesSheet";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 
 interface ConversationContextRailProps {
   conversationId: string;
@@ -211,9 +210,6 @@ export function ConversationContextRail({
     };
   }, [conversationId, dispatch]);
 
-  // ── Active context layers (org / scope / project / task) ───────────────────
-  const layers = useActiveContextLayerItems(conversationId);
-
   // ── Detail surfaces (one of each, opened on demand) ────────────────────────
   const [activeEntry, setActiveEntry] = useState<{
     key: string;
@@ -223,11 +219,9 @@ export function ConversationContextRail({
   const [listsOpen, setListsOpen] = useState(false);
   // "What the agent sees" — the plain-language readout of the real payload.
   const [seesOpen, setSeesOpen] = useState(false);
-  const layerDrawer = useContextItemDrawer();
 
   const closeOtherSurfaces = () => {
     setListsOpen(false);
-    layerDrawer.setOpen(false);
   };
 
   /** Same pill again → close; different pill → switch. */
@@ -283,21 +277,12 @@ export function ConversationContextRail({
       return;
     }
     setDetailOpen(false);
-    layerDrawer.setOpen(false);
     setListsOpen(true);
   };
 
-  const toggleLayers = () => {
-    if (layerDrawer.open) {
-      layerDrawer.setOpen(false);
-      return;
-    }
-    setDetailOpen(false);
-    setListsOpen(false);
-    layerDrawer.openAt(layers.items, 0);
-  };
-
   // ── Assemble the rail in priority order ────────────────────────────────────
+  // Working context (Scopes) is NOT a rail pill — it is `ActiveContextLensChip`
+  // rendered beside the Eye/Context control (popover, never a layers drawer).
   const items = useMemo<RailItem[]>(() => {
     const out: RailItem[] = [];
     const valued = entries.filter(entryHasValue);
@@ -367,19 +352,6 @@ export function ConversationContextRail({
       });
     }
 
-    if (layers.count > 0) {
-      out.push({
-        id: "context_layers",
-        icon: Layers,
-        label: layers.summary,
-        word: "Scopes",
-        detail: layers.count > 1 ? `${layers.count} layers` : undefined,
-        hint: "Click: view the active context layers",
-        active: layerDrawer.open,
-        onOpen: toggleLayers,
-      });
-    }
-
     for (const e of valued) {
       // Doc-like keys (working doc, scratchpad, attached-scratchpad extras)
       // already have their slice-driven pills above — never re-surface their
@@ -444,8 +416,6 @@ export function ConversationContextRail({
     taskCounts.total,
     taskCounts.done,
     todoCounts.open,
-    layers.count,
-    layers.summary,
     workingDocEnabled,
     workingDocTitle,
     workingDocSaving,
@@ -456,12 +426,13 @@ export function ConversationContextRail({
     detailOpen,
     activeEntry?.key,
     listsOpen,
-    layerDrawer.open,
     canvasOpen,
     currentCanvasSourceId,
     currentCanvasItem?.savedItemId,
     currentCanvasItem?.content?.metadata?.canvasItemId,
     scratchScope,
+    conversationId,
+    dispatch,
   ]);
 
   // ── Inline vs overflow split. Keep the highest-priority pills visible; fold
@@ -476,28 +447,6 @@ export function ConversationContextRail({
       overflow: items.slice(maxInline - 1),
     };
   }, [items, maxInline]);
-
-  // Zero footprint when there's nothing to surface — but keep any drawer that
-  // is mid-open mounted so its close animation completes if the backing item
-  // momentarily drops out.
-  if (items.length === 0 && !detailOpen && !listsOpen && !layerDrawer.open) {
-    return null;
-  }
-
-  if (items.length === 0) {
-    return (
-      <DetailSurfaces
-        conversationId={conversationId}
-        agentId={agentId ?? null}
-        activeEntry={activeEntry}
-        detailOpen={detailOpen}
-        setDetailOpen={setDetailOpen}
-        listsOpen={listsOpen}
-        setListsOpen={setListsOpen}
-        layerDrawer={layerDrawer}
-      />
-    );
-  }
 
   return (
     <div
@@ -516,6 +465,7 @@ export function ConversationContextRail({
         <Eye className="h-3 w-3 opacity-70 transition-opacity group-hover/ctx:opacity-100" />
         Context
       </button>
+      <ActiveContextLensChip className="h-6 shrink-0 px-2 text-[11px]" />
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
         {inline.map((item) => (
           <RailPill key={item.id} item={item} />
@@ -584,7 +534,6 @@ export function ConversationContextRail({
         setDetailOpen={setDetailOpen}
         listsOpen={listsOpen}
         setListsOpen={setListsOpen}
-        layerDrawer={layerDrawer}
       />
       <AgentSeesSheet
         conversationId={conversationId}
@@ -677,7 +626,6 @@ function DetailSurfaces({
   setDetailOpen,
   listsOpen,
   setListsOpen,
-  layerDrawer,
 }: {
   conversationId: string;
   agentId: string | null;
@@ -686,7 +634,6 @@ function DetailSurfaces({
   setDetailOpen: (open: boolean) => void;
   listsOpen: boolean;
   setListsOpen: (open: boolean) => void;
-  layerDrawer: ReturnType<typeof useContextItemDrawer>;
 }) {
   return (
     <>
@@ -705,7 +652,6 @@ function DetailSurfaces({
         open={listsOpen}
         onOpenChange={setListsOpen}
       />
-      <ContextItemDrawer controller={layerDrawer} />
     </>
   );
 }

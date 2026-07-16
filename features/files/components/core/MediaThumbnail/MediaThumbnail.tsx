@@ -63,6 +63,13 @@ export interface MediaThumbnailProps {
    * `thumbnailUrl` set).
    */
   preferAssetThumbnail?: boolean;
+  /**
+   * Whether to fall back to a source-file URL when no rendered thumbnail is
+   * already available. Disable this in dense metadata pickers: it prevents a
+   * signed-URL request per image/video row while preserving any cached
+   * `thumbnailUrl` and the icon fallback.
+   */
+  allowSourceFallback?: boolean;
 }
 
 /**
@@ -94,6 +101,7 @@ export function MediaThumbnail({
   className,
   rounded,
   preferAssetThumbnail = true,
+  allowSourceFallback = true,
 }: MediaThumbnailProps) {
   const profile = getFilePreviewProfile(
     file.fileName,
@@ -129,7 +137,9 @@ export function MediaThumbnail({
   //   video-poster    → `<video preload="metadata">` shows frame 1
   // This handles the very first few seconds after upload before the
   // backend renders the variant.
-  const needsBytes = strategy === "image" || strategy === "video-poster";
+  const needsBytes =
+    allowSourceFallback &&
+    (strategy === "image" || strategy === "video-poster");
   const cdnUrl = needsBytes ? (file.publicUrl ?? null) : null;
   const signedUrlEnabled = needsBytes && !backendThumb && !assetUrl && !cdnUrl;
   const signedUrl = useFileSrc(

@@ -10,7 +10,7 @@ import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 
@@ -84,16 +84,9 @@ export function ChatRunHeader({
             noBorder
           />
         </div>
-        {/* Working context — sets appContextSlice, which execute-instance reads
-            and stamps onto every run. Icon-only so the header stays compact on
-            mobile; count badge shows when context is set. */}
-        <ActiveContextButton
-          size="xs"
-          iconOnly
-          className="shrink-0"
-          triggerClassName="w-auto shrink-0"
-          checkboxVariant="standard"
-        />
+        {/* Working context — Lens Chip → ActiveContextTree. Sets
+            appContextSlice; Clear lives in the tree footer. */}
+        <ActiveContextLensChip className="shrink-0" />
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {/* Canvas — the unified live workspace, one click away at the top. */}
