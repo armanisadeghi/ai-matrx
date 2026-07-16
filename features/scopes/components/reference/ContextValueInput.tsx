@@ -329,6 +329,32 @@ export function ContextValueInput({
     );
   }
 
+  if (valueType === "number") {
+    const numCurrent =
+      typeof value === "number"
+        ? String(value)
+        : typeof value === "string"
+          ? value
+          : "";
+    return (
+      <Input
+        id={id}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
+        type="number"
+        inputMode="decimal"
+        value={numCurrent}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={(e) => onCommit?.(e.target.value)}
+        disabled={disabled}
+        placeholder={placeholder ?? placeholderForType(valueType)}
+        style={{ fontSize: "16px" }}
+        className={className}
+      />
+    );
+  }
+
   const isJsonType = valueType === "object" || valueType === "array";
   const current = typeof value === "string" ? value : "";
 
