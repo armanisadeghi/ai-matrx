@@ -96,51 +96,23 @@ type AgentUpdate = Omit<
 export type { AgentInsert, AgentUpdate };
 
 // ---------------------------------------------------------------------------
-// tool_config — the canonical JSONB on agent.definition.
-// Shape:
-//   { tools: ToolSpec[], excluded_tools: string[], auto_tools_disabled: bool }
-// where ToolSpec is the same discriminated union as the request schema:
-//   { kind: "registered", tool_id: uuid, ... } | { kind: "inline", ... }
+// tool_config — flags ONLY on agent.definition.
+// Shape the FE/server actually consume:
+//   { auto_tools_disabled?: bool, excluded_tools?: string[] }
 //
-// Backend keeps the legacy `tools` (uuid[]) + `custom_tools` (jsonb[]) columns
-// in sync with `tool_config` for back-compat; we prefer `tool_config` on read
-// so when legacy columns get dropped this file keeps working unchanged. On
-// write we still hit the legacy columns — backend's dual-sync keeps both
-// coherent, and switching writes to `tool_config` is a separate move once
-// backend confirms legacy is no longer required.
+// Tool ASSIGNMENT is NOT here. Authoritative columns:
+//   - tools uuid[]        → registered tool ids
+//   - custom_tools jsonb  → inline CustomTool defs
+// The executor (aidream) reads those columns only. `tool_config.tools` is a
+// dead / refused write path — never prefer it on read (an empty [] there
+// used to mask real tools and make Builder saves look like they didn't stick).
 // ---------------------------------------------------------------------------
 
 interface ToolConfigJson {
+  /** @deprecated Never assigns tools. Prefer `agent.definition.tools`. */
   tools?: Array<Record<string, unknown>>;
   excluded_tools?: string[];
   auto_tools_disabled?: boolean;
-}
-
-function splitToolConfig(
-  toolConfig: unknown,
-  context: { agentId?: string; relation: string },
-): {
-  tools: string[];
-  customTools: AgentDefinition["customTools"];
-} | null {
-  if (!toolConfig || typeof toolConfig !== "object") return null;
-  const cfg = toolConfig as ToolConfigJson;
-  if (!Array.isArray(cfg.tools)) return null;
-  const tools: string[] = [];
-  const inlineSpecs: unknown[] = [];
-  for (const spec of cfg.tools) {
-    if (!spec || typeof spec !== "object") continue;
-    const kind = spec.kind;
-    if (kind === "registered") {
-      const toolId = (spec.tool_id ?? spec.name) as string | undefined;
-      if (toolId) tools.push(toolId);
-    } else if (kind === "inline") {
-      inlineSpecs.push(spec);
-    }
-    // kind === "agent" is per-request only (not stored on the agent row);
-    // ignore here.
-  }
-  return { tools, customTools: parseCustomTools(inlineSpecs, context) };
 }
 
 // ---------------------------------------------------------------------------
@@ -175,16 +147,12 @@ function parseSkillConfigJson(raw: unknown): SkillConfig {
  * Safe to call with any row — all JSONB fields are cast but not key-converted.
  */
 export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
-  // Prefer tool_config (canonical) over the legacy split columns. Legacy
-  // columns are still maintained backend-side, but will eventually be
-  // dropped — reading from tool_config insulates us from that.
+  // Tools come from the authoritative columns — never from tool_config.
   const ingress = { agentId: row.id, relation: "agent.definition" };
-  const fromToolConfig = splitToolConfig(row.tool_config, ingress);
-  const tools = fromToolConfig?.tools ?? row.tools ?? [];
-  const customTools =
-    fromToolConfig?.customTools ?? parseCustomTools(row.custom_tools, ingress);
+  const tools = row.tools ?? [];
+  const customTools = parseCustomTools(row.custom_tools, ingress);
 
-  // auto_tools_disabled lives only in tool_config (no legacy column). The
+  // auto_tools_disabled lives only in tool_config (no dedicated column). The
   // server reads it from there (agx_manager.py); round-trip it so the Builder
   // toggle reflects the saved value.
   const tc = row.tool_config;

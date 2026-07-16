@@ -1,6 +1,6 @@
 /**
  * Ingress validation for `custom_tools` (agent.definition / agent.template /
- * agent.definition_version JSONB, and the inline specs inside `tool_config`).
+ * agent.definition_version JSONB).
  *
  * The wire contract is the generated OpenAPI `CustomTool` schema
  * (types/python-generated/api-types.ts) — Python rejects anything else with a
@@ -59,7 +59,11 @@ export function isJsonSchemaProperty(v: unknown): v is JsonSchemaProperty {
   if (v.enum !== undefined && v.enum !== null && !Array.isArray(v.enum)) {
     return false;
   }
-  if (v.items !== undefined && v.items !== null && !isJsonSchemaProperty(v.items)) {
+  if (
+    v.items !== undefined &&
+    v.items !== null &&
+    !isJsonSchemaProperty(v.items)
+  ) {
     return false;
   }
   if (v.properties !== undefined && v.properties !== null) {

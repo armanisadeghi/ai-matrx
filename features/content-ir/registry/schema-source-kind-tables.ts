@@ -249,3 +249,42 @@ export async function getKindSchemaBySlugFromTables(
     return null;
   }
 }
+
+/** The result of `getKindInputContractBySlug` — null when the kind is unknown. */
+export interface KindInputContract {
+  /** Reconstructed field schema — null for python-owned kinds whose `data` is empty. */
+  schema: KindSchema | null;
+  /** The materialized `kind_definition.emitted_json_schema` — the structural-leg authority. */
+  emittedJsonSchema: Json | null;
+}
+
+/**
+ * Cold tier for the INPUT path (D1): one kind's field schema PLUS its
+ * `emitted_json_schema` in the same read pattern. `KindInputForm` validates
+ * assembled instances against `emittedJsonSchema` via `validateStructuralLeg`
+ * (the activation gate's own ajv leg) — the field schema alone cannot play
+ * that role, and a python-owned kind has no stored field list at all.
+ * Returns null only when the kind slug does not exist (the caller screams).
+ */
+export async function getKindInputContractBySlug(
+  kind: string,
+): Promise<KindInputContract | null> {
+  const supabase = await getSupabase();
+
+  const { data: def, error: defErr } = await supabase
+    .schema("content_ir")
+    .from("kind_definition")
+    .select("id, emitted_json_schema")
+    .eq("kind", kind)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (defErr) {
+    throw new KindTablesError(
+      `Failed to fetch input contract for "${kind}": ${defErr.message}`,
+    );
+  }
+  if (!def) return null;
+
+  const schema = await getKindSchemaBySlugFromTables(kind);
+  return { schema, emittedJsonSchema: def.emitted_json_schema };
+}

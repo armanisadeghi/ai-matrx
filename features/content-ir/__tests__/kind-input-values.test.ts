@@ -25,7 +25,7 @@ import {
   initialValuesForVariables,
   KindInputPairingError,
   pairKindFieldsWithVariables,
-} from "../admin/kind-input-values";
+} from "../input/kind-input-values";
 
 // A faithful trim of the live `flashcard_set` kind: one required scalar plus a
 // required structured field (the R5 structured-JSON textarea case).

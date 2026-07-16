@@ -54,7 +54,7 @@ import {
   fieldTypeLabel,
   initialValuesForVariables,
   pairKindFieldsWithVariables,
-} from "@/features/content-ir/admin/kind-input-values";
+} from "@/features/content-ir/input/kind-input-values";
 
 type SchemaState =
   | { status: "loading" }

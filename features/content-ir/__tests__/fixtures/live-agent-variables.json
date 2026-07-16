@@ -1,0 +1,349 @@
+[
+  {
+    "category": "allow_other",
+    "agent_id": "96e3b242-5c2b-4210-b836-dd3f0a8f6620",
+    "variable": {
+      "name": "audience",
+      "helpText": "Select the primary audience for the structured knowledge document to tailor the tone and complexity",
+      "required": true,
+      "defaultValue": "General learner",
+      "customComponent": {
+        "type": "select",
+        "options": [
+          "Early Childhood (Pre-K - Kindergarten)",
+          "Lower Elementary (Grades 1-3)",
+          "Upper Elementary (Grades 4-5)",
+          "Middle School Students (Grades 6-8)",
+          "High School Students (Grades 9-12)",
+          "University/College Students",
+          "Post-Graduate/Academic Researchers",
+          "Medical & Healthcare Professionals",
+          "Legal & Compliance Specialists",
+          "Technical & Software Engineers",
+          "Corporate Employees/Onboarding",
+          "Executive Leadership & Stakeholders",
+          "Frontline/Vocational Workers",
+          "Subject Matter Experts (SMEs)",
+          "General Public (Non-Technical)",
+          "English Language Learners (ELL/ESL)",
+          "Special Education/Neurodivergent Learners",
+          "AI Training & Data Science Models",
+          "General learner"
+        ],
+        "allowOther": true
+      }
+    }
+  },
+  {
+    "category": "allow_other",
+    "agent_id": "a0cca49c-82ee-46af-80cc-97c04adba8e9",
+    "variable": {
+      "name": "extraction_unit",
+      "helpText": "Select the detailed level of extraction needed.",
+      "required": true,
+      "defaultValue": "Extract each slide separately and label clearly",
+      "customComponent": {
+        "type": "radio",
+        "options": [
+          "Extract each page separately and label clearly",
+          "Extract each slide separately and label clearly",
+          "Extract each section separately and label clearly",
+          "Extract each chapter separately and label clearly",
+          "Extract each spoken sentence separately and label clearly",
+          "Extract each item separately and label clearly",
+          "Extract each page/slide/chapter/section separately and clearly label each one."
+        ],
+        "allowOther": true
+      }
+    }
+  },
+  {
+    "category": "checkbox",
+    "agent_id": "bfd3a83a-b0ac-4c9f-80fb-61ee677231f5",
+    "variable": {
+      "name": "topic_to_learn",
+      "defaultValue": "Plasma Membrane Overview\nFluid Mosaic Model\nPhospholipid Bilayer\nMembrane Fluidity & Cholesterol\nMembrane Proteins (Integral & Peripheral)\nProtein Functions (6 Roles)\nMembrane Carbohydrates\nMembrane Synthesis & Sidedness\nSelective Permeability\nPassive Transport (Diffusion, Osmosis)\nFacilitated Diffusion\nActive Transport & Na⁺/K⁺ Pump\nMembrane Potential & Gradients\nProton Pump & Cotransport\nBulk Tr",
+      "customComponent": {
+        "type": "checkbox",
+        "options": [
+          "Plasma Membrane Overview",
+          "Fluid Mosaic Model",
+          "Phospholipid Bilayer",
+          "Membrane Fluidity & Cholesterol",
+          "Membrane Proteins (Integral & Peripheral)",
+          "Protein Functions (6 Roles)",
+          "Membrane Carbohydrates",
+          "Membrane Synthesis & Sidedness",
+          "Selective Permeability",
+          "Passive Transport (Diffusion, Osmosis)",
+          "Facilitated Diffusion",
+          "Active Transport & Na⁺/K⁺ Pump",
+          "Membrane Potential & Gradients",
+          "Proton Pump & Cotransport",
+          "Bulk Transport (Exo/Endocytosis)",
+          "Endocytosis Types & Cholesterol Uptake",
+          "All Topics Covered in the Chapter"
+        ],
+        "allowOther": true
+      }
+    }
+  },
+  {
+    "category": "checkbox",
+    "agent_id": "973985cc-80b2-42c2-9665-fe1d84e1d149",
+    "variable": {
+      "name": "primary_tech_stack",
+      "helpText": "Enter the primary tech stack for this project",
+      "required": true,
+      "defaultValue": "Ask me all about the tech stack",
+      "customComponent": {
+        "type": "checkbox",
+        "options": [
+          "Python",
+          "TypeScript",
+          "JavaScript",
+          "Next.js",
+          "React",
+          "Vue.js",
+          "Node.js",
+          "Java / Spring Boot",
+          "C# / .NET",
+          "Go",
+          "Rust",
+          "PHP / Laravel",
+          "React Native / Expo",
+          "Flutter",
+          "PostgreSQL",
+          "MongoDB",
+          "Redis",
+          "Docker / Kubernetes",
+          "AWS / Azure / GCP",
+          "Tailwind CSS",
+          "Ask me all about the tech stack",
+          "Redux",
+          "Supabase"
+        ],
+        "allowOther": true
+      }
+    }
+  },
+  {
+    "category": "closed_options",
+    "agent_id": "d37acead-dc46-4d4a-ae5d-dece454fcfd0",
+    "variable": {
+      "name": "output_format",
+      "defaultValue": "Provide only the Persian translation without explanations, notes, or the original text.",
+      "customComponent": {
+        "type": "radio",
+        "options": [
+          "Provide only the Persian translation without explanations, notes, or the original text.",
+          "Provide the Persian translation followed by brief notes on any translation choices or cultural adaptations made.",
+          "Provide both the original text and the Persian translation side-by-side for comparison."
+        ],
+        "allowOther": false
+      }
+    }
+  },
+  {
+    "category": "closed_options",
+    "agent_id": "fc8fd18c-9324-48ca-85d4-faf1b1954945",
+    "variable": {
+      "name": "creativity_level",
+      "helpText": "How creative do you want to get?",
+      "required": false,
+      "defaultValue": "Balanced - Mix of practical and innovative",
+      "customComponent": {
+        "type": "radio",
+        "options": [
+          "Grounded - Practical and immediately actionable",
+          "Balanced - Mix of practical and innovative",
+          "Experimental - Push boundaries and explore wild ideas",
+          "Visionary - Think big, ignore current constraints"
+        ],
+        "allowOther": false
+      }
+    }
+  },
+  {
+    "category": "media",
+    "agent_id": "0cd86da2-2679-4c10-9746-e6723779fe94",
+    "variable": {
+      "name": "youtube_url",
+      "helpText": "Paste the YouTube URL of the video",
+      "required": true,
+      "defaultValue": "",
+      "customComponent": {
+        "type": "youtube"
+      }
+    }
+  },
+  {
+    "category": "media",
+    "agent_id": "7402d782-81ea-4765-bb24-d08a639c4aa8",
+    "variable": {
+      "name": "youtube_url",
+      "helpText": "Paste a YouTube URL or Video ID",
+      "required": true,
+      "defaultValue": "",
+      "customComponent": {
+        "type": "youtube"
+      }
+    }
+  },
+  {
+    "category": "number",
+    "agent_id": "0de9ff99-5362-48ed-8b8f-35820e819657",
+    "variable": {
+      "name": "count",
+      "helpText": "How many flashcards should be generated? The model will generate up to this many, but may return fewer if the source cannot support the full count.",
+      "defaultValue": "20",
+      "customComponent": {
+        "max": 100,
+        "min": 1,
+        "step": 1,
+        "type": "number"
+      }
+    }
+  },
+  {
+    "category": "number",
+    "agent_id": "96e3b242-5c2b-4210-b836-dd3f0a8f6620",
+    "variable": {
+      "name": "max_sections",
+      "helpText": "Maximum number of top-level sections to produce. Fewer sections means broader groupings; more sections means finer granularity.",
+      "required": false,
+      "defaultValue": "8",
+      "customComponent": {
+        "max": 20,
+        "min": 4,
+        "type": "number"
+      }
+    }
+  },
+  {
+    "category": "picklist",
+    "agent_id": "1f1607f5-9866-4ab2-93e4-8dc4ef1e9376",
+    "variable": {
+      "name": "style",
+      "defaultValue": "",
+      "customComponent": {
+        "type": "buttons",
+        "options": [
+          "Hairstyle Analysis: Create a clean, modern hairstyle analysis graphic using this portrait. Show side-by-side hairstyles comparisons to highlight which hairstyles suit the subject best. Make it visual-first, with short labels only and no paragraphs. Use a minimal, premium style: neutral background.",
+          "Animal Infographic: Create a visually rich infographic about an endangered animal. Start by finding one online, research its habitat, diet, and unique traits. Present information through annotated visuals and structured callouts, not generic sections. Style it like a bold graphic illustration: a detailed, photorealistic central animal as the focal point, supported by diagrams, callouts, and concise text elements. Use clean backgrounds and a mix of photorealism with strong graphic elements (shapes, icons, color blocking) in a layered composition. Make it dense, tactile, and professionally authored.",
+          "Research Visual: Create a deeply researched editorial-style infographic that transforms a highly complex topic into something understandable. Use premium visual design: a clean grid layout, bold typography, subtle gradients, a refined color palette, elegant icons, data visualizations, layered diagrams, and clear hierarchy. Prioritize peer-reviewed articles and respected publications as references. Make it as rich and amazing as possible for this topic:",
+          "Hand Written: Add a hand drawn overlay on top of the image. Final output should be stylish, relaxed and effortlessly casual. Drawing rules: Use thin, hand-drawn lines as if drawn with a white pen. Keep it in a single-stroke style: rough and slightly uneven. Add outlines tracing around the outer edges of objects. Use arrows or dotted lines to guide the viewer’s eye. Text rules: Handwritten text. Keep it short, like a casual inner monologue. Tone: diary-like, brief, and emotion-focused. Commentary should be positive and sweet. Decorations: Add steam, sparkles, hearts, small emoticon-like faces sparingly. Avoid overdoing it; leave some “negative space”.",
+          "Surreal: Create an image where one element of the subject or scene transforms into a whimsical, silly surreal phenomenon that reimagines a conceptual rule (causality, identity, perception, or spatial logic), avoiding natural effects. The transformation should be intrinsically tied to the subject, blending the absurd with everyday reality to produce a striking, imaginative, and eccentric scene. The boundary between subject and transformation should feel merged or in tension. The subject's reaction should enhance cohesion.",
+          "Underwater: Create an extreme close-up underwater portrait after the subject has just jumped into a swimming pool or clear shallow water. Keep the mood calm, weightless, and ethereal, emphasizing light reflections. No struggle or urgency. Incredible, beautiful, effortless, smooth, calm",
+          "Hyper Wallpaper: Create a macro nature image of a scene with realistic textures, shallow depth of field with creamy bokeh, in a natural outdoor setting. The image has an analog, imperfect, wabi sabi, 35mm film-like quality—grain, natural color rendering, and a soft contrast curve. Ultra-realistic detail, macro photography, 9:16 aspect ratio. Before creating the image, ask me a follow up question giving a numbered list of a few unexpected options for subject matter and then render the image.",
+          "Cross-section: Transform the main subject of the uploaded image into a clean educational cutaway diagram on a white background. Keep the subject’s distinctive features from the original image, show a believable cross-section or layered interior, and add clear labeled callouts. Make it look like a textbook or museum science graphic, with clarity and accuracy prioritized over dramatic or artistic styling.",
+          "App Design: Create a 5.5x3 mockup image of a new design-forward app with a cohesive design system. Show one mobile welcome screen with no photography, one mobile home-page screen, and two product or service pages. Include nothing else in the mockup image. Before generating, ask me the name of my app, what it is for, and the aesthetic I want.",
+          "Illustrated Recipe: Create a 3-page color mixed media food zine for an international recipe. First, look online for recent trendy recipes, then choose one based on what you know about me. Include necessary step-by-step visuals, diagrams, and explainers. Include any health or environmental context of the dish."
+        ],
+        "picklist": {
+          "listId": "a7294f90-a652-426a-b039-330228ba2bf1"
+        },
+        "allowOther": true
+      }
+    }
+  },
+  {
+    "category": "picklist",
+    "agent_id": "04f69dff-a258-4791-a44e-b7b87f346b9d",
+    "variable": {
+      "name": "scene",
+      "defaultValue": "```matrx\n{\n  \"matrx_version\": 1,\n  \"kind\": \"reference\",\n  \"type\": \"picklist_item\",\n  \"items\": [\n    {\n      \"list_id\": \"6a7822ca-859c-4903-87a3-c8243058dcc5\",\n      \"item_id\": \"74961fd0-89ca-473e-a1f8-bf059119c44e\",\n      \"label\": \"A high-energy educational international decathlon\"\n    }\n  ]\n}\n```",
+      "customComponent": {
+        "type": "select",
+        "picklist": {
+          "listId": "6a7822ca-859c-4903-87a3-c8243058dcc5"
+        },
+        "allowOther": true
+      }
+    }
+  },
+  {
+    "category": "scope_bound",
+    "agent_id": "c50529ec-81b5-46ad-94d5-e59c9256258d",
+    "variable": {
+      "name": "extracted_information",
+      "binding": {
+        "itemKey": "qme_analysis_report",
+        "onMissing": "empty",
+        "scopeTypeId": "1aaba65d-68de-457e-8a0c-0f2731161d13",
+        "contextItemId": "d2e57968-c1b2-4ac1-99bb-955c338ebdcf"
+      },
+      "helpText": "Paste the extracted or summarized information that was pulled from the QME report — this is what will be checked for accuracy and completeness.",
+      "required": false,
+      "defaultValue": ""
+    }
+  },
+  {
+    "category": "scope_bound",
+    "agent_id": "3d1da24e-8907-442a-a4d9-0db9428c1ece",
+    "variable": {
+      "name": "news_topic_or_content",
+      "binding": {
+        "itemKey": "",
+        "onMissing": "empty",
+        "scopeTypeId": "",
+        "contextItemId": ""
+      },
+      "helpText": "You can enter a specific topic or paste a specific set of content. You can even use the + button below to attach a Document, scrape a webpage, or even a YouTube video for me to analyze.",
+      "required": true,
+      "defaultValue": "",
+      "customComponent": {
+        "type": "textarea"
+      }
+    }
+  },
+  {
+    "category": "textarea",
+    "agent_id": "4e1168b6-ec1f-4c2e-a09d-d50b28cd0376",
+    "variable": {
+      "name": "content",
+      "defaultValue": "### **Slide 1: Title Slide**\n*   **Main Title:** CHAPTER 9\n*   **Subtitle:** The Cell Cycle\n*   **Visual Elements:** The slide features a blue background with a dark blue rectangular overlay. There are two stylized circular illustrations (top left and bottom right) containing orange X-shaped structures representing chromosomes.\n\n### **Slide 2: Key Roles of Cell Division**\n*   **Header:** Key Roles",
+      "customComponent": {
+        "type": "textarea"
+      }
+    }
+  },
+  {
+    "category": "textarea",
+    "agent_id": "28cb5ca0-e7bd-44bb-bb5a-6fb13d1cdd49",
+    "variable": {
+      "name": "html_from_plugin",
+      "defaultValue": "<div class=\"entry-content\"><div class=\"et-l et-l--post\"><div class=\"et_builder_inner_content et_pb_gutters2\"><div class=\"et_pb_section et_pb_section_0 et_pb_with_background et_section_regular lazyloaded\"><div class=\"et_pb_row et_pb_row_0 lazyloaded\"><div class=\"et_pb_column et_pb_column_4_4 et_pb_column_0 et_pb_css_mix_blend_mode_passthrough et-last-child lazyloaded\"><div class=\"et_pb_module et_pb"
+    }
+  },
+  {
+    "category": "toggle_values",
+    "agent_id": "55cdc363-5f05-420f-9aee-b1fc7e290b6b",
+    "variable": {
+      "name": "include_source_bias",
+      "defaultValue": "## 📊 Source Bias Assessment\n[Brief analysis of any apparent bias in the original source material]",
+      "customComponent": {
+        "type": "toggle",
+        "toggleValues": [
+          "",
+          "## 📊 Source Bias Assessment\n[Brief analysis of any apparent bias in the original source material]"
+        ]
+      }
+    }
+  },
+  {
+    "category": "toggle_values",
+    "agent_id": "616543f2-eeb0-4b73-8c43-c777337aa8e2",
+    "variable": {
+      "name": "include_source_bias",
+      "defaultValue": "## 📊 Source Bias Assessment\n[Brief analysis of any apparent bias in the original source material]",
+      "customComponent": {
+        "type": "toggle",
+        "toggleValues": [
+          "",
+          "## 📊 Source Bias Assessment\n[Brief analysis of any apparent bias in the original source material]"
+        ]
+      }
+    }
+  }
+]

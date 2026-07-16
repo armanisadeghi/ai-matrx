@@ -482,13 +482,13 @@ export const saveAgentField = createAsyncThunk<
  * Toggles the agent's `auto_tools_disabled` kill switch — the inverse of the
  * Builder's "Allow automated tool injection" switch.
  *
- * Persists into `agent.definition.tool_config.auto_tools_disabled` via a read-merge-
- * write so the other tool_config keys (`tools`, `excluded_tools`) are never
- * clobbered. The server reads this flag from tool_config (agx_manager.py);
- * there is no legacy column and no DB trigger keeping it in sync, so a
- * targeted merge is the correct write. Optimistic via mergePartialAgent (which
- * does NOT mark the field dirty, so it never disturbs unsaved-edit tracking);
- * reverted on failure.
+ * Persists into `agent.definition.tool_config.auto_tools_disabled` via a
+ * read-merge-write so sibling tool_config keys (`excluded_tools`) are never
+ * clobbered. Strips the dead `tools` key if present — tool assignment lives
+ * on `agent.definition.tools` / `custom_tools`, never in tool_config. The
+ * server reads this flag from tool_config (agx_manager.py); there is no
+ * dedicated column, so a targeted merge is the correct write. Optimistic via
+ * mergePartialAgent (does NOT mark dirty); reverted on failure.
  */
 export const setAgentAutoToolsDisabled = createAsyncThunk<
   void,
@@ -523,8 +523,10 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
       current?.tool_config &&
       typeof current.tool_config === "object" &&
       !Array.isArray(current.tool_config)
-        ? (current.tool_config as Record<string, unknown>)
+        ? { ...(current.tool_config as Record<string, unknown>) }
         : {};
+    // Dead key — never re-persist; assignment is agent.definition.tools.
+    delete existingConfig.tools;
 
     const { data, error } = await supabase
       .schema("agent")

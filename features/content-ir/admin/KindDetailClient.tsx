@@ -8,10 +8,10 @@
  * once in the browser (canonical first) and shares them with the Preview and
  * Gate tabs.
  *
- * Code-splitting: the Gate tab (ajv + dual gate) and the Inputs tab (ajv, plus
+ * Code-splitting: the Gate tab (ajv + dual gate), the Inputs tab (ajv, plus
  * the whole production agent-input stack via VariableInputComponent →
- * ProTextarea) are each `next/dynamic({ ssr: false })` behind their tab
- * condition. The Preview tab is a light shell whose heavy renderer is ALREADY
+ * ProTextarea), and the Try-input tab (KindInputForm — same heavy stack) are
+ * each `next/dynamic({ ssr: false })` behind their tab condition. The Preview tab is a light shell whose heavy renderer is ALREADY
  * split behind SafeBlockRenderer's own `ssr:false` boundary — adding a second
  * boundary here would stack waterfalls (code-splitting skill rule 2), so it is
  * imported statically and simply not rendered until its tab is active.
@@ -43,6 +43,19 @@ const KindGateTab = dynamic(
   },
 );
 
+const KindTryInputTab = dynamic(
+  () => import("@/features/content-ir/admin/KindTryInputTab"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center gap-2 py-10 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm">Loading input form</span>
+      </div>
+    ),
+  },
+);
+
 const KindInputsTab = dynamic(
   () => import("@/features/content-ir/admin/KindInputsTab"),
   {
@@ -56,10 +69,11 @@ const KindInputsTab = dynamic(
   },
 );
 
-const TABS = ["preview", "gate", "schema", "inputs", "assets"] as const;
+const TABS = ["preview", "try-input", "gate", "schema", "inputs", "assets"] as const;
 type TabId = (typeof TABS)[number];
 const TAB_LABELS: Record<TabId, string> = {
   preview: "Preview",
+  "try-input": "Try input",
   gate: "Gate",
   schema: "Schema",
   inputs: "Inputs",
@@ -191,6 +205,7 @@ export default function KindDetailClient({
         {tab === "preview" && (
           <KindPreviewTab kind={detail.kind} examples={examples} />
         )}
+        {tab === "try-input" && <KindTryInputTab kind={detail.kind} />}
         {tab === "gate" && (
           <KindGateTab
             kind={detail.kind}

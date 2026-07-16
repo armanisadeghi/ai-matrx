@@ -13,10 +13,12 @@
  * number, `enabled` is a boolean. Somebody has to walk the derived variables
  * back into kind space. That is this module.
  *
- * It is pure (no React / Redux / Supabase) and lives beside the admin tab that
- * consumes it. If a second consumer appears (an agent that fills a kind, a
- * workflow node that collects one), promote it to `convert/` next to the
- * schema bridge — it is the same family of translator.
+ * It is pure (no React / Redux / Supabase). PROMOTED from admin/ to input/
+ * (2026-07-15, D1): the canonical `KindInputForm` (./KindInputForm.tsx) is the
+ * second consumer this header anticipated — the admin Inputs tab and the form
+ * now share ONE value translator. It stays here rather than `convert/` because
+ * convert/ is twin-managed and this module is web-host-specific (it encodes
+ * how `VariableInputComponent` emits values, which has no Python twin).
  *
  * HONESTY DISCIPLINE (mirrors the bridge's loss reports):
  * - A value that cannot be coerced becomes an explicit `coercionErrors` entry

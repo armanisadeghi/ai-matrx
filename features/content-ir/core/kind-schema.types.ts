@@ -28,6 +28,27 @@
  *   - `inline_object.open` — `additionalProperties: true`; fixes the
  *     open-empty-object defect where an open `inline_object{fields:{}}`
  *     materialized as CLOSED (schema_proposal / item_presentation class).
+ *
+ * 2026-07-15 input-semantics extension (W3-A, agent-input bridge) — the
+ * constructs the Wave-1 sufficiency survey of all 1,529 live agent variables
+ * showed FieldSchema could not carry, added so `AgentVariable` ⇄ kind
+ * conversion is faithful:
+ *   - `FieldBase.description` — human guidance; round-trips JSON Schema
+ *     `description` and VariableDefinition `helpText`.
+ *   - `FieldBase.default` — the field's default VALUE (JSON Schema `default`,
+ *     VariableDefinition `defaultValue`). Annotation-level: validators never
+ *     apply it; emitters carry it verbatim.
+ *   - `enum.open` — "one of these options OR any string" (the FE's
+ *     `allowOther`). Emits as `anyOf: [{type:"string", enum}, {type:"string"}]`
+ *     so the option set survives instead of widening to bare `string`.
+ *   - `number` bounds `min`/`max`/`step` — JSON Schema
+ *     `minimum`/`maximum`/`multipleOf` (number/slider components).
+ *   - `string[].values` (+ `open`) — an items-enum: array of strings drawn
+ *     from an option set (checkbox components), `open` meaning the set is
+ *     advisory (`allowOther` on a multi-select).
+ * Picklist bindings, scope bindings, and media component identity are
+ * PROVENANCE, not structure — they never enter FieldSchema; the bridge
+ * carries them out-of-band (see convert/kind-variable-bridge.ts sidecar).
  */
 
 /** System discriminator — hardcoded, not part of per-kind field schemas. */
@@ -43,11 +64,34 @@ export type RecordValueType = ArrayItemScalarType | "json";
 type FieldBase = {
   required?: boolean;
   nullable?: boolean;
+  /** Human guidance — JSON Schema `description` / variable `helpText`. */
+  description?: string;
+  /**
+   * Default VALUE (JSON Schema `default` / variable `defaultValue`).
+   * Annotation-level: validators never apply it; emitters carry it verbatim.
+   */
+  default?: unknown;
 };
 
 export type FieldSchema =
-  | (FieldBase & { type: ScalarFieldType })
-  | (FieldBase & { type: "string[]" | "number[]" | "boolean[]" })
+  | (FieldBase & { type: "string" | "boolean" })
+  | (FieldBase & {
+      type: "number";
+      /** Inclusive lower bound — JSON Schema `minimum`. */
+      min?: number;
+      /** Inclusive upper bound — JSON Schema `maximum`. */
+      max?: number;
+      /** Increment — JSON Schema `multipleOf`. Annotation-level in the parser. */
+      step?: number;
+    })
+  | (FieldBase & {
+      type: "string[]";
+      /** Items-enum: each item must be one of these values (checkbox option sets). */
+      values?: string[];
+      /** With `values`: the set is advisory — any string item is also legal (`allowOther`). */
+      open?: boolean;
+    })
+  | (FieldBase & { type: "number[]" | "boolean[]" })
   | (FieldBase & { type: "json" })
   | (FieldBase & { type: "json[]" })
   | (FieldBase & { type: "array"; itemKinds: string[] })
@@ -59,7 +103,12 @@ export type FieldSchema =
       open?: boolean;
     })
   | (FieldBase & { type: "record"; values: RecordValueType })
-  | (FieldBase & { type: "enum"; values: string[] })
+  | (FieldBase & {
+      type: "enum";
+      values: string[];
+      /** "One of these OR any string" — the option set is advisory (`allowOther`). */
+      open?: boolean;
+    })
   | (FieldBase & {
       type: "union";
       scalars: Array<"string" | "number" | "boolean">;

@@ -1439,6 +1439,21 @@ export class KindStreamParser {
       if (!value.every((item) => typeof item === itemType)) {
         return `Field "${fieldName}" on kind "${objectKind}" must be an array of ${itemType}s.`;
       }
+      // Items-enum (string[] option sets): closed sets reject unknown values;
+      // `open` sets are advisory — any string item is legal.
+      if (
+        fieldSchema.type === "string[]" &&
+        fieldSchema.values !== undefined &&
+        !fieldSchema.open
+      ) {
+        const allowed = fieldSchema.values;
+        const bad = value.find(
+          (item) => typeof item === "string" && !allowed.includes(item),
+        );
+        if (bad !== undefined) {
+          return `Field "${fieldName}" on kind "${objectKind}" items must be one of: ${allowed.join(", ")}.`;
+        }
+      }
       return null;
     }
 
@@ -1596,7 +1611,9 @@ export class KindStreamParser {
       if (typeof value !== "string") {
         return `Field "${fieldName}" must be a string.`;
       }
-      if (!fieldSchema.values.includes(value)) {
+      // `open` — the option set is advisory ("these OR any string"); any
+      // string value is legal. Closed enums reject unknown values.
+      if (!fieldSchema.open && !fieldSchema.values.includes(value)) {
         return `Field "${fieldName}" must be one of: ${fieldSchema.values.join(", ")}.`;
       }
       return null;
@@ -1628,6 +1645,17 @@ export class KindStreamParser {
     ) {
       if (typeof value !== fieldSchema.type) {
         return `Field "${fieldName}" must be ${fieldSchema.type}.`;
+      }
+      // Numeric bounds (inclusive, mirroring JSON Schema minimum/maximum).
+      // `step` (multipleOf) stays annotation-level here — float modulo is
+      // unreliable; the emitted JSON Schema gate (ajv/Pydantic) owns it.
+      if (fieldSchema.type === "number" && typeof value === "number") {
+        if (fieldSchema.min !== undefined && value < fieldSchema.min) {
+          return `Field "${fieldName}" must be >= ${fieldSchema.min}.`;
+        }
+        if (fieldSchema.max !== undefined && value > fieldSchema.max) {
+          return `Field "${fieldName}" must be <= ${fieldSchema.max}.`;
+        }
       }
       return null;
     }

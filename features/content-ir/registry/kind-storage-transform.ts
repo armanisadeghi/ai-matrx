@@ -39,7 +39,6 @@ import type {
   FieldSchema,
   KindSchema,
   RecordValueType,
-  ScalarFieldType,
 } from "../core/kind-schema.types";
 
 /**
