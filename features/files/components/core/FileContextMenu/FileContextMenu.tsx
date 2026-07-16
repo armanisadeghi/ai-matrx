@@ -34,6 +34,8 @@ import {
   RotateCw,
   Scissors,
   Share2,
+  Sparkles,
+  Telescope,
   Trash2,
   Users,
 } from "lucide-react";
@@ -417,6 +419,34 @@ export function FileContextMenu({
     }
   }, [fileId]);
 
+  // "Knowledge assets" — open the library preview with the Knowledge Asset
+  // Builder drawer already open (?assets=1). Resolves the processed document
+  // via the canonical bridge (direct supabase-js, no Python hop); unprocessed
+  // files get the same hint as the RAG viewer.
+  const handleOpenKnowledgeAssets = useCallback(async () => {
+    try {
+      const ids = await resolvePdfSurfaceIds({ fileId });
+      if (ids.processedDocumentId) {
+        window.open(
+          `/rag/library/${ids.processedDocumentId}/preview?assets=1`,
+          "_blank",
+          "noopener",
+        );
+      } else {
+        const { toast } = await import("sonner");
+        toast.info("Not yet processed for RAG", {
+          description:
+            'Run "Reprocess for RAG" first — knowledge assets build on the extraction.',
+        });
+      }
+    } catch (err) {
+      const { toast } = await import("sonner");
+      toast.error("Could not look up document", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [fileId]);
+
   return (
     <>
       <DropdownMenu>
@@ -640,6 +670,20 @@ export function FileContextMenu({
                   <DropdownMenuItem onClick={handleReprocess}>
                     <RotateCw className="mr-2 h-4 w-4" />
                     Reprocess for RAG
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => void handleOpenKnowledgeAssets()}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Knowledge assets
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      window.open("/rag/search", "_blank", "noopener")
+                    }
+                  >
+                    <Telescope className="mr-2 h-4 w-4" />
+                    Knowledge search
                   </DropdownMenuItem>
                 </>
               ) : null}

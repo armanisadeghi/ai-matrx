@@ -19,6 +19,7 @@ import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import type { ContextItemBodyProps } from "../types";
+import { useAttachedDocumentDisplayName } from "@/features/agents/components/inputs/resources/attached-documents";
 
 const LibraryPreviewPage = dynamic(
   () =>
@@ -36,13 +37,21 @@ const LibraryPreviewPage = dynamic(
   },
 );
 
-export function ProcessedDocumentBody({ item, setTitle }: ContextItemBodyProps) {
+export function ProcessedDocumentBody({
+  item,
+  setTitle,
+  searchSubmission,
+}: ContextItemBodyProps) {
   const documentId =
     item.refs.processedDocumentId ?? item.refs.documentIds?.[0] ?? null;
+  const displayName = useAttachedDocumentDisplayName(
+    item.refs.fileId,
+    item.title,
+  );
 
   useEffect(() => {
-    setTitle?.(item.title);
-  }, [item.title, setTitle]);
+    setTitle?.(displayName);
+  }, [displayName, setTitle]);
 
   if (!documentId) {
     return (
@@ -57,7 +66,15 @@ export function ProcessedDocumentBody({ item, setTitle }: ContextItemBodyProps) 
 
   return (
     <div className="h-full min-h-0">
-      <LibraryPreviewPage documentId={documentId} embedded />
+      {/* Search lives in the drawer's title pill (ProcessedDocumentTitle) —
+          submissions arrive via `searchSubmission`, so the internal bar is
+          dropped to keep the body full-height. */}
+      <LibraryPreviewPage
+        documentId={documentId}
+        embedded
+        hideSearchBar
+        externalSearch={searchSubmission}
+      />
     </div>
   );
 }

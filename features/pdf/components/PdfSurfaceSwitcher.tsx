@@ -42,8 +42,10 @@ import {
 import { usePdfSurfaceLinks } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 
 export interface PdfSurfaceSwitcherProps {
-  /** The surface currently rendering this PDF (marked + non-navigable). */
-  current: PdfSurfaceId;
+  /** The surface currently rendering this PDF (marked + non-navigable).
+   *  Omit on hosts that aren't a registered surface (e.g. the chat drawer) —
+   *  every surface is then navigable. */
+  current?: PdfSurfaceId;
   fileId?: string | null;
   processedDocumentId?: string | null;
   /** "icon" = icon-only trigger for dense toolbars; "sm" adds the label. */

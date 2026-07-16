@@ -41,7 +41,11 @@ import {
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import type { ComponentType } from "react";
-import type { ContextItemBodyProps, ContextItemTypeDef } from "./types";
+import type {
+  ContextItemBodyProps,
+  ContextItemTitleProps,
+  ContextItemTypeDef,
+} from "./types";
 import { NoteBody, NoteFooter, NoteTitleActions } from "./bodies/NoteBody";
 import { TaskBody } from "./bodies/TaskBody";
 import { WebpageBody, WebpageFooter } from "./bodies/WebpageBody";
@@ -49,6 +53,7 @@ import { DataBody } from "./bodies/DataBody";
 import { MediaBody, MediaFooter } from "./bodies/MediaBody";
 import { WorkingDocumentBody } from "./bodies/WorkingDocumentBody";
 import { ProcessedDocumentBody } from "./bodies/ProcessedDocumentBody";
+import { ProcessedDocumentTitle } from "./bodies/ProcessedDocumentTitle";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
 import { BookmarkReferenceBody } from "./bodies/BookmarkReferenceBody";
 import {
@@ -157,6 +162,9 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "processed_document",
     editable: false,
     Body: ProcessedDocumentBody,
+    // Full title-bar replacement: the PDF identity pill (rename / surfaces /
+    // file menu / find-in-document / sibling-doc switcher).
+    Title: ProcessedDocumentTitle,
   },
 
   // Active-context layers — the org / scope(s) / project / task the user set
@@ -356,4 +364,11 @@ export function resolveContextItemTitleActions(
   blockType: string,
 ): ComponentType<ContextItemBodyProps> | undefined {
   return resolveContextItemDef(blockType).TitleActions;
+}
+
+/** Full title-bar replacement for a block type, or undefined when none. */
+export function resolveContextItemTitle(
+  blockType: string,
+): ComponentType<ContextItemTitleProps> | undefined {
+  return resolveContextItemDef(blockType).Title;
 }

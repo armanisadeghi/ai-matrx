@@ -40,16 +40,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ChevronLeftTapButton,
-  ChevronRightTapButton,
   MoreHorizontalTapButton,
   PanelLeftTapButton,
   PanelRightTapButton,
 } from "@/components/icons/tap-buttons";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { PageJumperTapGroup } from "@/features/pdf/components/PageJumperTapGroup";
 import { downloadFile } from "@/features/files";
 import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { PdfStudioDocTitle } from "./PdfStudioDocTitle";
+import type { StudioDocSummary } from "./hooks/usePdfStudioDocs";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 
 export interface PdfStudioHeaderControlsProps {
@@ -77,6 +77,14 @@ export interface PdfStudioHeaderControlsProps {
   onRename: (newName: string) => void | Promise<void>;
   /** Archive (soft-delete) the active doc from the studio. */
   onDeleteDoc: (id: string) => Promise<void>;
+  /** Studio document list — powers the title pill's doc-switcher dropdown. */
+  docs?: StudioDocSummary[];
+  /** Open another studio document (same semantics as the sidebar). */
+  onSelectDoc?: (summary: StudioDocSummary) => void;
+  /** Live find-in-document from the title pill's search overlay. */
+  onFindQueryChange?: (query: string) => void;
+  /** Enter in the pill's search — runs the RAG in-document search. */
+  onFindSubmit?: (query: string) => void;
 }
 
 export function PdfStudioHeaderControls({
@@ -100,6 +108,10 @@ export function PdfStudioHeaderControls({
   onOpenSource,
   onRename,
   onDeleteDoc,
+  docs,
+  onSelectDoc,
+  onFindQueryChange,
+  onFindSubmit,
 }: PdfStudioHeaderControlsProps) {
   const saveBlob = useDownloadBlob();
   const openShare = useOpenShareModalWindow();
@@ -136,8 +148,16 @@ export function PdfStudioHeaderControls({
   }, [doc, openShare]);
 
   return (
-    <div className="grid w-full min-w-0 grid-cols-[1fr_auto_1fr] items-center">
-      <div className="flex min-w-0 items-center justify-self-start">
+    // minmax(0,1fr) — bare `1fr` is minmax(auto,1fr): the side columns refuse
+    // to shrink below their content and overflow UNDER the centered page
+    // jumper (clicks then hit the jumper, not the covered buttons). With a
+    // 0 minimum the doc-title pill truncates its filename instead.
+    <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center">
+      {/* Default stretch (NOT justify-self-start): a start-aligned grid item
+          sizes to its content and overflows the track under the centered
+          jumper; stretched, it fills exactly the column and the inner flex
+          truncates the doc-title pill's filename instead. */}
+      <div className="flex min-w-0 items-center">
         <PanelLeftTapButton
           onClick={onToggleSidebar}
           ariaLabel={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
@@ -151,6 +171,10 @@ export function PdfStudioHeaderControls({
             doc={doc}
             onRename={onRename}
             onDeleteDoc={onDeleteDoc}
+            docs={docs}
+            onSelectDoc={onSelectDoc}
+            onFindQueryChange={onFindQueryChange}
+            onFindSubmit={onFindSubmit}
           />
         ) : (
           <span className="ml-2 truncate text-sm text-muted-foreground">
@@ -245,78 +269,5 @@ export function PdfStudioHeaderControls({
         />
       </div>
     </div>
-  );
-}
-
-/** Compact `‹ N / total ›` page jumper — glass tap-group with an inline input. */
-function PageJumperTapGroup({
-  activePage,
-  totalPages,
-  onJumpToPage,
-}: {
-  activePage: number | null;
-  totalPages: number;
-  onJumpToPage: (n: number) => void;
-}) {
-  const total = Math.max(totalPages, 0);
-  const [draft, setDraft] = React.useState("");
-
-  // Sync the draft when the active page changes — derived-state pattern
-  // (render-phase set with prop tracking), not an effect.
-  const [syncedPage, setSyncedPage] = React.useState<number | null>(null);
-  if (activePage !== syncedPage) {
-    setSyncedPage(activePage);
-    if (activePage != null) setDraft(String(activePage));
-  }
-
-  const submit = () => {
-    const n = parseInt(draft, 10);
-    if (!Number.isFinite(n) || n < 1) return;
-    onJumpToPage(Math.min(n, Math.max(total, 1)));
-  };
-
-  return (
-    <TapTargetButtonGroup>
-      <ChevronLeftTapButton
-        variant="group"
-        onClick={() =>
-          activePage && activePage > 1 && onJumpToPage(activePage - 1)
-        }
-        disabled={!activePage || activePage <= 1}
-        ariaLabel="Previous page"
-        tooltip="Previous page (k)"
-      />
-      <label className="flex h-6 items-center gap-0.5 px-0.5 text-[11px] tabular-nums text-foreground">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={submit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              submit();
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          className="w-7 bg-transparent text-center text-[11px] outline-none"
-          inputMode="numeric"
-          aria-label="Current page"
-        />
-        <span className="text-[11px] text-muted-foreground">
-          / {total.toLocaleString()}
-        </span>
-      </label>
-      <ChevronRightTapButton
-        variant="group"
-        onClick={() =>
-          activePage &&
-          total > 0 &&
-          activePage < total &&
-          onJumpToPage(activePage + 1)
-        }
-        disabled={!activePage || total <= 0 || activePage >= total}
-        ariaLabel="Next page"
-        tooltip="Next page (j)"
-      />
-    </TapTargetButtonGroup>
   );
 }

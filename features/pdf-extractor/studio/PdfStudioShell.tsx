@@ -30,6 +30,7 @@ import React, {
 import { Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { useDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 import { Input } from "@/components/ui/input";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
@@ -147,6 +148,11 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     });
   const [findQuery, setFindQuery] = useState("");
   const [findOpen, setFindOpen] = useState(false);
+  // Server-side in-document search (same engine as the RAG library viewer /
+  // chat drawer): Enter in the title pill's search runs it; ranked segment
+  // hits render in the Segments pane, matched pages become jump chips. Live
+  // typing separately drives the `findQuery` string highlights above.
+  const docSearch = useDocumentSearch(activeDoc?.id ?? "");
   const [pipelineRunning, setPipelineRunning] = useState(false);
   const [aiCleanRunning, setAiCleanRunning] = useState(false);
   const [liveStatus, setLiveStatus] = useState<string | null>(null);
@@ -316,6 +322,45 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     },
     [dispatch],
   );
+
+  // ── In-document search (title pill, Enter) ───────────────────────────
+  // Runs the RAG lexical search, surfaces the Segments pane with the ranked
+  // hits, and jumps to the first matching page. An empty submit clears.
+  const { run: runDocSearch, clear: clearDocSearch } = docSearch;
+  const activePageRef = useRef(activePage);
+  activePageRef.current = activePage;
+  const handleFindSubmit = useCallback(
+    (q: string) => {
+      const trimmed = q.trim();
+      setFindQuery(trimmed);
+      if (!trimmed) {
+        clearDocSearch();
+        return;
+      }
+      dispatch(ensurePaneVisible("chunks"));
+      void runDocSearch(trimmed).then((matchedPages) => {
+        const cur = activePageRef.current;
+        if (
+          matchedPages.length > 0 &&
+          (cur == null || !matchedPages.includes(cur))
+        ) {
+          jumpToPage(matchedPages[0]);
+        }
+      });
+    },
+    [runDocSearch, clearDocSearch, dispatch, jumpToPage],
+  );
+
+  // Doc switch — drop the previous document's search results.
+  const activeDocId = activeDoc?.id ?? null;
+  const prevDocIdRef = useRef(activeDocId);
+  useEffect(() => {
+    if (prevDocIdRef.current !== activeDocId) {
+      prevDocIdRef.current = activeDocId;
+      clearDocSearch();
+      setFindQuery("");
+    }
+  }, [activeDocId, clearDocSearch]);
 
   const handleActivePage = useCallback(
     (n: number | null) => {
@@ -683,6 +728,10 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
           onOpenSource={handleOpenSource}
           onRename={handleRenameDoc}
           onDeleteDoc={handleDeleteDoc}
+          docs={docsState.docs}
+          onSelectDoc={handleSelectDoc}
+          onFindQueryChange={setFindQuery}
+          onFindSubmit={handleFindSubmit}
         />
       </PageHeader>
 
@@ -840,6 +889,10 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               onEditModeCancel={handleEditModeCancel}
               onRefreshPages={refreshPages}
               onJumpToPage={jumpToPage}
+              docSearch={docSearch}
+              // Pane ✕ dismisses the RESULTS view only; the pill's own X /
+              // Esc clears everything (query + highlights) via onFindSubmit("").
+              onClearDocSearch={clearDocSearch}
               onOpenChunkedRuns={handleOpenChunkedRuns}
             />
           ) : docLoading ? (

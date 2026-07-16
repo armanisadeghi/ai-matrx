@@ -17,7 +17,10 @@
  * - ···: the full /files action set (`FileContextMenu`) for cloud-backed
  *   files — hydrated via `useEnsureCloudFile` so the menu lights up on any
  *   surface. Omitted when there's no fileId.
- * - Search (opt-in via `onSearchChange`): macOS-style — activating it
+ * - Document switcher (opt-in via `documents` + `onSelectDocument`): the PDF
+ *   icon becomes a dropdown listing the host's documents — click to switch.
+ * - Search (opt-in via `onSearchChange` / `onSearchSubmit`): macOS-style —
+ *   activating it
  *   overlays the search field ACROSS the pill's existing content, so the
  *   pill width never changes. The idle content goes `visibility: hidden`
  *   (keeps layout, leaves tab order) and an absolute layer renders
@@ -29,7 +32,7 @@
  */
 
 import { useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Check, Search } from "lucide-react";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { EditableLabel } from "@/components/official/item/EditableLabel";
 import {
@@ -37,6 +40,13 @@ import {
   SearchTapButton,
   XTapButton,
 } from "@/components/icons/tap-buttons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
@@ -50,9 +60,17 @@ import { PdfSurfaceSwitcher } from "./PdfSurfaceSwitcher";
 const PDF_TYPE = getFileTypeDetails("document.pdf");
 const PdfIcon = PDF_TYPE.icon;
 
+/** One entry in the optional document-switcher list (PDF-icon dropdown). */
+export interface PdfSwitcherDocumentOption {
+  /** Host-defined id — handed back verbatim to `onSelectDocument`. */
+  id: string;
+  name: string;
+}
+
 export interface PdfNamedSurfaceSwitcherProps {
-  /** The surface currently rendering this PDF (marked + non-navigable). */
-  current: PdfSurfaceId;
+  /** The surface currently rendering this PDF (marked + non-navigable).
+   *  Omit on hosts that aren't a registered surface (e.g. the chat drawer). */
+  current?: PdfSurfaceId;
   fileId?: string | null;
   processedDocumentId?: string | null;
   /** Display name — truncated at text-[11px]; full name while editing. */
@@ -74,8 +92,22 @@ export interface PdfNamedSurfaceSwitcherProps {
    * pill's content — the pill width never changes (macOS style).
    */
   onSearchChange?: (query: string) => void;
+  /**
+   * Fired on Enter in the search field. Hosts whose search is a server
+   * round-trip use THIS (and may omit `onSearchChange`); either prop alone
+   * enables the search control.
+   */
+  onSearchSubmit?: (query: string) => void;
   /** Placeholder for the search input (default "Search"). */
   searchPlaceholder?: string;
+  /**
+   * Opt-in document switcher: when provided (with `onSelectDocument`), the
+   * PDF icon becomes a dropdown listing these documents — click to switch.
+   */
+  documents?: PdfSwitcherDocumentOption[];
+  /** The currently-open document's id (marked + non-selectable). */
+  activeDocumentId?: string | null;
+  onSelectDocument?: (id: string) => void;
   /** Tailwind max-width cap on the name (default `max-w-40` = 10rem). */
   nameMaxWidthClassName?: string;
   className?: string;
@@ -91,7 +123,11 @@ export function PdfNamedSurfaceSwitcher({
   showIcon = true,
   showMenu = true,
   onSearchChange,
+  onSearchSubmit,
   searchPlaceholder = "Search",
+  documents,
+  activeDocumentId,
+  onSelectDocument,
   nameMaxWidthClassName = "max-w-40",
   className,
 }: PdfNamedSurfaceSwitcherProps) {
@@ -122,12 +158,15 @@ export function PdfNamedSurfaceSwitcher({
   const openSearch = () => {
     setSearchOpen(true);
   };
+  const clearQuery = () => {
+    setQuery("");
+    onSearchChange?.("");
+    // Submit-based hosts (server-backed search) also reset on clear.
+    onSearchSubmit?.("");
+  };
   const closeSearch = () => {
     setSearchOpen(false);
-    if (query) {
-      setQuery("");
-      onSearchChange?.("");
-    }
+    if (query) clearQuery();
   };
   const handleSearchInput = (next: string) => {
     setQuery(next);
@@ -137,22 +176,66 @@ export function PdfNamedSurfaceSwitcher({
   // already-empty field) closes the search.
   const handleClear = () => {
     if (query) {
-      setQuery("");
-      onSearchChange?.("");
+      clearQuery();
       searchInputRef.current?.focus();
     } else {
       setSearchOpen(false);
     }
   };
 
+  const hasDocSwitcher = Boolean(documents?.length && onSelectDocument);
+
+  const iconEl = hasDocSwitcher ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Switch document"
+          title="Switch document"
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm transition-colors hover:bg-accent"
+        >
+          <PdfIcon
+            aria-hidden
+            className={cn("h-3.5 w-3.5", PDF_TYPE.color)}
+          />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-64">
+        <DropdownMenuLabel className="text-[11px] text-muted-foreground">
+          Documents
+        </DropdownMenuLabel>
+        {documents!.map((d) => {
+          const isActive = d.id === activeDocumentId;
+          return (
+            <DropdownMenuItem
+              key={d.id}
+              disabled={isActive}
+              onClick={() => onSelectDocument!(d.id)}
+              className="gap-2 py-1.5"
+            >
+              <PdfIcon
+                aria-hidden
+                className={cn("h-3.5 w-3.5 shrink-0", PDF_TYPE.color)}
+              />
+              <span className="min-w-0 flex-1 truncate text-xs">{d.name}</span>
+              {isActive && (
+                <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+              )}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : (
+    <PdfIcon
+      aria-hidden
+      className={cn("h-3.5 w-3.5 shrink-0", PDF_TYPE.color)}
+    />
+  );
+
   const identity = (
     <span className="flex min-w-0 items-center gap-1 pl-2.5">
-      {showIcon && (
-        <PdfIcon
-          aria-hidden
-          className={cn("h-3.5 w-3.5 shrink-0", PDF_TYPE.color)}
-        />
-      )}
+      {showIcon && iconEl}
       <span
         ref={nameBoxRef}
         className={cn(
@@ -189,7 +272,7 @@ export function PdfNamedSurfaceSwitcher({
   );
 
   return (
-    <TapTargetButtonGroup className={className}>
+    <TapTargetButtonGroup className={cn("min-w-0", className)}>
       {/* Idle content. While searching it keeps its layout (so the pill
           width cannot change) but is hidden + inert (visibility:hidden
           removes it from pointer events and tab order). */}
@@ -218,7 +301,7 @@ export function PdfNamedSurfaceSwitcher({
             />
           </FileContextMenu>
         )}
-        {onSearchChange && (
+        {(onSearchChange || onSearchSubmit) && (
           <SearchTapButton
             variant="group"
             ariaLabel="Search"
@@ -247,6 +330,10 @@ export function PdfNamedSurfaceSwitcher({
                 e.preventDefault();
                 e.stopPropagation();
                 closeSearch();
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                onSearchSubmit?.(query.trim());
               }
             }}
             // 16px on mobile prevents iOS focus-zoom; tiny on desktop.

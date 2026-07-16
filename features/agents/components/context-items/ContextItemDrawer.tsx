@@ -30,6 +30,7 @@ import {
 import {
   resolveContextItemBody,
   resolveContextItemFooter,
+  resolveContextItemTitle,
   resolveContextItemTitleActions,
 } from "./registry";
 import { buildReattachSpec, canReattach } from "./recontext";
@@ -40,24 +41,40 @@ interface ContextItemDrawerProps {
 }
 
 export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
-  const { open, items, index, activeItem, setOpen, next, prev } = controller;
+  const { open, items, index, activeItem, setOpen, next, prev, goTo } =
+    controller;
   const dispatch = useAppDispatch();
 
-  // Body-reported title override, reset whenever the active item changes.
+  // Body-reported title override + header-driven search submission — both
+  // reset whenever the active item changes.
   const [bodyTitle, setBodyTitle] = useState<string | null>(null);
+  const [searchSubmission, setSearchSubmission] = useState<{
+    query: string;
+    nonce: number;
+  } | null>(null);
   useEffect(() => {
     setBodyTitle(null);
+    setSearchSubmission(null);
   }, [activeItem?.id]);
 
   if (!activeItem) return null;
 
   const Body = resolveContextItemBody(activeItem.blockType);
   const Footer = resolveContextItemFooter(activeItem.blockType);
+  const Title = resolveContextItemTitle(activeItem.blockType);
   const TitleActions = resolveContextItemTitleActions(activeItem.blockType);
   const Icon = activeItem.icon;
   const multi = items.length > 1;
   const showReattach = canReattach(activeItem);
   const title = bodyTitle ?? activeItem.title;
+
+  const handleSelectItem = (id: string) => {
+    const i = items.findIndex((it) => it.id === id);
+    if (i >= 0) goTo(i);
+  };
+  const handleSearchSubmit = (query: string) => {
+    setSearchSubmission((s) => ({ query, nonce: (s?.nonce ?? 0) + 1 }));
+  };
 
   const handleReattach = () => {
     const spec = buildReattachSpec(activeItem);
@@ -83,11 +100,24 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
       defaultSize={40}
       expandButtonLabel={activeItem.typeLabel}
       title={
-        <span className="inline-flex min-w-0 items-center gap-2">
-          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate">{title}</span>
-          {TitleActions && <TitleActions item={activeItem} />}
-        </span>
+        Title ? (
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <Title
+              item={activeItem}
+              title={title}
+              items={items}
+              onSelectItem={handleSelectItem}
+              onSearchSubmit={handleSearchSubmit}
+            />
+            {TitleActions && <TitleActions item={activeItem} />}
+          </span>
+        ) : (
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 truncate">{title}</span>
+            {TitleActions && <TitleActions item={activeItem} />}
+          </span>
+        )
       }
       headerActions={
         multi ? (
@@ -127,7 +157,12 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
       contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
     >
       <div className="min-h-0 flex-1 overflow-hidden">
-        <Body key={activeItem.id} item={activeItem} setTitle={setBodyTitle} />
+        <Body
+          key={activeItem.id}
+          item={activeItem}
+          setTitle={setBodyTitle}
+          searchSubmission={searchSubmission}
+        />
       </div>
 
       {hasFooter && (

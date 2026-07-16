@@ -9,7 +9,14 @@ import {
   Copy,
   Check,
   EyeOff,
+  Search,
+  X,
 } from "lucide-react";
+import {
+  DocumentSearchResultsList,
+  DocumentSearchSummary,
+} from "@/features/rag/components/library/DocumentSearch";
+import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -36,6 +43,11 @@ interface PdfStudioChunksPaneProps {
   hasCldFile: boolean;
   onOpenChunkedRuns: () => void;
   onClose?: () => void;
+  /** Active in-document RAG search — while it has run, this pane shows the
+   *  ranked hits (with matched-page jump chips) instead of the page chunks. */
+  search?: UseDocumentSearch;
+  /** Clear the search and return to the per-page chunk list. */
+  onClearSearch?: () => void;
 }
 
 export function PdfStudioChunksPane({
@@ -44,6 +56,8 @@ export function PdfStudioChunksPane({
   hasCldFile,
   onOpenChunkedRuns,
   onClose,
+  search,
+  onClearSearch,
 }: PdfStudioChunksPaneProps) {
   const dispatch = useAppDispatch();
   const status = useAppSelector(selectChunksStatusForActivePage);
@@ -56,13 +70,85 @@ export function PdfStudioChunksPane({
     dispatch(fetchChunksForPage(docId, activePage));
   }, [dispatch, docId, activePage]);
 
-  const handleChunkClick = (chunk: ApiChunkRow) => {
-    const target = chunk.page_numbers?.[0];
-    if (target == null) return;
+  const jumpToResultPage = (target: number) => {
     dispatch(setScrollSource("chunks"));
     dispatch(setActivePage(target));
     dispatch(setPendingScrollPage(target));
   };
+
+  const handleChunkClick = (chunk: ApiChunkRow) => {
+    const target = chunk.page_numbers?.[0];
+    if (target == null) return;
+    jumpToResultPage(target);
+  };
+
+  // Search-results mode — the same summary + ranked list the RAG library
+  // viewer renders, scoped to this pane.
+  const searchActive = Boolean(search && (search.hasSearched || search.loading));
+  if (search && searchActive) {
+    return (
+      <div className="flex flex-col min-h-0 flex-1 border-r last:border-r-0 border-border">
+        <div className="shrink-0 px-3 pt-2 pb-1.5">
+          <div className="h-7 flex items-center gap-1.5 min-w-0">
+            <Search className="w-3 h-3 text-primary shrink-0" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80 shrink-0">
+              Results
+            </span>
+            <span
+              className="min-w-0 truncate text-[10px] text-muted-foreground"
+              title={search.activeQuery}
+            >
+              · “{search.activeQuery}”
+            </span>
+            {search.loading && (
+              <Loader2 className="w-3 h-3 text-muted-foreground/70 animate-spin ml-1 shrink-0" />
+            )}
+            <div className="ml-auto flex items-center gap-0.5 shrink-0">
+              {onClearSearch && (
+                <button
+                  type="button"
+                  onClick={onClearSearch}
+                  className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
+                  title="Clear search"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors"
+                  title="Hide pane"
+                >
+                  <EyeOff className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        <DocumentSearchSummary
+          activeQuery={search.activeQuery}
+          summary={search.summary}
+          loading={search.loading}
+          error={search.error}
+          activePageNumber={activePage ?? 1}
+          onJumpToPage={jumpToResultPage}
+        />
+        <div className="flex-1 min-h-0">
+          <DocumentSearchResultsList
+            hits={search.hits}
+            activeQuery={search.activeQuery}
+            loading={search.loading}
+            error={search.error}
+            hasSearched={search.hasSearched}
+            onJumpToPage={jumpToResultPage}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const retry = () => {
     if (activePage != null) {
@@ -70,14 +156,13 @@ export function PdfStudioChunksPane({
     }
   };
 
-  const buildCopyText = useCallback(
-    () =>
-      rows
-        .map((r) => r.content_text ?? "")
-        .filter(Boolean)
-        .join("\n\n---\n\n"),
-    [rows],
-  );
+  // Plain function (not useCallback): the search-results early return above
+  // must not sit before any hook. React Compiler memoizes as needed.
+  const buildCopyText = () =>
+    rows
+      .map((r) => r.content_text ?? "")
+      .filter(Boolean)
+      .join("\n\n---\n\n");
 
   return (
     <div className="flex flex-col min-h-0 flex-1 border-r last:border-r-0 border-border">

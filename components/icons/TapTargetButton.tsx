@@ -652,7 +652,9 @@ export function TapTargetButtonGroup({
       }
     >
       <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-7 rounded-full matrx-glass-thin-border" />
-      <div className="relative flex items-center">{children}</div>
+      {/* min-w-0 lets flexible children (e.g. a truncating filename) shrink
+          under container pressure; fixed-size tap buttons are unaffected. */}
+      <div className="relative flex min-w-0 items-center">{children}</div>
     </div>
   );
 }

@@ -153,6 +153,7 @@ import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
 import { PdfStudioChunksPane } from "./PdfStudioChunksPane";
+import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 
 export type { PaneKey } from "../state/types";
 import type { PaneKey } from "../state/types";
@@ -210,6 +211,12 @@ export interface PdfStudioReaderProps {
   onJumpToPage?: (page: number) => void;
   /** Called when the user wants to jump to the Chunked Runs inspector tab. */
   onOpenChunkedRuns?: () => void;
+  /** Active in-document RAG search (title pill, Enter) — while it has
+   *  results, the Segments pane shows the ranked hits instead of the
+   *  active page's chunks. */
+  docSearch?: UseDocumentSearch;
+  /** Clear the in-document search (Segments pane's ✕). */
+  onClearDocSearch?: () => void;
 }
 
 export function PdfStudioReader({
@@ -237,6 +244,8 @@ export function PdfStudioReader({
   onRefreshPages,
   onJumpToPage,
   onOpenChunkedRuns,
+  docSearch,
+  onClearDocSearch,
 }: PdfStudioReaderProps) {
   const hasPages = pages.length > 0;
   // Per-field emptiness. The raw and cleaned columns are populated by
@@ -365,6 +374,8 @@ export function PdfStudioReader({
           hasCldFile={doc.sourceKind === "cld_file" && !!doc.sourceId}
           onOpenChunkedRuns={onOpenChunkedRuns ?? (() => undefined)}
           onClose={() => onTogglePane("chunks")}
+          search={docSearch}
+          onClearSearch={onClearDocSearch}
         />
       )}
       {visiblePanes.has("extractions") && (

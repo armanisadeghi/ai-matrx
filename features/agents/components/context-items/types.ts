@@ -75,6 +75,24 @@ export interface ContextItemBodyProps {
    * duplicate header. Call once the record loads.
    */
   setTitle?: (title: string) => void;
+  /**
+   * Header-driven search (from a custom `Title`, e.g. the PDF pill's find).
+   * `nonce` bumps per submission; an empty query means "cleared".
+   */
+  searchSubmission?: { query: string; nonce: number } | null;
+}
+
+/** Props a custom title-bar component (`ContextItemTypeDef.Title`) receives. */
+export interface ContextItemTitleProps {
+  item: ContextDrawerItem;
+  /** Resolved display title (body-reported override, else the item's own). */
+  title: string;
+  /** All items currently in the drawer — for sibling switching. */
+  items: ContextDrawerItem[];
+  /** Jump the drawer to another item by its id. */
+  onSelectItem: (id: string) => void;
+  /** Submit a search for the body to run (find-in-document). */
+  onSearchSubmit: (query: string) => void;
 }
 
 /**
@@ -102,4 +120,11 @@ export interface ContextItemTypeDef {
    * view modes). Keeps high-frequency controls out of the footer.
    */
   TitleActions?: ComponentType<ContextItemBodyProps>;
+  /**
+   * Optional FULL title-bar replacement — owns the icon + name region
+   * (e.g. the PDF identity pill with rename / switcher / menu / search).
+   * When set, the drawer renders this instead of the default icon + title
+   * (TitleActions still renders after it).
+   */
+  Title?: ComponentType<ContextItemTitleProps>;
 }

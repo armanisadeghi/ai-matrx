@@ -22,18 +22,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  ChevronDown,
-  GitCompareArrows,
-  GitFork,
-  Loader2,
-  Search as SearchIcon,
-  AlertCircle,
-  Sparkles,
-} from "lucide-react";
+import { GitFork, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +30,6 @@ import { cn } from "@/lib/utils";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
@@ -64,9 +52,13 @@ import type { DocStatus } from "@/features/rag/types/library";
 import { ChunksOnPage } from "./ChunkList";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
+import { PageContentHeader } from "./PageContentHeader";
 
 // Full-page payload — DERIVED from the generated contract (never hand-mirrored).
 type ApiFullPage = components["schemas"]["LibraryFullPage"];
+
+/** Shared column-header band so Pages / Segments / Page-text headers line up. */
+const COLUMN_HEADER = "flex h-9 shrink-0 items-center border-b px-2";
 
 export interface LibraryPreviewPageProps {
   documentId: string;
@@ -78,12 +70,25 @@ export interface LibraryPreviewPageProps {
    *  `/rag/viewer/<id>?page=12`. The viewer opens on this page instead of
    *  page 1 so clicking a hit lands the user on the passage. */
   initialPageNumber?: number;
+  /** Open the Knowledge Asset Builder drawer on mount (`?assets=1` deep link,
+   *  and the file-menu "Knowledge assets" entry). */
+  initialAssetsOpen?: boolean;
+  /** Host-driven in-document search (e.g. the chat drawer's header pill).
+   *  Bump `nonce` per submission — the viewer runs the search and jumps to
+   *  the first matching page, exactly like its own bar. */
+  externalSearch?: { query: string; nonce: number } | null;
+  /** Drop the internal search bar — for hosts that surface search in their
+   *  own chrome (pair with `externalSearch`). Summary + results still render. */
+  hideSearchBar?: boolean;
 }
 
 export function LibraryPreviewPage({
   documentId,
   embedded = false,
   initialPageNumber,
+  initialAssetsOpen = false,
+  externalSearch,
+  hideSearchBar = false,
 }: LibraryPreviewPageProps) {
   const {
     doc,
@@ -97,7 +102,7 @@ export function LibraryPreviewPage({
   const [forking, setForking] = useState(false);
   // Knowledge Assets drawer — opens the builder alongside (not over) the doc,
   // so pages + text stay visible behind the resizable panel.
-  const [assetsOpen, setAssetsOpen] = useState(false);
+  const [assetsOpen, setAssetsOpen] = useState(initialAssetsOpen);
 
   // In-document search — lifted to the viewer so one query drives the page-text
   // highlights, the summary banner, the per-page match stepper, and the ranked
@@ -121,6 +126,30 @@ export function LibraryPreviewPage({
     );
   }, [run]);
 
+  // Host-driven search submissions (chat-drawer header pill). Each nonce bump
+  // seeds the query and runs the same flow as the internal bar; an empty query
+  // clears. Render-time prev-value pattern for the nonce guard.
+  const { setQuery, clear } = search;
+  const extNonce = externalSearch?.nonce ?? null;
+  const [seenExtNonce, setSeenExtNonce] = useState(extNonce);
+  useEffect(() => {
+    if (extNonce === null || extNonce === seenExtNonce) return;
+    setSeenExtNonce(extNonce);
+    const q = externalSearch?.query.trim() ?? "";
+    if (!q) {
+      clear();
+      return;
+    }
+    setQuery(q);
+    void run(q).then((matchedPages) => {
+      setActivePageIndex((cur) =>
+        matchedPages.length > 0 && !matchedPages.includes(cur + 1)
+          ? matchedPages[0] - 1
+          : cur,
+      );
+    });
+  }, [extNonce, seenExtNonce, externalSearch, setQuery, clear, run]);
+
   // "Make my copy" — fork this (read-only) shared document into a user-owned
   // copy and open it in the studio, where the user can run their own agents /
   // segmentation. Get-or-create on the server, so re-clicking is safe.
@@ -140,13 +169,7 @@ export function LibraryPreviewPage({
   };
 
   return (
-    <div
-      className={cn(
-        "relative flex flex-col bg-background h-full",
-        // DEBUG: red = entire embedded canvas document viewer (chat drawer body)
-        embedded && "border-2 border-red-500",
-      )}
-    >
+    <div className="relative flex flex-col bg-background h-full">
       {!embedded && (
         <EntityModeHeader
           backHref="/rag/library"
@@ -193,35 +216,30 @@ export function LibraryPreviewPage({
           floating button. */}
         {doc && !docError && (
           <>
-            <DocumentSearchBar
-              query={search.query}
-              onQueryChange={search.setQuery}
-              onSubmit={handleSearch}
-              onClear={search.clear}
-              loading={search.loading}
-              hasSearched={search.hasSearched}
-              summary={search.summary}
-              className={
-                embedded
-                  ? // DEBUG: green = search toolbar row (+ Knowledge Assets in embedded mode)
-                    "border-2 border-green-500"
-                  : undefined
-              }
-              rightSlot={
-                embedded ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAssetsOpen(true)}
-                    className="h-7 px-2 text-xs shrink-0"
-                    title="Build premium knowledge representations from this document"
-                  >
-                    <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
-                    Knowledge Assets
-                  </Button>
-                ) : undefined
-              }
-            />
+            {!hideSearchBar && (
+              <DocumentSearchBar
+                query={search.query}
+                onQueryChange={search.setQuery}
+                onSubmit={handleSearch}
+                onClear={search.clear}
+                loading={search.loading}
+                hasSearched={search.hasSearched}
+                summary={search.summary}
+                rightSlot={
+                  embedded ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAssetsOpen(true)}
+                      className="h-7 px-2 text-xs shrink-0"
+                      title="Build premium knowledge representations from this document"
+                    >
+                      Knowledge Assets
+                    </Button>
+                  ) : undefined
+                }
+              />
+            )}
             {search.hasSearched && (
               <DocumentSearchSummary
                 activeQuery={search.activeQuery}
@@ -278,7 +296,6 @@ export function LibraryPreviewPage({
               totalPages={doc?.pagesPersisted ?? 0}
               onPageChange={setActivePageIndex}
               query={search.activeQuery}
-              embedded={embedded}
             />
           </div>
         )}
@@ -357,7 +374,12 @@ function PagesNav({
 
   return (
     <div className="flex flex-col min-h-0">
-      <div className="px-3 py-2 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+      <div
+        className={cn(
+          COLUMN_HEADER,
+          "px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
+        )}
+      >
         Pages ({totalPages})
       </div>
       <ScrollArea className="flex-1">
@@ -412,7 +434,6 @@ function PageContent({
   totalPages,
   onPageChange,
   query,
-  embedded = false,
 }: {
   documentId: string;
   pageIndex: number;
@@ -420,7 +441,6 @@ function PageContent({
   onPageChange: (idx: number) => void;
   /** Active search term — literal matches are highlighted in the page text. */
   query: string;
-  embedded?: boolean;
 }) {
   const [page, setPage] = useState<ApiFullPage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -524,12 +544,7 @@ function PageContent({
 
   if (totalPages === 0) {
     return (
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center text-center p-8 text-muted-foreground",
-          embedded && "border-2 border-blue-500",
-        )}
-      >
+      <div className="flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
         <AlertCircle className="h-8 w-8 mb-2" />
         <p className="text-sm">
           No pages persisted yet. This usually means ingestion failed before
@@ -539,138 +554,28 @@ function PageContent({
     );
   }
 
+  const pageLabel =
+    page?.section_title?.trim() ||
+    page?.section_kind?.trim() ||
+    `Page ${pageIndex + 1}`;
+
   return (
-    <div
-      className={cn(
-        "flex flex-col min-h-0 min-w-0",
-        // DEBUG: blue = right-most column (cleaned/raw page text pane)
-        embedded && "border-2 border-blue-500",
-      )}
-    >
-      <div className="border-b px-3 py-2 flex items-center gap-2 min-w-0">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onPageChange(Math.max(0, pageIndex - 1))}
-          disabled={pageIndex <= 0}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="text-sm font-medium tabular-nums">
-          Page {pageIndex + 1} / {totalPages}
-        </span>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onPageChange(Math.min(totalPages - 1, pageIndex + 1))}
-          disabled={pageIndex >= totalPages - 1}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <input
-          type="number"
-          min={1}
-          max={totalPages}
-          value={pageIndex + 1}
-          onChange={(e) => {
-            const n = Number.parseInt(e.target.value, 10);
-            if (Number.isFinite(n) && n >= 1 && n <= totalPages) {
-              onPageChange(n - 1);
-            }
-          }}
-          className="ml-2 w-16 h-7 text-xs border rounded px-2 bg-background"
-        />
-
-        {/* Match stepper — only while a search is active. Steps through every
-            literal occurrence on THIS page; jump across pages from the summary
-            chips above. */}
-        {query && (
-          <div className="flex items-center gap-0.5 shrink-0 rounded-md border bg-card px-1">
-            {matches.length > 0 ? (
-              <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 w-6 p-0"
-                  onClick={() => stepMatch(-1)}
-                  title="Previous match on this page"
-                >
-                  <ChevronUp className="h-3.5 w-3.5" />
-                </Button>
-                <span className="text-[11px] tabular-nums text-muted-foreground px-0.5">
-                  {activeMatch + 1}/{matches.length}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 w-6 p-0"
-                  onClick={() => stepMatch(1)}
-                  title="Next match on this page"
-                >
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </Button>
-              </>
-            ) : (
-              <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 whitespace-nowrap">
-                0 on this page
-              </span>
-            )}
-          </div>
-        )}
-
-        {page?.section_kind && (
-          <Badge variant="info" className="ml-2 shrink-0">
-            {page.section_kind}
-          </Badge>
-        )}
-        {page?.used_ocr && (
-          <Badge variant="warning" className="shrink-0">
-            OCR
-          </Badge>
-        )}
-        {/* Section title: truncate to single line with full text on hover.
-            Previously this used `break-words`, which combined with a
-            squeezed flex container caused every character to break onto
-            its own line ("T / a / b / l / e..."). Truncate is the right
-            primitive here. */}
-        {page?.section_title && (
-          <span
-            className="text-xs text-muted-foreground min-w-0 flex-1 truncate"
-            title={page.section_title}
-          >
-            {page.section_title}
-          </span>
-        )}
-
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          {page?.raw_text && page?.cleaned_text && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCompare}
-              className="h-7 gap-1.5"
-              title="Compare the raw extraction with the cleaned text"
-            >
-              <GitCompareArrows className="h-3.5 w-3.5" />
-              Compare
-            </Button>
-          )}
-          <Tabs
-            value={tab}
-            onValueChange={(v) => setTab(v as "cleaned" | "raw")}
-            className="shrink-0"
-          >
-            <TabsList className="h-7">
-              <TabsTrigger value="cleaned" className="h-6 text-xs">
-                Cleaned
-              </TabsTrigger>
-              <TabsTrigger value="raw" className="h-6 text-xs">
-                Raw
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
+    <div className="flex flex-col min-h-0 min-w-0">
+      <PageContentHeader
+        pageLabel={pageLabel}
+        loading={loading && !page}
+        pageIndex={pageIndex}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+        query={query}
+        matchesCount={matches.length}
+        activeMatch={activeMatch}
+        onStepMatch={stepMatch}
+        tab={tab}
+        onTabChange={setTab}
+        canCompare={Boolean(page?.raw_text && page?.cleaned_text)}
+        onCompare={handleCompare}
+      />
 
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-4">
         {loading && (
@@ -735,30 +640,51 @@ function RightRail({
     setTab("results");
   }
 
+  const resultCount = search.hits?.length;
+
   return (
     <div className="flex flex-col min-h-0">
-      <Tabs
-        value={tab}
-        onValueChange={(v) => setTab(v as "chunks" | "results")}
-        className="flex-1 flex flex-col min-h-0"
-      >
-        <div className="border-b px-3 py-2">
-          <TabsList className="h-7">
-            <TabsTrigger value="chunks" className="h-6 text-xs">
-              {RAG_VOCAB.segmentsShort} (this page)
-            </TabsTrigger>
-            <TabsTrigger value="results" className="h-6 text-xs">
-              <SearchIcon className="h-3 w-3 mr-1" />
-              Results
-              {search.hits ? ` (${search.hits.length})` : ""}
-            </TabsTrigger>
-          </TabsList>
+      <div className={COLUMN_HEADER}>
+        <div
+          role="tablist"
+          aria-label="Segments and search results"
+          className="grid w-full grid-cols-2 rounded-md bg-muted p-0.5"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "chunks"}
+            onClick={() => setTab("chunks")}
+            className={cn(
+              "h-7 truncate rounded-sm px-2 text-xs font-medium transition-colors",
+              tab === "chunks"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {RAG_VOCAB.segmentsShort} (P.{activePageNumber})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "results"}
+            onClick={() => setTab("results")}
+            className={cn(
+              "h-7 truncate rounded-sm px-2 text-xs font-medium transition-colors",
+              tab === "results"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Results{resultCount != null ? ` (${resultCount})` : ""}
+          </button>
         </div>
+      </div>
 
-        <TabsContent value="chunks" className="flex-1 min-h-0 m-0">
+      <div className="flex-1 min-h-0">
+        {tab === "chunks" ? (
           <ChunksOnPage documentId={documentId} pageNumber={activePageNumber} />
-        </TabsContent>
-        <TabsContent value="results" className="flex-1 min-h-0 m-0">
+        ) : (
           <DocumentSearchResultsList
             hits={search.hits}
             activeQuery={search.activeQuery}
@@ -767,8 +693,8 @@ function RightRail({
             hasSearched={search.hasSearched}
             onJumpToPage={onJumpToPage}
           />
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 }

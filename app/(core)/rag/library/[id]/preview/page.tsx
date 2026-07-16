@@ -7,16 +7,20 @@
 
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
 
 export default function Page() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const documentId = useMemo(() => {
     const raw = params?.id;
     return Array.isArray(raw) ? raw[0] : (raw ?? null);
   }, [params]);
+  // `?assets=1` — deep link from the file menu's "Knowledge assets" entry:
+  // land with the Knowledge Asset Builder drawer already open.
+  const initialAssetsOpen = searchParams?.get("assets") === "1";
 
   if (!documentId) {
     return (
@@ -26,5 +30,10 @@ export default function Page() {
     );
   }
 
-  return <LibraryPreviewPage documentId={documentId} />;
+  return (
+    <LibraryPreviewPage
+      documentId={documentId}
+      initialAssetsOpen={initialAssetsOpen}
+    />
+  );
 }
