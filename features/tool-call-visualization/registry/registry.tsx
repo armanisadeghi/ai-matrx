@@ -89,6 +89,7 @@ import { ContextActionInline } from "../renderers/ctx/ContextActionInline";
 import { SqlInline } from "../renderers/sql/SqlInline";
 import { FsInline } from "../renderers/fs/FsInline";
 import { SkillInline } from "../renderers/skill/SkillInline";
+import { AskInline } from "../renderers/ask/AskInline";
 import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
 
@@ -1032,6 +1033,47 @@ export const toolRendererRegistry: ToolRegistry = {
   // Filesystem tools (sandbox / local agent). Static entries deliberately
   // OVERRIDE the DB-authored tool_ui renderers — those produced the generic
   // is_dir/mtime table dump the owner flagged. FsInline is the clean card.
+  // Agent-asks-the-user tools — known-pretty Q&A, canonical card.
+  ask_user: {
+    toolName: "ask_user",
+    chrome: "card",
+    displayName: "Question",
+    phaseLabels: {
+      running: "Asking you",
+      complete: "Asked you",
+      errorPrefix: "Couldn't ask",
+    },
+    resultsLabel: "Answer",
+    InlineComponent: AskInline,
+    OverlayComponent: AskInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const q = getArg<string>(entry, "question");
+      return typeof q === "string" && q ? q : null;
+    },
+  },
+
+  interaction_ask: {
+    toolName: "interaction_ask",
+    chrome: "card",
+    displayName: "Questions",
+    phaseLabels: {
+      running: "Asking you",
+      complete: "Asked you",
+      errorPrefix: "Couldn't ask",
+    },
+    resultsLabel: "Answers",
+    InlineComponent: AskInline,
+    OverlayComponent: AskInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const qs = getArg<unknown>(entry, "questions");
+      return Array.isArray(qs)
+        ? `${qs.length} ${qs.length === 1 ? "question" : "questions"}`
+        : null;
+    },
+  },
+
   fs_list: {
     toolName: "fs_list",
     chrome: "card",

@@ -1036,6 +1036,34 @@ const SKILL_ENTRIES: ToolLifecycleEntry[] = [
     }),
 ];
 
+// Agent-asks-the-user fixtures — ask_user (answered) + interaction_ask
+// (multi-question, partially answered = the waiting state).
+const ASK_ENTRIES: ToolLifecycleEntry[] = [
+    entry({
+        callId: "ask-single",
+        toolName: "ask_user",
+        arguments: { question: "Should I apply the migration to production now, or wait for the maintenance window?" },
+        result: { answer: "Wait for the maintenance window — run it at 2am UTC.", cancelled: false },
+    }),
+    entry({
+        callId: "ask-multi",
+        toolName: "interaction_ask",
+        arguments: {
+            introduction: "Quick policy questions so I can clean up your inbox without burying anything important.",
+            questions: [
+                { id: "receipts", prompt: "Receipts and paid statements — mark all as read?", options: ["Yes", "No"], component_type: "radio" },
+                { id: "news", prompt: "News alerts (breaking-news headlines) — mark as read?", options: ["Yes", "No"], component_type: "radio" },
+                { id: "security", prompt: "Security and login codes — how should I handle them?", options: ["Mark read", "Leave unread", "Show me each"], component_type: "radio" },
+            ],
+        },
+        result: {
+            message: "Questionnaire sent to frontend successfully.",
+            questions_sent: 3,
+            answers: { receipts: "Yes", news: "Yes" },
+        },
+    }),
+];
+
 // A run of consecutive fs_list calls — drives the consolidated FsBatchCard
 // (one card, one row per listing, rows expand in place; no batch line).
 const FS_BATCH_ENTRIES: ToolLifecycleEntry[] = [
@@ -1727,6 +1755,22 @@ export default function ResultFieldsGalleryPage() {
                 </p>
                 <ChatResultColumn>
                     {SKILL_ENTRIES.map((e) => (
+                        <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
+                    ))}
+                </ChatResultColumn>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Ask-the-user — `ask_user` + `interaction_ask` (Q&amp;A rows, awaiting-answer state)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    Known-pretty Q&amp;A on the canonical card: one condensed row per question with the answer beneath
+                    it; unanswered questions show a quiet &quot;Awaiting answer&quot;. No ids, no component_type enums, no
+                    option dumps.
+                </p>
+                <ChatResultColumn>
+                    {ASK_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
                 </ChatResultColumn>

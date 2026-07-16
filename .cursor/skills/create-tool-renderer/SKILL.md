@@ -18,6 +18,39 @@ Make a tool call render as a first-class, beautiful surface instead of the gener
 
 Every field in the result surfaces somewhere. Inline = the key info at a glance (truncation OK with a "view all"); overlay = every field, nested object, source, metadata (long text collapses with "Show more", never omitted).
 
+## Step 0 — classify the data, THEN pick the form
+
+Before writing any UI, classify the tool's result. This decision is the design:
+
+1. **Known + pretty** (the shape is documented/stable AND the content is human-meaningful — a file listing, a skill, a document, questions & answers, a search hit list) → **use the canonical card**: build on `ToolResultCard` (`renderers/_shared-entity/ToolResultCard.tsx`) and register with **`chrome: "card"`**. The shell then renders your card DIRECTLY — no folded glyph line, no duplicate icon/label. The card gives you the ratified grammar for free: full-width header (tinted icon · title · quiet sub), click-anywhere toggle, seamless attached body, bordered rounded-xl **Open** dropdown (your tool-specific items + the canonical Window Panel · Tool Admin pair). Thread the shell props through:
+
+   ```tsx
+   const { expanded, onToggleExpanded, onOpenWindowPanel, onOpenOverlay } = props;
+   <ToolResultCard icon={LibraryBig} iconClassName="text-violet-600 dark:text-violet-400"
+     title="Found 2 skills" sub={`“${query}”`}
+     expanded={expanded} onToggleExpanded={onToggleExpanded}
+     onOpenWindowPanel={onOpenWindowPanel && (() => onOpenWindowPanel())}
+     onOpenOverlay={onOpenOverlay && (() => onOpenOverlay())}>
+     {/* body rows */}
+   </ToolResultCard>
+   ```
+
+   **Never hand-roll this header.** Reference implementations: `renderers/skill/SkillInline.tsx`, `renderers/fs/FsInline.tsx`. Artifact-producing tools (working document, note) use `ArtifactResultBar` instead — same grammar, kind-registry driven (`registry/toolArtifact.ts`).
+
+2. **Unknown or ugly** (freeform blobs, DB rows, arbitrary JSON) → **NO card, NO frame.** Render a FLUSH body (no border, no background, no padding box) — the shell's folded line is the only chrome. Lean on the result-field library (`ResultValue` and friends). Reference: `renderers/sql/SqlInline.tsx`.
+
+**Density follows intent.** A lookup/search shows WHAT WAS FOUND — one line per hit, no descriptions. An adopt/get/read shows the detail. Never turn a one-line item into five lines.
+
+**Never render** (full payload always stays in Tool Admin / Raw):
+- **UUIDs or UUID lists** — `ResultValue` collapses them (`IdListChip` / `ShortId`); never list them out.
+- **Raw enum reprs** (`SklSkillType.REFERENCE`) — humanize (`humanizeEnumValue`, `result-fields/shape.ts`).
+- **Epoch timestamps, `true`/`false` chips, byte sizes on directories** — humanize or drop.
+- **Empty fields** — drop the row; no "No result returned" placeholders.
+- **The shell line's info again** — no repeated intent line, count, or icon in the body.
+- **Icon backgrounds** — a colored icon changes TEXT color only, never a tile/chip behind it.
+
+**Consecutive uniform runs consolidate.** N back-to-back calls of the same known-pretty tool = ONE card (header + one row per call, rows expand in place), not a batch line over N cards. Wire it in `components/ToolCallBatch.tsx` (see the `fs_list` → `FsBatchCard` branch).
+
 ## The contract (BOTH paths)
 
 A renderer is a React component taking `ToolRendererProps` (from `@/features/tool-call-visualization/types`):
@@ -136,6 +169,7 @@ import { ToolInline, ToolOverlay } from "../renderers/<tool-name>";
 // inside toolRendererRegistry:
 "<exact_tool_name>": {
   toolName: "<exact_tool_name>",
+  chrome: "card",                       // known-pretty tools ONLY — shell renders your ToolResultCard directly
   displayName: "Human Readable Name",
   phaseLabels: { running: "Doing the thing", complete: "Did the thing", errorPrefix: "Failed to do the thing" },
   resultsLabel: "Results",
@@ -148,7 +182,7 @@ import { ToolInline, ToolOverlay } from "../renderers/<tool-name>";
 
 The overlay renders inside the Results tab only — never render your own header; use `getHeaderSubtitle` / `getHeaderExtras`.
 
-Reference examples (read the registry entry for the closest shape first): `renderers/web-research/` (event log + steps), `renderers/news-api/` (clean `result`), `renderers/brave-search/` (step-event driven), `renderers/sql/` (sparse data done right).
+Reference examples (read the registry entry for the closest shape first): `renderers/skill/` + `renderers/fs/` (known-pretty `ToolResultCard` + `chrome: "card"`), `renderers/sql/` (unknown data, flush body), `renderers/search/` (live conveyor → persistent view), `renderers/news-api/` (clean `result`).
 
 ---
 
@@ -169,6 +203,8 @@ Cards: `bg-card rounded-md border border-border`. Opacity modifiers OK (`bg-prim
 
 ## Final checklist
 
+- [ ] **Classified the data (Step 0):** known-pretty → `ToolResultCard` + `chrome: "card"`; unknown/ugly → flush body. No hand-rolled headers.
+- [ ] No UUIDs, raw enums, epochs, boolean chips, empty-field rows, or shell-line repetition in the body.
 - [ ] Drives UI from `entry.status`; handles the streaming (not-yet-complete) state.
 - [ ] Parses `entry.result` defensively (string-or-object); `result` / `arguments` / `errorMessage` surfaced where relevant.
 - [ ] No duplicate title row / status icon on the slim line (the shell owns it).
