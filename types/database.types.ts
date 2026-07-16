@@ -7983,7 +7983,7 @@ export type Database = {
           review_interval_days: number | null
           scope_type_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
-          slug: string | null
+          slug: string
           sort_order: number
           source_type: Database["public"]["Enums"]["context_source_type"]
           status: Database["public"]["Enums"]["context_item_status"]
@@ -8026,7 +8026,7 @@ export type Database = {
           review_interval_days?: number | null
           scope_type_id: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          slug?: string | null
+          slug: string
           sort_order?: number
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
@@ -8069,7 +8069,7 @@ export type Database = {
           review_interval_days?: number | null
           scope_type_id?: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          slug?: string | null
+          slug?: string
           sort_order?: number
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
@@ -8209,7 +8209,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           parent_type_id: string | null
-          slug: string | null
+          slug: string
           sort_order: number
           updated_at: string
           updated_by: string | null
@@ -8230,7 +8230,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           parent_type_id?: string | null
-          slug?: string | null
+          slug: string
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
@@ -8251,7 +8251,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           parent_type_id?: string | null
-          slug?: string | null
+          slug?: string
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
@@ -8280,7 +8280,7 @@ export type Database = {
           parent_scope_id: string | null
           scope_type_id: string
           settings: Json
-          slug: string | null
+          slug: string
           sort_order: number
           updated_at: string
           updated_by: string | null
@@ -8298,7 +8298,7 @@ export type Database = {
           parent_scope_id?: string | null
           scope_type_id: string
           settings?: Json
-          slug?: string | null
+          slug: string
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
@@ -8316,7 +8316,7 @@ export type Database = {
           parent_scope_id?: string | null
           scope_type_id?: string
           settings?: Json
-          slug?: string | null
+          slug?: string
           sort_order?: number
           updated_at?: string
           updated_by?: string | null
@@ -8532,6 +8532,7 @@ export type Database = {
         Args: { p_item: Json; p_type: string }
         Returns: string
       }
+      slugify: { Args: { p: string }; Returns: string }
       validate_dataset_template_source: {
         Args: { p_org_id: string; p_source: Json }
         Returns: string
@@ -31438,6 +31439,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      shape_doctor_gather: { Args: { p_dataset: string }; Returns: Json }
       share_link_authorizes: {
         Args: {
           p_resource_id: string
