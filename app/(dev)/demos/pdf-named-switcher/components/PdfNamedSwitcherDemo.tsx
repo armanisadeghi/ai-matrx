@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * Demo for PdfNamedSurfaceSwitcher — real data, real rename.
+ * Demo for PdfNamedSurfaceSwitcher — real data, real rename, real menus.
  *
  * Loads the user's newest PDFs from `files.files` (direct supabase-js, per
- * the no-Python-for-DB rule). The "Live" rows hydrate each file into the
- * files store (`useEnsureCloudFile`) and commit renames through the real
- * `renameFile` thunk — click a name, type, Enter. The option rows reuse the
- * first real file so the switcher menu resolves genuine surface links; only
- * the truncation stress strings are display-only (clearly labeled, and
- * read-only so a demo click can never rename your file to a test string).
+ * the no-Python-for-DB rule). The "Live" rows commit renames through the
+ * real `renameFile` thunk — click a name, type, Enter — and the ··· /
+ * right-click menus are the real /files action set. Only the truncation
+ * stress strings are display-only (clearly labeled, and read-only so a demo
+ * click can never rename your file to a test string).
  */
 
 import { useEffect, useState } from "react";
@@ -18,7 +17,6 @@ import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { renameFile } from "@/features/files/redux/thunks";
-import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { filesDb } from "@/features/files/filesDb";
 import { supabase } from "@/utils/supabase/client";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
@@ -68,30 +66,27 @@ function useNewestPdfs(limit: number) {
 /** One live row — store-backed name + real rename through the files thunk. */
 function LiveRow({ file }: { file: PdfRow }) {
   const dispatch = useAppDispatch();
-  useEnsureCloudFile(file.id);
   const record = useAppSelector((s) => selectFileById(s, file.id));
   const name = record?.fileName ?? file.fileName;
 
   return (
-    <div className="flex items-center rounded-md border border-border bg-card px-2 py-1">
-      <PdfNamedSurfaceSwitcher
-        current="file-viewer"
-        fileId={file.id}
-        fileName={name}
-        onRename={async (next) => {
-          try {
-            await dispatch(
-              renameFile({ fileId: file.id, newName: next }),
-            ).unwrap();
-            toast.success(`Renamed to ${next}`);
-          } catch (err) {
-            toast.error(
-              err instanceof Error ? `Rename failed: ${err.message}` : "Rename failed",
-            );
-          }
-        }}
-      />
-    </div>
+    <PdfNamedSurfaceSwitcher
+      current="file-viewer"
+      fileId={file.id}
+      fileName={name}
+      onRename={async (next) => {
+        try {
+          await dispatch(
+            renameFile({ fileId: file.id, newName: next }),
+          ).unwrap();
+          toast.success(`Renamed to ${next}`);
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? `Rename failed: ${err.message}` : "Rename failed",
+          );
+        }
+      }}
+    />
   );
 }
 
@@ -112,19 +107,18 @@ export function PdfNamedSwitcherDemo() {
       <div>
         <h1 className="mb-2 text-3xl font-bold">PdfNamedSurfaceSwitcher</h1>
         <p className="max-w-2xl text-muted-foreground">
-          The PDF surface switcher paired with document identity: small PDF
-          icon + truncated filename (click to rename in place) + the
-          everywhere-menu. Geometry-safe — the tap group is untouched; the
-          name sits beside it.
+          One glass pill: PDF icon + editable filename + surface switcher +
+          the full file menu. Everything inside a single
+          TapTargetButtonGroup — no separate name background.
         </p>
       </div>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Live — your newest PDFs</h2>
         <p className="text-sm text-muted-foreground">
-          Real files, real rename (the files thunk renames the cloud file),
-          real surface links in the menu. Click a name to edit; Enter commits,
-          Esc cancels.
+          Real files: click a name to rename (Enter commits, Esc cancels),
+          right-click it or use ··· for the /files action set, layers for the
+          surface switcher.
         </p>
         {rows === null ? (
           <CardLoading />
@@ -141,7 +135,7 @@ export function PdfNamedSwitcherDemo() {
             and reload.
           </p>
         ) : (
-          <div className="flex max-w-md flex-col gap-2">
+          <div className="flex flex-col items-start gap-2">
             {rows.map((f) => (
               <LiveRow key={f.id} file={f} />
             ))}
@@ -151,32 +145,28 @@ export function PdfNamedSwitcherDemo() {
 
       {first && (
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">
-            Options — icon placement & read-only
-          </h2>
+          <h2 className="text-xl font-semibold">Options</h2>
           <p className="text-sm text-muted-foreground">
-            Same real file (menu links resolve); names read-only here so demo
-            clicks can&apos;t rename it.
+            Same real file; names read-only here so demo clicks can&apos;t
+            rename it.
           </p>
-          <div className="flex max-w-md flex-col gap-2">
+          <div className="flex flex-col items-start gap-2">
             {(
               [
-                ["start", "Icon start (default)"],
-                ["end", "Icon end"],
-                ["none", "No icon"],
+                [true, true, "Default (icon + menu)"],
+                [false, true, "No icon"],
+                [true, false, "No ··· menu (switcher only)"],
               ] as const
-            ).map(([icon, label]) => (
-              <div
-                key={icon}
-                className="flex items-center justify-between rounded-md border border-border bg-card px-2 py-1"
-              >
+            ).map(([showIcon, showMenu, label]) => (
+              <div key={label} className="flex items-center gap-4">
                 <PdfNamedSurfaceSwitcher
                   current="file-viewer"
                   fileId={first.id}
                   fileName={first.fileName}
-                  icon={icon}
+                  showIcon={showIcon}
+                  showMenu={showMenu}
                 />
-                <span className="pl-4 text-[10px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   {label}
                 </span>
               </div>
@@ -192,35 +182,28 @@ export function PdfNamedSwitcherDemo() {
           Default cap is <code className="text-xs">max-w-40</code>; the last
           row widens it.
         </p>
-        <div className="flex max-w-md flex-col gap-2">
+        <div className="flex flex-col items-start gap-2">
           {STRESS_NAMES.map((name) => (
-            <div
-              key={name}
-              className="flex items-center rounded-md border border-border bg-card px-2 py-1"
-            >
-              <PdfNamedSurfaceSwitcher
-                current="file-viewer"
-                fileId={first?.id}
-                fileName={name}
-              />
-            </div>
-          ))}
-          <div className="flex items-center rounded-md border border-border bg-card px-2 py-1">
             <PdfNamedSurfaceSwitcher
+              key={name}
               current="file-viewer"
               fileId={first?.id}
-              fileName={STRESS_NAMES[1]}
-              nameMaxWidthClassName="max-w-72"
+              fileName={name}
             />
-          </div>
+          ))}
+          <PdfNamedSurfaceSwitcher
+            current="file-viewer"
+            fileId={first?.id}
+            fileName={STRESS_NAMES[1]}
+            nameMaxWidthClassName="max-w-72"
+          />
         </div>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">In a toolbar row</h2>
         <p className="text-sm text-muted-foreground">
-          Sitting between other tap buttons — the group pill and 32px targets
-          stay untouched.
+          Sitting between other tap buttons — one pill among peers.
         </p>
         <div className="flex max-w-md items-center rounded-md border border-border bg-card px-2 py-1">
           <PanelLeftTapButton ariaLabel="Toggle sidebar (demo)" />

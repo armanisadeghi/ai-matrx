@@ -64,8 +64,14 @@ export function EditableLabel({
 
   const setEditing = useCallback(
     (next: boolean) => {
-      if (controlled) onEditingChange?.(next);
-      else setInternalEditing(next);
+      if (controlled) {
+        onEditingChange?.(next);
+      } else {
+        // Uncontrolled hosts still get notified — lets them adjust layout
+        // (e.g. widen the edit box) without taking over the edit state.
+        setInternalEditing(next);
+        onEditingChange?.(next);
+      }
     },
     [controlled, onEditingChange],
   );

@@ -201,6 +201,8 @@ export interface EditableLabelProps {
    */
   activation?: EditableLabelActivation;
   editing?: boolean; // controlled mode
+  /** Edit-state notifications. Controlled mode: the ONLY state channel.
+   *  Uncontrolled modes: fired as a notification (layout hooks etc.). */
   onEditingChange?: (editing: boolean) => void;
   selectOnEdit?: boolean; // default true
   placeholder?: string;
