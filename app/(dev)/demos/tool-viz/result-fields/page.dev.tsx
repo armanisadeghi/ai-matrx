@@ -976,6 +976,66 @@ const AGENT_CALL_ENTRY = entry({
     },
 });
 
+// Skill tool fixtures — exact live wire shapes (chat.tool_call, 2026-07-15).
+const SKILL_ENTRIES: ToolLifecycleEntry[] = [
+    entry({
+        callId: "skill-search",
+        toolName: "skill",
+        arguments: { action: "search", query: "flashcard" },
+        result: {
+            query: "flashcard",
+            category: null,
+            count: 2,
+            hints: [
+                {
+                    id: "b052f83c-42c4-487e-beaa-0eb8dec7b315",
+                    skill_id: "flashcard-generation",
+                    label: "Flashcard Generation",
+                    description:
+                        "Generate structured flashcards and complete flashcard sets that conform exactly to the Education Matrx flashcard schemas. Use this skill whenever the task involves producing, editing, or validating flashcards, study cards, or a flashcard \"set\" — including basic Q&A cards, cloze deletions, concept/definition cards, image-prompt cards, tiered cards with subcards, and enhanced cards with audio or detailed explanations.",
+                    skill_type: "SklSkillType.REFERENCE",
+                    category_path: ["render-blocks"],
+                    has_resources: false,
+                    has_allowed_tools: false,
+                    tier: "default",
+                },
+                {
+                    id: "267c5253-23ad-4df1-bd9c-b1b537af0b08",
+                    skill_id: "content-ir-authoring",
+                    label: "Content-IR Skill & Block Authoring",
+                    description:
+                        "Invoke when asked to create or expand agent enablement for a content_ir kind (a __kind schema) — i.e. produce a reference skill and/or insertable content blocks for a schema like flashcard_set.",
+                    skill_type: "SklSkillType.WORKFLOW",
+                    category_path: [],
+                    has_resources: false,
+                    has_allowed_tools: false,
+                    tier: "default",
+                },
+            ],
+        },
+    }),
+    entry({
+        callId: "skill-get",
+        toolName: "skill",
+        arguments: { action: "get", skill_id: "flashcard-generation" },
+        result: {
+            id: "b052f83c-42c4-487e-beaa-0eb8dec7b315",
+            skill_id: "flashcard-generation",
+            label: "Flashcard Generation",
+            description:
+                "Generate structured flashcards and complete flashcard sets that conform exactly to the Education Matrx flashcard schemas. Use this skill whenever the task involves producing, editing, or validating flashcards, study cards, or a flashcard \"set\".",
+            skill_type: "SklSkillType.REFERENCE",
+            category_path: ["render-blocks"],
+            version: 2,
+            allowed_tools: [],
+            disable_auto_invocation: false,
+            trigger_patterns: ["test prep", "school", "learning", "flashcards"],
+            mode: "full",
+            body: "# Flashcard Set Generation\n\n(large skill body — stays in Tool Admin, never inline)",
+        },
+    }),
+];
+
 // A run of consecutive fs_list calls — drives the consolidated FsBatchCard
 // (one card, one row per listing, rows expand in place; no batch line).
 const FS_BATCH_ENTRIES: ToolLifecycleEntry[] = [
@@ -1654,6 +1714,22 @@ export default function ResultFieldsGalleryPage() {
                 <div>
                     <ToolCallVisualization entries={[AGENT_CALL_ENTRY]} isPersisted hasContent />
                 </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Skill lookup — `skill` search + get (no ids, humanized types, empty fields dropped)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    Live wire shapes: search → one card of hint rows (label · type · clamped description); get → the
+                    skill card (label · type · version · description · category chips). UUIDs, enum reprs, and
+                    &quot;No result returned&quot; rows are gone — full payload stays in Tool Admin / Raw.
+                </p>
+                <ChatResultColumn>
+                    {SKILL_ENTRIES.map((e) => (
+                        <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
+                    ))}
+                </ChatResultColumn>
             </section>
 
             <section className="space-y-4">

@@ -148,6 +148,20 @@ export function looksLikeUuid(s: string): boolean {
 }
 
 /**
+ * "SklSkillType.REFERENCE" → "Reference"; "Enum.RENDER_BLOCK" → "Render block".
+ * Recognizes dotted enum-repr strings whose LAST segment is CONSTANT_CASE and
+ * returns the human form (full original belongs in a `title` attr). Returns
+ * null for anything else — callers fall through to the raw string.
+ */
+export function humanizeEnumValue(value: string): string | null {
+    if (!/^[A-Za-z][\w]*(?:\.[A-Za-z0-9_]+)+$/.test(value)) return null;
+    const tail = value.split(".").pop() as string;
+    if (!/^[A-Z][A-Z0-9_]*$/.test(tail)) return null;
+    const lowered = tail.toLowerCase().replace(/_/g, " ");
+    return lowered.charAt(0).toUpperCase() + lowered.slice(1);
+}
+
+/**
  * Conservative markdown sniff. True when the string carries structural
  * markdown (headings, lists, links, code fences, blockquotes, tables, bold/
  * italic) OR is long enough (>280 chars) that prose formatting is worthwhile.

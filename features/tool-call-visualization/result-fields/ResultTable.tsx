@@ -19,7 +19,7 @@ import React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "./shape";
-import { isPlainObject } from "./shape";
+import { humanizeEnumValue, isPlainObject } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
 
 export interface ResultTableProps {
@@ -133,6 +133,16 @@ const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => 
     }
     if (typeof value === "string" && value.length > LONG_CELL_CHARS) {
         return <LongTextCell value={value} />;
+    }
+    if (typeof value === "string") {
+        const human = humanizeEnumValue(value);
+        if (human) {
+            return (
+                <span className="whitespace-nowrap" title={value}>
+                    {human}
+                </span>
+            );
+        }
     }
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         return <ResultValue value={value} density="inline" depth={depth + 1} />;

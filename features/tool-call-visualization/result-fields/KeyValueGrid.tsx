@@ -23,7 +23,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { detectResultShape, humanizeKey, looksLikeUuid } from "./shape";
+import { detectResultShape, humanizeEnumValue, humanizeKey, looksLikeUuid } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
 import { ShortId } from "./ShortId";
 
@@ -90,6 +90,18 @@ function renderFieldValue(
   if (typeof val === "string" && isIdentifierKey(key) && looksLikeUuid(val)) {
     return <ShortId value={val} variant="full" />;
   }
+  // Dotted enum reprs ("SklSkillType.REFERENCE") read as machine noise —
+  // show the human form; the exact original stays on the title attr.
+  if (typeof val === "string") {
+    const human = humanizeEnumValue(val);
+    if (human) {
+      return (
+        <span className="text-sm text-foreground" title={val}>
+          {human}
+        </span>
+      );
+    }
+  }
   return <ResultValue value={val} density={density} depth={depth + 1} />;
 }
 
@@ -112,8 +124,21 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
   const chips: Entry[] = [];
   const inline: Entry[] = [];
   const blocks: Entry[] = [];
+  const ids: Array<[string, string]> = [];
   for (const entry of shown) {
     const [key, val] = entry;
+    // INLINE DENSITY INTELLIGENCE (owner rules, 2026-07-15):
+    //  • empty values are NOISE in chat ("Category · No result returned") —
+    //    skip them; full density + the Raw tab still carry every key.
+    //  • uuid identifier fields never earn a full row — they collect into ONE
+    //    quiet trailing chip row (compact ShortId, hover-copy).
+    if (density === "inline") {
+      if (detectResultShape(val).kind === "empty") continue;
+      if (typeof val === "string" && isIdentifierKey(key) && looksLikeUuid(val)) {
+        ids.push([key, val]);
+        continue;
+      }
+    }
     if (isMetaCountField(key, val)) chips.push(entry);
     else if (isInlineValue(key, val)) inline.push(entry);
     else blocks.push(entry);
@@ -169,6 +194,17 @@ export const KeyValueGrid: React.FC<KeyValueGridProps> = ({
           </div>
         </div>
       ))}
+
+      {ids.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {ids.map(([key, val]) => (
+            <span key={key} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              {humanizeKey(key)}
+              <ShortId value={val} />
+            </span>
+          ))}
+        </div>
+      )}
 
       {remaining > 0 && (
         <button

@@ -20,6 +20,7 @@ import {
   Database,
   Brain,
   Layers,
+  LibraryBig,
   Gauge,
   TrendingUp,
   SquareTerminal,
@@ -87,6 +88,7 @@ import { CtxPatchInline } from "../renderers/ctx/CtxPatchInline";
 import { ContextActionInline } from "../renderers/ctx/ContextActionInline";
 import { SqlInline } from "../renderers/sql/SqlInline";
 import { FsInline } from "../renderers/fs/FsInline";
+import { SkillInline } from "../renderers/skill/SkillInline";
 import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
 
@@ -1064,6 +1066,56 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
+  // Skill lookup (unified `skill` tool + legacy names). Verb by action.
+  skill: {
+    toolName: "skill",
+    displayName: "Skills",
+    phaseLabels: {
+      running: "Looking up skills",
+      complete: "Looked up skills",
+      errorPrefix: "Skill lookup failed",
+    },
+    resultsLabel: "Skills",
+    InlineComponent: SkillInline,
+    OverlayComponent: SkillInline,
+    getHeaderSubtitle: (entry) => {
+      const q = getArg<string>(entry, "query");
+      if (typeof q === "string" && q) return q;
+      const sid = getArg<string>(entry, "skill_id");
+      return typeof sid === "string" && sid ? sid : null;
+    },
+  },
+
+  skill_search: {
+    toolName: "skill_search",
+    displayName: "Skills",
+    phaseLabels: {
+      running: "Searching skills",
+      complete: "Searched skills",
+      errorPrefix: "Skill search failed",
+    },
+    resultsLabel: "Skills",
+    InlineComponent: SkillInline,
+    OverlayComponent: SkillInline,
+    getHeaderSubtitle: (entry) => {
+      const q = getArg<string>(entry, "query");
+      return typeof q === "string" && q ? q : null;
+    },
+  },
+
+  skill_list: {
+    toolName: "skill_list",
+    displayName: "Skills",
+    phaseLabels: {
+      running: "Listing skills",
+      complete: "Listed skills",
+      errorPrefix: "Skill list failed",
+    },
+    resultsLabel: "Skills",
+    InlineComponent: SkillInline,
+    OverlayComponent: SkillInline,
+  },
+
   random_wheel: {
     toolName: "random_wheel",
     displayName: "Random Wheel",
@@ -1345,6 +1397,9 @@ const TOOL_GLYPHS: Record<string, ToolGlyphSpec> = {
   data: { icon: Database, accent: "green" },
   data_action: { icon: Database, accent: "green" },
   memory: { icon: Brain, accent: "violet" },
+  skill: { icon: LibraryBig, accent: "violet" },
+  skill_search: { icon: LibraryBig, accent: "violet" },
+  skill_list: { icon: LibraryBig, accent: "violet" },
   ctx_get: { icon: Layers, accent: "primary" },
   ctx_batch: { icon: Layers, accent: "primary" },
   ctx_patch: { icon: Layers, accent: "primary" },
