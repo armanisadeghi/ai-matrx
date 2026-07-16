@@ -110,6 +110,15 @@ import { setMemoryEnabledOptimistic } from "../observational-memory/observationa
 export function assembleRequest(
   state: RootState,
   conversationId: string,
+  opts?: {
+    /**
+     * Pre-resolved scope set for THIS send (from the chat↔scope mismatch
+     * gate in smartExecute). When present it replaces the active-selection
+     * read below — the gate has already reconciled the sidebar selection
+     * with the conversation's durable tags.
+     */
+    scopeIdsOverride?: string[];
+  },
 ): AssembledAgentStartRequest | null {
   const instance = state.conversations.byConversationId[conversationId];
   if (!instance) return null;
@@ -188,9 +197,14 @@ export function assembleRequest(
   // id list; the server unions them with the conversation's tags inside
   // resolve_full_context so the selected scopes' context cells reach the
   // agent. Pre-deploy backends ignore the field (pydantic extra='ignore').
-  const scope_ids = Object.values(
-    selectScopeSelectionsContext(state) ?? {},
-  ).filter((id): id is string => !!id);
+  // The mismatch gate (conversationScopeGate via smartExecute) may hand us
+  // a pre-resolved set instead — e.g. the chat's own tags when the sidebar
+  // is empty, or the user's switch/combine/keep choice.
+  const scope_ids =
+    opts?.scopeIdsOverride ??
+    Object.values(selectScopeSelectionsContext(state) ?? {}).filter(
+      (id): id is string => !!id,
+    );
 
   // Source tracking
   const { sourceApp, sourceFeature } = instance;
@@ -284,6 +298,15 @@ interface ExecuteInstanceArgs {
    * `retryConversationTurn` thunk, which picks this vs. a re-send.
    */
   retry?: boolean;
+  /**
+   * Pre-resolved scope set for THIS send, from the chat↔scope mismatch gate
+   * (`ensureConversationScopesOrAsk` in smartExecute). When present:
+   * the request's `scope_ids` = this set (not the raw active selection),
+   * and the post-send union `syncConversationScopes` is SKIPPED — the gate
+   * already wrote the conversation's durable tags (replace semantics), and
+   * a union would re-add scopes the user just chose to drop.
+   */
+  scopeIdsOverride?: string[];
 }
 
 interface ExecuteInstanceResult {
@@ -298,7 +321,7 @@ export const executeInstance = createAsyncThunk<
 >(
   "instances/execute",
   async (
-    { conversationId, debug = false, retry = false },
+    { conversationId, debug = false, retry = false, scopeIdsOverride },
     { getState, dispatch, rejectWithValue },
   ) => {
     const requestId = generateRequestId();
@@ -361,7 +384,9 @@ export const executeInstance = createAsyncThunk<
       // render as prose + chips — a visible mismatch during the first turn.
 
       // Assemble the request (sync — pure selector logic).
-      const payload = assembleRequest(state, conversationId);
+      const payload = assembleRequest(state, conversationId, {
+        scopeIdsOverride,
+      });
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
       }
@@ -732,8 +757,11 @@ export const executeInstance = createAsyncThunk<
       // cx_conversation row on turn 1. The request-body `scope_ids` covers
       // the current turn once the backend deploy lands; the tags cover turn
       // 2+ today and persist which scopes the conversation ran under.
-      // Skipped for ephemeral conversations (no persisted rows by design).
-      if (!isEphemeral && payload.scope_ids?.length) {
+      // Skipped for ephemeral conversations (no persisted rows by design)
+      // and when the mismatch gate handed us a pre-resolved set — the gate
+      // already wrote the tags with REPLACE semantics; a union here would
+      // re-add scopes the user just chose to drop.
+      if (!isEphemeral && !scopeIdsOverride && payload.scope_ids?.length) {
         const { syncConversationScopes } =
           await import("@/features/scopes/redux/thunks/syncConversationScopes");
         void dispatch(syncConversationScopes(conversationId));

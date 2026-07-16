@@ -8285,6 +8285,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
@@ -8303,6 +8304,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -8321,6 +8323,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {

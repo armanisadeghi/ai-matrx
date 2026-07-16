@@ -72,6 +72,7 @@ import {
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
+import { ScopeMismatchDialogHost } from "@/components/dialogs/scope-mismatch/ScopeMismatchDialogHost";
 import { AudioModalHost } from "@/providers/AudioModalHost";
 import { AudioOutputHost } from "@/providers/AudioOutputHost";
 import { AudioPlaybackHost } from "@/features/audio/playback/AudioPlaybackHost";
@@ -169,6 +170,13 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   See components/dialogs/sandbox-gate/. */}
                                   <SandboxGateHost />
                                   <ValuePromptsDialogHost />
+                                  {/* Imperative chat↔scope mismatch dialog host.
+                                  Exposes `promptScopeMismatch({current, chat})` —
+                                  the 3-way pre-send ask (switch / combine / keep)
+                                  when the sidebar's active scopes differ from the
+                                  chat's durable tags. Dismiss cancels the send.
+                                  See components/dialogs/scope-mismatch/. */}
+                                  <ScopeMismatchDialogHost />
                                   {/* Imperative audio modal host. Exposes the global
                                   `showAudioModal({ text, title, ... })` helper
                                   (see utils/audio/audioModal.ts). The modal is

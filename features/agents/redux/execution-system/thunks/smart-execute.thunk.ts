@@ -15,6 +15,7 @@ import {
 import { selectUserInputText } from "../instance-user-input/instance-user-input.selectors";
 import { resolvePendingAsksWithInput } from "@/features/agents/ui-first-tools/redux/resolve-asks-with-input.thunk";
 import { ensureSandboxOrDecide } from "./sandbox-gate.thunk";
+import { ensureConversationScopesOrAsk } from "@/features/scopes/redux/thunks/conversationScopeGate";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -81,6 +82,30 @@ export const smartExecute = createAsyncThunk<
     ).unwrap();
     if (gate === "blocked") return;
 
+    // Route mode — read once; also reused for the execute dispatch below.
+    const apiEndpointMode =
+      state.messages.byConversationId[conversationId]?.apiEndpointMode ??
+      "agent";
+
+    // Chat↔scope "ask on mismatch" gate. A chat carries its scopes durably;
+    // when the sidebar's active selection differs from the chat's tags we
+    // ALWAYS ask (switch / combine / keep) — never silently retag, never
+    // silently drop. Same placement contract as the sandbox gate: BEFORE
+    // markInputSubmitted, so a cancel leaves the composer text as typed.
+    // Skipped for ephemeral chats (no persisted rows by design) and manual
+    // mode (Agent Builder — sends no scope_ids and stamps no tags).
+    const isEphemeral =
+      state.conversations.byConversationId[conversationId]?.isEphemeral ===
+      true;
+    let scopeIdsOverride: string[] | undefined;
+    if (!isEphemeral && apiEndpointMode !== "manual") {
+      const scopeGate = await dispatch(
+        ensureConversationScopesOrAsk(conversationId),
+      );
+      if (scopeGate.blocked) return;
+      scopeIdsOverride = scopeGate.scopeIdsOverride;
+    }
+
     const autoClear = selectAutoClearConversation(conversationId)(state);
 
     // Phase 1 — capture the current text + userValues so we can pre-populate
@@ -101,13 +126,10 @@ export const smartExecute = createAsyncThunk<
     // sends the live agent definition in the request body; the server reads
     // nothing from the agent record. Any non-manual surface keeps the
     // existing agent-mode path.
-    const apiEndpointMode =
-      state.messages.byConversationId[conversationId]?.apiEndpointMode ??
-      "agent";
     const executePromise =
       apiEndpointMode === "manual"
         ? dispatch(executeManualInstance({ conversationId }))
-        : dispatch(executeInstance({ conversationId }));
+        : dispatch(executeInstance({ conversationId, scopeIdsOverride }));
 
     // The split (auto-clear "iterate") mints a NEW, historyless conversation and
     // repoints the input focus at it. That is ONLY valid for a conversation
