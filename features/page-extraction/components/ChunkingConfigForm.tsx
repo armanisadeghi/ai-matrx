@@ -41,7 +41,6 @@ import {
   useExtractionJobs,
 } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
@@ -178,7 +177,7 @@ export function ChunkingConfigForm({
     if (!selectedJobId || !loadedJob) return;
     let jobToRun = loadedJob;
     if (userId && draftDiffersFromJob(draft, loadedJob)) {
-      const saveIssues = validateDraft(draft);
+      const saveIssues = validateDraft(draft, loadedAgent?.variableDefinitions);
       if (saveIssues.length > 0) {
         toast.error(
           saveIssues[0] ??
@@ -193,6 +192,7 @@ export function ChunkingConfigForm({
           ownerId: userId,
           fallbackName: documentName,
           existingJobId: selectedJobId,
+          agentVariables: loadedAgent?.variableDefinitions,
         });
         upsertJobInCache(fileId, jobToRun);
         setLoadedJob(jobToRun);
@@ -462,7 +462,10 @@ function TemplateEditor({
     [draft, loadedJob],
   );
 
-  const saveIssues = useMemo(() => validateDraft(draft), [draft]);
+  const saveIssues = useMemo(
+    () => validateDraft(draft, agent?.variableDefinitions),
+    [draft, agent?.variableDefinitions],
+  );
   const canSave = saveIssues.length === 0 && !saving;
 
   // Local error for the page-range input only.
@@ -591,6 +594,7 @@ function TemplateEditor({
         ownerId: userId,
         fallbackName: documentName,
         existingJobId: selectedJobId,
+        agentVariables: agent?.variableDefinitions,
       });
       // Push the freshly-saved row into the shared jobs cache BEFORE
       // dispatching the selection. Without this, the JobPicker dropdown
@@ -869,33 +873,15 @@ function TemplateEditor({
 
         {deriveSourceVariations(draft.variableMapping).includes("pdf_page") && (
           <Field
-            label="PDF attachments"
-            hint="Per-page PDFs are always attached when pdf_page is wired."
+            label="PDF document input"
+            hint="One exact-page PDF is attached per chunk."
           >
-            <label className="flex items-start gap-2 cursor-pointer">
-              <Checkbox
-                checked={draft.attachCombinedPdf}
-                onCheckedChange={(v) =>
-                  dispatch(
-                    patchDraft({
-                      fileId,
-                      patch: { attachCombinedPdf: v === true },
-                    }),
-                  )
-                }
-                className="mt-0.5"
-              />
-              <div className="flex-1">
-                <span className="font-medium text-foreground">
-                  Also attach a combined chunk PDF
-                </span>
-                <p className="text-[10px] text-muted-foreground leading-snug">
-                  Sends one PDF of the whole chunk&apos;s pages alongside the
-                  individual per-page attachments, giving the agent continuous
-                  cross-page context. More tokens.
-                </p>
-              </div>
-            </label>
+            <p className="text-[10px] text-muted-foreground leading-snug">
+              The attachment contains only this chunk&apos;s configured pages,
+              including overlap. Map <code>Chunk PDF document</code> to an agent
+              variable with the <strong>Document</strong> input type to activate
+              the native attachment. The full source PDF is never attached.
+            </p>
           </Field>
         )}
 

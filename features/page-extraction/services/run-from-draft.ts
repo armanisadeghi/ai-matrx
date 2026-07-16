@@ -72,6 +72,13 @@ export interface SaveTemplateOptions {
   fallbackName: string;
   /** When set, UPDATE this job instead of INSERTing a new one. */
   existingJobId?: string | null;
+  /** Loaded definitions for the selected agent; required to validate PDF wiring. */
+  agentVariables: AgentVariableForPdfValidation[] | null | undefined;
+}
+
+export interface AgentVariableForPdfValidation {
+  name: string;
+  customComponent?: { type?: string } | null;
 }
 
 export class DraftValidationError extends Error {
@@ -91,7 +98,10 @@ export class DraftValidationError extends Error {
  * from `variable_mapping` at save time. As long as at least one agent
  * variable is wired, the derivation produces a non-empty list.
  */
-export function validateDraft(draft: ChunkingConfigDraft): string[] {
+export function validateDraft(
+  draft: ChunkingConfigDraft,
+  agentVariables?: AgentVariableForPdfValidation[] | null,
+): string[] {
   const issues: string[] = [];
   if (!draft.agentId) issues.push("Pick an agent.");
   if (draft.agentId && Object.keys(draft.variableMapping).length === 0) {
@@ -100,6 +110,21 @@ export function validateDraft(draft: ChunkingConfigDraft): string[] {
   if (draft.kind === "validation" && !draft.validatesJobId) {
     issues.push("Pick the template this validates.");
   }
+  if (Object.hasOwn(draft.variableMapping, "pdf_page")) {
+    const pdfTarget = draft.variableMapping.pdf_page;
+    const target = agentVariables?.find(
+      (variable) => variable.name === pdfTarget,
+    );
+    if (!target) {
+      issues.push(
+        "Load the agent's variables before wiring Chunk PDF document.",
+      );
+    } else if (target.customComponent?.type !== "document") {
+      issues.push(
+        "Chunk PDF document must be mapped to an agent variable with Document input type.",
+      );
+    }
+  }
   return issues;
 }
 
@@ -107,8 +132,11 @@ export function validateDraft(draft: ChunkingConfigDraft): string[] {
  * Run-level validation. Save-level issues PLUS: page range must be
  * specified and chunk size must be set.
  */
-export function validateForRun(draft: ChunkingConfigDraft): string[] {
-  const issues = validateDraft(draft);
+export function validateForRun(
+  draft: ChunkingConfigDraft,
+  agentVariables?: AgentVariableForPdfValidation[] | null,
+): string[] {
+  const issues = validateDraft(draft, agentVariables);
   if (draft.scopePages.length === 0) issues.push("Specify the page range.");
   if (draft.chunkSize == null || draft.chunkSize < 1)
     issues.push("Set a chunk size.");
@@ -125,7 +153,7 @@ export async function saveTemplateFromDraft(
   draft: ChunkingConfigDraft,
   opts: SaveTemplateOptions,
 ): Promise<PageExtractionJob> {
-  const issues = validateDraft(draft);
+  const issues = validateDraft(draft, opts.agentVariables);
   if (issues.length > 0) throw new DraftValidationError(issues);
 
   const name = draft.jobName.trim() || `${opts.fallbackName} extraction`;

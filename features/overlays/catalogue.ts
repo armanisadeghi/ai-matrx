@@ -245,6 +245,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  characterCounterWindow: {
+    label: "Character Counter",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   chatDebugWindow: {
     label: "Chat Debug Window",
     instanceMode: "singleton",

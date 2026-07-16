@@ -64,13 +64,15 @@ function RunControlsWindowInner({
       overlayId={OVERLAY_ID}
       onClose={onClose}
       title="Chat Options"
-      width={860}
+      // Chat options should complement the conversation, not obscure it. Keep
+      // a narrow, slightly off-canvas starting rect on the left; users can
+      // still drag, resize, snap, maximize, or pop it out as usual.
+      initialRect={{ x: -16, y: 56, width: 440, height: 640 }}
       height={640}
-      minWidth={520}
+      minWidth={380}
       minHeight={420}
-      position="center"
-      sidebarDefaultSize={176}
-      sidebarMinSize={140}
+      sidebarDefaultSize={148}
+      sidebarMinSize={120}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       sidebar={
         <nav

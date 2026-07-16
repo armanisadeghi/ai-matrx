@@ -527,6 +527,10 @@ const ImageArrivalPeekHost = lazyOverlay(
     ),
   { ssr: false },
 );
+const CharacterCounterWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/text-counter/CharacterCounterWindow"),
+  { ssr: false },
+);
 const ImageUploaderWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/image/ImageUploaderWindow"),
   { ssr: false },
@@ -1095,6 +1099,9 @@ export default function OverlayController() {
     quickChatHistory: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickChatHistory"),
     ),
+    characterCounterWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "characterCounterWindow"),
+    ),
     quickChatWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickChatWindow"),
     ),
@@ -1404,6 +1411,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     quickNoteSaveWindow: useAppSelector((s) =>
       selectOverlayData(s, "quickNoteSaveWindow"),
+    ) as Record<string, unknown> | null,
+    characterCounterWindow: useAppSelector((s) =>
+      selectOverlayData(s, "characterCounterWindow"),
     ) as Record<string, unknown> | null,
     setContextValueWindow: useAppSelector((s) =>
       selectOverlayData(s, "setContextValueWindow"),
@@ -3682,6 +3692,20 @@ export default function OverlayController() {
                 ? data.initialConversationId
                 : null
             }
+          />
+        );
+      })()}
+
+      {/* characterCounterWindow */}
+      {(() => {
+        const isOpen = isOpenById.characterCounterWindow;
+        const data = dataById.characterCounterWindow as Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <CharacterCounterWindow
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "characterCounterWindow" }))}
+            initialText={typeof data?.initialText === "string" ? data.initialText : undefined}
           />
         );
       })()}

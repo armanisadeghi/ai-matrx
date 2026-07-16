@@ -39,6 +39,11 @@ lib/redux/slices/
 
 > The original FEATURE.md content (architecture diagrams, registry shape, etc.) is preserved below for historical context. **Treat the "registry" sections as describing the LEGACY path that's being deleted.**
 
+## Change Log
+
+- 2026-07-16 — Repositioned the chat `runControlsWindow` to open as a compact (440px) left-edge panel, preserving the conversation workspace and all existing shared tab state.
+- 2026-07-16 — Added the `characterCounterWindow` as an ephemeral, mobile-fullscreen WindowPanel rendered through the canonical overlay controller.
+
 ---
 
 ## Mental model

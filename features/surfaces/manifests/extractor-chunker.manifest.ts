@@ -74,10 +74,10 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "pdf_page",
-    label: "Chunk pages (PDF)",
+    label: "Chunk PDF document",
     description:
-      "THE content of the current chunk as PDF page attachments for visual / multi-modal agents (layout-faithful, includes images and tables). Populated only when the Job's source_variations includes `pdf_page`. Empty otherwise. (Phase 3 — wiring TBD.)",
-    valueType: "object",
+      "One native PDF document containing ONLY the current chunk's pages, in chunk order (including configured overlap). Map this attachment source to an agent variable whose input type is Document to activate it. It preserves layout, images, and tables without sending the rest of the source PDF.",
+    valueType: "document",
     alwaysAvailable: false,
     typicalCharCount: 0,
     sortOrder: 70,
@@ -212,7 +212,9 @@ export function createExtractorChunkerScope(values: {
   // alwaysAvailable: false → optional (chunk-specific)
   clean_text?: string;
   raw_text?: string;
-  pdf_page?: Record<string, unknown>;
+  // `pdf_page` is a native attachment source, assembled server-side after the
+  // chunk's page set is known. It is intentionally not an ApplicationScope
+  // object or a string variable.
   // alwaysAvailable: false → optional (inherited from pdf-extractor)
   page_range_text?: string;
   selected_text?: string;

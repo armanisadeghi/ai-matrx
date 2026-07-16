@@ -45,6 +45,7 @@ const ALLOWED_TYPES = new Set([
   "boolean",
   "object",
   "array",
+  "document",
 ]);
 const ALLOWED_ROLE_KINDS = new Set(["single", "multi"]);
 const ALLOWED_AUTO_RUN = new Set(["always", "never", "user-choice"]);

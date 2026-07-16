@@ -68,6 +68,7 @@ import {
   PanelRight,
   Radio,
   Captions,
+  TextCursorInput,
   ScrollText,
   Search,
   Settings,
@@ -631,6 +632,14 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     category: "dupes",
     gate: "admin",
     overlayId: "jsonTruncator",
+  },
+  {
+    id: "tile.character-counter",
+    label: "Character Counter",
+    icon: TextCursorInput,
+    category: "dupes",
+    gate: "admin",
+    overlayId: "characterCounterWindow",
   },
   {
     id: "tile.pick-lists",

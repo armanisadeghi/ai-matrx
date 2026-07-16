@@ -11103,7 +11103,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/files/share-links/{share_token}": {
+    "/files/share-links/{token}": {
         parameters: {
             query?: never;
             header?: never;
@@ -11114,7 +11114,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Deactivate Share Link */
-        delete: operations["deactivate_share_link_files_share_links__share_token__delete"];
+        delete: operations["deactivate_share_link_files_share_links__token__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -11448,24 +11448,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/share/{share_token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Resolve Share Link */
-        get: operations["resolve_share_link_share__share_token__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/share/{share_token}/download": {
+    "/share/{token}/download": {
         parameters: {
             query?: never;
             header?: never;
@@ -11473,7 +11456,7 @@ export interface paths {
             cookie?: never;
         };
         /** Download Shared File */
-        get: operations["download_shared_file_share__share_token__download_get"];
+        get: operations["download_shared_file_share__token__download_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15943,6 +15926,12 @@ export interface components {
         };
         /** ArchiveRequest */
         ArchiveRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Reason */
             reason: string;
         };
@@ -16351,6 +16340,12 @@ export interface components {
         };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             selector: components["schemas"]["MessageSelector"];
             /**
              * Cascade Tool Pairs
@@ -17064,6 +17059,12 @@ export interface components {
         };
         /** BulkDeleteRequest */
         BulkDeleteRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Ids
              * @description Explicit list of processed_document_ids to delete.
@@ -17464,6 +17465,12 @@ export interface components {
          *     user_id. Only admins can create system rows.
          */
         CategoryCreate: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Category Key */
             category_key: string;
             /** Label */
@@ -17499,6 +17506,12 @@ export interface components {
          * @description PATCH /skills/categories/{id} body. All fields optional.
          */
         CategoryPatch: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Category Key */
             category_key?: string | null;
             /** Label */
@@ -18111,6 +18124,12 @@ export interface components {
         };
         /** CleanRequest */
         CleanRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Intent
              * @enum {string}
@@ -18370,6 +18389,12 @@ export interface components {
         };
         /** CompactTurnsRequest */
         CompactTurnsRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             range: components["schemas"]["TurnRange"];
             /** Summary Content */
             summary_content: {
@@ -18532,6 +18557,12 @@ export interface components {
          *     resolved server-side from this ref.
          */
         ComputeTargetRef: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Kind
              * @enum {string}
@@ -19060,14 +19091,17 @@ export interface components {
             /** Id */
             id: string;
         };
-        /** CreateShareLinkRequest */
+        /**
+         * CreateShareLinkRequest
+         * @description Canonical share-link mint request (``platform.share_links`` levels).
+         */
         CreateShareLinkRequest: {
             /**
              * Permission Level
-             * @default read
+             * @default viewer
              * @enum {string}
              */
-            permission_level?: "read" | "write";
+            permission_level?: "viewer" | "editor";
             /** Expires At */
             expires_at?: string | null;
             /** Max Uses */
@@ -19075,6 +19109,12 @@ export interface components {
         };
         /** CreateTriggerRequest */
         CreateTriggerRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Definition Id */
             definition_id: string;
             /** Name */
@@ -19459,6 +19499,12 @@ export interface components {
         };
         /** DataStoreMemberCreate */
         DataStoreMemberCreate: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Source Kind */
             source_kind: string;
             /** Source Id */
@@ -19468,6 +19514,12 @@ export interface components {
         };
         /** DataStorePatch */
         DataStorePatch: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Name */
             name?: string | null;
             /** Description */
@@ -19806,6 +19858,12 @@ export interface components {
         };
         /** DerivativeRequest */
         DerivativeRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Intent
              * @enum {string}
@@ -19844,6 +19902,12 @@ export interface components {
         };
         /** DeriveRequest */
         DeriveRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Rebuild Confirmation Token */
             rebuild_confirmation_token?: string | null;
         };
@@ -19866,6 +19930,12 @@ export interface components {
         };
         /** DetectDocumentRequest */
         DetectDocumentRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Source Id */
             source_id: string;
             /**
@@ -20102,6 +20172,12 @@ export interface components {
         };
         /** DirectiveConfirmRequest */
         DirectiveConfirmRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Matrx Version
              * @default 1
@@ -20195,6 +20271,12 @@ export interface components {
          * @description Filter for batch dismiss. Empty body = dismiss every unrecovered row.
          */
         DismissBatchRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Ids
              * @description When set, only dismiss these failure ids (must still be unrecovered). Other filter fields are ignored.
@@ -22244,6 +22326,12 @@ export interface components {
          * @description Reserved for the later ``suggestions_only`` option; empty body for v1.
          */
         FileRefreshRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Run Enrich
              * @default false
@@ -22828,6 +22916,12 @@ export interface components {
         };
         /** HideRequest */
         HideRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             selector: components["schemas"]["MessageSelector"];
             /**
              * Cascade Tool Pairs
@@ -22902,6 +22996,12 @@ export interface components {
         };
         /** ImageBgRemoveRequest */
         ImageBgRemoveRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Source Id */
             source_id: string;
             /** Mask Id */
@@ -22941,6 +23041,12 @@ export interface components {
          *     ``params`` is the op-specific Pydantic body (validated by the dispatcher).
          */
         ImageEditRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Source Id */
             source_id: string;
             /** Mask Id */
@@ -22955,6 +23061,12 @@ export interface components {
         };
         /** ImageInpaintRequest */
         ImageInpaintRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Source Id */
             source_id: string;
             /** Mask Id */
@@ -23066,6 +23178,12 @@ export interface components {
         };
         /** InboxEditRequest */
         InboxEditRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Text */
             text: string;
         };
@@ -23074,6 +23192,12 @@ export interface components {
          * @description Enqueue an item into a conversation's Turn-Boundary Inbox.
          */
         InboxEnqueueRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Kind
              * @default user_message
@@ -23419,6 +23543,12 @@ export interface components {
          *     POST (not PATCH) so the path can't collide with PATCH /issue-classes/{class_id}.
          */
         IssueClassBatchUpdate: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Ids */
             ids: string[];
             /** Disposition */
@@ -24428,6 +24558,12 @@ export interface components {
         };
         /** LibraryPatchRequest */
         LibraryPatchRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Name */
             name?: string | null;
         };
@@ -24476,6 +24612,12 @@ export interface components {
         };
         /** LibraryTestSearchRequest */
         LibraryTestSearchRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Query */
             query: string;
             /**
@@ -24908,6 +25050,12 @@ export interface components {
         };
         /** MemberBatchRemoveRequest */
         MemberBatchRemoveRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Members */
             members: components["schemas"]["MemberRef"][];
         };
@@ -25341,6 +25489,12 @@ export interface components {
          *     Pattern row) OR a raw ``message`` (from a log row) to be normalized.
          */
         MuteRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Signature */
             signature?: string | null;
             /** Message */
@@ -25677,6 +25831,12 @@ export interface components {
         };
         /** NormExceptionRequest */
         NormExceptionRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Match */
             match: string;
             /** Replace Pattern */
@@ -26997,6 +27157,12 @@ export interface components {
         };
         /** ProcessContentBody */
         ProcessContentBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Content Type
              * @default pdf
@@ -27365,6 +27531,12 @@ export interface components {
          *     the proposal). Updates was_applied / was_overridden on the audit row.
          */
         RecoveryApplyAck: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Audit Id */
             audit_id: string;
             /** Was Applied */
@@ -27377,6 +27549,12 @@ export interface components {
          * @description Body for POST /api/recovery/handle.
          */
         RecoveryRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Envelope Xml
              * @description The XML envelope built by the studio's CopyMenu via lib/xml-envelope.ts. Carries workflow context + payload + available_actions so the agent can suggest a fix without follow-up questions.
@@ -27963,6 +28141,12 @@ export interface components {
         };
         /** ReplaceRequest */
         ReplaceRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             selector: components["schemas"]["MessageSelector"];
             /** Summary Content */
             summary_content: {
@@ -27994,6 +28178,12 @@ export interface components {
          * @description Filter for batch replay. Empty body = retry every unrecovered row.
          */
         ReplayBatchRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Ids
              * @description When set, only replay these failure ids (must still be unrecovered). Other filter fields are ignored.
@@ -28145,6 +28335,12 @@ export interface components {
          * @description Filter for batch resolve. Empty body = resolve every unresolved row.
          */
         ResolveBatchRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Ids
              * @description When set, only resolve these system_error ids (must still be unresolved). Other filter fields are ignored.
@@ -28271,6 +28467,12 @@ export interface components {
         };
         /** RestoreRequest */
         RestoreRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Compaction Group Id */
             compaction_group_id?: string | null;
             /** Summary Message Id */
@@ -28292,6 +28494,25 @@ export interface components {
         };
         /** ResumeRequest */
         ResumeRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @default true
+             */
+            store?: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
             /** User Request Id */
             user_request_id: string;
             config_overrides?: components["schemas"]["LLMParams"] | null;
@@ -28549,6 +28770,12 @@ export interface components {
         };
         /** RunBatchDeleteRequest */
         RunBatchDeleteRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Run Ids */
             run_ids: string[];
         };
@@ -28930,6 +29157,12 @@ export interface components {
         };
         /** SandboxBindRequest */
         SandboxBindRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Sandbox Instance Id
              * @description The sandbox_instances.id (UUID) to bind to this conversation.
@@ -29006,6 +29239,12 @@ export interface components {
         };
         /** SaveAsTemplateRequest */
         SaveAsTemplateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Name */
             name: string;
             /** Description */
@@ -29476,6 +29715,12 @@ export interface components {
         };
         /** SetCanonicalCleanRequest */
         SetCanonicalCleanRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Clean Id */
             clean_id: string;
             /** Reason */
@@ -29483,6 +29728,12 @@ export interface components {
         };
         /** SetCanonicalExtractRequest */
         SetCanonicalExtractRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Processed Document Id */
             processed_document_id: string;
             /** Reason */
@@ -29517,11 +29768,11 @@ export interface components {
         };
         /**
          * ShareLinkRecord
-         * @description A single share-link row (``cld_share_links``).
+         * @description A single share-link row (canonical ``platform.share_links``).
          */
         ShareLinkRecord: {
-            /** Share Token */
-            share_token?: string | null;
+            /** Token */
+            token?: string | null;
             /** Resource Id */
             resource_id?: string | null;
             /** Resource Type */
@@ -29538,35 +29789,6 @@ export interface components {
             use_count?: number | null;
         } & {
             [key: string]: unknown;
-        };
-        /** ShareLinkResolveResponse */
-        ShareLinkResolveResponse: {
-            /** Share Token */
-            share_token: string;
-            /**
-             * Resource Type
-             * @enum {string}
-             */
-            resource_type: "file" | "folder";
-            /** Resource Id */
-            resource_id: string;
-            /**
-             * Permission Level
-             * @enum {string}
-             */
-            permission_level: "read" | "write";
-            file?: components["schemas"]["FileRecord"] | null;
-            /** Url */
-            url?: string | null;
-            /** Expires At */
-            expires_at?: string | null;
-            /** Max Uses */
-            max_uses?: number | null;
-            /**
-             * Use Count
-             * @default 0
-             */
-            use_count?: number;
         };
         /**
          * SheetSpec
@@ -29630,6 +29852,12 @@ export interface components {
         };
         /** SiteBatchArchiveRequest */
         SiteBatchArchiveRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Site Ids */
             site_ids: string[];
             /**
@@ -29640,6 +29868,12 @@ export interface components {
         };
         /** SiteBatchDeleteRequest */
         SiteBatchDeleteRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Site Ids */
             site_ids: string[];
             /**
@@ -29699,6 +29933,12 @@ export interface components {
         };
         /** SkillCreate */
         SkillCreate: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Skill Id */
             skill_id: string;
             /** Label */
@@ -29769,6 +30009,12 @@ export interface components {
         };
         /** SkillPatch */
         SkillPatch: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Label */
             label?: string | null;
             /** Description */
@@ -30052,6 +30298,12 @@ export interface components {
         };
         /** SpeechRequest */
         SpeechRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Text */
             text: string;
             /**
@@ -31442,6 +31694,12 @@ export interface components {
          *     until the drift gate is quiet. Editing it bumps the row ``version``.
          */
         ToolUpdateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
             /** Validation Exempt */
@@ -31776,6 +32034,12 @@ export interface components {
         };
         /** TranscriptionUrlRequest */
         TranscriptionUrlRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Url */
             url: string;
             /** Language */
@@ -32290,6 +32554,12 @@ export interface components {
         };
         /** UserDataStoreMemberCreate */
         UserDataStoreMemberCreate: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Source Kind */
             source_kind: string;
             /** Source Id */
@@ -32326,6 +32596,12 @@ export interface components {
         };
         /** UserDataStorePatch */
         UserDataStorePatch: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Name */
             name?: string | null;
             /** Description */
@@ -32357,6 +32633,12 @@ export interface components {
         };
         /** UserSecretBulkEnvRequest */
         UserSecretBulkEnvRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Env Text */
             env_text: string;
             /** Default Category */
@@ -32376,6 +32658,12 @@ export interface components {
         };
         /** UserSecretCreateRequest */
         UserSecretCreateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Key */
             key: string;
             /** Value */
@@ -32439,6 +32727,12 @@ export interface components {
         };
         /** UserSecretUpdateRequest */
         UserSecretUpdateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Value */
             value?: string | null;
             /** Description */
@@ -32830,6 +33124,12 @@ export interface components {
         };
         /** VisibilityRequest */
         VisibilityRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /** Is Public */
             is_public: boolean;
         };
@@ -33394,6 +33694,12 @@ export interface components {
         };
         /** IngestRequest */
         aidream__api__routers__skills__IngestRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
             /**
              * Roots
              * @description Absolute paths to scan. Each can be a leaf skills directory OR a repo root — conventional locations (.claude/skills, .cursor/skills, .agent[s]/skills, .matrx/skills, skills) are auto-discovered inside repo roots.
@@ -53240,12 +53546,12 @@ export interface operations {
             };
         };
     };
-    deactivate_share_link_files_share_links__share_token__delete: {
+    deactivate_share_link_files_share_links__token__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                share_token: string;
+                token: string;
             };
             cookie?: never;
         };
@@ -53928,38 +54234,7 @@ export interface operations {
             };
         };
     };
-    resolve_share_link_share__share_token__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                share_token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ShareLinkResolveResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    download_shared_file_share__share_token__download_get: {
+    download_shared_file_share__token__download_get: {
         parameters: {
             query?: {
                 /** @description When True (default), image/video/audio/pdf are served as Content-Disposition: inline so they render in <img>/<video>/<audio>/preview tags. When False, force Content-Disposition: attachment to trigger a browser download. Executable types (HTML, SVG, JS) are always forced to attachment regardless. */
@@ -53967,7 +54242,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                share_token: string;
+                token: string;
             };
             cookie?: never;
         };

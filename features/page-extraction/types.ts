@@ -116,7 +116,7 @@ export type ExtraExtractionInput =
 export type SourceVariationKind =
   | "clean_text" // per-page AI-cleaned text
   | "raw_text" // per-page raw OCR text
-  | "pdf_page"; // each page rendered as a PDF attachment (Phase 2)
+  | "pdf_page"; // one exact-page PDF document attached for each chunk
 
 /**
  * Extension point for future chunking algorithms. Only `pages` is supported

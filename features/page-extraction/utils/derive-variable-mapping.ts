@@ -10,6 +10,7 @@
  * raw_text, …) to the agent variable name returned by `mapping[surface_key]`.
  *
  * Heuristics — applied to lowercased agent variable names:
+ *   - Document input type          → native PDF-document chunk
  *   - contains "file" or "doc"    → filename
  *   - contains "page" + "number" or word "pages" → page_numbers
  *   - contains "text", "content", "selection", "input" → primary text
@@ -25,6 +26,7 @@ import type { SourceVariationKind } from "@/features/page-extraction/types";
 
 export interface AgentVariableLike {
   name: string;
+  customComponent?: { type?: string } | null;
 }
 
 const FILE_PATTERN = /file|doc/i;
@@ -38,14 +40,26 @@ export function deriveVariableMapping(
   const out: Record<string, string> = {};
   if (!agentVariables || agentVariables.length === 0) return out;
 
-  const primaryTextSurface: SourceVariationKind =
-    selectedVariations.includes("clean_text")
-      ? "clean_text"
-      : selectedVariations[0] ?? "clean_text";
+  const primaryTextSurface: SourceVariationKind = selectedVariations.includes(
+    "clean_text",
+  )
+    ? "clean_text"
+    : (selectedVariations[0] ?? "clean_text");
 
   for (const v of agentVariables) {
     const name = (v?.name ?? "").trim();
     if (!name) continue;
+
+    // A Document variable is the only compatible target for the native
+    // chunk-PDF attachment. Prefer this explicit declaration over a name
+    // heuristic ("document" otherwise looks like a filename variable).
+    if (
+      v.customComponent?.type === "document" &&
+      selectedVariations.includes("pdf_page")
+    ) {
+      out.pdf_page = name;
+      continue;
+    }
 
     // Page number first — "page_number" must NOT be caught by the text
     // heuristic ("page_content" should map to text, not page_number).

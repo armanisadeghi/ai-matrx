@@ -21,6 +21,7 @@ export async function GET() {
     { loc: `${baseUrl}/free/games/tic-tac-toe`, changefreq: 'monthly', priority: '0.6' },
     { loc: `${baseUrl}/free/uuid/generator`, changefreq: 'monthly', priority: '0.6' },
     { loc: `${baseUrl}/free/uuid/array`, changefreq: 'monthly', priority: '0.5' },
+    { loc: `${baseUrl}/free/character-counter`, changefreq: 'monthly', priority: '0.6' },
     { loc: `${baseUrl}/free/zip-code-heatmap`, changefreq: 'monthly', priority: '0.6' },
   ]
 

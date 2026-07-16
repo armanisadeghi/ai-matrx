@@ -1105,6 +1105,17 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "json_truncator" },
   },
 
+  // ── Character Counter ─────────────────────────────────────────────────────
+  {
+    slug: "character-counter-window",
+    overlayId: "characterCounterWindow",
+    kind: "window",
+    label: "Character Counter",
+    defaultData: { initialText: "" },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Resource Picker ───────────────────────────────────────────────────────
   {
     slug: "resource-picker-window",

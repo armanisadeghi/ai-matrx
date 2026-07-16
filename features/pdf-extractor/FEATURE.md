@@ -45,6 +45,12 @@ live FE reads `processed_documents` directly from Supabase via `docprocDb` +
 sections when next in here.
 
 ## Change Log
+- 2026-07-16 — **Exact PDF chunk attachments + Copy Pages ZIP.** The Chunker
+  now exposes `pdf_page` as **Chunk PDF document**, a native Document input
+  carrying only the chunk's pages (including configured overlap), never the
+  complete source PDF. `CopyPagesOverlay` now uses the same pages-per-chunk
+  and overlap stride for raw/clean text and can download the matching PDF
+  chunks as one ZIP through the canonical `/utilities/pdf/split` client.
 - 2026-07-15 — Verified packaged with the attached-documents system (page spine ·
   canonical renderer · attach/resolve · agent tools); typed `docprocDb` conversion
   (`e82fb6d74`); this FEATURE.md pointer added.

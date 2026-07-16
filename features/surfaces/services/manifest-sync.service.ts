@@ -55,7 +55,14 @@ type UiSurfaceAgentRoleRow =
 type UiSurfaceAgentRoleInsert =
   Database["ui"]["Tables"]["ui_surface_agent_role"]["Insert"];
 
-const VALUE_TYPES = ["string", "number", "boolean", "object", "array"] as const;
+const VALUE_TYPES = [
+  "string",
+  "number",
+  "boolean",
+  "object",
+  "array",
+  "document",
+] as const;
 type DbValueType = (typeof VALUE_TYPES)[number];
 
 const ROLE_KINDS = ["single", "multi"] as const;

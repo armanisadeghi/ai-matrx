@@ -6,7 +6,7 @@
  * row a dropdown of every value the surface can emit.
  *
  * Dropdown order (top → bottom):
- *   1. Dynamic chunks   — Clean / Raw / PDF-page chunks with live counts.
+ *   1. Dynamic chunks   — Clean / Raw / native PDF-document chunks with live counts.
  *                         Picking one of these implicitly tells the save
  *                         path which `source_variations` to request from
  *                         the Python backend (no checkboxes anymore).
@@ -73,6 +73,7 @@ import { listRunsForJob } from "@/features/page-extraction/api/runs";
 export interface AgentVariableForMapping {
   name: string;
   helpText?: string | null;
+  customComponent?: { type?: string } | null;
 }
 
 export interface VariableMappingEditorProps {
@@ -305,6 +306,7 @@ export function VariableMappingEditor({
       <ul className="space-y-1.5">
         {agentVariables.map((v) => {
           const currentKey = inverse.get(v.name) ?? UNMAPPED_VALUE;
+          const isDocumentVariable = v.customComponent?.type === "document";
           const isLiteralMode = isAgentVarLiteralWiring(
             v.name,
             mapping,
@@ -345,7 +347,10 @@ export function VariableMappingEditor({
                     expandAdvanced={expandAdvanced}
                     onToggleAdvanced={() => setShowAdvanced((p) => !p)}
                     disabledKeys={
-                      new Set([...claimedKeys].filter((k) => k !== currentKey))
+                      new Set([
+                        ...[...claimedKeys].filter((k) => k !== currentKey),
+                        ...(isDocumentVariable ? [] : ["pdf_page"]),
+                      ])
                     }
                     onChange={(nextKey) => {
                       if (nextKey === LITERAL_MODE_VALUE) {
@@ -399,6 +404,12 @@ export function VariableMappingEditor({
               {v.helpText && (
                 <p className="text-[10px] text-muted-foreground/70 leading-snug pl-1">
                   {v.helpText}
+                </p>
+              )}
+              {currentKey === "pdf_page" && !isDocumentVariable && (
+                <p className="text-[10px] text-destructive leading-snug pl-1">
+                  Chunk PDF document requires a Document input variable. Choose
+                  a Document variable before running this template.
                 </p>
               )}
             </li>
@@ -611,7 +622,7 @@ function chunkLabel(key: ChunkKey, count: number | undefined): string {
     case "raw_text":
       return `${countPrefix}raw-text chunks`;
     case "pdf_page":
-      return `${countPrefix}PDF page chunks`;
+      return `${countPrefix}PDF-document chunks`;
   }
 }
 
@@ -622,7 +633,7 @@ function chunkHint(key: ChunkKey): string | undefined {
     case "raw_text":
       return "Raw OCR per-chunk text";
     case "pdf_page":
-      return "PDF page attachment (visual)";
+      return "One exact-page PDF per chunk · map to a Document variable";
   }
 }
 

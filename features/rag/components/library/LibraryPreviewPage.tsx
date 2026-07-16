@@ -132,13 +132,21 @@ export function LibraryPreviewPage({
       toast.success("Created your editable copy");
       router.push(`/tools/pdf-extractor/${newId}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not create your copy");
+      toast.error(
+        e instanceof Error ? e.message : "Could not create your copy",
+      );
       setForking(false);
     }
   };
 
   return (
-    <div className="relative flex flex-col bg-background h-full">
+    <div
+      className={cn(
+        "relative flex flex-col bg-background h-full",
+        // DEBUG: red = entire embedded canvas document viewer (chat drawer body)
+        embedded && "border-2 border-red-500",
+      )}
+    >
       {!embedded && (
         <EntityModeHeader
           backHref="/rag/library"
@@ -168,105 +176,112 @@ export function LibraryPreviewPage({
           !embedded && "pt-[var(--shell-header-h)]",
         )}
       >
-      {!embedded && doc && (
-        <div className="border-b px-4 py-1.5 flex items-center gap-2 min-w-0 shrink-0">
-          <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
-          <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
-            {doc.pagesPersisted} pages · {doc.chunks}{" "}
-            {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}
-            embeds
-          </span>
-        </div>
-      )}
+        {!embedded && doc && (
+          <div className="border-b px-4 py-1.5 flex items-center gap-2 min-w-0 shrink-0">
+            <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
+            <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
+              {doc.pagesPersisted} pages · {doc.chunks}{" "}
+              {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}
+              embeds
+            </span>
+          </div>
+        )}
 
-      {/* In-document search — present in both modes. In embedded surfaces (the
+        {/* In-document search — present in both modes. In embedded surfaces (the
           /files Knowledge tab) the document header is dropped, so the Knowledge
           Assets entry rides along as the bar's trailing slot instead of a
           floating button. */}
-      {doc && !docError && (
-        <>
-          <DocumentSearchBar
-            query={search.query}
-            onQueryChange={search.setQuery}
-            onSubmit={handleSearch}
-            onClear={search.clear}
-            loading={search.loading}
-            hasSearched={search.hasSearched}
-            summary={search.summary}
-            rightSlot={
-              embedded ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAssetsOpen(true)}
-                  className="h-7 px-2 text-xs shrink-0"
-                  title="Build premium knowledge representations from this document"
-                >
-                  <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
-                  Knowledge Assets
-                </Button>
-              ) : undefined
-            }
-          />
-          {search.hasSearched && (
-            <DocumentSearchSummary
-              activeQuery={search.activeQuery}
-              summary={search.summary}
+        {doc && !docError && (
+          <>
+            <DocumentSearchBar
+              query={search.query}
+              onQueryChange={search.setQuery}
+              onSubmit={handleSearch}
+              onClear={search.clear}
               loading={search.loading}
-              error={search.error}
-              activePageNumber={activePageIndex + 1}
-              onJumpToPage={jumpToPage}
+              hasSearched={search.hasSearched}
+              summary={search.summary}
+              className={
+                embedded
+                  ? // DEBUG: green = search toolbar row (+ Knowledge Assets in embedded mode)
+                    "border-2 border-green-500"
+                  : undefined
+              }
+              rightSlot={
+                embedded ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAssetsOpen(true)}
+                    className="h-7 px-2 text-xs shrink-0"
+                    title="Build premium knowledge representations from this document"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
+                    Knowledge Assets
+                  </Button>
+                ) : undefined
+              }
             />
-          )}
-        </>
-      )}
+            {search.hasSearched && (
+              <DocumentSearchSummary
+                activeQuery={search.activeQuery}
+                summary={search.summary}
+                loading={search.loading}
+                error={search.error}
+                activePageNumber={activePageIndex + 1}
+                onJumpToPage={jumpToPage}
+              />
+            )}
+          </>
+        )}
 
-      {docError && (
-        <div className="m-4 p-3 border border-destructive/50 bg-destructive/5 rounded-md text-sm text-destructive">
-          <strong>Could not load document:</strong> {docError}
-        </div>
-      )}
+        {docError && (
+          <div className="m-4 p-3 border border-destructive/50 bg-destructive/5 rounded-md text-sm text-destructive">
+            <strong>Could not load document:</strong> {docError}
+          </div>
+        )}
 
-      {!docError && (
-        // `minmax(0, 1fr)` (instead of bare `1fr`) is critical here:
-        // CSS Grid defaults the third track to `minmax(auto, 1fr)`,
-        // which lets the column grow past the available space when the
-        // page content has long unbroken text. With `minmax(0, 1fr)`
-        // the column hard-caps at the remaining viewport width and the
-        // inner `<pre>` wraps as expected.
-        <div className="flex-1 min-h-0 grid grid-cols-[220px_360px_minmax(0,1fr)] divide-x overflow-hidden">
-          {/* Left: pages list */}
-          <PagesNav
-            documentId={documentId}
-            totalPages={doc?.pagesPersisted ?? 0}
-            activePageIndex={activePageIndex}
-            onSelect={setActivePageIndex}
-            seedPages={doc?.pages ?? []}
-          />
+        {!docError && (
+          // `minmax(0, 1fr)` (instead of bare `1fr`) is critical here:
+          // CSS Grid defaults the third track to `minmax(auto, 1fr)`,
+          // which lets the column grow past the available space when the
+          // page content has long unbroken text. With `minmax(0, 1fr)`
+          // the column hard-caps at the remaining viewport width and the
+          // inner `<pre>` wraps as expected.
+          <div className="flex-1 min-h-0 grid grid-cols-[220px_360px_minmax(0,1fr)] divide-x overflow-hidden">
+            {/* Left: pages list */}
+            <PagesNav
+              documentId={documentId}
+              totalPages={doc?.pagesPersisted ?? 0}
+              activePageIndex={activePageIndex}
+              onSelect={setActivePageIndex}
+              seedPages={doc?.pages ?? []}
+            />
 
-          {/* Middle: per-page segments + ranked search results — sits next to
+            {/* Middle: per-page segments + ranked search results — sits next to
               Pages so the user sees the page-by-page breakdown directly
               alongside the page list, without the wide page-text panel in
               between. */}
-          <RightRail
-            documentId={documentId}
-            activePageNumber={activePageIndex + 1}
-            search={search}
-            onJumpToPage={jumpToPage}
-          />
+            <RightRail
+              documentId={documentId}
+              activePageNumber={activePageIndex + 1}
+              search={search}
+              onJumpToPage={jumpToPage}
+            />
 
-          {/* Right: page text — gets the remaining 1fr and is the place to
+            {/* Right: page text — gets the remaining 1fr and is the place to
               read the cleaned / raw text of the active page, with the active
               search term highlighted in place. */}
-          <PageContent
-            documentId={documentId}
-            pageIndex={activePageIndex}
-            totalPages={doc?.pagesPersisted ?? 0}
-            onPageChange={setActivePageIndex}
-            query={search.activeQuery}
-          />
-        </div>
-      )}
+            <PageContent
+              documentId={documentId}
+              pageIndex={activePageIndex}
+              totalPages={doc?.pagesPersisted ?? 0}
+              onPageChange={setActivePageIndex}
+              query={search.activeQuery}
+              embedded={embedded}
+            />
+          </div>
+        )}
       </div>
 
       {/* Knowledge Asset Builder — resizable right drawer. The doc stays fully
@@ -397,6 +412,7 @@ function PageContent({
   totalPages,
   onPageChange,
   query,
+  embedded = false,
 }: {
   documentId: string;
   pageIndex: number;
@@ -404,6 +420,7 @@ function PageContent({
   onPageChange: (idx: number) => void;
   /** Active search term — literal matches are highlighted in the page text. */
   query: string;
+  embedded?: boolean;
 }) {
   const [page, setPage] = useState<ApiFullPage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -507,7 +524,12 @@ function PageContent({
 
   if (totalPages === 0) {
     return (
-      <div className="flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
+      <div
+        className={cn(
+          "flex flex-col items-center justify-center text-center p-8 text-muted-foreground",
+          embedded && "border-2 border-blue-500",
+        )}
+      >
         <AlertCircle className="h-8 w-8 mb-2" />
         <p className="text-sm">
           No pages persisted yet. This usually means ingestion failed before
@@ -518,7 +540,13 @@ function PageContent({
   }
 
   return (
-    <div className="flex flex-col min-h-0 min-w-0">
+    <div
+      className={cn(
+        "flex flex-col min-h-0 min-w-0",
+        // DEBUG: blue = right-most column (cleaned/raw page text pane)
+        embedded && "border-2 border-blue-500",
+      )}
+    >
       <div className="border-b px-3 py-2 flex items-center gap-2 min-w-0">
         <Button
           size="sm"

@@ -67,9 +67,10 @@ export interface MediaThumbnailProps {
 
 /**
  * Best-effort pick of a small variant from an Asset envelope for grid
- * thumbnails. Walks the conventional keys in order, then falls back to
- * `primary_url`. Returns null when nothing renderable exists — the
- * caller should fall back to its signed-URL path.
+ * thumbnails. Only image variants belong in this list: `primary_url` and
+ * `original` can point at source bytes (such as a PDF or archive), which
+ * would cause an `<img>` request to fail. Returns null when no rendered
+ * thumbnail exists so the caller can use its proper fallback.
  */
 function pickThumbnailUrl(
   asset: import("@/features/files/types").Asset | null,
@@ -83,8 +84,6 @@ function pickThumbnailUrl(
     v.tiny?.url ??
     v.card_url?.url ??
     v.card?.url ??
-    asset.primary_url ??
-    v.original?.url ??
     null
   );
 }

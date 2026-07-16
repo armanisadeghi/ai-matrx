@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Database,
   Eye,
+  FileText,
   Hash,
   List,
   ToggleLeft,
@@ -33,6 +34,7 @@ const TYPE_ICONS: Record<
   boolean: ToggleLeft,
   object: Database,
   array: List,
+  document: FileText,
 };
 
 function splitSurfaceName(fullName: string): { client: string; local: string } {

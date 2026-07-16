@@ -1531,6 +1531,10 @@ export interface UsageTotals {
   total_requests?: number;
   unique_models?: number;
   total_cost?: number | null;
+  known_cost_subtotal?: number;
+  provider_reported_requests?: number;
+  catalog_priced_requests?: number;
+  unknown_cost_requests?: number;
 }
 
 export interface UserRequestResult {

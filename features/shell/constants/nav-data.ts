@@ -836,6 +836,21 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Character Counter",
+        href: "/free/character-counter",
+        iconName: "TextCursorInput",
+        description: "Count characters, words, limits, and keyword density locally",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Character Counter Window",
+        href: "/free/character-counter",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-character-counter-panel",
+      },
+      {
         label: "UUID Generator",
         href: "/free/uuid/generator",
         iconName: "Hash",

@@ -42,7 +42,8 @@ export type ShellNavPanelActionId =
   | "open-messages-panel"
   | "open-pick-lists-panel"
   | "open-preferences-panel"
-  | "open-json-truncator-panel";
+  | "open-json-truncator-panel"
+  | "open-character-counter-panel";
 
 export interface NavWindowPanelActionDef {
   tileId: string;
@@ -247,6 +248,12 @@ export const NAV_WINDOW_PANEL_ACTIONS: Record<
     label: "JSON Truncator Window",
     iconName: NAV_WINDOW_PANEL_ICON,
     href: "/free/data-truncator",
+  },
+  "open-character-counter-panel": {
+    tileId: "tile.character-counter",
+    label: "Character Counter Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/free/character-counter",
   },
 };
 

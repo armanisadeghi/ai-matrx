@@ -25,7 +25,12 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 /** Logical type of a surface value. Most are stringified for LLMs at runtime. */
 export type SurfaceValueType =
-  "string" | "number" | "boolean" | "object" | "array";
+  | "string"
+  | "number"
+  | "boolean"
+  | "object"
+  | "array"
+  | "document";
 
 export interface SurfaceValue {
   /**

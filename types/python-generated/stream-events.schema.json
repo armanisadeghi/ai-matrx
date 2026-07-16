@@ -1030,7 +1030,7 @@
                 "type": "null"
               }
             ],
-            "default": 0.0,
+            "default": 0,
             "title": "Cost"
           }
         },
@@ -1218,6 +1218,26 @@
             ],
             "default": null,
             "title": "Total Cost"
+          },
+          "known_cost_subtotal": {
+            "default": 0,
+            "title": "Known Cost Subtotal",
+            "type": "number"
+          },
+          "provider_reported_requests": {
+            "default": 0,
+            "title": "Provider Reported Requests",
+            "type": "integer"
+          },
+          "catalog_priced_requests": {
+            "default": 0,
+            "title": "Catalog Priced Requests",
+            "type": "integer"
+          },
+          "unknown_cost_requests": {
+            "default": 0,
+            "title": "Unknown Cost Requests",
+            "type": "integer"
           }
         },
         "title": "UsageTotals",
@@ -1368,7 +1388,7 @@
             "type": "null"
           }
         ],
-        "default": 0.0,
+        "default": 0,
         "title": "Cost"
       }
     },
@@ -1556,6 +1576,26 @@
         ],
         "default": null,
         "title": "Total Cost"
+      },
+      "known_cost_subtotal": {
+        "default": 0,
+        "title": "Known Cost Subtotal",
+        "type": "number"
+      },
+      "provider_reported_requests": {
+        "default": 0,
+        "title": "Provider Reported Requests",
+        "type": "integer"
+      },
+      "catalog_priced_requests": {
+        "default": 0,
+        "title": "Catalog Priced Requests",
+        "type": "integer"
+      },
+      "unknown_cost_requests": {
+        "default": 0,
+        "title": "Unknown Cost Requests",
+        "type": "integer"
       }
     },
     "title": "UsageTotals",
@@ -1865,7 +1905,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0.0,
+        "default": 0,
         "title": "Progress",
         "type": "number"
       },
@@ -4177,7 +4217,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0.0,
+        "default": 0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5289,7 +5329,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost",
         "type": "number"
       },
@@ -5349,7 +5389,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost",
         "type": "number"
       },
@@ -6317,7 +6357,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0.0,
+        "default": 0,
         "title": "Confidence",
         "type": "number"
       },

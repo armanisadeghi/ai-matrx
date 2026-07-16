@@ -68,6 +68,7 @@ Per user: "the single most important feature we'll ever build for our applicatio
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-16 | codex | Repositioned the chat Chat Options (`runControlsWindow`) from a centered 860px window to a compact 440px, slightly off-canvas left-edge panel; the shared per-conversation tab state is unchanged. |
 | 2026-07-14 | codex | Direct local-PC saved-agent turns now require the explicit `agent_execution_v1` health capability and otherwise remain on AIDream; 422 UI errors classify by structured code so agent preparation failures are no longer mislabeled as invalid conversation ids. |
 | 2026-07-15 | codex | Restored live `/chat` pasted-image and ordinary attachment uploads by gating the premature direct-browser `matrx-files` route; the existing durable `file_id` resource-attachment flow remains unchanged and browser bytes stay on aidream until authenticated CORS preflight passes. |
 | 2026-07-14 | codex | `/chat/new` now first-paints with the landing composer silhouette instead of a blank/missing input, and the same cold bottom-first conversation loading path was extended to `/agents/[id]/run?conversationId=...` so runner deep-links land at the bottom without visible transcript assembly. |

@@ -4,11 +4,11 @@
  * CopyPagesOverlay — shared "copy page range to clipboard" panel.
  *
  * Two modes:
- *  - Single block  : leave "Pages per section" blank → copies everything as
+ *  - Single block  : leave "Pages per chunk" blank → copies everything as
  *                    one structured text block.
- *  - Batch sections: fill in a chunk size → splits the selected pages into
- *                    N sections, shows a list so you can copy each one
- *                    individually or grab them all at once.
+ *  - Batch chunks  : set pages per chunk + optional overlap → splits the
+ *                    selected pages into exact page chunks for text copying
+ *                    or one-click PDF ZIP download.
  *
  * Each copied block has this shape:
  *
@@ -46,6 +46,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,13 @@ import {
 } from "@/components/ui/dialog";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
+import { usePdfClient } from "@/features/pdf/api/client";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
+import { buildPdfSource } from "@/features/pdf/utils/source";
+import {
+  chunkPdfPageNumbers,
+  MAX_PDF_CHUNKS_PER_BATCH,
+} from "@/features/pdf/utils/page-chunks";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -98,17 +106,9 @@ export function parsePageRange(input: string, maxPage: number): number[] {
   return [...new Set(pages)].sort((a, b) => a - b);
 }
 
-/**
- * Chunk an array into sub-arrays of `size`. If size <= 0 the whole array is
- * returned as a single chunk.
- */
-function chunkArray<T>(arr: T[], size: number): T[][] {
-  if (size <= 0) return [arr];
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
+function downloadFilename(docName: string): string {
+  const base = docName.replace(/\.pdf$/i, "").replace(/[^a-z0-9._-]+/gi, "-");
+  return `${base || "pdf"}-page-chunks.zip`;
 }
 
 /**
@@ -153,6 +153,7 @@ function buildSectionText(
 function buildPageSections(
   pageRange: string,
   pagesPerSection: string,
+  overlappingPages: string,
   maxPage: number,
   doc: PdfDocument,
   pageRows: PdfPageRow[],
@@ -165,8 +166,18 @@ function buildPageSections(
 
   const chunkN = parseInt(pagesPerSection.trim(), 10);
   const chunkSize = isNaN(chunkN) || chunkN <= 0 ? 0 : chunkN;
+  const overlapN = parseInt(overlappingPages.trim(), 10);
+  const overlap = isNaN(overlapN) || overlapN <= 0 ? 0 : overlapN;
+  if (chunkSize > 0 && overlap >= chunkSize) {
+    return { error: "Overlap must be smaller than pages per chunk." };
+  }
   const flatPages = getFlatPages(doc, source);
-  const chunks = chunkArray(selectedPages, chunkSize);
+  const chunks = chunkPdfPageNumbers(selectedPages, chunkSize, overlap);
+  if (chunks.length > MAX_PDF_CHUNKS_PER_BATCH) {
+    return {
+      error: `This creates ${chunks.length} chunks. Limit a batch to ${MAX_PDF_CHUNKS_PER_BATCH} chunks.`,
+    };
+  }
 
   const sections: PageSection[] = chunks.map((chunk, i) => {
     const first = chunk[0];
@@ -365,6 +376,7 @@ export function CopyPagesOverlay({
   const [pagesPerSection, setPagesPerSection] = useState(
     DEFAULT_PAGES_PER_SECTION,
   );
+  const [overlappingPages, setOverlappingPages] = useState("0");
   const [source, setSource] = useState<"raw" | "clean">("clean");
   const initializedForOpenRef = useRef<string | null>(null);
   const [sections, setSections] = useState<PageSection[]>([]);
@@ -373,6 +385,9 @@ export function CopyPagesOverlay({
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const pdfClient = usePdfClient();
+  const downloadBlob = useDownloadBlob();
 
   // Flat-content fallback: split by form-feed (\f), the standard PDF page sep
   const flatPages = useMemo(
@@ -429,6 +444,7 @@ export function CopyPagesOverlay({
       const result = buildPageSections(
         pageRange,
         pagesPerSection,
+        overlappingPages,
         maxPage,
         doc,
         pages,
@@ -447,7 +463,7 @@ export function CopyPagesOverlay({
       setCopiedIdx(null);
       setCopiedAll(false);
     },
-    [source, pageRange, pagesPerSection, maxPage, doc, pages],
+    [source, pageRange, pagesPerSection, overlappingPages, maxPage, doc, pages],
   );
 
   const handleGenerate = regenerateSections;
@@ -466,6 +482,7 @@ export function CopyPagesOverlay({
     setSource(defaultSource);
     setPageRange(defaultRange);
     setPagesPerSection(DEFAULT_PAGES_PER_SECTION);
+    setOverlappingPages("0");
     setErrorMsg(null);
     setExpandedIdx(null);
     setCopiedIdx(null);
@@ -474,6 +491,7 @@ export function CopyPagesOverlay({
     const result = buildPageSections(
       defaultRange,
       DEFAULT_PAGES_PER_SECTION,
+      "0",
       maxPage,
       doc,
       pages,
@@ -489,6 +507,38 @@ export function CopyPagesOverlay({
     setSections(result.sections);
     setGenerated(true);
   }, [open, pagesLoading, doc, pages, maxPage, hasClean]);
+
+  const handleDownloadPdfChunks = useCallback(async () => {
+    if (sections.length === 0) return;
+    const sourceWire = buildPdfSource(doc);
+    if (!sourceWire) {
+      setErrorMsg("The source PDF is unavailable, so its pages cannot be exported.");
+      return;
+    }
+    setDownloadingPdf(true);
+    setErrorMsg(null);
+    try {
+      const result = await pdfClient.postPdfBlob("split", {
+        ...sourceWire,
+        parts: sections.map((section, index) => ({
+          pages: section.pages,
+          filename: `${downloadFilename(doc.name).replace(/\.zip$/i, "")}-${String(index + 1).padStart(3, "0")}-pages-${formatPageSpan(section.pages)}.pdf`,
+        })),
+      });
+      downloadBlob({
+        blob: result.blob,
+        filename: downloadFilename(doc.name),
+      });
+    } catch (error) {
+      setErrorMsg(
+        error instanceof Error
+          ? `Could not create PDF chunks: ${error.message}`
+          : "Could not create PDF chunks.",
+      );
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }, [sections, doc, pdfClient, downloadBlob]);
 
   const handleCopySection = useCallback(
     async (idx: number) => {
@@ -529,6 +579,7 @@ export function CopyPagesOverlay({
       if (!isOpen) {
         setPageRange("");
         setPagesPerSection(DEFAULT_PAGES_PER_SECTION);
+        setOverlappingPages("0");
         setSource("clean");
         setSections([]);
         setGenerated(false);
@@ -614,10 +665,10 @@ export function CopyPagesOverlay({
               />
             </div>
 
-            {/* Pages per section */}
-            <div className="w-36 shrink-0">
+            {/* Pages per chunk */}
+            <div className="w-28 shrink-0">
               <label className="block text-[10px] font-medium text-muted-foreground mb-1">
-                Pages / section
+                Pages / chunk
               </label>
               <Input
                 value={pagesPerSection}
@@ -632,6 +683,27 @@ export function CopyPagesOverlay({
               />
             </div>
 
+            {/* Overlap */}
+            <div className="w-20 shrink-0">
+              <label className="block text-[10px] font-medium text-muted-foreground mb-1">
+                Overlap
+              </label>
+              <Input
+                value={overlappingPages}
+                onChange={(e) => {
+                  setOverlappingPages(e.target.value);
+                  setGenerated(false);
+                  setErrorMsg(null);
+                }}
+                placeholder="0"
+                className="h-8 text-xs font-mono"
+                type="number"
+                min="0"
+                max={Math.max(0, chunkSize - 1)}
+                disabled={!isBatchMode}
+              />
+            </div>
+
             {/* Action button */}
             <Button
               size="sm"
@@ -639,7 +711,7 @@ export function CopyPagesOverlay({
               onClick={() => handleGenerate()}
               disabled={pagesLoading}
             >
-              {isBatchMode ? "Generate Sections" : "Generate"}
+              {isBatchMode ? "Generate Chunks" : "Generate"}
             </Button>
           </div>
 
@@ -709,6 +781,24 @@ export function CopyPagesOverlay({
                     onClick={handleCopyAll}
                     title="Copy all sections"
                   />
+                </div>
+
+                <div className="flex justify-end py-2 border-b border-border">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1.5 text-[11px]"
+                    onClick={() => void handleDownloadPdfChunks()}
+                    disabled={downloadingPdf}
+                  >
+                    {downloadingPdf ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Download className="w-3 h-3" />
+                    )}
+                    Download {sections.length} PDF chunk{sections.length === 1 ? "" : "s"}
+                  </Button>
                 </div>
 
                 {sections.map((sec, idx) => {
