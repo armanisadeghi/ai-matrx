@@ -193,6 +193,20 @@ describe("decideKindInputPath — the routing law", () => {
     }
   });
 
+  it("a planted input binding on a data-only machine contract refuses BEFORE any rendering path (enforced invariant, not data hygiene)", () => {
+    const path = decideKindInputPath(
+      "tool_io_web_search_a1b2c3d4_input",
+      active(GENERIC_INPUT_COMPONENT_KEY),
+      fieldSchema,
+      true,
+    );
+    expect(path.mode).toBe("refused");
+    if (path.mode === "refused") {
+      expect(path.reason).toContain("data-only machine contract");
+      expect(path.reason).toContain("registry defect");
+    }
+  });
+
   it("generic + stored fields → bridged-form; no field list → instance-json", () => {
     expect(
       decideKindInputPath("k", active(GENERIC_INPUT_COMPONENT_KEY), fieldSchema)
@@ -213,7 +227,7 @@ describe("decideKindInputPath — the routing law", () => {
 
 describe("emission — bridged pipeline emits schema-valid instances", () => {
   const resolve = (kind: string): KindSchema | undefined =>
-    SYSTEM_KIND_DEFINITIONS.find((d) => d.kind === kind)?.schema;
+    SYSTEM_KIND_DEFINITIONS.find((d) => d.kind === kind)?.schema ?? undefined;
   const flashcardSchema = resolve("flashcard_set");
   const exported = kindSchemaToJsonSchema("flashcard_set", resolve, {
     injectKind: false,

@@ -30,6 +30,10 @@
  * families (`action_io` / `tool_io` / `agent_io` and the generated
  * `workflow_io` contracts) carry NO input rows on purpose — machines fill
  * them, humans never do. They resolve null here, and that null is correct.
+ * The absence of rows is NOT the guarantee, though — `dataOnly` (from the
+ * kind's own metadata) refuses FIRST, so a stray input-role row planted on a
+ * machine contract can never render a form (enforced invariant, per the
+ * 2026-07-15 adversarial review).
  */
 
 import type { ComponentResolution } from "../registry/component-registry";
@@ -51,7 +55,14 @@ export function decideKindInputPath(
   kind: string,
   resolution: ComponentResolution | null,
   schema: KindSchema | null,
+  dataOnly = false,
 ): KindInputPath {
+  if (dataOnly) {
+    return {
+      mode: "refused",
+      reason: `Kind "${kind}" is a generated data-only machine contract (action_io / tool_io / workflow_io / agent_io) — machines fill it, humans never do. Refused by classification regardless of any registered input binding; a stray input-role kind_component row on this kind is a registry defect, not a license to render.`,
+    };
+  }
   if (resolution === null) {
     return {
       mode: "refused",

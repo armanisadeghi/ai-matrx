@@ -256,6 +256,34 @@ export interface KindInputContract {
   schema: KindSchema | null;
   /** The materialized `kind_definition.emitted_json_schema` — the structural-leg authority. */
   emittedJsonSchema: Json | null;
+  /**
+   * True when the kind is a generated data-only machine contract
+   * (`metadata.data_only` or a generated contract family) — machines fill
+   * these, humans never do. The input routing law refuses them even if a
+   * stray input-role component row exists (enforced invariant, not data
+   * hygiene).
+   */
+  dataOnly: boolean;
+}
+
+/** The generated machine-contract families (mirrors aidream ContractFamily). */
+const GENERATED_CONTRACT_FAMILY_VALUES = new Set([
+  "action_io",
+  "tool_io",
+  "workflow_io",
+  "agent_io",
+]);
+
+function isDataOnlyKindMetadata(metadata: Json | null): boolean {
+  if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return false;
+  }
+  const record = metadata as Record<string, Json | undefined>;
+  if (record.data_only === true) return true;
+  return (
+    typeof record.family === "string" &&
+    GENERATED_CONTRACT_FAMILY_VALUES.has(record.family)
+  );
 }
 
 /**
@@ -274,7 +302,7 @@ export async function getKindInputContractBySlug(
   const { data: def, error: defErr } = await supabase
     .schema("content_ir")
     .from("kind_definition")
-    .select("id, emitted_json_schema")
+    .select("id, emitted_json_schema, metadata")
     .eq("kind", kind)
     .is("deleted_at", null)
     .maybeSingle();
@@ -286,5 +314,9 @@ export async function getKindInputContractBySlug(
   if (!def) return null;
 
   const schema = await getKindSchemaBySlugFromTables(kind);
-  return { schema, emittedJsonSchema: def.emitted_json_schema };
+  return {
+    schema,
+    emittedJsonSchema: def.emitted_json_schema,
+    dataOnly: isDataOnlyKindMetadata(def.metadata),
+  };
 }

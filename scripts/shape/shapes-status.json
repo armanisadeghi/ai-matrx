@@ -1,5 +1,5 @@
 {
-  "generated_for": "714-kinds+d0d0796dbdd0",
+  "generated_for": "714-kinds+bcf4e6eb9f42",
   "columns": [
     "definition",
     "example",
@@ -3448,7 +3448,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3462,7 +3462,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3476,7 +3476,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3644,7 +3644,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3658,7 +3658,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3686,7 +3686,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3700,7 +3700,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3714,7 +3714,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3784,7 +3784,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3840,7 +3840,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -3854,7 +3854,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -4050,7 +4050,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -4246,7 +4246,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -4344,7 +4344,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -8922,7 +8922,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -10000,7 +10000,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"

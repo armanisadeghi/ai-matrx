@@ -135,6 +135,7 @@ export default function KindInputForm({
           kind,
           resolveComponent(kind, "web", "input"),
           contract.schema,
+          contract.dataOnly,
         );
         if (path.mode === "refused") {
           captureError({
