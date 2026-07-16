@@ -250,3 +250,33 @@ describe("kind storage transform — 2026-07-15 expressivity constructs", () => 
     ).toThrow(/mutually exclusive/);
   });
 });
+
+describe("kind storage transform — input-semantics constructs (W3-A)", () => {
+  it("round-trips description / default / bounds / open enum / items-enum", () => {
+    const schema: KindSchema = {
+      kind: "input_semantics_demo",
+      fields: {
+        audience: {
+          type: "enum",
+          values: ["kids", "adults"],
+          open: true,
+          description: "Who reads this",
+          default: "adults",
+          required: true,
+        },
+        count: { type: "number", min: 1, max: 100, step: 1, default: 10 },
+        topics: { type: "string[]", values: ["a", "b"], open: true },
+        tags: { type: "string[]", values: ["x"] },
+        plain: { type: "string[]" },
+        note: { type: "string", description: "Free text", default: "hi" },
+        payload: { type: "json", default: null },
+      },
+    };
+    const stored = kindSchemaToStorage(schema);
+    expect(stored.edges).toEqual([]);
+    expect(storageToKindSchema(schema.kind, stored)).toEqual(schema);
+    // `null` default survives storage (only ABSENCE is absence).
+    const payload = stored.data.find((e) => e.name === "payload");
+    expect(payload && "default" in payload && payload.default).toBeNull();
+  });
+});

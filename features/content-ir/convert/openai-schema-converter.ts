@@ -124,6 +124,7 @@ const METADATA_KEYS = new Set([
   "format",
   "minimum",
   "maximum",
+  "multipleOf",
   "exclusiveMinimum",
   "exclusiveMaximum",
   "minLength",
@@ -149,7 +150,7 @@ function deepClone<T>(value: T): T {
 
 function fieldSchemaSummary(field: FieldSchema): string {
   if (field.type === "enum") {
-    return `enum(${field.values.join("|")})${field.required ? "*" : ""}`;
+    return `enum(${field.values.join("|")}${field.open ? "|+any" : ""})${field.required ? "*" : ""}`;
   }
   if (field.type === "array") {
     return `array<${field.itemKinds.join("|")}>${field.required ? "*" : ""}`;
@@ -195,10 +196,31 @@ function resolvePrimaryType(node: JsonSchemaNode): {
   return { type: null, nullable: false };
 }
 
-function collectDropped(node: JsonSchemaNode, path: string): DroppedMetadata[] {
+/**
+ * Metadata keys the converted field CARRIES (input-semantics extension) —
+ * these are no longer "dropped": description / default land on FieldBase;
+ * minimum / maximum / multipleOf land on `number` fields as min/max/step.
+ */
+function carriedMetadataKeys(field: FieldSchema | null): Set<string> {
+  if (field === null) return new Set();
+  const carried = new Set(["description", "default"]);
+  if (field.type === "number") {
+    carried.add("minimum");
+    carried.add("maximum");
+    carried.add("multipleOf");
+  }
+  return carried;
+}
+
+function collectDropped(
+  node: JsonSchemaNode,
+  path: string,
+  carriedField: FieldSchema | null = null,
+): DroppedMetadata[] {
+  const carried = carriedMetadataKeys(carriedField);
   const dropped: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(node)) {
-    if (METADATA_KEYS.has(key)) {
+    if (METADATA_KEYS.has(key) && !carried.has(key)) {
       dropped[key] = value;
     }
   }
@@ -207,6 +229,39 @@ function collectDropped(node: JsonSchemaNode, path: string): DroppedMetadata[] {
     return [{ path, dropped }];
   }
   return [];
+}
+
+/**
+ * Attach the representable node metadata to a converted field: description
+ * (string), default (any JSON value, verbatim), and — for `number` fields —
+ * minimum/maximum/multipleOf as min/max/step. Never overwrites values the
+ * core conversion already set.
+ */
+function attachNodeMetadata(
+  node: JsonSchemaNode,
+  field: FieldSchema,
+): FieldSchema {
+  let out = field;
+  if (typeof node.description === "string" && out.description === undefined) {
+    out = { ...out, description: node.description };
+  }
+  if (node.default !== undefined && out.default === undefined) {
+    out = { ...out, default: node.default };
+  }
+  if (out.type === "number") {
+    const bounds: { min?: number; max?: number; step?: number } = {};
+    if (typeof node.minimum === "number" && out.min === undefined) {
+      bounds.min = node.minimum;
+    }
+    if (typeof node.maximum === "number" && out.max === undefined) {
+      bounds.max = node.maximum;
+    }
+    if (typeof node.multipleOf === "number" && out.step === undefined) {
+      bounds.step = node.multipleOf;
+    }
+    if (Object.keys(bounds).length > 0) out = { ...out, ...bounds };
+  }
+  return out;
 }
 
 function synthesizeItemKindSlug(schemaName: string, fieldName: string): string {
@@ -424,6 +479,11 @@ function registerDeclaredKindDraft(
   });
 }
 
+/**
+ * Convert one JSON Schema property node. Wraps the core structural
+ * conversion with the metadata carry (description / default / number
+ * bounds) and reports the metadata that remains genuinely dropped.
+ */
 function convertProperty(
   fieldName: string,
   node: JsonSchemaNode,
@@ -431,8 +491,19 @@ function convertProperty(
   path: string,
   ctx: ConvertContext,
 ): FieldSchema | null {
-  ctx.droppedMetadata.push(...collectDropped(node, path));
+  const core = convertPropertyCore(fieldName, node, required, path, ctx);
+  const field = core === null ? null : attachNodeMetadata(node, core);
+  ctx.droppedMetadata.push(...collectDropped(node, path, field));
+  return field;
+}
 
+function convertPropertyCore(
+  fieldName: string,
+  node: JsonSchemaNode,
+  required: boolean,
+  path: string,
+  ctx: ConvertContext,
+): FieldSchema | null {
   if (typeof node.$ref === "string") {
     ctx.problems.push({
       severity: "error",
@@ -445,6 +516,7 @@ function convertProperty(
   if (Array.isArray(node.anyOf) || Array.isArray(node.oneOf)) {
     const variants = (node.anyOf ?? node.oneOf) as JsonSchemaNode[];
     const scalarTypes = new Set<"string" | "number" | "boolean">();
+    const enumVariantSets: string[][] = [];
     const memberKinds: string[] = [];
     const anonymousObjects: JsonSchemaNode[] = [];
     let sawNull = false;
@@ -468,6 +540,15 @@ function convertProperty(
       if (nullable) sawNull = true;
       if (type === "null") {
         sawNull = true;
+        continue;
+      }
+      // A string variant CARRYING an enum is an option set, not a plain
+      // scalar — collected separately so anyOf [enum, string] reads back as
+      // an OPEN enum instead of silently losing the options.
+      if (type === "string" && Array.isArray(variant.enum)) {
+        enumVariantSets.push(
+          variant.enum.filter((v): v is string => typeof v === "string"),
+        );
         continue;
       }
       if (type === "string" || type === "number" || type === "boolean") {
@@ -495,6 +576,36 @@ function convertProperty(
           "anyOf/oneOf with unsupported variants cannot be converted automatically.",
       });
       return null;
+    }
+
+    // Enum variants (+ optionally a plain string variant, + optional null):
+    // the option-set forms. [enum] → closed enum; [enum, string] → OPEN enum
+    // ("these options OR any string" — the allowOther wire form).
+    if (
+      enumVariantSets.length > 0 &&
+      anonymousObjects.length === 0 &&
+      memberKinds.length === 0 &&
+      [...scalarTypes].every((s) => s === "string")
+    ) {
+      const values = [...new Set(enumVariantSets.flat())];
+      const open = scalarTypes.has("string");
+      return {
+        ...requiredNullableFlags(required, sawNull),
+        type: "enum",
+        values,
+        ...(open ? { open: true } : {}),
+      };
+    }
+    if (enumVariantSets.length > 0) {
+      // Option sets mixed with non-string members — not representable as an
+      // enum; widen the enum member to string within the union, loudly.
+      ctx.problems.push({
+        severity: "warning",
+        path,
+        message:
+          "anyOf/oneOf mixes an enum variant with non-string members — enum widened to string within the union.",
+      });
+      scalarTypes.add("string");
     }
 
     // Exactly one anonymous object (+ optional null) — a nullable inline object,
@@ -659,6 +770,35 @@ function convertProperty(
         ? (itemNode.oneOf as JsonSchemaNode[])
         : null;
     if (itemVariants) {
+      // items: {anyOf: [string-enum, string]} — the OPEN items-enum form
+      // (multi-select option set with allowOther). All-scalar-string variants
+      // with at least one enum read back as string[] + values (+ open when a
+      // plain string variant widens the set).
+      const itemEnumSets: string[][] = [];
+      let itemPlainString = false;
+      let itemsAllString = true;
+      for (const variant of itemVariants) {
+        if (!isRecord(variant) || resolvePrimaryType(variant).type !== "string") {
+          itemsAllString = false;
+          break;
+        }
+        if (Array.isArray(variant.enum)) {
+          itemEnumSets.push(
+            variant.enum.filter((v): v is string => typeof v === "string"),
+          );
+        } else {
+          itemPlainString = true;
+        }
+      }
+      if (itemsAllString && itemEnumSets.length > 0) {
+        return {
+          ...requiredNullableFlags(required, nullable),
+          type: "string[]",
+          values: [...new Set(itemEnumSets.flat())],
+          ...(itemPlainString ? { open: true } : {}),
+        };
+      }
+
       const itemKinds: string[] = [];
       for (const variant of itemVariants) {
         if (!isRecord(variant) || !isRecord(variant.properties)) {
@@ -694,6 +834,16 @@ function convertProperty(
     const itemType = resolvePrimaryType(itemNode).type;
 
     if (itemType === "string") {
+      // items: {type:"string", enum:[...]} — the CLOSED items-enum form.
+      if (Array.isArray(itemNode.enum)) {
+        return {
+          ...requiredNullableFlags(required, nullable),
+          type: "string[]",
+          values: itemNode.enum.filter(
+            (v): v is string => typeof v === "string",
+          ),
+        };
+      }
       return {
         ...requiredNullableFlags(required, nullable),
         type: "string[]",

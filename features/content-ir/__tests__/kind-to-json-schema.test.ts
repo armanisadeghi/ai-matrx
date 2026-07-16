@@ -572,3 +572,121 @@ describe("kindSchemaToJsonSchema — 2026-07-15 expressivity constructs", () => 
     ).toBeDefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Input-semantics constructs (W3-A agent-input bridge) — emission + round-trip
+// ---------------------------------------------------------------------------
+
+describe("input-semantics constructs — emit and round-trip", () => {
+  const schema: KindSchema = {
+    kind: "input_semantics_demo",
+    fields: {
+      audience: {
+        type: "enum",
+        values: ["kids", "adults"],
+        open: true,
+        description: "Who reads this",
+        default: "adults",
+        required: true,
+      },
+      tone: { type: "enum", values: ["formal", "casual"] },
+      count: { type: "number", min: 1, max: 100, step: 1, default: 10 },
+      topics: { type: "string[]", values: ["a", "b"], open: true },
+      tags: { type: "string[]", values: ["x", "y"] },
+      note: { type: "string", description: "Free text" },
+    },
+  };
+  const soleResolve = (k: string): KindSchema | undefined =>
+    k === schema.kind ? schema : undefined;
+
+  it("emits open enums as anyOf [enum, string], bounds, items enums, description/default", () => {
+    const exported = unwrap(
+      kindSchemaToJsonSchema(schema.kind, soleResolve, { injectKind: false }),
+    );
+    const props = asRecord(at(exported.schema, "properties"));
+    expect(props.audience).toEqual({
+      anyOf: [
+        { type: "string", enum: ["kids", "adults"] },
+        { type: "string" },
+      ],
+      description: "Who reads this",
+      default: "adults",
+    });
+    expect(props.tone).toEqual({ type: "string", enum: ["formal", "casual"] });
+    expect(props.count).toEqual({
+      type: "number",
+      minimum: 1,
+      maximum: 100,
+      multipleOf: 1,
+      default: 10,
+    });
+    expect(props.topics).toEqual({
+      type: "array",
+      items: {
+        anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "string" }],
+      },
+    });
+    expect(props.tags).toEqual({
+      type: "array",
+      items: { type: "string", enum: ["x", "y"] },
+    });
+    expect(props.note).toEqual({ type: "string", description: "Free text" });
+    expect(asRecord(exported.schema).required).toEqual(["audience"]);
+  });
+
+  it("round-trips through runSchemaConversion with zero information loss", () => {
+    const exported = unwrap(
+      kindSchemaToJsonSchema(schema.kind, soleResolve, { injectKind: true }),
+    );
+    const conversion = runSchemaConversion(
+      { name: schema.kind, schema: exported.schema },
+      {},
+    );
+    expect(conversion.parseErrors).toEqual([]);
+    expect(
+      conversion.problems.filter((p) => p.severity === "error"),
+    ).toEqual([]);
+    const root = conversion.blockSchemas.find((d) => d.slug === schema.kind);
+    expect(root?.fields).toEqual(schema.fields);
+    // Nothing representable may land in droppedMetadata anymore.
+    const droppedKeys = conversion.droppedMetadata.flatMap((d) =>
+      Object.keys(d.dropped),
+    );
+    expect(droppedKeys).not.toContain("description");
+    expect(droppedKeys).not.toContain("default");
+    expect(droppedKeys).not.toContain("minimum");
+    expect(droppedKeys).not.toContain("maximum");
+    expect(droppedKeys).not.toContain("multipleOf");
+  });
+
+  it("nullable open enum keeps the null variant and reads back nullable+open", () => {
+    const nullableSchema: KindSchema = {
+      kind: "nullable_open_demo",
+      fields: {
+        pick: { type: "enum", values: ["a"], open: true, nullable: true },
+      },
+    };
+    const exported = unwrap(
+      kindSchemaToJsonSchema(
+        nullableSchema.kind,
+        (k) => (k === nullableSchema.kind ? nullableSchema : undefined),
+        { injectKind: false },
+      ),
+    );
+    expect(at(exported.schema, "properties", "pick")).toEqual({
+      anyOf: [
+        { type: "string", enum: ["a"] },
+        { type: "string" },
+        { type: "null" },
+      ],
+    });
+    const conversion = runSchemaConversion(
+      { name: nullableSchema.kind, schema: exported.schema },
+      {},
+    );
+    const root = conversion.blockSchemas.find(
+      (d) => d.slug === nullableSchema.kind,
+    );
+    expect(root?.fields).toEqual(nullableSchema.fields);
+  });
+});

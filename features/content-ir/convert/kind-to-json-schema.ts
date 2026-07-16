@@ -147,19 +147,55 @@ export function kindSchemaToJsonSchema(
   const withNull = (type: string, nullable: boolean | undefined) =>
     nullable ? [type, "null"] : type;
 
+  /**
+   * Annotation carry: description / default emit beside the structural
+   * schema (input-semantics extension, W3-A). Applied to every field node —
+   * including anyOf wrappers (open enums), where they belong on the OUTER
+   * node so the forward converter reads them back symmetrically.
+   */
   function fieldToJsonSchema(field: FieldSchema): JsonSchemaNode {
+    const node = fieldToJsonSchemaCore(field);
+    if (field.description !== undefined) node.description = field.description;
+    if (field.default !== undefined) node.default = field.default;
+    return node;
+  }
+
+  function fieldToJsonSchemaCore(field: FieldSchema): JsonSchemaNode {
     switch (field.type) {
       case "string":
-      case "number":
       case "boolean":
         return { type: withNull(field.type, field.nullable) };
+
+      case "number":
+        return {
+          type: withNull("number", field.nullable),
+          ...(field.min !== undefined ? { minimum: field.min } : {}),
+          ...(field.max !== undefined ? { maximum: field.max } : {}),
+          ...(field.step !== undefined ? { multipleOf: field.step } : {}),
+        };
 
       case "json":
         // Any JSON value — the empty schema. (Nullable is inherent: null IS
         // a JSON value.)
         return {};
 
-      case "string[]":
+      case "string[]": {
+        // Items-enum (checkbox option sets): closed → items string enum;
+        // open → items anyOf [enum, string] (the set survives as guidance).
+        const items: JsonSchemaNode =
+          field.values === undefined
+            ? { type: "string" }
+            : field.open
+              ? {
+                  anyOf: [
+                    { type: "string", enum: [...field.values] },
+                    { type: "string" },
+                  ],
+                }
+              : { type: "string", enum: [...field.values] };
+        return { type: withNull("array", field.nullable), items };
+      }
+
       case "number[]":
       case "boolean[]":
         return {
@@ -173,11 +209,22 @@ export function kindSchemaToJsonSchema(
           items: {},
         };
 
-      case "enum":
-        return {
-          type: withNull("string", field.nullable),
-          enum: [...field.values],
-        };
+      case "enum": {
+        if (!field.open) {
+          return {
+            type: withNull("string", field.nullable),
+            enum: [...field.values],
+          };
+        }
+        // OPEN enum — "these options OR any string". anyOf keeps the option
+        // set intact for providers instead of widening to a bare string.
+        const variants: JsonSchemaNode[] = [
+          { type: "string", enum: [...field.values] },
+          { type: "string" },
+        ];
+        if (field.nullable) variants.push({ type: "null" });
+        return { anyOf: variants };
+      }
 
       case "union": {
         const variants: JsonSchemaNode[] = field.scalars.map((scalar) => ({

@@ -1,15 +1,18 @@
 /**
  * kind-variable-bridge — the R5 kind ↔ agent-spec converter.
  *
- * Covers: every FieldSchema variant forward (scalars, scalar arrays, enum,
- * array/object/inline_object/record/union JSON-stub textareas), every
- * VARIABLE_COMPONENT_TYPES member in reverse (compile-time-exhaustive via a
- * Record over the union), every ContextObjectType (same technique), the
- * loss-report discipline (toggleValues, min/max/step, allowOther, checkbox
- * enum-set, media refs, picklists, bindings, json-slot narrowing,
- * duplicates), name sanitization, and THE ROUND-TRIP LAW: for the clean
- * subset (string/number/boolean/enum) kindFields → variables → kindFields is
- * the identity with zero losses.
+ * Covers: every FieldSchema variant forward (scalars, scalar arrays, enum
+ * incl. open, bounded number, items-enum string[], structured JSON-stub
+ * textareas), every VARIABLE_COMPONENT_TYPES member in reverse
+ * (compile-time-exhaustive via a Record over the union), every
+ * ContextObjectType (same technique), the OUT-OF-BAND SIDECAR (picklist /
+ * scope bindings, component identity), the loss-report discipline (what
+ * neither FieldSchema nor the sidecar carries), name sanitization, and THE
+ * ROUND-TRIP LAW: for the clean subset kindFields → variables → kindFields
+ * is the identity with zero losses.
+ *
+ * Live-data fidelity is pinned separately in
+ * live-variable-bridge-roundtrip.test.ts (18 real agent variable docs).
  */
 
 import {
@@ -293,20 +296,21 @@ describe("variableDefinitionsToKindFields", () => {
     checkbox: { type: "string[]", loss: false }, // no options → no enum-set to lose
     number: { type: "number", loss: false },
     slider: { type: "number", loss: false }, // no min/max/step set
-    datetime: { type: "string", loss: true },
-    time: { type: "string", loss: true },
-    email: { type: "string", loss: true },
-    url: { type: "string", loss: true },
-    phone: { type: "string", loss: true },
+    // Input-role string components — identity carried in the SIDECAR now.
+    datetime: { type: "string", loss: false },
+    time: { type: "string", loss: false },
+    email: { type: "string", loss: false },
+    url: { type: "string", loss: false },
+    phone: { type: "string", loss: false },
     percent: { type: "number", loss: false },
-    color: { type: "string", loss: true },
-    markdown: { type: "string", loss: true },
-    currency: { type: "string", loss: true },
-    image: { type: "string", loss: true },
-    audio: { type: "string", loss: true },
-    video: { type: "string", loss: true },
-    youtube: { type: "string", loss: true },
-    document: { type: "string", loss: true },
+    color: { type: "string", loss: false },
+    markdown: { type: "string", loss: false },
+    currency: { type: "string", loss: true }, // {amount,currency} serialized
+    image: { type: "string", loss: false },
+    audio: { type: "string", loss: false },
+    video: { type: "string", loss: false },
+    youtube: { type: "string", loss: false },
+    document: { type: "string", loss: false },
   };
 
   it("maps every VARIABLE_COMPONENT_TYPES member (bare component, no options)", () => {
@@ -317,6 +321,24 @@ describe("variableDefinitionsToKindFields", () => {
       const expected = BARE_EXPECTATIONS[type];
       expect(fields.v.type).toBe(expected.type);
       expect(losses.length > 0).toBe(expected.loss);
+    }
+  });
+
+  it("records non-canonical component identity in the sidecar for every member", () => {
+    // Canonical per produced shape: string→textarea, number→number,
+    // boolean→toggle, enum→select, string[]+values→checkbox,
+    // string[] w/o values→textarea. Everything else is recorded.
+    const NOT_RECORDED = new Set<VariableComponentType>([
+      "textarea",
+      "toggle",
+      "number",
+    ]);
+    for (const type of VARIABLE_COMPONENT_TYPES) {
+      const { sidecar } = variableDefinitionsToKindFields([
+        makeVar("v", { type }),
+      ]);
+      const expectRecorded = !NOT_RECORDED.has(type);
+      expect(sidecar.v?.component === type).toBe(expectRecorded);
     }
   });
 
@@ -339,64 +361,109 @@ describe("variableDefinitionsToKindFields", () => {
     },
   );
 
-  it("allowOther widens an optioned single-select to string, with a loss", () => {
+  it("allowOther keeps the option set as an OPEN enum, with no loss", () => {
     const { fields, losses } = variableDefinitionsToKindFields([
       makeVar("v", { type: "select", options: ["a", "b"], allowOther: true }),
     ]);
-    expect(fields.v).toStrictEqual({ type: "string" });
-    expect(losses).toHaveLength(1);
-    expect(losses[0].reason).toContain("allowOther");
+    expect(fields.v).toStrictEqual({
+      type: "enum",
+      values: ["a", "b"],
+      open: true,
+    });
+    expect(losses).toStrictEqual([]);
   });
 
-  it("checkbox with options → string[] with the enum-set constraint in the loss report", () => {
+  it("checkbox with options → string[] carrying the items-enum, no loss", () => {
     const { fields, losses } = variableDefinitionsToKindFields([
       makeVar("v", { type: "checkbox", options: ["x", "y"] }),
     ]);
-    expect(fields.v).toStrictEqual({ type: "string[]" });
-    expect(losses).toHaveLength(1);
-    expect(losses[0].reason).toContain("enum-set");
-    expect(losses[0].reason).toContain('"x"');
+    expect(fields.v).toStrictEqual({ type: "string[]", values: ["x", "y"] });
+    expect(losses).toStrictEqual([]);
+  });
+
+  it("checkbox with options + allowOther → open items-enum", () => {
+    const { fields } = variableDefinitionsToKindFields([
+      makeVar("v", { type: "checkbox", options: ["x"], allowOther: true }),
+    ]);
+    expect(fields.v).toStrictEqual({
+      type: "string[]",
+      values: ["x"],
+      open: true,
+    });
   });
 
   it.each(["toggle", "light-switch"] as const)(
-    "%s with toggleValues → boolean plus a toggleValues loss entry",
+    "%s with toggleValues → 2-value enum (labels ARE the wire values), no loss",
     (type) => {
-      const { fields, losses } = variableDefinitionsToKindFields([
+      const { fields, losses, sidecar } = variableDefinitionsToKindFields([
         makeVar("v", { type, toggleValues: ["Off", "On"] }),
       ]);
-      expect(fields.v).toStrictEqual({ type: "boolean" });
-      expect(losses).toHaveLength(1);
-      expect(losses[0].reason).toContain("toggleValues");
-      expect(losses[0].reason).toContain("On");
+      expect(fields.v).toStrictEqual({ type: "enum", values: ["Off", "On"] });
+      expect(losses).toStrictEqual([]);
+      expect(sidecar.v).toStrictEqual({ component: type });
     },
   );
 
   it.each(["number", "slider"] as const)(
-    "%s with min/max/step → number plus a bounds loss entry",
+    "%s with min/max/step → bounded number, no loss",
     (type) => {
-      const { fields, losses } = variableDefinitionsToKindFields([
+      const { fields, losses, sidecar } = variableDefinitionsToKindFields([
         makeVar("v", { type, min: 1, max: 10, step: 2 }),
       ]);
-      expect(fields.v).toStrictEqual({ type: "number" });
-      expect(losses).toHaveLength(1);
-      expect(losses[0].reason).toContain("min, max, step");
+      expect(fields.v).toStrictEqual({ type: "number", min: 1, max: 10, step: 2 });
+      expect(losses).toStrictEqual([]);
+      expect(sidecar.v?.component === "slider").toBe(type === "slider");
     },
   );
 
   it.each(["image", "audio", "video", "youtube", "document"] as const)(
-    "%s → string with a media-ref loss entry",
+    "%s → string with the input-role component in the sidecar, no loss",
     (type) => {
-      const { fields, losses } = variableDefinitionsToKindFields([
+      const { fields, losses, sidecar } = variableDefinitionsToKindFields([
         makeVar("v", { type }),
       ]);
       expect(fields.v).toStrictEqual({ type: "string" });
-      expect(losses).toHaveLength(1);
-      expect(losses[0].reason).toContain("media ref");
+      expect(losses).toStrictEqual([]);
+      expect(sidecar.v).toStrictEqual({ component: type });
     },
   );
 
-  it("picklist-bound with static options (single-select) → enum, no loss", () => {
-    const { fields, losses } = variableDefinitionsToKindFields([
+  it("helpText → description; defaultValue → default (zero values omitted)", () => {
+    const { fields } = variableDefinitionsToKindFields([
+      makeVar(
+        "v",
+        { type: "select", options: ["a", "b"] },
+        { helpText: "Pick a tone", defaultValue: "b" },
+      ),
+      makeVar("zero", { type: "textarea" }, { defaultValue: "" }),
+    ]);
+    expect(fields.v).toStrictEqual({
+      type: "enum",
+      values: ["a", "b"],
+      description: "Pick a tone",
+      default: "b",
+    });
+    expect(fields.zero).toStrictEqual({ type: "string" });
+  });
+
+  it("synthetic flattening helpTexts are never read back as description", () => {
+    const { fields } = variableDefinitionsToKindFields([
+      makeVar("list", { type: "textarea" }, { helpText: "One per line." }),
+      makeVar(
+        "structured",
+        { type: "textarea" },
+        {
+          helpText: 'Structured JSON (bar_chart).',
+          defaultValue: '{\n  "__kind": "bar_chart"\n}',
+        },
+      ),
+    ]);
+    expect(fields.list).toStrictEqual({ type: "string" });
+    expect(fields.structured).toStrictEqual({ type: "string" });
+  });
+
+  it("picklist-bound with static options (single-select) → enum + sidecar binding, no loss", () => {
+    const { fields, losses, sidecar } = variableDefinitionsToKindFields([
       makeVar("v", {
         type: "select",
         options: ["x", "y"],
@@ -405,6 +472,9 @@ describe("variableDefinitionsToKindFields", () => {
     ]);
     expect(fields.v).toStrictEqual({ type: "enum", values: ["x", "y"] });
     expect(losses).toStrictEqual([]);
+    expect(sidecar.v).toStrictEqual({
+      structuredList: { listId: "list-1" },
+    });
   });
 
   it("picklist-bound without static options → string plus a loss", () => {
@@ -442,25 +512,18 @@ describe("variableDefinitionsToKindFields", () => {
     expect(losses[0].reason).toContain("multi-select");
   });
 
-  it("a binding-driven variable emits NO field, only a loss entry", () => {
-    const { fields, losses } = variableDefinitionsToKindFields([
-      {
-        name: "ctx",
-        defaultValue: "",
-        binding: {
-          contextItemId: "ci-1",
-          scopeTypeId: "st-1",
-          itemKey: "client_name",
-        },
-      },
+  it("a binding-driven variable emits a string field + the binding in the sidecar", () => {
+    const binding = {
+      contextItemId: "ci-1",
+      scopeTypeId: "st-1",
+      itemKey: "client_name",
+    };
+    const { fields, losses, sidecar } = variableDefinitionsToKindFields([
+      { name: "ctx", defaultValue: "", binding },
     ]);
-    expect(fields).toStrictEqual({});
-    expect(losses).toHaveLength(1);
-    expect(losses[0]).toStrictEqual({
-      name: "ctx",
-      reason:
-        'bound to scope context item "client_name" — value is resolved at run time, no kind field emitted',
-    });
+    expect(fields.ctx).toStrictEqual({ type: "string" });
+    expect(losses).toStrictEqual([]);
+    expect(sidecar.ctx).toStrictEqual({ scopeBinding: binding });
   });
 
   it("required: true carries; absent required stays absent", () => {
@@ -560,12 +623,21 @@ describe("contextSlotsToKindFields", () => {
 // ---------------------------------------------------------------------------
 
 describe("round-trip law", () => {
-  it("clean subset (string/number/boolean/enum) round-trips to identity with zero losses", () => {
+  it("clean subset round-trips to identity with zero losses (incl. the input-semantics constructs)", () => {
     const clean: KindSchema["fields"] = {
       title: { type: "string", required: true },
       count: { type: "number" },
+      bounded: { type: "number", min: 1, max: 10, step: 2 },
       enabled: { type: "boolean", required: true },
       tone: { type: "enum", values: ["formal", "casual"] },
+      audience: {
+        type: "enum",
+        values: ["kids", "adults"],
+        open: true,
+        description: "Who reads this",
+        default: "adults",
+      },
+      topics: { type: "string[]", values: ["a", "b"], open: true },
     };
     const vars = kindFieldsToVariableDefinitions({
       kind: "clean_demo",
@@ -574,6 +646,45 @@ describe("round-trip law", () => {
     const { fields, losses } = variableDefinitionsToKindFields(vars);
     expect(fields).toStrictEqual(clean);
     expect(losses).toStrictEqual([]);
+  });
+
+  it("sidecar round-trips: bindings and component identity reattach on the way out", () => {
+    const vars: VariableDefinition[] = [
+      {
+        name: "photo",
+        defaultValue: "",
+        customComponent: { type: "image" },
+      },
+      {
+        name: "style",
+        defaultValue: "",
+        customComponent: {
+          type: "buttons",
+          options: ["a", "b"],
+          structured_list: { listId: "list-1" },
+        },
+      },
+      {
+        name: "client",
+        defaultValue: "",
+        binding: {
+          contextItemId: "ci-1",
+          scopeTypeId: "st-1",
+          itemKey: "client_name",
+        },
+      },
+      {
+        name: "flag",
+        defaultValue: "",
+        customComponent: { type: "toggle", toggleValues: ["No", "Yes"] },
+      },
+    ];
+    const { fields, sidecar } = variableDefinitionsToKindFields(vars);
+    const back = kindFieldsToVariableDefinitions(
+      { kind: "sidecar_demo", fields },
+      { sidecar },
+    );
+    expect(back).toStrictEqual(vars);
   });
 
   it("scalar arrays flatten to string on the way back (documented v1 flattening)", () => {

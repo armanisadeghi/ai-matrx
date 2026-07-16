@@ -57,12 +57,23 @@ type StoredFieldBase = {
   name: string;
   required?: boolean;
   nullable?: boolean;
+  /** Human guidance — mirrors FieldBase.description. */
+  description?: string;
+  /** Default VALUE (annotation-level) — mirrors FieldBase.default. */
+  default?: unknown;
 };
 
 /** One element of `kind_definition.data` — FieldSchema + name, ref targets removed. */
 export type StoredFieldElement =
-  | (StoredFieldBase & { type: ScalarFieldType })
-  | (StoredFieldBase & { type: "string[]" | "number[]" | "boolean[]" })
+  | (StoredFieldBase & { type: "string" | "boolean" })
+  | (StoredFieldBase & {
+      type: "number";
+      min?: number;
+      max?: number;
+      step?: number;
+    })
+  | (StoredFieldBase & { type: "string[]"; values?: string[]; open?: boolean })
+  | (StoredFieldBase & { type: "number[]" | "boolean[]" })
   | (StoredFieldBase & { type: "json" })
   | (StoredFieldBase & { type: "json[]" })
   | (StoredFieldBase & { type: "array" }) // ref array — targets live in edges
@@ -73,7 +84,7 @@ export type StoredFieldElement =
       open?: boolean;
     })
   | (StoredFieldBase & { type: "record"; values: RecordValueType })
-  | (StoredFieldBase & { type: "enum"; values: string[] })
+  | (StoredFieldBase & { type: "enum"; values: string[]; open?: boolean })
   | (StoredFieldBase & {
       type: "union";
       scalars: Array<"string" | "number" | "boolean">;
@@ -113,11 +124,20 @@ const PATH_SEP = ".";
 function base(field: FieldSchema): StoredFieldBase & { name: string } {
   // name is filled by the caller; required/nullable copied only when true so
   // the stored element stays minimal (matches the emitter's optional reads).
-  const out: { name: string; required?: boolean; nullable?: boolean } = {
+  const out: {
+    name: string;
+    required?: boolean;
+    nullable?: boolean;
+    description?: string;
+    default?: unknown;
+  } = {
     name: "",
   };
   if (field.required) out.required = true;
   if (field.nullable) out.nullable = true;
+  if (field.description !== undefined) out.description = field.description;
+  // `null` is a legitimate default; only ABSENCE is absence.
+  if (field.default !== undefined) out.default = field.default;
   return out;
 }
 
@@ -135,20 +155,40 @@ function storeField(
 
   switch (field.type) {
     case "string":
-    case "number":
     case "boolean":
-    case "string[]":
     case "number[]":
     case "boolean[]":
     case "json":
     case "json[]":
       return { ...b, type: field.type };
 
+    case "number":
+      return {
+        ...b,
+        type: "number",
+        ...(field.min !== undefined ? { min: field.min } : {}),
+        ...(field.max !== undefined ? { max: field.max } : {}),
+        ...(field.step !== undefined ? { step: field.step } : {}),
+      };
+
+    case "string[]":
+      return {
+        ...b,
+        type: "string[]",
+        ...(field.values !== undefined ? { values: [...field.values] } : {}),
+        ...(field.open ? { open: true } : {}),
+      };
+
     case "record":
       return { ...b, type: "record", values: field.values };
 
     case "enum":
-      return { ...b, type: "enum", values: [...field.values] };
+      return {
+        ...b,
+        type: "enum",
+        values: [...field.values],
+        ...(field.open ? { open: true } : {}),
+      };
 
     case "union": {
       // Object-union members are refs → edges (positions ordered), exactly
@@ -251,26 +291,55 @@ function restoreField(
   path: string,
   byPath: Map<string, KindEdgeSpec[]>,
 ): FieldSchema {
-  const b: { required?: boolean; nullable?: boolean } = {};
+  const b: {
+    required?: boolean;
+    nullable?: boolean;
+    description?: string;
+    default?: unknown;
+  } = {};
   if (element.required) b.required = true;
   if (element.nullable) b.nullable = true;
+  if (element.description !== undefined) b.description = element.description;
+  if (element.default !== undefined) b.default = element.default;
 
   switch (element.type) {
     case "string":
-    case "number":
     case "boolean":
-    case "string[]":
     case "number[]":
     case "boolean[]":
     case "json":
     case "json[]":
       return { ...b, type: element.type };
 
+    case "number":
+      return {
+        ...b,
+        type: "number",
+        ...(element.min !== undefined ? { min: element.min } : {}),
+        ...(element.max !== undefined ? { max: element.max } : {}),
+        ...(element.step !== undefined ? { step: element.step } : {}),
+      };
+
+    case "string[]":
+      return {
+        ...b,
+        type: "string[]",
+        ...(element.values !== undefined
+          ? { values: [...element.values] }
+          : {}),
+        ...(element.open ? { open: true } : {}),
+      };
+
     case "record":
       return { ...b, type: "record", values: element.values };
 
     case "enum":
-      return { ...b, type: "enum", values: [...element.values] };
+      return {
+        ...b,
+        type: "enum",
+        values: [...element.values],
+        ...(element.open ? { open: true } : {}),
+      };
 
     case "union": {
       const list = byPath.get(path) ?? [];
