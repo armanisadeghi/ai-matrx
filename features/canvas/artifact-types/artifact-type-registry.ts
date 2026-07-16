@@ -157,6 +157,11 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
     materializable: true,
     kinds: ["math_problem"],
   },
+  // NO `kinds` facade for mermaid_diagram (deliberate): mermaid's artifact
+  // payload is RAW SOURCE TEXT and its userEditable version chain edits that
+  // text. MermaidArtifact renders `data`-as-string / `raw` only, so a
+  // structured `content.data` value object would rehydrate blank on canvas
+  // and break the edit chain. Facade requires a value-aware renderer first.
   {
     canvasType: "mermaid",
     aliases: ["mermaid"],
