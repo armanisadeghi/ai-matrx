@@ -788,6 +788,9 @@ export function RagPageReferences({
 
   if (!isCldFile && !isLibrary) return null;
 
+  const isPhysicalPdfPreview =
+    selectedPreview?.key === "physical_pdf" && Boolean(ids.fileId);
+
   return (
     <div className="border-t border-border bg-muted/10">
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/25 px-3 py-2">
@@ -848,113 +851,141 @@ export function RagPageReferences({
           ))}
         </div>
       </div>
-      <div className="grid min-w-0 md:grid-cols-2 md:divide-x md:divide-border">
-        <section className="min-w-0 p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Retrieved chunk
+      {isPhysicalPdfPreview && ids.fileId ? (
+        <section className="min-w-0 bg-background">
+          <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
+            <SelectedPreviewIcon className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-semibold text-foreground">
+              {selectedPreview.label}
             </span>
-            <RagContentActions
-              humanText={aiBundle.sections.retrieved?.humanText ?? ""}
-              label="retrieved chunk"
-              bundle={pageAiBundle}
-              initialSections={["retrieved"]}
+            <span className="text-[10px] text-muted-foreground">
+              {selectedPreview.detail}
+            </span>
+            {selectedCopy ? (
+              <RagContentActions
+                humanText={selectedCopy.humanText}
+                label={selectedPreview.label.toLowerCase()}
+                bundle={pageAiBundle}
+                initialSections={[selectedCopy.key]}
+                className="ml-auto"
+              />
+            ) : null}
+          </div>
+          {/* The physical page is the primary evidence. Keep it out of the
+              comparison-card stack so it can use the result pane's height. */}
+          <div className="h-[min(72dvh,64rem)] min-h-[34rem] overflow-hidden bg-muted/20">
+            <SelectedPdfPages
+              fileId={ids.fileId}
+              sourcePages={selectedSourcePages}
             />
           </div>
-          {children}
         </section>
-        <section className="min-w-0 border-t border-border bg-background md:border-t-0">
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-            {selectedPreview ? (
-              <>
-                <SelectedPreviewIcon className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-semibold text-foreground">
-                  {selectedPreview.label}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {selectedPreview.detail}
-                </span>
-                {selectedCopy ? (
-                  <RagContentActions
-                    humanText={selectedCopy.humanText}
-                    label={selectedPreview.label.toLowerCase()}
-                    bundle={pageAiBundle}
-                    initialSections={[selectedCopy.key]}
-                    className="ml-auto"
-                  />
-                ) : null}
-              </>
-            ) : (
-              <span className="text-xs font-semibold text-foreground">
-                Page reference preview
+      ) : (
+        <div className="grid min-w-0 md:grid-cols-2 md:divide-x md:divide-border">
+          <section className="min-w-0 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Retrieved chunk
               </span>
-            )}
-          </div>
-          <div className="max-h-[34rem] min-h-44 overflow-auto p-3">
-            {busy && !selectedPreview ? (
-              <div className="flex h-36 items-center justify-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Choosing the best page reference…
-              </div>
-            ) : null}
-            {selectedPreview?.key === "physical_pdf" && ids.fileId ? (
-              <div className="h-[32rem] overflow-hidden rounded-lg border border-border bg-muted/20">
-                <SelectedPdfPages
-                  fileId={ids.fileId}
-                  sourcePages={selectedSourcePages}
+              <RagContentActions
+                humanText={aiBundle.sections.retrieved?.humanText ?? ""}
+                label="retrieved chunk"
+                bundle={pageAiBundle}
+                initialSections={["retrieved"]}
+              />
+            </div>
+            {children}
+          </section>
+          <section className="min-w-0 border-t border-border bg-background md:border-t-0">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+              {selectedPreview ? (
+                <>
+                  <SelectedPreviewIcon className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">
+                    {selectedPreview.label}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {selectedPreview.detail}
+                  </span>
+                  {selectedCopy ? (
+                    <RagContentActions
+                      humanText={selectedCopy.humanText}
+                      label={selectedPreview.label.toLowerCase()}
+                      bundle={pageAiBundle}
+                      initialSections={[selectedCopy.key]}
+                      className="ml-auto"
+                    />
+                  ) : null}
+                </>
+              ) : (
+                <span className="text-xs font-semibold text-foreground">
+                  Page reference preview
+                </span>
+              )}
+            </div>
+            <div className="max-h-[34rem] min-h-44 overflow-auto p-3">
+              {busy && !selectedPreview ? (
+                <div className="flex h-36 items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Choosing the best page reference…
+                </div>
+              ) : null}
+              {selectedPreview?.key === "page_image" && pageImageId ? (
+                <PageImagePreview
+                  fileId={pageImageId}
+                  pageNumber={pageNumber}
                 />
-              </div>
-            ) : null}
-            {selectedPreview?.key === "page_image" && pageImageId ? (
-              <PageImagePreview fileId={pageImageId} pageNumber={pageNumber} />
-            ) : null}
-            {selectedPreview?.key === "clean" && page?.cleanedText ? (
-              <BasicMarkdownContent content={page.cleanedText} />
-            ) : null}
-            {selectedPreview?.key === "raw" && page?.rawText ? (
-              <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground">
-                {page.rawText}
-              </pre>
-            ) : null}
-            {selectedPreview?.key === "verification" && page?.verifiedAt ? (
-              <VerificationDetail
-                verifiedAt={page.verifiedAt}
-                flags={page.verificationFlags}
-                method={page.extractionMethod}
-                confidence={page.extractionConfidence}
-                usedOcr={page.usedOcr}
-              />
-            ) : null}
-            {selectedGroup ? <DerivativeDetail group={selectedGroup} /> : null}
-            {selectedPreview?.key === "custom-extractions" && loaded ? (
-              <ExtractionDetail
-                rows={loaded.extractionRows}
-                total={loaded.extractionTotal}
-              />
-            ) : null}
-            {pageNumber == null ? (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                This result has no page provenance, so page-specific enriched
-                assets cannot be resolved without guessing. The PDF source is
-                still available on demand.
-              </p>
-            ) : null}
-            {pageNumber != null &&
-            !busy &&
-            !error &&
-            !pageError &&
-            !hasAnyEnrichment ? (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                No enriched page assets have been produced yet. The PDF page
-                remains available on demand.
-              </p>
-            ) : null}
-            {error || pageError ? (
-              <p className="text-xs text-destructive">{error ?? pageError}</p>
-            ) : null}
-          </div>
-        </section>
-      </div>
+              ) : null}
+              {selectedPreview?.key === "clean" && page?.cleanedText ? (
+                <BasicMarkdownContent content={page.cleanedText} />
+              ) : null}
+              {selectedPreview?.key === "raw" && page?.rawText ? (
+                <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground">
+                  {page.rawText}
+                </pre>
+              ) : null}
+              {selectedPreview?.key === "verification" && page?.verifiedAt ? (
+                <VerificationDetail
+                  verifiedAt={page.verifiedAt}
+                  flags={page.verificationFlags}
+                  method={page.extractionMethod}
+                  confidence={page.extractionConfidence}
+                  usedOcr={page.usedOcr}
+                />
+              ) : null}
+              {selectedGroup ? (
+                <DerivativeDetail group={selectedGroup} />
+              ) : null}
+              {selectedPreview?.key === "custom-extractions" && loaded ? (
+                <ExtractionDetail
+                  rows={loaded.extractionRows}
+                  total={loaded.extractionTotal}
+                />
+              ) : null}
+              {pageNumber == null ? (
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  This result has no page provenance, so page-specific enriched
+                  assets cannot be resolved without guessing. The PDF source is
+                  still available on demand.
+                </p>
+              ) : null}
+              {pageNumber != null &&
+              !busy &&
+              !error &&
+              !pageError &&
+              !hasAnyEnrichment ? (
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  No enriched page assets have been produced yet. The PDF page
+                  remains available on demand.
+                </p>
+              ) : null}
+              {error || pageError ? (
+                <p className="text-xs text-destructive">{error ?? pageError}</p>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
