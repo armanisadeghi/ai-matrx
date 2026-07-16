@@ -1,5 +1,5 @@
 {
-  "generated_for": "714-kinds+5ef5ba2e2311",
+  "generated_for": "714-kinds+d0d0796dbdd0",
   "columns": [
     "definition",
     "example",
@@ -3798,9 +3798,9 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "missing",
-        "skill": "missing",
-        "content_block": "missing",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -3812,9 +3812,9 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "missing",
-        "skill": "missing",
-        "content_block": "missing",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -3826,9 +3826,9 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "missing",
-        "skill": "missing",
-        "content_block": "missing",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -3939,8 +3939,8 @@
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "skill": "missing",
-        "content_block": "missing",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -4205,8 +4205,8 @@
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "skill": "missing",
-        "content_block": "missing",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -4303,8 +4303,8 @@
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "skill": "missing",
-        "content_block": "missing",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -10050,42 +10050,6 @@
     },
     {
       "severity": "yellow",
-      "code": "no-content-block",
-      "kind": "office_document",
-      "message": "kind \"office_document\" has no content block referencing \"__kind\": \"office_document\""
-    },
-    {
-      "severity": "yellow",
-      "code": "no-content-block",
-      "kind": "office_presentation",
-      "message": "kind \"office_presentation\" has no content block referencing \"__kind\": \"office_presentation\""
-    },
-    {
-      "severity": "yellow",
-      "code": "no-content-block",
-      "kind": "office_spreadsheet",
-      "message": "kind \"office_spreadsheet\" has no content block referencing \"__kind\": \"office_spreadsheet\""
-    },
-    {
-      "severity": "yellow",
-      "code": "no-content-block",
-      "kind": "q_and_a_set",
-      "message": "kind \"q_and_a_set\" has no content block referencing \"__kind\": \"q_and_a_set\""
-    },
-    {
-      "severity": "yellow",
-      "code": "no-content-block",
-      "kind": "schema_showcase",
-      "message": "kind \"schema_showcase\" has no content block referencing \"__kind\": \"schema_showcase\""
-    },
-    {
-      "severity": "yellow",
-      "code": "no-content-block",
-      "kind": "study_pack_set",
-      "message": "kind \"study_pack_set\" has no content block referencing \"__kind\": \"study_pack_set\""
-    },
-    {
-      "severity": "yellow",
       "code": "no-example",
       "kind": "basic_card",
       "message": "kind \"basic_card\" has no example (no kind_example row, no interim sample_data)"
@@ -10275,42 +10239,6 @@
       "code": "no-example",
       "kind": "troubleshooting_step",
       "message": "kind \"troubleshooting_step\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-skill",
-      "kind": "office_document",
-      "message": "kind \"office_document\" has no render_block skill teaching it"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-skill",
-      "kind": "office_presentation",
-      "message": "kind \"office_presentation\" has no render_block skill teaching it"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-skill",
-      "kind": "office_spreadsheet",
-      "message": "kind \"office_spreadsheet\" has no render_block skill teaching it"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-skill",
-      "kind": "q_and_a_set",
-      "message": "kind \"q_and_a_set\" has no render_block skill teaching it"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-skill",
-      "kind": "schema_showcase",
-      "message": "kind \"schema_showcase\" has no render_block skill teaching it"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-skill",
-      "kind": "study_pack_set",
-      "message": "kind \"study_pack_set\" has no render_block skill teaching it"
     }
   ]
 }
