@@ -90,30 +90,35 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
     aliases: ["timeline"],
     standaloneAliases: ["timeline"],
     materializable: true,
+    kinds: ["timeline"],
   },
   {
     canvasType: "research",
     aliases: ["research"],
     standaloneAliases: ["research"],
     materializable: true,
+    kinds: ["research_report"],
   },
   {
     canvasType: "resources",
     aliases: ["resources"],
     standaloneAliases: ["resources"],
     materializable: true,
+    kinds: ["resource_collection"],
   },
   {
     canvasType: "progress",
     aliases: ["progress", "progress_tracker"],
     standaloneAliases: ["progress_tracker"],
     materializable: true,
+    kinds: ["progress_tracker"],
   },
   {
     canvasType: "troubleshooting",
     aliases: ["troubleshooting"],
     standaloneAliases: ["troubleshooting"],
     materializable: true,
+    kinds: ["troubleshooting_guide"],
   },
   {
     canvasType: "decision-tree",
@@ -143,6 +148,7 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
     aliases: ["recipe", "cooking_recipe"],
     standaloneAliases: ["cooking_recipe"],
     materializable: true,
+    kinds: ["cooking_recipe"],
   },
   {
     canvasType: "math_problem",
@@ -200,6 +206,7 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
     standaloneAliases: ["questionnaire"],
     materializable: true,
     persistenceStrategy: "generic",
+    kinds: ["questionnaire"],
   },
   // Data-touching (vision R7): NEVER auto-create. Materializes as a tracked
   // proposal; `TasksArtifact` converts to real `ctx_tasks` on explicit user

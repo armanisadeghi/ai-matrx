@@ -21,6 +21,9 @@ const IconResolver = dynamic(
   { ssr: false },
 );
 
+/** Beyond this length the empty-state background shows description only. */
+const LONG_DESCRIPTION_CHAR_THRESHOLD = 1000;
+
 export function AgentEmptyMessageDisplay({
   conversationId,
 }: {
@@ -55,6 +58,17 @@ export function AgentEmptyMessageDisplay({
     descriptionOverride !== null && descriptionOverride !== undefined
       ? descriptionOverride
       : agentDescription;
+
+  const isLongDescription =
+    (displayDescription?.length ?? 0) > LONG_DESCRIPTION_CHAR_THRESHOLD;
+
+  if (isLongDescription && displayDescription) {
+    return (
+      <div className="flex flex-col h-full justify-start text-left px-6 py-8 max-w-3xl mx-auto w-full">
+        <MarkdownStream content={displayDescription} hideCopyButton={true} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6 py-12">

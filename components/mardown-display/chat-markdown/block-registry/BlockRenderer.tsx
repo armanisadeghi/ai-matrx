@@ -2,40 +2,31 @@
 import React, { useCallback } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
 import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import {
   ArtifactRender,
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
-import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
 import { useBlockRenderingConfig } from "@/components/mardown-display/chat-markdown/BlockRenderingContext";
-import { InlineCodeSnippet } from "../InlineCodeSnippet";
-import type {
-  TypedRenderBlock,
-  ServerOnlyBlockType,
-} from "@/types/python-generated/stream-events";
-import type { ClientOnlyBlockType } from "@/components/mardown-display/markdown-classification/processors/utils/client-blocks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectHideReasoning,
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
-import { parseYouTubeUrl } from "@/lib/media/youtube";
-import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
-import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
-import { isInlineDecision } from "@/components/mardown-display/blocks/inline-decision/types";
-import {
-  applyIrKindRoute,
-  GENERIC_STRUCTURED_COMPONENT_KEY,
-} from "@/features/content-ir/react/kind-route";
-import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
+import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { Loader2 } from "lucide-react";
-import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
+import {
+  isBlockLoading,
+  resolveBlockDispatch,
+  reportUnregisteredBlockType,
+  type BlockDispatchContext,
+  type RenderBlock,
+} from "./block-dispatch";
 
-/** Language for ``` fences with no info string (plain text / notes / prose). */
-const DEFAULT_UNLABELED_FENCE_LANGUAGE = "markdown";
+// The flat render-block shape lives with the dispatch registry now; re-export
+// so the existing importers (EnhancedChatMarkdown, SafeBlockRenderer, …) keep
+// working unchanged.
+export type { RenderBlock } from "./block-dispatch";
 
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
@@ -59,42 +50,6 @@ const StrictModeError: React.FC<{ blockType: string; blockId?: string }> = ({
   </div>
 );
 
-/**
- * Flat render block interface used by BlockRenderer.
- *
- * This is intentionally NOT a discriminated union. Using a discriminated union
- * (like TypedRenderBlock) causes TypeScript to narrow `block` to `never` for any
- * `case` whose type string isn't in the union — making the switch unusable.
- *
- * All fields are the union of what any block case can access. Specific typed data
- * for server-processed blocks arrives via `serverData` (the Python `data` field).
- *
- * The `type` string covers ALL blocks: Python-typed (TypedRenderBlock["type"]),
- * client-splitter types (ClientOnlyBlockType), FE-synthesized data-event
- * wrappers (ServerOnlyBlockType), and the open `string` fallback for anything
- * Python adds before TypeScript types catch up.
- */
-export interface RenderBlock {
-  type:
-    | TypedRenderBlock["type"]
-    | ClientOnlyBlockType
-    | ServerOnlyBlockType
-    | string;
-  content: string;
-  /** Python's `data` field — typed by the server, accessed via serverData in the renderer. */
-  serverData?: Record<string, unknown>;
-  /** For code blocks: the language identifier (e.g. "typescript", "json"). */
-  language?: string;
-  /** For image/video blocks parsed from markdown: the media URL. */
-  src?: string;
-  /** For image/video blocks parsed from markdown: the alt text. */
-  alt?: string;
-  /** Block-specific metadata from the splitter or server. */
-  metadata?: Record<string, unknown>;
-  /** True when this block was emitted mid-stream (status: "streaming") — content is incomplete. */
-  isStreamingBlock?: boolean;
-}
-
 interface BlockRendererProps {
   requestId?: string;
   block: RenderBlock;
@@ -115,78 +70,6 @@ interface BlockRendererProps {
   /** Generic handler: replaces `original` substring with `replacement` in the full content string. */
   replaceBlockContent: (original: string, replacement: string) => void;
   handleOpenEditor: () => void;
-}
-
-/**
- * Best-effort MIME type for an audio URL parsed from a markdown link, derived
- * from its file extension (query string ignored). Lets the audio player emit a
- * correct `<source type>`; returns undefined for unknown extensions, which the
- * player handles gracefully.
- */
-function audioMimeFromUrl(url: string): string | undefined {
-  const ext = url
-    .split(/[?#]/)[0]
-    .match(/\.([a-z0-9]+)$/i)?.[1]
-    ?.toLowerCase();
-  switch (ext) {
-    case "mp3":
-      return "audio/mpeg";
-    case "wav":
-      return "audio/wav";
-    case "m4a":
-      return "audio/mp4";
-    case "aac":
-      return "audio/aac";
-    case "ogg":
-    case "oga":
-      return "audio/ogg";
-    case "opus":
-      return "audio/opus";
-    case "flac":
-      return "audio/flac";
-    case "weba":
-    case "webm":
-      return "audio/webm";
-    default:
-      return undefined;
-  }
-}
-
-/**
- * Helper to determine if JSON content is genuinely incomplete (still streaming)
- * or just marked incomplete due to formatting issues
- */
-function isGenuinelyIncomplete(content: string): boolean {
-  const trimmed = content.trim();
-  const openBraces = (trimmed.match(/\{/g) || []).length;
-  const closeBraces = (trimmed.match(/\}/g) || []).length;
-
-  // If braces are unbalanced, it's genuinely incomplete
-  return openBraces > closeBraces;
-}
-
-/**
- * Returns true when a block should show its loading skeleton instead of
- * attempting to parse incomplete content.
- *
- * A block is considered "still loading" when either:
- *  - It was emitted mid-stream (status === "streaming") — content is definitely
- *    incomplete because the accumulator hasn't seen the closing fence/tag yet.
- *  - The splitter/server explicitly marked it isComplete: false AND the
- *    brace count shows the JSON is still open.
- */
-function isBlockLoading(block: {
-  isStreamingBlock?: boolean;
-  metadata?: Record<string, unknown>;
-  content: string;
-}): boolean {
-  if (block.isStreamingBlock) return true;
-  if (
-    block.metadata?.isComplete === false &&
-    isGenuinelyIncomplete(block.content)
-  )
-    return true;
-  return false;
 }
 
 /**
@@ -263,8 +146,24 @@ function isPendingStructuredJson(block: {
 }
 
 /**
- * Renders individual content blocks with lazy-loaded components
- * Extracted from MarkdownStream for better code splitting
+ * Renders individual content blocks through four ordered stages:
+ *
+ *  1. KIND ROUTE (Shape blocks, first-class) — `applyIrKindRoute`: a block
+ *     whose `metadata.__ir` envelope resolved a REGISTERED kind routes through
+ *     the kind registry (`resolveComponent` / legacy bridge) before any
+ *     type-keyed dispatch. This is how bare/fenced JSON `flashcard_set` —
+ *     which the legacy detectors can only call "code" — becomes real
+ *     flashcards, live while streaming.
+ *  2. PENDING SKELETON — a still-streaming JSON region with an unresolved
+ *     kind shows a neutral skeleton instead of flashing raw text.
+ *  3. UNIFIED ARTIFACT RENDERER — standalone materializable blocks render
+ *     through the single shared artifact path (chat/canvas/artifact identical).
+ *  4. DISPATCH REGISTRY — the declarative, crosswalk-classified table in
+ *     block-dispatch.tsx (protocol / scalar_generic / shape / opaque). An
+ *     unregistered type SCREAMS (reportUnregisteredBlockType) and renders as
+ *     basic markdown — never a silent default.
+ *
+ * Components are lazy-loaded (see BlockComponentRegistry) for code splitting.
  */
 export const BlockRenderer: React.FC<BlockRendererProps> = ({
   requestId,
@@ -279,18 +178,19 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   replaceBlockContent,
   handleOpenEditor,
 }) => {
-  // content-ir kind routing: a block whose metadata.__ir envelope resolved a
-  // registered kind renders as that kind's component (envelope-derived
-  // serverData) — e.g. bare/fenced JSON flashcard_set, which the legacy
-  // detectors can only call "code". Everything else passes through untouched.
+  // Stage 1 — content-ir kind routing: a block whose metadata.__ir envelope
+  // resolved a registered kind renders as that kind's component
+  // (envelope-derived serverData) — e.g. bare/fenced JSON flashcard_set, which
+  // the legacy detectors can only call "code". Everything else passes through
+  // untouched.
   const block = applyIrKindRoute(rawBlock);
   const { strictServerData } = useBlockRenderingConfig();
 
   // Per-conversation display flags. When a surface has `hideReasoning` or
   // `hideToolResults` set on its `instanceUIState`, the matching block
-  // types self-gate here so there's exactly one source of truth — no
-  // scattered conditional-render sites, no missed branches, no need for
-  // parents to remember to filter.
+  // types self-gate in their dispatch registrations so there's exactly one
+  // source of truth — no scattered conditional-render sites, no missed
+  // branches, no need for parents to remember to filter.
   const hideReasoning = useAppSelector(
     conversationId ? selectHideReasoning(conversationId) : () => false,
   );
@@ -345,23 +245,22 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     ],
   );
 
-  // ── Unified artifact renderer (Wave B) ───────────────────────────────────
-  // Standalone materializable blocks whose type has a unified renderer are
-  // A JSON region still streaming with an unresolved kind renders a neutral
-  // skeleton, NOT its raw text — the moment `__kind` arrives it routes to the
-  // real component (above), and if it completes kind-less it falls through to
-  // the code block below. Kills the "shows the whole JSON, converts only when
-  // done" flash for bare/late-`__kind` JSON. (Placed after all hooks so the
-  // early return never changes hook order.)
+  // Stage 2 — a JSON region still streaming with an unresolved kind renders a
+  // neutral skeleton, NOT its raw text — the moment `__kind` arrives it routes
+  // to the real component (Stage 1), and if it completes kind-less it falls
+  // through to the code block below. Kills the "shows the whole JSON, converts
+  // only when done" flash for bare/late-`__kind` JSON. (Placed after all hooks
+  // so the early return never changes hook order.)
   if (isPendingStructuredJson(block)) {
     return <PendingStructuredBlock key={index} />;
   }
 
-  // rendered through the single shared path (chat/canvas/artifact identical).
-  // `artifact` blocks go through the dedicated `case "artifact"` below (UUID id
-  // → render-by-id; else inline ArtifactBlock chrome). Standalone materializable
-  // types (```tasks, ```mermaid, JSON blocks, …) route through the unified
-  // renderer here.
+  // Stage 3 — unified artifact renderer (Wave B): standalone materializable
+  // blocks whose type has a unified renderer are rendered through the single
+  // shared path (chat/canvas/artifact identical). `artifact` blocks go through
+  // the dedicated `artifact` registration below (UUID id → render-by-id; else
+  // inline ArtifactBlock chrome). Standalone materializable types (```tasks,
+  // ```mermaid, JSON blocks, …) route through the unified renderer here.
   if (block.type !== "artifact") {
     const _def = resolveArtifactDef(block.type);
     if (_def && hasArtifactRenderer(_def.canvasType)) {
@@ -416,865 +315,36 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     }
   }
 
-  switch (block.type) {
-    case "audio_output": {
-      // Two inbound shapes during the Phase 0/2 transition:
-      //  - Legacy `audio_output` event       → snake_case `{ url, mime_type }`
-      //  - Canonical `media_block(kind=audio)` → camelCase `UnifiedMediaBlock`
-      //    with `cdnUrl` / `signedUrl` / `externalUrl` (no `url`).
-      // Read both; prefer the canonical fields when present.
-      // TODO: collapse onto `UnifiedMediaBlock` end-to-end when audio gets
-      // an `UnifiedAudioBlockRenderer` matching the image one.
-      // Resolve the playable URL through the universal file handler instead of
-      // echoing the raw `data.url`. The handler prefers the durable public/CDN
-      // URL and re-mints expiring URLs from `file_id`, so audio plays during
-      // streaming (when Python sends only a `file_id`, no minted URL) AND the
-      // "Copy link" action never leaks a raw signed S3 URL. See the renderer
-      // for the full durability rationale.
-      const sd = (block.serverData ?? {}) as Record<string, unknown>;
-      return <AudioOutputBlockRenderer key={index} data={sd} />;
-    }
+  // Stage 4 — the declarative dispatch registry (block-dispatch.tsx),
+  // organized by crosswalk classification and exhaustive against the
+  // generated block-type unions.
+  const ctx: BlockDispatchContext = {
+    block,
+    index,
+    isStreamActive,
+    conversationId,
+    messageId,
+    taskId,
+    requestId,
+    isLastReasoningBlock,
+    hideReasoning,
+    hideToolResults,
+    replaceBlockContent,
+    renderBasicMarkdown,
+  };
 
-    case "thinking":
-    case "reasoning":
-      if (hideReasoning) return null;
-      return (
-        <BlockComponents.ReasoningVisualization
-          key={index}
-          reasoningText={block.content}
-          showReasoning={true}
-          isStreaming={
-            isStreamActive &&
-            (isLastReasoningBlock || block.isStreamingBlock === true)
-          }
-        />
-      );
-
-    case "consolidated_reasoning":
-      if (hideReasoning) return null;
-      return (
-        <BlockComponents.ConsolidatedReasoningVisualization
-          key={index}
-          reasoningTexts={
-            (block.metadata?.reasoningTexts as string[] | undefined) ?? [
-              block.content,
-            ]
-          }
-          showReasoning={true}
-        />
-      );
-
-    case "image_output": {
-      // block.serverData IS the UnifiedImageBlock — every inbound path
-      // (process-stream.ts, normalize-content-blocks.ts) converts to the
-      // canonical shape before storing. See features/files/blocks/image/types.ts.
-      // Use the guard to prove the shape rather than force-casting from
-      // `Record<string, unknown>` — anything that doesn't pass the guard is
-      // a stale entry from before the migration and gets silently skipped.
-      if (!isUnifiedImageBlock(block.serverData)) return null;
-      return (
-        <BlockComponents.ImageOutputBlock
-          key={index}
-          block={block.serverData}
-        />
-      );
-    }
-
-    case "video_output": {
-      // Resolve through the file handler (`VideoOutputBlockRenderer`) instead
-      // of echoing the raw `data.url` — identical durability fix to
-      // `audio_output`: the handler prefers the durable public/CDN URL and
-      // re-mints expiring URLs from `file_id`, so video plays during streaming
-      // (when Python sends only a `file_id`, no minted URL) AND "Copy link"
-      // never leaks a raw signed S3 URL. The renderer also resolves the
-      // Phase-1c `posterUrl` the same way. See the renderer for the rationale.
-      const sd = (block.serverData ?? {}) as Record<string, unknown>;
-      return <VideoOutputBlockRenderer key={index} data={sd} />;
-    }
-
-    case "media_block": {
-      // Document and YouTube kinds land here via the `media_block`
-      // stream-event branch in process-stream.ts.
-      const sd = (block.serverData ?? {}) as Record<string, unknown>;
-
-      // YouTube: render the playable embed through the same component the
-      // markdown `youtube` block uses (one component, one look). The Python
-      // YouTubeBlock carries `video_id` (snake) and `external_url`; read both
-      // casings defensively. Recover the start offset from the watch URL.
-      if (sd.kind === "youtube") {
-        const videoId = (sd.video_id ?? sd.videoId) as string | undefined;
-        if (!videoId) return null;
-        const externalUrl = (sd.external_url ?? sd.externalUrl) as
-          string | undefined;
-        const start = externalUrl
-          ? parseYouTubeUrl(externalUrl)?.start
-          : undefined;
-        const sourceLabel = (sd.source_label ?? sd.sourceLabel) as
-          string | undefined;
-        return (
-          <BlockComponents.YouTubeEmbedBlock
-            key={index}
-            videoId={videoId}
-            start={start}
-            title={sourceLabel}
-          />
-        );
-      }
-
-      // Document kind has no dedicated inline renderer yet — no-op to avoid
-      // flashing a broken card. The data is preserved on the render block.
-      // Phase 1c provides DocumentBlock.page1Url (full-res page 1 JPEG) for a
-      // future <DocumentBlockInline> reading preview.
-      return null;
-    }
-
-    case "search_results": {
-      // Python sends: { results?: SearchResultItem[]; metadata?: Record<string, unknown> }
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.SearchResultsBlock
-          key={index}
-          results={(sd.results as Record<string, unknown>[]) ?? []}
-          metadata={(sd.metadata as Record<string, unknown>) ?? {}}
-        />
-      );
-    }
-
-    case "search_error": {
-      // Python sends: { error: string; metadata?: Record<string, unknown> }
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.SearchErrorBlock
-          key={index}
-          error={(sd.error as string) ?? "Unknown search error"}
-          metadata={(sd.metadata as Record<string, unknown>) ?? undefined}
-        />
-      );
-    }
-
-    case "function_result": {
-      // Python sends: { function_name, success, result, error, duration_ms }
-      // Component wants: { functionName, success, result, error, durationMs }
-      // TODO(python): rename function_name → functionName, duration_ms → durationMs.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.FunctionResultBlock
-          key={index}
-          functionName={(sd.function_name as string) ?? "unknown"}
-          success={(sd.success as boolean) ?? false}
-          result={sd.result}
-          error={(sd.error as string | null) ?? null}
-          durationMs={(sd.duration_ms as number | null) ?? null}
-        />
-      );
-    }
-
-    case "workflow_step": {
-      // Python sends: { step_name, status, data }
-      // Component wants: { stepName, status, data }
-      // TODO(python): rename step_name → stepName.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.WorkflowStepBlock
-          key={index}
-          stepName={(sd.step_name as string) ?? "unknown"}
-          status={(sd.status as string) ?? "unknown"}
-          data={(sd.data as Record<string, unknown>) ?? undefined}
-        />
-      );
-    }
-
-    case "categorization_result": {
-      // Python sends: { prompt_id, category, tags, description, dry_run, metadata }
-      // Component wants: { promptId, category, tags, description, dryRun, metadata }
-      // TODO(python): rename prompt_id → promptId, dry_run → dryRun.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.CategorizationResultBlock
-          key={index}
-          promptId={(sd.prompt_id as string) ?? ""}
-          category={(sd.category as string) ?? ""}
-          tags={(sd.tags as string[]) ?? []}
-          description={(sd.description as string) ?? undefined}
-          dryRun={(sd.dry_run as boolean) ?? undefined}
-          metadata={(sd.metadata as Record<string, unknown>) ?? undefined}
-        />
-      );
-    }
-
-    case "fetch_results": {
-      // Python sends: { results?: FetchResultItem[]; metadata?: Record<string, unknown> }
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.FetchResultsBlock
-          key={index}
-          results={(sd.results as Record<string, unknown>[]) ?? []}
-          metadata={(sd.metadata as Record<string, unknown>) ?? {}}
-        />
-      );
-    }
-
-    case "podcast_complete": {
-      // Python sends: { show_id, success, episode_count, error }
-      // Component wants: { showId, success, episodeCount, error }
-      // TODO(python): rename show_id → showId, episode_count → episodeCount.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.PodcastCompleteBlock
-          key={index}
-          showId={(sd.show_id as string) ?? ""}
-          success={(sd.success as boolean) ?? false}
-          episodeCount={(sd.episode_count as number) ?? undefined}
-          error={(sd.error as string | null) ?? null}
-        />
-      );
-    }
-
-    case "podcast_stage": {
-      // Python sends: { stage, success, error, result_keys }
-      // Component wants: { stage, success, error, resultKeys }
-      // TODO(python): rename result_keys → resultKeys.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.PodcastStageBlock
-          key={index}
-          stage={(sd.stage as string) ?? ""}
-          success={(sd.success as boolean) ?? false}
-          error={(sd.error as string | null) ?? null}
-          resultKeys={(sd.result_keys as string[]) ?? []}
-        />
-      );
-    }
-
-    case "scrape_batch_complete": {
-      // Python sends: { total_scraped }
-      // Component wants: { totalScraped }
-      // TODO(python): rename total_scraped → totalScraped.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.ScrapeBatchCompleteBlock
-          key={index}
-          totalScraped={(sd.total_scraped as number) ?? 0}
-        />
-      );
-    }
-
-    case "structured_input_warning": {
-      // Python sends: { block_type, failures }
-      // Component wants: { blockType, failures }
-      // TODO(python): rename block_type → blockType.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.StructuredInputWarningBlock
-          key={index}
-          blockType={(sd.block_type as string) ?? "unknown"}
-          failures={(sd.failures as Record<string, unknown>[]) ?? []}
-        />
-      );
-    }
-
-    case "display_questionnaire": {
-      // Python sends: { introduction, questions }
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.DisplayQuestionnaireBlock
-          key={index}
-          introduction={(sd.introduction as string) ?? ""}
-          questions={(sd.questions as Record<string, unknown>[]) ?? []}
-        />
-      );
-    }
-
-    case "value_store_stored": {
-      // Conversation Value Store (Pattern 2): a sub-agent result landed in
-      // the store — compact "result ready" card; the descriptor's ```matrx
-      // fence renders via the envelope chip renderer inside the component.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.ValueStoreStoredBlock
-          key={index}
-          descriptor={
-            (sd.descriptor as React.ComponentProps<
-              typeof BlockComponents.ValueStoreStoredBlock
-            >["descriptor"]) ?? {}
-          }
-        />
-      );
-    }
-
-    case "context_groomed": {
-      // Groom receipt — the MODEL's view was compacted; user view unchanged.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.ContextGroomedBlock
-          key={index}
-          stubbedKeys={(sd.stubbed_keys as string[]) ?? []}
-          retainedKeys={(sd.retained_keys as string[]) ?? []}
-        />
-      );
-    }
-
-    case "unknown_data_event": {
-      // Fallback for unknown data event types.
-      const sd = block.serverData ?? {};
-      return (
-        <BlockComponents.UnknownDataEventBlock
-          key={index}
-          dataType={(sd._dataType as string) ?? "unknown"}
-          data={sd}
-          conversationId={conversationId}
-          messageId={messageId}
-        />
-      );
-    }
-
-    case "image":
-      // The splitter only emits an "image" block when it parsed a URL out of
-      // the markdown — but guard honestly rather than asserting: a missing
-      // src would otherwise silently reach ImageBlock's required `src: string`
-      // prop as `undefined`, and it fetches that src unconditionally.
-      if (!block.src) return null;
-      return (
-        <BlockComponents.ImageBlock
-          key={index}
-          src={block.src}
-          alt={block.alt}
-        />
-      );
-
-    case "video":
-      // Same guard as "image" above — VideoBlock also requires a real src.
-      if (!block.src) return null;
-      return (
-        <BlockComponents.VideoBlock
-          key={index}
-          src={block.src}
-          alt={block.alt}
-        />
-      );
-
-    case "matrx_file":
-      // A link/bare URL to one of OUR files. The component re-derives the URL +
-      // surrounding text from `content`, discovers the real file type, and
-      // renders the universal inline previewer (or degrades to the link).
-      return (
-        <BlockComponents.MatrxFileBlock
-          key={index}
-          content={block.content}
-          src={block.src}
-          alt={block.alt}
-          metadata={block.metadata}
-        />
-      );
-
-    case "youtube": {
-      // A YouTube link the splitter promoted from markdown (linked thumbnail,
-      // plain link, or bare URL). videoId/start/title/poster live on metadata;
-      // renders the same click-to-play embed as the server `media_block` case.
-      const md = (block.metadata ?? {}) as Record<string, unknown>;
-      const videoId = md.videoId as string | undefined;
-      if (!videoId) return null;
-      return (
-        <BlockComponents.YouTubeEmbedBlock
-          key={index}
-          videoId={videoId}
-          start={md.start as number | undefined}
-          title={md.title as string | undefined}
-          poster={md.poster as string | undefined}
-        />
-      );
-    }
-
-    case "audio": {
-      // Audio that streamed in as a markdown/text link (the splitter's
-      // `detectAudioMarkdown`). The URL is on `block.src`, mirroring the
-      // markdown `image`/`video` cases. This is the live-stream twin of the
-      // server-side `audio_output` case above — both go through
-      // `AudioOutputBlockRenderer` so the URL is resolved durably (file_id
-      // recovery / public-URL preference) and "Copy link" never leaks a raw
-      // signed S3 URL, even for an audio-only turn shown mid-stream.
-      if (!block.src) return null;
-      return (
-        <AudioOutputBlockRenderer
-          key={index}
-          data={{ url: block.src, mimeType: audioMimeFromUrl(block.src) }}
-          title={block.alt && block.alt !== "Audio" ? block.alt : undefined}
-        />
-      );
-    }
-
-    case "code": {
-      // Special handling for diff blocks
-      if (block.language === "diff" && looksLikeDiff(block.content)) {
-        return (
-          <BlockComponents.StreamingDiffBlock
-            key={index}
-            content={block.content}
-            language={block.language || "typescript"}
-            isStreamActive={isStreamActive}
-            className="my-3"
-          />
-        );
-      }
-
-      // Custom renderers for specific languages
-      const lang = block.language?.toLowerCase();
-      if (lang === "yaml" || lang === "yml") {
-        return (
-          <BlockComponents.YamlBlock
-            key={index}
-            content={block.content}
-            className="my-3"
-          />
-        );
-      }
-      // if (lang === "xml" || lang === "html" || lang === "svg") {
-      if (lang === "xml" || lang === "svg") {
-        return (
-          <BlockComponents.XmlBlock
-            key={index}
-            content={block.content}
-            language={lang}
-            className="my-3"
-          />
-        );
-      }
-      // HTML used to be lumped in with XmlBlock above, which broke the
-      // standard code block (and with it the "convert to actual webpage"
-      // feature). It now routes through HtmlInlinePreview: while streaming or
-      // for fragments it renders a plain code block; once a COMPLETE HTML
-      // document has finished streaming it auto-converts into a live, inline
-      // webpage preview (loader → success/iframe, or silent code-on-error).
-      if (lang === "html") {
-        return (
-          <BlockComponents.HtmlInlinePreview
-            key={index}
-            code={block.content}
-            language={block.language}
-            isComplete={!isStreamActive && !isBlockLoading(block)}
-            messageId={messageId}
-            conversationId={conversationId}
-            onCodeChange={
-              isStreamActive
-                ? undefined
-                : (newCode: string) =>
-                    replaceBlockContent(block.content, newCode)
-            }
-          />
-        );
-      }
-      // React/JSX/TSX → compile to a live component once finalized (auto-preview
-      // like html). Streaming/incomplete shows the code; compile/runtime errors
-      // fall back to the code block silently. Execution is allowlist-scoped and
-      // in-app — see features/dynamic-react/compileReactComponent.
-      if (lang === "jsx" || lang === "tsx" || lang === "react") {
-        return (
-          <BlockComponents.ReactCodeBlock
-            key={index}
-            code={block.content}
-            language={block.language}
-            isComplete={!isStreamActive && !isBlockLoading(block)}
-            onCodeChange={
-              isStreamActive
-                ? undefined
-                : (newCode: string) =>
-                    replaceBlockContent(block.content, newCode)
-            }
-          />
-        );
-      }
-      if (lang === "csv" || lang === "tsv") {
-        return (
-          <BlockComponents.CsvBlock
-            key={index}
-            content={block.content}
-            delimiter={lang === "tsv" ? "\t" : ","}
-            className="my-3"
-            onInnerContentChange={
-              isStreamActive
-                ? undefined
-                : (inner: string) => replaceBlockContent(block.content, inner)
-            }
-          />
-        );
-      }
-      if (lang === "toml") {
-        return (
-          <BlockComponents.TomlBlock
-            key={index}
-            content={block.content}
-            className="my-3"
-          />
-        );
-      }
-      if (lang === "json" || lang === "jsonc" || lang === "json5") {
-        return (
-          <BlockComponents.JsonBlock
-            key={index}
-            content={block.content}
-            className="my-3"
-            isStreamActive={isStreamActive}
-            conversationId={conversationId}
-            messageId={messageId}
-            onCodeChange={
-              isStreamActive
-                ? undefined
-                : (newCode: string) =>
-                    replaceBlockContent(block.content, newCode)
-            }
-          />
-        );
-      }
-      if (lang === "markdown" || lang === "md" || lang === "mdx") {
-        return (
-          <BlockComponents.MarkdownPreviewBlock
-            key={index}
-            content={block.content}
-            className="my-3"
-            isStreamActive={isStreamActive}
-            onCodeChange={
-              isStreamActive
-                ? undefined
-                : (newCode: string) =>
-                    replaceBlockContent(block.content, newCode)
-            }
-          />
-        );
-      }
-      // DATA CONTRACT: do NOT mutate the code string. The trim below is
-      // used ONLY for size classification (is this small enough to render
-      // inline?). The content passed to the renderer is `block.content`
-      // verbatim — leading/trailing whitespace, blank lines, everything
-      // preserved.
-      const sizingProbe = block.content.trim();
-      const lineCount = sizingProbe.split("\n").length;
-      const isSmallBlock = lineCount <= 2 && sizingProbe.length < 120;
-
-      if (!sizingProbe) return null;
-
-      if (isSmallBlock) {
-        return (
-          <InlineCodeSnippet
-            key={index}
-            code={block.content}
-            language={block.language}
-            className="my-3"
-          />
-        );
-      }
-
-      // Regular code block — attach-to-context when we have a real message id
-      return (
-        <CodeBlockWithContextAttach
-          key={index}
-          code={block.content}
-          language={block.language || DEFAULT_UNLABELED_FENCE_LANGUAGE}
-          fontSize={16}
-          className="my-3"
-          onCodeChange={
-            isStreamActive
-              ? undefined
-              : (newCode: string) => replaceBlockContent(block.content, newCode)
-          }
-          isStreamActive={isStreamActive}
-          conversationId={conversationId}
-          messageId={messageId}
-        />
-      );
-    }
-
-    case "table":
-      return (
-        <BlockComponents.StreamingTableRenderer
-          key={index}
-          content={block.content}
-          metadata={block.metadata}
-          isStreamActive={isStreamActive}
-          onContentChange={
-            isStreamActive
-              ? undefined
-              : (updatedTable: string) =>
-                  replaceBlockContent(block.content, updatedTable)
-          }
-        />
-      );
-
-    case "transcript":
-      return (
-        <BlockComponents.TranscriptBlock key={index} content={block.content} />
-      );
-
-    // "tasks" → handled by the early unified-renderer branch above
-    // (resolveArtifactDef("tasks") → tasks def → TasksArtifact).
-
-    case "structured_info":
-      return (
-        <BlockComponents.StructuredPlanBlock
-          key={index}
-          // Kind-routed blocks (structured_info) deliver the projected
-          // markdown as serverData { content } - a JSON __kind arrival has
-          // JSON text in block.content, so the bridge output is the only
-          // renderable text for that path. Fence arrivals keep block.content.
-          content={
-            typeof (
-              block.serverData as { content?: unknown } | null | undefined
-            )?.content === "string"
-              ? (block.serverData as { content: string }).content
-              : block.content
-          }
-        />
-      );
-
-    case "matrxBroker":
-      return (
-        <p
-          key={index}
-          className="my-1 text-sm text-yellow-600 dark:text-yellow-400"
-        >
-          This block type is deprecated.
-        </p>
-      );
-
-    // `questionnaire` is a materializable artifact type — handled by the unified
-    // renderer early-branch above (resolveArtifactDef + hasArtifactRenderer →
-    // QuestionnaireArtifact, which persists answers to canvas_item_state). Its
-    // legacy case was removed when enrolled.
-
-    // flashcards, quiz, presentation, cooking_recipe, timeline, research,
-    // resources, progress_tracker, comparison_table, troubleshooting,
-    // decision_tree, diagram, mermaid, math_problem → unified renderer
-    // (all handled by the early-branch above via resolveArtifactDef +
-    // hasArtifactRenderer; cases removed in Wave F)
-
-    // `svg` + `chart` are materializable artifact types — handled by the unified
-    // renderer early-branch above (resolveArtifactDef + hasArtifactRenderer →
-    // SvgArtifact / ChartArtifact). Their legacy cases were removed when enrolled.
-
-    case "item_presentation":
-      // Owns all its phases internally: instant skeleton from a partial JSON
-      // scan → recognized icon/accent + DB auto-enrichment → grow-in details →
-      // window-panel open on click. Forgiving for unknown types; never errors.
-      return (
-        <BlockComponents.ItemPresentationBlock
-          key={index}
-          content={block.content}
-          isStreamActive={Boolean(block.isStreamingBlock) || isStreamActive}
-        />
-      );
-
-    case "matrx":
-      // A ```matrx fence — one Matrx Envelope. In-content position resolves only
-      // reference/secret (chips); other kinds show a neutral card. Fail-safe:
-      // invalid JSON renders raw, never throws. See features/matrx-envelope/.
-      return (
-        <BlockComponents.MatrxEnvelopeBlock
-          key={index}
-          content={block.content}
-        />
-      );
-
-    case "schema_proposal":
-      // A ```json output-schema proposal ({ name, schema, strict? }). Offers
-      // "Apply to an agent" → writes agent.definition.output_schema. Fail-safe parse.
-      // serverData (the `schema_proposal` kind bridge's clean, __kind-stripped
-      // object) is preferred over the content parse when present.
-      return (
-        <BlockComponents.SchemaProposalBlock
-          key={index}
-          content={block.content}
-          serverData={block.serverData}
-        />
-      );
-
-    case "search_replace":
-      return (
-        <BlockComponents.SearchReplaceBlock
-          key={index}
-          serverData={block.serverData}
-          content={block.serverData ? undefined : block.content}
-          language={(block.metadata?.language as string) || "typescript"}
-          isStreamActive={isStreamActive}
-          className="my-3"
-        />
-      );
-
-    case "decision": {
-      const candidateDecision: unknown =
-        block.serverData ?? block.metadata?.decision;
-
-      if (
-        !isInlineDecision(candidateDecision) ||
-        candidateDecision.options.length === 0
-      ) {
-        return renderBasicMarkdown(block.content);
-      }
-      const decisionData = candidateDecision;
-
-      if (block.metadata?.isComplete === false) {
-        return (
-          <div
-            key={index}
-            className="my-1.5 px-3.5 py-2.5 border border-border rounded-md bg-card"
-          >
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_6px_hsl(var(--primary)/0.4)]" />
-              <span className="font-medium text-foreground">
-                {decisionData.prompt || "Decision loading..."}
-              </span>
-            </div>
-          </div>
-        );
-      }
-
-      const metadataRawXml = block.metadata?.rawXml;
-      const rawXml =
-        typeof metadataRawXml === "string" ? metadataRawXml : block.content;
-
-      return (
-        <BlockComponents.InlineDecisionBlock
-          key={index}
-          decision={decisionData}
-          isStreamActive={isStreamActive}
-          rawXml={rawXml}
-          onResolve={(_decisionId: string, xml: string, chosenText: string) => {
-            replaceBlockContent(xml, chosenText);
-          }}
-        />
-      );
-    }
-
-    case "artifact": {
-      // R3 recognition: a `<artifact>` whose id is a real canvas UUID is
-      // MATERIALIZED → render the live row BY ID (ignore the inline body, which
-      // is the model-facing archive). A non-UUID / absent id (the model's
-      // `artifact_1`, or mid-stream) renders inline and stays a materialization
-      // candidate. This is the single load-bearing branch that lets the canonical
-      // `<artifact id>body</artifact>` text be both model-readable and rendered live.
-      const artifactMeta = block.metadata as
-        | {
-            artifactId?: string;
-            artifactType?: string;
-            artifactTitle?: string;
-            version?: number;
-          }
-        | undefined;
-      if (isMaterializedArtifactId(artifactMeta?.artifactId)) {
-        return (
-          <BlockComponents.ArtifactRefBlock
-            key={index}
-            serverData={{
-              artifact_id: artifactMeta?.artifactId,
-              artifact_type: artifactMeta?.artifactType,
-              version: artifactMeta?.version,
-              title: artifactMeta?.artifactTitle,
-            }}
-            // Inline archive body — lets ArtifactRefBlock fall back to rendering
-            // the content if the UUID is invented / not-yet-persisted / missing,
-            // instead of dead-ending on the "couldn't load" card.
-            fallbackContent={block.content}
-            fallbackMetadata={artifactMeta}
-            fallbackServerData={block.serverData}
-            messageId={messageId}
-            conversationId={conversationId}
-            taskId={taskId}
-          />
-        );
-      }
-      return (
-        <BlockComponents.ArtifactBlock
-          key={index}
-          content={block.content}
-          metadata={block.metadata}
-          serverData={block.serverData}
-          isStreamActive={isStreamActive}
-          messageId={messageId}
-          conversationId={conversationId}
-          taskId={taskId}
-        />
-      );
-    }
-
-    case "editor_error":
-      return (
-        <BlockComponents.EditorErrorBlock
-          key={index}
-          content={block.content}
-          metadata={block.metadata}
-        />
-      );
-
-    case "editor_code_snippet":
-      return (
-        <BlockComponents.EditorCodeSnippetBlock
-          key={index}
-          content={block.content}
-          metadata={block.metadata}
-        />
-      );
-
-    case "audiocite":
-      return (
-        <BlockComponents.AudioCitationBlock
-          key={index}
-          content={block.content}
-          metadata={block.metadata as Record<string, string> | undefined}
-        />
-      );
-
-    case "tree":
-      return (
-        <BlockComponents.TreeBlock
-          key={index}
-          content={block.content}
-          className="my-3"
-        />
-      );
-
-    case "accent-divider":
-      return (
-        <div key={index} className="my-4 flex items-center gap-3">
-          <div className="h-0.5 flex-1 bg-primary/60 rounded-full" />
-        </div>
-      );
-
-    case "heavy-divider":
-      return (
-        <div key={index} className="my-6 flex items-center gap-2">
-          <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
-        </div>
-      );
-
-    case "text":
-    case "info":
-    case "task":
-    case "database":
-    case "private":
-    case "plan":
-    case "event":
-    case "tool":
-      // `tool` here is the generic XML-tagged `<tool>...</tool>` markdown
-      // block, not a `tool_call` content block (those render via
-      // ToolHandlers.InlineToolCard / DbToolCard). Still, respect the
-      // same visibility flag so the surface is silent about tools end
-      // to end.
-      if (block.type === "tool" && hideToolResults) return null;
-      return block.content ? renderBasicMarkdown(block.content) : null;
-
-    // The R6 generic fallback (features/content-ir/react/kind-route.ts): the
-    // envelope resolved a kind the platform KNOWS, but nothing render-trusted
-    // claims it. Rather than dropping to a raw code block, show every field
-    // readably plus an honest "unverified shape" affordance. Reached ONLY via
-    // applyIrKindRoute — nothing emits this block type upstream.
-    case GENERIC_STRUCTURED_COMPONENT_KEY:
-      return (
-        <GenericStructuredBlock
-          key={index}
-          content={block.content}
-          metadata={block.metadata}
-        />
-      );
-
-    default:
-      return block.content ? renderBasicMarkdown(block.content) : null;
+  const dispatch = resolveBlockDispatch(block.type);
+  if (dispatch) {
+    return dispatch(ctx);
   }
+
+  // No registration — a genuinely unknown type (Python outran the generated
+  // unions, or a registration was deleted). SCREAM, then render the content
+  // as basic markdown so nothing the model produced is hidden.
+  reportUnregisteredBlockType(block.type, {
+    conversationId,
+    messageId,
+    requestId,
+  });
+  return block.content ? renderBasicMarkdown(block.content) : null;
 };

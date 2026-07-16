@@ -18,6 +18,7 @@
 
 import React, { Suspense, lazy } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
 
 export interface ArtifactRendererProps {
   /** Chrome/scope hint — NOT a different component (each adapter handles modes internally). */
@@ -109,9 +110,24 @@ export function ArtifactRender({
 }: ArtifactRendererProps & { canvasType: string }) {
   const R = RENDERERS[canvasType];
   if (!R) return null;
+  // Structured (kind) artifact rehydration: a STRUCTURED row stores the
+  // zero-loss `__kind` value object as `content.data` (Track 2B). That value
+  // is the CANONICAL shape, not the legacy serverData the components consume —
+  // derive serverData through the kind registry's legacy bridge
+  // (`kindServerDataFromStoredValue`, the same seam ArtifactRefBlock uses)
+  // so every adapter's `serverData ?? data ?? parse(raw)` resolution renders
+  // the bridge output, identical to the live stream. No-ops for string
+  // payloads, non-kind objects, and callers that already supplied serverData.
+  const structuredServerData =
+    props.serverData == null
+      ? kindServerDataFromStoredValue(props.data)
+      : null;
+  const finalProps = structuredServerData
+    ? { ...props, serverData: structuredServerData }
+    : props;
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
-      <R {...props} />
+      <R {...finalProps} />
     </Suspense>
   );
 }
