@@ -390,6 +390,12 @@ const REQUIRED_PROPERTY = /must have required property '([^']+)'/;
  *
  * Note ajv runs with `allErrors: true` but `validateStructuralLeg` slices to
  * the first 8 — so an instance with many faults shows a truncated set.
+ *
+ * DEDUPED: ajv's `allErrors` revisits the same instance path once per anyOf
+ * branch (a card missing `front` fails flashcard AND enhanced_flashcard AND
+ * tiered_flashcard → three identical messages), and consumers key their error
+ * lists by message text — duplicates crash React's key invariant and can OMIT
+ * rows. Identical strings carry no extra signal; each lands once.
  */
 export function attributeStructuralErrors(
   detail: string | undefined,
@@ -397,6 +403,7 @@ export function attributeStructuralErrors(
 ): AttributedSchemaErrors {
   const byField: Record<string, string[]> = {};
   const formLevel: string[] = [];
+  const seen = new Set<string>();
   if (!detail) return { byField, formLevel };
 
   const known = new Set(fieldKeys);
@@ -413,6 +420,8 @@ export function attributeStructuralErrors(
   for (const entry of body.split("; ")) {
     const trimmed = entry.trim();
     if (trimmed === "") continue;
+    if (seen.has(trimmed)) continue;
+    seen.add(trimmed);
 
     if (trimmed.startsWith("/")) {
       // `/cards/0 must have required property 'back'` → owner is `cards`.

@@ -102,12 +102,19 @@ export default function KindInputForm({
   const [jsonParseError, setJsonParseError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  // A kind switch resets the whole form. Render-phase state adjustment (the
+  // React prop-sync pattern), not an effect — the effect below only LOADS.
+  const [syncedKind, setSyncedKind] = useState(kind);
+  if (syncedKind !== kind) {
+    setSyncedKind(kind);
     setState({ status: "loading" });
     setStructuralDetail(null);
     setCoercionErrors({});
     setJsonParseError(null);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         // Warm the resolver so DB input bindings (workflow I/O kinds have no

@@ -46,23 +46,39 @@ function dbRow(
   };
 }
 
+const OUTPUT_ENTRIES = SYSTEM_COMPONENT_ENTRIES.filter(
+  (e) => e.role === "output",
+);
+const INPUT_ENTRIES = SYSTEM_COMPONENT_ENTRIES.filter(
+  (e) => e.role === "input",
+);
+
 describe("compiled bootstrap (system-components)", () => {
   it("mirrors EVERY legacyBlockType facet — one web/output entry per bridge, no drift possible", () => {
     const bridged = SYSTEM_KIND_DEFINITIONS.filter((d) => d.legacyBlockType);
-    expect(SYSTEM_COMPONENT_ENTRIES).toHaveLength(bridged.length);
-    expect(
-      SYSTEM_COMPONENT_ENTRIES.map((e) => [e.kind, e.componentKey]),
-    ).toEqual(bridged.map((d) => [d.kind, d.legacyBlockType]));
+    expect(OUTPUT_ENTRIES).toHaveLength(bridged.length);
+    expect(OUTPUT_ENTRIES.map((e) => [e.kind, e.componentKey])).toEqual(
+      bridged.map((d) => [d.kind, d.legacyBlockType]),
+    );
     for (const entry of SYSTEM_COMPONENT_ENTRIES) {
       expect(entry.platform).toBe("web");
-      expect(entry.role).toBe("output");
       expect(entry.source).toBe("bundled");
+    }
+  });
+
+  it("D1 input floor: EVERY compiled kind gets one web/input generic_structured entry", () => {
+    expect(INPUT_ENTRIES).toHaveLength(SYSTEM_KIND_DEFINITIONS.length);
+    expect(INPUT_ENTRIES.map((e) => e.kind)).toEqual(
+      SYSTEM_KIND_DEFINITIONS.map((d) => d.kind),
+    );
+    for (const entry of INPUT_ENTRIES) {
+      expect(entry.componentKey).toBe("generic_structured");
     }
   });
 
   it("covers every known bridge by name", () => {
     const byKind = new Map(
-      SYSTEM_COMPONENT_ENTRIES.map((e) => [e.kind, e.componentKey]),
+      OUTPUT_ENTRIES.map((e) => [e.kind, e.componentKey]),
     );
     expect(Object.fromEntries(byKind)).toEqual({
       flashcard_set: "flashcards",
@@ -91,9 +107,9 @@ describe("compiled bootstrap (system-components)", () => {
 });
 
 describe("resolveComponent — compiled floor (pre-warm)", () => {
-  it("resolves every bridged kind from the compiled tier, trusted-active", () => {
+  it("resolves every compiled entry (both roles) from the compiled tier, trusted-active", () => {
     for (const entry of SYSTEM_COMPONENT_ENTRIES) {
-      expect(resolveComponent(entry.kind, "web", "output")).toEqual({
+      expect(resolveComponent(entry.kind, "web", entry.role)).toEqual({
         componentKey: entry.componentKey,
         source: "bundled",
         config: {},
@@ -103,11 +119,11 @@ describe("resolveComponent — compiled floor (pre-warm)", () => {
     }
   });
 
-  it("misses are null: child kinds, other roles, other platforms, unknowns", () => {
+  it("misses are null: un-bridged output, other platforms, unknowns (both roles)", () => {
     expect(resolveComponent("flashcard", "web", "output")).toBeNull();
-    expect(resolveComponent("flashcard_set", "web", "input")).toBeNull();
     expect(resolveComponent("flashcard_set", "react-native", "output")).toBeNull();
     expect(resolveComponent("never_heard_of_it", "web", "output")).toBeNull();
+    expect(resolveComponent("never_heard_of_it", "web", "input")).toBeNull();
   });
 });
 
