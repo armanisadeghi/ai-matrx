@@ -25,8 +25,11 @@
 
 import { isMatrxEnvelope } from "@/features/matrx-envelope/envelope";
 import { isJsonObject } from "@/types/json";
-import type { TypedRenderBlock } from "@/types/python-generated/stream-events";
-import type { MissingBlockType } from "@/types/python-generated/missing-types";
+import type {
+  TypedRenderBlock,
+  ServerOnlyBlockType,
+} from "@/types/python-generated/stream-events";
+import type { ClientOnlyBlockType } from "./client-blocks";
 import {
   parseYouTubeUrl,
   isYouTubeThumbnailUrl,
@@ -45,11 +48,15 @@ import { IR_ENVELOPE_KEY } from "@/features/content-ir/core/ir-types";
 
 /**
  * All block type strings this splitter can emit — the union of:
- *   - TypedRenderBlock["type"]  : types defined in Python's auto-generated stream-events.ts
- *   - MissingBlockType          : client-only types (tree, accent-divider, heavy-divider)
- *                                 and server-only types not yet in stream-events.ts
+ *   - TypedRenderBlock["type"]  : render_block wire types (generated stream-events.ts)
+ *   - ClientOnlyBlockType       : splitter-only types (client-blocks.ts, this directory)
+ *   - ServerOnlyBlockType       : FE-synthesized data-event wrappers (generated
+ *                                 stream-events.ts ServerOnlyRenderBlock)
  */
-type SplitterBlockType = TypedRenderBlock["type"] | MissingBlockType;
+type SplitterBlockType =
+  | TypedRenderBlock["type"]
+  | ClientOnlyBlockType
+  | ServerOnlyBlockType;
 
 /**
  * SplitterBlock — the output type of splitContentIntoBlocksV2.

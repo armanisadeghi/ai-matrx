@@ -9,7 +9,20 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { Scope } from "./types";
-import { isUuid } from "@/features/scope-system/utils/slugify";
+import {
+  isReservedSlug,
+  isUuid,
+  isValidSlug,
+  toSlug,
+} from "@/features/scope-system/utils/slugify";
+
+function requiredSlug(value: string, kind: string, supplied?: string): string {
+  const slug = supplied?.trim() || toSlug(value);
+  if (!slug || !isValidSlug(slug) || isReservedSlug(slug)) {
+    throw new Error(`${kind} needs a valid URL slug; use letters or numbers in its name`);
+  }
+  return slug;
+}
 
 const scopesAdapter = createEntityAdapter<Scope>({
   // User-controlled sort_order first, then name as a stable tiebreaker.
@@ -86,7 +99,7 @@ export const createScope = createAsyncThunk(
       p_parent_scope_id: params.parent_scope_id ?? undefined,
       p_description: params.description ?? "",
       p_settings: params.settings ?? {},
-      p_slug: params.slug ?? undefined,
+      p_slug: requiredSlug(params.name, "Scope", params.slug),
       p_sort_order: params.sort_order ?? undefined,
     });
     if (error) throw error;
@@ -104,12 +117,16 @@ export const updateScope = createAsyncThunk(
     slug?: string;
     sort_order?: number;
   }) => {
+    const slug =
+      params.slug === undefined
+        ? undefined
+        : requiredSlug(params.name ?? "", "Scope", params.slug);
     const { data, error } = await supabase.rpc("update_scope", {
       p_scope_id: params.scope_id,
       p_name: params.name,
       p_description: params.description,
       p_settings: params.settings,
-      p_slug: params.slug,
+      p_slug: slug,
       p_sort_order: params.sort_order,
     });
     if (error) throw error;

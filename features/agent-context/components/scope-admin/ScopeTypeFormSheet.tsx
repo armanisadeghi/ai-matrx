@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
+import { toSlug } from "@/features/scope-system/utils/slugify";
 
 interface ScopeTypeFormSheetProps {
   open: boolean;
@@ -125,6 +126,7 @@ export function ScopeTypeFormSheet({
             max_assignments: maxAssignments
               ? parseInt(maxAssignments, 10)
               : undefined,
+            slug: editingType.slug ?? toSlug(labelSingular),
           }),
         );
       } else {
@@ -142,6 +144,7 @@ export function ScopeTypeFormSheet({
             parent_type_id:
               parentTypeId === NONE_VALUE ? undefined : parentTypeId,
             default_variable_keys: variableKeys,
+            slug: toSlug(labelSingular),
           }),
         );
       }

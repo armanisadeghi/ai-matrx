@@ -2253,6 +2253,7 @@ export interface DiagramBlockData {
   title: string;
   description?: string | null;
   type?: "flowchart" | "mindmap" | "orgchart" | "network" | "system" | "process";
+  requested_type?: string | null;
   nodes?: DiagramNode[];
   edges?: DiagramEdge[];
   layout?: DiagramLayout;
@@ -2886,6 +2887,230 @@ const TYPED_RENDER_BLOCK_TYPES = new Set<string>([
 export function isTypedRenderBlock(e: RenderBlockPayload): e is RenderBlockPayload & TypedRenderBlock {
   return TYPED_RENDER_BLOCK_TYPES.has(e.type);
 }
+
+// --- Server Data-Event Render Blocks (FE-synthesized wrappers) ---
+
+// NOT render_block wire events — the frontend synthesizes these block wrappers
+// when it converts a `data` stream event (or FE parse state) into a renderable
+// block. Generated from matrx_connect.context.data_render_blocks; classified per
+// the content-vocab crosswalk. Protocol/lifecycle events live in their own union
+// (ServerProtocolRenderBlock) and are never mixed into Shape blocks.
+
+export interface SearchReplaceRenderData {
+  search: string;
+  replace: string;
+  searchComplete: boolean;
+  replaceComplete: boolean;
+  isComplete: boolean;
+  language?: string | null;
+}
+
+export interface UnknownDataEventData {
+  [key: string]: unknown;
+  _dataType: string;
+}
+
+/** Audio output from the AI (TTS or file). */
+export interface AudioOutputRenderBlock {
+  type: "audio_output";
+  content: string;
+  data: AudioOutputData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Image output from the AI. Display priority: cdn_url → file handler (via file_id) → signed_url → url. */
+export interface ImageOutputRenderBlock {
+  type: "image_output";
+  content: string;
+  data: ImageOutputData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Video output from the AI. */
+export interface VideoOutputRenderBlock {
+  type: "video_output";
+  content: string;
+  data: VideoOutputData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Web search results block — unregistered shape candidate (tool_io). */
+export interface SearchResultsRenderBlock {
+  type: "search_results";
+  content: string;
+  data: SearchResultsData;
+  metadata?: Record<string, unknown>;
+}
+
+/** URL fetch results block — unregistered shape candidate (tool_io). */
+export interface FetchResultsRenderBlock {
+  type: "fetch_results";
+  content: string;
+  data: FetchResultsData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Prompt categorization result — unregistered shape candidate. */
+export interface CategorizationResultRenderBlock {
+  type: "categorization_result";
+  content: string;
+  data: CategorizationResultData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Questionnaire to display — alias of the registered `questionnaire` kind. */
+export interface DisplayQuestionnaireRenderBlock {
+  type: "display_questionnaire";
+  content: string;
+  data: QuestionnaireDisplayData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Generic tool-result envelope — payload typing is owned by tool_io contracts. */
+export interface FunctionResultRenderBlock {
+  type: "function_result";
+  content: string;
+  data: FunctionResultData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Workflow progress event. */
+export interface WorkflowStepRenderBlock {
+  type: "workflow_step";
+  content: string;
+  data: WorkflowStepData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Web search failure event. */
+export interface SearchErrorRenderBlock {
+  type: "search_error";
+  content: string;
+  data: SearchErrorData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Warning about malformed structured input blocks. */
+export interface StructuredInputWarningRenderBlock {
+  type: "structured_input_warning";
+  content: string;
+  data: StructuredInputWarningData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Podcast pipeline lifecycle event (stage finished). */
+export interface PodcastStageRenderBlock {
+  type: "podcast_stage";
+  content: string;
+  data: PodcastStageEvent;
+  metadata?: Record<string, unknown>;
+}
+
+/** Podcast pipeline lifecycle event (generation complete). */
+export interface PodcastCompleteRenderBlock {
+  type: "podcast_complete";
+  content: string;
+  data: PodcastCompleteEvent;
+  metadata?: Record<string, unknown>;
+}
+
+/** Scrape pipeline lifecycle event. */
+export interface ScrapeBatchCompleteRenderBlock {
+  type: "scrape_batch_complete";
+  content: string;
+  data: ScrapeBatchCompleteData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Conversation Value Store 'result ready' card — FE-synthesized from the kind-discriminated value_store.stored data event. Never persisted to cx_message.content. */
+export interface ValueStoreStoredRenderBlock {
+  type: "value_store_stored";
+  /** Always null — a non-null content would leak into committed message parts. The payload lives on `data`. */
+  content: null;
+  data: ValueStoredEvent;
+  metadata?: Record<string, unknown>;
+}
+
+/** Context-groom receipt line — FE-synthesized from the value_store.groomed data event. Subtle indicator only; never persisted. */
+export interface ContextGroomedRenderBlock {
+  type: "context_groomed";
+  /** Always null — a non-null content would leak into committed message parts. The payload lives on `data`. */
+  content: null;
+  data: ContextGroomedEvent;
+  metadata?: Record<string, unknown>;
+}
+
+/** Search-and-replace block for code editing (FE parse state). */
+export interface SearchReplaceRenderBlock {
+  type: "search_replace";
+  content: string;
+  data?: SearchReplaceRenderData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Fallback for data events whose type is not recognized; _dataType preserves the original type string. */
+export interface UnknownDataEventRenderBlock {
+  type: "unknown_data_event";
+  content: string;
+  data: UnknownDataEventData;
+  metadata?: Record<string, unknown>;
+}
+
+/** Protocol/lifecycle/ack events — control plumbing, never Shapes. */
+export type ServerProtocolRenderBlock =
+  | FunctionResultRenderBlock
+  | WorkflowStepRenderBlock
+  | SearchErrorRenderBlock
+  | StructuredInputWarningRenderBlock
+  | PodcastStageRenderBlock
+  | PodcastCompleteRenderBlock
+  | ScrapeBatchCompleteRenderBlock
+  | ValueStoreStoredRenderBlock
+  | ContextGroomedRenderBlock
+  | SearchReplaceRenderBlock;
+
+export const SERVER_PROTOCOL_RENDER_BLOCK_TYPES = new Set<string>([
+  "function_result", "workflow_step", "search_error", "structured_input_warning", "podcast_stage", "podcast_complete", "scrape_batch_complete", "value_store_stored", "context_groomed", "search_replace",
+]);
+
+/** Generated-media delivery blocks — generic media primitives. */
+export type ServerScalarGenericRenderBlock =
+  | AudioOutputRenderBlock
+  | ImageOutputRenderBlock
+  | VideoOutputRenderBlock;
+
+export const SERVER_SCALAR_GENERIC_RENDER_BLOCK_TYPES = new Set<string>([
+  "audio_output", "image_output", "video_output",
+]);
+
+/** Typed server result displays — registered-kind aliases or shape candidates. */
+export type ServerShapeRenderBlock =
+  | SearchResultsRenderBlock
+  | FetchResultsRenderBlock
+  | CategorizationResultRenderBlock
+  | DisplayQuestionnaireRenderBlock;
+
+export const SERVER_SHAPE_RENDER_BLOCK_TYPES = new Set<string>([
+  "search_results", "fetch_results", "categorization_result", "display_questionnaire",
+]);
+
+/** Deliberately untyped catch-alls. */
+export type ServerOpaqueRenderBlock =
+  | UnknownDataEventRenderBlock;
+
+export const SERVER_INTENTIONALLY_OPAQUE_RENDER_BLOCK_TYPES = new Set<string>([
+  "unknown_data_event",
+]);
+
+/** Every FE-synthesized data-event render block — the generated successor of
+ * the hand-maintained ServerOnlyRenderBlock union in missing-types.ts. */
+export type ServerOnlyRenderBlock =
+  | ServerProtocolRenderBlock
+  | ServerScalarGenericRenderBlock
+  | ServerShapeRenderBlock
+  | ServerOpaqueRenderBlock;
+
+export type ServerOnlyBlockType = ServerOnlyRenderBlock["type"];
 
 // --- Message Part Models (cx_message.content[] items) ---
 

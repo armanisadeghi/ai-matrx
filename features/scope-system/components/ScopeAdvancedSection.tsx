@@ -52,8 +52,8 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
 
   async function handleSave(event?: React.FormEvent) {
     event?.preventDefault();
-    const trimmedSlug = slug.trim();
-    if (trimmedSlug && !isValidSlug(trimmedSlug)) {
+    const trimmedSlug = slug.trim() || toSlug(scope.name);
+    if (!trimmedSlug || !isValidSlug(trimmedSlug)) {
       toast.error("URL slug must be lowercase letters, numbers, and hyphens");
       return;
     }
@@ -78,7 +78,7 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
       await dispatch(
         updateScope({
           scope_id: scope.id,
-          slug: trimmedSlug || undefined,
+          slug: trimmedSlug,
           settings: parsedSettings,
           sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
         }),

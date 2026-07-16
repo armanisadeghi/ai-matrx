@@ -188,6 +188,10 @@ export interface DoctorKindSurface {
   kindDefinitionId: string;
   surfaceType: string;
   token: string;
+  /** kind_surface.is_active — inactive surfaces are exempt from the
+   * host-detectability reconciliation (a deactivated surface SHOULD be
+   * undetectable via the generated bootstrap). */
+  isActive: boolean;
 }
 
 export interface DoctorRenderBlockSkill {
@@ -250,6 +254,20 @@ export interface ShapeDoctorInput {
    * from the manifest, is a RED `contract-gap` finding.
    */
   contractManifest?: DoctorContractManifestEntry[];
+  /**
+   * The detection HOSTS' full token surface per surface type (extracted via
+   * `extractHostSurfaceTokensFromTexts`). When provided, every ACTIVE
+   * `kind_surface` row of a host-covered surface type must have its token in
+   * the matching host set — a miss is a RED `surface-token-undetectable`
+   * (registry says the surface exists; no host literal can ever fire it).
+   * Wave 1 C2: the generated bootstrap and the hand-coded host literals must
+   * agree until the Wave-2 ratchet deletes the literals.
+   */
+  hostSurfaceTokens?: {
+    xml_tag: ReadonlySet<string>;
+    fence_lang: ReadonlySet<string>;
+    json_root_key: ReadonlySet<string>;
+  };
 }
 
 // ─── Report shape ───────────────────────────────────────────────────────────
@@ -294,6 +312,7 @@ export type FindingCode =
   | "vocab-unclassified" // a kind/detector/surface name missing from the crosswalk
   | "contract-gap" // manifest ↔ live catalog mismatch for a generated contract family
   | "coverage-input-missing" // emitted by the CLI when crosswalk/manifest snapshot is unreadable
+  | "surface-token-undetectable" // an ACTIVE kind_surface token no host literal can fire
   // yellow
   | "no-example"
   | "no-skill"
@@ -839,6 +858,27 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
       code: "detector-token-unregistered",
       message: `detector token "${t.token}" (${t.surfaceType}; ${t.sources.join(", ")}) has no kind_surface row — expected until Stage 5`,
     });
+  }
+
+  // Registry↔host reconciliation (Wave 1 C2) — every ACTIVE kind_surface row
+  // must be fireable by a host literal. The generated bootstrap is derived
+  // straight from kind_surface, so this equivalently proves no bootstrap entry
+  // diverges from the hand-coded literals (which stay until the Wave-2
+  // enforcement ratchet).
+  if (input.hostSurfaceTokens) {
+    const host = input.hostSurfaceTokens;
+    const hostCovered = ["xml_tag", "fence_lang", "json_root_key"] as const;
+    for (const s of [...input.surfaces].sort((a, b) => a.token.localeCompare(b.token))) {
+      if (!s.isActive) continue;
+      const surfaceType = hostCovered.find((t) => t === s.surfaceType);
+      if (!surfaceType) continue; // tool_name etc. — no markdown host to fire it
+      if (host[surfaceType].has(s.token.toLowerCase())) continue;
+      reds.push({
+        severity: "red",
+        code: "surface-token-undetectable",
+        message: `ACTIVE kind_surface (${s.surfaceType}, "${s.token}") has NO host detector literal — the registry advertises a surface no host can fire; add the host token or deactivate the row, then pnpm check:shapes:surfaces:refresh`,
+      });
+    }
   }
 
   // Crosswalk coverage — with the generated crosswalk supplied, EVERY name the

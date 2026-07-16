@@ -89,6 +89,8 @@
     "check:shapes:crosswalk": "tsx scripts/shape/generate-content-vocab-crosswalk.ts --check",
     "check:shapes:crosswalk:refresh": "tsx scripts/shape/generate-content-vocab-crosswalk.ts",
     "check:shapes:manifest:refresh": "tsx scripts/shape/refresh-contract-manifest.ts",
+    "check:shapes:surfaces": "tsx scripts/shape/export-kind-surfaces.ts --check",
+    "check:shapes:surfaces:refresh": "tsx scripts/shape/export-kind-surfaces.ts",
     "check:content-ir:twin": "tsx scripts/shape/check-content-ir-twin.ts",
     "check:content-ir:strict": "tsx scripts/shape/generate-content-vocab-crosswalk.ts --check && tsx scripts/shape/check-content-ir-twin.ts && tsx scripts/shape/check-shapes.ts --strict",
     "shape:revalidate": "tsx scripts/shape/revalidate-stranded-examples.ts",

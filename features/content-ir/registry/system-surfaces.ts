@@ -7,6 +7,15 @@
  * SHAPE_SYSTEM.md R2 — `kind_surface` is the ONE enumerable input-surface
  * list, never a second detector).
  *
+ * The entry list is GENERATED from the live DB (Content IR Wave 1 / P11):
+ * `pnpm check:shapes:surfaces:refresh` writes system-surfaces.generated.ts
+ * here AND the byte-identical Python twin in aidream
+ * (`kind_surfaces_generated.py`); `pnpm check:shapes:surfaces` fails on any
+ * drift. NEVER hand-add an entry — insert the `kind_surface` row (shape-system
+ * skill) and regenerate. Only ACTIVE rows are exported, so deactivating a
+ * surface in the DB really deactivates it (the old hand-maintained array
+ * silently resurrected deactivated surfaces).
+ *
  * One entry per (surfaceType, token). `parserStrategy` is a NAME — the
  * implementation lives in surfaces/ (see surfaces/xml-finalize.ts). An entry
  * naming a strategy this build does not implement fails LOUDLY at
@@ -15,6 +24,8 @@
  * This file is metadata only: no IO, no strategy imports — the registry
  * stays consultable from anywhere without dragging parser code along.
  */
+
+import { GENERATED_SURFACE_ENTRIES } from "./system-surfaces.generated";
 
 /** Mirrors the `content_ir.kind_surface.surface_type` vocabulary. */
 export type KindSurfaceType =
@@ -35,128 +46,5 @@ export interface KindSurfaceEntry {
   streaming: boolean;
 }
 
-export const SYSTEM_SURFACE_ENTRIES: KindSurfaceEntry[] = [
-  // THE KEYSTONE (Stage 1): <flashcards> XML converges to the canonical
-  // flashcard_set kind at region finalize — XML and __kind JSON render
-  // through the SAME kind pipeline. Mirrors the live kind_surface row.
-  {
-    surfaceType: "xml_tag",
-    token: "flashcards",
-    kind: "flashcard_set",
-    parserStrategy: "flashcards_legacy_text",
-    streaming: true,
-  },
-  // ```flashcards fences carry the same Front/Back body as the XML surface
-  // (SPECIAL_CODE_LANGUAGES promotes them to the flashcards block today) —
-  // same strategy, fence discriminator. First consumer of the fence hook.
-  {
-    surfaceType: "fence_lang",
-    token: "flashcards",
-    kind: "flashcard_set",
-    parserStrategy: "flashcards_legacy_text",
-    streaming: true,
-  },
-  // Gold-mine sweep: ```mermaid / ```mmd fences converge to mermaid_diagram
-  // (raw DSL + optional title; structured diagrams stay diagram_spec).
-  {
-    surfaceType: "fence_lang",
-    token: "mermaid",
-    kind: "mermaid_diagram",
-    parserStrategy: "mermaid_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "fence_lang",
-    token: "mmd",
-    kind: "mermaid_diagram",
-    parserStrategy: "mermaid_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "fence_lang",
-    token: "tasks",
-    kind: "task_list",
-    parserStrategy: "tasks_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "xml_tag",
-    token: "resources",
-    kind: "resource_collection",
-    parserStrategy: "resources_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "xml_tag",
-    token: "progress_tracker",
-    kind: "progress_tracker",
-    parserStrategy: "progress_tracker_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "xml_tag",
-    token: "timeline",
-    kind: "timeline",
-    parserStrategy: "timeline_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "fence_lang",
-    token: "structured_info",
-    kind: "structured_info",
-    parserStrategy: "structured_info_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "fence_lang",
-    token: "transcript",
-    kind: "transcript",
-    parserStrategy: "transcript_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "xml_tag",
-    token: "troubleshooting",
-    kind: "troubleshooting_guide",
-    parserStrategy: "troubleshooting_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "xml_tag",
-    token: "cooking_recipe",
-    kind: "cooking_recipe",
-    parserStrategy: "cooking_recipe_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "fence_lang",
-    token: "cooking_recipe",
-    kind: "cooking_recipe",
-    parserStrategy: "cooking_recipe_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "xml_tag",
-    token: "research",
-    kind: "research_report",
-    parserStrategy: "research_legacy_text",
-    streaming: true,
-  },
-  // `questionnaire` arrives in BOTH framings today — SIMPLE_XML_TAGS
-  // (stream-block-accumulator) and SPECIAL_CODE_LANGUAGES (content-splitter-v2)
-  // — carrying the identical `## Q1:` + `Type:` body. One strategy, two rows.
-  {
-    surfaceType: "xml_tag",
-    token: "questionnaire",
-    kind: "questionnaire",
-    parserStrategy: "questionnaire_legacy_text",
-    streaming: true,
-  },
-  {
-    surfaceType: "fence_lang",
-    token: "questionnaire",
-    kind: "questionnaire",
-    parserStrategy: "questionnaire_legacy_text",
-    streaming: true,
-  },
-];
+export const SYSTEM_SURFACE_ENTRIES: readonly KindSurfaceEntry[] =
+  GENERATED_SURFACE_ENTRIES;

@@ -10,7 +10,20 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { ScopeType } from "./types";
-import { isUuid } from "@/features/scope-system/utils/slugify";
+import {
+  isReservedSlug,
+  isUuid,
+  isValidSlug,
+  toSlug,
+} from "@/features/scope-system/utils/slugify";
+
+function requiredSlug(value: string, kind: string, supplied?: string): string {
+  const slug = supplied?.trim() || toSlug(value);
+  if (!slug || !isValidSlug(slug) || isReservedSlug(slug)) {
+    throw new Error(`${kind} needs a valid URL slug; use letters or numbers in its name`);
+  }
+  return slug;
+}
 
 const scopeTypesAdapter = createEntityAdapter<ScopeType>({
   sortComparer: (a, b) => a.sort_order - b.sort_order,
@@ -68,7 +81,8 @@ export const createScopeType = createAsyncThunk(
       p_max_assignments: params.max_assignments ?? undefined,
       p_default_variable_keys: params.default_variable_keys ?? [],
       p_color: params.color ?? undefined,
-      p_slug: params.slug ?? undefined,
+      p_slug:
+        requiredSlug(params.label_singular, "Scope type", params.slug),
     });
     if (error) throw error;
     return data as ScopeType;
@@ -88,6 +102,10 @@ export const updateScopeType = createAsyncThunk(
     color?: string;
     slug?: string;
   }) => {
+    const slug =
+      params.slug === undefined
+        ? undefined
+        : requiredSlug(params.label_singular ?? "", "Scope type", params.slug);
     const { data, error } = await supabase.rpc("update_scope_type", {
       p_type_id: params.type_id,
       p_label_singular: params.label_singular,
@@ -97,7 +115,7 @@ export const updateScopeType = createAsyncThunk(
       p_sort_order: params.sort_order,
       p_max_assignments: params.max_assignments,
       p_color: params.color,
-      p_slug: params.slug,
+      p_slug: slug,
     });
     if (error) throw error;
     return data as ScopeType;

@@ -113,6 +113,123 @@ export function extractDetectorTokensFromTexts({
   return { tokens, failures };
 }
 
+/** The hosts' full detection-token surface, keyed by kind_surface.surface_type. */
+export interface HostSurfaceTokens {
+  xml_tag: Set<string>;
+  fence_lang: Set<string>;
+  json_root_key: Set<string>;
+}
+
+export interface HostSurfaceExtraction {
+  tokens: HostSurfaceTokens;
+  failures: DetectorExtractFailure[];
+}
+
+/**
+ * Every token the detection HOSTS can actually recognize, per surface type —
+ * the reconciliation counterpart of the generated `kind_surface` bootstrap
+ * (Wave 1 C2): a registered surface whose token appears in NO host literal is
+ * undetectable, i.e. registry↔host drift. Sources:
+ *   xml_tag       — accumulator SIMPLE_XML_TAGS + ATTR_XML_TAGS, splitter
+ *                   XML_TAG_BLOCKS tags + ATTRIBUTE_XML_BLOCKS
+ *   fence_lang    — splitter SPECIAL_CODE_LANGUAGES + CODE_LANGUAGE_ALIASES
+ *                   keys (the accumulator imports the same literals)
+ *   json_root_key — splitter JSON_BLOCK_PATTERNS `rootKey:` values
+ */
+export function extractHostSurfaceTokensFromTexts({
+  accumulatorText,
+  splitterText,
+}: DetectorSourceTexts): HostSurfaceExtraction {
+  const failures: DetectorExtractFailure[] = [];
+  const tokens: HostSurfaceTokens = {
+    xml_tag: new Set<string>(),
+    fence_lang: new Set<string>(),
+    json_root_key: new Set<string>(),
+  };
+
+  const collectSet = (
+    text: string,
+    name: string,
+    file: string,
+    into: Set<string>,
+    // Set(...) literals and plain arrays both close with `]`.
+    pattern: RegExp,
+  ): void => {
+    const match = pattern.exec(text);
+    const items = match ? extractQuotedStrings(match[1]) : [];
+    if (items.length === 0) {
+      failures.push({ literal: name, file });
+      return;
+    }
+    for (const item of items) into.add(item.toLowerCase());
+  };
+
+  collectSet(
+    accumulatorText,
+    "SIMPLE_XML_TAGS",
+    "stream-block-accumulator.ts",
+    tokens.xml_tag,
+    /const SIMPLE_XML_TAGS = new Set\(\[([\s\S]*?)\]\)/,
+  );
+  collectSet(
+    accumulatorText,
+    "ATTR_XML_TAGS",
+    "stream-block-accumulator.ts",
+    tokens.xml_tag,
+    /const ATTR_XML_TAGS = new Set\(\[([\s\S]*?)\]\)/,
+  );
+  collectSet(
+    splitterText,
+    "ATTRIBUTE_XML_BLOCKS",
+    "content-splitter-v2.ts",
+    tokens.xml_tag,
+    /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/,
+  );
+
+  // Splitter XML_TAG_BLOCKS values are "<tag>" strings — strip the brackets.
+  const xmlTagBlocks = /const XML_TAG_BLOCKS = \{([\s\S]*?)\} as const;/.exec(splitterText);
+  const tagStrings = xmlTagBlocks ? extractQuotedStrings(xmlTagBlocks[1]) : [];
+  if (tagStrings.length === 0) {
+    failures.push({ literal: "XML_TAG_BLOCKS", file: "content-splitter-v2.ts" });
+  } else {
+    for (const raw of tagStrings) {
+      const m = /^<([a-z0-9_-]+)>$/i.exec(raw);
+      if (m) tokens.xml_tag.add(m[1].toLowerCase());
+    }
+  }
+
+  collectSet(
+    splitterText,
+    "SPECIAL_CODE_LANGUAGES",
+    "content-splitter-v2.ts",
+    tokens.fence_lang,
+    /const SPECIAL_CODE_LANGUAGES = \[([\s\S]*?)\]/,
+  );
+  const aliases = /const CODE_LANGUAGE_ALIASES: Record<string, string> = \{([\s\S]*?)\}/.exec(
+    splitterText,
+  );
+  const aliasKeys = aliases
+    ? [...aliases[1].matchAll(/^\s*([a-z0-9_]+):/gm)].map((m) => m[1])
+    : [];
+  if (aliasKeys.length === 0) {
+    failures.push({ literal: "CODE_LANGUAGE_ALIASES", file: "content-splitter-v2.ts" });
+  } else {
+    for (const key of aliasKeys) tokens.fence_lang.add(key.toLowerCase());
+  }
+
+  const jsonPatterns = /const JSON_BLOCK_PATTERNS = \{([\s\S]*?)\n\} as const;/.exec(splitterText);
+  const rootKeys = jsonPatterns
+    ? [...jsonPatterns[1].matchAll(/rootKey: "([^"]+)"/g)].map((m) => m[1])
+    : [];
+  if (rootKeys.length === 0) {
+    failures.push({ literal: "JSON_BLOCK_PATTERNS.rootKey", file: "content-splitter-v2.ts" });
+  } else {
+    for (const key of rootKeys) tokens.json_root_key.add(key.toLowerCase());
+  }
+
+  return { tokens, failures };
+}
+
 /**
  * Kinds with a compiled bridge/component facet, from system-kinds.ts TEXT:
  * each definition object opens with `kind: "<slug>"`; a `legacyBlockType:` /

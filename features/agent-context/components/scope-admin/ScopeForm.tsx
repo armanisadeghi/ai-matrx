@@ -9,6 +9,7 @@ import {
   selectScopesByType,
 } from "../../redux/scope/scopesSlice";
 import type { ScopeType, Scope } from "../../redux/scope/types";
+import { toSlug } from "@/features/scope-system/utils/slugify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,6 +87,7 @@ export function ScopeForm({
             scope_id: editingScope.id,
             name: name.trim(),
             description: description.trim(),
+            slug: editingScope.slug ?? toSlug(name),
           }),
         );
       } else {
@@ -95,6 +97,7 @@ export function ScopeForm({
             type_id: scopeType.id,
             name: name.trim(),
             description: description.trim(),
+            slug: toSlug(name),
             parent_scope_id:
               selectedParent === NONE_VALUE ? undefined : selectedParent,
           }),

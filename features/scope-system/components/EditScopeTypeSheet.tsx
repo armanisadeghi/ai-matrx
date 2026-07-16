@@ -225,8 +225,8 @@ export function EditScopeTypeSheet({
       toast.error("Name is required");
       return;
     }
-    const trimmedSlug = slug.trim();
-    if (trimmedSlug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(trimmedSlug)) {
+    const trimmedSlug = slug.trim() || toSlug(trimmedSingular);
+    if (!trimmedSlug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(trimmedSlug)) {
       toast.error("URL slug must be lowercase letters, numbers, and hyphens");
       return;
     }
@@ -261,7 +261,7 @@ export function EditScopeTypeSheet({
             icon: icon || "Folder",
             description,
             color,
-            slug: slugChanged ? trimmedSlug || undefined : undefined,
+            slug: slugChanged ? trimmedSlug : undefined,
             sort_order: sortOrder,
             max_assignments: maxAssignments
               ? parseInt(maxAssignments, 10)

@@ -18,6 +18,7 @@ import { contextDb } from "@/utils/supabase/contextDb";
 import { createClient } from "@/utils/supabase/server";
 import type { Database, Json } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toSlug } from "@/features/scope-system/utils/slugify";
 
 const SYSTEM_ORG_SLUG = "matrx-system";
 
@@ -184,6 +185,7 @@ async function ensureScopeForType(
       organization_id: organizationId,
       scope_type_id: scopeTypeId,
       name: fallbackName,
+      slug: toSlug(fallbackName),
     })
     .select("id")
     .single();
@@ -568,6 +570,13 @@ async function createScopeType(admin: AdminClient, body: CreateScopeTypeBody) {
       { status: 400 },
     );
   }
+  const slug = toSlug(labelSingular);
+  if (!slug) {
+    return NextResponse.json(
+      { error: "label_singular must contain letters or numbers for its URL slug" },
+      { status: 400 },
+    );
+  }
 
   const organizationId = await resolveSystemOrgId(admin);
 
@@ -577,6 +586,7 @@ async function createScopeType(admin: AdminClient, body: CreateScopeTypeBody) {
       organization_id: organizationId,
       label_singular: labelSingular,
       label_plural: labelPlural,
+      slug,
       icon: body.icon?.trim() || "globe",
       color: body.color?.trim() || "",
       description: body.description?.trim() || "",
@@ -640,6 +650,13 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
       { status: 400 },
     );
   }
+  const slug = toSlug(displayName);
+  if (!slug) {
+    return NextResponse.json(
+      { error: "display_name must contain letters or numbers for its URL slug" },
+      { status: 400 },
+    );
+  }
   if (COMPUTED_KEYS.has(key)) {
     return NextResponse.json(
       { error: `'${key}' is a reserved ambient key` },
@@ -655,6 +672,7 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
     .insert({
       scope_type_id: body.scopeTypeId,
       key,
+      slug,
       display_name: displayName,
       value_type: body.value_type,
       sensitivity: body.sensitivity ?? "internal",

@@ -114,7 +114,7 @@ Confirmed contents of `types/python-generated/` today:
 | `types/python-generated/llm-params.schema.json` | KEEP | Unrelated. |
 | `types/python-generated/stream-events.ts` | KEEP | Streaming event schema. |
 | `types/python-generated/stream-events.schema.json` | KEEP | Streaming event schema. |
-| `types/python-generated/missing-types.ts` | MODIFY | Audit for Asset/MediaRef stubs that may exist here; should disappear after regen. |
+| `types/python-generated/missing-types.ts` | DELETED (2026-07-15) | Absorbed: server-only wrappers generate into `stream-events.ts` (ServerOnlyRenderBlock); client-only types live in `components/mardown-display/markdown-classification/processors/utils/client-blocks.ts`. |
 | `types/python-generated/AI_CORE_API.md` | KEEP | Doc. |
 | `types/python-generated/CONTENT-BLOCK-RENDER-LEVELS.md` | KEEP | Doc. |
 | `features/files/types.ts:1187-1311` (hand-authored AssetPreset / AssetVariant / Asset / AddAssetVariantsRequest / AssetPatchRequest / AssetPresetVariantDescriptor / AssetPresetDescriptor / PresetsRegistryResponse) | DELETE | 125 lines verified present. Replaced by regenerated types from OpenAPI. |

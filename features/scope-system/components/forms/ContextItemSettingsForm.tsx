@@ -210,12 +210,12 @@ export function ContextItemSettingsForm({
       toast.error("Display name is required");
       return;
     }
-    const trimmedSlug = slug.trim();
-    if (trimmedSlug && !isValidSlug(trimmedSlug)) {
+    const trimmedSlug = slug.trim() || toSlug(trimmedName);
+    if (!trimmedSlug || !isValidSlug(trimmedSlug)) {
       toast.error("URL slug must be lowercase letters, numbers, and hyphens");
       return;
     }
-    if (trimmedSlug && isReservedSlug(trimmedSlug)) {
+    if (isReservedSlug(trimmedSlug)) {
       toast.error(`"${trimmedSlug}" is a reserved word — choose another slug`);
       return;
     }
@@ -235,7 +235,7 @@ export function ContextItemSettingsForm({
         updateContextItem({
           id: item.id,
           display_name: trimmedName,
-          slug: trimmedSlug || null,
+          slug: trimmedSlug,
           description: description.trim(),
           category: category.trim() || null,
           value_type: derivedValueType,

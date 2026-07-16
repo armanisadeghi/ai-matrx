@@ -21,7 +21,7 @@ Client changes (you):
 Ping Python team (block the merge until they've shipped):
 
 - Add `<Type>RenderBlock` to `TypedRenderBlock` in `stream-events.ts` (auto-generated — they add on the Python side, you regen).
-- Until they ship, temporarily declare the interface in **`types/python-generated/missing-types.ts`** under `ServerOnlyRenderBlock`. Delete that temp entry as soon as regen picks it up.
+- FE-synthesized data-event wrappers are GENERATED: add a row to aidream `matrx_connect/context/data_render_blocks.py` (`DATA_EVENT_RENDER_BLOCKS`) with its crosswalk classification, regenerate (`scripts/generate_types.py stream`), and sync — `ServerOnlyRenderBlock` in `stream-events.ts` picks it up. Never hand-declare a server wrapper type (the old `missing-types.ts` patch file is deleted).
 
 Round-trip to DB (only if the block needs to survive reload from `cx_message.content`):
 
@@ -44,7 +44,7 @@ Pattern: simple `<tag>...</tag>` wrapper with no attributes. Splitter extracts, 
 
 Ping Python team:
 
-- If Python will also emit this as `render_block`, they add the matching `TypedRenderBlock` interface. If purely client-only, no Python work — but add a stub entry to `missing-types.ts` under `ClientOnlyRenderBlock` so the splitter's union type accepts it.
+- If Python will also emit this as `render_block`, they add the matching `TypedRenderBlock` interface. If purely client-only, no Python work — but add the interface to `processors/utils/client-blocks.ts` (into the `ClientOnlyRenderBlock` union) so the splitter's union type accepts it, and add a classification rule in `scripts/shape/generate-content-vocab-crosswalk.ts` + regenerate the crosswalk.
 
 ---
 
@@ -89,7 +89,7 @@ Block stays `type: "code"`; only the `language` changes the renderer branch.
 3. **`BlockComponentRegistry.tsx`** — lazy entry + `BlockComponents` entry.
 4. **`components/mardown-display/blocks/<name>/`** — component.
 
-No Python work, no `missing-types.ts`, no DB round-trip work — `code` is already handled.
+No Python work, no vocabulary edit, no DB round-trip work — `code` is already handled.
 
 ---
 
@@ -103,7 +103,7 @@ Like Flavor E, but the block emerges with a different `type` so it flows through
 4. **`components/mardown-display/blocks/<name>/`** — component + optional parser.
 5. **DB round-trip** — add a `case "<type>":` in `reconstructBlockMarkdown` that wraps back as ` ```<type>\n…\n``` ` (a fence — NOT the `<type>…</type>` XML default, which corrupts fence-promoted blocks).
 6. **(Optional) live promotion** — to render progressively *during* streaming, promote the fence at open-time in `stream-block-accumulator.ts` (the code-fence branch) instead of only at close. Mermaid is the first non-JSON type to do this.
-7. **Server side (do this FIRST when server emits it):** aidream `block_detector.py` `SPECIAL_CODE_LANGUAGES` (+ `CODE_LANGUAGE_ALIASES`), a Pydantic model + forgiving parser, `stream_processor.py` classification set + parser map, `render_blocks.py` registry (3 entries), then `pnpm sync-types:fast` so `TypedRenderBlock` gains the type. Landing the server first means no temp `missing-types.ts` entry.
+7. **Server side (do this FIRST when server emits it):** aidream `block_detector.py` `SPECIAL_CODE_LANGUAGES` (+ `CODE_LANGUAGE_ALIASES`), a Pydantic model + forgiving parser, `stream_processor.py` classification set + parser map, `render_blocks.py` registry (3 entries), then `pnpm sync-types:fast` so `TypedRenderBlock` gains the type. Landing the server first means the type arrives via regen — no hand-declared entry anywhere.
 
 Python team: if the block is ever emitted server-side as a `render_block`, they add the matching TypedRenderBlock (step 7).
 
@@ -114,7 +114,7 @@ Python team: if the block is ever emitted server-side as a `render_block`, they 
 Regex/structural detection directly in the splitter.
 
 1. **`content-splitter-v2.ts`** — add a detector (new step in `splitContentIntoBlocksV2`) that pushes `{ type: "<type>", content }`.
-2. **`types/python-generated/missing-types.ts`** — add a `<Type>RenderBlock` interface under `ClientOnlyRenderBlock` (and into the `ClientOnlyRenderBlock` union). This keeps the splitter's union type happy.
+2. **`processors/utils/client-blocks.ts`** — add a `<Type>RenderBlock` interface and put it into the `ClientOnlyRenderBlock` union. This keeps the splitter's union type happy. Then add a classification rule in `scripts/shape/generate-content-vocab-crosswalk.ts` and run `pnpm check:shapes:crosswalk:refresh`.
 3. **`BlockRenderer.tsx`** — `case "<type>":`. If rendering is trivial (e.g. a divider), inline the JSX; otherwise delegate to a component.
 4. **`BlockComponentRegistry.tsx`** — entry only if the renderer delegates to a component.
 
@@ -144,7 +144,7 @@ Do not touch these — they're either generic passthroughs or unrelated:
 ## Python contract reminder
 
 - `types/python-generated/stream-events.ts` is **auto-generated**. Never hand-edit. For any server-emitted block, the Python team owns the source — notify them, they regen.
-- While waiting on Python, declare a temp interface in `types/python-generated/missing-types.ts` (under `ServerOnlyRenderBlock` for server-driven, `ClientOnlyRenderBlock` for client-only). Delete the temp entry once regen lands.
+- Server-driven wrappers: add the row to aidream `data_render_blocks.py` and regen (never a hand-declared temp interface). Client-only: add the interface to `processors/utils/client-blocks.ts`.
 - Python sends `snake_case`. Components want `camelCase`. The `BlockRenderer` case is where the remap happens (see the `// TODO(python): rename x → y` comments on existing cases). Leave the TODO and move on — a later sweep renames on the Python side.
 
 ---
@@ -180,6 +180,6 @@ Is the block emitted by Python as a render_block event?
 | D — JSON fence | 3 (`content-splitter-v2`, `BlockRenderer`, `BlockComponentRegistry`) |
 | E — code language branch | 2 (`BlockRenderer`, `BlockComponentRegistry`) |
 | F — code language remapped | 3 (`content-splitter-v2`, `BlockRenderer`, `BlockComponentRegistry`) + `assemble-cx-content-blocks` |
-| G — pure client pattern | 3 (`content-splitter-v2`, `missing-types`, `BlockRenderer`) + `BlockComponentRegistry` if non-trivial |
+| G — pure client pattern | 3 (`content-splitter-v2`, `client-blocks`, `BlockRenderer`) + `BlockComponentRegistry` if non-trivial |
 
 Always remember to create the component itself under `components/mardown-display/blocks/<name>/`.

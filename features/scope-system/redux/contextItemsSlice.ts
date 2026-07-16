@@ -10,7 +10,12 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { contextDb } from "@/utils/supabase/contextDb";
 import type { TablesUpdate } from "@/types/database.types";
-import { isUuid } from "@/features/scope-system/utils/slugify";
+import {
+  isReservedSlug,
+  isUuid,
+  isValidSlug,
+  toSlug,
+} from "@/features/scope-system/utils/slugify";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import type { ReferenceSource } from "@/features/scopes/utils/referenceSource";
 import type {
@@ -67,6 +72,14 @@ export interface ContextItem {
   reference_source?: ReferenceSource | null;
 }
 
+function requiredSlug(value: string, supplied?: string): string {
+  const slug = supplied?.trim() || toSlug(value);
+  if (!slug || !isValidSlug(slug) || isReservedSlug(slug)) {
+    throw new Error("Context item needs a valid URL slug; use letters or numbers in its display name");
+  }
+  return slug;
+}
+
 const adapter = createEntityAdapter<ContextItem>({
   // Order by the user-controlled sort_order, then display name as a stable tiebreaker.
   sortComparer: (a, b) =>
@@ -109,7 +122,7 @@ export const updateContextItem = createAsyncThunk(
   async (params: {
     id: string;
     display_name?: string;
-    slug?: string | null;
+    slug?: string;
     description?: string;
     category?: string | null;
     value_type?: ContextValueType;
@@ -129,7 +142,9 @@ export const updateContextItem = createAsyncThunk(
     const patch: TablesUpdate<{ schema: "context" }, "context_items"> = {};
     if (params.display_name !== undefined)
       patch.display_name = params.display_name;
-    if (params.slug !== undefined) patch.slug = params.slug;
+    if (params.slug !== undefined) {
+      patch.slug = requiredSlug(params.display_name ?? "", params.slug);
+    }
     if (params.sort_order !== undefined) patch.sort_order = params.sort_order;
     if (params.description !== undefined)
       patch.description = params.description;
@@ -210,7 +225,7 @@ export const createContextItem = createAsyncThunk(
       p_fetch_hint: params.fetch_hint ?? "on_demand",
       p_sensitivity: params.sensitivity ?? "internal",
       p_tags: params.tags ?? [],
-      p_slug: params.slug ?? undefined,
+      p_slug: requiredSlug(params.display_name, params.slug),
       p_sort_order: params.sort_order ?? undefined,
       p_allowed_reference_types: params.allowed_reference_types ?? undefined,
       p_max_items: params.max_items ?? undefined,

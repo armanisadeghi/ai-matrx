@@ -60,7 +60,10 @@ const BLOCKTYPE_PY = resolve(
   "packages/matrx-ai/matrx_ai/processing/blocks/models/base.py",
 );
 const STREAM_EVENTS_PATH = resolve(ROOT, "types/python-generated/stream-events.ts");
-const MISSING_TYPES_PATH = resolve(ROOT, "types/python-generated/missing-types.ts");
+const CLIENT_BLOCKS_PATH = resolve(
+  ROOT,
+  "components/mardown-display/markdown-classification/processors/utils/client-blocks.ts",
+);
 const ARTIFACT_REGISTRY_PATH = resolve(
   ROOT,
   "features/canvas/artifact-types/artifact-type-registry.ts",
@@ -262,9 +265,9 @@ function readTypedRenderBlockTypes(): string[] {
   return values;
 }
 
-/** ClientOnly / ServerOnly discriminator tokens from missing-types.ts, via the unions. */
-function readMissingTypeTokens(): { client: string[]; server: string[] } {
-  const text = readFileSync(MISSING_TYPES_PATH, "utf8");
+/** ClientOnly discriminator tokens from the client-blocks vocabulary module. */
+function readClientBlockTokens(): string[] {
+  const text = readFileSync(CLIENT_BLOCKS_PATH, "utf8");
   const tokenOf = (interfaceName: string): string => {
     const m = new RegExp(
       `interface ${interfaceName} \\{[\\s\\S]*?type: "([^"]+)";`,
@@ -272,17 +275,42 @@ function readMissingTypeTokens(): { client: string[]; server: string[] } {
     if (!m) fail(`could not extract discriminator for interface ${interfaceName}`);
     return m[1];
   };
-  const unionMembers = (unionName: string): string[] => {
-    const m = new RegExp(`export type ${unionName} =([\\s\\S]*?);`).exec(text);
-    if (!m) fail(`union ${unionName} not found in ${MISSING_TYPES_PATH}`);
-    const members = [...m[1].matchAll(/\|\s*([A-Za-z0-9_]+)/g)].map((x) => x[1]);
-    if (members.length === 0) fail(`union ${unionName} extracted empty`);
-    return members;
-  };
-  return {
-    client: unionMembers("ClientOnlyRenderBlock").map(tokenOf),
-    server: unionMembers("ServerOnlyRenderBlock").map(tokenOf),
-  };
+  const m = /export type ClientOnlyRenderBlock =([\s\S]*?);/.exec(text);
+  if (!m) fail(`union ClientOnlyRenderBlock not found in ${CLIENT_BLOCKS_PATH}`);
+  const members = [...m[1].matchAll(/\|\s*([A-Za-z0-9_]+)/g)].map((x) => x[1]);
+  if (members.length === 0) fail("union ClientOnlyRenderBlock extracted empty");
+  return members.map(tokenOf);
+}
+
+/**
+ * Server data-event render-block tokens from the GENERATED per-classification
+ * set literals in stream-events.ts (source of truth: aidream
+ * matrx_connect/context/data_render_blocks.py). Returns token →
+ * Python-claimed classification, so the build can verify the generated
+ * vocabulary agrees with this file's rule tables (the authority).
+ */
+function readServerBlockTokens(): Map<string, VocabClassification> {
+  const text = readFileSync(STREAM_EVENTS_PATH, "utf8");
+  const SETS: Array<[string, VocabClassification]> = [
+    ["SERVER_PROTOCOL_RENDER_BLOCK_TYPES", "protocol"],
+    ["SERVER_SCALAR_GENERIC_RENDER_BLOCK_TYPES", "scalar_generic"],
+    ["SERVER_SHAPE_RENDER_BLOCK_TYPES", "shape"],
+    ["SERVER_INTENTIONALLY_OPAQUE_RENDER_BLOCK_TYPES", "intentionally_opaque"],
+  ];
+  const tokens = new Map<string, VocabClassification>();
+  for (const [literal, classification] of SETS) {
+    const m = new RegExp(
+      `export const ${literal} = new Set<string>\\(\\[([\\s\\S]*?)\\]\\)`,
+    ).exec(text);
+    if (!m) fail(`${literal} literal not found in ${STREAM_EVENTS_PATH} — regenerate stream types`);
+    const values = [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+    if (values.length === 0) fail(`${literal} extracted empty`);
+    for (const v of values) {
+      if (tokens.has(v)) fail(`server block token "${v}" appears in two classification sets`);
+      tokens.set(v, classification);
+    }
+  }
+  return tokens;
 }
 
 /** Artifact registry vocabulary: canvasTypes, aliases, standalone aliases, kind facades. */
@@ -438,11 +466,18 @@ async function build(): Promise<BuildResult> {
   }
 
   // 3. Client-only / server-only render blocks.
-  const missing = readMissingTypeTokens();
-  inputs["frontend:client_only_render_block"] = `${missing.client.length} types (types/python-generated/missing-types.ts)`;
-  inputs["frontend:server_only_render_block"] = `${missing.server.length} types (types/python-generated/missing-types.ts)`;
-  for (const name of missing.client) items.push({ name, source: "frontend:client_only_render_block" });
-  for (const name of missing.server) items.push({ name, source: "frontend:server_only_render_block" });
+  const clientBlockTokens = readClientBlockTokens();
+  const serverBlockTokens = readServerBlockTokens();
+  inputs["frontend:client_only_render_block"] =
+    `${clientBlockTokens.length} types (components/mardown-display/markdown-classification/processors/utils/client-blocks.ts)`;
+  inputs["frontend:server_only_render_block"] =
+    `${serverBlockTokens.size} types (types/python-generated/stream-events.ts ServerOnlyRenderBlock — generated from aidream data_render_blocks.py)`;
+  for (const name of clientBlockTokens) {
+    items.push({ name, source: "frontend:client_only_render_block" });
+  }
+  for (const name of serverBlockTokens.keys()) {
+    items.push({ name, source: "frontend:server_only_render_block" });
+  }
 
   // 4. Artifact type registry.
   const artifact = readArtifactRegistryVocab();
@@ -609,6 +644,21 @@ async function build(): Promise<BuildResult> {
       continue;
     }
     unclassified.push(name);
+  }
+
+  // The generated server vocabulary carries a Python-claimed classification
+  // (aidream data_render_blocks.py). The rule tables in THIS file are the
+  // authority — any divergence fails the run so protocol/shape classing is
+  // honored end-to-end, never silently forked.
+  const rowByName = new Map(rows.map((r) => [r.name, r]));
+  for (const [token, claimed] of serverBlockTokens) {
+    const row = rowByName.get(token);
+    if (!row) continue; // already recorded as unclassified
+    if (row.classification !== claimed) {
+      problems.push(
+        `server block token "${token}": generated vocabulary (data_render_blocks.py) claims "${claimed}" but the crosswalk rule tables classify it as "${row.classification}" — reconcile the two`,
+      );
+    }
   }
 
   const totals: CrosswalkFile["totals"] = {

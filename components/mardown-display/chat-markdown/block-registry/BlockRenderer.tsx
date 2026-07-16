@@ -10,8 +10,11 @@ import {
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
 import { useBlockRenderingConfig } from "@/components/mardown-display/chat-markdown/BlockRenderingContext";
 import { InlineCodeSnippet } from "../InlineCodeSnippet";
-import type { TypedRenderBlock } from "@/types/python-generated/stream-events";
-import type { MissingBlockType } from "@/types/python-generated/missing-types";
+import type {
+  TypedRenderBlock,
+  ServerOnlyBlockType,
+} from "@/types/python-generated/stream-events";
+import type { ClientOnlyBlockType } from "@/components/mardown-display/markdown-classification/processors/utils/client-blocks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectHideReasoning,
@@ -67,11 +70,16 @@ const StrictModeError: React.FC<{ blockType: string; blockId?: string }> = ({
  * for server-processed blocks arrives via `serverData` (the Python `data` field).
  *
  * The `type` string covers ALL blocks: Python-typed (TypedRenderBlock["type"]),
- * missing/pending types (MissingBlockType), and the open `string` fallback for
- * anything Python adds before TypeScript types catch up.
+ * client-splitter types (ClientOnlyBlockType), FE-synthesized data-event
+ * wrappers (ServerOnlyBlockType), and the open `string` fallback for anything
+ * Python adds before TypeScript types catch up.
  */
 export interface RenderBlock {
-  type: TypedRenderBlock["type"] | MissingBlockType | string;
+  type:
+    | TypedRenderBlock["type"]
+    | ClientOnlyBlockType
+    | ServerOnlyBlockType
+    | string;
   content: string;
   /** Python's `data` field — typed by the server, accessed via serverData in the renderer. */
   serverData?: Record<string, unknown>;
