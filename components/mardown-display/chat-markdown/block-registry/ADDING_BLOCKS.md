@@ -2,6 +2,8 @@
 
 Authoritative checklist for introducing a new renderable block in the streaming + markdown pipeline. Only files that actually matter are listed.
 
+**Rendering is a dispatch REGISTRY, not a switch.** `block-registry/block-dispatch.tsx` holds one table per crosswalk classification (protocol / scalar_generic / shape / intentionally_opaque). "Register in `block-dispatch.tsx`" below means: add the type to the matching classification union AND an entry in that classification's table (the `satisfies Record<…>` gate makes a missing/extra entry a compile error). Match the classification the content-vocab crosswalk assigns — `__tests__/block-dispatch.test.tsx` fails on drift. `BlockRenderer.tsx` itself is stage wiring only (kind route → pending skeleton → unified artifact renderer → dispatch); it never gains per-type branches.
+
 Pick the **flavor** that matches the new block, then follow that section.
 
 ---
@@ -14,7 +16,7 @@ Python emits a `render_block` event. No raw markdown pattern is parsed on the cl
 
 Client changes (you):
 
-1. **`block-registry/BlockRenderer.tsx`** — add a `case "<type>":` in the main switch. Read from `block.serverData`. If the component has a streaming skeleton, guard with `isBlockLoading(block)` and render `LoadingComponents.<X>`. If the block should respect `hideReasoning` / `hideToolResults`, add the gating at the top of the case (see `thinking`, `tool` cases).
+1. **`block-registry/block-dispatch.tsx`** — register the type (classification union + table entry). Read from `block.serverData`. If the component has a streaming skeleton, guard with `isBlockLoading(block)` and render `LoadingComponents.<X>`. If the block should respect `hideReasoning` / `hideToolResults`, gate at the top of the entry (see the `thinking` / `tool` registrations).
 2. **`block-registry/BlockComponentRegistry.tsx`** — `const X = lazy(...)` + an entry under `BlockComponents`. Add a `LoadingComponents` entry only if there's a streaming skeleton.
 3. **`components/mardown-display/blocks/<name>/<Name>Block.tsx`** — the component itself. Props consume the (snake_case) fields Python sends.
 
@@ -37,7 +39,7 @@ Pattern: simple `<tag>...</tag>` wrapper with no attributes. Splitter extracts, 
 
 1. **`components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts`**
    - Add the tag to the `XML_TAG_BLOCKS` registry (`{ <type>: ["<tag>"] }`).
-2. **`block-registry/BlockRenderer.tsx`** — add a `case "<type>":`. Prefer the server-data-first pattern: render from `block.serverData` if present, else parse `block.content` via a dynamic-imported parser (see `case "cooking_recipe"` / `case "timeline"` for the canonical shape).
+2. **`block-registry/block-dispatch.tsx`** — register the type. Prefer the server-data-first pattern: render from `block.serverData` if present, else parse `block.content` via a dynamic-imported parser. (Most XML-tag shapes render via the unified artifact stage upstream — register a preserved fallback like the existing shape entries.)
 3. **`block-registry/BlockComponentRegistry.tsx`** — lazy entry + `BlockComponents` entry. Add `LoadingComponents.<X>` if you want a streaming skeleton.
 4. **`components/mardown-display/blocks/<name>/`** — the component + optional `parse<Name>Markdown.ts` parser file.
 5. **DB round-trip** — `assemble-cx-content-blocks.ts::reconstructBlockMarkdown`: add the type to the `case "task": case "database": ...` group so it gets wrapped as `<type>\ncontent\n</type>` on replay.
@@ -53,7 +55,7 @@ Ping Python team:
 Same as Flavor B, but the opener carries `key="value"` attrs parsed into `metadata`.
 
 1. **`content-splitter-v2.ts`** — add the type string to the `ATTRIBUTE_XML_BLOCKS` array. Attributes are auto-extracted by `parseXmlAttributes`.
-2. **`BlockRenderer.tsx`** — `case "<type>":` reads `block.metadata?.<attr>` and `block.content`.
+2. **`block-dispatch.tsx`** — register the type; the entry reads `block.metadata?.<attr>` and `block.content`.
 3. **`BlockComponentRegistry.tsx`** — lazy entry.
 4. **`components/mardown-display/blocks/<name>/`** — component.
 5. **DB round-trip** — `reconstructBlockMarkdown`: add a `case "<type>":` in the same group as `artifact`/`decision` so attrs are serialized back into the opening tag.
@@ -70,7 +72,7 @@ Pattern: triple-backtick `json` fence whose top-level key identifies the block (
    - Add a pattern to `JSON_BLOCK_PATTERNS` with `rootKey` (the top-level JSON key) and a `validate(parsed)` predicate.
    - `detectJsonBlockType` picks it up automatically.
    - If it needs special streaming-completion heuristics, extend `validateJsonBlock`.
-2. **`BlockRenderer.tsx`** — `case "<type>":` with the canonical three-tier shape: prefer `block.serverData`, else `isBlockLoading` → show `LoadingComponents.<X>`, else `safeJsonParse(block.content)` and render, else `renderFallbackContent(block.content)`.
+2. **`block-dispatch.tsx`** — register the type with the canonical three-tier shape: prefer `block.serverData`, else `isBlockLoading` → show `LoadingComponents.<X>`, else `safeJsonParse(block.content)` and render, else a raw code-block fallback.
 3. **`BlockComponentRegistry.tsx`** — lazy `BlockComponents` entry + `LoadingComponents.<X>` entry (streaming JSON needs a skeleton).
 4. **`components/mardown-display/blocks/<name>/`** — component + optional `parse<Name>JSON.ts`.
 5. **`block-registry/json-parse-utils.ts`** — only if you introduce a new shared JSON-parse helper. `safeJsonParse` already handles LaTeX-aware JSON.
@@ -85,7 +87,7 @@ Python team: same rule as Flavor B.
 Block stays `type: "code"`; only the `language` changes the renderer branch.
 
 1. **No splitter changes.** The splitter emits `{ type: "code", language }`.
-2. **`BlockRenderer.tsx`** — extend the `case "code":` block: add a `if (lang === "<lang>") return <YourBlock ... />`.
+2. **`block-dispatch.tsx`** — add the language to `CODE_LANGUAGE_DISPATCH` (the code-language sub-table) with its render function.
 3. **`BlockComponentRegistry.tsx`** — lazy entry + `BlockComponents` entry.
 4. **`components/mardown-display/blocks/<name>/`** — component.
 
@@ -98,7 +100,7 @@ No Python work, no vocabulary edit, no DB round-trip work — `code` is already 
 Like Flavor E, but the block emerges with a different `type` so it flows through its own renderer branch. **` ```mermaid ` is the fullest worked example** (server + client detection, an alias, live progressive rendering, materialization, an editor) — read its diff before adding the next render-block skill.
 
 1. **`content-splitter-v2.ts`** — add the language to the `SPECIAL_CODE_LANGUAGES` array. (Optional) add a fence alias to `CODE_LANGUAGE_ALIASES` (e.g. `mmd → mermaid`) and normalize with `normalizeCodeLanguage` before the membership test — both are exported and mirrored in aidream `block_detector.py`.
-2. **`BlockRenderer.tsx`** — `case "<type>":`.
+2. **`block-dispatch.tsx`** — register the type.
 3. **`BlockComponentRegistry.tsx`** — lazy entry.
 4. **`components/mardown-display/blocks/<name>/`** — component + optional parser.
 5. **DB round-trip** — add a `case "<type>":` in `reconstructBlockMarkdown` that wraps back as ` ```<type>\n…\n``` ` (a fence — NOT the `<type>…</type>` XML default, which corrupts fence-promoted blocks).
@@ -115,7 +117,7 @@ Regex/structural detection directly in the splitter.
 
 1. **`content-splitter-v2.ts`** — add a detector (new step in `splitContentIntoBlocksV2`) that pushes `{ type: "<type>", content }`.
 2. **`processors/utils/client-blocks.ts`** — add a `<Type>RenderBlock` interface and put it into the `ClientOnlyRenderBlock` union. This keeps the splitter's union type happy. Then add a classification rule in `scripts/shape/generate-content-vocab-crosswalk.ts` and run `pnpm check:shapes:crosswalk:refresh`.
-3. **`BlockRenderer.tsx`** — `case "<type>":`. If rendering is trivial (e.g. a divider), inline the JSX; otherwise delegate to a component.
+3. **`block-dispatch.tsx`** — register the type. If rendering is trivial (e.g. a divider), inline the JSX in the entry; otherwise delegate to a component.
 4. **`BlockComponentRegistry.tsx`** — entry only if the renderer delegates to a component.
 
 No Python work. No DB round-trip work (the raw pattern survives in the text chunk — keep the original line on `content` so `reconstructBlockMarkdown`'s default re-emits it and the reload splitter re-detects it).
@@ -145,7 +147,7 @@ Do not touch these — they're either generic passthroughs or unrelated:
 
 - `types/python-generated/stream-events.ts` is **auto-generated**. Never hand-edit. For any server-emitted block, the Python team owns the source — notify them, they regen.
 - Server-driven wrappers: add the row to aidream `data_render_blocks.py` and regen (never a hand-declared temp interface). Client-only: add the interface to `processors/utils/client-blocks.ts`.
-- Python sends `snake_case`. Components want `camelCase`. The `BlockRenderer` case is where the remap happens (see the `// TODO(python): rename x → y` comments on existing cases). Leave the TODO and move on — a later sweep renames on the Python side.
+- Python sends `snake_case`. Components want `camelCase`. The `block-dispatch.tsx` entry is where the remap happens (see the `// TODO(python): rename x → y` comments on existing entries). Leave the TODO and move on — a later sweep renames on the Python side.
 
 ---
 
@@ -153,7 +155,7 @@ Do not touch these — they're either generic passthroughs or unrelated:
 
 ```
 Is the block emitted by Python as a render_block event?
-├── YES → Flavor A (server-driven). Notify Python team. Client: BlockRenderer + Registry.
+├── YES → Flavor A (server-driven). Notify Python team. Client: block-dispatch + Registry.
 └── NO → parsed from raw markdown by the client splitter.
     │
     ├── Triggered by a <tag>?
@@ -174,12 +176,12 @@ Is the block emitted by Python as a render_block event?
 
 | Flavor | Files touched (min) |
 |--------|---------------------|
-| A — server render_block | 2 client (`BlockRenderer`, `BlockComponentRegistry`) + 1 Python-side |
-| B — plain XML tag | 3 (`content-splitter-v2`, `BlockRenderer`, `BlockComponentRegistry`) + `assemble-cx-content-blocks` if DB round-trip matters |
+| A — server render_block | 2 client (`block-dispatch`, `BlockComponentRegistry`) + 1 Python-side |
+| B — plain XML tag | 3 (`content-splitter-v2`, `block-dispatch`, `BlockComponentRegistry`) + `assemble-cx-content-blocks` if DB round-trip matters |
 | C — attribute XML tag | Same as B |
-| D — JSON fence | 3 (`content-splitter-v2`, `BlockRenderer`, `BlockComponentRegistry`) |
-| E — code language branch | 2 (`BlockRenderer`, `BlockComponentRegistry`) |
-| F — code language remapped | 3 (`content-splitter-v2`, `BlockRenderer`, `BlockComponentRegistry`) + `assemble-cx-content-blocks` |
-| G — pure client pattern | 3 (`content-splitter-v2`, `client-blocks`, `BlockRenderer`) + `BlockComponentRegistry` if non-trivial |
+| D — JSON fence | 3 (`content-splitter-v2`, `block-dispatch`, `BlockComponentRegistry`) |
+| E — code language branch | 2 (`block-dispatch` CODE_LANGUAGE_DISPATCH, `BlockComponentRegistry`) |
+| F — code language remapped | 3 (`content-splitter-v2`, `block-dispatch`, `BlockComponentRegistry`) + `assemble-cx-content-blocks` |
+| G — pure client pattern | 3 (`content-splitter-v2`, `client-blocks`, `block-dispatch`) + `BlockComponentRegistry` if non-trivial |
 
 Always remember to create the component itself under `components/mardown-display/blocks/<name>/`.
