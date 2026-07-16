@@ -6,7 +6,6 @@ import {
   ArtifactRender,
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
-import { useBlockRenderingConfig } from "@/components/mardown-display/chat-markdown/BlockRenderingContext";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectHideReasoning,
@@ -27,28 +26,6 @@ import {
 // so the existing importers (EnhancedChatMarkdown, SafeBlockRenderer, …) keep
 // working unchanged.
 export type { RenderBlock } from "./block-dispatch";
-
-/**
- * Shown in strict-mode when block.serverData is null — means Python did not
- * populate the `data` field. This is always a Python pipeline bug.
- */
-const StrictModeError: React.FC<{ blockType: string; blockId?: string }> = ({
-  blockType,
-  blockId,
-}) => (
-  <div className="my-2 p-3 rounded-md border-2 border-red-500 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 text-xs font-mono">
-    <div className="font-bold mb-1">⚠ STRICT MODE — Python pipeline bug</div>
-    <div>
-      Block type: <span className="font-semibold">{blockType}</span>
-      {blockId ? ` (${blockId})` : ""}
-    </div>
-    <div className="mt-1 text-red-600 dark:text-red-300">
-      <code>block.serverData</code> is null — Python did not populate the{" "}
-      <code>data</code> field. Client-side fallback parsing is disabled in
-      strict mode.
-    </div>
-  </div>
-);
 
 interface BlockRendererProps {
   requestId?: string;
@@ -184,7 +161,6 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // the legacy detectors can only call "code". Everything else passes through
   // untouched.
   const block = applyIrKindRoute(rawBlock);
-  const { strictServerData } = useBlockRenderingConfig();
 
   // Per-conversation display flags. When a surface has `hideReasoning` or
   // `hideToolResults` set on its `instanceUIState`, the matching block
