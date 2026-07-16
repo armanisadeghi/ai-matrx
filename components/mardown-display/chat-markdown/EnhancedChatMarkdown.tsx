@@ -27,11 +27,20 @@ import {
   selectIsReasoningStreaming,
   selectUnifiedSlots,
   selectAllRenderBlocks,
+  selectToolLifecycleMap,
   SPECIAL_RENDER_BLOCK_TYPES,
   type ContentSegment,
   type ContentSegmentDbTool,
   type UnifiedSlot,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import {
+  foldAgentWork,
+  SHORT_TEXT_FOLD_MAX,
+  type AgentWorkClass,
+  type AgentWorkFold,
+} from "@/features/tool-call-visualization/grouping/foldAgentWork";
+import { AgentWorkGroup } from "@/features/tool-call-visualization/components/AgentWorkGroup";
+import { getToolDisplayMode } from "@/features/tool-call-visualization/registry/registry";
 import { selectMessageInterleavedContent } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -115,12 +124,11 @@ const TOOL_BATCH_MIN = 2;
 
 /** A live unified slot, or a folded run of consecutive tool slots. */
 type GroupedSlot =
-  | UnifiedSlot
-  | { kind: "tool_batch"; callIds: string[]; seq: number };
+  UnifiedSlot | { kind: "tool_batch"; callIds: string[]; seq: number };
 
 function groupConsecutiveToolSlots(slots: UnifiedSlot[]): GroupedSlot[] {
   const out: GroupedSlot[] = [];
-  for (let i = 0; i < slots.length; ) {
+  for (let i = 0; i < slots.length;) {
     const s = slots[i];
     if (s.kind === "tool") {
       const callIds: string[] = [s.callId];
@@ -150,7 +158,7 @@ type GroupedSegment =
 
 function groupConsecutiveDbTools(segments: ContentSegment[]): GroupedSegment[] {
   const out: GroupedSegment[] = [];
-  for (let i = 0; i < segments.length; ) {
+  for (let i = 0; i < segments.length;) {
     const seg = segments[i];
     if (seg.type === "db_tool") {
       const run: ContentSegmentDbTool[] = [seg];
@@ -175,6 +183,45 @@ function groupConsecutiveDbTools(segments: ContentSegment[]): GroupedSegment[] {
     }
   }
   return out;
+}
+
+/**
+ * Epoch-ms span of a tool lifecycle entry / persisted tool record — feeds the
+ * agent-work group's "Worked for Ns" duration. Null when timestamps are
+ * missing or unparsable.
+ */
+function toolSpan(
+  startedAt: string | null | undefined,
+  completedAt: string | null | undefined,
+): { start: number; end: number } | null {
+  if (!startedAt || !completedAt) return null;
+  const start = Date.parse(startedAt);
+  const end = Date.parse(completedAt);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+    return null;
+  }
+  return { start, end };
+}
+
+function mergeSpans(
+  spans: Array<{ start: number; end: number } | null>,
+): { start: number; end: number } | null {
+  let start = Infinity;
+  let end = -Infinity;
+  for (const s of spans) {
+    if (!s) continue;
+    if (s.start < start) start = s.start;
+    if (s.end > end) end = s.end;
+  }
+  return end >= start ? { start, end } : null;
+}
+
+/** Is this text short enough to fold into an agent-work group as an aside? */
+function classifyTextForFold(text: string | null | undefined): AgentWorkClass {
+  const trimmed = text?.trim() ?? "";
+  // Empty text renders nothing — never let an invisible item break a run.
+  if (trimmed.length === 0) return "shortText";
+  return trimmed.length <= SHORT_TEXT_FOLD_MAX ? "shortText" : "visible";
 }
 
 export const EnhancedChatMarkdownInternal: React.FC<
@@ -291,6 +338,95 @@ export const EnhancedChatMarkdownInternal: React.FC<
     [messageInterleavedContent],
   );
 
+  // Tool names for the settled-turn agent-work fold (live path): the unified
+  // slots only carry callIds; display-mode checks need the tool name.
+  const toolLifecycleMapSelector = useMemo(
+    () => (requestId ? selectToolLifecycleMap(requestId) : () => undefined),
+    [requestId],
+  );
+  const toolLifecycleMap = useAppSelector(toolLifecycleMapSelector);
+
+  // ── Settled-turn fold: thinking / generic tools / short asides → one
+  // "Worked for Ns" group. NEVER during a stream — live turns render every
+  // item in real time; the fold is a post-hoc reorganization when content is
+  // settled (stream ended, or loaded from the DB). Tools with a
+  // result-is-purpose / stay-open renderer stay visible and break the run.
+  const isSettled = !isStreamActive;
+
+  const workGroupedSlots = useMemo((): Array<
+    GroupedSlot | AgentWorkFold<GroupedSlot>
+  > => {
+    if (!isSettled) return groupedSlots;
+    const toolClass = (callId: string): AgentWorkClass =>
+      getToolDisplayMode(toolLifecycleMap?.[callId]?.toolName ?? null) ===
+      "auto"
+        ? "work"
+        : "visible";
+    return foldAgentWork(groupedSlots, {
+      classify: (slot) => {
+        if (slot.kind === "thinking" || slot.kind === "status") return "work";
+        if (slot.kind === "tool") return toolClass(slot.callId);
+        if (slot.kind === "tool_batch") {
+          return slot.callIds.every((id) => toolClass(id) === "work")
+            ? "work"
+            : "visible";
+        }
+        if (slot.kind === "render_block") {
+          const rb = renderBlocksMap[slot.blockId];
+          if (!rb) return "shortText"; // renders nothing — don't break the run
+          if (rb.type === "text") return classifyTextForFold(rb.content);
+        }
+        return "visible";
+      },
+      stepsOf: (slot) => (slot.kind === "tool_batch" ? slot.callIds.length : 1),
+      spanOf: (slot) => {
+        const entrySpan = (callId: string) => {
+          const e = toolLifecycleMap?.[callId];
+          return toolSpan(e?.startedAt, e?.completedAt);
+        };
+        if (slot.kind === "tool") return entrySpan(slot.callId);
+        if (slot.kind === "tool_batch") {
+          return mergeSpans(slot.callIds.map(entrySpan));
+        }
+        return null;
+      },
+    });
+  }, [isSettled, groupedSlots, toolLifecycleMap, renderBlocksMap]);
+
+  const workGroupedSegments = useMemo((): Array<
+    GroupedSegment | AgentWorkFold<GroupedSegment>
+  > => {
+    if (!isSettled) return groupedSegments;
+    const dbToolClass = (seg: ContentSegmentDbTool): AgentWorkClass =>
+      getToolDisplayMode(seg.record?.toolName ?? seg.stubName) === "auto"
+        ? "work"
+        : "visible";
+    const dbToolSpan = (seg: ContentSegmentDbTool) =>
+      toolSpan(seg.record?.startedAt, seg.record?.completedAt);
+    return foldAgentWork(groupedSegments, {
+      classify: (seg) => {
+        if (seg.type === "thinking" || seg.type === "status") return "work";
+        if (seg.type === "db_tool") return dbToolClass(seg);
+        if (seg.type === "db_tool_batch") {
+          return seg.segments.every((s) => dbToolClass(s) === "work")
+            ? "work"
+            : "visible";
+        }
+        if (seg.type === "text") return classifyTextForFold(seg.content);
+        return "visible";
+      },
+      stepsOf: (seg) =>
+        seg.type === "db_tool_batch" ? seg.segments.length : 1,
+      spanOf: (seg) => {
+        if (seg.type === "db_tool") return dbToolSpan(seg);
+        if (seg.type === "db_tool_batch") {
+          return mergeSpans(seg.segments.map(dbToolSpan));
+        }
+        return null;
+      },
+    });
+  }, [isSettled, groupedSegments]);
+
   // NB: materialized artifacts are plain text now (vision R1) — both the
   // interleaved-segment path and the plain processedBlocks path split text via
   // splitContentIntoBlocksV2 and render `<artifact id>` by id, so no artifact-
@@ -344,8 +480,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
           serverData: (sb.data as Record<string, unknown>) ?? undefined,
           metadata: sb.metadata,
           language: (sb.data as Record<string, unknown>)?.language as
-            | string
-            | undefined,
+            string | undefined,
           src: (sb.data as Record<string, unknown>)?.src as string | undefined,
           alt: (sb.data as Record<string, unknown>)?.alt as string | undefined,
         }),
@@ -647,211 +782,240 @@ export const EnhancedChatMarkdownInternal: React.FC<
     }
   }
 
+  // Renders one live grouped slot (the pre-fold shape) — shared between the
+  // top-level map and the expanded body of an AgentWorkGroup, so folded items
+  // render EXACTLY as they would ungrouped (no wrappers, no drift).
+  const renderGroupedSlot = (slot: GroupedSlot, i: number) => {
+    if (!requestId) return null;
+    if (slot.kind === "tool_batch") {
+      return (
+        <InlineToolBatch
+          key={`tool-batch-${slot.seq}`}
+          requestId={requestId}
+          callIds={slot.callIds}
+          conversationId={conversationId ?? ""}
+        />
+      );
+    }
+    if (slot.kind === "render_block") {
+      const rb = renderBlocksMap[slot.blockId];
+      if (!rb) return null;
+      // Media blocks (image_output / audio_output / video_output)
+      // carry their payload on `data`, not `content`. Don't drop
+      // them just because content is empty.
+      if (
+        !MEDIA_RENDER_BLOCK_TYPES.has(rb.type) &&
+        !DATA_CARD_RENDER_BLOCK_TYPES.has(rb.type) &&
+        !rb.content?.trim()
+      ) {
+        return null;
+      }
+
+      // Text render_blocks may carry inline `<thinking>` /
+      // `<reasoning>` tags (models that emit reasoning in
+      // regular text instead of as `reasoning_chunk` events).
+      // Split them through the same pipeline the DB path uses
+      // (see the `text` segment branch below) so those tags
+      // become `ThinkingTrace` blocks instead of leaking as
+      // raw markdown. Mark the last reasoning sub-block as
+      // streaming so its shimmer/tail animation fires while
+      // the stream is still depositing tokens into it.
+      if (rb.type === "text" && rb.content?.trim()) {
+        const sub = (() => {
+          try {
+            return splitContentIntoBlocksV2(rb.content);
+          } catch {
+            return null;
+          }
+        })();
+        if (sub && sub.length > 0) {
+          let lastReasoningIdx = -1;
+          for (let j = sub.length - 1; j >= 0; j--) {
+            if (sub[j].type === "reasoning" || sub[j].type === "thinking") {
+              lastReasoningIdx = j;
+              break;
+            }
+          }
+          const isStreamingRb = rb.status === "streaming";
+          return sub.map((b, j) =>
+            renderBlock(
+              {
+                ...b,
+                isStreamingBlock: isStreamingRb && j === lastReasoningIdx,
+              } as RenderBlock,
+              i * 1000 + j,
+            ),
+          );
+        }
+      }
+
+      const block = renderBlockToContentBlock(rb);
+      return renderBlock(block, i);
+    }
+    if (slot.kind === "tool") {
+      return (
+        <InlineToolCard
+          key={`tool-${slot.seq}-${slot.callId}`}
+          requestId={requestId}
+          callId={slot.callId}
+          conversationId={conversationId ?? ""}
+        />
+      );
+    }
+    if (slot.kind === "status") {
+      return (
+        <InlineStatusIndicator key={`status-${slot.seq}`} label={slot.label} />
+      );
+    }
+    if (slot.kind === "thinking") {
+      // Live thinking, pinned to its chronological slot. Rendered
+      // through the SAME `renderBlock({type:"reasoning"})` path
+      // the persisted branch uses, so live and reloaded turns
+      // produce an identical ThinkingTrace.
+      return (
+        <InlineThinkingSlot
+          key={`thinking-${slot.seq}`}
+          requestId={requestId}
+          chunkStartIndex={slot.chunkStartIndex}
+          chunkEndIndex={slot.chunkEndIndex}
+          renderReasoning={(content, isStreaming) =>
+            renderBlock(
+              {
+                type: "reasoning",
+                content,
+                isStreamingBlock: isStreaming,
+              } as RenderBlock,
+              i,
+            )
+          }
+        />
+      );
+    }
+    if (slot.kind === "error") {
+      return (
+        <InlineAssistantError key={`error-${slot.seq}`} requestId={requestId} />
+      );
+    }
+    return null;
+  };
+
+  // Renders one persisted grouped segment — shared between the top-level map
+  // and the expanded body of an AgentWorkGroup (same rationale as above).
+  const renderGroupedSegment = (segment: GroupedSegment, segIdx: number) => {
+    if (segment.type === "db_tool_batch") {
+      return (
+        <DbToolBatch
+          key={segment.key}
+          segments={segment.segments}
+          conversationId={conversationId ?? ""}
+        />
+      );
+    }
+    if (segment.type === "db_tool") {
+      return (
+        <DbToolCard
+          key={`db-tool-${segIdx}-${segment.callId}`}
+          segment={segment}
+          conversationId={conversationId ?? ""}
+        />
+      );
+    }
+    if (segment.type === "render_block") {
+      // DB media parts (images / audio / video) routed
+      // through the canonical BlockRenderer pipeline. Image
+      // segments land on UnifiedImageBlockRenderer +
+      // useUnifiedImageUrl, which re-mint expired signed
+      // URLs from the persisted fileId, so old messages
+      // keep working indefinitely.
+      const block: RenderBlock = {
+        type: segment.blockType,
+        content: segment.content ?? "",
+        serverData: segment.data ?? undefined,
+        metadata: segment.metadata,
+      };
+      return renderBlock(block, segIdx * 1000);
+    }
+    if (segment.type === "thinking") {
+      const thinkBlocks = (() => {
+        try {
+          return splitContentIntoBlocksV2(segment.content);
+        } catch {
+          return [
+            {
+              type: "reasoning" as const,
+              content: segment.content,
+              startLine: 0,
+              endLine: 0,
+            },
+          ];
+        }
+      })();
+      return thinkBlocks.map((block, blockIdx) =>
+        renderBlock({ ...block, type: "reasoning" }, segIdx * 1000 + blockIdx),
+      );
+    }
+    if (segment.type === "text") {
+      const segBlocks = (() => {
+        try {
+          return splitContentIntoBlocksV2(segment.content);
+        } catch {
+          return [
+            {
+              type: "text" as const,
+              content: segment.content,
+              startLine: 0,
+              endLine: 0,
+            },
+          ];
+        }
+      })();
+      return segBlocks.map((block, blockIdx) =>
+        renderBlock(block, segIdx * 1000 + blockIdx),
+      );
+    }
+    return null;
+  };
+
   try {
     return (
       <div className="mb-1 w-full min-w-0 text-left overflow-x-hidden">
         <div className={containerStyles}>
           {hasUnifiedSpecial && requestId
-            ? groupedSlots.map((slot, i) => {
-                if (slot.kind === "tool_batch") {
-                  return (
-                    <InlineToolBatch
-                      key={`tool-batch-${slot.seq}`}
-                      requestId={requestId}
-                      callIds={slot.callIds}
-                      conversationId={conversationId ?? ""}
-                    />
-                  );
-                }
-                if (slot.kind === "render_block") {
-                  const rb = renderBlocksMap[slot.blockId];
-                  if (!rb) return null;
-                  // Media blocks (image_output / audio_output / video_output)
-                  // carry their payload on `data`, not `content`. Don't drop
-                  // them just because content is empty.
-                  if (
-                    !MEDIA_RENDER_BLOCK_TYPES.has(rb.type) &&
-                    !DATA_CARD_RENDER_BLOCK_TYPES.has(rb.type) &&
-                    !rb.content?.trim()
-                  ) {
-                    return null;
-                  }
-
-                  // Text render_blocks may carry inline `<thinking>` /
-                  // `<reasoning>` tags (models that emit reasoning in
-                  // regular text instead of as `reasoning_chunk` events).
-                  // Split them through the same pipeline the DB path uses
-                  // (see the `text` segment branch below) so those tags
-                  // become `ThinkingTrace` blocks instead of leaking as
-                  // raw markdown. Mark the last reasoning sub-block as
-                  // streaming so its shimmer/tail animation fires while
-                  // the stream is still depositing tokens into it.
-                  if (rb.type === "text" && rb.content?.trim()) {
-                    const sub = (() => {
-                      try {
-                        return splitContentIntoBlocksV2(rb.content);
-                      } catch {
-                        return null;
-                      }
-                    })();
-                    if (sub && sub.length > 0) {
-                      let lastReasoningIdx = -1;
-                      for (let j = sub.length - 1; j >= 0; j--) {
-                        if (
-                          sub[j].type === "reasoning" ||
-                          sub[j].type === "thinking"
-                        ) {
-                          lastReasoningIdx = j;
-                          break;
-                        }
-                      }
-                      const isStreamingRb = rb.status === "streaming";
-                      return sub.map((b, j) =>
-                        renderBlock(
-                          {
-                            ...b,
-                            isStreamingBlock:
-                              isStreamingRb && j === lastReasoningIdx,
-                          } as RenderBlock,
-                          i * 1000 + j,
-                        ),
-                      );
-                    }
-                  }
-
-                  const block = renderBlockToContentBlock(rb);
-                  return renderBlock(block, i);
-                }
-                if (slot.kind === "tool") {
-                  return (
-                    <InlineToolCard
-                      key={`tool-${slot.seq}-${slot.callId}`}
-                      requestId={requestId}
-                      callId={slot.callId}
-                      conversationId={conversationId ?? ""}
-                    />
-                  );
-                }
-                if (slot.kind === "status") {
-                  return (
-                    <InlineStatusIndicator
-                      key={`status-${slot.seq}`}
-                      label={slot.label}
-                    />
-                  );
-                }
-                if (slot.kind === "thinking") {
-                  // Live thinking, pinned to its chronological slot. Rendered
-                  // through the SAME `renderBlock({type:"reasoning"})` path
-                  // the persisted branch uses, so live and reloaded turns
-                  // produce an identical ThinkingTrace.
-                  return (
-                    <InlineThinkingSlot
-                      key={`thinking-${slot.seq}`}
-                      requestId={requestId}
-                      chunkStartIndex={slot.chunkStartIndex}
-                      chunkEndIndex={slot.chunkEndIndex}
-                      renderReasoning={(content, isStreaming) =>
-                        renderBlock(
-                          {
-                            type: "reasoning",
-                            content,
-                            isStreamingBlock: isStreaming,
-                          } as RenderBlock,
-                          i,
-                        )
-                      }
-                    />
-                  );
-                }
-                if (slot.kind === "error") {
-                  return (
-                    <InlineAssistantError
-                      key={`error-${slot.seq}`}
-                      requestId={requestId}
-                    />
-                  );
-                }
-                return null;
-              })
+            ? workGroupedSlots.map((slot, i) =>
+                slot.kind === "agent_work" ? (
+                  <AgentWorkGroup
+                    key={`agent-work-${slot.items[0]?.seq ?? i}`}
+                    sessionKey={`agent-work:${requestId}:${slot.items[0]?.seq ?? i}`}
+                    durationMs={slot.durationMs}
+                    stepCount={slot.stepCount}
+                    conversationId={conversationId}
+                  >
+                    {slot.items.map((s, k) =>
+                      renderGroupedSlot(s, i * 1000 + k),
+                    )}
+                  </AgentWorkGroup>
+                ) : (
+                  renderGroupedSlot(slot, i)
+                ),
+              )
             : hasDbInterleavedSpecial
-              ? groupedSegments.map((segment, segIdx) => {
-                  if (segment.type === "db_tool_batch") {
-                    return (
-                      <DbToolBatch
-                        key={segment.key}
-                        segments={segment.segments}
-                        conversationId={conversationId ?? ""}
-                      />
-                    );
-                  }
-                  if (segment.type === "db_tool") {
-                    return (
-                      <DbToolCard
-                        key={`db-tool-${segIdx}-${segment.callId}`}
-                        segment={segment}
-                        conversationId={conversationId ?? ""}
-                      />
-                    );
-                  }
-                  if (segment.type === "render_block") {
-                    // DB media parts (images / audio / video) routed
-                    // through the canonical BlockRenderer pipeline. Image
-                    // segments land on UnifiedImageBlockRenderer +
-                    // useUnifiedImageUrl, which re-mint expired signed
-                    // URLs from the persisted fileId, so old messages
-                    // keep working indefinitely.
-                    const block: RenderBlock = {
-                      type: segment.blockType,
-                      content: segment.content ?? "",
-                      serverData: segment.data ?? undefined,
-                      metadata: segment.metadata,
-                    };
-                    return renderBlock(block, segIdx * 1000);
-                  }
-                  if (segment.type === "thinking") {
-                    const thinkBlocks = (() => {
-                      try {
-                        return splitContentIntoBlocksV2(segment.content);
-                      } catch {
-                        return [
-                          {
-                            type: "reasoning" as const,
-                            content: segment.content,
-                            startLine: 0,
-                            endLine: 0,
-                          },
-                        ];
-                      }
-                    })();
-                    return thinkBlocks.map((block, blockIdx) =>
-                      renderBlock(
-                        { ...block, type: "reasoning" },
-                        segIdx * 1000 + blockIdx,
-                      ),
-                    );
-                  }
-                  if (segment.type === "text") {
-                    const segBlocks = (() => {
-                      try {
-                        return splitContentIntoBlocksV2(segment.content);
-                      } catch {
-                        return [
-                          {
-                            type: "text" as const,
-                            content: segment.content,
-                            startLine: 0,
-                            endLine: 0,
-                          },
-                        ];
-                      }
-                    })();
-                    return segBlocks.map((block, blockIdx) =>
-                      renderBlock(block, segIdx * 1000 + blockIdx),
-                    );
-                  }
-                  return null;
-                })
+              ? workGroupedSegments.map((segment, segIdx) =>
+                  "kind" in segment && segment.kind === "agent_work" ? (
+                    <AgentWorkGroup
+                      key={`agent-work-${messageId ?? ""}-${segIdx}`}
+                      sessionKey={`agent-work:${messageId ?? conversationId ?? ""}:${segIdx}`}
+                      durationMs={segment.durationMs}
+                      stepCount={segment.stepCount}
+                      conversationId={conversationId}
+                    >
+                      {segment.items.map((s, k) =>
+                        renderGroupedSegment(s, segIdx * 1000 + k),
+                      )}
+                    </AgentWorkGroup>
+                  ) : (
+                    renderGroupedSegment(segment, segIdx)
+                  ),
+                )
               : processedBlocks.map((block, index) =>
                   renderBlock(block, index),
                 )}
