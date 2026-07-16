@@ -38,11 +38,6 @@ import {
   VALUE_TYPE_CONFIG,
   DEFAULT_CATEGORIES,
 } from "@/features/agent-context/constants";
-import {
-  toSlug,
-  isValidSlug,
-  isReservedSlug,
-} from "@/features/scope-system/utils/slugify";
 import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
 import { componentToValueType } from "@/features/scope-system/utils/componentValueType";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
@@ -88,7 +83,6 @@ export function ContextItemSettingsForm({
 
   const [busy, setBusy] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [customComponent, setCustomComponent] = useState<
@@ -105,7 +99,6 @@ export function ContextItemSettingsForm({
   const uid = useId();
   const ids = {
     displayName: `${uid}-display-name`,
-    slug: `${uid}-slug`,
     entryMode: `${uid}-entry-mode`,
     description: `${uid}-description`,
     category: `${uid}-category`,
@@ -134,7 +127,6 @@ export function ContextItemSettingsForm({
     if (!item) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- selecting a different item intentionally resets the controlled editor fields.
     setDisplayName(item.display_name);
-    setSlug(item.slug ?? "");
     setDescription(item.description ?? "");
     setCategory(item.category ?? "");
     setCustomComponent(item.custom_component ?? undefined);
@@ -210,15 +202,6 @@ export function ContextItemSettingsForm({
       toast.error("Display name is required");
       return;
     }
-    const trimmedSlug = slug.trim() || toSlug(trimmedName);
-    if (!trimmedSlug || !isValidSlug(trimmedSlug)) {
-      toast.error("URL slug must be lowercase letters, numbers, and hyphens");
-      return;
-    }
-    if (isReservedSlug(trimmedSlug)) {
-      toast.error(`"${trimmedSlug}" is a reserved word — choose another slug`);
-      return;
-    }
     if (isReference && allowedReferenceTypes.length === 0) {
       toast.error("Select at least one reference type");
       return;
@@ -235,7 +218,6 @@ export function ContextItemSettingsForm({
         updateContextItem({
           id: item.id,
           display_name: trimmedName,
-          slug: trimmedSlug,
           description: description.trim(),
           category: category.trim() || null,
           value_type: derivedValueType,
@@ -329,39 +311,11 @@ export function ContextItemSettingsForm({
           disabled={busy}
         />
         <p className="text-[10px] font-mono text-muted-foreground">
-          <Hash className="h-2.5 w-2.5 inline -mt-0.5" /> {item.key}
+          <Hash className="h-2.5 w-2.5 inline -mt-0.5" /> Identifier: {item.key}
+          {item.slug ? ` · URL: ${item.slug}` : ""}
         </p>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={ids.slug} className="text-xs">
-          URL slug
-        </Label>
-        <div className="flex gap-2">
-          <Input
-            id={ids.slug}
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder={toSlug(displayName) || "url-slug"}
-            style={{ fontSize: "16px" }}
-            disabled={busy}
-            className="flex-1 font-mono"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setSlug(toSlug(displayName))}
-            disabled={busy || !displayName.trim()}
-          >
-            Auto
-          </Button>
-        </div>
-        <p className="text-[10px] text-muted-foreground">
-          Human-readable segment in the item URL. Must be unique within this
-          scope type.
-        </p>
-      </div>
 
       {/* ── Value shape — the first decision: direct-typed value vs. reference.
           Flat section set off by a hairline (Linear/Stripe settings pattern) —

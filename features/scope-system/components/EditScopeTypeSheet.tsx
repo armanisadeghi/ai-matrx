@@ -225,7 +225,7 @@ export function EditScopeTypeSheet({
       toast.error("Name is required");
       return;
     }
-    const trimmedSlug = slug.trim() || toSlug(trimmedSingular);
+    const trimmedSlug = slug.trim() || toSlug(trimmedPlural);
     if (!trimmedSlug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(trimmedSlug)) {
       toast.error("URL slug must be lowercase letters, numbers, and hyphens");
       return;
@@ -283,7 +283,6 @@ export function EditScopeTypeSheet({
             createContextItem({
               scope_type_id: scopeType.id,
               key: slugifyKey(trimmedName) || trimmedName.toLowerCase(),
-              slug: toSlug(trimmedName) || undefined,
               display_name: trimmedName,
             }),
           ).unwrap();

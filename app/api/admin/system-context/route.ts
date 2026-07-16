@@ -570,10 +570,10 @@ async function createScopeType(admin: AdminClient, body: CreateScopeTypeBody) {
       { status: 400 },
     );
   }
-  const slug = toSlug(labelSingular);
+  const slug = toSlug(labelPlural);
   if (!slug) {
     return NextResponse.json(
-      { error: "label_singular must contain letters or numbers for its URL slug" },
+      { error: "label_plural must contain letters or numbers for its URL slug" },
       { status: 400 },
     );
   }
@@ -650,13 +650,6 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
       { status: 400 },
     );
   }
-  const slug = toSlug(displayName);
-  if (!slug) {
-    return NextResponse.json(
-      { error: "display_name must contain letters or numbers for its URL slug" },
-      { status: 400 },
-    );
-  }
   if (COMPUTED_KEYS.has(key)) {
     return NextResponse.json(
       { error: `'${key}' is a reserved ambient key` },
@@ -672,7 +665,6 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
     .insert({
       scope_type_id: body.scopeTypeId,
       key,
-      slug,
       display_name: displayName,
       value_type: body.value_type,
       sensitivity: body.sensitivity ?? "internal",
@@ -693,7 +685,9 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
       allowed_reference_types: body.allowed_reference_types ?? null,
       max_items: body.max_items ?? 1,
       allowed_scope_type_ids: body.allowed_scope_type_ids ?? null,
-    })
+      // `ensure_slug` derives slug from key. Generated DB types have not yet
+      // caught up with that trigger and still declare slug as required.
+    } as Database["context"]["Tables"]["context_items"]["Insert"])
     .select("id")
     .single();
   if (itemErr) {

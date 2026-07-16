@@ -29,7 +29,7 @@ import {
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
 import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
-import { slugifyKey, toSlug } from "@/features/scope-system/utils/slugify";
+import { slugifyKey } from "@/features/scope-system/utils/slugify";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import {
   EntryModeToggle,
@@ -212,7 +212,6 @@ export function ContextItemAddForm({
         createContextItem({
           scope_type_id: scopeTypeId,
           key: slugifyKey(trimmed) || trimmed.toLowerCase(),
-          slug: toSlug(trimmed) || undefined,
           display_name: trimmed,
           value_type: valueType,
           description: description.trim() || undefined,

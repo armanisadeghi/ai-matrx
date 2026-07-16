@@ -33,7 +33,16 @@ import { attachSkillConfigFromState } from "../utils/build-skill-config-for-requ
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { Json } from "@/types/database.types";
 import { generateRequestId } from "../utils/ids";
-import { setInstanceStatus } from "../conversations/conversations.slice";
+import {
+  patchConversation,
+  setInstanceStatus,
+} from "../conversations/conversations.slice";
+import {
+  LAST_REQUEST_CONTEXT_KEY,
+  readPreviousRequestContext,
+  snapshotFromPayload,
+  warnRequestContextDrift,
+} from "../utils/warn-request-context-drift";
 import {
   selectEditorResourceXml,
   selectResourcePayloads,
@@ -618,6 +627,12 @@ export const executeInstance = createAsyncThunk<
         // assistant turn is hidden from the model) and re-attempts. Every
         // other field (tools, capabilities, memory, scope) resolves
         // identically to a normal turn — see CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
+        // Continue MUST re-send conversation identity the same way turn 1 does.
+        // assembleRequest already collected organization_id / project_id /
+        // task_id / source_* / scope_ids from appContextSlice — omitting them
+        // here silently emptied AppContext on the server (org fell onto the
+        // personal-org default; Titanium scope tools "not found"). scope_ids
+        // were already forwarded; the org/project/task/source fields were not.
         routedPayload = {
           ...(retry ? { retry: true } : { user_input: payload.user_input }),
           stream: true,
@@ -637,6 +652,17 @@ export const executeInstance = createAsyncThunk<
           // USER-layer apply policy — re-sent every turn so a mid-conversation
           // preference change applies immediately (omitted when "default").
           ...(payload.user && { user: payload.user }),
+          // Conversation identity — re-sent every turn (request wins; server
+          // also restores from the conversation row when omitted).
+          ...(payload.organization_id && {
+            organization_id: payload.organization_id,
+          }),
+          ...(payload.project_id && { project_id: payload.project_id }),
+          ...(payload.task_id && { task_id: payload.task_id }),
+          ...(payload.source_app && { source_app: payload.source_app }),
+          ...(payload.source_feature && {
+            source_feature: payload.source_feature,
+          }),
           // Latest active scope selections — re-sent every turn so a
           // mid-conversation scope switch applies immediately.
           ...(payload.scope_ids?.length && { scope_ids: payload.scope_ids }),
@@ -712,6 +738,32 @@ export const executeInstance = createAsyncThunk<
           await import("@/features/scopes/redux/thunks/syncConversationScopes");
         void dispatch(syncConversationScopes(conversationId));
       }
+
+      // Identity-context drift check (observability only — does not block).
+      // Previous = BE-written metadata.last_request_context (or last local
+      // stamp). Confirm-with-user UX is OPEN in FOUND_DEFECTS.
+      const previousCtx = readPreviousRequestContext(instance.metadata);
+      const currentCtx = snapshotFromPayload(routedPayload, {
+        agent_id: instance.agentId ?? instance.initialAgentId ?? null,
+        agent_version_id: instance.initialAgentVersionId ?? null,
+      });
+      warnRequestContextDrift({
+        conversationId,
+        isContinuation,
+        previous: previousCtx,
+        current: currentCtx,
+      });
+      // Stamp locally so turn N+1 can compare without a full reload.
+      // BE also persists the authoritative post-restore snapshot.
+      dispatch(
+        patchConversation({
+          conversationId,
+          metadata: {
+            ...(instance.metadata ?? {}),
+            [LAST_REQUEST_CONTEXT_KEY]: currentCtx,
+          },
+        }),
+      );
 
       // Record the true submit moment — this is t=0 for all client timing.
       const submitAt = performance.now();

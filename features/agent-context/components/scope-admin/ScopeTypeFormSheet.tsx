@@ -126,7 +126,7 @@ export function ScopeTypeFormSheet({
             max_assignments: maxAssignments
               ? parseInt(maxAssignments, 10)
               : undefined,
-            slug: editingType.slug ?? toSlug(labelSingular),
+            slug: editingType.slug ?? toSlug(labelPlural),
           }),
         );
       } else {
@@ -144,7 +144,7 @@ export function ScopeTypeFormSheet({
             parent_type_id:
               parentTypeId === NONE_VALUE ? undefined : parentTypeId,
             default_variable_keys: variableKeys,
-            slug: toSlug(labelSingular),
+            slug: toSlug(labelPlural),
           }),
         );
       }

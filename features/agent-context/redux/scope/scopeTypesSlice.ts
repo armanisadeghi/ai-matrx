@@ -82,7 +82,7 @@ export const createScopeType = createAsyncThunk(
       p_default_variable_keys: params.default_variable_keys ?? [],
       p_color: params.color ?? undefined,
       p_slug:
-        requiredSlug(params.label_singular, "Scope type", params.slug),
+        requiredSlug(params.label_plural, "Scope type", params.slug),
     });
     if (error) throw error;
     return data as ScopeType;
@@ -105,7 +105,7 @@ export const updateScopeType = createAsyncThunk(
     const slug =
       params.slug === undefined
         ? undefined
-        : requiredSlug(params.label_singular ?? "", "Scope type", params.slug);
+        : requiredSlug(params.label_plural ?? "", "Scope type", params.slug);
     const { data, error } = await supabase.rpc("update_scope_type", {
       p_type_id: params.type_id,
       p_label_singular: params.label_singular,

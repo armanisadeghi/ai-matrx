@@ -197,7 +197,6 @@ export function NewScopeInline({
           createContextItem({
             scope_type_id: typeId,
             key: slugifyKey(displayName) || displayName.toLowerCase(),
-            slug: toSlug(displayName) || undefined,
             display_name: displayName,
           }),
         ).unwrap();
