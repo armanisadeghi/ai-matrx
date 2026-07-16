@@ -199,6 +199,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/system-context",
         isNew: true,
       },
+      {
+        title: "Context Inspector",
+        description:
+          "Render the exact context payload for a selected scope-system tier, variation, organization, and clearance using the live aidream serializer.",
+        iconName: "Braces",
+        link: "/administration/context-inspector",
+        isNew: true,
+      },
     ],
   },
   {

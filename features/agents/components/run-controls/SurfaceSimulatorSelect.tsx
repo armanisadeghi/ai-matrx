@@ -52,8 +52,11 @@ let surfaceCache: SurfaceOption[] | null = null;
 
 export function SurfaceSimulatorSelect({
   conversationId,
+  compact = false,
 }: {
   conversationId: string;
+  /** Render as one label/control row for compact settings surfaces. */
+  compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const settings =
@@ -115,22 +118,8 @@ export function SurfaceSimulatorSelect({
     a.localeCompare(b),
   );
 
-  return (
-    <div className="py-1">
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <Label className="text-xs text-muted-foreground">
-          Surface Simulator
-        </Label>
-        {override && (
-          <button
-            type="button"
-            onClick={() => setOverride(null)}
-            className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-destructive"
-          >
-            <X className="h-3 w-3" /> clear
-          </button>
-        )}
-      </div>
+  const picker = (
+    <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -215,12 +204,52 @@ export function SurfaceSimulatorSelect({
           </Command>
         </PopoverContent>
       </Popover>
-      {override && (
+      {override && !compact && (
         <p className="mt-1 text-[10px] leading-tight text-amber-600 dark:text-amber-500">
           Simulating <span className="font-mono">{override}</span> — this run&apos;s
           available tools match that surface, not the real one.
         </p>
       )}
+    </>
+  );
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3 py-1">
+        <Label className="w-1/3 shrink-0 text-xs text-muted-foreground">
+          Surface Simulator
+        </Label>
+        <div className="min-w-0 flex-1">{picker}</div>
+        {override && (
+          <button
+            type="button"
+            onClick={() => setOverride(null)}
+            className="shrink-0 text-[10px] text-muted-foreground hover:text-destructive"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-1">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <Label className="text-xs text-muted-foreground">
+          Surface Simulator
+        </Label>
+        {override && (
+          <button
+            type="button"
+            onClick={() => setOverride(null)}
+            className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-destructive"
+          >
+            <X className="h-3 w-3" /> clear
+          </button>
+        )}
+      </div>
+      {picker}
     </div>
   );
 }

@@ -39,7 +39,11 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { upsertToolCall } from "@/features/agents/redux/execution-system/observability/observability.slice";
-import { selectToolCallsForConversation } from "@/features/agents/redux/execution-system/observability/observability.selectors";
+import {
+  EMPTY_TOOL_CALLS,
+  selectToolCallsForConversation,
+} from "@/features/agents/redux/execution-system/observability/observability.selectors";
+import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { RootState } from "@/lib/redux/store";
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
@@ -286,32 +290,29 @@ function useConversationToolEntries(
   loadMore: () => void;
 } {
   const dispatch = useAppDispatch();
-  const persisted = useAppSelector((state: RootState) =>
-    conversationId
-      ? selectToolCallsForConversation(conversationId)(state)
-      : [],
+
+  // Factory selectors — memoize the instance so createSelector's cache survives
+  // across dispatches (inline factory() inside useAppSelector recreates it every
+  // call → new array/Map refs → Reselect stability warnings + wasted rerenders).
+  const selectPersisted = useMemo(
+    () =>
+      conversationId
+        ? selectToolCallsForConversation(conversationId)
+        : (_state: RootState) => EMPTY_TOOL_CALLS,
+    [conversationId],
   );
+  const persisted = useAppSelector(selectPersisted);
 
   // Live overlays: any in-flight toolLifecycle for this conversation wins
   // over the persisted row for the same callId.
-  const liveByCallId = useAppSelector((state: RootState) => {
-    if (!conversationId || !enabled) {
-      return null as Map<string, ToolLifecycleEntry> | null;
-    }
-    const requestIds =
-      state.activeRequests.byConversationId[conversationId] ?? [];
-    const map = new Map<string, ToolLifecycleEntry>();
-    for (const requestId of requestIds) {
-      const lifecycle =
-        state.activeRequests.byRequestId[requestId]?.toolLifecycle;
-      if (!lifecycle) continue;
-      for (const callId of Object.keys(lifecycle)) {
-        const entry = lifecycle[callId];
-        if (entry) map.set(callId, entry);
-      }
-    }
-    return map.size > 0 ? map : null;
-  });
+  const selectLiveByCallId = useMemo(
+    () =>
+      conversationId && enabled
+        ? selectLiveToolLifecycleByConversation(conversationId)
+        : (_state: RootState) => null as Map<string, ToolLifecycleEntry> | null,
+    [conversationId, enabled],
+  );
+  const liveByCallId = useAppSelector(selectLiveByCallId);
 
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);

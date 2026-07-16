@@ -310,6 +310,21 @@ describe("assembleManualRequest — live read contract", () => {
     expect(payload.config_overrides).toBeUndefined();
   });
 
+  test("does not leak legacy settings.model_id onto the manual wire payload", async () => {
+    const state = makeState({
+      modelId: "canonical-model-id",
+      settings: { model_id: "stale-model-id", temperature: 0.7 },
+    });
+    const payload = (await assembleManualRequest(
+      state,
+      CONVERSATION_ID,
+    )) as Record<string, unknown>;
+
+    expect(payload.ai_model_id).toBe("canonical-model-id");
+    expect(payload.model_id).toBeUndefined();
+    expect(payload.temperature).toBe(0.7);
+  });
+
   test("UI-only capability flags in agent.settings are stripped", async () => {
     const state = makeState({
       settings: {

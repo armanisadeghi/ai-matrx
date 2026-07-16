@@ -10,7 +10,8 @@ import type {
 const EMPTY_STRING_ARRAY: string[] = [];
 const EMPTY_USER_REQUESTS: CxUserRequestRecord[] = [];
 const EMPTY_REQUESTS: CxRequestRecord[] = [];
-const EMPTY_TOOL_CALLS: CxToolCallRecord[] = [];
+/** Stable empty ref — never inline `?? []` / `: []` at the call site. */
+export const EMPTY_TOOL_CALLS: CxToolCallRecord[] = [];
 
 // ---------------------------------------------------------------------------
 // User requests
@@ -126,6 +127,9 @@ export const selectToolCallsForMessage = (messageId: string) =>
  * `startedAt`. Used by the tool-call window's "All Messages" scope.
  * Scans the by-id map (conversationId is on every row) — no secondary
  * index yet; conversations rarely hold enough tools for this to matter.
+ *
+ * Factory — callers must memoize the instance:
+ * `useMemo(() => selectToolCallsForConversation(id), [id])`
  */
 export const selectToolCallsForConversation = (conversationId: string) =>
   createSelector(

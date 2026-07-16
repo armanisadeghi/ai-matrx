@@ -146,8 +146,11 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   // sandbox rendering still uses `useSandboxInstances` so all existing
   // status / pill / clone behaviour keeps working unchanged.
   const { data: computeTargets, refetch: refetchTargets } = useComputeTargets();
+  // Quickset and the full Sandbox tab share this picker. Only present targets
+  // the user can actually bind — offline local computers are status, not
+  // available execution targets.
   const localPcs = (computeTargets?.targets ?? []).filter(
-    (t) => t.kind === "local-pc",
+    (target) => target.kind === "local-pc" && target.is_online,
   );
 
   // Fetch the user's boxes when the panel mounts (i.e. the Sandbox tab opens).
@@ -318,7 +321,8 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
           <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
             <div className="min-w-0">
               <p className="text-xs font-medium text-foreground truncate">
-                {resolved.proxyUrl.match(/\/sandboxes\/([^/]+)/)?.[1] ??
+                {resolved.name ??
+                  resolved.proxyUrl.match(/\/sandboxes\/([^/]+)/)?.[1] ??
                   resolved.rowId.slice(0, 8)}
               </p>
               <p className="text-[11px] text-muted-foreground">

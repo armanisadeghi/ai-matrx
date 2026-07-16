@@ -65,9 +65,9 @@ function RunControlsWindowInner({
       onClose={onClose}
       title="Chat Options"
       // Chat options should complement the conversation, not obscure it. Keep
-      // a narrow, slightly off-canvas starting rect on the left; users can
+      // a compact, comfortably inset starting rect on the left; users can
       // still drag, resize, snap, maximize, or pop it out as usual.
-      initialRect={{ x: -16, y: 56, width: 440, height: 640 }}
+      initialRect={{ x: 72, y: 56, width: 480, height: 640 }}
       height={640}
       minWidth={380}
       minHeight={420}

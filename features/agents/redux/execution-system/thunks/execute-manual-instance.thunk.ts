@@ -157,7 +157,11 @@ function stripUiCapabilityFlags(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(settings)) {
-    if (isUiGateKey(k)) continue;
+    // `model_id` belongs to the persisted agent definition. The manual chat
+    // contract uses `ai_model_id`, which is sourced above from `agent.modelId`.
+    // Legacy rows can still contain the database key in settings; forwarding
+    // it after `ai_model_id` creates an ignored/unknown request field.
+    if (k === "model_id" || isUiGateKey(k)) continue;
     out[k] = v;
   }
   return out;

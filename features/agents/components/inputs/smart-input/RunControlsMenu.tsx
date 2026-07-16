@@ -11,9 +11,9 @@
  *
  *   - Desktop "plus"      — `PlusAttachMenu`: the lightweight anchored attach
  *     popover (ResourcePickerMenu) + one quick row (model override select,
- *     working-doc switch, All-options button → the window at Context).
+ *     working-doc switch, All-options button → the window at Quickset).
  *   - Desktop "gear"      — opens the `runControlsWindow` overlay on its
- *     **Context** tab: a real, non-blocking WindowPanel (minimize to tray,
+ *     **Quickset** tab: a real, non-blocking WindowPanel (minimize to tray,
  *     maximize, drag, snap). Dialogs launched from inside it (e.g. "Preview
  *     full prompt") stack ABOVE it — the old fullscreen-popover z-order trap
  *     is structurally gone.
@@ -118,7 +118,7 @@ export function RunControlsMenu({
           ? () =>
               openRunControlsWindow({
                 conversationId,
-                initialTab: "context",
+                initialTab: "quickset",
               })
           : isMobile
             ? () => handleOpenChange(true)

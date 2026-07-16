@@ -1,16 +1,18 @@
 "use client";
 
+/**
+ * RunSettingsEditor
+ *
+ * Chat Options has two presentations of the same settings: the full Settings
+ * tab and Quickset. `RunSettingsQuickControls` is the single stateful control
+ * group shared by both. Keep explanatory copy in the reference area of the
+ * full editor; the controls themselves stay scan-friendly label/control rows.
+ */
+
 import { useState } from "react";
-import {
-  Brain,
-  FileText,
-  PanelRight,
-  Wand2,
-  Route,
-  HardDrive,
-  Braces,
-} from "lucide-react";
+import { Brain, FileText, PanelRight } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -27,6 +29,7 @@ import {
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { DirectiveApplyPolicy } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
+  requestMemoryToggle,
   setBuilderAdvancedSettings,
   setReuseConversationId,
   setUseBlockMode,
@@ -40,13 +43,13 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import {
+  clearApiOverrides,
+  selectAiApiVersion,
   selectApiVersion,
   selectPathOverrides,
-  selectAiApiVersion,
+  setAiApiVersion,
   setApiVersion,
   setPathOverride,
-  setAiApiVersion,
-  clearApiOverrides,
 } from "@/lib/redux/slices/apiConfigSlice";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
@@ -56,7 +59,6 @@ import { SystemInstructionModal } from "../builder/message-builders/system-instr
 import { useOpenSystemInstructionWindow } from "@/features/overlays/openers/systemInstructionWindow";
 import { NumberStepper } from "@/components/official-candidate/NumberStepper";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { MemoryControls } from "@/features/agents/components/observational-memory/components/MemoryControls";
 import {
   selectIsMemoryEnabledForConversation,
   selectMemoryDegraded,
@@ -66,31 +68,119 @@ interface RunSettingsEditorProps {
   conversationId: string;
 }
 
-function SettingRow({
-  id,
-  label,
-  checked,
-  onChange,
-}: {
+interface SettingsRowProps {
   id: string;
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
-}) {
+  quickset?: boolean;
+}
+
+function SettingsRow({
+  id,
+  label,
+  checked,
+  onChange,
+  quickset = false,
+}: SettingsRowProps) {
   return (
-    <div className="flex items-center justify-between py-1">
-      <Label
-        htmlFor={id}
-        className="text-xs text-muted-foreground cursor-pointer"
-      >
-        {label}
-      </Label>
-      <Switch
-        id={id}
-        checked={checked}
-        onCheckedChange={onChange}
-        className="scale-75 origin-right"
+    <label
+      htmlFor={id}
+      className={cn(
+        "min-h-8 cursor-pointer items-center gap-3 py-1",
+        quickset ? "grid grid-cols-3" : "flex justify-between",
+      )}
+    >
+      <span className="text-xs text-foreground">{label}</span>
+      <span className={cn(quickset && "col-span-2")}>
+        <Switch id={id} checked={checked} onCheckedChange={onChange} />
+      </span>
+    </label>
+  );
+}
+
+/** The seven primary settings, rendered identically in Settings and Quickset. */
+export function RunSettingsQuickControls({
+  conversationId,
+  quickset = false,
+}: RunSettingsEditorProps & { quickset?: boolean }) {
+  const dispatch = useAppDispatch();
+  const settings =
+    useAppSelector(selectBuilderAdvancedSettings(conversationId)) ??
+    DEFAULT_BUILDER_ADVANCED_SETTINGS;
+  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isBlockMode = useAppSelector(selectIsBlockMode);
+  const isSnapshot = useAppSelector(selectIsSnapshot);
+  const aiApiVersion = useAppSelector(selectAiApiVersion);
+  const memoryEnabled = useAppSelector(
+    selectIsMemoryEnabledForConversation(conversationId),
+  );
+
+  return (
+    <div className="space-y-0.5">
+      <SurfaceSimulatorSelect conversationId={conversationId} compact />
+      <SettingsRow
+        id={`disable-tool-injection-${conversationId}`}
+        label="Disable Tool Injection (This Run)"
+        checked={settings.disableToolInjection ?? false}
+        quickset={quickset}
+        onChange={(value) =>
+          dispatch(
+            setBuilderAdvancedSettings({
+              conversationId,
+              changes: { disableToolInjection: value },
+            }),
+          )
+        }
       />
+      <SettingsRow
+        id={`debug-${conversationId}`}
+        label="Debug Mode"
+        checked={settings.debug}
+        quickset={quickset}
+        onChange={(value) =>
+          dispatch(
+            setBuilderAdvancedSettings({
+              conversationId,
+              changes: { debug: value },
+            }),
+          )
+        }
+      />
+      {isAdmin && (
+        <>
+          <SettingsRow
+            id={`block-mode-${conversationId}`}
+            label="Block Mode"
+            checked={isBlockMode}
+            quickset={quickset}
+            onChange={(value) => dispatch(setUseBlockMode(value))}
+          />
+          <SettingsRow
+            id={`snapshot-${conversationId}`}
+            label="Snapshot Mode"
+            checked={isSnapshot}
+            quickset={quickset}
+            onChange={(value) => dispatch(setUseSnapshot(value))}
+          />
+          <SettingsRow
+            id={`conversation-memory-${conversationId}`}
+            label="Conversation Memory"
+            checked={memoryEnabled}
+            quickset={quickset}
+            onChange={(enabled) => dispatch(requestMemoryToggle({ enabled }))}
+          />
+          <SettingsRow
+            id={`ai-api-version-${conversationId}`}
+            label="V2 Spine"
+            checked={aiApiVersion === "v2"}
+            quickset={quickset}
+            onChange={(enabled) =>
+              dispatch(setAiApiVersion(enabled ? "v2" : "v1"))
+            }
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -104,25 +194,15 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
     selectReuseConversationId(conversationId),
   );
   const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const isBlockMode = useAppSelector(selectIsBlockMode);
-  const isSnapshot = useAppSelector(selectIsSnapshot);
-  const isMemoryEnabledForThisConversation = useAppSelector(
-    selectIsMemoryEnabledForConversation(conversationId),
-  );
-  const isMemoryDegraded = useAppSelector(selectMemoryDegraded(conversationId));
   const directiveApplyPolicy = useAppSelector(
-    (s) => s.userPreferences.assistant.directiveApplyPolicy,
+    (state) => state.userPreferences.assistant.directiveApplyPolicy,
   );
   const apiVersion = useAppSelector(selectApiVersion);
   const pathOverrides = useAppSelector(selectPathOverrides);
   const globalManualOverride = pathOverrides[ENDPOINTS.ai.manual] ?? "";
-  const aiApiVersion = useAppSelector(selectAiApiVersion);
-  const isV2 = aiApiVersion === "v2";
+  const memoryDegraded = useAppSelector(selectMemoryDegraded(conversationId));
   const [sysModalOpen, setSysModalOpen] = useState(false);
   const openSystemInstructionWindow = useOpenSystemInstructionWindow();
-
-  // Inline validation for the raw request-override escape hatch — same parser
-  // the send thunks use, so what the editor accepts is exactly what ships.
   const overridesError = parseRequestOverrides(settings.requestOverrides).error;
 
   const openMemoryInspector = () =>
@@ -135,426 +215,257 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
 
   return (
     <>
-      <div className="space-y-0.5">
-        <div className="px-0.5 pb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
-          Tool injection
-        </div>
-        <SettingRow
-          id={`disable-tool-injection-${conversationId}`}
-          label="Disable tool injection (this run)"
-          checked={settings.disableToolInjection ?? false}
-          onChange={(v) =>
-            dispatch(
-              setBuilderAdvancedSettings({
-                conversationId,
-                changes: { disableToolInjection: v },
-              }),
-            )
-          }
-        />
-        <p className="px-0.5 pb-1 text-[10px] leading-snug text-muted-foreground/70">
-          Sends no surface for this conversation, so the server adds no
-          automatic tools — the agent runs with only its own saved tools.
-        </p>
+      <div className="space-y-4">
+        <RunSettingsQuickControls conversationId={conversationId} />
 
-        <SurfaceSimulatorSelect conversationId={conversationId} />
+        <Separator />
 
-        <Separator className="!my-1.5" />
-
-        <SettingRow
-          id={`debug-${conversationId}`}
-          label="Debug mode"
-          checked={settings.debug}
-          onChange={(v) =>
-            dispatch(
-              setBuilderAdvancedSettings({
-                conversationId,
-                changes: { debug: v },
-              }),
-            )
-          }
-        />
-        <SettingRow
-          id={`store-${conversationId}`}
-          label="Save to DB"
-          checked={settings.store}
-          onChange={(v) =>
-            dispatch(
-              setBuilderAdvancedSettings({
-                conversationId,
-                changes: { store: v },
-              }),
-            )
-          }
-        />
-        <SettingRow
-          id={`reuse-cid-${conversationId}`}
-          label="Reuse conversation ID"
-          checked={reuseConversationId}
-          onChange={(v) =>
-            dispatch(setReuseConversationId({ conversationId, value: v }))
-          }
-        />
-
-        <Separator className="!my-1.5" />
-
-        <SettingRow
-          id={`structured-sys-${conversationId}`}
-          label="Structured system prompt"
-          checked={settings.useStructuredSystemInstruction}
-          onChange={(v) =>
-            dispatch(
-              setBuilderAdvancedSettings({
-                conversationId,
-                changes: { useStructuredSystemInstruction: v },
-              }),
-            )
-          }
-        />
-
-        {settings.useStructuredSystemInstruction && (
-          <div className="flex items-center gap-1.5 mt-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 h-7 text-xs min-w-0"
-              onClick={() => setSysModalOpen(true)}
-            >
-              <FileText className="w-3 h-3 mr-1.5 shrink-0" />
-              <span className="truncate">Dialog</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 h-7 text-xs min-w-0"
-              onClick={() => openSystemInstructionWindow({ conversationId })}
-            >
-              <PanelRight className="w-3 h-3 mr-1.5 shrink-0" />
-              <span className="truncate">Window</span>
-            </Button>
-          </div>
-        )}
-
-        <Separator className="!my-1.5" />
-
-        {/* User-level output-directive apply policy. Persists to user
-            preferences and flows to the backend `user.apply_policy` (USER
-            layer, highest priority) on every turn when not "Default". */}
-        <div className="flex items-center justify-between py-1 gap-3">
-          <Label
-            htmlFor={`apply-policy-${conversationId}`}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
-          >
-            <Wand2 className="w-3 h-3" />
-            Agent actions
-          </Label>
-          <Select
-            value={directiveApplyPolicy}
-            onValueChange={(value) =>
-              dispatch(
-                setPreference({
-                  module: "assistant",
-                  preference: "directiveApplyPolicy",
-                  value: value as DirectiveApplyPolicy,
-                }),
-              )
-            }
-          >
-            <SelectTrigger
-              id={`apply-policy-${conversationId}`}
-              className="h-6 w-[11rem] text-xs"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default" className="text-xs">
-                Ask first (default)
-              </SelectItem>
-              <SelectItem value="auto" className="text-xs">
-                Apply automatically
-              </SelectItem>
-              <SelectItem value="ask" className="text-xs">
-                Always ask first
-              </SelectItem>
-              <SelectItem value="off" className="text-xs">
-                Never apply
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Separator className="!my-1.5" />
-
-        <div className="flex items-center justify-between py-1 gap-3">
-          <Label className="text-xs text-muted-foreground shrink-0">
-            Max iterations
-          </Label>
-          <NumberStepper
-            value={settings.maxIterations}
-            onChange={(v) =>
+        <section className="space-y-1.5">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Additional controls
+          </h3>
+          <SettingsRow
+            id={`store-${conversationId}`}
+            label="Save to DB"
+            checked={settings.store}
+            onChange={(value) =>
               dispatch(
                 setBuilderAdvancedSettings({
                   conversationId,
-                  changes: { maxIterations: v },
+                  changes: { store: value },
                 }),
               )
             }
-            min={1}
-            max={1000}
-            className="h-6"
           />
-        </div>
-
-        <div className="flex items-center justify-between py-1 gap-3">
-          <Label className="text-xs text-muted-foreground shrink-0">
-            Retries / iteration
-          </Label>
-          <NumberStepper
-            value={settings.maxRetriesPerIteration}
-            onChange={(v) =>
+          <SettingsRow
+            id={`reuse-cid-${conversationId}`}
+            label="Reuse Conversation ID"
+            checked={reuseConversationId}
+            onChange={(value) =>
+              dispatch(setReuseConversationId({ conversationId, value }))
+            }
+          />
+          <SettingsRow
+            id={`structured-sys-${conversationId}`}
+            label="Structured System Prompt"
+            checked={settings.useStructuredSystemInstruction}
+            onChange={(value) =>
               dispatch(
                 setBuilderAdvancedSettings({
                   conversationId,
-                  changes: { maxRetriesPerIteration: v },
+                  changes: { useStructuredSystemInstruction: value },
                 }),
               )
             }
-            min={0}
-            max={10}
-            className="h-6"
           />
-        </div>
-
-        {isAdmin && (
-          <>
-            <Separator className="!my-1.5" />
-            <div className="px-0.5 pt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
-              Admin
-            </div>
-
-            {/* ── Experimental capabilities (manual, not rolled out) ───────── */}
-            <div className="flex items-center gap-1.5 px-0.5 pb-0.5 pt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
-              <HardDrive className="w-3 h-3" />
-              Experimental capabilities
-            </div>
-            <SettingRow
-              id={`agent-fs-${conversationId}`}
-              label="Agent filesystem (agent-fs)"
-              checked={settings.agentFs ?? false}
-              onChange={(v) =>
-                dispatch(
-                  setBuilderAdvancedSettings({
-                    conversationId,
-                    changes: { agentFs: v },
-                  }),
-                )
-              }
-            />
-            <p className="px-0.5 pb-1 text-[10px] leading-snug text-muted-foreground/70">
-              Arms <code className="font-mono">fs_*</code> +{" "}
-              <code className="font-mono">shell_execute</code> against a durable
-              filesystem backed by your Code Snippets — no sandbox needed. Files
-              persist under <code className="font-mono">/home/agent/…</code>.
-              Manual + off by default; not rolled out.
-            </p>
-
-            <Separator className="!my-1.5" />
-            <SettingRow
-              id={`block-mode-${conversationId}`}
-              label="Block mode (block_mode)"
-              checked={isBlockMode}
-              onChange={(v) => dispatch(setUseBlockMode(v))}
-            />
-            <SettingRow
-              id={`snapshot-${conversationId}`}
-              label="Snapshot capture (snapshot)"
-              checked={isSnapshot}
-              onChange={(v) => dispatch(setUseSnapshot(v))}
-            />
-
-            {/* ── API routing overrides (admin/test) ──────────────────────── */}
-            <Separator className="!my-1.5" />
-            <div className="flex items-center gap-1.5 px-0.5 pb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
-              <Route className="w-3 h-3" />
-              API routing (test)
-            </div>
-
-            {/* AI runtime version — v1/v2 spine. Scoped to the four covered AI
-                surfaces (chat, manual, agents, conversations); everything else
-                stays v1. Mirror of the sidebar API-version toggle. */}
-            <SettingRow
-              id={`ai-api-version-${conversationId}`}
-              label="AI runtime v2 spine"
-              checked={isV2}
-              onChange={(on) => dispatch(setAiApiVersion(on ? "v2" : "v1"))}
-            />
-            <p className="px-0.5 pb-1 text-[10px] leading-snug text-muted-foreground/70">
-              Routes <code className="font-mono">/ai/manual</code>,{" "}
-              <code className="font-mono">/ai/chat</code>,{" "}
-              <code className="font-mono">/ai/agents/*</code> and{" "}
-              <code className="font-mono">/ai/conversations/*</code> to their{" "}
-              <code className="font-mono">/v2/ai/*</code> siblings app-wide. Same
-              body, same server. Persists across reloads.
-            </p>
-
-            <Separator className="!my-1.5" />
-
-            {/* Per-conversation manual route override — the primary
-                "test THIS run against a different route" control. */}
-            <div className="py-1 space-y-1">
-              <Label
-                htmlFor={`manual-route-${conversationId}`}
-                className="text-xs text-muted-foreground"
-              >
-                Manual route (this run)
-              </Label>
-              <Input
-                id={`manual-route-${conversationId}`}
-                value={settings.manualEndpointOverride ?? ""}
-                onChange={(e) =>
-                  dispatch(
-                    setBuilderAdvancedSettings({
-                      conversationId,
-                      changes: {
-                        manualEndpointOverride: e.target.value || null,
-                      },
-                    }),
-                  )
-                }
-                placeholder={ENDPOINTS.ai.manual}
-                spellCheck={false}
-                className="h-7 text-xs font-mono"
-              />
-              <p className="text-[10px] leading-snug text-muted-foreground/70">
-                Overrides the Builder’s POST path for this conversation only
-                (e.g. <code className="font-mono">/v2/ai/chat</code>). Same
-                request body, same server — only the path changes. Empty ={" "}
-                <code className="font-mono">{ENDPOINTS.ai.manual}</code>.
-              </p>
-            </div>
-
-            <Separator className="!my-1.5" />
-
-            {/* Global manual route override — applies app-wide + persists. */}
-            <div className="py-1 space-y-1">
-              <Label
-                htmlFor={`global-manual-route-${conversationId}`}
-                className="text-xs text-muted-foreground"
-              >
-                Global manual route
-              </Label>
-              <Input
-                id={`global-manual-route-${conversationId}`}
-                value={globalManualOverride}
-                onChange={(e) =>
-                  dispatch(
-                    setPathOverride({
-                      canonicalPath: ENDPOINTS.ai.manual,
-                      replacement: e.target.value,
-                    }),
-                  )
-                }
-                placeholder={ENDPOINTS.ai.manual}
-                spellCheck={false}
-                className="h-7 text-xs font-mono"
-              />
-            </div>
-
-            {/* Global API version prefix — applies to EVERY backend path. */}
-            <div className="py-1 space-y-1">
-              <Label
-                htmlFor={`api-version-${conversationId}`}
-                className="text-xs text-muted-foreground"
-              >
-                Global API version
-              </Label>
-              <Input
-                id={`api-version-${conversationId}`}
-                value={apiVersion ?? ""}
-                onChange={(e) => dispatch(setApiVersion(e.target.value))}
-                placeholder="(none) — e.g. v2"
-                spellCheck={false}
-                className="h-7 text-xs font-mono"
-              />
-              <p className="text-[10px] leading-snug text-muted-foreground/70">
-                Prefixes every backend path app-wide (e.g.{" "}
-                <code className="font-mono">v2</code> →{" "}
-                <code className="font-mono">/v2/ai/manual</code>). Persists
-                across reloads.
-              </p>
-            </div>
-
-            {(apiVersion || Object.keys(pathOverrides).length > 0) && (
+          {settings.useStructuredSystemInstruction && (
+            <div className="flex gap-2 pl-0">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full h-7 text-xs"
-                onClick={() => dispatch(clearApiOverrides())}
+                className="h-7 text-xs"
+                onClick={() => setSysModalOpen(true)}
               >
-                Clear all API overrides
+                <FileText className="mr-1.5 h-3 w-3" /> Edit
               </Button>
-            )}
-
-            {/* ── Raw request overrides (test escape hatch) ───────────────── */}
-            <Separator className="!my-1.5" />
-            <div className="flex items-center gap-1.5 px-0.5 pb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
-              <Braces className="w-3 h-3" />
-              Request overrides (test)
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => openSystemInstructionWindow({ conversationId })}
+              >
+                <PanelRight className="mr-1.5 h-3 w-3" /> Open window
+              </Button>
             </div>
-            <div className="py-1 space-y-1">
-              <Textarea
-                id={`request-overrides-${conversationId}`}
-                value={settings.requestOverrides ?? ""}
-                onChange={(e) =>
+          )}
+          <div className="flex items-center gap-3 py-1">
+            <Label className="flex-1 text-xs text-foreground">Agent actions</Label>
+            <Select
+              value={directiveApplyPolicy}
+              onValueChange={(value) =>
+                dispatch(
+                  setPreference({
+                    module: "assistant",
+                    preference: "directiveApplyPolicy",
+                    value: value as DirectiveApplyPolicy,
+                  }),
+                )
+              }
+            >
+              <SelectTrigger className="h-7 w-44 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Ask first</SelectItem>
+                <SelectItem value="auto">Apply automatically</SelectItem>
+                <SelectItem value="ask">Always ask first</SelectItem>
+                <SelectItem value="off">Never apply</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-3 py-1">
+            <Label className="flex-1 text-xs text-foreground">Max iterations</Label>
+            <NumberStepper
+              value={settings.maxIterations}
+              onChange={(value) =>
+                dispatch(
+                  setBuilderAdvancedSettings({
+                    conversationId,
+                    changes: { maxIterations: value },
+                  }),
+                )
+              }
+              min={1}
+              max={1000}
+              className="h-7"
+            />
+          </div>
+          <div className="flex items-center gap-3 py-1">
+            <Label className="flex-1 text-xs text-foreground">Retries / iteration</Label>
+            <NumberStepper
+              value={settings.maxRetriesPerIteration}
+              onChange={(value) =>
+                dispatch(
+                  setBuilderAdvancedSettings({
+                    conversationId,
+                    changes: { maxRetriesPerIteration: value },
+                  }),
+                )
+              }
+              min={0}
+              max={10}
+              className="h-7"
+            />
+          </div>
+        </section>
+
+        {isAdmin && (
+          <>
+            <Separator />
+            <section className="space-y-1.5">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Admin controls
+              </h3>
+              <SettingsRow
+                id={`agent-fs-${conversationId}`}
+                label="Agent Filesystem"
+                checked={settings.agentFs ?? false}
+                onChange={(value) =>
                   dispatch(
                     setBuilderAdvancedSettings({
                       conversationId,
-                      changes: { requestOverrides: e.target.value || null },
+                      changes: { agentFs: value },
                     }),
                   )
                 }
-                placeholder={'{ "client": { "capabilities": ["agent-fs"] } }'}
+              />
+              <div className="flex items-center gap-3 py-1">
+                <Label htmlFor={`manual-route-${conversationId}`} className="w-1/3 text-xs text-foreground">
+                  Manual route
+                </Label>
+                <Input
+                  id={`manual-route-${conversationId}`}
+                  value={settings.manualEndpointOverride ?? ""}
+                  onChange={(event) =>
+                    dispatch(
+                      setBuilderAdvancedSettings({
+                        conversationId,
+                        changes: { manualEndpointOverride: event.target.value || null },
+                      }),
+                    )
+                  }
+                  placeholder={ENDPOINTS.ai.manual}
+                  spellCheck={false}
+                  className="h-7 flex-1 font-mono text-xs"
+                />
+              </div>
+              <div className="flex items-center gap-3 py-1">
+                <Label htmlFor={`global-manual-route-${conversationId}`} className="w-1/3 text-xs text-foreground">
+                  Global manual route
+                </Label>
+                <Input
+                  id={`global-manual-route-${conversationId}`}
+                  value={globalManualOverride}
+                  onChange={(event) =>
+                    dispatch(
+                      setPathOverride({
+                        canonicalPath: ENDPOINTS.ai.manual,
+                        replacement: event.target.value,
+                      }),
+                    )
+                  }
+                  placeholder={ENDPOINTS.ai.manual}
+                  spellCheck={false}
+                  className="h-7 flex-1 font-mono text-xs"
+                />
+              </div>
+              <div className="flex items-center gap-3 py-1">
+                <Label htmlFor={`api-version-${conversationId}`} className="w-1/3 text-xs text-foreground">
+                  API version
+                </Label>
+                <Input
+                  id={`api-version-${conversationId}`}
+                  value={apiVersion ?? ""}
+                  onChange={(event) => dispatch(setApiVersion(event.target.value))}
+                  spellCheck={false}
+                  className="h-7 flex-1 font-mono text-xs"
+                />
+              </div>
+              {(apiVersion || Object.keys(pathOverrides).length > 0) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 w-full text-xs"
+                  onClick={() => dispatch(clearApiOverrides())}
+                >
+                  Clear API overrides
+                </Button>
+              )}
+              <Label htmlFor={`request-overrides-${conversationId}`} className="pt-1 text-xs text-foreground">
+                Request overrides
+              </Label>
+              <Textarea
+                id={`request-overrides-${conversationId}`}
+                value={settings.requestOverrides ?? ""}
+                onChange={(event) =>
+                  dispatch(
+                    setBuilderAdvancedSettings({
+                      conversationId,
+                      changes: { requestOverrides: event.target.value || null },
+                    }),
+                  )
+                }
+                placeholder='{ "key": "value" }'
                 spellCheck={false}
                 rows={4}
-                className="text-xs font-mono leading-snug"
+                className="font-mono text-xs"
               />
-              {overridesError ? (
-                <p className="text-[10px] leading-snug text-destructive">
-                  Invalid JSON — {overridesError}
-                </p>
-              ) : (
-                <p className="text-[10px] leading-snug text-muted-foreground/70">
-                  Raw JSON object shallow-merged onto the request body just
-                  before POST — top-level keys override the assembled payload.
-                  For testing arbitrary request fields. Empty = no override.
-                </p>
+              {overridesError && (
+                <p className="text-[11px] text-destructive">Invalid JSON — {overridesError}</p>
               )}
-            </div>
-
-            {/* ── Observational Memory (admin-gated, per-conversation) ───── */}
-            <Separator className="!my-1.5" />
-            <div className="px-0.5 pb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
-              Observational Memory
-            </div>
-            <MemoryControls conversationId={conversationId} variant="compact" />
-            <Button
-              variant={
-                isMemoryEnabledForThisConversation ? "default" : "outline"
-              }
-              size="sm"
-              className="w-full h-7 text-xs mt-1.5"
-              onClick={openMemoryInspector}
-            >
-              <Brain className="w-3 h-3 mr-1.5" />
-              Open Memory Inspector
-              {isMemoryDegraded && (
-                <span className="ml-1.5 text-[10px] text-amber-500">
-                  · degraded
-                </span>
-              )}
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 w-full text-xs"
+                onClick={openMemoryInspector}
+              >
+                <Brain className="mr-1.5 h-3 w-3" /> Open Memory Inspector
+                {memoryDegraded ? " (degraded)" : ""}
+              </Button>
+            </section>
           </>
         )}
+
+        <Separator />
+        <section className="space-y-1.5 rounded-md bg-muted/35 p-2.5 text-[11px] leading-relaxed text-muted-foreground">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-foreground">
+            Reference
+          </h3>
+          <p>Surface Simulator changes the surface reported for this run, which changes the available surface tools.</p>
+          <p>Disable Tool Injection prevents automatic surface and capability tools; the agent&apos;s saved tools remain available.</p>
+          <p>Conversation Memory is queued for the next turn. Configure and inspect its persisted details from Memory Inspector.</p>
+          {isAdmin && <p>Block, Snapshot, V2 Spine, routes, and request overrides are advanced admin/test controls.</p>}
+        </section>
       </div>
 
       <SystemInstructionModal

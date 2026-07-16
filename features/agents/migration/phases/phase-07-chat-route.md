@@ -65,10 +65,23 @@ Per user: "the single most important feature we'll ever build for our applicatio
 - SSR `ssr/chat/a/[agentId]` route — coexists per the task rules.
 - Wiring chat shortcuts into the Phase 1 user-scope shortcut table — hardcoded bindings for now.
 
+## Active Chat Options refinement scope (2026-07-16)
+
+This is a live implementation checklist for the Chat Options (`runControlsWindow`) refinement. Every control remains a view over the existing per-conversation Redux-backed execution state; Quickset must never introduce duplicate state or a parallel save path.
+
+- [x] Correct the desktop window geometry: leave 50–100px between the left viewport edge and the panel, increase its compact width slightly, and keep the conversation usable beside it.
+- [x] Fix Memory → “Full prompt” so it opens the prompt-preview window without closing Chat Options.
+- [x] Rework the Settings tab so controls are compact label/control rows and descriptions or implementation identifiers are moved to a bottom reference area only. Its ordered top controls are Surface Simulator, Disable Tool Injection (This Run), Debug Mode, Block Mode, Snapshot Mode, Conversation Memory, and V2 Spine.
+- [x] Add `Quickset` as the first/default Chat Options tab. Render compact two-column rows (label one-third, control two-thirds) using existing state/control implementations: Submit on Enter; Show Creator Panel; Show Variables; placeholder-only Active Context; Working Document; Scratch; Model (the same selector used by `/agents/[id]/build` and Overrides); Agent Tools; Surface Tools; Add Tools; Disable Tool Injection; Skills; Agent Sandbox; and the seven Settings controls above.
+- [x] Use popovers for Agent Tools, Surface Tools, Add Tools, and Skills. The sandbox selector lists only available bindings, displays the saved binding label, and writes through the existing binding path.
+- [x] Run focused checks, update feature docs, then request an adversarial review against this exact checklist before handoff.
+
 ## Change log
 | Date | Who | Change |
 |---|---|---|
-| 2026-07-16 | codex | Repositioned the chat Chat Options (`runControlsWindow`) from a centered 860px window to a compact 440px, slightly off-canvas left-edge panel; the shared per-conversation tab state is unchanged. |
+| 2026-07-16 | codex | Hardened the shared manual AIDream request assembler against legacy `settings.model_id`: `/v2/ai/manual` now receives only the canonical `ai_model_id` sourced from the agent definition, while valid flattened LLM settings continue through unchanged. Added a focused regression test. |
+| 2026-07-16 | codex | Documented the active Chat Options/Quickset refinement checklist before implementation, including geometry, prompt-preview retention, shared-state constraints, settings cleanup, and every requested Quickset row. |
+| 2026-07-16 | codex | Completed the Chat Options refinement: the 480px window opens 72px from the left edge, Memory and prompt preview retain it, Quickset is the first/default shared-state tab, Settings has compact controls with a bottom reference, canonical build model selection is reused for overrides, and picker controls are compact popovers. |
 | 2026-07-14 | codex | Direct local-PC saved-agent turns now require the explicit `agent_execution_v1` health capability and otherwise remain on AIDream; 422 UI errors classify by structured code so agent preparation failures are no longer mislabeled as invalid conversation ids. |
 | 2026-07-15 | codex | Restored live `/chat` pasted-image and ordinary attachment uploads by gating the premature direct-browser `matrx-files` route; the existing durable `file_id` resource-attachment flow remains unchanged and browser bytes stay on aidream until authenticated CORS preflight passes. |
 | 2026-07-14 | codex | `/chat/new` now first-paints with the landing composer silhouette instead of a blank/missing input, and the same cold bottom-first conversation loading path was extended to `/agents/[id]/run?conversationId=...` so runner deep-links land at the bottom without visible transcript assembly. |

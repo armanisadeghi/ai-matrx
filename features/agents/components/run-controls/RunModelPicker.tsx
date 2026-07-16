@@ -14,10 +14,10 @@
  * indicator honest too.
  */
 
-import { RotateCcw, Info } from "lucide-react";
+import { RotateCcw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
-import { selectModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   setOverrides,
@@ -36,15 +36,11 @@ function useModelOverride(conversationId: string) {
   const overrideState = useAppSelector(
     selectInstanceOverrideState(conversationId),
   );
-  const options = useAppSelector(selectModelOptions);
 
   const baseModel = overrideState?.baseSettings?.model ?? null;
   const overrideModel = overrideState?.overrides?.model ?? null;
   const effectiveModel = overrideModel ?? baseModel;
   const isOverridden = effectiveModel !== baseModel;
-
-  const baseModelLabel =
-    options.find((o) => o.value === baseModel)?.label ?? null;
 
   const handleChange = (modelId: string) => {
     // Picking the agent's own model is not an override — clear it.
@@ -62,7 +58,6 @@ function useModelOverride(conversationId: string) {
     baseModel,
     effectiveModel,
     isOverridden,
-    baseModelLabel,
     handleChange,
     handleReset,
   };
@@ -70,7 +65,8 @@ function useModelOverride(conversationId: string) {
 
 /**
  * QuickRunModelSelect — single-row compact variant for toolbar/quick rows
- * (the `+` attach popover). Same override semantics as RunModelPicker;
+ * (the `+` attach popover). It deliberately uses the same canonical
+ * ModelListDropdown as `/agents/[id]/build`; only the write target differs.
  * agent default pinned first; reset icon appears only when overridden.
  */
 export function QuickRunModelSelect({
@@ -89,12 +85,12 @@ export function QuickRunModelSelect({
   } = useModelOverride(conversationId);
 
   return (
-    <div className="flex min-w-0 items-center gap-1">
-      <SmartModelSelect
+    <div className={cn("flex min-w-0 items-center gap-1", className)}>
+      <ModelListDropdown
         value={effectiveModel ?? baseModel ?? null}
         onValueChange={handleChange}
-        priorityValues={baseModel ? [baseModel] : undefined}
-        className={className}
+        inputModalities={[]}
+        outputModalities={["text"]}
       />
       {isOverridden && (
         <button
@@ -136,10 +132,11 @@ export function RunModelPicker({ conversationId }: { conversationId: string }) {
         )}
       </div>
 
-      <SmartModelSelect
+      <ModelListDropdown
         value={effectiveModel ?? baseModel ?? null}
         onValueChange={handleChange}
-        className="w-full"
+        inputModalities={[]}
+        outputModalities={["text"]}
       />
     </div>
   );

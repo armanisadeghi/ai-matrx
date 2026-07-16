@@ -41,7 +41,7 @@ lib/redux/slices/
 
 ## Change Log
 
-- 2026-07-16 — Repositioned the chat `runControlsWindow` to open as a compact (440px) left-edge panel, preserving the conversation workspace and all existing shared tab state.
+- 2026-07-16 — Refined the chat `runControlsWindow` to open as a compact 480px panel inset 72px from the left edge. It now defaults to the shared-state Quickset tab while retaining the conversation workspace and the standard WindowPanel behavior.
 - 2026-07-16 — Added the `characterCounterWindow` as an ephemeral, mobile-fullscreen WindowPanel rendered through the canonical overlay controller.
 
 ---

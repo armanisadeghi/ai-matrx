@@ -29,6 +29,7 @@ import {
   SlidersVertical,
   FileText,
   Brain,
+  Zap,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
@@ -67,9 +68,11 @@ import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useOpenChatDebugWindow } from "@/features/overlays/openers/chatDebugWindow";
 import { useOpenAgentMemoryWindow } from "@/features/overlays/openers/agentMemoryWindow";
 import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
+import { QuicksetPanel } from "./QuicksetPanel";
 import type { Resource } from "@/features/agents/resources/types";
 
 export type RunControlsTab =
+  | "quickset"
   | "attach"
   | "context"
   | "document"
@@ -92,6 +95,11 @@ const ATTACH_TAB: RunControlsTabDef = {
   id: "attach",
   label: "Attach",
   icon: Paperclip,
+};
+const QUICKSET_TAB: RunControlsTabDef = {
+  id: "quickset",
+  label: "Quickset",
+  icon: Zap,
 };
 const CONTEXT_TAB: RunControlsTabDef = {
   id: "context",
@@ -185,6 +193,7 @@ export function useRunControlsState(
     ? BASE_TABS.filter((tab) => tab.id !== "sandbox")
     : BASE_TABS;
   const tabs: RunControlsTabDef[] = [
+    QUICKSET_TAB,
     ...(includeAttach ? [ATTACH_TAB] : []),
     CONTEXT_TAB,
     DOCUMENT_TAB,
@@ -193,11 +202,7 @@ export function useRunControlsState(
     ...(showCreatorTab ? [CREATOR_TAB] : []),
   ];
 
-  const defaultTab: RunControlsTab = includeAttach
-    ? "attach"
-    : hasOverrideLayer
-      ? "model"
-      : "tools";
+  const defaultTab: RunControlsTab = "quickset";
 
   const resolveTab = (tab: RunControlsTab): RunControlsTab =>
     (tab === "model" && !hasOverrideLayer) ||
@@ -325,6 +330,14 @@ export function RunControlsTabPanel({
           />
         </div>
       )}
+      {activeTab === "quickset" && (
+        <QuicksetPanel
+          conversationId={conversationId}
+          isCreator={isCreator}
+          showCreatorPanel={showCreatorPanel}
+          onToggleCreatorPanel={onToggleCreatorPanel}
+        />
+      )}
       {activeTab === "context" && (
         <div className={scrollClass}>
           <ActiveContextPanel checkboxVariant="standard" sectionHeight={220} />
@@ -372,7 +385,6 @@ export function RunControlsTabPanel({
             type="button"
             onClick={() => {
               openMemoryWindow();
-              onClose();
             }}
             className="flex w-full items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
           >
@@ -382,10 +394,6 @@ export function RunControlsTabPanel({
             <span className="flex flex-col">
               <span className="text-sm font-medium text-foreground">
                 What the agent remembers
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Browse, edit, add, or remove memories the agent has saved
-                about you
               </span>
             </span>
           </button>
@@ -402,11 +410,6 @@ export function RunControlsTabPanel({
             <span className="flex flex-col">
               <span className="text-sm font-medium text-foreground">
                 Submit on Enter
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {submitOnEnter
-                  ? "Enter sends · Shift+Enter for a new line"
-                  : "Enter adds a new line · ⌘/Ctrl+Enter sends"}
               </span>
             </span>
             <Switch
@@ -437,11 +440,6 @@ export function RunControlsTabPanel({
                 <span className="text-sm font-medium text-foreground">
                   Creator panel
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {showCreatorPanel
-                    ? "Visible — click to hide"
-                    : "Hidden — click to show"}
-                </span>
               </span>
             </button>
           )}
@@ -459,9 +457,6 @@ export function RunControlsTabPanel({
                 <span className="text-sm font-medium text-foreground">
                   Debug instance state
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  Open the live state inspector for this run
-                </span>
               </span>
             </button>
           )}
@@ -470,7 +465,6 @@ export function RunControlsTabPanel({
             type="button"
             onClick={() => {
               openPromptPreview({ conversationId });
-              onClose();
             }}
             className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
           >
@@ -480,9 +474,6 @@ export function RunControlsTabPanel({
             <span className="flex flex-col">
               <span className="text-sm font-medium text-foreground">
                 Preview full prompt
-              </span>
-              <span className="text-xs text-muted-foreground">
-                See exactly what goes to the model — context, system prompt, tools
               </span>
             </span>
           </button>

@@ -2,7 +2,7 @@
 
 **Status:** `consolidated — canonical home for all tool-call UI`
 **Tier:** `1` — tools are first-class product surface, not auxiliary output
-**Last updated:** `2026-07-14`
+**Last updated:** `2026-07-16`
 
 ---
 
@@ -209,6 +209,7 @@ Historical planning and analysis docs from the pre-consolidation era have been a
 
 ## Change log
 
+- `2026-07-16` — claude: **Selector stability — `useConversationToolEntries` no longer recreates factories inside `useAppSelector`.** Root cause of the Reselect warning (`useAppSelector[persisted] returned a different result…`): `selectToolCallsForConversation(id)` was called inline on every subscription check, so each dispatch got a fresh `createSelector` with an empty cache → new array ref every time. Fixed: memoize the factory (`useMemo(() => select…(id), [id])`), use exported `EMPTY_TOOL_CALLS` instead of inline `: []`, and extract the live overlay into memoized `selectLiveToolLifecycleByConversation` (same class of Map-rebuild bug).
 - `2026-07-16` — claude: **Settled turns fold into one "Worked for Ns" `AgentWorkGroup` line.** New pure fold `grouping/foldAgentWork.ts` (+ jest guard) wraps runs of thinking/status/auto-mode tools/short interior asides once a turn is settled; `EnhancedChatMarkdown` applies it after tool-batch grouping on BOTH the live-slot and persisted-segment paths, with the per-item render bodies extracted to shared `renderGroupedSlot`/`renderGroupedSegment` so folded children render identically ungrouped. Duration = min-start→max-end of the group's tool timestamps ("Worked for 26s"), step-count fallback. Stay-open/result-is-purpose tools, media, errors, and long text stay visible and break the run; leading intros and the final answer are never swallowed. Verified live on DB-loaded conversations (fold, expand-flat, long-text break).
 
 - `2026-07-15` — claude: **Ask-the-user tools on the canonical card + the `create-tool-renderer` skill now teaches the doctrine.** New `renderers/ask/AskInline.tsx` for `ask_user` (single Q → `{answer, cancelled}`) and `interaction_ask` (questions array; answers may land later): one condensed row per question with the answer beneath it (`↳`), unanswered rows show a quiet italic "Awaiting answer"; questions render the moment they exist (`keepExpandedOnStream`), including the sent-but-unanswered state. No ids, no `component_type` enums, no option dumps. Registered `chrome: "card"`. The skill (`.cursor/skills/create-tool-renderer/SKILL.md`) gained "Step 0 — classify the data": known+pretty → `ToolResultCard` + `chrome: "card"`; unknown/ugly → flush body; density-follows-intent; the never-render list (uuids/enums/epochs/boolean chips/empty rows/shell repetition/icon backgrounds); uniform-run consolidation — so future renderers (any model) land on the template without hand-holding.

@@ -477,6 +477,34 @@ export const selectAllToolLifecycles = (requestId: string) =>
       lifecycle ? Object.values(lifecycle) : undefined,
   );
 
+/**
+ * Live in-flight toolLifecycle entries across every active request for a
+ * conversation, keyed by callId. Used by the tool-call window's "All"
+ * scope to overlay stream state on persisted cx_tool_call rows.
+ *
+ * Factory — callers must memoize the instance:
+ * `useMemo(() => selectLiveToolLifecycleByConversation(id), [id])`
+ * Returns `null` (stable) when nothing is in flight.
+ */
+export const selectLiveToolLifecycleByConversation = (conversationId: string) =>
+  createSelector(
+    (state: RootState) => state.activeRequests.byConversationId[conversationId],
+    (state: RootState) => state.activeRequests.byRequestId,
+    (requestIds, byRequestId): Map<string, ToolLifecycleEntry> | null => {
+      if (!requestIds || requestIds.length === 0) return null;
+      const map = new Map<string, ToolLifecycleEntry>();
+      for (const requestId of requestIds) {
+        const lifecycle = byRequestId[requestId]?.toolLifecycle;
+        if (!lifecycle) continue;
+        for (const callId of Object.keys(lifecycle)) {
+          const entry = lifecycle[callId];
+          if (entry) map.set(callId, entry);
+        }
+      }
+      return map.size > 0 ? map : null;
+    },
+  );
+
 /** Tools that are actively running (started, progress, step). Memoized. */
 export const selectActiveTools = (requestId: string) =>
   createSelector(
