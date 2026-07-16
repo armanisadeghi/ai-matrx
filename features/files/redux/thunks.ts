@@ -33,8 +33,12 @@ import { pgErrorToError } from "@/utils/supabase/pg-error";
 import * as Files from "@/features/files/api/files";
 import * as Folders from "@/features/files/api/folders";
 import * as Permissions from "@/features/files/api/permissions";
-import * as ShareLinks from "@/features/files/api/share-links";
 import * as Versions from "@/features/files/api/versions";
+import {
+  createShareLink as createCanonicalShareLink,
+  listShareLinks as listCanonicalShareLinks,
+  revokeShareLink as revokeCanonicalShareLink,
+} from "@/utils/permissions/shareLinks";
 import {
   softDeleteFileDirect,
   softDeleteFolderDirect,
@@ -48,10 +52,9 @@ import {
   dbRowToCloudFilePermission,
   dbRowToCloudFileVersion,
   dbRowToCloudFolder,
-  dbRowToCloudShareLink,
+  canonicalShareLinkToCloudShareLink,
   parseCloudTreeRows,
   rpcPermissionRowToCloudFilePermission,
-  rpcShareLinkRowToCloudShareLink,
 } from "./converters";
 import {
   registerRequest,
@@ -107,12 +110,13 @@ import type {
   CloudFolder,
   CloudShareLink,
   CreateShareLinkArg,
-  DeactivateShareLinkArg,
+  RevokeShareLinkArg,
   DeleteFileArg,
   GranteeType,
   GrantPermissionArg,
   MoveFileArg,
   RenameFileArg,
+  ResourceType,
   RestoreVersionArg,
   RevokePermissionArg,
   SignedUrlArg,
@@ -476,19 +480,20 @@ export const loadPermissions = createAsyncThunk<
 
 export const loadShareLinks = createAsyncThunk<
   void,
-  { resourceId: string },
+  { resourceId: string; resourceType?: ResourceType },
   ThunkApi
->("cloudFiles/loadShareLinks", async ({ resourceId }, { dispatch }) => {
-  if (isVirtualResourceId(resourceId)) return;
-  const { data, error } = await filesDb(supabase)
-    .from("share_links")
-    .select("*")
-    .eq("resource_id", resourceId)
-    .eq("is_active", true);
-  if (error) throw pgErrorToError(error);
-  const shareLinks: CloudShareLink[] = (data ?? []).map(dbRowToCloudShareLink);
-  dispatch(upsertShareLinksForResource({ resourceId, shareLinks }));
-});
+>(
+  "cloudFiles/loadShareLinks",
+  async ({ resourceId, resourceType = "file" }, { dispatch }) => {
+    if (isVirtualResourceId(resourceId)) return;
+    // Canonical owner-gated list over platform.share_links.
+    const links = await listCanonicalShareLinks(resourceType, resourceId);
+    const shareLinks: CloudShareLink[] = links
+      .filter((l) => l.isActive)
+      .map((l) => canonicalShareLinkToCloudShareLink(l, resourceType, resourceId));
+    dispatch(upsertShareLinksForResource({ resourceId, shareLinks }));
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Writes — folders
@@ -1540,7 +1545,7 @@ export const createShareLink = createAsyncThunk<
   CloudShareLink,
   CreateShareLinkArg,
   ThunkApi
->("cloudFiles/createShareLink", async (arg, { dispatch }) => {
+>("cloudFiles/createShareLink", async (arg, { dispatch, getState }) => {
   if (isVirtualResourceId(arg.resourceId)) {
     throw new Error("Share links aren't available for this source yet.");
   }
@@ -1557,42 +1562,54 @@ export const createShareLink = createAsyncThunk<
     resourceType: arg.resourceType,
   });
   try {
-    const body = {
-      permission_level: arg.permissionLevel,
-      expires_at: arg.expiresAt ?? null,
-      max_uses: arg.maxUses ?? null,
-    };
-    const { data } =
-      arg.resourceType === "folder"
-        ? await ShareLinks.createFolderShareLink(arg.resourceId, body, {
-            requestId,
-          })
-        : await ShareLinks.createFileShareLink(arg.resourceId, body, {
-            requestId,
-          });
-    const link = rpcShareLinkRowToCloudShareLink(data);
-    await dispatch(loadShareLinks({ resourceId: arg.resourceId })).unwrap();
+    // Canonical owner-gated mint over platform.share_links.
+    const created = await createCanonicalShareLink({
+      resourceType: arg.resourceType,
+      resourceId: arg.resourceId,
+      permissionLevel: arg.permissionLevel,
+      expiresAt: arg.expiresAt ?? null,
+      maxUses: arg.maxUses ?? null,
+    });
+    if (!created.success || !created.token) {
+      throw new Error(created.error ?? "Failed to create share link");
+    }
+    // Reload the full list — the create RPC returns only { token, id }.
+    await dispatch(
+      loadShareLinks({
+        resourceId: arg.resourceId,
+        resourceType: arg.resourceType,
+      }),
+    ).unwrap();
+    const link = (
+      getState().cloudFiles.shareLinksByResourceId[arg.resourceId] ?? []
+    ).find((l) => l.shareToken === created.token);
+    if (!link) {
+      throw new Error("Share link was created but could not be loaded back");
+    }
     return link;
   } finally {
     releaseRequest(requestId);
   }
 });
 
-export const deactivateShareLink = createAsyncThunk<
+export const revokeShareLink = createAsyncThunk<
   void,
-  DeactivateShareLinkArg,
+  RevokeShareLinkArg,
   ThunkApi
->("cloudFiles/deactivateShareLink", async ({ shareToken }, { dispatch }) => {
+>("cloudFiles/revokeShareLink", async ({ linkId }, { dispatch }) => {
   const requestId = newRequestId();
   registerRequest({
     requestId,
-    kind: "deactivate-share-link",
+    kind: "revoke-share-link",
     resourceId: null,
     resourceType: null,
   });
   try {
-    await ShareLinks.deactivateShareLink(shareToken, { requestId });
-    dispatch(removeShareLink({ shareToken }));
+    const result = await revokeCanonicalShareLink(linkId);
+    if (!result.success) {
+      throw new Error(result.error ?? "Failed to revoke share link");
+    }
+    dispatch(removeShareLink({ linkId }));
   } finally {
     releaseRequest(requestId);
   }

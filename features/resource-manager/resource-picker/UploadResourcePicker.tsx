@@ -205,7 +205,7 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
                         folderPath,
                         visibility: "private",
                         createShareLink: true,
-                        shareLinkPermissionLevel: "read",
+                        shareLinkPermissionLevel: "viewer",
                     },
                 );
                 const url = normalized.url ?? "";

@@ -210,6 +210,7 @@ The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer aga
   - [`features/sharing/FEATURE.md`](../sharing/FEATURE.md) — cross-org/user/project sharing of resources
   - [`features/projects/README.md`](../projects/README.md) — projects mirror this architecture
   - [`features/agents/FEATURE.md`](../agents/FEATURE.md) — agents are org-scoped; shortcuts/apps are multi-scope
+  - Cross-repo system-of-record for the full access model (ownership, `iam.permissions`, `iam.memberships` incl. org membership roles, `platform.associations` conveyance, admin level): [`common-docs/access-architecture/FEATURE.md`](/Volumes/Samsung2TB/code/common-docs/access-architecture/FEATURE.md)
 
 ---
 
@@ -237,6 +238,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-07-15` — claude: **Cross-links pointer added to `common-docs/access-architecture/FEATURE.md`** — the cross-repo system-of-record for the full access model (ownership, permissions, memberships, associations, admin level), verified live 2026-07-15.
 - `2026-07-15` — **Keyboard focus and tab-order pass.** Removed duplicate and mouse-only organization-card navigation, made settings jump navigation move focus into its destination section, added labelled/Enter-submittable organization forms with intentional dialog focus, restored focus after inline editors, opted organization resource drawers into opener/return focus management, and exposed hover-only resource actions on keyboard focus.
 - `2026-07-15` — **Organization creation is atomic.** Added authenticated-only `org_create` to create a team organization and its caller-bound owner membership in one transaction, revoked direct authenticated/anon organization INSERT, and moved both frontend creation paths to the RPC. Live rolled-back verification confirmed the owner row and ACLs. (`supabase/migrations/20260715060000_atomic_organization_creation.sql`)
 - `2026-07-15` — **Closed D2 membership/invitation privilege escalation.** Ordinary members can no longer self-promote, remove owners, add/reactivate arbitrary members, enumerate/manage invitations, mint owner invitations, or spoof ownership transfer. Owner/admin rules now match the org/project UI; self-leave remains supported; last-owner checks serialize in the database; one stale project membership org id was repaired; invitation email routes accept only `invitationId` and derive stored delivery data via `inv_get_managed`. (`supabase/migrations/20260715053000_*`, `20260715053100_*`)

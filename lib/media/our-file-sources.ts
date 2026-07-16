@@ -167,8 +167,9 @@ const OUR_FILE_ORIGINS: OurFileOrigin[] = [
       mime: mime ?? undefined,
     }),
   },
-  // 4. Share-link byte endpoint — `{backend}/share/{token}/download` (or
-  //    `/share/{token}`). The handler resolves bytes by token; lifetime is
+  // 4. Share-link byte endpoint — `{backend}/share/{token}/download` (bare
+  //    `/share/{token}` also accepted for URLs minted before the canonical
+  //    unification). The handler resolves bytes by token; lifetime is
   //    backend-managed.
   {
     label: "share-link",

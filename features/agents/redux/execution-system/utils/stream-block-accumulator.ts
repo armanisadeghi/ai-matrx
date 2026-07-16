@@ -702,7 +702,7 @@ export class StreamBlockAccumulator {
     // re-derives url/label/surrounding-text from the line content, discovers
     // the real file type, and renders the universal inline previewer (or
     // degrades to the link). Confirm with the full recognizer so a prefilter
-    // marker hit on a non-file URL (e.g. an app `/share/` page) falls to text.
+    // marker hit on a non-file URL (e.g. an app `/s/` share page) falls to text.
     if (
       hasCandidate(flags, Candidate.MATRX_FILE) &&
       detectMatrxFileMarkdown(rawLine).isMatrxFile

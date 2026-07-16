@@ -17,10 +17,8 @@ import type {
   CloudFolder,
   CloudFolderRow,
   CloudShareLink,
-  CloudShareLinkRow,
   CloudTreeRow,
   FileRecordApi,
-  FilesShareLinkRpcRow,
   GranteeType,
   IamResourcePermissionRpcRow,
   MediaRef,
@@ -28,6 +26,7 @@ import type {
   ResourceType,
   Visibility,
 } from "@/features/files/types";
+import type { ShareLink as CanonicalShareLink } from "@/utils/permissions/shareLinks";
 
 // ---------------------------------------------------------------------------
 // Narrowing helpers
@@ -326,44 +325,30 @@ export function rpcPermissionRowToCloudFilePermission(
 // ---------------------------------------------------------------------------
 
 /**
- * Map the summary JSON from `files.fn_*_share_link` RPCs into the file domain
- * shape. The RPC omits `id`, `created_at`, `is_active`, and `organization_id`
- * — callers that need the full row should read `files.share_links` directly
- * (see `loadShareLinks`).
+ * Map a canonical share link (`utils/permissions/shareLinks.ts` `ShareLink`,
+ * from the `list_share_links` / `create_share_link` RPC family over
+ * `platform.share_links`) into the file domain shape. The RPCs don't echo the
+ * resource identity, so the caller supplies it.
  */
-export function rpcShareLinkRowToCloudShareLink(
-  row: FilesShareLinkRpcRow,
+export function canonicalShareLinkToCloudShareLink(
+  link: CanonicalShareLink,
+  resourceType: ResourceType,
+  resourceId: string,
 ): CloudShareLink {
-  const level = toPermissionLevel(row.permission_level);
   return {
-    id: row.share_token,
-    resourceId: row.resource_id,
-    resourceType: toResourceType(row.resource_type),
-    shareToken: row.share_token,
-    permissionLevel: level === "admin" ? "write" : level,
-    createdBy: row.created_by,
-    createdAt: new Date().toISOString(),
-    expiresAt: row.expires_at,
-    maxUses: row.max_uses,
-    useCount: row.use_count ?? 0,
-    isActive: true,
-  };
-}
-
-export function dbRowToCloudShareLink(row: CloudShareLinkRow): CloudShareLink {
-  const level = toPermissionLevel(row.permission_level);
-  return {
-    id: row.id,
-    resourceId: row.resource_id,
-    resourceType: toResourceType(row.resource_type),
-    shareToken: row.share_token,
-    permissionLevel: level === "admin" ? "write" : level,
-    createdBy: row.created_by,
-    createdAt: row.created_at,
-    expiresAt: row.expires_at,
-    maxUses: row.max_uses,
-    useCount: row.use_count,
-    isActive: row.is_active,
+    id: link.id,
+    resourceId,
+    resourceType,
+    shareToken: link.token,
+    // File links are minted viewer/editor; anything above editor still means
+    // "can modify" for display purposes.
+    permissionLevel: link.permissionLevel === "viewer" ? "viewer" : "editor",
+    label: link.label,
+    createdAt: link.createdAt,
+    expiresAt: link.expiresAt,
+    maxUses: link.maxUses,
+    useCount: link.useCount,
+    isActive: link.isActive,
   };
 }
 

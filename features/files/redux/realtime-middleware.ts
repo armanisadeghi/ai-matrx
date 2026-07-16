@@ -47,11 +47,11 @@ import type {
 } from "@supabase/supabase-js";
 
 import {
+  canonicalShareLinkToCloudShareLink,
   dbRowToCloudFile,
   dbRowToCloudFilePermission,
   dbRowToCloudFileVersion,
   dbRowToCloudFolder,
-  dbRowToCloudShareLink,
 } from "./converters";
 import { isOwnEcho, ledgerSize } from "./request-ledger";
 import { reconcileTree } from "./thunks";
@@ -77,8 +77,24 @@ import type {
   CloudFolderRow,
   CloudFilePermissionRow,
   CloudFileVersionRow,
-  CloudShareLinkRow,
+  CloudShareLink,
 } from "@/features/files/types";
+
+/** Raw `platform.share_links` row as delivered by postgres_changes. */
+interface PlatformShareLinkRow {
+  id?: string;
+  resource_type?: string;
+  resource_id?: string;
+  token?: string;
+  permission_level?: string;
+  label?: string | null;
+  expires_at?: string | null;
+  max_uses?: number | null;
+  use_count?: number | null;
+  is_active?: boolean;
+  created_at?: string | null;
+  last_used_at?: string | null;
+}
 
 // ---------------------------------------------------------------------------
 // Action creators — not reducers, just signals consumed by this middleware.
@@ -186,7 +202,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     channel = supabase
       .channel(`cloud-files:${userId}`)
       // Files — NO owner filter. We rely on Realtime RLS authorization (same
-      // pattern as files.file_versions / files.share_links below) so the user
+      // pattern as files.file_versions / platform.share_links below) so the user
       // receives changes to every file they can SELECT: their own AND files
       // shared WITH them. A column filter on created_by would silently drop
       // shared-with-me updates (the row's created_by is someone else's id).
@@ -236,12 +252,14 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
         },
         (payload) => handlePermissionPayload(payload),
       )
-      // Share links — no filter; RLS enforces.
+      // Share links — canonical platform.share_links. RLS (owner-only
+      // SELECT) bounds delivery to links this user created. Requires the
+      // table in the realtime publication.
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "files",
+          schema: "platform",
           table: "share_links",
         },
         (payload) => handleShareLinkPayload(payload),
@@ -532,24 +550,44 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
   ): void {
     dispatch(touchRealtime());
-    const newRow = payload.new as unknown as CloudShareLinkRow | undefined;
-    const oldRow = payload.old as unknown as CloudShareLinkRow | undefined;
+    const newRow = payload.new as PlatformShareLinkRow | undefined;
+    const oldRow = payload.old as PlatformShareLinkRow | undefined;
+    // platform.share_links spans EVERY shareable type — this slice only
+    // tracks file/folder links.
+    const resourceType = newRow?.resource_type ?? oldRow?.resource_type;
+    if (resourceType !== "file" && resourceType !== "folder") return;
     const resourceId = newRow?.resource_id ?? oldRow?.resource_id;
     if (!resourceId) return;
 
     const state = store.getState() as StateWithCloudFiles;
     const existing = state.cloudFiles.shareLinksByResourceId[resourceId] ?? [];
 
-    if (payload.eventType === "DELETE") {
-      const deletedToken = oldRow?.share_token;
-      if (deletedToken) {
-        dispatch(removeShareLink({ shareToken: deletedToken }));
+    if (payload.eventType === "DELETE" || newRow?.is_active === false) {
+      const removedId = oldRow?.id ?? newRow?.id;
+      if (removedId) {
+        dispatch(removeShareLink({ linkId: removedId }));
       }
       return;
     }
 
-    if (!newRow?.id) return;
-    const converted = dbRowToCloudShareLink(newRow);
+    if (!newRow?.id || !newRow.token) return;
+    const converted = canonicalShareLinkToCloudShareLink(
+      {
+        id: newRow.id,
+        token: newRow.token,
+        permissionLevel: (newRow.permission_level ??
+          "viewer") as CloudShareLink["permissionLevel"],
+        label: newRow.label ?? null,
+        expiresAt: newRow.expires_at ?? null,
+        maxUses: newRow.max_uses ?? null,
+        useCount: newRow.use_count ?? 0,
+        isActive: newRow.is_active ?? true,
+        createdAt: newRow.created_at ?? null,
+        lastUsedAt: newRow.last_used_at ?? null,
+      },
+      resourceType,
+      resourceId,
+    );
     const next = [converted, ...existing.filter((l) => l.id !== converted.id)];
     dispatch(upsertShareLinksForResource({ resourceId, shareLinks: next }));
   }

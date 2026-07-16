@@ -62,13 +62,6 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/files/share",
-      label: "Share links",
-      description: "Manage outbound share links.",
-      filePath: "app/(core)/files/share/page.tsx",
-      status: "Live",
-    },
-    {
       url: "/files/folders",
       label: "Folders",
       description: "Folder management view.",

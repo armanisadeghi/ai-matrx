@@ -326,7 +326,7 @@ export function ConversationInput({
               folderPath,
               visibility: "private",
               createShareLink: true,
-              shareLinkPermissionLevel: "read",
+              shareLinkPermissionLevel: "viewer",
             },
           );
           // Store the cld_files UUID as `id` and the share URL as `url`.

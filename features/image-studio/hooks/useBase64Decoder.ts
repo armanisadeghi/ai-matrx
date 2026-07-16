@@ -255,7 +255,7 @@ export function useBase64Decoder(
           folderPath,
           visibility: "private",
           createShareLink: true,
-          shareLinkPermissionLevel: "read",
+          shareLinkPermissionLevel: "viewer",
           metadata: {
             source: "image-studio-from-base64",
             mime_type: decoded.mimeType,
@@ -273,7 +273,7 @@ export function useBase64Decoder(
 
       const next: SaveResult = {
         fileId: normalized.fileId,
-        shareUrl: normalized.url ?? `/share/${normalized.shareToken}`,
+        shareUrl: normalized.url ?? `/s/${normalized.shareToken}`,
         shareToken: normalized.shareToken,
         filePath: `${folderPath}/${filename}`,
       };

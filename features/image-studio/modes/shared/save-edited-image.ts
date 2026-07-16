@@ -61,7 +61,7 @@ export async function saveEditedImage(args: {
       metadata: args.metadata,
       changeSummary: args.changeSummary,
       createShareLink: true,
-      shareLinkPermissionLevel: "read",
+      shareLinkPermissionLevel: "viewer",
     },
   );
   if (!normalized.fileId || !normalized.shareToken || !normalized.url) {

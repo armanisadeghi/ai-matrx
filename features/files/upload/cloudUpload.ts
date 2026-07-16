@@ -41,7 +41,10 @@ import {
   uploadFile as Files_uploadFile,
   uploadFileWithProgress as Files_uploadFileWithProgress,
 } from "@/features/files/api/files";
-import { createFileShareLink } from "@/features/files/api/share-links";
+import {
+  createShareLink as createCanonicalShareLink,
+  shareLinkUrl,
+} from "@/utils/permissions/shareLinks";
 import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import {
   newRequestId,
@@ -97,14 +100,11 @@ export interface CloudUploadOptions {
   signal?: AbortSignal;
   /**
    * If true, also creates a permanent share link after upload. Returns
-   * the `shareUrl` (`/share/:token`) and the raw `shareToken`.
+   * the `shareUrl` (`/s/:token`) and the raw `shareToken`.
    */
   createShareLink?: boolean;
-  /**
-   * Share-link permission. Note: `admin` is only valid on direct
-   * `public.permissions` grants — share links accept `read` / `write`.
-   */
-  shareLinkPermissionLevel?: "read" | "write";
+  /** Share-link permission — canonical `viewer` / `editor` levels. */
+  shareLinkPermissionLevel?: "viewer" | "editor";
   shareLinkExpiresAt?: string | null;
   shareLinkMaxUses?: number | null;
 }
@@ -120,7 +120,7 @@ export interface CloudUploadSuccess {
   shareToken?: string;
   /**
    * The PUBLIC LANDING PAGE for the share link, e.g.
-   * `https://app.example.com/share/<token>`. Renders an HTML page with
+   * `https://app.example.com/s/<token>`. Renders an HTML page with
    * file metadata and a download button. **Do NOT** use this for
    * `<img src>`, `<video src>`, or hot-linking — the page is HTML, not
    * the file bytes.
@@ -128,7 +128,7 @@ export interface CloudUploadSuccess {
   shareUrl?: string;
   /**
    * The PUBLIC DIRECT URL for the file bytes — points at Python's
-   * `{BACKEND}/share/{token}` resolver, which 302-redirects to a freshly
+   * `{BACKEND}/share/{token}/download` endpoint, which 302-redirects to a freshly
    * signed S3 URL each time it's hit. Embed in `<img src>`, `<a href
    * download>`, Slack/Notion unfurls, OG images. No Next.js hop.
    *
@@ -177,18 +177,39 @@ function resolveFilePath(file: File, options: CloudUploadOptions): string {
   return file.name;
 }
 
-function buildShareUrl(token: string): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin.replace(/\/$/, "")}/share/${token}`;
-}
-
 /**
  * Build the public DIRECT-FILE URL for a share token — points at Python's
- * `/share/{token}` resolver, which 302s to the signed S3 URL. No Next.js
- * hop. Embed in `<img src>`, `<video src>`, downloads, Slack unfurls, etc.
+ * `/share/{token}/download` byte endpoint. No Next.js hop. Embed in
+ * `<img src>`, `<video src>`, downloads, Slack unfurls, etc.
  */
 function buildDirectShareUrl(token: string): string {
   return pythonShareUrl(token);
+}
+
+/**
+ * Mint a canonical share link (`platform.share_links`) for a freshly
+ * uploaded file. Throws on failure so both upload paths surface the
+ * distinct `share_link_failed` error.
+ */
+async function mintUploadShareLink(
+  fileId: string,
+  options: CloudUploadOptions,
+): Promise<{ shareToken: string; shareUrl: string; directUrl: string }> {
+  const created = await createCanonicalShareLink({
+    resourceType: "file",
+    resourceId: fileId,
+    permissionLevel: options.shareLinkPermissionLevel ?? "viewer",
+    expiresAt: options.shareLinkExpiresAt ?? null,
+    maxUses: options.shareLinkMaxUses ?? null,
+  });
+  if (!created.success || !created.token) {
+    throw new Error(created.error ?? "Share link creation failed");
+  }
+  return {
+    shareToken: created.token,
+    shareUrl: shareLinkUrl(created.token),
+    directUrl: buildDirectShareUrl(created.token),
+  };
 }
 
 // ─── Upload primitive (no Redux side effects) ────────────────────────────
@@ -244,21 +265,13 @@ export async function cloudUploadRaw(
     let directUrl: string | undefined;
     if (options.createShareLink) {
       try {
-        const linkRes = await createFileShareLink(
-          upload.data.file_id,
-          {
-            permission_level: options.shareLinkPermissionLevel ?? "read",
-            expires_at: options.shareLinkExpiresAt ?? null,
-            max_uses: options.shareLinkMaxUses ?? null,
-          },
-          { requestId: newRequestId(), signal: options.signal },
-        );
-        shareToken = linkRes.data.share_token;
-        shareUrl = buildShareUrl(shareToken);
         // Always emit the direct-file URL alongside the page URL.
         // Consumers default to `directUrl` for img/video/audio/iframe
         // src; `shareUrl` is for "click here to view file metadata".
-        directUrl = buildDirectShareUrl(shareToken);
+        ({ shareToken, shareUrl, directUrl } = await mintUploadShareLink(
+          upload.data.file_id,
+          options,
+        ));
       } catch (linkErr) {
         // Upload succeeded; share-link creation didn't. Surface a
         // distinct error so the caller can decide whether to keep the
@@ -407,21 +420,13 @@ export async function cloudUpload(
     let directUrl: string | undefined;
     if (options.createShareLink) {
       try {
-        const linkRes = await createFileShareLink(
-          upload.data.file_id,
-          {
-            permission_level: options.shareLinkPermissionLevel ?? "read",
-            expires_at: options.shareLinkExpiresAt ?? null,
-            max_uses: options.shareLinkMaxUses ?? null,
-          },
-          { requestId: newRequestId(), signal: options.signal },
-        );
-        shareToken = linkRes.data.share_token;
-        shareUrl = buildShareUrl(shareToken);
         // Always emit the direct-file URL alongside the page URL.
         // Consumers default to `directUrl` for img/video/audio/iframe
         // src; `shareUrl` is for "click here to view file metadata".
-        directUrl = buildDirectShareUrl(shareToken);
+        ({ shareToken, shareUrl, directUrl } = await mintUploadShareLink(
+          upload.data.file_id,
+          options,
+        ));
       } catch (linkErr) {
         return {
           ok: false,

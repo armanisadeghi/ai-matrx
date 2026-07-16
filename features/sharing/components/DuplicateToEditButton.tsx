@@ -58,7 +58,7 @@ export function DuplicateToEditButton({
       ? "Continue this chat"
       : resourceType === "fc_set"
         ? "Study these flashcards"
-        : resourceType === "quiz_sessions"
+        : resourceType === "quiz_session"
           ? "Take this quiz"
           : "Make a copy");
 
@@ -67,7 +67,7 @@ export function DuplicateToEditButton({
       ? MessageSquare
       : resourceType === "fc_set"
         ? GraduationCap
-        : resourceType === "quiz_sessions"
+        : resourceType === "quiz_session"
           ? ListChecks
           : Copy;
 

@@ -386,12 +386,12 @@ export interface UploadOpts {
   /**
    * If true, the handler also creates a permanent share link after upload.
    * The returned NormalizedFile carries `shareToken` + `url` pointing at
-   * Python's `{BACKEND}/share/{token}` resolver (no Next.js hop, no
+   * Python's `{BACKEND}/share/{token}/download` endpoint (no Next.js hop, no
    * expiry — embed in `<img src>`, persist to DB columns, etc.).
    */
   createShareLink?: boolean;
   /** Default "read". `admin` is not valid for share links. */
-  shareLinkPermissionLevel?: "read" | "write";
+  shareLinkPermissionLevel?: "viewer" | "editor";
   shareLinkExpiresAt?: string | null;
   shareLinkMaxUses?: number | null;
   /**

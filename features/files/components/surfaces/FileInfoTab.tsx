@@ -496,15 +496,15 @@ function CopyableShareLink({
   // We can't pre-build the public URL without window context, but the
   // share token alone is enough to identify the link in the row text;
   // the Copy button uses the canonical action that resolves it to the
-  // full /share/{token} URL on the current origin.
+  // full byte URL for the token.
   return (
     <div className="grid grid-cols-[8rem_1fr_auto] items-baseline gap-2 px-3 py-2 border-b border-border last:border-b-0">
       <span className="text-xs text-muted-foreground">Active link</span>
       <span
         className="truncate text-xs text-foreground font-mono min-w-0"
-        title={`/share/${shareToken}`}
+        title={`/s/${shareToken}`}
       >
-        /share/{shareToken}
+        /s/{shareToken}
       </span>
       <button
         type="button"

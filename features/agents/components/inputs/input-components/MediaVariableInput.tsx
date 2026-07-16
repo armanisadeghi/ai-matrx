@@ -155,7 +155,7 @@ export function MediaVariableInput({
             folderPath: meta.folderPath,
             visibility: "private",
             createShareLink: true,
-            shareLinkPermissionLevel: "read",
+            shareLinkPermissionLevel: "viewer",
           },
         );
         // Prefer file_id over URL on the wire — it's the canonical

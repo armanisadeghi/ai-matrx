@@ -7,21 +7,24 @@
  * involvement.
  *
  * Design note — "all variants in one object":
- *   The deleted `/api/share/{token}/file` Next.js redirect had exactly
- *   ONE possible URL. Python now exposes the same bytes via several
- *   slightly-different URLs (inline vs attachment, JSON metadata,
- *   pretty landing page). Rather than add a new function for every
- *   future tweak, the canonical builders here (`shareUrls`, `fileUrls`)
- *   return ALL the variants up front and let the caller pick. Single
- *   spelling for "everything you can do with a token / file id."
+ *   Python exposes the same bytes via slightly-different URLs (inline vs
+ *   attachment) and the FE has a share landing page. Rather than add a new
+ *   function for every future tweak, the canonical builders here
+ *   (`shareUrls`, `fileUrls`) return ALL the variants up front and let the
+ *   caller pick. Single spelling for "everything you can do with a
+ *   token / file id."
  *
- *   Single-string helpers (`pythonShareUrl`, `pythonShareResolveUrl`,
- *   `pythonFileDownloadUrl`, `pythonFileInlineUrl`) are kept as thin
- *   wrappers so existing callers don't churn. Prefer the object form
- *   in new code.
+ *   Single-string helpers (`pythonShareUrl`, `pythonFileDownloadUrl`,
+ *   `pythonFileInlineUrl`) are kept as thin wrappers so existing callers
+ *   don't churn. Prefer the object form in new code.
+ *
+ * Tokens are CANONICAL share-link tokens (`platform.share_links`), minted via
+ * `createShareLink` in `@/utils/permissions/shareLinks` — the landing page is
+ * `/s/{token}` and the byte endpoint is Python's `/share/{token}/download`.
  */
 
 import { resolveFilesBaseUrl } from "@/lib/python-client";
+import { shareLinkUrl } from "@/utils/permissions/shareLinks";
 
 export function pythonBaseUrl(): string {
   return resolveFilesBaseUrl();
@@ -35,9 +38,7 @@ export interface ShareUrls {
   /**
    * Bytes endpoint with `inline` Content-Disposition (the default).
    * Works as `<img src>`, `<video src>`, `<audio src>`, PDF preview, or a
-   * raw download link a recipient can paste anywhere. This is the
-   * canonical replacement for the deleted Next.js route
-   * `/api/share/{token}/file`.
+   * raw download link a recipient can paste anywhere.
    *
    * Image / video / audio / PDF render inline. Dangerous types
    * (HTML, SVG, JS) are forced to `attachment` server-side.
@@ -51,17 +52,9 @@ export interface ShareUrls {
    */
   attachment: string;
   /**
-   * JSON metadata endpoint. Returns `ShareLinkResolveResponse`
-   * (`url`, `file_name`, `mime_type`, `file_size`, `expires_at`,
-   * `max_uses`, `use_count`, …). Used by the public `/share/[token]`
-   * landing page and `resolveShareLink()`. Never use for `<img src>`.
-   */
-  resolve: string;
-  /**
-   * Pretty share landing page on the FE (HTML preview + download
-   * button). Useful as a clickable link in chat / email / docs;
-   * NOT a media src. Falls back to a relative `/share/{token}` if
-   * called outside the browser (no `window.location.origin`).
+   * The canonical share landing page on the FE — `/s/{token}` (metadata via
+   * the `resolve_share_token` RPC + preview + download button). Useful as a
+   * clickable link in chat / email / docs; NOT a media src.
    */
   page: string;
 }
@@ -76,15 +69,13 @@ export function shareUrls(
 ): ShareUrls {
   const t = encodeURIComponent(token);
   const backend = pythonBaseUrl();
-  const origin =
-    opts?.appOrigin ??
-    (typeof window !== "undefined" ? window.location.origin : "");
   const base = `${backend}/share/${t}`;
   return {
     download: `${base}/download`,
     attachment: `${base}/download?inline=false`,
-    resolve: base,
-    page: origin ? `${origin}/share/${t}` : `/share/${t}`,
+    page: opts?.appOrigin
+      ? `${opts.appOrigin.replace(/\/$/, "")}/s/${t}`
+      : shareLinkUrl(t),
   };
 }
 
@@ -92,20 +83,9 @@ export function shareUrls(
  * Python's public byte-streaming share endpoint. Convenience wrapper
  * around `shareUrls(token).download` for callers that just want the
  * single canonical embeddable URL.
- *
- * Replaces the deleted Next.js route `/api/share/{token}/file`.
  */
 export function pythonShareUrl(token: string): string {
   return shareUrls(token).download;
-}
-
-/**
- * Python's JSON share-resolver endpoint. Returns metadata + a fresh
- * signed S3 URL — used by the public `/share/[token]` landing page
- * and `resolveShareLink()`, never as a media src.
- */
-export function pythonShareResolveUrl(token: string): string {
-  return shareUrls(token).resolve;
 }
 
 // ---------------------------------------------------------------------------
@@ -181,12 +161,10 @@ export function tokenFromShareUrl(url: string): string | null {
  * in the database. The intent is what the user clicks when they want to
  * SEE the file (not download it):
  *
- *   - Our `/share/{token}/download` URLs → FE landing page at
- *     `${origin}/share/{token}` (preview UI + a download button + an
- *     "Open in app" affordance for documents). This is what an admin
- *     wants when they click a screenshot in the feedback dialog.
- *   - Our `/share/{token}` Python JSON resolver → same FE landing page
- *     (the JSON URL is not human-friendly).
+ *   - Our `/share/{token}/download` (or bare `/share/{token}`) URLs → the
+ *     canonical FE landing page at `${origin}/s/{token}` (metadata + preview
+ *     + download button). This is what an admin wants when they click a
+ *     screenshot in the feedback dialog.
  *   - Anything else (legacy Supabase-Storage URLs, external URLs) →
  *     returned unchanged. Browsers render image bytes inline regardless,
  *     and we have no viewer page for them anyway.

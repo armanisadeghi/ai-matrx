@@ -563,13 +563,13 @@ export function useCropStudioController(
                       folderPath,
                       visibility: "private",
                       createShareLink: true,
-                      shareLinkPermissionLevel: "read",
+                      shareLinkPermissionLevel: "viewer",
                     }
                   : {
                       folderPath,
                       visibility: "private",
                       createShareLink: true,
-                      shareLinkPermissionLevel: "read",
+                      shareLinkPermissionLevel: "viewer",
                     },
               );
               return {

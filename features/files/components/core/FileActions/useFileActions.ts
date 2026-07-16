@@ -248,7 +248,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
         fileId,
       );
       const cachedReadLink = cachedLinks.find(
-        (l) => l.permissionLevel === "read",
+        (l) => l.permissionLevel === "viewer",
       );
       if (cachedReadLink) {
         token = cachedReadLink.shareToken;
@@ -256,14 +256,14 @@ export function useFileActions(fileId: string): FileActionHandlers {
         // Cache may be cold (no one has opened the Share dialog this
         // session). Load before deciding to create — keeps us from
         // accidentally creating duplicate links.
-        await dispatch(loadShareLinks({ resourceId: fileId }))
+        await dispatch(loadShareLinks({ resourceId: fileId, resourceType: "file" }))
           .unwrap()
           .catch(() => undefined);
         const refreshed = selectActiveShareLinksForResource(
           store.getState(),
           fileId,
         );
-        const reusable = refreshed.find((l) => l.permissionLevel === "read");
+        const reusable = refreshed.find((l) => l.permissionLevel === "viewer");
         if (reusable) {
           token = reusable.shareToken;
         } else {
@@ -273,7 +273,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
             createShareLink({
               resourceId: fileId,
               resourceType: "file",
-              permissionLevel: "read",
+              permissionLevel: "viewer",
             }),
           ).unwrap();
           token = link.shareToken;

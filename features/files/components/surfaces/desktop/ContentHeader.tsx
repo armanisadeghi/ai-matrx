@@ -146,7 +146,7 @@ export function ContentHeader({
       return;
     }
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    window.open(`${origin}/share/${link.shareToken}`, "_blank");
+    window.open(`${origin}/s/${link.shareToken}`, "_blank");
   };
 
   return (

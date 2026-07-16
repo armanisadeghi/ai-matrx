@@ -155,7 +155,9 @@ export function useFileShortcuts(): {
         e.preventDefault();
         void (async () => {
           try {
-            await dispatch(loadShareLinks({ resourceId: target.id }))
+            await dispatch(
+              loadShareLinks({ resourceId: target.id, resourceType: target.kind }),
+            )
               .unwrap()
               .catch(() => undefined);
             const links = selectActiveShareLinksForResource(
@@ -163,14 +165,14 @@ export function useFileShortcuts(): {
               target.id,
             );
             let token = links.find(
-              (l) => l.permissionLevel === "read",
+              (l) => l.permissionLevel === "viewer",
             )?.shareToken;
             if (!token) {
               const link = await dispatch(
                 createShareLinkThunk({
                   resourceId: target.id,
                   resourceType: target.kind,
-                  permissionLevel: "read",
+                  permissionLevel: "viewer",
                 }),
               ).unwrap();
               token = link.shareToken;
@@ -178,7 +180,7 @@ export function useFileShortcuts(): {
             const url =
               target.kind === "file"
                 ? pythonShareUrl(token)
-                : `${window.location.origin}/share/${token}`;
+                : `${window.location.origin}/s/${token}`;
             if (navigator.clipboard) {
               await navigator.clipboard.writeText(url);
             }

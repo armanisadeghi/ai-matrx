@@ -59,7 +59,7 @@ export default function OrgTablesPage() {
       ) : (
         <OrgResourceList
           orgId={resolvedOrgId}
-          resourceType="udt_datasets"
+          resourceType="dataset"
           tableName="udt_datasets"
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}

@@ -44,7 +44,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           folderPath,
           visibility: "public",
           createShareLink: true,
-          shareLinkPermissionLevel: "read",
+          shareLinkPermissionLevel: "viewer",
         },
       );
       const url = normalized.url;

@@ -137,7 +137,7 @@ export async function uploadInternal(
   // whose `normalized.url` is empty, fall through to the share-token URLs.
   if (result.shareToken) {
     const appShareUrl = opts.appOrigin
-      ? `${opts.appOrigin.replace(/\/$/, "")}/share/${result.shareToken}`
+      ? `${opts.appOrigin.replace(/\/$/, "")}/s/${result.shareToken}`
       : undefined;
     const url =
       normalized.url ||

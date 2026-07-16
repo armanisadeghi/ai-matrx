@@ -15,13 +15,13 @@ If you're modifying anything in this feature, **also update this doc and [migrat
 ## TL;DR
 
 - **Canonical rule (2026-06-26):** our FE has Supabase, so **every pure UI↔DB op goes direct via supabase-js** — never through the Python REST `/files/*` API. That API exists for consumers _without_ Supabase (the extension, external clients); for us it's two wasted hops through a slow server. Per-operation direct-vs-server map: [CLOUD_FILES_RPC_DISPOSITIONS.md](CLOUD_FILES_RPC_DISPOSITIONS.md).
-  - **Direct (supabase-js):** reads (tree, folder contents, search, trash, usage, versions, permissions, share-links) via [filesDb()](filesDb.ts) table queries or auth-checked `SECURITY DEFINER` RPCs (`get_user_file_tree`, `search_files`, `list_trash`, `get_usage_status`, …); and metadata writes (soft-delete, rename, move, restore markers, permission/share-link CRUD) via the mutation RPCs.
-  - **Python REST only for:** file **bytes** (upload/download — S3), URL **signing**, heavy **processing** (RAG, variants), and the **public/anon** share-resolve path.
+  - **Direct (supabase-js):** reads (tree, folder contents, search, trash, usage, versions, permissions) via [filesDb()](filesDb.ts) table queries or auth-checked `SECURITY DEFINER` RPCs (`get_user_file_tree`, `search_files`, `list_trash`, `get_usage_status`, …); metadata writes (soft-delete, rename, move, restore markers, permission CRUD) via the mutation RPCs; and share links via the CANONICAL RPC family (`create_share_link` / `list_share_links` / `revoke_share_link` over `platform.share_links`, wrapped by `utils/permissions/shareLinks.ts`).
+  - **Python REST only for:** file **bytes** (upload/download — S3, incl. the public token-validated `GET /share/{token}/download`), URL **signing**, and heavy **processing** (RAG, variants).
 - **Security gate:** the mutation RPCs (`soft_delete_file`, `hard_delete_file`, `restore_file`, `restore_folder`, `rename_folder`, `soft_delete_folder`, `bump_version`, `prune_old_versions`) are `SECURITY DEFINER` with **no `auth.uid()` ownership check** today — authorization lives only in the Python layer. They MUST be hardened (`auth.uid()` + `iam.has_access(...,'editor')`, mirroring the read RPCs) **before** any direct browser call, or it's an IDOR hole.
-- **Live updates** come from Supabase Realtime on `cloud_files`, `cloud_file_versions`, `cloud_file_permissions`, `cloud_file_share_links`.
+- **Live updates** come from Supabase Realtime on `files.files`, `files.folders`, `files.file_versions`, `iam.permissions`, and `platform.share_links`.
 - **State** lives in a single `cloudFiles` Redux slice, modeled on [features/agents/redux/agent-shortcuts/](../agents/redux/agent-shortcuts/): normalized, dirty-tracked, optimistic + rollback.
 - **Components** are built once in `features/files/components/core/` and composed into 6 **surfaces**: Page, WindowPanel, MobileStack, Embedded, Dialog, Drawer. The core never knows its host.
-- **Route** for the full app is [app/(a)/files/](<../../app/(a)/files/>) (URL `/files`; `/cloud-files/*` 308s here permanently). Public shares under [app/(public)/share/[token]/](<../../app/(public)/share/>).
+- **Route** for the full app is [app/(a)/files/](<../../app/(a)/files/>) (URL `/files`; `/cloud-files/*` 308s here permanently). Public shares render on the canonical share page [app/(public)/s/[token]/](<../../app/(public)/s/>).
 
 **Backend contract:** [from_python/UPDATES.md](from_python/UPDATES.md) — Python-team-owned. Never drift from it. Anything FE wants from Python goes in [for_python/REQUESTS.md](for_python/REQUESTS.md).
 
@@ -80,7 +80,7 @@ Tables (Postgres, RLS enforced):
 - `cloud_folders` — folder metadata. Hierarchical via `parent_folder_id`.
 - `cloud_file_versions` — every version's bytes pointer. Identifies by `(file_id, version_number)`.
 - `cloud_file_permissions` — `resource_id`, `resource_type` (file | folder), `grantee_id`, `grantee_type` (user | group), `permission_level` (read | write | admin), `expires_at`.
-- `cloud_file_share_links` — `share_token`, `resource_*`, `permission_level`, `expires_at`, `max_uses`, `use_count`, `is_active`.
+- `platform.share_links` (canonical, ALL resource types) — `token`, `resource_*`, `permission_level` (viewer | editor | admin), `label`, `expires_at`, `max_uses`, `use_count`, `is_active`, `last_used_at`. The legacy `files.share_links` table is graveyarded (Wave F, 2026-07-15).
 - `cloud_file_groups` — user groups for bulk permissions.
 
 RPC:
@@ -478,6 +478,8 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 ---
 
 ## Change log
+
+- **2026-07-15 — Wave F: share links unified onto the canonical system.** `features/files/api/share-links.ts` (legacy `files.fn_*_share_link` RPCs) deleted; the `createShareLink` / `loadShareLinks` / `revokeShareLink` (renamed from `deactivateShareLink`) thunks now use `utils/permissions/shareLinks.ts` over `platform.share_links`; `CloudShareLink.permissionLevel` is `viewer|editor`; realtime repointed to `platform.share_links`; landing pages are `/s/{token}` (legacy `/share/[token]` + `/files/share/[token]` routes deleted); `files.share_links` graveyarded. Full detail: [handler/FEATURE.md](handler/FEATURE.md) Change log + `features/sharing/FEATURE.md`.
 
 - **2026-07-15 — Selected PDF page client.** Added the reusable typed `api/pdf-pages.ts` client for `POST /files/{file_id}/pdf-pages`. It accepts ordered arbitrary pages/ranges and returns one cached derivative `FileRef` plus source→output page mapping and fetch/cache diagnostics. The endpoint is part of the standalone matrx-files ownership map (behind the existing browser-cutover flag) and is consumed by RAG exact-page previews; it remains available through aidream before cutover.
 

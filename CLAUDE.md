@@ -141,9 +141,9 @@ Do not invent a new admin-gate primitive. `selectIsSuperAdmin` / `requireSuperAd
 
 Some tables are super-admin-only and the codebase is hostile territory — any contributor can edit a TS check. Defense is at the DB: RLS deny-writes + `SECURITY DEFINER` RPCs gated by `is_super_admin()` + audit-log trigger. One RPC family per protected resource; one audit log to monitor.
 
-**Currently protected:** `public.admins`, `public.admin_audit_log`.
+**Currently protected:** `admin.admins`, `admin.admin_audit_log` (schema `admin`, not `public`).
 
-**Invoke the `protected-resources` skill** before: adding an RLS policy or `SECURITY DEFINER` RPC, touching the admin RPC family (`admin_promote` / `admin_update` / `admin_revoke` / `admin_list` / `admin_list_audit` / `admin_find_user_by_email` / `is_super_admin` / `get_admin_status`), writing `.from('admins')` or `.from('admin_audit_log')`, using `createAdminClient()` for a user-initiated write to a sensitive table, or locking down a new sensitive table.
+**Invoke the `protected-resources` skill** before: adding an RLS policy or `SECURITY DEFINER` RPC, touching the admin RPC family (`admin_promote` / `admin_update` / `admin_revoke` / `admin_list` / `admin_list_audit` / `admin_find_user_by_email` / `is_super_admin` / `get_admin_status`), writing `.schema('admin').from('admins')` or `.from('admin_audit_log')`, using `createAdminClient()` for a user-initiated write to a sensitive table, or locking down a new sensitive table.
 
 **Two rules:** one mutation path per protected table (wrap new writes in an RPC); never disable RLS or skip `is_super_admin()` inside the RPC.
 
@@ -345,6 +345,10 @@ Hard rules: no JSX prop spread in `features/overlays/OverlayController.tsx`; no 
 ## Cross-Repo — App Config (remote runtime configuration for desktop clients)
 
 Shipped desktop apps read non-secret runtime values (server URLs, flags, min versions) from one anon-readable Supabase `app_config` row per app. This repo's role: the admin UI at `/administration/app-config` (editor with diff-confirmed save, history/restore — writes ONLY via the `admin_update_app_config` RPC; code in `features/admin/app-config/`). **Live since 2026-07-14.** Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/app-config/FEATURE.md` — read it before touching this feature in ANY repo.
+
+## Cross-Repo — Access Architecture (permissions, sharing, memberships, associations)
+
+How a row becomes visible platform-wide — ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, `visibility`, admin level — spans this repo, aidream, and the shared DB. Cross-repo system-of-record: `/Volumes/Samsung2TB/code/common-docs/access-architecture/FEATURE.md` (symlinked here as `common-docs/`) — read it before touching any permission/sharing/scope-access code.
 
 ---
 

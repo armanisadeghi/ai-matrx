@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, ExternalLink, Link, Loader2, Trash2 } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
+import { shareLinkUrl } from "@/utils/permissions/shareLinks";
 import {
   Dialog,
   DialogContent,
@@ -29,8 +30,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveShareLinksForResource } from "@/features/files/redux/selectors";
 import {
   createShareLink,
-  deactivateShareLink,
   loadShareLinks,
+  revokeShareLink,
 } from "@/features/files/redux/thunks";
 import { formatAbsoluteDate } from "@/features/files/utils/format";
 import type { ResourceType } from "@/features/files/types";
@@ -101,8 +102,8 @@ export function ShareLinkDialogBody({
     selectActiveShareLinksForResource(s, resourceId),
   );
   const [creating, setCreating] = useState(false);
-  const [permissionLevel, setPermissionLevel] = useState<"read" | "write">(
-    "read",
+  const [permissionLevel, setPermissionLevel] = useState<"viewer" | "editor">(
+    "viewer",
   );
   const [expiresAt, setExpiresAt] = useState<string>("");
   const [maxUses, setMaxUses] = useState<string>("");
@@ -112,23 +113,23 @@ export function ShareLinkDialogBody({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   useEffect(() => {
-    void dispatch(loadShareLinks({ resourceId }));
-  }, [dispatch, resourceId]);
+    void dispatch(loadShareLinks({ resourceId, resourceType }));
+  }, [dispatch, resourceId, resourceType]);
 
+  /** Canonical share landing page — `/s/{token}`. */
   const buildPageUrl = useCallback(
-    (token: string) => {
-      const base =
-        appOrigin ??
-        (typeof window !== "undefined" ? window.location.origin : "");
-      return `${base}/share/${token}`;
-    },
+    (token: string) =>
+      appOrigin
+        ? `${appOrigin.replace(/\/$/, "")}/s/${token}`
+        : shareLinkUrl(token),
     [appOrigin],
   );
 
   /**
-   * Direct-file URL — points at Python's public `/share/{token}` resolver.
-   * The browser → Python → S3 chain has no Next.js hop; embeddable into
-   * `<img src>`, `<video>`, raw downloads, Notion, Slack, etc.
+   * Direct-file URL — Python's public `/share/{token}/download` byte
+   * endpoint. The browser → Python → S3 chain has no Next.js hop;
+   * embeddable into `<img src>`, `<video>`, raw downloads, Notion, Slack,
+   * etc. Files only — folders have no bytes.
    */
   const buildFileUrl = useCallback(
     (token: string) => `${pythonShareUrl(token)}`,
@@ -175,9 +176,9 @@ export function ShareLinkDialogBody({
     [],
   );
 
-  const handleDeactivate = useCallback(
-    async (token: string) => {
-      await dispatch(deactivateShareLink({ shareToken: token })).unwrap();
+  const handleRevoke = useCallback(
+    async (linkId: string) => {
+      await dispatch(revokeShareLink({ linkId })).unwrap();
     },
     [dispatch],
   );
@@ -196,12 +197,12 @@ export function ShareLinkDialogBody({
             <select
               value={permissionLevel}
               onChange={(e) =>
-                setPermissionLevel(e.target.value as "read" | "write")
+                setPermissionLevel(e.target.value as "viewer" | "editor")
               }
               className="rounded-md border bg-background px-2 py-1 text-sm"
             >
-              <option value="read">Read only</option>
-              <option value="write">Read + write</option>
+              <option value="viewer">Read only</option>
+              <option value="editor">Read + write</option>
             </select>
           </label>
           <label className="flex flex-col gap-1 text-xs">
@@ -260,7 +261,8 @@ export function ShareLinkDialogBody({
           <ul className="flex flex-col gap-3">
             {links.map((link) => {
               const pageUrl = buildPageUrl(link.shareToken);
-              const fileUrl = buildFileUrl(link.shareToken);
+              const fileUrl =
+                resourceType === "file" ? buildFileUrl(link.shareToken) : null;
               const fileKey = `file:${link.shareToken}`;
               const pageKey = `page:${link.shareToken}`;
               return (
@@ -289,8 +291,8 @@ export function ShareLinkDialogBody({
                     </div>
                     <button
                       type="button"
-                      onClick={() => void handleDeactivate(link.shareToken)}
-                      aria-label="Deactivate link"
+                      onClick={() => void handleRevoke(link.id)}
+                      aria-label="Revoke link"
                       title="Revoke link"
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-destructive hover:bg-destructive/10"
                     >
@@ -300,15 +302,17 @@ export function ShareLinkDialogBody({
 
                   {/* Direct file URL — embeds + hot-links. Promoted as the
                       primary action because most callers want the bytes,
-                      not the metadata page. */}
-                  <UrlRow
-                    label="Direct file URL"
-                    sublabel="Opens / embeds the file directly"
-                    url={fileUrl}
-                    isCopied={copiedKey === fileKey}
-                    onCopy={() => void handleCopy(fileKey, fileUrl)}
-                    primary
-                  />
+                      not the metadata page. Files only. */}
+                  {fileUrl ? (
+                    <UrlRow
+                      label="Direct file URL"
+                      sublabel="Opens / embeds the file directly"
+                      url={fileUrl}
+                      isCopied={copiedKey === fileKey}
+                      onCopy={() => void handleCopy(fileKey, fileUrl)}
+                      primary
+                    />
+                  ) : null}
                   {/* Page URL — pretty landing page with metadata + download. */}
                   <UrlRow
                     label="Share page"

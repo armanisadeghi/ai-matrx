@@ -1,0 +1,18 @@
+-- C2: retire public.check_resource_access (legacy parallel resolver, audit gap G16).
+-- Applied live 2026-07-15 as Supabase migration `access_wave_c2_retire_check_resource_access`,
+-- which contains the FULL bodies of the five rewritten agx_* functions — the applied SQL
+-- is recorded verbatim in supabase_migrations.schema_migrations; current bodies are in pg_proc.
+--
+-- What it did:
+--   * agx_create_agent_from_template, agx_duplicate_agent, agx_duplicate_version,
+--     agx_sync_linked_agents, agx_get_access_level: every
+--     check_resource_access('agent'|'agent_template', id, level, owner, NULL, project, org)
+--     call replaced with iam.has_access_for(v_uid, '<token>', id, '<level>').
+--     Verified safe: all 648 org-scoped agents and all 11 org/project-scoped templates
+--     carry visibility internal/public, so the canonical resolver grants >= the legacy
+--     function on all live rows.
+--   * The 32 transcripts.studio_* child policies that also depended on the function were
+--     repointed first (see access_wave_c2a_studio_child_policies_canonical.sql).
+--   * Then the legacy resolver was dropped (kept below so re-running this file still
+--     enforces the retirement):
+DROP FUNCTION IF EXISTS public.check_resource_access(p_resource_type text, p_resource_id uuid, p_required_level permission_level, p_owner_id uuid, p_assignee_id uuid, p_project_id uuid, p_organization_id uuid);

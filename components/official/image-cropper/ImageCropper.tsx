@@ -171,7 +171,7 @@ const ImageCropper = ({
           folderPath: "Shared Assets",
           visibility: "public",
           createShareLink: true,
-          shareLinkPermissionLevel: "read",
+          shareLinkPermissionLevel: "viewer",
         },
       );
 

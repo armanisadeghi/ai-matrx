@@ -9,7 +9,7 @@
  *
  *   • Copy public link    — Truly permanent. Either the file's CDN URL
  *                           (when visibility="public") or a freshly
- *                           created no-expiry share-link `/share/{token}`.
+ *                           created no-expiry share-link `/share/{token}/download`.
  *                           Will still work in a week, a month, a year.
  *   • Copy temporary link — The current 1-hour signed URL with an
  *                           explicit "expires soon" label. Honest.
@@ -257,7 +257,7 @@ function MatrxQuickActions({
   // Load share links once on mount so we can detect when a no-expiry
   // public link already exists (avoids creating duplicates on each open).
   useEffect(() => {
-    void dispatch(loadShareLinks({ resourceId: block.fileId }));
+    void dispatch(loadShareLinks({ resourceId: block.fileId, resourceType: "file" }));
   }, [dispatch, block.fileId]);
 
   // An "existing public link" is read-only, no expiry, no usage cap.
@@ -265,7 +265,7 @@ function MatrxQuickActions({
   const existingPublicLink = useMemo(() => {
     return (
       links.find(
-        (l) => l.permissionLevel === "read" && !l.expiresAt && !l.maxUses,
+        (l) => l.permissionLevel === "viewer" && !l.expiresAt && !l.maxUses,
       ) ?? null
     );
   }, [links]);
@@ -275,7 +275,7 @@ function MatrxQuickActions({
    *   1. File is already `visibility="public"` AND has a permanent CDN URL
    *      — that URL is itself public and never expires.
    *   2. Otherwise — create (or reuse) a no-expiry read-only share link
-   *      and use its Python `/share/{token}` URL.
+   *      and use its Python `/share/{token}/download` URL.
    */
   const handleCopyPublic = useCallback(async () => {
     if (publicBusy) return;
@@ -299,7 +299,7 @@ function MatrxQuickActions({
           createShareLink({
             resourceId: block.fileId,
             resourceType: "file",
-            permissionLevel: "read",
+            permissionLevel: "viewer",
           }),
         ).unwrap();
         token = link.shareToken;

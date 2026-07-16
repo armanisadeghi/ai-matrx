@@ -128,7 +128,6 @@ export type CloudFileVersionRow = FilesTables["file_versions"]["Row"];
  * (graveyarded in the 2026 DB cutover — see docs/db_rebuild/03-app-agent-cutover-instructions.md §1a).
  */
 export type CloudFilePermissionRow = IamTables["permissions"]["Row"];
-export type CloudShareLinkRow = FilesTables["share_links"]["Row"];
 
 /**
  * Summary JSON returned by `iam.fn_list_resource_permissions` and
@@ -146,22 +145,6 @@ export interface IamResourcePermissionRpcRow {
   expires_at: string | null;
 }
 
-/**
- * Summary JSON returned by `files.fn_list_share_links` and
- * `files.fn_create_share_link` — NOT a full `files.share_links` row.
- * Omits `id`, `created_at`, `is_active`, and `organization_id`.
- */
-export interface FilesShareLinkRpcRow {
-  share_token: string;
-  resource_id: string;
-  resource_type: string;
-  permission_level: string;
-  created_by: string | null;
-  expires_at: string | null;
-  max_uses: number | null;
-  use_count: number | null;
-}
-
 // ---------------------------------------------------------------------------
 // 3. API (REST) types — from Python OpenAPI schemas
 // ---------------------------------------------------------------------------
@@ -169,10 +152,6 @@ export interface FilesShareLinkRpcRow {
 export type FileRecordApi = components["schemas"]["FileRecord"];
 export type FileUploadResponse = components["schemas"]["FileUploadResponse"];
 export type FilePatchRequest = components["schemas"]["FilePatchRequest"];
-export type CreateShareLinkRequest =
-  components["schemas"]["CreateShareLinkRequest"];
-export type ShareLinkResolveResponse =
-  components["schemas"]["ShareLinkResolveResponse"];
 export type GrantPermissionRequest =
   components["schemas"]["GrantPermissionRequest"];
 export type SignedUrlResponse = components["schemas"]["SignedUrlResponse"];
@@ -355,14 +334,19 @@ export interface CloudFilePermission {
   expiresAt: string | null;
 }
 
+/**
+ * A canonical share link (`platform.share_links`) scoped to a file or folder.
+ * Minted/listed/revoked via the canonical RPC family (`create_share_link` /
+ * `list_share_links` / `revoke_share_link` — see `utils/permissions/shareLinks.ts`).
+ */
 export interface CloudShareLink {
   id: string;
   resourceId: string;
   resourceType: ResourceType;
   shareToken: string;
-  permissionLevel: "read" | "write";
-  createdBy: string | null;
-  createdAt: string;
+  permissionLevel: "viewer" | "editor";
+  label: string | null;
+  createdAt: string | null;
   expiresAt: string | null;
   maxUses: number | null;
   useCount: number;
@@ -885,13 +869,14 @@ export interface RevokePermissionArg {
 export interface CreateShareLinkArg {
   resourceId: string;
   resourceType: ResourceType;
-  permissionLevel: "read" | "write";
+  permissionLevel: "viewer" | "editor";
   expiresAt?: string;
   maxUses?: number;
 }
 
-export interface DeactivateShareLinkArg {
-  shareToken: string;
+export interface RevokeShareLinkArg {
+  /** `platform.share_links.id` — the canonical revoke key. */
+  linkId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -1123,7 +1108,7 @@ export type RequestKind =
   | "grant-permission"
   | "revoke-permission"
   | "create-share-link"
-  | "deactivate-share-link"
+  | "revoke-share-link"
   | "folder-create"
   | "folder-update"
   | "folder-delete"

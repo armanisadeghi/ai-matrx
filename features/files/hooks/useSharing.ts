@@ -23,7 +23,7 @@ import {
 } from "@/features/files/redux/selectors";
 import {
   createShareLink as createShareLinkThunk,
-  deactivateShareLink as deactivateShareLinkThunk,
+  revokeShareLink as revokeShareLinkThunk,
   grantPermission as grantPermissionThunk,
   loadPermissions,
   loadShareLinks,
@@ -58,7 +58,7 @@ export interface UseSharingResult {
   createShareLink: (
     args: Omit<CreateShareLinkArg, "resourceId" | "resourceType">,
   ) => Promise<CloudShareLink>;
-  deactivateShareLink: (shareToken: string) => Promise<void>;
+  revokeShareLink: (linkId: string) => Promise<void>;
   /**
    * Quick-grant shorthand — grants read permission to a single user id.
    * Resolves when the permission list reflects the change.
@@ -86,9 +86,9 @@ export function useSharing(
   const refresh = useCallback(async () => {
     await Promise.all([
       dispatch(loadPermissions({ resourceId })).unwrap(),
-      dispatch(loadShareLinks({ resourceId })).unwrap(),
+      dispatch(loadShareLinks({ resourceId, resourceType })).unwrap(),
     ]);
-  }, [dispatch, resourceId]);
+  }, [dispatch, resourceId, resourceType]);
 
   useEffect(() => {
     if (options.skipAutoLoad) return;
@@ -122,9 +122,9 @@ export function useSharing(
     [dispatch, resourceId, resourceType],
   );
 
-  const deactivateShareLink = useCallback(
-    async (shareToken: string) => {
-      await dispatch(deactivateShareLinkThunk({ shareToken })).unwrap();
+  const revokeShareLink = useCallback(
+    async (linkId: string) => {
+      await dispatch(revokeShareLinkThunk({ linkId })).unwrap();
     },
     [dispatch],
   );
@@ -148,7 +148,7 @@ export function useSharing(
     grantPermission,
     revokePermission,
     createShareLink,
-    deactivateShareLink,
+    revokeShareLink,
     quickGrantRead,
   };
 }

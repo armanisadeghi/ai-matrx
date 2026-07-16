@@ -357,7 +357,6 @@ export {
 export {
   pythonBaseUrl,
   pythonShareUrl,
-  pythonShareResolveUrl,
   pythonFileDownloadUrl,
   pythonFileInlineUrl,
   shareUrls,

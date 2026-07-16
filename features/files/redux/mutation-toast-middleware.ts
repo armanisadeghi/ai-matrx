@@ -54,7 +54,7 @@ const MUTATION_THUNK_NAMES = new Set<string>([
   "grantPermission",
   "revokePermission",
   "createShareLink",
-  "deactivateShareLink",
+  "revokeShareLink",
   // virtual sources (notes/code/etc. surfaced as files)
   "renameAny",
   "moveAny",
@@ -86,7 +86,7 @@ const TITLE: Record<string, string> = {
   grantPermission: "Couldn't share",
   revokePermission: "Couldn't update sharing",
   createShareLink: "Couldn't create share link",
-  deactivateShareLink: "Couldn't revoke share link",
+  revokeShareLink: "Couldn't revoke share link",
   writeAny: "Couldn't save",
 };
 
@@ -111,7 +111,7 @@ function parseThunk(type: string, phase: "rejected" | "fulfilled"): string | nul
  */
 const SUCCESS_TITLE: Record<string, string> = {
   createShareLink: "Share link created",
-  deactivateShareLink: "Share link revoked",
+  revokeShareLink: "Share link revoked",
   grantPermission: "Sharing updated",
   revokePermission: "Sharing updated",
   restoreVersion: "Version restored",

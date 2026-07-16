@@ -218,7 +218,9 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     schemaName: "rag",
     idColumn: "id",
     ownerColumn: "created_by",
-    isPublicColumn: "visibility",
+    // 'visibility' is the canonical enum, not a boolean is_public column — a
+    // non-null value here wrongly routes sharing through make_resource_public.
+    isPublicColumn: null,
     displayLabel: "Data Store",
     urlPathTemplate: "/rag/data-stores/{id}",
     rlsUsesHasPermission: false,
@@ -388,8 +390,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/notes?folder={id}",
     rlsUsesHasPermission: true,
   },
-  pdf_redaction_audits: {
-    resourceType: "pdf_redaction_audits",
+  pdf_redaction_audit: {
+    resourceType: "pdf_redaction_audit",
     tableName: "pdf_redaction_audits",
     schemaName: "pdf",
     idColumn: "id",
@@ -410,8 +412,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/projects/{id}",
     rlsUsesHasPermission: true,
   },
-  quiz_sessions: {
-    resourceType: "quiz_sessions",
+  quiz_session: {
+    resourceType: "quiz_session",
     tableName: "quiz_sessions",
     schemaName: "education",
     idColumn: "id",
@@ -454,8 +456,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/research/topics/{id}",
     rlsUsesHasPermission: true,
   },
-  sandbox_instances: {
-    resourceType: "sandbox_instances",
+  sandbox_instance: {
+    resourceType: "sandbox_instance",
     tableName: "sandbox_instances",
     idColumn: "id",
     ownerColumn: "user_id",
@@ -596,8 +598,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/transcripts/{id}",
     rlsUsesHasPermission: true,
   },
-  udt_datasets: {
-    resourceType: "udt_datasets",
+  dataset: {
+    resourceType: "dataset",
     tableName: "udt_datasets",
     schemaName: "workbench",
     idColumn: "id",
@@ -607,8 +609,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/data/{id}",
     rlsUsesHasPermission: true,
   },
-  udt_documents: {
-    resourceType: "udt_documents",
+  udt_document: {
+    resourceType: "udt_document",
     tableName: "udt_documents",
     schemaName: "workbench",
     idColumn: "id",
@@ -638,13 +640,15 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     schemaName: "context",
     idColumn: "id",
     ownerColumn: "created_by",
-    isPublicColumn: "visibility",
+    // 'visibility' is the canonical enum, not a boolean is_public column — a
+    // non-null value here wrongly routes sharing through make_resource_public.
+    isPublicColumn: null,
     displayLabel: "Scope",
     urlPathTemplate: "/scopes/{id}",
     rlsUsesHasPermission: false,
   },
-  udt_workbooks: {
-    resourceType: "udt_workbooks",
+  workbook: {
+    resourceType: "workbook",
     tableName: "udt_workbooks",
     schemaName: "workbench",
     idColumn: "id",
@@ -654,8 +658,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/workbooks/{id}",
     rlsUsesHasPermission: true,
   },
-  user_analysis_preferences: {
-    resourceType: "user_analysis_preferences",
+  user_analysis_preference: {
+    resourceType: "user_analysis_preference",
     tableName: "user_analysis_preferences",
     schemaName: "users",
     idColumn: "user_id",
@@ -698,8 +702,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/workflows/{id}",
     rlsUsesHasPermission: false,
   },
-  wf_run: {
-    resourceType: "wf_run",
+  workflow_run: {
+    resourceType: "workflow_run",
     tableName: "run",
     schemaName: "workflow",
     idColumn: "id",
@@ -709,8 +713,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/runs/{id}",
     rlsUsesHasPermission: false,
   },
-  wf_trigger: {
-    resourceType: "wf_trigger",
+  workflow_trigger: {
+    resourceType: "workflow_trigger",
     tableName: "trigger",
     schemaName: "workflow",
     idColumn: "id",

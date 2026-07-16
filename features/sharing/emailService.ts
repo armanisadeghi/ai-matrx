@@ -69,7 +69,7 @@ async function getResourceDetails(
           : null;
       }
 
-      case "udt_datasets": {
+      case "dataset": {
         const { data } = await supabase
           .schema("workbench")
           .from("udt_datasets")

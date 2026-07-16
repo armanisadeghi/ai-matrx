@@ -74,7 +74,7 @@ export default function WorkbookPage({
         setCanEdit(true);
       } else {
         const { data: perm } = await supabase.rpc("has_permission", {
-          p_resource_type: "udt_workbooks",
+          p_resource_type: "workbook",
           p_resource_id: id,
           p_required_permission: "editor",
         });
@@ -155,7 +155,7 @@ export default function WorkbookPage({
                 size="sm"
               />
               <ShareButton
-                resourceType="udt_workbooks"
+                resourceType="workbook"
                 resourceId={workbook.id}
                 resourceName={workbook.workbook_name}
                 isOwner={isOwner}

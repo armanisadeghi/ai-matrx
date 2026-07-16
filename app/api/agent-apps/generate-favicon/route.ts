@@ -140,13 +140,13 @@ export async function POST(request: NextRequest) {
       accessToken: session.access_token,
     });
 
-    const { fileId, shareUrl } = await Api.Server.uploadAndShare(ctx, {
+    const { fileId, directUrl } = await Api.Server.uploadAndShare(ctx, {
       file: svgBytes,
       filePath: `${folderForAgentApp(appId)}/favicon.svg`,
       fileName: "favicon.svg",
       contentType: "image/svg+xml",
       visibility: "private",
-      permissionLevel: "read",
+      permissionLevel: "viewer",
       metadata: {
         origin: "agent-app-favicon",
         agent_app_id: appId,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     const { error: updateError } = await adminClient
       .schema("app")
       .from("definition")
-      .update({ favicon_url: shareUrl })
+      .update({ favicon_url: directUrl })
       .eq("id", appId);
 
     if (updateError) {
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      faviconUrl: shareUrl,
+      faviconUrl: directUrl,
       faviconFileId: fileId,
       color: faviconColor,
       initials,

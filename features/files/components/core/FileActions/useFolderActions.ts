@@ -11,7 +11,7 @@
  * `move`, `rename`, `delete` run against the right Postgres column.
  *
  * Public URL semantics are different from files: a folder share link
- * resolves to the existing `/share/<token>` listing page, not to a
+ * resolves to the canonical `/s/<token>` share page, not to a
  * direct-bytes endpoint, because a folder isn't a single file. The
  * `copyShareUrl` function below returns the page URL.
  */
@@ -134,20 +134,20 @@ export function useFolderActions(folderId: string): FolderActionHandlers {
       store.getState(),
       folderId,
     );
-    const cachedRead = cached.find((l) => l.permissionLevel === "read");
+    const cachedRead = cached.find((l) => l.permissionLevel === "viewer");
     if (cachedRead) {
       token = cachedRead.shareToken;
     } else {
       // Cache may be cold — refresh once before deciding to mint a new
       // link, so repeated calls don't pile up duplicates.
-      await dispatch(loadShareLinks({ resourceId: folderId }))
+      await dispatch(loadShareLinks({ resourceId: folderId, resourceType: "folder" }))
         .unwrap()
         .catch(() => undefined);
       const refreshed = selectActiveShareLinksForResource(
         store.getState(),
         folderId,
       );
-      const reusable = refreshed.find((l) => l.permissionLevel === "read");
+      const reusable = refreshed.find((l) => l.permissionLevel === "viewer");
       if (reusable) {
         token = reusable.shareToken;
       } else {
@@ -155,7 +155,7 @@ export function useFolderActions(folderId: string): FolderActionHandlers {
           createShareLink({
             resourceId: folderId,
             resourceType: "folder",
-            permissionLevel: "read",
+            permissionLevel: "viewer",
           }),
         ).unwrap();
         token = link.shareToken;
@@ -168,7 +168,7 @@ export function useFolderActions(folderId: string): FolderActionHandlers {
     // file blob — there's no "direct bytes" view for a directory.
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/share/${token}`;
+    const url = `${origin}/s/${token}`;
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(url);

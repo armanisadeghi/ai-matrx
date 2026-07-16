@@ -65,7 +65,7 @@ export function usePasteImageResource(
             ),
             visibility: "private",
             createShareLink: true,
-            shareLinkPermissionLevel: "read",
+            shareLinkPermissionLevel: "viewer",
           },
         );
         // Prefer the cld_files UUID — durable + fastest for the backend to

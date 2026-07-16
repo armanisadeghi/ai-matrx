@@ -78,7 +78,7 @@ export default function DocumentPage({
         setCanEdit(true);
       } else {
         const { data: perm } = await supabase.rpc("has_permission", {
-          p_resource_type: "udt_documents",
+          p_resource_type: "udt_document",
           p_resource_id: id,
           p_required_permission: "editor",
         });
@@ -160,7 +160,7 @@ export default function DocumentPage({
                 size="sm"
               />
               <ShareButton
-                resourceType="udt_documents"
+                resourceType="udt_document"
                 resourceId={doc.id}
                 resourceName={doc.document_name}
                 isOwner={isOwner}

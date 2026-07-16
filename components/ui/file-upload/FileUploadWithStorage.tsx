@@ -140,7 +140,7 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
                 folderPath,
                 visibility,
                 createShareLink: true,
-                shareLinkPermissionLevel: "read",
+                shareLinkPermissionLevel: "viewer",
                 metadata: {
                   origin: "FileUploadWithStorage",
                   legacy_bucket: bucket,

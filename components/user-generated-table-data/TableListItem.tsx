@@ -148,7 +148,7 @@ export function TableListItem({
       <div className="flex-shrink-0 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
         {isOwned && (
           <ShareButton
-            resourceType="udt_datasets"
+            resourceType="dataset"
             resourceId={id}
             resourceName={table_name}
             isOwner={true}

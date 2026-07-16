@@ -65,6 +65,8 @@ The move that MUST happen for any entity carrying a per-entity `*_versions` tabl
 - **entity** — independent business object (its own owner/visibility). Most tables.
 - **component** — child whose access IS its parent's, full depth (versions, events, line-items). RLS defers to a `composition` parent; no own visibility.
 - **ledger** — append-only org-scoped log. No user writes, no version/soft-delete.
+- **restricted** — secret-bearing system tables (AI vendor config — `ai.endpoint`/`ai.api`/`ai.offering`). `std_select` = owner OR super-admin **only** — deliberately **no** `iam.has_access` path, because `has_access` would leak viewer access through the global-readable system org.
+- **system** — catalog/shared-definition tables. **Requires a `visibility` column.** `std_select` = public-visibility OR owner OR `has_access`.
 Check existing columns/policies/triggers first: `\d`-style via `information_schema.columns`, `pg_policy`, `pg_trigger` (see TOOLKIT.md §5–6).
 
 ## Step 1 — Base columns (additive, idempotent)
@@ -148,9 +150,9 @@ values ('<token>','<schema>','<table>','id','created_by','visibility','<Label>',
 ## Step 4 — Canonical RLS (the only policy authority)
 Inventory existing policies first (`apply_rls` **drops them all**); fold anything load-bearing into the standard model. Then:
 ```sql
-select iam.apply_rls('<schema>','<table>','<token>','<entity|component|ledger>');
+select iam.apply_rls('<schema>','<table>','<token>','<entity|component|ledger|restricted|system>');
 ```
-(`entity` requires created_by + organization_id present; `component` requires the composition edge. There is **no `join` variant** — TOOLKIT.md §2. A pure M2M **join table** (`a_id`+`b_id`, no lifecycle) is best collapsed into `platform.associations` (db-rules §7); if it must stay a table, policy it as `component` (composition edge) or hand-write org-gated policies like `platform.associations` — never invent a `join` variant.)
+(`entity` requires created_by + organization_id present; `component` requires the composition edge; `restricted` is owner-or-super-admin-only with no `has_access` path (secret-bearing system tables); `system` requires a `visibility` column (catalog/shared-definition tables) — see Step 0. There is **no `join` variant** — TOOLKIT.md §2. A pure M2M **join table** (`a_id`+`b_id`, no lifecycle) is best collapsed into `platform.associations` (db-rules §3); if it must stay a table, policy it as `component` (composition edge) or hand-write org-gated policies like `platform.associations` — never invent a `join` variant.)
 
 ## Step 5 — Versioning
 - **Table already versions** (history/audit today) → put it on the central system: attach the capture trigger.
@@ -174,7 +176,7 @@ In downtime, once consumers are repointed, drop `user_id`/`owner_id`, `is_public
 - **Prove safe first:** `count(*) filter (where created_by is distinct from <owner_col>)=0`, `is_public`/`shared_with` empty — then the drop loses nothing.
 
 ## Step 7 — Verify (the two-gate acceptance)
-There are **two** gates and you must clear BOTH. `verify_canonical` checks the table's own structure; `canonical_certify` also checks that no dependent function is broken — **it is the "done" gate per db-rules.md §8 (nothing is done until `canonical_certify_ok` is `true`).**
+There are **two** gates and you must clear BOTH. `verify_canonical` checks the table's own structure; `canonical_certify` also checks that no dependent function is broken — **it is the "done" gate per db-rules FEATURE.md §11 (nothing is done until `canonical_certify_ok` is `true`).**
 ```sql
 select * from iam.verify_canonical('<schema>','<table>','<token>');    -- read EVERY row
 select iam.verify_canonical_ok('<schema>','<table>','<token>');         -- gate 1: no structural FAIL
@@ -200,7 +202,7 @@ db-change SOP: `pnpm db-types` → update all usages (new columns, `.schema()` i
 ## NEVER
 - `apply_rls` before org is backfilled (0 nulls) or before `entity_types` (+ composition edge for components) exists.
 - Skip Step 1.5 — `retrofit_entity` adds the base *columns* but NOT the FK constraints or `organization_id NOT NULL`; without them the table carries four permanent `base_*` FAILs no matter how clean it looks.
-- Trust `verify_canonical_ok` alone — WARNs are unfinished canonicalization, and it does NOT check dependent functions. `iam.canonical_certify_ok=true` is the only "done" signal (db-rules.md §8).
+- Trust `verify_canonical_ok` alone — WARNs are unfinished canonicalization, and it does NOT check dependent functions. `iam.canonical_certify_ok=true` is the only "done" signal (db-rules FEATURE.md §11).
 - Assume `is_versioned=true` captures history — it doesn't without the `_history` trigger.
 - Leave the feature reading its old comments/associations table after migrating the rows — repoint the code, then graveyard the table.
 - Change behavior. Canonicalization preserves what the user sees; if anything differs, it's a bug.

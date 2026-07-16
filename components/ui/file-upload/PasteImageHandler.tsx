@@ -23,10 +23,10 @@ type SaveToOption = "public" | "private";
 
 /**
  * Shape passed to `onImagePasted`. `url` is the embeddable direct-file
- * URL (Python's `/share/{token}` resolver) — drop into `<img src>`,
+ * URL (Python's `/share/{token}/download` endpoint) — drop into `<img src>`,
  * `<video>`, `<a href>`, etc.
  *
- * `pageUrl` is the optional HTML landing page (`/share/<token>`) for
+ * `pageUrl` is the optional HTML landing page (`/s/<token>`) for
  * "click here to view file metadata" surfaces. `fileId` is the
  * canonical cld_files UUID — prefer it for AI API calls.
  */
@@ -132,7 +132,7 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
               folderPath,
               visibility,
               createShareLink: true,
-              shareLinkPermissionLevel: "read",
+              shareLinkPermissionLevel: "viewer",
             },
           );
           if (!normalized.url) {
@@ -149,7 +149,7 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
             type: classifyFileType(file.type),
             fileId: normalized.fileId,
             pageUrl: normalized.shareToken
-              ? `/share/${normalized.shareToken}`
+              ? `/s/${normalized.shareToken}`
               : undefined,
           };
           onImagePasted?.(result);

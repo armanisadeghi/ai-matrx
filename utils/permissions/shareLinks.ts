@@ -201,7 +201,7 @@ export async function forkSharedResource(
         ? { success: true, path: `/education/flashcards/${r.set_id}` }
         : { success: false, error: r?.error };
     }
-    if (resourceType === "quiz_sessions") {
+    if (resourceType === "quiz_session") {
       const { data, error } = await supabase.rpc("fork_shared_quiz", {
         p_quiz_id: resourceId,
         p_token: shareToken ?? undefined,
@@ -223,7 +223,7 @@ export function isForkable(resourceType: string | undefined): boolean {
   return (
     resourceType === "conversation" ||
     resourceType === "fc_set" ||
-    resourceType === "quiz_sessions"
+    resourceType === "quiz_session"
   );
 }
 

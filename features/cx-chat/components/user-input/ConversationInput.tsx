@@ -329,7 +329,7 @@ export function ConversationInput({
               folderPath,
               visibility: "private",
               createShareLink: true,
-              shareLinkPermissionLevel: "read",
+              shareLinkPermissionLevel: "viewer",
             },
           );
           const blockType = uploadMimeToBlockType(file.type);

@@ -97,7 +97,7 @@ export function fileInfoHumanSummary(snapshot: FileInfoSnapshot): string {
   lines.push("Sharing");
   lines.push(`Visibility: ${visibilityLabel(file.visibility)}`);
   if (shareLink) {
-    lines.push(`Active link: /share/${shareLink.shareToken}`);
+    lines.push(`Active link: /s/${shareLink.shareToken}`);
   } else {
     lines.push(
       `Share link: No active share link. Use "Copy link" in the header to create a 7-day signed URL.`,

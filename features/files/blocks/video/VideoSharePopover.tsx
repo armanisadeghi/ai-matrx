@@ -9,7 +9,7 @@
  * presentation wrapper differs (a `<video>` has no "copy image" notion).
  *
  *   • Copy public link    — Permanent. CDN URL (visibility="public") or a
- *                           freshly created no-expiry `/share/{token}`.
+ *                           freshly created no-expiry `/share/{token}/download`.
  *   • Copy temporary link — The current signed URL, labelled "expires soon".
  *   • Manage all links →  — The full ShareLinkDialog (matrx files only).
  *
@@ -222,13 +222,13 @@ function MatrxQuickActions({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   useEffect(() => {
-    void dispatch(loadShareLinks({ resourceId: block.fileId }));
+    void dispatch(loadShareLinks({ resourceId: block.fileId, resourceType: "file" }));
   }, [dispatch, block.fileId]);
 
   const existingPublicLink = useMemo(() => {
     return (
       links.find(
-        (l) => l.permissionLevel === "read" && !l.expiresAt && !l.maxUses,
+        (l) => l.permissionLevel === "viewer" && !l.expiresAt && !l.maxUses,
       ) ?? null
     );
   }, [links]);
@@ -253,7 +253,7 @@ function MatrxQuickActions({
           createShareLink({
             resourceId: block.fileId,
             resourceType: "file",
-            permissionLevel: "read",
+            permissionLevel: "viewer",
           }),
         ).unwrap();
         token = link.shareToken;

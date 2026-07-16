@@ -180,6 +180,10 @@ If you find yourself editing `service.ts`, the share RPCs, `ShareModal.getShareU
 
 `data_store` **is** in `shareable_resource_registry` (so Relationship Manager / reachability know it is a conveying container — `file→data_store` Conveys viewer), with `rls_uses_has_permission=false` and `is_link_shareable=false`. That registration is for cascade recognition only. **Do NOT** wire `ShareButton` / `useSharing` / `iam.permissions` for data stores — publishing stays on `DataStorePublishPanel` + `data_store_grants`.
 
+### Legacy files-only share-link system — being REMOVED (2026-07)
+
+A **second, older** share-link system exists outside everything documented above: `files.share_links` (its own table, not `platform.share_links`) + `consume_share_link` + `files.fn_*` RPCs + the route `/share/[token]` + `/files/share/[token]`, resolved by the **Python backend** (aidream), returning a 1-hour signed S3 URL — entirely outside the registry/`iam.permissions`/reachability model this doc describes. Direct `.from("share_links")` reads also exist in files thunks. This is being **removed this round** in favor of the canonical system: `platform.share_links` + `/s/[token]` (§"No-login share links", above) is the ONE share-link system going forward. Do not extend, fix, or add new consumers of the legacy `files.share_links` lane — migrate any remaining caller to `platform.share_links` / `useSharing` / `ShareLinkPanel` instead.
+
 ---
 
 ## View-vs-edit access gate, public lanes & duplicate-to-edit (P7)
@@ -229,6 +233,7 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
   - `features/invitations/` — org invitation flow; separate system, don't fold it in
   - `features/organizations/` — target source for org-level shares
   - Reference integration: `features/prompts/` — list page, shared cards, edit-page banner, save-warning modal
+  - Cross-repo system-of-record for the full access model (ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, admin level): [`common-docs/access-architecture/FEATURE.md`](/Volumes/Samsung2TB/code/common-docs/access-architecture/FEATURE.md)
 
 ---
 
@@ -242,6 +247,8 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- `2026-07-15` — claude (Wave F): **Legacy files-only share-link lane ELIMINATED — one system now.** FE mints/lists/revokes file+folder links via the canonical RPCs (`utils/permissions/shareLinks.ts`); `/s/[token]` renders `file` (public_columns metadata + preview/download via aidream's token-validated `GET /share/{token}/download`) and `folder` (metadata card, no anon child listing); `app/(public)/share/[token]` + `app/(core)/files/share/[token]` + `features/files/api/share-links.ts` deleted; aidream/matrx-files repointed to `platform.share_links`; `files.share_links` graveyarded + `fn_*`/`consume_share_link` RPCs dropped (`migrations/files_share_links_legacy_retire.sql`); registry `is_link_shareable=true` + `public_columns` for `file`/`folder` (`migrations/share_links_enable_file_folder.sql`). Old `/share/...` links are dead (approved).
+- `2026-07-15` — claude: **Documented the legacy files-only share-link system (`files.share_links` + `/share/[token]` + Python resolve + `fn_*` RPCs) — being removed this round.** New §"Legacy files-only share-link system" under Key flows records the pre-existing second lane (undocumented until now) and its end state: ONE system, `platform.share_links` + `/s/[token]`. Added a cross-repo pointer to `common-docs/access-architecture/FEATURE.md` (§7 G3 documents the two-system gap this closes).
 - `2026-07-15` — **Share-notification identity hardening.** `/api/sharing/notify` no longer trusts caller-supplied sharer names or treats an arbitrary recipient UUID as authorization. It validates UUID/resource-type input, resolves the canonical registry token, requires the matching non-rejected `iam.permissions` grant created by the authenticated caller, derives the sharer from the session, and resolves recipient preferences/email only after that proof. `get_user_emails_by_ids` is now platform-admin/service-only.
 - `2026-07-13` — **Standalone `/administration/sharing` page deleted** — absorbed into the Relationships hub at `/administration/relationships/sharing` (redirect in `next.config.js`). Same two RPCs (`admin_list_share_policies` / `admin_set_share_policy`) now drive the per-row **Link policy** side panel (`SharePolicyColumnEditor` in `features/admin/relationships/`) on the registry table that already owns full row CRUD. See `features/admin/relationships/FEATURE.md`.
 - `2026-07-10` — **Registry snapshot re-synced to live DB + live-drift guard.** The parity test only diffs the TS mirror against the *committed* `registry.db-snapshot.json`, never the live DB — how the `assessment` enum row shipped un-mirrored. Regenerated the snapshot from live (picked up `assessment`, `learn_doc`, `wf_node_data_slot`), synced `utils/permissions/registry.ts` (3 rows added; `learn_doc.isPublicColumn='visibility'` mirrored faithfully — flagged as a likely DB-registry defect, see FOUND_DEFECTS), parity test green (62/62). Added `pnpm check:shareable-registry` (`regen-…--check`) — pulls the live registry and screams on drift vs the committed snapshot; documented as mandatory on any registry migration (Key flow #6 step 4).

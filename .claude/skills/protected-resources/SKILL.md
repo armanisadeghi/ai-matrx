@@ -1,6 +1,6 @@
 ---
 name: protected-resources
-description: Single-path-of-resistance pattern for tables/operations that must NOT be modifiable by anyone except Super Admins — even contributors with full codebase access. Mandatory reading whenever a task touches `public.admins`, `public.admin_audit_log`, the `is_super_admin()` / `requireSuperAdmin()` / `selectIsSuperAdmin` gates, anything in `app/api/admin/admins/**`, `app/(authenticated)/(admin-auth)/administration/admins/**`, the SECURITY DEFINER admin RPCs (`admin_promote`, `admin_update`, `admin_revoke`, `admin_list`, `admin_list_audit`, `admin_find_user_by_email`), or when adding a new table/feature you intend to lock down to Super Admin only (billing, feature flags, secrets, audit data, anything sensitive). Use this skill before writing any new RLS policy, SECURITY DEFINER RPC, `createAdminClient()` call, or admin-gated API route.
+description: Single-path-of-resistance pattern for tables/operations that must NOT be modifiable by anyone except Super Admins — even contributors with full codebase access. Mandatory reading whenever a task touches `admin.admins`, `admin.admin_audit_log`, the `is_super_admin()` / `requireSuperAdmin()` / `selectIsSuperAdmin` gates, anything in `app/api/admin/admins/**`, `app/(authenticated)/(admin-auth)/administration/admins/**`, the SECURITY DEFINER admin RPCs (`admin_promote`, `admin_update`, `admin_revoke`, `admin_list`, `admin_list_audit`, `admin_find_user_by_email`), or when adding a new table/feature you intend to lock down to Super Admin only (billing, feature flags, secrets, audit data, anything sensitive). Use this skill before writing any new RLS policy, SECURITY DEFINER RPC, `createAdminClient()` call, or admin-gated API route.
 ---
 
 # Protected Resources — Single Path of Resistance
@@ -42,7 +42,7 @@ The naive answers — "guard the route", "check the selector", "hide the button"
 Every mutation to a protected table goes through ONE choke point: a `SECURITY DEFINER` RPC. There is no other way in. Audit logging hangs off that one path so you only have to monitor one thing.
 
 ```
-                  ┌──── direct .from('admins').insert(...)  ❌ blocked by RLS
+                  ┌──── direct .schema('admin').from('admins').insert(...)  ❌ blocked by RLS
                   │
                   ├──── direct API route writing the table  ❌ blocked by RLS
    any caller ───┤
@@ -51,10 +51,10 @@ Every mutation to a protected table goes through ONE choke point: a `SECURITY DE
                   └──── RPC admin_promote()  ✅ checks is_super_admin() + writes audit row
                               │
                               ▼
-                        public.admins (RLS denies direct writes)
+                        admin.admins (RLS denies direct writes)
                               │
                               ▼
-                        audit trigger → public.admin_audit_log
+                        audit trigger → admin.admin_audit_log
 ```
 
 **Never add a second mutation path.** If you find yourself calling `createAdminClient().from('admins').update(...)` from a route, stop — wrap it in an RPC instead. Two paths means two things to audit and two things to keep in sync. The whole point of this pattern is that there is exactly ONE place to look when investigating.
@@ -65,8 +65,8 @@ Every mutation to a protected table goes through ONE choke point: a `SECURITY DE
 
 | Resource | RLS | Mutation RPCs | Audit |
 |---|---|---|---|
-| `public.admins` | self-select + super-admin-select; deny all writes | `admin_promote`, `admin_update`, `admin_revoke` | `admin_audit_log` (trigger captures every INSERT/UPDATE/DELETE) |
-| `public.admin_audit_log` | super-admin-only select; deny all writes | (only the trigger writes) | self-evident; immutable by design |
+| `admin.admins` | self-select + super-admin-select; deny all writes | `admin_promote`, `admin_update`, `admin_revoke` | `admin_audit_log` (trigger captures every INSERT/UPDATE/DELETE) |
+| `admin.admin_audit_log` | super-admin-only select; deny all writes | (only the trigger writes) | self-evident; immutable by design |
 
 Read RPCs:
 - `admin_list()` — all admins + email/last-sign-in
@@ -160,7 +160,7 @@ After running the migration:
 
 ## DON'T
 
-- ❌ Add a `.from('protected_table').insert/update/delete(...)` anywhere. There should be ZERO such call sites in the codebase. RLS will block them anyway, but the call site is a maintenance hazard — it implies the model is "RLS plus app-level checks" when it should be "RLS plus RPCs."
+- ❌ Add a `.from('protected_table').insert/update/delete(...)` anywhere (for the `admin` schema tables, that's `.schema('admin').from('admins'/'admin_audit_log')`). There should be ZERO such call sites in the codebase. RLS will block them anyway, but the call site is a maintenance hazard — it implies the model is "RLS plus app-level checks" when it should be "RLS plus RPCs."
 - ❌ Use `createAdminClient()` for user-initiated writes to a protected table. Service role bypasses RLS — that's the point — but it also bypasses `auth.uid()`, so `is_super_admin()` returns false (correctly: there is no current user). Use the user's normal client + RPC.
 - ❌ Add a second mutation path "for convenience". Convenience is the enemy of monitoring. One choke point, one audit log, one thing to read.
 - ❌ Disable RLS "temporarily" on a protected table. There is no temporarily.
@@ -191,7 +191,7 @@ If a regular admin manages to bypass all five layers, the audit row is still wri
 
 For surfaces that should be open to "any admin level" (not Super-only), use:
 - TS: `requireAdmin()` / `selectIsAdmin` / `state.userAuth.isAdmin`
-- SQL: `EXISTS (SELECT 1 FROM public.admins WHERE user_id = auth.uid())` — there's no shipped helper for this since the default IS super-only.
+- SQL: `EXISTS (SELECT 1 FROM admin.admins WHERE user_id = auth.uid())` — there's no shipped helper for this since the default IS super-only.
 
 For surfaces that need a specific tier (e.g. "developer or above"), gate on `state.userAuth.adminLevel` directly — read `selectAdminLevel` and check the values you want. Don't invent new boolean selectors per tier; the level enum is the source of truth.
 

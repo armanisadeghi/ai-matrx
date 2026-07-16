@@ -136,10 +136,21 @@
     "table_name": "data_stores",
     "id_column": "id",
     "owner_column": "created_by",
-    "is_public_column": "visibility",
+    "is_public_column": null,
     "display_label": "Data Store",
     "url_path_template": "/rag/data-stores/{id}",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "dataset",
+    "table_name": "udt_datasets",
+    "id_column": "id",
+    "owner_column": "user_id",
+    "is_public_column": "is_public",
+    "display_label": "Dataset",
+    "url_path_template": "/data/{id}",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -308,7 +319,7 @@
     "is_active": true
   },
   {
-    "resource_type": "pdf_redaction_audits",
+    "resource_type": "pdf_redaction_audit",
     "table_name": "pdf_redaction_audits",
     "id_column": "id",
     "owner_column": "user_id",
@@ -352,7 +363,7 @@
     "is_active": false
   },
   {
-    "resource_type": "quiz_sessions",
+    "resource_type": "quiz_session",
     "table_name": "quiz_sessions",
     "id_column": "id",
     "owner_column": "user_id",
@@ -396,7 +407,7 @@
     "is_active": true
   },
   {
-    "resource_type": "sandbox_instances",
+    "resource_type": "sandbox_instance",
     "table_name": "sandbox_instances",
     "id_column": "id",
     "owner_column": "user_id",
@@ -411,7 +422,7 @@
     "table_name": "scopes",
     "id_column": "id",
     "owner_column": "created_by",
-    "is_public_column": "visibility",
+    "is_public_column": null,
     "display_label": "Scope",
     "url_path_template": "/scopes/{id}",
     "rls_uses_has_permission": false,
@@ -561,18 +572,7 @@
     "is_active": true
   },
   {
-    "resource_type": "udt_datasets",
-    "table_name": "udt_datasets",
-    "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
-    "display_label": "Dataset",
-    "url_path_template": "/data/{id}",
-    "rls_uses_has_permission": true,
-    "is_active": true
-  },
-  {
-    "resource_type": "udt_documents",
+    "resource_type": "udt_document",
     "table_name": "udt_documents",
     "id_column": "id",
     "owner_column": "user_id",
@@ -583,18 +583,7 @@
     "is_active": true
   },
   {
-    "resource_type": "udt_workbooks",
-    "table_name": "udt_workbooks",
-    "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
-    "display_label": "Workbook",
-    "url_path_template": "/workbooks/{id}",
-    "rls_uses_has_permission": true,
-    "is_active": true
-  },
-  {
-    "resource_type": "user_analysis_preferences",
+    "resource_type": "user_analysis_preference",
     "table_name": "user_analysis_preferences",
     "id_column": "user_id",
     "owner_column": "user_id",
@@ -649,25 +638,14 @@
     "is_active": true
   },
   {
-    "resource_type": "wf_run",
-    "table_name": "run",
+    "resource_type": "workbook",
+    "table_name": "udt_workbooks",
     "id_column": "id",
-    "owner_column": "created_by",
-    "is_public_column": null,
-    "display_label": "Workflow Run",
-    "url_path_template": "/runs/{id}",
-    "rls_uses_has_permission": false,
-    "is_active": true
-  },
-  {
-    "resource_type": "wf_trigger",
-    "table_name": "trigger",
-    "id_column": "id",
-    "owner_column": "created_by",
-    "is_public_column": null,
-    "display_label": "Workflow Trigger",
-    "url_path_template": "/workflows/{id}/triggers/{id}",
-    "rls_uses_has_permission": false,
+    "owner_column": "user_id",
+    "is_public_column": "is_public",
+    "display_label": "Workbook",
+    "url_path_template": "/workbooks/{id}",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -679,6 +657,28 @@
     "display_label": "Workflow",
     "url_path_template": "/workflows/{id}",
     "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "workflow_run",
+    "table_name": "run",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Workflow Run",
+    "url_path_template": "/runs/{id}",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "workflow_trigger",
+    "table_name": "trigger",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Workflow Trigger",
+    "url_path_template": "/workflows/{id}/triggers/{id}",
+    "rls_uses_has_permission": false,
     "is_active": true
   }
 ]

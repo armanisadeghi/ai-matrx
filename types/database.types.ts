@@ -12752,51 +12752,6 @@ export type Database = {
         }
         Relationships: []
       }
-      share_links: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          max_uses: number | null
-          organization_id: string
-          permission_level: string
-          resource_id: string
-          resource_type: string
-          share_token: string
-          use_count: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          organization_id: string
-          permission_level?: string
-          resource_id: string
-          resource_type: string
-          share_token?: string
-          use_count?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          organization_id?: string
-          permission_level?: string
-          resource_id?: string
-          resource_type?: string
-          share_token?: string
-          use_count?: number
-        }
-        Relationships: []
-      }
       structure: {
         Row: {
           bucket_id: string
@@ -13125,24 +13080,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      fn_create_share_link: {
-        Args: {
-          p_expires_at?: string
-          p_max_uses?: number
-          p_permission_level?: string
-          p_resource_id: string
-          p_resource_type: string
-        }
-        Returns: Json
-      }
-      fn_deactivate_share_link: {
-        Args: { p_share_token: string }
-        Returns: boolean
-      }
-      fn_list_share_links: {
-        Args: { p_resource_id: string; p_resource_type: string }
-        Returns: Json
-      }
       is_safe_webhook_url: { Args: { p_url: string }; Returns: boolean }
       webhook_dispatch: { Args: { p_limit?: number }; Returns: number }
       webhook_event_payload: {
@@ -15444,6 +15381,51 @@ export type Database = {
           user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      files_share_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          organization_id: string
+          permission_level: string
+          resource_id: string
+          resource_type: string
+          share_token: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          organization_id: string
+          permission_level?: string
+          resource_id: string
+          resource_type: string
+          share_token?: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          organization_id?: string
+          permission_level?: string
+          resource_id?: string
+          resource_type?: string
+          share_token?: string
+          use_count?: number
         }
         Relationships: []
       }
@@ -27733,7 +27715,6 @@ export type Database = {
           updated_at: string
         }[]
       }
-      consume_share_link: { Args: { p_token: string }; Returns: Json }
       container_resource_counts: {
         Args: { p_column: string; p_container_id: string }
         Returns: {

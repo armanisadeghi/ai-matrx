@@ -534,12 +534,12 @@ const slice = createSlice({
         action.payload.shareLinks;
     },
 
-    removeShareLink(state, action: PayloadAction<{ shareToken: string }>) {
-      const { shareToken } = action.payload;
+    removeShareLink(state, action: PayloadAction<{ linkId: string }>) {
+      const { linkId } = action.payload;
       for (const resourceId of Object.keys(state.shareLinksByResourceId)) {
         state.shareLinksByResourceId[resourceId] = state.shareLinksByResourceId[
           resourceId
-        ].filter((l) => l.shareToken !== shareToken);
+        ].filter((l) => l.id !== linkId);
       }
     },
 

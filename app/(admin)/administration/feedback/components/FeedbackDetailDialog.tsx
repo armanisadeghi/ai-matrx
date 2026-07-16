@@ -240,7 +240,7 @@ export default function FeedbackDetailDialog({
           folderPath: "Shared Assets/feedback-images",
           visibility: "public",
           createShareLink: true,
-          shareLinkPermissionLevel: "read",
+          shareLinkPermissionLevel: "viewer",
         },
       );
       return { url: normalized.url };

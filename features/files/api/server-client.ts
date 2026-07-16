@@ -41,8 +41,6 @@ import type {
   FileUploadResponse,
   Visibility,
   PermissionLevel,
-  CreateShareLinkRequest,
-  CloudShareLinkRow,
 } from "@/features/files/types";
 
 // ---------------------------------------------------------------------------
@@ -228,12 +226,34 @@ export async function deleteFile(
 // Share links
 // ---------------------------------------------------------------------------
 
+/**
+ * Mirror of aidream's `ShareLinkRecord` — a canonical `platform.share_links`
+ * row as echoed by `POST /files/{id}/share-links`.
+ */
+export interface ServerShareLinkRecord {
+  token?: string | null;
+  resource_id?: string | null;
+  resource_type?: string | null;
+  permission_level?: string | null;
+  created_by?: string | null;
+  expires_at?: string | null;
+  max_uses?: number | null;
+  use_count?: number | null;
+}
+
+export interface ServerCreateShareLinkBody {
+  /** Canonical share-link levels. Default "viewer". */
+  permission_level?: "viewer" | "editor";
+  expires_at?: string | null;
+  max_uses?: number | null;
+}
+
 export function createFileShareLink(
   ctx: ServerCloudFilesContext,
   fileId: string,
-  body: CreateShareLinkRequest,
-): Promise<CloudShareLinkRow> {
-  return fetchJson<CloudShareLinkRow>(
+  body: ServerCreateShareLinkBody,
+): Promise<ServerShareLinkRecord> {
+  return fetchJson<ServerShareLinkRecord>(
     ctx,
     "POST",
     `/files/${fileId}/share-links`,
@@ -270,13 +290,20 @@ export interface ServerUploadAndShareResult {
   fileId: string;
   filePath: string;
   shareToken: string;
+  /** Canonical share landing page — `${appOrigin}/s/{token}`. HTML, not bytes. */
   shareUrl: string;
+  /**
+   * Python's public byte endpoint — `{backend}/share/{token}/download`.
+   * The URL to persist anywhere the raw bytes are consumed (`<img src>`,
+   * favicons, unfurls).
+   */
+  directUrl: string;
   requestId: string;
 }
 
 export interface ServerUploadAndShareArgs extends ServerUploadFileArgs {
-  /** Share-link permission. Default "read". */
-  permissionLevel?: "read" | "write";
+  /** Share-link permission (canonical levels). Default "viewer". */
+  permissionLevel?: "viewer" | "editor";
   /** Optional max-use cap. Omit for unlimited. */
   maxUses?: number;
   /** Optional expiry. Omit for indefinite. */
@@ -296,18 +323,28 @@ export async function uploadAndShare(
   const { data: uploaded, requestId } = await uploadFile(ctx, args);
 
   const link = await createFileShareLink(ctx, uploaded.file_id, {
-    permission_level: args.permissionLevel ?? "read",
+    permission_level: args.permissionLevel ?? "viewer",
     expires_at: args.expiresAt ?? null,
     max_uses: args.maxUses ?? null,
   });
+  if (!link.token) {
+    throw new BackendApiError({
+      code: "internal_error",
+      detail: "Share link creation returned no token",
+      userMessage: "The share link could not be created.",
+      status: 500,
+    });
+  }
 
-  const shareUrl = `${args.appOrigin.replace(/\/$/, "")}/share/${link.share_token}`;
+  const shareUrl = `${args.appOrigin.replace(/\/$/, "")}/s/${link.token}`;
+  const directUrl = `${resolveBaseUrl(ctx)}/share/${encodeURIComponent(link.token)}/download`;
 
   return {
     fileId: uploaded.file_id,
     filePath: uploaded.file_path,
-    shareToken: link.share_token,
+    shareToken: link.token,
     shareUrl,
+    directUrl,
     requestId,
   };
 }

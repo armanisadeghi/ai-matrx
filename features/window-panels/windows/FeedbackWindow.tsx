@@ -352,7 +352,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
             folderPath: "Shared Assets/feedback-images",
             visibility: "public",
             createShareLink: true,
-            shareLinkPermissionLevel: "read",
+            shareLinkPermissionLevel: "viewer",
           },
         );
         if (normalized.url) {
@@ -417,7 +417,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
             folderPath: "Shared Assets/feedback-images",
             visibility: "public",
             createShareLink: true,
-            shareLinkPermissionLevel: "read",
+            shareLinkPermissionLevel: "viewer",
           },
         );
         if (normalized.url) {
