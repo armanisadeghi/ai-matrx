@@ -1034,6 +1034,7 @@ export const toolRendererRegistry: ToolRegistry = {
   // is_dir/mtime table dump the owner flagged. FsInline is the clean card.
   fs_list: {
     toolName: "fs_list",
+    chrome: "card",
     displayName: "Files",
     phaseLabels: {
       running: "Listing files",
@@ -1051,6 +1052,7 @@ export const toolRendererRegistry: ToolRegistry = {
 
   fs_read: {
     toolName: "fs_read",
+    chrome: "card",
     displayName: "Files",
     phaseLabels: {
       running: "Reading file",
@@ -1069,6 +1071,7 @@ export const toolRendererRegistry: ToolRegistry = {
   // Skill lookup (unified `skill` tool + legacy names). Verb by action.
   skill: {
     toolName: "skill",
+    chrome: "card",
     displayName: "Skills",
     phaseLabels: {
       running: "Looking up skills",
@@ -1088,6 +1091,7 @@ export const toolRendererRegistry: ToolRegistry = {
 
   skill_search: {
     toolName: "skill_search",
+    chrome: "card",
     displayName: "Skills",
     phaseLabels: {
       running: "Searching skills",
@@ -1105,6 +1109,7 @@ export const toolRendererRegistry: ToolRegistry = {
 
   skill_list: {
     toolName: "skill_list",
+    chrome: "card",
     displayName: "Skills",
     phaseLabels: {
       running: "Listing skills",

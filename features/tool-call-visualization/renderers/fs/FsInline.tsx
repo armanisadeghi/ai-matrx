@@ -34,6 +34,8 @@ import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
+import { ToolResultCard } from "../_shared-entity/ToolResultCard";
+import type { ToolResultCardProps } from "../_shared-entity/ToolResultCard";
 
 // ─── payload shapes ──────────────────────────────────────────────────────────
 
@@ -85,82 +87,66 @@ function fenceLang(path: string): string {
     return map[ext] ?? "";
 }
 
-// ─── the card frame (ArtifactResultBar grammar) ──────────────────────────────
+// ─── card bodies (frame = the canonical ToolResultCard) ─────────────────────
 
-const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="w-full overflow-hidden rounded-xl border border-border/50 bg-card">
-        {children}
-    </div>
-);
+const FS_ICON_TINT = "text-sky-600 dark:text-sky-400";
 
-const CardHeader: React.FC<{
-    icon: React.ReactNode;
-    title: string;
-    sub: string;
-}> = ({ icon, title, sub }) => (
-    <div className="flex items-center gap-3 px-4 py-2.5">
-        {icon}
-        <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-foreground">{title}</span>
-            <span className="block truncate text-xs text-muted-foreground">{sub}</span>
-        </span>
-    </div>
-);
-
-// ─── listing body ────────────────────────────────────────────────────────────
+/** Shell-provided card state + destinations, threaded into ToolResultCard. */
+type ShellCardProps = Pick<
+    ToolResultCardProps,
+    "expanded" | "onToggleExpanded" | "onOpenWindowPanel" | "onOpenOverlay"
+>;
 
 const ROW_CAP = 8;
 
-const FsListCard: React.FC<{ path: string; entries: FsEntry[] }> = ({ path, entries }) => {
-    const [showAll, setShowAll] = React.useState(false);
-    const dirs = entries.filter((e) => e.isDir).length;
-    const files = entries.length - dirs;
-    const sub = [
-        dirs > 0 ? `${dirs} ${dirs === 1 ? "folder" : "folders"}` : null,
-        files > 0 ? `${files} ${files === 1 ? "file" : "files"}` : null,
-    ]
-        .filter(Boolean)
-        .join(" · ") || "Empty folder";
+/** One file/folder row — used by the listing card and the batch sub-rows. */
+const FsEntryRow: React.FC<{ entry: FsEntry; withTopBorder: boolean; indent?: boolean }> = ({
+    entry: e,
+    withTopBorder,
+    indent = false,
+}) => (
+    <div
+        className={cn(
+            "flex items-center gap-2.5 py-1.5 pr-4",
+            indent ? "pl-10" : "pl-4",
+            withTopBorder && (indent ? "border-t border-border/20" : "border-t border-border/30"),
+        )}
+    >
+        {e.isDir ? (
+            <Folder className="size-3.5 shrink-0 text-sky-600/70 dark:text-sky-400/70" />
+        ) : (
+            <File className="size-3.5 shrink-0 text-muted-foreground" />
+        )}
+        <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">{e.name}</span>
+        {!e.isDir && e.size !== null && (
+            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                {humanSize(e.size)}
+            </span>
+        )}
+    </div>
+);
 
+const FsListCard: React.FC<{ path: string; entries: FsEntry[] } & ShellCardProps> = ({
+    path,
+    entries,
+    ...shell
+}) => {
+    const [showAll, setShowAll] = React.useState(false);
     const shown = showAll ? entries : entries.slice(0, ROW_CAP);
     const remaining = entries.length - shown.length;
 
     return (
-        <Card>
-            <CardHeader
-                icon={
-                    <FolderOpen
-                        className="size-[18px] shrink-0 text-sky-600 dark:text-sky-400"
-                        strokeWidth={2.25}
-                    />
-                }
-                title={basename(path)}
-                sub={`${path} · ${sub}`}
-            />
+        <ToolResultCard
+            icon={FolderOpen}
+            iconClassName={FS_ICON_TINT}
+            title={basename(path)}
+            sub={`${path} · ${countsLabel(entries) === "Empty" ? "Empty folder" : countsLabel(entries)}`}
+            {...shell}
+        >
             {entries.length > 0 && (
-                <div className="border-t border-border/50">
+                <div>
                     {shown.map((e, i) => (
-                        <div
-                            key={`${e.name}-${i}`}
-                            className={cn(
-                                "flex items-center gap-2.5 px-4 py-1.5",
-                                i > 0 && "border-t border-border/30",
-                            )}
-                        >
-                            {e.isDir ? (
-                                <Folder className="size-3.5 shrink-0 text-sky-600/70 dark:text-sky-400/70" />
-                            ) : (
-                                <File className="size-3.5 shrink-0 text-muted-foreground" />
-                            )}
-                            <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
-                                {e.name}
-                            </span>
-                            {!e.isDir && e.size !== null && (
-                                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                                    {humanSize(e.size)}
-                                </span>
-                            )}
-                        </div>
+                        <FsEntryRow key={`${e.name}-${i}`} entry={e} withTopBorder={i > 0} />
                     ))}
                     {remaining > 0 && (
                         <button
@@ -176,33 +162,29 @@ const FsListCard: React.FC<{ path: string; entries: FsEntry[] }> = ({ path, entr
                     )}
                 </div>
             )}
-        </Card>
+        </ToolResultCard>
     );
 };
 
-// ─── read body ───────────────────────────────────────────────────────────────
-
-const FsReadCard: React.FC<{ path: string; content: string; size: number | null; truncated: boolean }> = ({
-    path,
-    content,
-    size,
-    truncated,
-}) => (
-    <Card>
-        <CardHeader
-            icon={<File className="size-[18px] shrink-0 text-sky-600 dark:text-sky-400" strokeWidth={2.25} />}
-            title={basename(path)}
-            sub={[path, size !== null ? humanSize(size) : null, truncated ? "truncated" : null]
-                .filter(Boolean)
-                .join(" · ")}
-        />
-        <div className="max-h-80 overflow-auto border-t border-border/50 px-4 py-2 [&_pre]:!my-0">
+const FsReadCard: React.FC<
+    { path: string; content: string; size: number | null; truncated: boolean } & ShellCardProps
+> = ({ path, content, size, truncated, ...shell }) => (
+    <ToolResultCard
+        icon={File}
+        iconClassName={FS_ICON_TINT}
+        title={basename(path)}
+        sub={[path, size !== null ? humanSize(size) : null, truncated ? "truncated" : null]
+            .filter(Boolean)
+            .join(" · ")}
+        {...shell}
+    >
+        <div className="max-h-80 overflow-auto px-4 py-2 [&_pre]:!my-0">
             <BasicMarkdownContent
                 content={"```" + fenceLang(path) + "\n" + content + "\n```"}
                 showCopyButton={false}
             />
         </div>
-    </Card>
+    </ToolResultCard>
 );
 
 // ─── consolidated batch card ─────────────────────────────────────────────────
@@ -255,18 +237,13 @@ export const FsBatchCard: React.FC<{
 
     return (
         <div className={cn("mb-2", className)}>
-            <Card>
-                <CardHeader
-                    icon={
-                        <FolderOpen
-                            className="size-[18px] shrink-0 text-sky-600 dark:text-sky-400"
-                            strokeWidth={2.25}
-                        />
-                    }
-                    title={`Listed ${listings.length} ${listings.length === 1 ? "folder" : "folders"}`}
-                    sub={listings.map((l) => basename(l.path)).join(" · ")}
-                />
-                <div className="border-t border-border/50">
+            <ToolResultCard
+                icon={FolderOpen}
+                iconClassName={FS_ICON_TINT}
+                title={`Listed ${listings.length} ${listings.length === 1 ? "folder" : "folders"}`}
+                sub={listings.map((l) => basename(l.path)).join(" · ")}
+            >
+                <div>
                     {listings.map((l, i) => (
                         <React.Fragment key={`${l.path}-${i}`}>
                             <button
@@ -294,29 +271,12 @@ export const FsBatchCard: React.FC<{
                             </button>
                             {open[i] &&
                                 l.entries.map((e, j) => (
-                                    <div
-                                        key={`${e.name}-${j}`}
-                                        className="flex items-center gap-2.5 border-t border-border/20 py-1.5 pl-10 pr-4"
-                                    >
-                                        {e.isDir ? (
-                                            <Folder className="size-3.5 shrink-0 text-sky-600/70 dark:text-sky-400/70" />
-                                        ) : (
-                                            <File className="size-3.5 shrink-0 text-muted-foreground" />
-                                        )}
-                                        <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
-                                            {e.name}
-                                        </span>
-                                        {!e.isDir && e.size !== null && (
-                                            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                                                {humanSize(e.size)}
-                                            </span>
-                                        )}
-                                    </div>
+                                    <FsEntryRow key={`${e.name}-${j}`} entry={e} withTopBorder indent />
                                 ))}
                         </React.Fragment>
                     ))}
                 </div>
-            </Card>
+            </ToolResultCard>
         </div>
     );
 };
@@ -324,13 +284,21 @@ export const FsBatchCard: React.FC<{
 // ─── dispatcher ──────────────────────────────────────────────────────────────
 
 export const FsInline: React.FC<ToolRendererProps> = (props) => {
-    const { entry, onOpenOverlay, toolGroupId } = props;
+    const { entry, onOpenOverlay, onOpenWindowPanel, toolGroupId, expanded, onToggleExpanded } =
+        props;
 
     if (entry.status === "error") {
         return <ToolErrorCard entry={entry} onOpenOverlay={onOpenOverlay} toolGroupId={toolGroupId} />;
     }
     // Not terminal — the shell line shimmers with the intent; nothing to show yet.
     if (!isTerminal(entry)) return null;
+
+    const shell: ShellCardProps = {
+        expanded,
+        onToggleExpanded,
+        onOpenWindowPanel: onOpenWindowPanel ? () => onOpenWindowPanel() : undefined,
+        onOpenOverlay: onOpenOverlay ? () => onOpenOverlay() : undefined,
+    };
 
     const result = resultAsObject(entry);
     const path =
@@ -344,7 +312,7 @@ export const FsInline: React.FC<ToolRendererProps> = (props) => {
             .map(asFsEntry)
             .filter((e): e is FsEntry => e !== null);
         if (entries.length > 0 || (result.entries as unknown[]).length === 0) {
-            return <FsListCard path={path} entries={entries} />;
+            return <FsListCard path={path} entries={entries} {...shell} />;
         }
     }
 
@@ -356,6 +324,7 @@ export const FsInline: React.FC<ToolRendererProps> = (props) => {
                 content={result.content}
                 size={typeof result.size === "number" ? result.size : null}
                 truncated={result.truncated === true}
+                {...shell}
             />
         );
     }
