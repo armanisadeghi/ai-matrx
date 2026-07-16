@@ -1,4 +1,6 @@
-import { Maximize2, Braces, Eraser, FileText, Webhook } from "lucide-react";
+import { Maximize2, Braces, Copy, Eraser, FileText, Webhook } from "lucide-react";
+import { toast } from "sonner";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 
 // View-mode toggle has moved out of this button row and into the
 // MessageViewModeMenu rendered next to the "System" role label. This file
@@ -94,6 +96,28 @@ export function SystemMessageButtons({
 
   const buttons: IconButtonConfig[] = [
     variableButton,
+    {
+      id: "copy",
+      icon: Copy,
+      tooltip: "Copy message",
+      mobileLabel: "Copy Message",
+      onClick: async (e) => {
+        e?.stopPropagation();
+        if (!templateCurrentContent) {
+          toast.error("Nothing to copy");
+          return;
+        }
+        await copyToClipboard(templateCurrentContent, {
+          formatJson: false,
+          onSuccess: () => toast.success("Copied to clipboard"),
+          onError: () => toast.error("Failed to copy"),
+        });
+      },
+      onMouseDown: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      },
+    },
     {
       id: "template",
       icon: FileText,

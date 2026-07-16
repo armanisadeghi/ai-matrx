@@ -1,4 +1,6 @@
-import { Maximize2, Braces, Eraser, X, FileText } from "lucide-react";
+import { Maximize2, Braces, Copy, Eraser, X, FileText } from "lucide-react";
+import { toast } from "sonner";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 
 // View-mode toggle has moved to MessageViewModeMenu next to the role
 // selector. This file owns the action icon row only.
@@ -99,6 +101,28 @@ export function MessageItemButtons({
 
   const buttons: IconButtonConfig[] = [
     variableButton,
+    {
+      id: "copy",
+      icon: Copy,
+      tooltip: "Copy message",
+      mobileLabel: "Copy Message",
+      onClick: async (e) => {
+        e?.stopPropagation();
+        if (!templateCurrentContent) {
+          toast.error("Nothing to copy");
+          return;
+        }
+        await copyToClipboard(templateCurrentContent, {
+          formatJson: false,
+          onSuccess: () => toast.success("Copied to clipboard"),
+          onError: () => toast.error("Failed to copy"),
+        });
+      },
+      onMouseDown: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      },
+    },
     {
       id: "template",
       icon: FileText,
