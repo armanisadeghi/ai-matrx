@@ -461,10 +461,7 @@ function ModelDetailCard({
   /** Pinned ai.offering uuid (offering_id) — only shown as selected on the current model. */
   pinnedOfferingId?: string | null;
   /** When provided, Service chips become pin toggles (undefined = Auto). */
-  onPinOffering?: (
-    model: CatalogModel,
-    offeringId: string | undefined,
-  ) => void;
+  onPinOffering?: (model: CatalogModel, offeringId: string | undefined) => void;
   /** Mobile only: append the admin offerings section inside the card scroll. */
   includeAdminSection?: boolean;
 }) {
@@ -475,135 +472,135 @@ function ModelDetailCard({
   return (
     <div className="flex h-full flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-foreground">
-            {model.name}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold text-foreground">
+              {model.name}
+            </div>
+            {model.maker && (
+              <div className="text-xs text-muted-foreground">{model.maker}</div>
+            )}
           </div>
-          {model.maker && (
-            <div className="text-xs text-muted-foreground">{model.maker}</div>
-          )}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          {model.isPrimary && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
-              Default
-            </span>
-          )}
-          {model.isPremium && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
-              Premium
-            </span>
-          )}
-          {model.isDeprecated && (
-            <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
-              Deprecated
-            </span>
-          )}
-        </div>
-      </div>
-
-      {model.description && (
-        <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">
-          {model.description}
-        </p>
-      )}
-
-      <dl className="mt-3 space-y-2 text-xs">
-        <div>
-          <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-            Input
-          </dt>
-          <dd>
-            <ModalityIcons list={model.input} />
-          </dd>
-        </div>
-        <div>
-          <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-            Output
-          </dt>
-          <dd>
-            <ModalityIcons list={model.output} />
-          </dd>
-        </div>
-
-        {model.features.buckets.length > 0 && (
-          <div>
-            <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Features
-            </dt>
-            <dd className="flex flex-wrap gap-1">
-              {model.features.buckets.map((b) => (
-                <span
-                  key={b}
-                  className="whitespace-nowrap rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground/80"
-                  title={FEATURE_BUCKETS[b].description}
-                >
-                  {FEATURE_BUCKETS[b].label}
-                </span>
-              ))}
-            </dd>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            {model.isPrimary && (
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
+                Default
+              </span>
+            )}
+            {model.isPremium && (
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
+                Premium
+              </span>
+            )}
+            {model.isDeprecated && (
+              <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+                Deprecated
+              </span>
+            )}
           </div>
+        </div>
+
+        {model.description && (
+          <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">
+            {model.description}
+          </p>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
-          {/* POINTS — the platform's user currency, front and center. */}
-          <div className="col-span-2">
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Points / 1M tokens
-            </dt>
-            <dd
-              className="whitespace-nowrap text-sm font-semibold tabular-nums text-foreground"
-              title="Points per 1 million tokens — what usage actually costs you"
-            >
-              {model.pointsInput == null && model.pointsOutput == null
-                ? "—"
-                : `${fmtPoints(model.pointsInput)} in · ${fmtPoints(model.pointsOutput)} out`}
-            </dd>
-          </div>
+        <dl className="mt-3 space-y-2 text-xs">
           <div>
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Context
-            </dt>
-            <dd className="tabular-nums text-foreground/80">
-              {model.contextWindow?.toLocaleString() ?? "—"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Max output
-            </dt>
-            <dd className="tabular-nums text-foreground/80">
-              {model.maxTokens?.toLocaleString() ?? "—"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Usage
+            <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Input
             </dt>
             <dd>
-              <UsageTier tier={tier} />
+              <ModalityIcons list={model.input} />
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Speed
+            <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Output
             </dt>
             <dd>
-              <SpeedDots value={model.speedRating} />
+              <ModalityIcons list={model.output} />
             </dd>
           </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Interaction
-            </dt>
-            <dd className="text-foreground/80">
-              {INTERACTION_LABEL[model.interaction]}
-            </dd>
-          </div>
-        </div>
 
-        {/* Services — the endpoint's PUBLIC Matrx brand only (Matrx
+          {model.features.buckets.length > 0 && (
+            <div>
+              <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                Features
+              </dt>
+              <dd className="flex flex-wrap gap-1">
+                {model.features.buckets.map((b) => (
+                  <span
+                    key={b}
+                    className="whitespace-nowrap rounded border border-border px-1.5 py-0.5 text-[10px] text-foreground/80"
+                    title={FEATURE_BUCKETS[b].description}
+                  >
+                    {FEATURE_BUCKETS[b].label}
+                  </span>
+                ))}
+              </dd>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            {/* POINTS — the platform's user currency, front and center. */}
+            <div className="col-span-2">
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Points / 1M tokens
+              </dt>
+              <dd
+                className="whitespace-nowrap text-sm font-semibold tabular-nums text-foreground"
+                title="Points per 1 million tokens — what usage actually costs you"
+              >
+                {model.pointsInput == null && model.pointsOutput == null
+                  ? "—"
+                  : `${fmtPoints(model.pointsInput)} in · ${fmtPoints(model.pointsOutput)} out`}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Context
+              </dt>
+              <dd className="tabular-nums text-foreground/80">
+                {model.contextWindow?.toLocaleString() ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Max output
+              </dt>
+              <dd className="tabular-nums text-foreground/80">
+                {model.maxTokens?.toLocaleString() ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Usage
+              </dt>
+              <dd>
+                <UsageTier tier={tier} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Speed
+              </dt>
+              <dd>
+                <SpeedDots value={model.speedRating} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Interaction
+              </dt>
+              <dd className="text-foreground/80">
+                {INTERACTION_LABEL[model.interaction]}
+              </dd>
+            </div>
+          </div>
+
+          {/* Services — the endpoint's PUBLIC Matrx brand only (Matrx
             Fast / Matrx Lightning / ...). Never a vendor name (the admin
             variant's Offerings column carries the real vendor). When
             `onPinOffering` is provided the chips are pin toggles: clicking a
@@ -612,108 +609,113 @@ function ModelDetailCard({
             the preferred offering by priority. Clicking the pinned chip
             unpins (back to Auto). Otherwise the chips are display-only and
             the first (preferred) tier is highlighted. */}
-        {model.tiers.length > 0 && model.tiers[0].servedVia && (
-          <div>
-            <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-              {model.tiers.length === 1 ? SERVICE_LABEL : SERVICE_LABEL_PLURAL}
-            </dt>
-            <dd className="flex flex-wrap gap-1">
-              {onPinOffering ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => onPinOffering(model, undefined)}
-                    title="Auto — the server picks the preferred Service for each call"
-                    className={cn(
-                      "transition-colors",
-                      !anyPinnedHere
-                        ? SERVICE_CHIP_SELECTED
-                        : cn(
-                            SERVICE_CHIP_UNSELECTED,
-                            "hover:bg-muted/60 hover:text-foreground",
-                          ),
-                    )}
-                  >
-                    Auto
-                  </button>
-                  {model.tiers.map((t) => {
-                    const pinned = pinnedHere(t);
-                    return (
-                      <button
-                        key={t.offeringId}
-                        type="button"
-                        onClick={() =>
-                          onPinOffering(model, pinned ? undefined : t.offeringId)
-                        }
-                        title={
-                          pinned
-                            ? "Pinned — every call uses this Service. Click to return to Auto."
-                            : `Pin every call to ${t.servedVia}`
-                        }
-                        className={cn(
-                          "transition-colors",
-                          pinned
-                            ? SERVICE_CHIP_SELECTED
-                            : cn(
-                                SERVICE_CHIP_UNSELECTED,
-                                "hover:bg-muted/60 hover:text-foreground",
-                              ),
-                        )}
-                      >
-                        {t.servedVia}
-                      </button>
-                    );
-                  })}
-                </>
-              ) : (
-                model.tiers.map((t, i) => (
-                  <span
-                    key={t.offeringId}
-                    className={
-                      i === 0
-                        ? SERVICE_CHIP_SELECTED
-                        : SERVICE_CHIP_UNSELECTED
-                    }
-                    title={
-                      i === 0
-                        ? "Default serving tier"
-                        : "Also available on this tier"
-                    }
-                  >
-                    {t.servedVia}
-                  </span>
-                ))
-              )}
-            </dd>
+          {model.tiers.length > 0 && model.tiers[0].servedVia && (
+            <div>
+              <dt className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                {model.tiers.length === 1
+                  ? SERVICE_LABEL
+                  : SERVICE_LABEL_PLURAL}
+              </dt>
+              <dd className="flex flex-wrap gap-1">
+                {onPinOffering ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onPinOffering(model, undefined)}
+                      title="Auto — the server picks the preferred Service for each call"
+                      className={cn(
+                        "transition-colors",
+                        !anyPinnedHere
+                          ? SERVICE_CHIP_SELECTED
+                          : cn(
+                              SERVICE_CHIP_UNSELECTED,
+                              "hover:bg-muted/60 hover:text-foreground",
+                            ),
+                      )}
+                    >
+                      Auto
+                    </button>
+                    {model.tiers.map((t) => {
+                      const pinned = pinnedHere(t);
+                      return (
+                        <button
+                          key={t.offeringId}
+                          type="button"
+                          onClick={() =>
+                            onPinOffering(
+                              model,
+                              pinned ? undefined : t.offeringId,
+                            )
+                          }
+                          title={
+                            pinned
+                              ? "Pinned — every call uses this Service. Click to return to Auto."
+                              : `Pin every call to ${t.servedVia}`
+                          }
+                          className={cn(
+                            "transition-colors",
+                            pinned
+                              ? SERVICE_CHIP_SELECTED
+                              : cn(
+                                  SERVICE_CHIP_UNSELECTED,
+                                  "hover:bg-muted/60 hover:text-foreground",
+                                ),
+                          )}
+                        >
+                          {t.servedVia}
+                        </button>
+                      );
+                    })}
+                  </>
+                ) : (
+                  model.tiers.map((t, i) => (
+                    <span
+                      key={t.offeringId}
+                      className={
+                        i === 0
+                          ? SERVICE_CHIP_SELECTED
+                          : SERVICE_CHIP_UNSELECTED
+                      }
+                      title={
+                        i === 0
+                          ? "Default serving tier"
+                          : "Also available on this tier"
+                      }
+                    >
+                      {t.servedVia}
+                    </span>
+                  ))
+                )}
+              </dd>
+            </div>
+          )}
+
+          {model.multilingual && (
+            <div className="flex items-center gap-1 text-foreground/80">
+              <Languages className="h-3.5 w-3.5" />
+              <span>Multilingual</span>
+            </div>
+          )}
+
+          {/* Never hide data: the complete raw feature set, always. */}
+          {model.features.raw.length > 0 && (
+            <div>
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                All capability flags
+              </dt>
+              <dd className="font-mono text-[10px] leading-relaxed text-muted-foreground/80">
+                {model.features.raw.join(", ")}
+              </dd>
+            </div>
+          )}
+        </dl>
+
+        {/* Mobile: the admin offerings section lives inside the card scroll. */}
+        {includeAdminSection && variant === "admin" && (
+          <div className="mt-3 rounded-md border border-border">
+            <AdminOfferingsSection model={model} />
           </div>
         )}
-
-        {model.multilingual && (
-          <div className="flex items-center gap-1 text-foreground/80">
-            <Languages className="h-3.5 w-3.5" />
-            <span>Multilingual</span>
-          </div>
-        )}
-
-        {/* Never hide data: the complete raw feature set, always. */}
-        {model.features.raw.length > 0 && (
-          <div>
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              All capability flags
-            </dt>
-            <dd className="font-mono text-[10px] leading-relaxed text-muted-foreground/80">
-              {model.features.raw.join(", ")}
-            </dd>
-          </div>
-        )}
-      </dl>
-
-      {/* Mobile: the admin offerings section lives inside the card scroll. */}
-      {includeAdminSection && variant === "admin" && (
-        <div className="mt-3 rounded-md border border-border">
-          <AdminOfferingsSection model={model} />
-        </div>
-      )}
       </div>
       {/* Fixed footer — the Select button never moves. */}
       <div className="shrink-0 border-t border-border p-3">
@@ -997,9 +999,7 @@ function FiltersPanel({
               <ChipToggle
                 key={i}
                 active={filters.interaction === i}
-                onClick={() =>
-                  setFilters((f) => ({ ...f, interaction: i }))
-                }
+                onClick={() => setFilters((f) => ({ ...f, interaction: i }))}
               >
                 {i === "any" ? "Any" : INTERACTION_LABEL[i]}
               </ChipToggle>
@@ -1265,16 +1265,18 @@ export function ModelListDropdown({
   // Distinct maker / Service / vendor / API option lists from the catalog.
   const makerOptions = useMemo(
     () =>
-      [...new Set(models.map((m) => m.maker).filter((v): v is string => !!v))].sort(
-        (a, b) => a.localeCompare(b),
-      ),
+      [
+        ...new Set(models.map((m) => m.maker).filter((v): v is string => !!v)),
+      ].sort((a, b) => a.localeCompare(b)),
     [models],
   );
   const serviceOptions = useMemo(
     () =>
       [
         ...new Set(
-          models.flatMap((m) => m.tiers.map((t) => t.servedVia)).filter(Boolean),
+          models
+            .flatMap((m) => m.tiers.map((t) => t.servedVia))
+            .filter(Boolean),
         ),
       ].sort((a, b) => a.localeCompare(b)),
     [models],
@@ -1358,7 +1360,10 @@ export function ModelListDropdown({
       for (const m2 of filters.output) if (!m.output.includes(m2)) return false;
       for (const b of filters.features)
         if (!m.features.buckets.includes(b)) return false;
-      if (filters.interaction !== "any" && m.interaction !== filters.interaction)
+      if (
+        filters.interaction !== "any" &&
+        m.interaction !== filters.interaction
+      )
         return false;
       if (filters.multilingualOnly && !m.multilingual) return false;
       return true;
@@ -1605,7 +1610,9 @@ export function ModelListDropdown({
         {error ? (
           <div className="p-3 text-xs text-destructive">
             <div className="font-medium">Failed to load {variant} catalog</div>
-            <div className="mt-0.5 font-mono text-[11px] opacity-80">{error}</div>
+            <div className="mt-0.5 font-mono text-[11px] opacity-80">
+              {error}
+            </div>
             {variant === "admin" && (
               <div className="mt-1 text-[11px] text-muted-foreground">
                 If this is a 42501, the admin_model_catalog RPC rejected your
@@ -1818,8 +1825,8 @@ export function ModelListDropdown({
                 <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
                   <Shield className="h-6 w-6 text-muted-foreground/40" />
                   <p className="text-xs leading-relaxed text-muted-foreground/70">
-                    Hover a model to see every offering&apos;s real vendor,
-                    api, provider model id and $ pricing.
+                    Hover a model to see every offering&apos;s real vendor, api,
+                    provider model id and $ pricing.
                   </p>
                 </div>
               )}
