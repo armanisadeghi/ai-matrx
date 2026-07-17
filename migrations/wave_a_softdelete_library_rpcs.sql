@@ -89,6 +89,9 @@ begin
     from docproc.processed_documents pd
     where pd.owner_id = v_user
       and pd.deleted_at is null
+      -- Top-level docs only (6.3): a derivation is never trashed by status
+      -- while its parent stays live; mirrors the list view's scope.
+      and pd.parent_processed_id is null
       and (
         case
           when (select count(*) from docproc.processed_document_pages pp where pp.processed_document_id = pd.id) = 0
