@@ -16,10 +16,11 @@
  */
 
 import dynamic from "next/dynamic";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import type { ContextItemBodyProps } from "../types";
 import { useAttachedDocumentDisplayName } from "@/features/agents/components/inputs/resources/attached-documents";
+import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 
 const LibraryPreviewPage = dynamic(
   () =>
@@ -42,18 +43,39 @@ export function ProcessedDocumentBody({
   setTitle,
   searchSubmission,
 }: ContextItemBodyProps) {
-  const documentId =
+  const edgeDocumentId =
     item.refs.processedDocumentId ?? item.refs.documentIds?.[0] ?? null;
   const displayName = useAttachedDocumentDisplayName(
     item.refs.fileId,
     item.title,
+  );
+  const [viewDocumentId, setViewDocumentId] = useState<string | null>(
+    edgeDocumentId,
   );
 
   useEffect(() => {
     setTitle?.(displayName);
   }, [displayName, setTitle]);
 
-  if (!documentId) {
+  // Association edges may point at a knowledge-asset derivative (e.g.
+  // synthetic_qa — segments only, zero persisted pages). Preview always
+  // resolves through the file's canonical initial_extract when we can.
+  useEffect(() => {
+    let cancelled = false;
+    void resolvePdfSurfaceIds({
+      fileId: item.refs.fileId ?? null,
+      processedDocumentId: edgeDocumentId,
+    }).then((ids) => {
+      if (!cancelled) {
+        setViewDocumentId(ids.processedDocumentId ?? edgeDocumentId);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [edgeDocumentId, item.refs.fileId]);
+
+  if (!viewDocumentId) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-muted-foreground">
         <FileText className="h-8 w-8" />
@@ -70,7 +92,7 @@ export function ProcessedDocumentBody({
           submissions arrive via `searchSubmission`, so the internal bar is
           dropped to keep the body full-height. */}
       <LibraryPreviewPage
-        documentId={documentId}
+        documentId={viewDocumentId}
         embedded
         hideSearchBar
         externalSearch={searchSubmission}

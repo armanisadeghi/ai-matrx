@@ -19,8 +19,12 @@
  * read one metadata table the client can read itself. Python is for compute /
  * file bytes / cross-service work, never as a proxy for an RLS-readable table.
  *
- * Selection: latest non-archived `processed_documents` row anchored to the
- * file via (`source_kind = 'cld_file'`, `source_id = <file id>`), newest first.
+ * Selection (in order):
+ *   1. `files.files.canonical_processed_document_id` — the viewable extract
+ *      (`initial_extract`, pages + raw/clean text). Same bridge PDF surfaces use.
+ *   2. Newest non-archived row for (`source_kind = 'cld_file'`, `source_id`).
+ *      Avoid treating knowledge-asset derivatives (`synthetic_qa`, …) as the
+ *      attach/preview target when a canonical extract exists.
  *
  * `chunk_count` is intentionally NOT resolved here. RAG chunks live in the
  * `rag` schema (`rag.kg_chunks`), which is not exposed to PostgREST, so the
@@ -34,6 +38,7 @@
  * calling `clearFileDocumentCache`.
  */
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 import { extractErrorMessage } from "@/utils/errors";
 
 export interface FileDocumentLookup {
@@ -63,6 +68,79 @@ export type FileDocumentState =
 const cache = new Map<string, FileDocumentState>();
 const inflight = new Map<string, Promise<FileDocumentState>>();
 
+type ProcessedDocRow = {
+  id: string;
+  derivation_kind: string;
+  total_pages: number | null;
+  updated_at: string;
+  clean_content_completed_at: string | null;
+};
+
+function toFoundState(row: ProcessedDocRow): FileDocumentState {
+  return {
+    kind: "found",
+    doc: {
+      processed_document_id: row.id,
+      derivation_kind: row.derivation_kind,
+      total_pages: row.total_pages,
+      chunk_count: null,
+      has_clean_content: row.clean_content_completed_at != null,
+      updated_at: row.updated_at,
+    },
+  };
+}
+
+async function fetchProcessedDocumentById(
+  processedDocumentId: string,
+): Promise<ProcessedDocRow | null> {
+  const { data, error } = await supabase
+    .schema("docproc")
+    .from("processed_documents")
+    .select(
+      "id, derivation_kind, total_pages, updated_at, clean_content_completed_at",
+    )
+    .is("deleted_at", null)
+    .eq("id", processedDocumentId)
+    .is("archived_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function fetchNewestProcessedDocumentForFile(
+  fileId: string,
+): Promise<ProcessedDocRow | null> {
+  const { data, error } = await supabase
+    .schema("docproc")
+    .from("processed_documents")
+    .select(
+      "id, derivation_kind, total_pages, updated_at, clean_content_completed_at",
+    )
+    .is("deleted_at", null)
+    .eq("source_kind", "cld_file")
+    .eq("source_id", fileId)
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Canonical viewable extract for a cloud file — shared with PDF surface links. */
+export async function resolveCanonicalProcessedDocumentId(
+  fileId: string,
+): Promise<string | null> {
+  const { data: bridge, error: bridgeError } = await filesDb(supabase)
+    .from("files")
+    .select("canonical_processed_document_id")
+    .is("deleted_at", null)
+    .eq("id", fileId)
+    .maybeSingle();
+  if (bridgeError) throw bridgeError;
+  return bridge?.canonical_processed_document_id ?? null;
+}
+
 /**
  * Probe the file → document lookup. Memoised per session; safe to call from
  * many components in parallel (de-duped via `inflight`).
@@ -77,44 +155,23 @@ export async function lookupFileDocument(
 
   const promise = (async (): Promise<FileDocumentState> => {
     try {
-      const { data, error } = await supabase
-        .schema("docproc").from("processed_documents")
-        .select(
-          "id, derivation_kind, total_pages, updated_at, clean_content_completed_at",
-        )
-        .is("deleted_at", null)
-        .eq("source_kind", "cld_file")
-        .eq("source_id", fileId)
-        .is("archived_at", null)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      let row: ProcessedDocRow | null = null;
 
-      if (error) {
-        // RLS filters rows, it never errors — so an error here is a real
-        // transient/network/schema problem. Don't cache; let a re-mount retry.
-        return { kind: "unavailable", reason: error.message };
+      const canonicalId = await resolveCanonicalProcessedDocumentId(fileId);
+      if (canonicalId) {
+        row = await fetchProcessedDocumentById(canonicalId);
+      }
+      if (!row) {
+        row = await fetchNewestProcessedDocumentForFile(fileId);
       }
 
-      if (!data) {
-        // Zero rows visible under RLS = not ingested (or not readable). Either
-        // way the surfaces treat it the same: offer "Process this file".
+      if (!row) {
         const state: FileDocumentState = { kind: "absent" };
         cache.set(fileId, state);
         return state;
       }
 
-      const state: FileDocumentState = {
-        kind: "found",
-        doc: {
-          processed_document_id: data.id,
-          derivation_kind: data.derivation_kind,
-          total_pages: data.total_pages,
-          chunk_count: null,
-          has_clean_content: data.clean_content_completed_at != null,
-          updated_at: data.updated_at,
-        },
-      };
+      const state = toFoundState(row);
       cache.set(fileId, state);
       return state;
     } catch (err) {
@@ -135,7 +192,9 @@ export async function lookupFileDocument(
  * tick when the answer is already known — avoiding an async round-trip that
  * would let a fast submit race the attach.
  */
-export function peekFileDocument(fileId: string): FileDocumentState | undefined {
+export function peekFileDocument(
+  fileId: string,
+): FileDocumentState | undefined {
   return cache.get(fileId);
 }
 

@@ -5,12 +5,11 @@
  * processedDocumentId) from whichever half the calling surface knows.
  *
  * Resolution order:
- *   fileId → cld_files.canonical_processed_document_id (the bridge),
- *            falling back to the newest processed_documents row whose
- *            source_id = fileId (covers docs extracted before the bridge
- *            triggers landed 2026-06-11).
- *   processedDocumentId → processed_documents.source_id when
- *            source_kind = 'cld_file'.
+ *   fileId → canonical_processed_document_id (viewable initial_extract),
+ *            falling back to the newest processed_documents row for the file.
+ *   processedDocumentId → source file id, then re-canonicalize from that
+ *            file so derivative ids (synthetic_qa, …) map back to the extract
+ *            the user actually reads.
  *
  * Module-scoped 60s cache: every PDF surface mounts the switcher, and
  * remount storms (tab switches, route transitions) must not refetch.
@@ -18,7 +17,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { filesDb } from "@/features/files/filesDb";
+import { resolveCanonicalProcessedDocumentId } from "@/features/files/api/document-lookup";
 import type { PdfSurfaceLinkIds } from "@/features/pdf/surfaces/registry";
 
 const TTL_MS = 60_000;
@@ -52,16 +51,11 @@ async function resolveIds(opts: {
   let processedDocumentId = opts.processedDocumentId ?? null;
 
   if (fileId && !processedDocumentId) {
-    const { data: bridge } = await filesDb(supabase)
-      .from("files")
-      .select("canonical_processed_document_id")
-      .is("deleted_at", null)
-      .eq("id", fileId)
-      .maybeSingle();
-    processedDocumentId = bridge?.canonical_processed_document_id ?? null;
+    processedDocumentId = await resolveCanonicalProcessedDocumentId(fileId);
     if (!processedDocumentId) {
-      const { data: doc } = await (supabase as any)
-        .schema("docproc").from("processed_documents")
+      const { data: doc } = await supabase
+        .schema("docproc")
+        .from("processed_documents")
         .select("id")
         .is("deleted_at", null)
         .eq("source_kind", "cld_file")
@@ -73,8 +67,9 @@ async function resolveIds(opts: {
       processedDocumentId = doc?.id ?? null;
     }
   } else if (processedDocumentId && !fileId) {
-    const { data: doc } = await (supabase as any)
-      .schema("docproc").from("processed_documents")
+    const { data: doc } = await supabase
+      .schema("docproc")
+      .from("processed_documents")
       .select("source_kind, source_id")
       .is("deleted_at", null)
       .eq("id", processedDocumentId)
@@ -82,6 +77,11 @@ async function resolveIds(opts: {
     if (doc?.source_kind === "cld_file" && doc.source_id) {
       fileId = doc.source_id;
     }
+  }
+
+  if (fileId) {
+    const canonicalId = await resolveCanonicalProcessedDocumentId(fileId);
+    if (canonicalId) processedDocumentId = canonicalId;
   }
 
   return { fileId, processedDocumentId };
