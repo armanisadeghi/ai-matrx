@@ -397,7 +397,6 @@ find features/ai-models 'app/(admin)/administration/ai-models' app/api/ai-models
 - `features/agents/hooks/useModelControls.ts`
 - `features/agents/hooks/useDiffEnrichment.ts`
 - `features/agents/import/ImportQuickFixes.tsx`
-- `features/agents/runtime/runtime-resolver.ts`
 - `features/agents/runtime/get-model-capabilities.ts`
 - `features/agents/runtime/pickRuntime.ts`
 - `features/agents/runtime/validation.ts`

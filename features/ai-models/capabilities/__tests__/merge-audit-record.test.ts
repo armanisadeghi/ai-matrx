@@ -24,6 +24,24 @@ const EXTRACTION_ROW = {
 };
 
 describe("mergeAuditRecordIntoCapabilities", () => {
+  it("preserves the canonical embedding vocabulary", () => {
+    expect(
+      parseCapabilities({
+        input: ["text"],
+        output: ["embedding"],
+        features: ["embeddings", "dimension_reduction"],
+        interaction: "embedding",
+        multilingual: false,
+      }),
+    ).toEqual({
+      input: ["text"],
+      output: ["embedding"],
+      features: ["embeddings", "dimension_reduction"],
+      interaction: "embedding",
+      multilingual: false,
+    });
+  });
+
   it("untouched Save is lossless on an extraction-model row", () => {
     const edited = toAuditRecord(parseCapabilities(EXTRACTION_ROW));
     const merged = mergeAuditRecordIntoCapabilities(EXTRACTION_ROW, edited);

@@ -15,6 +15,7 @@ import React, { useRef, useState, useCallback, useEffect } from "react";
 import {
   Save,
   Copy,
+  Check,
   CopyPlus,
   Share2,
   Trash2,
@@ -110,7 +111,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [contentCopied, setContentCopied] = useState(false);
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copiedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Sync Redux label → local — NEVER while the user is typing the title.
@@ -180,7 +183,10 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // Unmount while focused (tab closed mid-rename) must not leave the
   // editing flag stuck — a stuck flag permanently disables auto-label.
   useEffect(() => {
-    return () => setNoteLabelEditing(noteId, false);
+    return () => {
+      setNoteLabelEditing(noteId, false);
+      if (copiedResetTimerRef.current) clearTimeout(copiedResetTimerRef.current);
+    };
   }, [noteId]);
 
   const handleTitleFocus = useCallback(() => {
@@ -249,7 +255,41 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     a.download = `${label || "note"}.md`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("Markdown download started");
   }, [content, label]);
+
+  const handleSave = useCallback(async () => {
+    const result = await dispatch(saveNote(noteId));
+    if (saveNote.rejected.match(result)) {
+      toast.error("Failed to save note");
+      return;
+    }
+    toast.success("Note saved");
+  }, [dispatch, noteId]);
+
+  const handleCopyContent = useCallback(() => {
+    navigator.clipboard
+      .writeText(content)
+      .then(() => {
+        setContentCopied(true);
+        if (copiedResetTimerRef.current) clearTimeout(copiedResetTimerRef.current);
+        copiedResetTimerRef.current = setTimeout(
+          () => setContentCopied(false),
+          1200,
+        );
+        toast.success("Note content copied");
+      })
+      .catch(() => toast.error("Failed to copy note content"));
+  }, [content]);
+
+  const handleDuplicate = useCallback(async () => {
+    const result = await dispatch(copyNote(noteId));
+    if (copyNote.rejected.match(result)) {
+      toast.error("Failed to duplicate note");
+      return;
+    }
+    toast.success("Note duplicated");
+  }, [dispatch, noteId]);
 
   const handleTranscription = useCallback(
     (text: string) => {
@@ -311,7 +351,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     {
       icon: <Save className="w-3.5 h-3.5" />,
       label: isSaving ? "Saving…" : "Save",
-      fn: () => dispatch(saveNote(noteId)),
+      fn: () => void handleSave(),
     },
     {
       icon: <Bookmark className="w-3.5 h-3.5" />,
@@ -321,7 +361,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     {
       icon: <CopyPlus className="w-3.5 h-3.5" />,
       label: "Duplicate note",
-      fn: () => dispatch(copyNote(noteId)),
+      fn: () => void handleDuplicate(),
     },
     {
       icon: <FolderInput className="w-3.5 h-3.5" />,
@@ -439,14 +479,11 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           >
             <button
               className={actionBtnClass}
-              onClick={() => {
-                navigator.clipboard
-                  .writeText(content)
-                  .catch(() => toast.error("Failed to copy note content"));
-              }}
+              onClick={handleCopyContent}
               title="Copy content"
+              aria-label="Copy note content"
             >
-              <Copy />
+              {contentCopied ? <Check className="text-green-500" /> : <Copy />}
             </button>
             <button
               className={actionBtnClass}

@@ -84,6 +84,15 @@ export function pickRuntime(opts: PickRuntimeInput): PickRuntimeResult {
           "This is an extraction model (NER/classification) — it cannot run as a conversational agent. Use it through an extraction surface instead.",
       };
 
+    case "embedding":
+      // Embedding models produce vectors, not assistant turns. Keep this
+      // explicit so a newly recognized interaction mode can never silently
+      // fall through to conversational transport selection.
+      return {
+        error:
+          "This is an embedding model — it cannot run as a conversational agent. Use it through an embedding or retrieval surface instead.",
+      };
+
     case "turn":
     case "single":
       // "single" (one-shot generation — image/video models) deliberately

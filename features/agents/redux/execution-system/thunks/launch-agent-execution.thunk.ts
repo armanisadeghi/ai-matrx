@@ -61,12 +61,6 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import {
-  assertExecutionTargetLaunchable,
-  resolveAgentRuntime,
-} from "@/features/agents/runtime/runtime-resolver";
-import { launchRealtimeSession } from "@/features/agents/runtime/realtime/launchRealtimeSession.thunk";
-import { isRealtimeRuntime } from "@/features/agents/runtime/pickRuntime";
-import {
   isProjectCreateFlow,
   logProjectCreateAiSnapshot,
   logProjectCreateAiStage,
@@ -472,43 +466,6 @@ export const launchAgentExecution = createAsyncThunk<
   }
 
   // =========================================================================
-  // Step 0.6: Runtime selection — pick the transport (python-stream by
-  // default, browser-realtime for voice / realtime models on
-  // realtime-capable surfaces). If the model declares
-  // `interaction: "realtime"` AND the surface is `browser-realtime`,
-  // hand off to `launchRealtimeSession` and skip the regular instance
-  // creation + executeInstance path entirely.
-  //
-  // Inert by default — `ui_surface.execution_mode` defaults to
-  // `python-stream` for every existing surface row, so today this path
-  // never fires. The voice migration (Step 4) is what flips the
-  // `/chat/voice` surface to `browser-realtime`.
-  // =========================================================================
-  if (agentId) {
-    const runtimeResult = await resolveAgentRuntime(
-      () => getState() as RootState,
-      { agentId, surfaceName },
-    );
-    if ("error" in runtimeResult) {
-      throw new Error(runtimeResult.error);
-    }
-    if (isRealtimeRuntime(runtimeResult.runtime)) {
-      if (!surfaceName) {
-        throw new Error(
-          "Realtime agents must be launched from a surface with a name.",
-        );
-      }
-      await dispatch(launchRealtimeSession({ agentId, surfaceName })).unwrap();
-      // The realtime path mounts the session on the voice surface
-      // rather than creating a cx_conversation here. Return a marker
-      // conversationId so the caller's contract (a string) is honored;
-      // callers that need real ids on the realtime path will key off
-      // the surface's own slice in Step 4.
-      return { conversationId: "" };
-    }
-  }
-
-  // =========================================================================
   // Step 1: Route by trigger type and create instance
   // =========================================================================
 
@@ -524,21 +481,6 @@ export const launchAgentExecution = createAsyncThunk<
 
     if (!shortcut) {
       throw new Error(`Shortcut ${shortcutId} not found in Redux`);
-    }
-
-    // Extraction-model refusal for the SHORTCUT path (TASK-003). Shortcut
-    // launches never carry an agentId, so the Step 0.6 resolveAgentRuntime
-    // gate above (`if (agentId)`) does not cover them — refuse here, before
-    // any conversation is minted.
-    if (shortcut.agentId) {
-      const launchable = await assertExecutionTargetLaunchable(
-        () => getState() as RootState,
-        shortcut.resolvedId ?? shortcut.agentId,
-        shortcut.isVersion,
-      );
-      if ("error" in launchable) {
-        throw new Error(launchable.error);
-      }
     }
 
     resolvedDisplayMode =

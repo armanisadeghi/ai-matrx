@@ -46,6 +46,13 @@ describe("pickRuntime — interaction-mode exhaustiveness (TASK-003)", () => {
     }
   });
 
+  it("an embedding model is refused on every surface — never launched as a chat model", () => {
+    for (const surfaceMode of EXECUTION_MODES) {
+      const result = pickRuntime({ modelInteraction: "embedding", surfaceMode });
+      expect("error" in result).toBe(true);
+    }
+  });
+
   it("a single-shot (image/video gen) model routes like a turn-based model", () => {
     expect(
       pickRuntime({ modelInteraction: "single", surfaceMode: "python-stream" }),

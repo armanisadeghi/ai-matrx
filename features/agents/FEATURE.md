@@ -2,7 +2,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-07-15`
+**Last updated:** `2026-07-16`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -344,7 +344,7 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 ## Change log
 
 - `2026-07-15` — **Builder tool save looked like it stuck but tools vanished on reload.** Save correctly wrote `agent.definition.tools`; `dbRowToAgentDefinition` preferred stale `tool_config.tools` (often `[]`) and masked the column. Fixed: read assignment from `tools` / `custom_tools` only; `tool_config` is flags-only (`auto_tools_disabled`). Scrubbed dead `tool_config.tools` keys live (`migrations/agent_tool_config_strip_assignment_key.sql`).
-- `2026-07-15` — **Agent launch model checks now fail closed when Redux is cold.** Direct launches and version-pinned shortcuts resolve the authoritative agent/version `model_id` and `ai.model_config.capabilities` before creating a conversation. Missing agent/model metadata is a retryable launch error, and extraction models are refused instead of being silently treated as turn-based.
+- `2026-07-16` — **Launches no longer read the model catalog or authorize execution in the browser.** Removed the client runtime resolver from `launchAgentExecution`: it incorrectly used the current selectable-model view (`ai.model_config`) to authorize pinned historical versions, making any version on a deprecated model fail before its request reached aidream. The frontend now creates the normal execution instance and sends the agent/version identifier; aidream remains authoritative for model resolution, deprecation fallback, interaction validation, and execution transport. The voice surface manages its own browser-realtime session and is not launched through this generic thunk.
 - `2026-07-15` — **Long agent descriptions take over the empty-state background.** `AgentEmptyMessageDisplay` (chat + agent run before the first message) now hides the icon and name when the description exceeds 1000 characters and renders description-only markdown in a left-aligned, scrollable layout.
 
 - `2026-07-14` — **Runner conversation deep-links share the cold bottom-first loader.** `/agents/[id]/run?conversationId=...` now loads the target conversation with the same bounded initial page, transcript skeleton, cold markdown settle, bottom-pinned display window, and older-message lazy reveal used by `/chat/[conversationId]`. Verified in-browser on a long conversation with `scrollTop === maxTop`.

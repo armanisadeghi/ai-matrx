@@ -254,7 +254,6 @@ features/voice-agent/
 
 features/agents/runtime/             # ✨ added in prior session
 ├── pickRuntime.ts                   # pure resolver (model.interaction × surface.execution_mode)
-├── runtime-resolver.ts              # async helper, called by launcher
 ├── validation.ts                    # capabilities pre-flight (warn-only)
 ├── get-model-capabilities.ts        # canonical-shape lookup
 └── realtime/
@@ -289,25 +288,14 @@ Adding a new state means: declare in `types.ts`, handle in the slice's
 `colorForStatus` + the conditional motion blocks, optionally add a
 status-pill copy.
 
-### How the runtime resolver knows where to send a launch
+### Historical note: generic launcher runtime routing was removed
 
-For any launch via `launchAgentExecution`:
-
-1. The launcher resolves the agent → reads `agent.modelId`.
-2. The launcher reads `model.capabilities.interaction` ("turn" or
-   "realtime") from the canonical-shape capabilities (Step 1
-   backfill).
-3. The launcher resolves the surface → reads
-   `ui_surface.execution_mode` ("python-stream" / "nextjs-stream" /
-   "browser-realtime" / "local-runtime").
-4. `pickRuntime` makes the decision. If `interaction === "realtime"`
-   AND surface is `browser-realtime`, the launcher dispatches
-   `launchRealtimeSession` and skips `executeInstance` entirely. Else
-   it falls through to the regular path.
-
-For the voice surfaces (`matrx-user/chat-voice` and
-`matrx-user/transcript-scribe-live`), the realtime path fires. For
-every other surface, the change is inert.
+As of 2026-07-16, this handoff's generic-launcher routing description is
+superseded. `launchAgentExecution` no longer reads browser-side model or
+surface metadata, because catalog visibility is not execution authorization
+and excluded valid pinned versions on deprecated models. Aidream owns normal
+agent execution validation/routing; the dedicated voice hooks own their
+browser-realtime session.
 
 ---
 

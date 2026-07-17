@@ -20,19 +20,21 @@
 // The audit system's flat `CapabilitiesRecord` is now a DERIVED
 // projection (`toAuditRecord`) — existing consumers see the same view.
 
-// `entities` is an OUTPUT-only modality in practice (extraction models emit
-// structured entities, not prose); `document` appears on inputs. Both are
-// members of the one shared set because input/output share the vocabulary.
-export const CONTENT_TYPES = ["text", "image", "audio", "video", "document", "entities"] as const;
+// `entities` and `embedding` are OUTPUT-only modalities in practice
+// (extraction models emit structured entities; vector models emit embeddings),
+// while `document` appears on inputs. All are members of the one shared set
+// because input/output share the vocabulary.
+export const CONTENT_TYPES = ["text", "image", "audio", "video", "document", "entities", "embedding"] as const;
 export type ContentType = typeof CONTENT_TYPES[number];
 
-// Full live vocabulary (verified against ai.model_definition 2026-07-12:
-// turn:209, single:5, extraction:5, realtime:2).
+// Full live vocabulary (verified against ai.model_definition 2026-07-17:
+// turn, single, extraction, realtime, embedding).
 //   turn       — ordinary multi-turn chat request/response.
 //   single     — one-shot generation (image/video gen); no conversation.
 //   extraction — NER/classification models (GLiNER2 family); NOT chat models.
 //   realtime   — live voice/audio transport.
-export const INTERACTION_MODES = ["turn", "single", "extraction", "realtime"] as const;
+//   embedding  — vectorization models; NOT chat models.
+export const INTERACTION_MODES = ["turn", "single", "extraction", "realtime", "embedding"] as const;
 export type InteractionMode = typeof INTERACTION_MODES[number];
 
 // The complete feature vocabulary present on live `ai.model_definition` rows
@@ -54,6 +56,7 @@ export const FEATURE_KEYS = [
   "multi_turn",
   "system_prompt",
   "embeddings",
+  "dimension_reduction",
   "fine_tuning",
   "batch_api",
   "prompt_caching",

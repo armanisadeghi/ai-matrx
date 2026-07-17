@@ -1,15 +1,24 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { Braces, Copy, Loader2, Play, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Braces, Check, ChevronsUpDown, Copy, Loader2, Play, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -18,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 type ScopeSystemTier = "overview" | "scope" | "scope_type" | "context_item";
 type ScopeSystemVariation = "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
@@ -28,6 +38,13 @@ interface RenderResponse {
   status: number;
   contentType: string | null;
   metadata: Record<string, unknown> | null;
+}
+
+interface OrganizationOption {
+  id: string;
+  name: string;
+  slug: string;
+  is_personal: boolean;
 }
 
 const TIER_OPTIONS: Array<{ value: ScopeSystemTier; label: string; help: string }> = [
@@ -88,6 +105,10 @@ export default function ContextInspectorPage() {
   const [tier, setTier] = useState<ScopeSystemTier>("overview");
   const [variation, setVariation] = useState<ScopeSystemVariation>("a1");
   const [organizationId, setOrganizationId] = useState("");
+  const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
+  const [organizationsLoading, setOrganizationsLoading] = useState(true);
+  const [organizationsError, setOrganizationsError] = useState<string | null>(null);
+  const [organizationPickerOpen, setOrganizationPickerOpen] = useState(false);
   const [scopeTypeSlug, setScopeTypeSlug] = useState("");
   const [scopeSlug, setScopeSlug] = useState("");
   const [itemKey, setItemKey] = useState("");
@@ -102,10 +123,47 @@ export default function ContextInspectorPage() {
     () => VARIATION_OPTIONS.filter((option) => option.tiers.includes(tier)),
     [tier],
   );
+  const selectedOrganization = organizations.find((organization) => organization.id === organizationId);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadOrganizations = async () => {
+      try {
+        const result = await fetch("/api/admin/agent-context/organizations", {
+          cache: "no-store",
+        });
+        const payload = await result.json() as {
+          organizations?: OrganizationOption[];
+          error?: unknown;
+          detail?: unknown;
+        };
+        if (!result.ok) {
+          throw new Error(
+            typeof payload.error === "string"
+              ? payload.error
+              : typeof payload.detail === "string"
+                ? payload.detail
+                : "Unable to load organizations.",
+          );
+        }
+        if (!cancelled) setOrganizations(payload.organizations ?? []);
+      } catch (caught) {
+        if (!cancelled) {
+          setOrganizationsError(caught instanceof Error ? caught.message : String(caught));
+        }
+      } finally {
+        if (!cancelled) setOrganizationsLoading(false);
+      }
+    };
+
+    void loadOrganizations();
+    return () => { cancelled = true; };
+  }, []);
 
   const runRender = useCallback(async () => {
     if (!organizationId.trim()) {
-      setError("Organization ID is required.");
+      setError("Select an organization before rendering context.");
       return;
     }
     if (tier === "scope" && (!scopeTypeSlug.trim() || !scopeSlug.trim())) {
@@ -214,8 +272,53 @@ export default function ContextInspectorPage() {
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-1.5">
-            <Label htmlFor="organization-id">Organization ID</Label>
-            <Input id="organization-id" value={organizationId} onChange={(event) => setOrganizationId(event.target.value)} placeholder="UUID passed to the live call" />
+            <Label>Organization</Label>
+            <Popover open={organizationPickerOpen} onOpenChange={setOrganizationPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={organizationPickerOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={organizationsLoading || Boolean(organizationsError)}
+                >
+                  {organizationsLoading ? (
+                    <span className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading organizations…</span>
+                  ) : selectedOrganization ? (
+                    <span className="truncate">{selectedOrganization.name} <span className="text-muted-foreground">· {selectedOrganization.slug}</span></span>
+                  ) : (
+                    <span className="text-muted-foreground">Select an organization…</span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search organizations…" />
+                  <CommandList className="max-h-72">
+                    <CommandEmpty>No accessible organizations found.</CommandEmpty>
+                    <CommandGroup>
+                      {organizations.map((organization) => (
+                        <CommandItem
+                          key={organization.id}
+                          value={`${organization.name} ${organization.slug}`}
+                          onSelect={() => {
+                            setOrganizationId(organization.id);
+                            setOrganizationPickerOpen(false);
+                          }}
+                        >
+                          <Check className={cn("h-4 w-4", organization.id === organizationId ? "opacity-100" : "opacity-0")} />
+                          <span className="min-w-0 truncate">{organization.name}</span>
+                          <span className="ml-auto shrink-0 text-xs text-muted-foreground">{organization.slug}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {organizationsError && <p className="text-xs text-destructive">{organizationsError}</p>}
           </div>
           <div className="space-y-1.5">
             <Label>Tier</Label>
