@@ -2,23 +2,21 @@
 //
 // The dictionary follows the ONE global active context (appContextSlice). There
 // is a single context for the whole UI — set it anywhere (the chat, the war
-// room) and it applies everywhere. So AMBIENT audio (read-aloud playback +
-// recording STT bias) resolves its dictionary from that context, NOT from a
-// per-surface selection. Flip context → the next utterance uses the new
-// context's dictionary.
+// room) and it applies everywhere. Ambient read-aloud playback resolves its
+// dictionary from that context, NOT from a per-surface selection. Flip context
+// → the next utterance uses the new context's dictionary.
 //
 // Explicit document-production surfaces (podcast / scribe) still pass their own
 // surface key to override; this bridge is the default for everything else.
 //
-// Store-level (non-React) so the TTS/STT engines can use it without threading
-// state through every callsite. Best-effort: never throws — audio must never
-// break because the dictionary couldn't resolve.
+// Store-level (non-React) so TTS engines can use it without threading state
+// through every callsite. Best-effort: playback must never break because the
+// dictionary couldn't resolve.
 
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { ensureResolved } from "@/features/dictionary/redux/dictionarySlice";
 import {
   selectDictTtsAliasesForSurface,
-  selectDictSttPromptForSurface,
 } from "@/features/dictionary/redux/selectors";
 import {
   DEFAULT_DICT_SELECTION,
@@ -82,18 +80,5 @@ export async function resolveActiveContextTtsAliases(): Promise<DictPronunciatio
     );
   } catch {
     return [];
-  }
-}
-
-/** STT prompt bias for the current global context. Best-effort. */
-export async function resolveActiveContextSttPrompt(): Promise<string> {
-  try {
-    const store = await ensureActiveContextResolved();
-    if (!store) return "";
-    return (
-      selectDictSttPromptForSurface(ACTIVE_CONTEXT_DICTIONARY_SURFACE)(store.getState()) ?? ""
-    );
-  } catch {
-    return "";
   }
 }

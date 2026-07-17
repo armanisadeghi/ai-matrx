@@ -45,6 +45,12 @@ live FE reads `processed_documents` directly from Supabase via `docprocDb` +
 sections when next in here.
 
 ## Change Log
+- 2026-07-17 — Agent runs from the studio inspector / workspace open in the
+  **`flexible-panel`** display mode (draggable `WindowPanel`) instead of
+  `modal-full`; initial panel size matches the old modal (`768×85vh`). `pdf-extractor` filter now reuses
+  `usePdfStudioDocs` + `cldSourceFileIdsFromStudioDocs` (root, non-archived
+  `processed_documents` with a live `cld_file` source). MIME/extension heuristics
+  removed — only files already processed by this utility appear.
 - 2026-07-16 — **Exact PDF chunk attachments + Copy Pages ZIP.** The Chunker
   now exposes `pdf_page` as **Chunk PDF document**, a native Document input
   carrying only the chunk's pages (including configured overlap), never the

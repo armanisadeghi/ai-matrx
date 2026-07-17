@@ -7,7 +7,6 @@
 
 import {
   DICT_DEFAULT_INLINE_CHARS,
-  DICT_STT_PROMPT_CHAR_CAP,
   type DictConsumption,
   type DictEntryDraft,
   type DictPronunciation,
@@ -37,35 +36,6 @@ function customDraftsToResolved(drafts: DictEntryDraft[]): ResolvedDictEntry[] {
       source_level: "custom",
       source_name: "This task",
     }));
-}
-
-/**
- * Whisper `prompt` biasing string. Groq keeps the FINAL ~224 tokens, so the
- * most useful spellings go LAST and we cap total length conservatively. We feed
- * canonical terms (and their aliases as additional surface forms) so the model
- * is primed to emit the correct spelling.
- */
-export function buildSttPrompt(resolved: ResolvedDictionary): string {
-  const terms: string[] = [];
-  for (const e of [...resolved.entries].sort(byTerm)) {
-    terms.push(e.term);
-  }
-  if (terms.length === 0) return "";
-  // De-dupe case-insensitively, preserve order.
-  const seen = new Set<string>();
-  const unique = terms.filter((t) => {
-    const k = t.toLowerCase();
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-
-  let prompt = `Key terms: ${unique.join(", ")}.`;
-  if (prompt.length > DICT_STT_PROMPT_CHAR_CAP) {
-    // Keep the TAIL — Whisper weights the final tokens most.
-    prompt = prompt.slice(prompt.length - DICT_STT_PROMPT_CHAR_CAP);
-  }
-  return prompt;
 }
 
 /**
@@ -159,7 +129,6 @@ export function buildConsumption(
     // (persistent) and `custom_entries` (per-task) separate. The per-task set is
     // folded only into the DERIVED outputs below.
     resolved,
-    sttPrompt: buildSttPrompt(merged),
     ttsAliases: buildTtsAliases(merged),
     contextBlock: buildContextBlock(merged),
     customEntries,

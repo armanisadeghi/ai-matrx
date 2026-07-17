@@ -38,10 +38,51 @@ export interface StudioDocSummary {
   sourceMissing: boolean;
 }
 
+/**
+ * Ordered `cld_files.id` values for studio docs that still have a live
+ * binary source. Same membership rules as the `/tools/pdf-extractor`
+ * sidebar defaults: roots only (`parent_processed_id` null),
+ * `source_kind = 'cld_file'`, and not `sourceMissing`.
+ *
+ * Used by Cloud Files pickers that offer a "PDF Extractor" filter — MIME
+ * type alone is wrong; only files already processed into
+ * `docproc.processed_documents` belong in that list.
+ */
+export function cldSourceFileIdsFromStudioDocs(
+  docs: readonly StudioDocSummary[],
+): string[] {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const d of docs) {
+    if (
+      d.parentProcessedId != null ||
+      d.sourceKind !== "cld_file" ||
+      !d.sourceId ||
+      d.sourceMissing ||
+      seen.has(d.sourceId)
+    ) {
+      continue;
+    }
+    seen.add(d.sourceId);
+    ordered.push(d.sourceId);
+  }
+  return ordered;
+}
+
 type SortKey = "recent" | "name" | "size";
 
-export function usePdfStudioDocs(opts?: { pageSize?: number }) {
+export function usePdfStudioDocs(opts?: {
+  pageSize?: number;
+  /**
+   * When `false`, skip the `processed_documents` fetch. Used by surfaces that
+   * only need the list while a "PDF Extractor" filter is active (e.g. the
+   * Cloud Files resource picker) so opening the picker on other filters does
+   * not pay for a studio list read.
+   */
+  enabled?: boolean;
+}) {
   const pageSize = opts?.pageSize ?? 200;
+  const enabled = opts?.enabled ?? true;
   const userId = useAppSelector(selectUserId);
 
   const [docs, setDocs] = useState<StudioDocSummary[]>([]);
@@ -81,7 +122,7 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
   }, []);
 
   useEffect(() => {
-    if (!userId) return undefined;
+    if (!userId || !enabled) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -162,7 +203,7 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
     return () => {
       cancelled = true;
     };
-  }, [userId, pageSize, bumper]);
+  }, [userId, pageSize, bumper, enabled]);
 
   // ── Client-side derived filters ─────────────────────────────────────────
 

@@ -61,13 +61,18 @@ import { loadFolderContents } from "@/features/files/redux/thunks";
 import { isExcludedFromRecents } from "@/features/files/utils/folder-conventions";
 import type { CloudFileRecord, CloudFolderRecord } from "@/features/files";
 import { supabase } from "@/utils/supabase/client";
+import {
+  cldSourceFileIdsFromStudioDocs,
+  usePdfStudioDocs,
+} from "@/features/pdf-extractor/studio/hooks/usePdfStudioDocs";
 
 /** Same cap as `buildRows` recents filter in the files list. */
 /** Two viewports worth of rows; never mount a 100-item thumbnail fan-out. */
 const RECENTS_CAP = 20;
 
 type PickerViewMode = "list" | "grid";
-type FileFilter =
+/** File-type filter used by Stored Files / Cloud Files picker UI. */
+export type FilesResourcePickerFilter =
   | "all"
   | "pdf-extractor"
   | "pdfs"
@@ -79,10 +84,15 @@ type FileFilter =
   | "audio"
   | "data"
   | "other";
+
+type FileFilter = FilesResourcePickerFilter;
 type FileSort = "updated" | "name" | "size";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const SEARCH_RESULT_LIMIT = 20;
+
+/** Empty set reused when the PDF Extractor filter is inactive. */
+const EMPTY_PROCESSED_FILE_IDS = new Set<string>();
 
 // ---------------------------------------------------------------------------
 // Types (preserve the legacy surface)
@@ -118,29 +128,34 @@ interface FilesResourcePickerProps {
    * it's just repurposed as a folder-name filter.
    */
   allowedBuckets?: string[];
+  /**
+   * Initial file-type filter. Defaults to `"all"`. Callers embedding this
+   * picker for a media-specific variable (image/audio/video) can open
+   * already filtered without changing the Smart Agent Input path.
+   */
+  initialFilter?: FilesResourcePickerFilter;
 }
 
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
 
-function isPdfExtractorFile(file: CloudFileRecord) {
-  return (
-    file.mimeType === "application/pdf" ||
-    file.mimeType?.startsWith("image/") === true
-  );
-}
+function matchesFileFilter(
+  file: CloudFileRecord,
+  filter: FileFilter,
+  processedFileIds: ReadonlySet<string> = EMPTY_PROCESSED_FILE_IDS,
+) {
+  if (filter === "pdf-extractor") {
+    // Membership in `/tools/pdf-extractor` studio docs — never MIME.
+    return processedFileIds.has(file.id);
+  }
 
-function matchesFileFilter(file: CloudFileRecord, filter: FileFilter) {
   const { previewKind } = getFilePreviewProfile(
     file.fileName,
     file.mimeType,
     file.fileSize,
   );
   switch (filter) {
-    case "pdf-extractor":
-      // Identical to `usePdfExtractor.addFiles`: PDF MIME or image MIME.
-      return isPdfExtractorFile(file);
     case "pdfs":
       return previewKind === "pdf";
     case "text":
@@ -304,6 +319,8 @@ interface TreeNodeProps {
   viewMode: PickerViewMode;
   fileFilter: FileFilter;
   fileSort: FileSort;
+  /** Source file ids from `usePdfStudioDocs` — required for `pdf-extractor`. */
+  processedFileIds: ReadonlySet<string>;
   defaultOpen?: boolean;
 }
 
@@ -315,6 +332,7 @@ function FolderNode({
   viewMode,
   fileFilter,
   fileSort,
+  processedFileIds,
   defaultOpen = false,
 }: TreeNodeProps) {
   const [open, setOpen] = useState(defaultOpen);
@@ -340,11 +358,13 @@ function FolderNode({
           .map((id) => filesById[id])
           .filter(
             (f): f is CloudFileRecord =>
-              !!f && !f.deletedAt && matchesFileFilter(f, fileFilter),
+              !!f &&
+              !f.deletedAt &&
+              matchesFileFilter(f, fileFilter, processedFileIds),
           ),
         fileSort,
       ),
-    [children.fileIds, filesById, fileFilter, fileSort],
+    [children.fileIds, filesById, fileFilter, fileSort, processedFileIds],
   );
 
   const paddingLeft = level * 1.25;
@@ -421,6 +441,7 @@ function FolderNode({
                     viewMode={viewMode}
                     fileFilter={fileFilter}
                     fileSort={fileSort}
+                    processedFileIds={processedFileIds}
                   />
                 );
               })}
@@ -453,6 +474,7 @@ export function FilesResourcePicker({
   onBack,
   onSelect,
   allowedBuckets,
+  initialFilter = "all",
 }: FilesResourcePickerProps) {
   const currentUserId = useAppSelector(
     (s: unknown) => (s as { user?: { id?: string | null } }).user?.id ?? null,
@@ -460,6 +482,7 @@ export function FilesResourcePicker({
   useCloudTree(currentUserId ?? null);
   const treeStatus = useAppSelector(selectTreeStatus);
   const foldersById = useAppSelector(selectAllFoldersMap);
+  const filesById = useAppSelector(selectAllFilesMap);
   const rootFolderIds = useAppSelector(selectRootFolderIds);
   const allFiles = useAppSelector(selectAllFilesArray);
 
@@ -467,14 +490,32 @@ export function FilesResourcePicker({
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<PickerViewMode>("list");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [fileFilter, setFileFilter] = useState<FileFilter>("all");
+  const [fileFilter, setFileFilter] = useState<FileFilter>(initialFilter);
   const [fileSort, setFileSort] = useState<FileSort>("updated");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<CloudFileRecord[]>([]);
   const [settledSearchQuery, setSettledSearchQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [resolvedProcessedFiles, setResolvedProcessedFiles] = useState<
+    CloudFileRecord[]
+  >([]);
+  const [processedFilesLoading, setProcessedFilesLoading] = useState(false);
 
+  const isPdfExtractorFilter = fileFilter === "pdf-extractor";
   const isSearching = searchQuery.trim().length > 0;
+
+  // Same `processed_documents` corpus as `/tools/pdf-extractor` (roots,
+  // non-archived). The "pdf-extractor" filter is membership in this list —
+  // never a MIME / extension heuristic. Fetch only while that filter is on.
+  const studioDocs = usePdfStudioDocs({ enabled: isPdfExtractorFilter });
+  const processedSourceFileIds = useMemo(
+    () => cldSourceFileIdsFromStudioDocs(studioDocs.docs),
+    [studioDocs.docs],
+  );
+  const processedFileIds = useMemo(
+    () => new Set(processedSourceFileIds),
+    [processedSourceFileIds],
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(
@@ -484,8 +525,84 @@ export function FilesResourcePicker({
     return () => window.clearTimeout(timer);
   }, [searchQuery]);
 
+  // Resolve studio source ids → CloudFileRecords (Redux first, then a
+  // batched files.files read for anything the tree hasn't hydrated).
   useEffect(() => {
-    if (!debouncedSearchQuery) {
+    if (!isPdfExtractorFilter) {
+      setResolvedProcessedFiles([]);
+      setProcessedFilesLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const orderedIds = processedSourceFileIds;
+    if (orderedIds.length === 0) {
+      setResolvedProcessedFiles([]);
+      setProcessedFilesLoading(studioDocs.loading);
+      return undefined;
+    }
+
+    setProcessedFilesLoading(true);
+    void (async () => {
+      try {
+        const fromStore: CloudFileRecord[] = [];
+        const missing: string[] = [];
+        for (const id of orderedIds) {
+          const hit = filesById[id];
+          if (hit && !hit.deletedAt) fromStore.push(hit);
+          else missing.push(id);
+        }
+
+        let fetchedById = new Map<string, CloudFileRecord>();
+        if (missing.length > 0) {
+          const { data, error } = await filesDb(supabase)
+            .from("files")
+            .select(FILES_TABLE_COLUMNS)
+            .in("id", missing)
+            .is("deleted_at", null);
+          if (error) throw error;
+          fetchedById = new Map(
+            (data ?? []).map((row) => {
+              const file = dbRowToCloudFile(row) as CloudFileRecord;
+              return [file.id, file] as const;
+            }),
+          );
+        }
+        if (cancelled) return;
+
+        const byId = new Map<string, CloudFileRecord>();
+        for (const f of fromStore) byId.set(f.id, f);
+        for (const [id, f] of fetchedById) byId.set(id, f);
+
+        // Preserve studio order (created_at desc of the processed doc).
+        setResolvedProcessedFiles(
+          orderedIds
+            .map((id) => byId.get(id))
+            .filter((f): f is CloudFileRecord => !!f),
+        );
+      } catch (error: unknown) {
+        if (cancelled) return;
+        console.error("Failed to resolve PDF Extractor source files:", error);
+        setResolvedProcessedFiles([]);
+      } finally {
+        if (!cancelled) setProcessedFilesLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isPdfExtractorFilter,
+    processedSourceFileIds,
+    filesById,
+    studioDocs.loading,
+  ]);
+
+  useEffect(() => {
+    // PDF Extractor search is client-side over the studio source set —
+    // never a broad cloud-files query that then MIME-filters.
+    if (!debouncedSearchQuery || isPdfExtractorFilter) {
       return undefined;
     }
 
@@ -523,7 +640,7 @@ export function FilesResourcePicker({
     })();
 
     return () => controller.abort();
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, isPdfExtractorFilter]);
 
   // Recent files — same rules as the files list Recents view.
   const recentFiles = useMemo(() => {
@@ -537,19 +654,35 @@ export function FilesResourcePicker({
   const visibleRecentFiles = useMemo(
     () =>
       sortFiles(
-        recentFiles.filter((file) => matchesFileFilter(file, fileFilter)),
+        recentFiles.filter((file) =>
+          matchesFileFilter(file, fileFilter, processedFileIds),
+        ),
         fileSort,
       ),
-    [recentFiles, fileFilter, fileSort],
+    [recentFiles, fileFilter, fileSort, processedFileIds],
   );
+
+  const visibleProcessedFiles = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const pool = q
+      ? resolvedProcessedFiles.filter(
+          (f) =>
+            f.fileName.toLowerCase().includes(q) ||
+            f.filePath.toLowerCase().includes(q),
+        )
+      : resolvedProcessedFiles;
+    return sortFiles(pool, fileSort);
+  }, [resolvedProcessedFiles, searchQuery, fileSort]);
 
   const visibleSearchResults = useMemo(
     () =>
       sortFiles(
-        searchResults.filter((file) => matchesFileFilter(file, fileFilter)),
+        searchResults.filter((file) =>
+          matchesFileFilter(file, fileFilter, processedFileIds),
+        ),
         fileSort,
       ),
-    [searchResults, fileFilter, fileSort],
+    [searchResults, fileFilter, fileSort, processedFileIds],
   );
 
   const handleSearchChange = (value: string) => {
@@ -622,8 +755,12 @@ export function FilesResourcePicker({
     }
   };
 
-  const loading = treeStatus === "loading" || treeStatus === "idle";
-  const error = treeStatus === "error";
+  const loading = isPdfExtractorFilter
+    ? studioDocs.loading || processedFilesLoading
+    : treeStatus === "loading" || treeStatus === "idle";
+  const error = isPdfExtractorFilter
+    ? !!studioDocs.error
+    : treeStatus === "error";
 
   return (
     <div className="flex flex-col max-h-[min(460px,70dvh)]">
@@ -640,7 +777,7 @@ export function FilesResourcePicker({
         </Button>
         <Folder className="w-4 h-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">
-          Cloud Files
+          {isPdfExtractorFilter ? "PDF Extractor" : "Cloud Files"}
         </span>
         <div
           role="radiogroup"
@@ -684,7 +821,11 @@ export function FilesResourcePicker({
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <Input
             type="text"
-            placeholder="Search files and folders…"
+            placeholder={
+              isPdfExtractorFilter
+                ? "Search processed documents…"
+                : "Search files and folders…"
+            }
             value={searchQuery}
             onChange={(event) => handleSearchChange(event.target.value)}
             className="h-7 text-xs pl-7 pr-2 bg-background border-gray-300 dark:border-gray-700"
@@ -707,7 +848,7 @@ export function FilesResourcePicker({
           className="h-5 min-w-0 flex-1 bg-transparent text-[10px] text-foreground outline-none"
         >
           <option value="all">All file types</option>
-          <option value="pdf-extractor">PDF Extractor (PDFs & images)</option>
+          <option value="pdf-extractor">PDF Extractor (processed)</option>
           <option value="pdfs">PDFs</option>
           <option value="text">Text</option>
           <option value="markdown">Markdown</option>
@@ -740,9 +881,28 @@ export function FilesResourcePicker({
             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           </div>
         ) : error ? (
-          <div className="text-xs text-red-600 dark:text-red-400 text-center py-8">
-            Error loading files
+          <div className="text-xs text-red-600 dark:text-red-400 text-center py-8 px-3">
+            {studioDocs.error ?? "Error loading files"}
           </div>
+        ) : isPdfExtractorFilter ? (
+          visibleProcessedFiles.length === 0 ? (
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8 px-3">
+              {isSearching
+                ? "No processed documents match this search"
+                : "No processed documents yet — extract a file in PDF Extractor first"}
+            </div>
+          ) : (
+            <div className="p-1">
+              <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5">
+                Processed documents
+              </div>
+              <FileListOrGrid
+                files={visibleProcessedFiles}
+                viewMode={viewMode}
+                onSelect={handleFileSelect}
+              />
+            </div>
+          )
         ) : isSearching ? (
           searchQuery.trim() !== debouncedSearchQuery ||
           debouncedSearchQuery !== settledSearchQuery ? (
@@ -803,6 +963,7 @@ export function FilesResourcePicker({
                     viewMode={viewMode}
                     fileFilter={fileFilter}
                     fileSort={fileSort}
+                    processedFileIds={processedFileIds}
                   />
                 ))}
               </div>

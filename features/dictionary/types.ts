@@ -124,8 +124,6 @@ export interface DictPronunciation {
 /** Derived, ready-to-consume outputs computed from a ResolvedDictionary. */
 export interface DictConsumption {
   resolved: ResolvedDictionary;
-  /** Whisper `prompt` biasing string (capped to the 224-token window). */
-  sttPrompt: string;
   /** TTS substitution pairs (term + sounds_like → pronunciation). */
   ttsAliases: DictPronunciation[];
   /** Markdown block for LLM context injection (cleanup agents etc.). */
@@ -140,6 +138,3 @@ export interface DictConsumption {
 
 /** The 200-char default ceiling, mirrored from the agent context-slot policy. */
 export const DICT_DEFAULT_INLINE_CHARS = 200;
-
-/** Groq Whisper keeps the FINAL ~224 tokens of the prompt; stay well under. */
-export const DICT_STT_PROMPT_CHAR_CAP = 800;

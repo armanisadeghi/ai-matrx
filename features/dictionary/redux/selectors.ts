@@ -26,13 +26,6 @@ export const selectDictEntriesByOwner = (level: DictLevel, ownerId: string) =>
 export const selectDictResolvedForSurface = (surfaceKey: string) =>
   createSelector([selectDictionary], (d) => d.resolvedBySurface[surfaceKey] ?? null);
 
-/** The STT prompt string for a surface, or "" if none resolved yet. */
-export const selectDictSttPromptForSurface = (surfaceKey: string) =>
-  createSelector(
-    [selectDictResolvedForSurface(surfaceKey)],
-    (cell) => cell?.data?.sttPrompt ?? "",
-  );
-
 /** TTS substitution pairs for a surface. */
 export const selectDictTtsAliasesForSurface = (surfaceKey: string) =>
   createSelector(

@@ -2,13 +2,13 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-06-17`
+**Last updated:** `2026-07-17`
 
 ---
 
 ## Purpose
 
-Custom Dictionary — terminology + pronunciation entries attachable at four owner levels (**user, organization, scope type, scope**). Improves transcription accuracy (Whisper keyterm biasing + cleanup-agent context) and speech playback (TTS pronunciation). At use time the relevant dictionaries are **merged and de-duplicated by term; the most specific level wins** (scope > scope_type > organization > user) — the **persistent** set. On top of it, a surface may carry **per-task custom entries** (session-scoped, never saved) that **override** persistent for that one task.
+Custom Dictionary — terminology + pronunciation entries attachable at four owner levels (**user, organization, scope type, scope**). Improves cleanup-agent terminology handling and speech playback (TTS pronunciation). It is deliberately not sent to Whisper/Groq transcription: its `prompt` is continuation context rather than a constrained vocabulary and can inject terms that were never spoken. At use time the relevant dictionaries are **merged and de-duplicated by term; the most specific level wins** (scope > scope_type > organization > user) — the **persistent** set. On top of it, a surface may carry **per-task custom entries** (session-scoped, never saved) that **override** persistent for that one task.
 
 ---
 
@@ -23,13 +23,12 @@ Custom Dictionary — terminology + pronunciation entries attachable at four own
 
 **Hooks**
 - `useDictionary(level, ownerId)` — per-owner CRUD + inline-policy for the manager UI.
-- `useDictionaryContext(surfaceKey)` — surface consumption: selection (from surface-user-state) + resolved entries + `sttPrompt`/`ttsAliases`/`contextBlock` + `setSelection`. Also the per-task custom set: `customEntries` + `addCustomEntry`/`removeCustomEntry`/`clearCustomEntries`.
+- `useDictionaryContext(surfaceKey)` — surface consumption: selection (from surface-user-state) + resolved entries + `ttsAliases`/`contextBlock` + `setSelection`. Also the per-task custom set: `customEntries` + `addCustomEntry`/`removeCustomEntry`/`clearCustomEntries`.
 
 **Services**
 - `features/dictionary/service/dictionaryService.ts` — **sole chokepoint** for all `dict_*` Supabase RPC access.
 
 **Bridges (store-level, for non-React consumers)**
-- `features/dictionary/sttBridge.ts` — `resolveDictionarySttPrompt(surfaceKey)` for the audio recording hooks.
 - `features/dictionary/ttsBridge.ts` — `resolveDictionaryTtsAliases(surfaceKey)` for the Cartesia TTS hooks.
 
 **Redux slice(s)**
@@ -62,7 +61,7 @@ Custom Dictionary — terminology + pronunciation entries attachable at four own
 
 - **Manage** — `DictionaryManager` (reusable for all four levels) → `dictionaryService` → `dict_*` RPCs. `DictionarySection` embeds it into org/scope edit flows; `DictionaryTab` mounts it for the user level.
 - **Select** — `DictionarySelectorWindow` (a WindowPanel overlay, id `dictionarySelectorWindow`) writes the selection to `user_surface_state` keyed by surface; it communicates back to the parent **through that shared store, not a callback**. Its **"Add for this task"** section appends `customEntries` (per-task pronunciations) to that same selection.
-- **Consume (client)** — STT: audio hooks read the resolved `sttPrompt` via `sttBridge` when a surface opts in with `transcriptionOptions.dictionarySurfaceKey`. TTS: Cartesia hooks apply pronunciation substitutions via `ttsBridge` + `parseMarkdownToText(text, { pronunciations })` when given `dictionarySurfaceKey`. The `ttsAliases` (and `sttPrompt`/`contextBlock`) already fold persistent + per-task in `buildConsumption(resolved, customEntries)`.
+- **Consume (client)** — TTS: Cartesia hooks apply pronunciation substitutions via `ttsBridge` + `parseMarkdownToText(text, { pronunciations })` when given `dictionarySurfaceKey`. `ttsAliases` and `contextBlock` already fold persistent + per-task entries in `buildConsumption(resolved, customEntries)`. STT deliberately receives no dictionary terms: Whisper/Groq `prompt` behaves as continuation context, not an enforced lexicon.
 - **Consume (server, all TTS providers)** — a request sends `dictionary.entries` (persistent) + `dictionary.custom_entries` (per-task) + `tts_quality`. aidream's **substitution floor** (`apply_tts_dictionary`, `config/dictionary_config.py`) rewrites the spoken text on every engine — ElevenLabs `text_to_dialogue` (whose native locators don't apply), Google Gemini-TTS, Groq, xAI, OpenAI. Per-provider model/mechanism research: `aidream/docs/dictionary/providers/`.
 - **Consume (server, auto-injection)** — aidream `apply_dictionary` (in all four agent-run prep sites) resolves the user's stored selection for any surface flagged `supports_dictionary` and sets `config.dictionary`; the translator (`BaseTranslator.get_system_text`) renders a definitions block for chat models and a terse pronunciation directive for TTS / non-function-calling models. (aidream-side; see that repo.)
 
@@ -92,7 +91,7 @@ Custom Dictionary — terminology + pronunciation entries attachable at four own
 
 ## Doctrine compliance
 
-- **Reused, not forked:** extended the surfaces registry (`supports_dictionary` + `user_surface_state` primitive), the agent inline-policy control (extracted + shared), the Whisper `prompt` param, the Cartesia `parseMarkdownToText` step, and the aidream unified-config translator layer.
+- **Reused, not forked:** extended the surfaces registry (`supports_dictionary` + `user_surface_state` primitive), the agent inline-policy control (extracted + shared), the Cartesia `parseMarkdownToText` step, and the aidream unified-config translator layer. STT uses the shared catalog route without dictionary prompting.
 - **No legacy:** net-new feature; nothing replaced.
 - **Single chokepoints:** `dictionaryService` for `dict_*`; one `dictionary` multi-action tool; one shared inline-policy control.
 
@@ -108,6 +107,7 @@ Complete and live-verified on web (settings CRUD, cleanup card, selector window,
 
 ## Change log
 
+- `2026-07-17` — **STT dictionary safety.** Removed dictionary-derived Groq/Whisper prompts from every browser recording path and the shared AIDream audio contract. Whisper treats that field as continuation context, so a vocabulary list could be transcribed even when absent from audio. Dictionary support remains for TTS pronunciation and cleanup-agent context.
 - `2026-07-13` — **Prod deploy re-verify (aidream v0.1.536).** Auto-injection live on `matrx-user/transcripts-cleanup` (Dictionary Assistant quotes the injected block); Diagram Editor skill run clean; zero new `dictionary_recovery`/`skill_merge_recovery` rows post-deploy. Only the human podcast-listen check remains (handoff `docs/handoffs/custom-dictionary.md`).
 - `2026-07-13` — **Prod activation pass.** Cache-bust run; Dictionary Assistant→`dictionary` tool→`dict_entries` verified live on prod (fixed the missing tool assignment on agent `ab1a868e`). Root-caused + fixed two aidream prod breaks: `dict_resolve_for` jsonb-vs-`uuid[]` binding (`ArrayArg`) and `SkillBody.version` str-vs-int (skills silently stripped) — deploy-pending. Live capture STT biasing wired: `useChunkedRecordAndTranscribe` now falls back to `resolveActiveContextSttPrompt()` when no explicit `dictionarySurfaceKey`/`prompt` — the shared global recorder (`GlobalRecordingProvider`) is Whisper-biased by default.
 - `2026-06-13` — Feature created. DB (dict_entries/dict_settings/user_surface_state/supports_dictionary + RPCs), FE feature (manager, sections, settings tab, selector WindowPanel, indicator, cleanup card, import/export, surface-user-state primitive), STT/TTS consumers, aidream config/translator/auto-injection/podcast, `dictionary` tool + 3 system agents + 2 skills.

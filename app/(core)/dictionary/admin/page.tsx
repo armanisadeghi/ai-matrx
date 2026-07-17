@@ -15,7 +15,7 @@ const DICTIONARY_ADMIN_MAP: FeatureAdminMap = {
   name: "Custom Dictionary",
   slug: "dictionary",
   description:
-    "Terminology + pronunciation entries attachable at four owner levels (user / organization / scope type / scope). Improves transcription accuracy (Whisper keyterm biasing + cleanup-agent context) and speech playback (TTS pronunciation). Merged + de-duplicated at use time (most-specific level wins). Managed from user settings and every entity edit flow; consumed automatically by surfaces flagged supports_dictionary.",
+    "Terminology + pronunciation entries attachable at four owner levels (user / organization / scope type / scope). Improves cleanup-agent terminology handling and speech playback (TTS pronunciation). Transcription intentionally remains audio-evidence-only because Whisper prompts are continuation context, not a constrained vocabulary. Merged + de-duplicated at use time (most-specific level wins). Managed from user settings and every entity edit flow; consumed automatically by surfaces flagged supports_dictionary.",
   docs: [{ label: "Dictionary FEATURE.md", href: "/features/dictionary/FEATURE.md" }],
 
   routes: [
@@ -108,7 +108,7 @@ const DICTIONARY_ADMIN_MAP: FeatureAdminMap = {
       name: "dictionary",
       filePath: "features/dictionary/redux/dictionarySlice.ts",
       description:
-        "Owners catalogue, per-owner entry cache, and per-surface resolved consumption (entries + sttPrompt + ttsAliases + contextBlock). In-flight dedup + TTL.",
+        "Owners catalogue, per-owner entry cache, and per-surface resolved consumption (entries + ttsAliases + contextBlock). In-flight dedup + TTL.",
     },
     {
       name: "surfaceUserState",
@@ -123,7 +123,7 @@ const DICTIONARY_ADMIN_MAP: FeatureAdminMap = {
       name: "Transcripts / Studio / Scribe",
       adminUrl: "/transcripts/admin",
       description:
-        "Consuming surfaces. STT keyterm biasing rides the existing Whisper `prompt`; LLM cleanup context is auto-injected server-side when the surface is flagged supports_dictionary.",
+        "Consuming surfaces. LLM cleanup context is auto-injected server-side when the surface is flagged supports_dictionary; TTS applies pronunciation substitutions. STT deliberately receives no dictionary prompt.",
     },
     {
       name: "Agents",

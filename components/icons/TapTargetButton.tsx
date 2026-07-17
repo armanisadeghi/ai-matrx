@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  cloneElement,
   forwardRef,
+  isValidElement,
   type ButtonHTMLAttributes,
   type ReactElement,
   type ReactNode,
@@ -10,6 +12,7 @@ import {
 import Link from "next/link";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface TapTargetButtonProps {
   icon?: React.ReactNode;
@@ -82,7 +85,14 @@ function IconContent({
   TapTargetButtonProps,
   "icon" | "children" | "strokeWidth" | "className"
 >) {
-  if (icon) return <>{icon}</>;
+  if (icon) {
+    if (isValidElement<{ className?: string }>(icon)) {
+      return cloneElement(icon, {
+        className: cn(className, icon.props.className),
+      });
+    }
+    return <span className={className}>{icon}</span>;
+  }
   return (
     <svg
       className={className}
@@ -549,7 +559,7 @@ export const TapTargetButtonSolid = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
-    pillClassName: `matrx-tap-pill ${bgColor} ${hoverBgColor} ${activeBgColor}`,
+    pillClassName: `matrx-tap-pill ${bgColor} ${iconColor} ${hoverBgColor} ${activeBgColor}`,
     iconClassName: `matrx-tap-icon ${iconColor}`,
     labelClassName: `matrx-tap-label ${iconColor}`,
     rest,

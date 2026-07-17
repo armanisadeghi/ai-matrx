@@ -43,7 +43,6 @@ export async function transcribeAudioFile(
   const form = new FormData();
   form.append("file", file);
   if (options?.language) form.append("language", options.language);
-  if (options?.prompt) form.append("prompt", options.prompt);
   const { data } = await apiMultipart("/audio/transcribe", form, { signal });
   return normalizeTranscription(data);
 }
@@ -55,7 +54,6 @@ export async function transcribeAudioUrl(
   const { data } = await apiPost("/audio/transcribe-url", {
     url,
     language: options?.language,
-    prompt: options?.prompt,
   });
   return normalizeTranscription(data);
 }

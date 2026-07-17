@@ -3157,6 +3157,48 @@
         }
       }
     },
+    "/ai/context/preview": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Preview Context",
+        "description": "Return EXACTLY what context resolution produces for these selections.",
+        "operationId": "preview_context_ai_context_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/chat/direct-chat": {
       "post": {
         "tags": [
@@ -12682,6 +12724,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -36353,6 +36455,70 @@
         }
       }
     },
+    "/admin/agent-context/organizations": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Context Organizations",
+        "description": "List only the organizations the current principal can render context for.",
+        "operationId": "list_context_organizations_admin_agent_context_organizations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextOrganizationsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/agent-context/render": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Render Context",
+        "description": "Return the same bytes an agent would receive for this context target.",
+        "operationId": "render_context_admin_agent_context_render_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextRenderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextRenderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scheduling/validate-cron": {
       "post": {
         "tags": [
@@ -45809,17 +45975,6 @@
             ],
             "title": "Language"
           },
-          "prompt": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Prompt"
-          },
           "model": {
             "type": "string",
             "title": "Model",
@@ -50698,6 +50853,16 @@
         ],
         "title": "CleanRequest"
       },
+      "Clearance": {
+        "type": "string",
+        "enum": [
+          "public",
+          "internal",
+          "restricted",
+          "privileged"
+        ],
+        "title": "Clearance"
+      },
       "ClientContext": {
         "properties": {
           "surface": {
@@ -51977,6 +52142,384 @@
         "title": "ContextItemBinding",
         "description": "Binds a variable to a scope context item; it inherits that item's component."
       },
+      "ContextOrganizationOption": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "is_personal": {
+            "type": "boolean",
+            "title": "Is Personal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "is_personal"
+        ],
+        "title": "ContextOrganizationOption"
+      },
+      "ContextOrganizationsResponse": {
+        "properties": {
+          "organizations": {
+            "items": {
+              "$ref": "#/components/schemas/ContextOrganizationOption"
+            },
+            "type": "array",
+            "title": "Organizations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organizations"
+        ],
+        "title": "ContextOrganizationsResponse"
+      },
+      "ContextPreviewBindings": {
+        "properties": {
+          "variables": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Variables"
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context"
+          },
+          "picklist_bindings": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Picklist Bindings"
+          },
+          "traces": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Traces"
+          }
+        },
+        "type": "object",
+        "title": "ContextPreviewBindings",
+        "description": "Serialized ``ScopeBindingResult`` — the agent's scope-bound fill."
+      },
+      "ContextPreviewRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature"
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "entity_is_new": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Is New"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ContextPreviewRequest",
+        "description": "Inputs mirroring what ``AgentStartRequest`` feeds context resolution.\n\n``organization_id`` / ``project_id`` / ``task_id`` / ``scope_ids`` arrive\nvia the :class:`ScopedRequest` base (FE ``callApi`` auto-injects them)."
+      },
+      "ContextPreviewResponse": {
+        "properties": {
+          "injected_block": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Injected Block"
+          },
+          "block_producer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Producer"
+          },
+          "block_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Sha256"
+          },
+          "block_byte_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Byte Length"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "scope_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scope Ids"
+          },
+          "scope_labels": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Scope Labels"
+          },
+          "variables": {
+            "$ref": "#/components/schemas/ContextPreviewVariables"
+          },
+          "cell_values": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Cell Values"
+          },
+          "bindings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextPreviewBindings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type"
+          },
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "entity_is_new": {
+            "type": "boolean",
+            "title": "Entity Is New"
+          }
+        },
+        "type": "object",
+        "required": [
+          "injected_block",
+          "block_producer",
+          "block_sha256",
+          "block_byte_length",
+          "organization_id",
+          "scope_ids",
+          "scope_labels",
+          "variables",
+          "cell_values",
+          "bindings",
+          "entity_type",
+          "entity_id",
+          "entity_is_new"
+        ],
+        "title": "ContextPreviewResponse"
+      },
+      "ContextPreviewVariables": {
+        "properties": {
+          "direct": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Direct"
+          },
+          "tool_accessible": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tool Accessible"
+          },
+          "searchable": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Searchable"
+          }
+        },
+        "type": "object",
+        "title": "ContextPreviewVariables",
+        "description": "Resolved scope variables split by delivery tier (RPC ``inject_as``)."
+      },
+      "ContextRenderRequest": {
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/ContextTarget"
+          },
+          "invocation": {
+            "$ref": "#/components/schemas/InvocationContext"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target",
+          "invocation"
+        ],
+        "title": "ContextRenderRequest"
+      },
+      "ContextRenderResponse": {
+        "properties": {
+          "rendered": {
+            "type": "string",
+            "title": "Rendered"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rendered",
+          "metadata"
+        ],
+        "title": "ContextRenderResponse"
+      },
       "ContextStateResponse": {
         "properties": {
           "conversation_id": {
@@ -52057,6 +52600,78 @@
         ],
         "title": "ContextStateResponse",
         "description": "Same shape as the CONTEXT_STATE stream event payload.\n\nThe FE Model Context tab hydrates from this endpoint on conversation\nopen, then receives live updates from the CONTEXT_STATE stream events\nafter each turn — no polling needed once the stream is connected."
+      },
+      "ContextTarget": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "scope_system",
+            "title": "Kind"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "overview",
+              "scope",
+              "scope_type",
+              "context_item"
+            ],
+            "title": "Tier"
+          },
+          "variation": {
+            "type": "string",
+            "enum": [
+              "a1",
+              "a2",
+              "fk_a",
+              "fk_b",
+              "d_elements",
+              "d_attributes"
+            ],
+            "title": "Variation",
+            "default": "a1"
+          },
+          "scope_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Slug"
+          },
+          "scope_type_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Type Slug"
+          },
+          "item_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "tier"
+        ],
+        "title": "ContextTarget"
       },
       "ContractAuditReport": {
         "properties": {
@@ -55648,6 +56263,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -65158,6 +65828,103 @@
           "top_sources"
         ],
         "title": "InventoryResponse"
+      },
+      "InvocationContext": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type",
+            "default": "conversation"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "scope_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scope Ids"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "clearance": {
+            "$ref": "#/components/schemas/Clearance",
+            "default": "internal"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "organization_id"
+        ],
+        "title": "InvocationContext",
+        "description": "Normal-call inputs retained here as expansion points for all context producers."
       },
       "IssueClassBatchResult": {
         "properties": {
@@ -88638,17 +89405,6 @@
               }
             ],
             "title": "Language"
-          },
-          "prompt": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Prompt"
           },
           "model": {
             "type": "string",

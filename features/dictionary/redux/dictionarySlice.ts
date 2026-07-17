@@ -230,10 +230,9 @@ export function ensureResolved(
 }
 
 /**
- * Store-callable bridge for non-React consumers (the audio recording hooks).
+ * Store-callable bridge for non-React consumers (for example, TTS adapters).
  * Loads the surface-user-state, reads the stored dictionary selection
  * (surface_key → '_default' → personal-only default), then resolves + caches.
- * After awaiting this, selectDictSttPromptForSurface(surfaceKey) is populated.
  */
 export function ensureDictionaryForSurfaceFromStore(surfaceKey: string): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {

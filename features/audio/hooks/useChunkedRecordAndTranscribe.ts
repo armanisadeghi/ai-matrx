@@ -176,11 +176,6 @@ export function useChunkedRecordAndTranscribe({
     transcriptionOptionsRef.current = transcriptionOptions;
   }, [transcriptionOptions]);
 
-  // Custom Dictionary keyterm biasing: resolved once per recording start when a
-  // surface opts in via `dictionarySurfaceKey`. Applied per chunk when the
-  // caller hasn't passed an explicit `prompt`.
-  const dictPromptRef = useRef<string>("");
-
   const sessionRelativeSec = useCallback(() => {
     if (!startTimeRef.current) return 0;
     const elapsed =
@@ -314,9 +309,7 @@ export function useChunkedRecordAndTranscribe({
         const result = await uploadAndTranscribeFull(
           fullBlob,
           userIdRef.current || "anonymous",
-          baseOpts?.prompt || !dictPromptRef.current
-            ? baseOpts
-            : { ...baseOpts, prompt: dictPromptRef.current },
+          baseOpts,
         );
         return result;
       } catch (err) {
@@ -498,7 +491,6 @@ export function useChunkedRecordAndTranscribe({
         // the chunk as audio, not video (recorder blobs carry `;codecs=opus`
         // or an empty type, both of which sniff to `video/webm`).
         const audioFile = toAudioFile(blobToSend, { prefix: "chunk" });
-        const effectivePrompt = opts?.prompt || dictPromptRef.current;
 
         // Bound the request: on bad networks a chunk fetch can hang
         // indefinitely, leaving `pendingRef` > 0 forever so `maybeFireFinal`
@@ -514,7 +506,7 @@ export function useChunkedRecordAndTranscribe({
         try {
           data = await transcribeAudioFile(
             audioFile,
-            { language: opts?.language, prompt: effectivePrompt },
+            { language: opts?.language },
             ctrl.signal,
           );
         } finally {
@@ -721,33 +713,6 @@ export function useChunkedRecordAndTranscribe({
       chunkTimingsRef.current.clear();
       setLiveTranscript("");
       setFailedChunkCount(0);
-
-      // Resolve dictionary keyterm biasing. Same policy as useAudioTranscription:
-      // an explicit `dictionarySurfaceKey` scopes to that surface's stored
-      // selection; otherwise ambient capture follows the ONE global active
-      // context (features/dictionary/activeContextBridge.ts). Best-effort +
-      // non-blocking: fire it off; chunks fall back to "" until it lands
-      // (first chunk is ~3 s out, the RPC is faster). Never await here.
-      const dictSurfaceKey =
-        transcriptionOptionsRef.current?.dictionarySurfaceKey;
-      dictPromptRef.current = "";
-      if (!transcriptionOptionsRef.current?.prompt) {
-        if (dictSurfaceKey) {
-          void import("@/features/dictionary/sttBridge").then(
-            ({ resolveDictionarySttPrompt }) =>
-              resolveDictionarySttPrompt(dictSurfaceKey).then((p) => {
-                dictPromptRef.current = p;
-              }),
-          );
-        } else {
-          void import("@/features/dictionary/activeContextBridge").then(
-            ({ resolveActiveContextSttPrompt }) =>
-              resolveActiveContextSttPrompt().then((p) => {
-                dictPromptRef.current = p;
-              }),
-          );
-        }
-      }
 
       // Shared mic manager: reuses a warm grant so mobile doesn't re-prompt
       // on every recording. Released (not hard-stopped) on teardown.

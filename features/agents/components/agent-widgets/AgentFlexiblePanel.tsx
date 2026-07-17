@@ -5,6 +5,10 @@ import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-sy
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentRunner } from "../smart/AgentRunner";
 
+/** Match `AgentFullModal` (`max-w-3xl` × `h-[85dvh]`). */
+const AGENT_FLEXIBLE_PANEL_WIDTH = 768;
+const AGENT_FLEXIBLE_PANEL_HEIGHT = "85vh";
+
 interface AgentFlexiblePanelProps {
   /** Overlay instance id — unique per open panel; also the window-manager id. */
   instanceId: string;
@@ -25,10 +29,10 @@ export function AgentFlexiblePanel({
       overlayId="agentFlexiblePanel"
       title={title}
       onClose={onClose}
-      width={500}
-      height={800}
-      minWidth={300}
-      minHeight={250}
+      width={AGENT_FLEXIBLE_PANEL_WIDTH}
+      height={AGENT_FLEXIBLE_PANEL_HEIGHT}
+      minWidth={480}
+      minHeight={320}
       bodyClassName="p-0"
       urlSyncKey="agent"
       urlSyncId={conversationId}

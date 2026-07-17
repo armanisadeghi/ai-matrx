@@ -31,32 +31,8 @@ export function useAudioTranscription() {
         // types all sniff to video otherwise).
         const audioFile = toAudioFile(audioBlob, { prefix: "audio" });
 
-        // Add optional parameters
-        // Explicit prompt wins; otherwise apply Custom Dictionary biasing. By
-        // default the bias follows the ONE global active context; a caller may
-        // scope it to a specific surface via dictionarySurfaceKey. Best-effort,
-        // never blocks.
-        let prompt = options?.prompt ?? "";
-        if (!prompt) {
-          try {
-            if (options?.dictionarySurfaceKey) {
-              const { resolveDictionarySttPrompt } =
-                await import("@/features/dictionary/sttBridge");
-              prompt = await resolveDictionarySttPrompt(
-                options.dictionarySurfaceKey,
-              );
-            } else {
-              const { resolveActiveContextSttPrompt } =
-                await import("@/features/dictionary/activeContextBridge");
-              prompt = await resolveActiveContextSttPrompt();
-            }
-          } catch {
-            prompt = "";
-          }
-        }
         const data = await transcribeAudioFile(audioFile, {
           language: options?.language,
-          prompt,
         });
 
         setResult(data);

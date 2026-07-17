@@ -4,16 +4,18 @@
  * MediaVariableInput
  *
  * Shared embedded picker for image/audio/video/document variable inputs.
- * The variable value is a plain URL string — same shape as a directly
- * attached media block on an agent message. When substituted at runtime,
- * `{{var}}` becomes the URL inside the matching block's `url` field.
+ * The persisted value is a canonical file_id when a library file is selected,
+ * otherwise a URL. When substituted into an agent message's media block,
+ * matrx-ai re-routes a UUID to `file_id` and resolves it through the normal
+ * MediaRef boundary. This is what makes a document variable safe for agent
+ * calls, workflow calls, and a saved agent default — never persist a signed
+ * URL as the identity of an owned file.
  *
- * Visibility contract: uploads go through `useFileUpload` with
- * `visibility: "private"` + `createShareLink: true` — same as the
- * generic `UploadResourcePicker`. We do NOT use the public-CDN
- * image uploader window (that one's the right tool when an agent
- * author hard-codes an image into the prompt; for runtime variable
- * fills the user's file shouldn't be auto-public).
+ * Library selection reuses `FilesResourcePicker` — the same Cloud Files /
+ * "Stored Files" UI as Smart Agent Input (search, type filter, sort,
+ * list/grid, recents, folder tree). Upload + paste-URL lanes stay local;
+ * uploads go through `useFileUpload` with `visibility: "private"` +
+ * `createShareLink: true` — same contract as `UploadResourcePicker`.
  *
  * The five wrappers (Image/Audio/Video/Document) parameterize this with
  * a `mediaKind`. YouTube is its own component — paste-only, no upload.
@@ -26,6 +28,7 @@ import {
   Video as VideoIcon,
   FileText,
   Upload,
+  FolderOpen,
   X,
   Loader2,
   AlertCircle,
@@ -33,7 +36,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useFileUpload, useFileSrc, InlineMediaRef } from "@/features/files";
+import {
+  FilesResourcePicker,
+  type FilesResourcePickerFilter,
+} from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import { cn } from "@/lib/utils";
 
 // 36-char canonical UUID — what cld_files file_ids look like.
@@ -55,6 +63,8 @@ const KIND_META: Record<
     urlPlaceholder: string;
     /** True when an `<img>` preview makes sense for the picked URL. */
     canThumbnail: boolean;
+    /** Initial Cloud Files type filter (user can still change it). */
+    libraryFilter: FilesResourcePickerFilter;
   }
 > = {
   image: {
@@ -64,6 +74,7 @@ const KIND_META: Record<
     folderPath: "Shared Assets/agent-variables/images",
     urlPlaceholder: "https://example.com/image.png",
     canThumbnail: true,
+    libraryFilter: "photos",
   },
   audio: {
     label: "audio",
@@ -72,6 +83,7 @@ const KIND_META: Record<
     folderPath: "Shared Assets/agent-variables/audio",
     urlPlaceholder: "https://example.com/audio.mp3",
     canThumbnail: false,
+    libraryFilter: "audio",
   },
   video: {
     label: "video",
@@ -80,14 +92,17 @@ const KIND_META: Record<
     folderPath: "Shared Assets/agent-variables/video",
     urlPlaceholder: "https://example.com/video.mp4",
     canThumbnail: false,
+    libraryFilter: "videos",
   },
   document: {
     label: "document",
     Icon: FileText,
-    accept: ".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx,.ppt,.pptx,application/pdf",
+    accept:
+      ".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx,.ppt,.pptx,application/pdf",
     folderPath: "Shared Assets/agent-variables/documents",
     urlPlaceholder: "https://example.com/document.pdf",
     canThumbnail: false,
+    libraryFilter: "all",
   },
 };
 
@@ -95,16 +110,23 @@ function readValue(value: unknown): string {
   if (typeof value === "string") return value;
   if (value && typeof value === "object") {
     const o = value as Record<string, unknown>;
+    // Runtime values may already be a MediaRef (for example an upstream
+    // agent/workflow node). Keep its durable identity instead of collapsing
+    // it to a transient URL or an empty field.
+    if (typeof o.file_id === "string") return o.file_id;
+    if (typeof o.fileId === "string") return o.fileId;
     if (typeof o.url === "string") return o.url;
   }
   return "";
 }
 
 function describeValue(value: string): string {
-  if (UUID_PATTERN.test(value)) return `From your library · ${value.slice(0, 8)}…`;
+  if (UUID_PATTERN.test(value))
+    return `From your library · ${value.slice(0, 8)}…`;
   try {
     const u = new URL(value);
-    const path = u.pathname.length > 30 ? `…${u.pathname.slice(-28)}` : u.pathname;
+    const path =
+      u.pathname.length > 30 ? `…${u.pathname.slice(-28)}` : u.pathname;
     return u.host + path;
   } catch {
     return value;
@@ -144,6 +166,7 @@ export function MediaVariableInput({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const { upload, uploading, error } = useFileUpload();
 
   const uploadFile = useCallback(
@@ -196,12 +219,12 @@ export function MediaVariableInput({
 
   const onClear = () => onChange("");
 
+  const openLibrary = () => setLibraryOpen(true);
+
   // Decide whether we render an <img> thumbnail. Images and resolved
   // file_id thumbnails get one; URLs without an http(s) prefix don't.
   const hasThumbnail =
-    meta.canThumbnail &&
-    !!previewSrc &&
-    /^https?:\/\//.test(previewSrc);
+    meta.canThumbnail && !!previewSrc && /^https?:\/\//.test(previewSrc);
 
   return (
     <div className={cn("space-y-1.5", compact && "space-y-1")}>
@@ -254,7 +277,22 @@ export function MediaVariableInput({
         </div>
       )}
 
-      {/* Empty state — drop zone + paste URL */}
+      {/* Selecting from Cloud Files must be first-class for every media
+          variable — same picker as Smart Agent Input → Stored Files. */}
+      {stored && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-7 w-full text-xs"
+          onClick={openLibrary}
+        >
+          <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
+          Choose a different file
+        </Button>
+      )}
+
+      {/* Empty state — drop zone + library + paste URL */}
       {!stored && (
         <>
           <div
@@ -299,6 +337,18 @@ export function MediaVariableInput({
             />
           </div>
 
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 w-full text-xs"
+            disabled={uploading}
+            onClick={openLibrary}
+          >
+            <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
+            Choose from Files
+          </Button>
+
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
             <span className="flex-1 border-t border-border" />
             <span>or paste URL</span>
@@ -322,6 +372,26 @@ export function MediaVariableInput({
           <span className="text-[11px]">{error.message}</span>
         </div>
       )}
+
+      {/* Same Cloud Files picker as Smart Agent Input → Stored Files.
+          Persist file_id only — never the short-lived signed URL. */}
+      <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
+        <DialogContent className="sm:max-w-[480px] p-0 gap-0 overflow-hidden [&>button]:hidden">
+          <DialogTitle className="sr-only">
+            Choose {meta.label} from Cloud Files
+          </DialogTitle>
+          {libraryOpen && (
+            <FilesResourcePicker
+              onBack={() => setLibraryOpen(false)}
+              initialFilter={meta.libraryFilter}
+              onSelect={(selection) => {
+                if (selection.fileId) onChange(selection.fileId);
+                setLibraryOpen(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

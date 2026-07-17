@@ -187,7 +187,7 @@ export function PdfExtractorFloatingWorkspace({
           surfaceKey: `pdf-extractor:bound-agent:${agentId}`,
           sourceFeature: "pdf-extractor",
           config: {
-            displayMode: "modal-full",
+            displayMode: "flexible-panel",
             allowChat: true,
             showVariablePanel: true,
           },
@@ -853,7 +853,7 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
         surfaceKey: `pdf-extractor:bound-agent:${agentId}`,
         sourceFeature: "pdf-extractor",
         config: {
-          displayMode: "modal-full",
+          displayMode: "flexible-panel",
           allowChat: true,
           showVariablePanel: true,
         },

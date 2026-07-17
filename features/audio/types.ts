@@ -29,14 +29,6 @@ export interface TranscriptionSegment {
 
 export interface TranscriptionOptions {
   language?: string; // ISO-639-1 language code (e.g., 'en', 'es')
-  prompt?: string; // Provide context or guide spelling
-  /**
-   * Opt a surface into Custom Dictionary keyterm biasing. When set (and `prompt`
-   * is not explicitly provided), the recording hooks resolve the user's active
-   * dictionary for this surface and pass it as the Whisper `prompt`. An explicit
-   * `prompt` always wins. See features/dictionary/sttBridge.ts.
-   */
-  dictionarySurfaceKey?: string;
 }
 
 export interface AudioRecordingState {
@@ -53,4 +45,3 @@ export interface UseAudioTranscriptionProps {
   autoSubmit?: boolean; // Automatically start transcription when recording stops
   options?: TranscriptionOptions;
 }
-

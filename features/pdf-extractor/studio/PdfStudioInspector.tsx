@@ -394,7 +394,7 @@ function AiActionsPanel({
         surfaceKey: `pdf-extractor:bound-agent:${agentId}`,
         sourceFeature: "pdf-extractor",
         config: {
-          displayMode: "modal-full",
+          displayMode: "flexible-panel",
           allowChat: true,
           showVariablePanel: true,
         },

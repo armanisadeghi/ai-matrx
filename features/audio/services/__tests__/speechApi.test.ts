@@ -42,6 +42,10 @@ describe("speechApi", () => {
         no_speech_prob: 0,
       },
     ]);
+    expect(apiPostMock).toHaveBeenCalledWith("/audio/transcribe-url", {
+      url: "https://cdn.matrxserver.com/audio.wav",
+      language: undefined,
+    });
   });
 
   it("drops retired persisted voices so the catalog default wins", async () => {
