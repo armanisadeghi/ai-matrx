@@ -3131,7 +3131,7 @@ export interface ThinkingPart {
   type?: "thinking";
   text?: string;
   id?: string;
-  provider?: "openai" | "anthropic" | "google" | "cerebras" | null;
+  provider?: "openai" | "anthropic" | "google" | "cerebras" | "moonshot" | "together" | "groq" | "xai" | "generic_openai" | null;
   signature?: string | null;
   signature_encoding?: "base64" | null;
   summary?: unknown[];
