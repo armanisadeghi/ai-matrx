@@ -126,14 +126,24 @@ const TOOL_BATCH_MIN = 2;
 type GroupedSlot =
   UnifiedSlot | { kind: "tool_batch"; callIds: string[]; seq: number };
 
-function groupConsecutiveToolSlots(slots: UnifiedSlot[]): GroupedSlot[] {
+function groupConsecutiveToolSlots(
+  slots: UnifiedSlot[],
+  // Result-is-purpose / stay-open tools (rag_search, document_search, …) are
+  // the DELIVERABLE — they render their full card directly and are never
+  // hidden behind a "N tool calls" line. Only "auto" tools batch.
+  isBatchable: (callId: string) => boolean,
+): GroupedSlot[] {
   const out: GroupedSlot[] = [];
   for (let i = 0; i < slots.length;) {
     const s = slots[i];
-    if (s.kind === "tool") {
+    if (s.kind === "tool" && isBatchable(s.callId)) {
       const callIds: string[] = [s.callId];
       let j = i + 1;
-      while (j < slots.length && slots[j].kind === "tool") {
+      while (
+        j < slots.length &&
+        slots[j].kind === "tool" &&
+        isBatchable((slots[j] as { callId: string }).callId)
+      ) {
         callIds.push((slots[j] as { callId: string }).callId);
         j++;
       }
@@ -156,14 +166,22 @@ type GroupedSegment =
   | ContentSegment
   | { type: "db_tool_batch"; segments: ContentSegmentDbTool[]; key: string };
 
-function groupConsecutiveDbTools(segments: ContentSegment[]): GroupedSegment[] {
+function groupConsecutiveDbTools(
+  segments: ContentSegment[],
+  // Same rule as the live path: deliverable-card tools never batch.
+  isBatchable: (seg: ContentSegmentDbTool) => boolean,
+): GroupedSegment[] {
   const out: GroupedSegment[] = [];
   for (let i = 0; i < segments.length;) {
     const seg = segments[i];
-    if (seg.type === "db_tool") {
+    if (seg.type === "db_tool" && isBatchable(seg)) {
       const run: ContentSegmentDbTool[] = [seg];
       let j = i + 1;
-      while (j < segments.length && segments[j].type === "db_tool") {
+      while (
+        j < segments.length &&
+        segments[j].type === "db_tool" &&
+        isBatchable(segments[j] as ContentSegmentDbTool)
+      ) {
         run.push(segments[j] as ContentSegmentDbTool);
         j++;
       }
@@ -183,6 +201,31 @@ function groupConsecutiveDbTools(segments: ContentSegment[]): GroupedSegment[] {
     }
   }
   return out;
+}
+
+/**
+ * Inside an EXPANDED agent-work group the list must be strictly LINEAR — one
+ * row per thing that happened, in order, nothing requiring a second click to
+ * reveal a third click. A "N tool calls" batch line is a summary-of-summaries
+ * there, so folded batches are expanded back to their individual tool cards.
+ * (Outside a group, batches keep folding as before.)
+ */
+function flattenWorkSlots(items: GroupedSlot[]): GroupedSlot[] {
+  return items.flatMap((item) =>
+    item.kind === "tool_batch"
+      ? item.callIds.map((callId): GroupedSlot => ({
+          kind: "tool",
+          callId,
+          seq: item.seq,
+        }))
+      : [item],
+  );
+}
+
+function flattenWorkSegments(items: GroupedSegment[]): GroupedSegment[] {
+  return items.flatMap((item) =>
+    item.type === "db_tool_batch" ? item.segments : [item],
+  );
 }
 
 /**
@@ -325,26 +368,39 @@ export const EnhancedChatMarkdownInternal: React.FC<
     (s) => s.type === "db_tool" || s.type === "thinking",
   );
 
-  // Fold runs of consecutive tool calls into one expandable batch line so a
-  // back-to-back burst (e.g. ten `tool_def` updates) isn't a wall of rows.
-  // Only the rendering is regrouped; the `hasUnifiedSpecial` /
-  // `hasDbInterleavedSpecial` branch checks still read the raw arrays.
-  const groupedSlots = useMemo(
-    () => groupConsecutiveToolSlots(unifiedSlots),
-    [unifiedSlots],
-  );
-  const groupedSegments = useMemo(
-    () => groupConsecutiveDbTools(messageInterleavedContent),
-    [messageInterleavedContent],
-  );
-
-  // Tool names for the settled-turn agent-work fold (live path): the unified
-  // slots only carry callIds; display-mode checks need the tool name.
+  // Tool names for batching + the settled-turn agent-work fold (live path):
+  // the unified slots only carry callIds; display-mode checks need the name.
   const toolLifecycleMapSelector = useMemo(
     () => (requestId ? selectToolLifecycleMap(requestId) : () => undefined),
     [requestId],
   );
   const toolLifecycleMap = useAppSelector(toolLifecycleMapSelector);
+
+  // Fold runs of consecutive tool calls into one expandable batch line so a
+  // back-to-back burst (e.g. ten `tool_def` updates) isn't a wall of rows.
+  // Deliverable-card tools ("stay-open" display mode — rag_search,
+  // document_search, …) are excluded: their card IS the content and renders
+  // directly. Only the rendering is regrouped; the `hasUnifiedSpecial` /
+  // `hasDbInterleavedSpecial` branch checks still read the raw arrays.
+  const groupedSlots = useMemo(
+    () =>
+      groupConsecutiveToolSlots(
+        unifiedSlots,
+        (callId) =>
+          getToolDisplayMode(toolLifecycleMap?.[callId]?.toolName ?? null) ===
+          "auto",
+      ),
+    [unifiedSlots, toolLifecycleMap],
+  );
+  const groupedSegments = useMemo(
+    () =>
+      groupConsecutiveDbTools(
+        messageInterleavedContent,
+        (seg) =>
+          getToolDisplayMode(seg.record?.toolName ?? seg.stubName) === "auto",
+      ),
+    [messageInterleavedContent],
+  );
 
   // ── Settled-turn fold: thinking / generic tools / short asides → one
   // "Worked for Ns" group. NEVER during a stream — live turns render every
@@ -990,7 +1046,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                     stepCount={slot.stepCount}
                     conversationId={conversationId}
                   >
-                    {slot.items.map((s, k) =>
+                    {flattenWorkSlots(slot.items).map((s, k) =>
                       renderGroupedSlot(s, i * 1000 + k),
                     )}
                   </AgentWorkGroup>
@@ -1008,7 +1064,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                       stepCount={segment.stepCount}
                       conversationId={conversationId}
                     >
-                      {segment.items.map((s, k) =>
+                      {flattenWorkSegments(segment.items).map((s, k) =>
                         renderGroupedSegment(s, segIdx * 1000 + k),
                       )}
                     </AgentWorkGroup>

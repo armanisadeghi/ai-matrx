@@ -4,6 +4,7 @@ import React from "react";
 import {
   CheckCircle,
   AlertTriangle,
+  FileSearch,
   ListChecks,
   List,
   SquareCheckBig,
@@ -79,6 +80,7 @@ import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
 import { RagSearchInline } from "../renderers/rag-search/RagSearchInline";
 import { RagSearchOverlay } from "../renderers/rag-search/RagSearchOverlay";
+import { DocumentSearchInline } from "../renderers/document-search/DocumentSearchInline";
 import { RandomWheelInline } from "../renderers/random-wheel";
 import { NoteToolInline } from "../renderers/note/NoteToolInline";
 import { NoteToolOverlay } from "../renderers/note/NoteToolOverlay";
@@ -116,8 +118,7 @@ function seoMetaTagsHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
   const result = resultAsObject(entry);
   if (!result) return null;
   const batch = result.batch_analysis as
-    | Array<{ overall_ok: boolean }>
-    | undefined;
+    Array<{ overall_ok: boolean }> | undefined;
   if (!batch) return null;
   const total = (result.count as number | undefined) ?? batch.length;
   const passed = batch.filter((a) => a.overall_ok).length;
@@ -143,8 +144,7 @@ function seoTitlesHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
   const result = resultAsObject(entry);
   if (!result) return null;
   const analysis = result.title_analysis as
-    | Array<{ title_ok: boolean }>
-    | undefined;
+    Array<{ title_ok: boolean }> | undefined;
   if (!analysis) return null;
   const total = (result.count as number | undefined) ?? analysis.length;
   const passed = analysis.filter((a) => a.title_ok).length;
@@ -172,8 +172,7 @@ function seoDescriptionsHeaderExtras(
   const result = resultAsObject(entry);
   if (!result) return null;
   const analysis = result.description_analysis as
-    | Array<{ description_ok: boolean }>
-    | undefined;
+    Array<{ description_ok: boolean }> | undefined;
   if (!analysis) return null;
   const total = (result.count as number | undefined) ?? analysis.length;
   const passed = analysis.filter((a) => a.description_ok).length;
@@ -262,7 +261,8 @@ function scrapeHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
   return (
     <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
       <span>
-        {parsed.pages.length} {parsed.pages.length === 1 ? "page" : "pages"} read
+        {parsed.pages.length} {parsed.pages.length === 1 ? "page" : "pages"}{" "}
+        read
       </span>
       {parsed.totalChars > 0 && (
         <span>{parsed.totalChars.toLocaleString()} chars</span>
@@ -818,13 +818,29 @@ export const toolRendererRegistry: ToolRegistry = {
           <span>
             {nHits} {nHits === 1 ? "hit" : "hits"}
           </span>
-          {totalCandidates != null && (
-            <span>{totalCandidates} candidates</span>
-          )}
+          {totalCandidates != null && <span>{totalCandidates} candidates</span>}
           {latency != null && <span>{latency} ms</span>}
           {reranker && <span className="ml-auto">{reranker}</span>}
         </div>
       );
+    },
+  },
+
+  document_search: {
+    toolName: "document_search",
+    displayName: "Document Search",
+    phaseLabels: {
+      running: "Searching documents",
+      complete: "Searched documents",
+      errorPrefix: "Document search failed",
+    },
+    resultsLabel: "Passages",
+    InlineComponent: DocumentSearchInline,
+    chrome: "card",
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const query = getArg<string>(entry, "query");
+      return typeof query === "string" && query ? query : null;
     },
   },
 
@@ -930,7 +946,9 @@ export const toolRendererRegistry: ToolRegistry = {
             : Array.isArray(result?.results)
               ? (result?.results as unknown[]).length
               : null;
-        return count == null ? null : `${count} ${count === 1 ? "item" : "items"}`;
+        return count == null
+          ? null
+          : `${count} ${count === 1 ? "item" : "items"}`;
       }
       const label =
         typeof result?.label === "string" && result.label
@@ -1368,6 +1386,7 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "web_read",
   "core_web_read_web_pages",
   "rag_search",
+  "document_search", // same retrieval family as rag_search — sources ARE the deliverable
   "get_user_lists",
   "seo_check_meta_tags_batch",
   "seo_check_meta_titles",
@@ -1437,6 +1456,7 @@ const TOOL_GLYPHS: Record<string, ToolGlyphSpec> = {
   research_web: { icon: Telescope, accent: "violet" },
   news_get_headlines: { icon: Newspaper, accent: "rose" },
   rag_search: { icon: Search, accent: "cyan" },
+  document_search: { icon: FileSearch, accent: "cyan" },
   // data / sql / ctx / memory
   sql: { icon: Database, accent: "green" },
   db_query: { icon: Database, accent: "green" },
