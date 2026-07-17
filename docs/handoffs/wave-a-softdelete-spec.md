@@ -19,14 +19,15 @@ Source: workflow wf_26d010fe-aba (56 agents, 37 confirmed cracks, 4.4M tokens).
 
 - [x] Phase 0 — schema (`kg_chunks.deleted_at` + index; regen types) — LIVE 2026-07-17 (index name is `kg_chunks_live_by_doc_idx`; FE types + aidream `KgChunks.deleted_at` regenerated; column is currently written/read by NOTHING — Phase 1/2 wire it)
 - [x] Pre-build adversarial verification (2026-07-17) — see PRE-BUILD VERIFICATION section; all premises confirmed against live DB + both repos; corrections folded into phases below
-- [ ] Phase 1 — per-document soft-delete/restore/purge authority
-- [ ] Phase 2 — close every read surface (search lanes + RLS + tools + central gate)
-- [ ] Phase 3 — canonical repoint triggers
-- [ ] Phase 4 — FE resolver guard
-- [ ] Phase 5 — collapse cascade authorities + atomicity
-- [ ] Phase 6 — reprocess/replace/archive coherence
-- [ ] Capstone — BEFORE DELETE hard-delete guard (the invariant)
-- [ ] Adversarial pass #2 against the implementation
+- [x] Phase 1 — per-document soft-delete/restore/purge authority (aidream 5c87dbf9b + c5a4fc81d; FE RPCs `rag.fn_delete_library_document`/`fn_bulk`/`fn_delete_and_source` converted live — the FE delete path was RPC-direct, an adversarial BLOCKER the spec missed)
+- [x] Phase 2 — close every read surface (aidream 307168e36 + 70d08acf3 after adversarial round found 7 more sites; DB `wave_a_softdelete_read_surfaces.sql` — 6 kg_chunks policies, pd org select, gate fns + `can_read_processed_document_any`)
+- [x] Phase 3 — canonical repoint triggers (`wave_a_canonical_repoint.sql`; NEWEST live sibling; UPDATE OF deleted_at + AFTER DELETE; live round-trip tested)
+- [x] Phase 4 — FE resolver guard + V7 reads (FE 0d88c5331)
+- [x] Phase 5 — cascade trigger is the ONE transactional authority (`wave_a_cascade_true_inverse.sql` + `wave_a_phase5_adversarial_fixes`: file-owner gate, chunk recount, WHEN clause; aidream b31529626 + 6d70a0736 — restore marker-gated, individually-trashed docs survive file round-trips)
+- [x] Phase 5.5 — owner Trash surface (FE 1b389613d: `LibraryTrashSheet` on the library header; `wave_a_library_trash_rpcs.sql` — list/restore/purge + summary-totals fix; family rows restore via `restore_file`)
+- [x] Phase 6 — reprocess/replace/archive coherence (aidream bfdfa3c8b: sha-reuse clears deleted_at; set_canonical_extract retires demoted siblings' chunks + re-activates promoted; archive retires chunks in-tx; bulk status top-level-only in Python + RPC)
+- [x] Capstone — BEFORE DELETE guard live on `docproc.processed_documents` (`wave_a_before_delete_guard.sql`, tested: live delete → 55000, trashed delete → cascades). **V10 deviation:** NO trigger guard on `rag.kg_chunks` — authenticated is SELECT-only there (no user delete path exists), and chunk hard-deletes are service-only rebuild machinery (re-ingest stale replacement, derivation rebuilds) that legitimately erases live rows; purge paths pre-stamp docs instead.
+- [x] Adversarial pass #2 against the implementation (3 Sonnet rounds during build: phase-1 FAIL→fixed, phase-2 FAIL→fixed, phases-3-5 PASS-WITH-FIXES→fixed; final acceptance pass run at completion)
 
 ## PRE-BUILD VERIFICATION (2026-07-17) — corrections that OVERRIDE the phase text where they conflict
 
