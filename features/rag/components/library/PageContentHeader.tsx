@@ -269,6 +269,7 @@ export function PageContentHeader({
             id: "page-readout",
             label: `Page ${activePage} / ${totalPages.toLocaleString()}`,
             disabled: true,
+            onSelect: () => {},
           },
           {
             id: "page-prev",
@@ -291,6 +292,7 @@ export function PageContentHeader({
               id: "match-none",
               label: "No matches on this page",
               disabled: true,
+              onSelect: () => {},
             },
           ];
         }

@@ -1,12 +1,16 @@
 import { validateDraft } from "@/features/page-extraction/services/run-from-draft";
-import type { ChunkingConfigDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
+import {
+  emptyDraft,
+  type ChunkingConfigDraft,
+} from "@/features/page-extraction/redux/pageExtractionSlice";
 
 function draftWithPdfTarget(target: string): ChunkingConfigDraft {
   return {
+    ...emptyDraft(),
     agentId: "agent-1",
     variableMapping: { pdf_page: target },
     kind: "extraction",
-  } as ChunkingConfigDraft;
+  };
 }
 
 describe("validateDraft PDF-document wiring", () => {

@@ -50,6 +50,7 @@ import {
   Video,
   Boxes,
   FileText,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -135,6 +136,7 @@ const MODALITY_ICON: Record<Modality, typeof Type> = {
   video: Video,
   document: FileText,
   entities: Boxes,
+  embedding: Layers,
 };
 
 const INTERACTION_LABEL: Record<Interaction, string> = {
@@ -142,6 +144,7 @@ const INTERACTION_LABEL: Record<Interaction, string> = {
   single: "Single-shot",
   extraction: "Extraction",
   realtime: "Realtime",
+  embedding: "Embedding",
 };
 
 interface ModelListDropdownProps {

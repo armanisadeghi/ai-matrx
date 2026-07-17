@@ -27,7 +27,6 @@ import {
  * thunks / `useContainerLinks` — never a bespoke edge write.
  */
 
-import type { RootState } from "@/lib/redux/store";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import type { Json } from "@/types/database.types";

@@ -16,6 +16,8 @@ const orgs: OrgNode[] = [
     name: "Acme",
     slug: "acme",
     is_personal: false,
+    role: "member",
+    projects: [],
     scope_types: [
       {
         id: "type-client",
@@ -56,6 +58,8 @@ const orgs: OrgNode[] = [
     name: "Other",
     slug: "other",
     is_personal: false,
+    role: "member",
+    projects: [],
     scope_types: [
       {
         id: "type-matter",
