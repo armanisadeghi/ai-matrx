@@ -174,13 +174,21 @@ declare
   v_user uuid := auth.uid();
   v_chunks int := 0;
   v_pages int := 0;
+  v_via text;
 begin
   -- THE INVARIANT: purge is reachable only from the trash — the row must
   -- already be soft-deleted. There is no active -> hard-deleted path.
-  perform 1 from docproc.processed_documents
+  select metadata->>'deleted_via' into v_via
+    from docproc.processed_documents
    where id = p_id and owner_id = v_user and deleted_at is not null;
   if not found then
     raise exception 'document not found in trash (only trashed documents can be purged)';
+  end if;
+  -- Family lock (mirrors fn_restore_library_document): a doc trashed WITH its
+  -- file lives and dies with the family — purging one member would strand the
+  -- rest. Family purge arrives with the file-purge path.
+  if v_via = 'file_cascade' then
+    raise exception 'this document was trashed with its file — the family is purged together via the file, not per-document';
   end if;
 
   delete from rag.kg_chunks where processed_document_id = p_id;

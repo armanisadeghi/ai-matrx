@@ -213,16 +213,20 @@ export function LibraryTrashSheet({
                       )}
                       {isFamily ? "Restore file" : "Restore"}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
-                      disabled={busy}
-                      onClick={() => handlePurge(row)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Purge
-                    </Button>
+                    {!isFamily && (
+                      // Family rows purge together via the file — the RPC
+                      // rejects per-doc purge for them, so no button.
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                        disabled={busy}
+                        onClick={() => handlePurge(row)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Purge
+                      </Button>
+                    )}
                   </li>
                 );
               })}
