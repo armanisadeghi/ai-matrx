@@ -146,6 +146,8 @@ declare
   v_chunks int := 0;
   v_docs int := 0;
   v_cld_deleted boolean := false;
+  v_file_owner uuid;
+  v_file_deleted timestamptz;
 begin
   select source_kind, source_id into v_source_kind, v_source_id
     from docproc.processed_documents
@@ -157,12 +159,23 @@ begin
 
   -- File row FIRST: the cascade trigger stamps every derivation with
   -- metadata.deleted_via='file_cascade' so a file restore brings back exactly
-  -- this set.
+  -- this set. Whole-family delete requires FILE ownership — a curator's
+  -- document grant must never silently degrade into a markerless mass-trash
+  -- of someone else's live file (adversarial finding, phases 3-5).
   if v_source_kind = 'cld_file' then
-    update files.files
-       set deleted_at = now()
-     where id = v_source_id::uuid and created_by = v_user and deleted_at is null;
-    v_cld_deleted := found;
+    select created_by, deleted_at into v_file_owner, v_file_deleted
+      from files.files where id = v_source_id::uuid;
+    if v_file_owner is not null and v_file_deleted is null then
+      if v_file_owner <> v_user then
+        raise exception 'only the file owner can delete the whole file — use the per-document delete instead';
+      end if;
+      update files.files
+         set deleted_at = now()
+       where id = v_source_id::uuid and deleted_at is null;
+      v_cld_deleted := found;
+    end if;
+    -- No file row, or file already trashed: proceed — stamping the remaining
+    -- family below is a heal, not an escalation.
   end if;
 
   -- Any family docs the trigger didn't stamp (non-cld sources, curator-owned
@@ -178,7 +191,14 @@ begin
   update rag.kg_chunks set deleted_at = now()
    where source_kind = v_source_kind and source_id = v_source_id
      and deleted_at is null;
-  get diagnostics v_chunks = row_count;
+
+  -- Recount, don't trust row_count: for the owner path the cascade trigger
+  -- already stamped the chunks synchronously inside the file UPDATE, so the
+  -- statement above matches ~0 rows (adversarial finding — the toast said
+  -- "0 segments hidden"). Same fresh-count pattern as v_docs.
+  select count(*) into v_chunks from rag.kg_chunks
+   where source_kind = v_source_kind and source_id = v_source_id
+     and deleted_at is not null;
 
   -- Memberships: source-keyed (loose kind match, mirrors the old RPC) AND
   -- doc-keyed rows for every family member (the Phase-1 adversarial leak).

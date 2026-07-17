@@ -67,6 +67,7 @@ import { toast } from "sonner";
 import { fileHandler } from "@/features/files";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingProgressSheet } from "./ProcessingProgressSheet";
+import { LibraryTrashSheet } from "./LibraryTrashSheet";
 import { ActiveJobsStrip } from "./ActiveJobsStrip";
 import { AnimatedKpiCard } from "./AnimatedKpiCard";
 import {
@@ -137,6 +138,7 @@ export function LibraryPage() {
     null,
   );
   const [bulkRunning, setBulkRunning] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
   const [searchDocId, setSearchDocId] = useState<string | null>(null);
   const [searchDocName, setSearchDocName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -435,6 +437,11 @@ export function LibraryPage() {
               </div>
             )}
             <TapTargetButton
+              icon={<Trash2 className="h-4 w-4" />}
+              ariaLabel="Trash"
+              onClick={() => setTrashOpen(true)}
+            />
+            <TapTargetButton
               icon={<RefreshCw className="h-4 w-4" />}
               ariaLabel="Refresh"
               onClick={() => setRefreshKey((n) => n + 1)}
@@ -686,6 +693,12 @@ export function LibraryPage() {
         }}
         processedDocumentId={searchDocId}
         documentName={searchDocName}
+      />
+
+      <LibraryTrashSheet
+        open={trashOpen}
+        onOpenChange={setTrashOpen}
+        onMutated={() => setRefreshKey((n) => n + 1)}
       />
 
       <ProcessingProgressSheet

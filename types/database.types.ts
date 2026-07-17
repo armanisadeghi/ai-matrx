@@ -5946,6 +5946,7 @@ export type Database = {
     Views: {
       conversation_summary: {
         Row: {
+          conversation_type: string | null
           cost_complete: boolean | null
           created_at: string | null
           description: string | null
@@ -9248,7 +9249,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      recompute_canonical_for_file: {
+        Args: { p_file_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -27576,6 +27580,10 @@ export type Database = {
         Args: { p_doc: string; p_user: string }
         Returns: boolean
       }
+      can_read_processed_document_any: {
+        Args: { p_doc: string; p_user: string }
+        Returns: boolean
+      }
       cat_create: {
         Args: {
           p_color?: string
@@ -33230,6 +33238,7 @@ export type Database = {
           content_text: string
           content_tsv: unknown
           created_at: string
+          deleted_at: string | null
           derivation_kind: string
           derived_from_chunk_id: string | null
           document_char_end: number | null
@@ -33271,6 +33280,7 @@ export type Database = {
           content_text: string
           content_tsv?: unknown
           created_at?: string
+          deleted_at?: string | null
           derivation_kind?: string
           derived_from_chunk_id?: string | null
           document_char_end?: number | null
@@ -33312,6 +33322,7 @@ export type Database = {
           content_text?: string
           content_tsv?: unknown
           created_at?: string
+          deleted_at?: string | null
           derivation_kind?: string
           derived_from_chunk_id?: string | null
           document_char_end?: number | null
@@ -34511,6 +34522,7 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_list_library_trash: { Args: never; Returns: Json }
       fn_list_user_data_stores: {
         Args: { p_include_inactive?: boolean }
         Returns: {
@@ -34525,6 +34537,8 @@ export type Database = {
           short_code: string
         }[]
       }
+      fn_purge_library_document: { Args: { p_id: string }; Returns: Json }
+      fn_restore_library_document: { Args: { p_id: string }; Returns: Json }
       library_grant_publish: {
         Args: {
           p_actor?: string

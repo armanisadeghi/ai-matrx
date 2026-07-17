@@ -87,3 +87,12 @@ begin
   return new;
 end
 $function$;
+
+-- The cascade only matters when deleted_at actually flips — don't run the
+-- (now 3-statement) function on every rename/move/metadata update.
+drop trigger if exists _cascade_softdelete_documents on files.files;
+create trigger _cascade_softdelete_documents
+  after update on files.files
+  for each row
+  when (old.deleted_at is distinct from new.deleted_at)
+  execute function docproc.cascade_file_softdelete_to_documents();
