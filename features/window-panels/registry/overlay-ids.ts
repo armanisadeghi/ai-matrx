@@ -117,6 +117,7 @@ export const OVERLAY_IDS = [
   "structuredListManagerV1Window",
   "structuredListManagerV2Window",
   "projectsWindow",
+  "contextPreviewPanel",
   "quickChat",
   "quickChatHistory",
   "quickChatWindow",

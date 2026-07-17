@@ -1389,6 +1389,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/context/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Context
+         * @description Return EXACTLY what context resolution produces for these selections.
+         */
+        post: operations["preview_context_ai_context_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/chat/direct-chat": {
         parameters: {
             query?: never;
@@ -4845,6 +4865,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13111,6 +13155,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/agent-context/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Context Organizations
+         * @description List only the organizations the current principal can render context for.
+         */
+        get: operations["list_context_organizations_admin_agent_context_organizations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/agent-context/render": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Render Context
+         * @description Return the same bytes an agent would receive for this context target.
+         */
+        post: operations["render_context_admin_agent_context_render_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scheduling/validate-cron": {
         parameters: {
             query?: never;
@@ -16653,8 +16737,6 @@ export interface components {
             file: string;
             /** Language */
             language?: string | null;
-            /** Prompt */
-            prompt?: string | null;
             /**
              * Model
              * @default stt-default
@@ -18163,6 +18245,11 @@ export interface components {
             reason?: string | null;
         };
         /**
+         * Clearance
+         * @enum {string}
+         */
+        Clearance: "public" | "internal" | "restricted" | "privileged";
+        /**
          * ClientContext
          * @description Request envelope describing the calling client's surface + capabilities + state.
          *
@@ -18645,6 +18732,143 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ContextOrganizationOption */
+        ContextOrganizationOption: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Is Personal */
+            is_personal: boolean;
+        };
+        /** ContextOrganizationsResponse */
+        ContextOrganizationsResponse: {
+            /** Organizations */
+            organizations: components["schemas"]["ContextOrganizationOption"][];
+        };
+        /**
+         * ContextPreviewBindings
+         * @description Serialized ``ScopeBindingResult`` — the agent's scope-bound fill.
+         */
+        ContextPreviewBindings: {
+            /** Variables */
+            variables?: {
+                [key: string]: unknown;
+            };
+            /** Context */
+            context?: {
+                [key: string]: unknown;
+            };
+            /** Picklist Bindings */
+            picklist_bindings?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Traces */
+            traces?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * ContextPreviewRequest
+         * @description Inputs mirroring what ``AgentStartRequest`` feeds context resolution.
+         *
+         *     ``organization_id`` / ``project_id`` / ``task_id`` / ``scope_ids`` arrive
+         *     via the :class:`ScopedRequest` base (FE ``callApi`` auto-injects them).
+         */
+        ContextPreviewRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @default true
+             */
+            store?: boolean;
+            /** Target Instance Id */
+            target_instance_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Entity Is New */
+            entity_is_new?: boolean | null;
+        };
+        /** ContextPreviewResponse */
+        ContextPreviewResponse: {
+            /** Injected Block */
+            injected_block: string | null;
+            /** Block Producer */
+            block_producer: string | null;
+            /** Block Sha256 */
+            block_sha256: string | null;
+            /** Block Byte Length */
+            block_byte_length: number | null;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Scope Ids */
+            scope_ids: string[];
+            /** Scope Labels */
+            scope_labels: {
+                [key: string]: unknown;
+            };
+            variables: components["schemas"]["ContextPreviewVariables"];
+            /** Cell Values */
+            cell_values: {
+                [key: string]: unknown;
+            };
+            bindings: components["schemas"]["ContextPreviewBindings"] | null;
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Id */
+            entity_id: string;
+            /** Entity Is New */
+            entity_is_new: boolean;
+        };
+        /**
+         * ContextPreviewVariables
+         * @description Resolved scope variables split by delivery tier (RPC ``inject_as``).
+         */
+        ContextPreviewVariables: {
+            /** Direct */
+            direct?: {
+                [key: string]: unknown;
+            };
+            /** Tool Accessible */
+            tool_accessible?: {
+                [key: string]: unknown;
+            };
+            /** Searchable */
+            searchable?: {
+                [key: string]: unknown;
+            };
+        };
+        /** ContextRenderRequest */
+        ContextRenderRequest: {
+            target: components["schemas"]["ContextTarget"];
+            invocation: components["schemas"]["InvocationContext"];
+        };
+        /** ContextRenderResponse */
+        ContextRenderResponse: {
+            /** Rendered */
+            rendered: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * ContextStateResponse
          * @description Same shape as the CONTEXT_STATE stream event payload.
@@ -18698,6 +18922,31 @@ export interface components {
             } | null;
             /** Measured At */
             measured_at: string;
+        };
+        /** ContextTarget */
+        ContextTarget: {
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "scope_system";
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "overview" | "scope" | "scope_type" | "context_item";
+            /**
+             * Variation
+             * @default a1
+             * @enum {string}
+             */
+            variation?: "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
+            /** Scope Slug */
+            scope_slug?: string | null;
+            /** Scope Type Slug */
+            scope_type_slug?: string | null;
+            /** Item Key */
+            item_key?: string | null;
         };
         /** ContractAuditReport */
         ContractAuditReport: {
@@ -19979,6 +20228,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -23526,6 +23802,37 @@ export interface components {
             };
             /** Top Sources */
             top_sources: components["schemas"]["TopSource"][];
+        };
+        /**
+         * InvocationContext
+         * @description Normal-call inputs retained here as expansion points for all context producers.
+         */
+        InvocationContext: {
+            /** Organization Id */
+            organization_id: string;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Entity Type
+             * @default conversation
+             */
+            entity_type?: string;
+            /** Entity Id */
+            entity_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[];
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Channel */
+            channel?: string | null;
+            /** @default internal */
+            clearance?: components["schemas"]["Clearance"];
+        } & {
+            [key: string]: unknown;
         };
         /** IssueClassBatchResult */
         IssueClassBatchResult: {
@@ -32044,8 +32351,6 @@ export interface components {
             url: string;
             /** Language */
             language?: string | null;
-            /** Prompt */
-            prompt?: string | null;
             /**
              * Model
              * @default stt-default
@@ -36025,6 +36330,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_context_ai_context_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextPreviewResponse"];
                 };
             };
             /** @description Validation Error */
@@ -42335,6 +42673,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -57329,6 +57702,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiCatalogReloadSummary"];
+                };
+            };
+        };
+    };
+    list_context_organizations_admin_agent_context_organizations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextOrganizationsResponse"];
+                };
+            };
+        };
+    };
+    render_context_admin_agent_context_render_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextRenderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextRenderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -688,6 +688,13 @@ const DocumentsWorkspace = lazyOverlay(
     ),
   { ssr: false },
 );
+const ContextPreviewPanel = lazyOverlay(
+  () =>
+    import("@/features/agents/components/context-preview/ContextPreviewPanel").then(
+      (m) => ({ default: m.ContextPreviewPanel }),
+    ),
+  { ssr: false },
+);
 const ScratchpadQuickPanel = lazyOverlay(
   () =>
     import("@/features/agents/components/working-document/ScratchpadQuickPanel").then(
@@ -1122,6 +1129,9 @@ export default function OverlayController() {
     workingDocumentPanel: useAppSelector((s) =>
       selectIsOverlayOpen(s, "workingDocumentPanel"),
     ),
+    contextPreviewPanel: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "contextPreviewPanel"),
+    ),
     scratchpadPanel: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scratchpadPanel"),
     ),
@@ -1423,6 +1433,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     workingDocumentPanel: useAppSelector((s) =>
       selectOverlayData(s, "workingDocumentPanel"),
+    ) as Record<string, unknown> | null,
+    contextPreviewPanel: useAppSelector((s) =>
+      selectOverlayData(s, "contextPreviewPanel"),
     ) as Record<string, unknown> | null,
     noteKnowledgePanel: useAppSelector((s) =>
       selectOverlayData(s, "noteKnowledgePanel"),
@@ -4416,6 +4429,42 @@ export default function OverlayController() {
               initialKind={initialKind}
               defaultRailOpen
               className="h-full"
+            />
+          </SidePanelSurface>
+        );
+      })()}
+
+      {/* contextPreviewPanel — "what the agent receives": server-resolved
+          context (exact injected block + variables) + this turn's client-side
+          attachments, in a resizable non-blocking right sidebar. Opened from
+          the ContextLensBar's "Context" segment above the composer. */}
+      {(() => {
+        const isOpen = isOpenById.contextPreviewPanel;
+        if (!isOpen) return null;
+        const data = dataById.contextPreviewPanel as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        const conversationId =
+          typeof data?.conversationId === "string"
+            ? data.conversationId
+            : undefined;
+        const agentId =
+          typeof data?.agentId === "string" ? data.agentId : undefined;
+        return (
+          <SidePanelSurface
+            title="What the agent receives"
+            description="The exact context the server resolves for your current settings."
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "contextPreviewPanel" }))
+            }
+            storageKey="context-preview-panel"
+            defaultWidth={520}
+            maxWidth={960}
+          >
+            <ContextPreviewPanel
+              conversationId={conversationId}
+              agentId={agentId}
             />
           </SidePanelSurface>
         );

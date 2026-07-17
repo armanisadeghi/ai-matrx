@@ -660,6 +660,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  contextPreviewPanel: {
+    label: "Agent Context Preview",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   smartCodeEditorWindow: {
     label: "Smart Code Editor Window",
     instanceMode: "multi",

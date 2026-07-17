@@ -2,7 +2,7 @@
 
 **Owner:** (unassigned — pick up here)
 **Status:** active · multiple pieces shipped, one investigation open, vision partially built
-**Last updated:** 2026-06-25
+**Last updated:** 2026-07-17
 
 This is the working document → Canvas → surfaces → context-clarity arc. A concurrent
 agent has been HEAVILY refactoring the same area (doc canonicalization: the
@@ -64,27 +64,25 @@ doc → confirm `binding.kind` (it should be `cx_working_document`); if it's `no
 the hydration in the association-open path. Building agent-edit history headlessly is
 fiddly (the default chat agent won't always ctx_patch the working doc).
 
-## OPEN #2 — "What the agent sees" follow-ups (review done, critical fixes shipped)
+## OPEN #2 — "What the agent sees" follow-ups (server-truth panel SHIPPED 2026-07-17)
 
-Adversarially reviewed for ACCURACY. Confirmed: the panel reads the SAME slice as the
-real payload (`selectInstanceContextEntries` = `selectContextPayload`), so context
-entries stay in lockstep; the scratchpad `showDiff` fix is correct (no regression).
-**Shipped fixes (`c27634100`):** honest reframe (dropped the false "nothing hidden"
-completeness claim), baseline now names always-sent legs, extra-scratchpad labeling via
-`docKindForContextKey`, empty-but-sent entries shown, honest char label.
+**2026-07-17: `AgentSeesSheet` is DELETED, replaced by the server-truth
+`contextPreviewPanel`** (non-blocking `SidePanelSurface`, opened from the composer's
+merged `ContextLensBar`). Its Resolved tab renders aidream `POST /ai/context/preview`
+(new endpoint, aidream `76934c9b9`) — the EXACT injected context block + tiered
+variables from the run code path (`resolve_agent_context_block` / `build_agent_context`
+/ `resolve_scope_bindings`). This CLOSES the old "personal-org fallback" and
+"conversation-tagged scopes" follow-ups (the server resolves effective org + the
+conversation-tag union itself). The old client-side view survives as the "Attached this
+turn" tab (`features/agents/components/context-preview/AttachedContextSection.tsx`).
 
-**Remaining follow-ups (to make it fully complete, not just honest):**
-- **Itemize the always-sent legs** instead of one baseline line: attachments/resource
+**Remaining follow-ups:**
+- **Itemize the always-sent legs** in the Attached tab: attachments/resource
   payloads (files/images/code — `resourcePayloads` in `execute-instance.thunk.ts` ~L140-152),
   `request.variables`, observational memory (~L202-229), and injected tool defs. These are
   often the BIGGEST thing the agent sees.
-- **Personal-org fallback:** the panel's org layer uses `selectActiveOrganizationId` (no
-  fallback); the request uses `selectEffectiveOrganizationId` (falls back to
-  personal_organization_id). Switch the panel to the effective org so an unselected-org
-  user still sees the org whose cells are actually sent.
-- **Conversation-tagged scopes:** `resolve_full_context` unions active selections with the
-  conversation's persisted scope tags; the panel shows only active selections. Add the
-  conversation tags (or a caveat).
+- **aidream prod deploy** — `/ai/context/preview` is committed on aidream main but not
+  deployed; the panel's Resolved tab errors loudly against prod until it ships.
 
 ## Vision — what's next (roadmap, in priority order)
 

@@ -14,9 +14,11 @@
  *                             off for this chat (same as the docs-menu switch).
  *   • Scratchpad            → same canvas toggle + X (per-conversation gate).
  *   • Agent lists           → plan / tasks / todos (the `TaskPanel` drawer).
- *   • Working context       → `ActiveContextLensChip` (Lens Chip → ContextTree
- *                             popover; same host as the chat header — never a
- *                             layers drawer).
+ *   • Working context       → `ContextLensBar` — ONE pill: the "Context"
+ *                             segment opens the contextPreviewPanel overlay
+ *                             (server-resolved "what the agent receives"),
+ *                             the Lens Chip segment opens the ContextTree
+ *                             picker popover (never a layers drawer).
  *   • Any other live context entry the agent or user set (slot / ad-hoc) —
  *     click opens the detail sheet; X removes the entry from context.
  *
@@ -31,8 +33,9 @@
  * Mobile-friendly: the most important pills stay inline; the rest collapse into
  * a clean "…" overflow menu so the rail never wraps or crowds the composer.
  *
- * Always mounts Eye + Lens Chip (working context). Other pills appear only when
- * the conversation has surfaceable attachments — safe in every SmartAgentInput.
+ * Always mounts the ContextLensBar (working context + preview entry). Other
+ * pills appear only when the conversation has surfaceable attachments — safe
+ * in every SmartAgentInput.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -43,7 +46,6 @@ import {
   MoreHorizontal,
   NotebookPen,
   Code2,
-  Eye,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -103,8 +105,9 @@ import {
   unsubscribeAgentLists,
 } from "@/features/agents/ui-first-tools/redux/agent-lists.thunks";
 import { TaskPanel } from "@/features/agents/ui-first-tools/ui/lists/TaskPanel";
-import { AgentSeesSheet } from "@/features/agents/components/context-slots-display/AgentSeesSheet";
-import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
+import { ContextLensBar } from "@/features/scopes/components/active-context/ContextLensBar";
+import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
+import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 
 interface ConversationContextRailProps {
   conversationId: string;
@@ -217,8 +220,12 @@ export function ConversationContextRail({
   } | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [listsOpen, setListsOpen] = useState(false);
-  // "What the agent sees" — the plain-language readout of the real payload.
-  const [seesOpen, setSeesOpen] = useState(false);
+  // "What the agent receives" — server-resolved preview in the non-blocking
+  // contextPreviewPanel overlay (opened from the ContextLensBar's left segment).
+  const openContextPreview = useOpenContextPreviewPanel();
+  const previewOpen = useAppSelector((s) =>
+    selectIsOverlayOpen(s, "contextPreviewPanel"),
+  );
 
   const closeOtherSurfaces = () => {
     setListsOpen(false);
@@ -452,20 +459,15 @@ export function ConversationContextRail({
     <div
       className={cn("flex min-w-0 items-center gap-1.5 px-0.5 pb-1", className)}
     >
-      <button
-        type="button"
-        onClick={() => setSeesOpen(true)}
-        title="See exactly what the agent receives this turn"
-        className={cn(
-          "group/ctx flex shrink-0 items-center gap-1 rounded px-1 py-0.5",
-          "text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70",
-          "transition-colors hover:bg-muted/60 hover:text-foreground",
-        )}
-      >
-        <Eye className="h-3 w-3 opacity-70 transition-opacity group-hover/ctx:opacity-100" />
-        Context
-      </button>
-      <ActiveContextLensChip className="h-6 shrink-0 px-2 text-[11px]" />
+      <ContextLensBar
+        previewOpen={previewOpen}
+        onOpenPreview={() =>
+          openContextPreview({
+            conversationId,
+            agentId: agentId ?? undefined,
+          })
+        }
+      />
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
         {inline.map((item) => (
           <RailPill key={item.id} item={item} />
@@ -534,11 +536,6 @@ export function ConversationContextRail({
         setDetailOpen={setDetailOpen}
         listsOpen={listsOpen}
         setListsOpen={setListsOpen}
-      />
-      <AgentSeesSheet
-        conversationId={conversationId}
-        open={seesOpen}
-        onOpenChange={setSeesOpen}
       />
     </div>
   );
