@@ -9,6 +9,7 @@
  */
 
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { LLMParamReasoningEffort } from "@/types/python-generated/llm-params-enums.generated";
 
 // ── Core Settings Shape ────────────────────────────────────────────────────────
 
@@ -34,14 +35,8 @@ export interface AgentSettings {
   thinking_budget?: number;
   thinking_level?: "minimal" | "low" | "medium" | "high";
   include_thoughts?: boolean;
-  reasoning_effort?:
-    | "auto"
-    | "none"
-    | "minimal"
-    | "low"
-    | "medium"
-    | "high"
-    | "xhigh";
+  // Generated from the backend Pydantic contract; do not duplicate this enum.
+  reasoning_effort?: LLMParamReasoningEffort;
   reasoning_summary?: "concise" | "detailed" | "never" | "auto" | "always";
   verbosity?: string;
 

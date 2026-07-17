@@ -19,7 +19,7 @@ type NonNullable<T> = T extends null | undefined ? never : T;
 
 export const TOOL_CHOICE_OPTIONS = ['none', 'auto', 'required'] as const satisfies readonly NonNullable<LLMParams['tool_choice']>[];
 
-export const REASONING_EFFORT_OPTIONS = ['auto', 'none', 'minimal', 'low', 'medium', 'high', 'xhigh'] as const satisfies readonly NonNullable<LLMParams['reasoning_effort']>[];
+export const REASONING_EFFORT_OPTIONS = ['auto', 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'] as const satisfies readonly NonNullable<LLMParams['reasoning_effort']>[];
 
 export const REASONING_SUMMARY_OPTIONS = ['concise', 'detailed', 'never', 'auto', 'always'] as const satisfies readonly NonNullable<LLMParams['reasoning_summary']>[];
 

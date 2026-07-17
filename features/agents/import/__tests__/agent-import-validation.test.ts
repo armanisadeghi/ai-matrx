@@ -57,6 +57,17 @@ describe("analyzeImportPaste", () => {
     expect(result.canConvert).toBe(true);
   });
 
+  it("accepts the backend-approved maximum reasoning tier", () => {
+    const raw = JSON.stringify({
+      ...VALID_AGENT,
+      settings: { reasoning_effort: "max" },
+    });
+    const result = analyzeImportPaste("agent-json", raw, EMPTY_TOOL_INDEX);
+    expect(result.status).toBe("analyzed");
+    if (result.status !== "analyzed") return;
+    expect(result.issues.some((issue) => issue.path === "settings.reasoning_effort")).toBe(false);
+  });
+
   it("flags invalid message roles", () => {
     const raw = JSON.stringify({
       ...VALID_AGENT,

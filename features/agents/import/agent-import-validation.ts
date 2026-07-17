@@ -4,6 +4,7 @@
  */
 
 import { VARIABLE_COMPONENT_TYPES } from "@/features/agents/types/agent-definition.types";
+import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
 import type { ToolIndex } from "./import-types";
 import { parsePasted } from "./agent-import-parse";
 
@@ -21,15 +22,9 @@ const VALID_CONTENT_BLOCK_TYPES = new Set([
   "document",
 ]);
 
-const REASONING_EFFORT = new Set([
-  "auto",
-  "none",
-  "minimal",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-]);
+// The backend's generated vocabulary is also the import-validation vocabulary.
+// This prevents a newly approved provider tier from being rejected in the UI.
+const REASONING_EFFORT = new Set<string>(REASONING_EFFORT_OPTIONS);
 
 const REASONING_SUMMARY = new Set([
   "concise",

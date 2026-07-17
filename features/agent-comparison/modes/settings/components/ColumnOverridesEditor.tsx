@@ -33,20 +33,12 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
 
 interface Props {
   conversationId: string;
 }
 
-const REASONING_EFFORT_OPTIONS = [
-  "auto",
-  "none",
-  "minimal",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-] as const;
 const THINKING_LEVEL_OPTIONS = ["minimal", "low", "medium", "high"] as const;
 
 export function ColumnOverridesEditor({ conversationId }: Props) {

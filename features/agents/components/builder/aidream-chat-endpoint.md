@@ -56,7 +56,7 @@ All fields are optional unless marked required.
 
 | Field | Type | Description |
 |---|---|---|
-| `reasoning_effort` | `"none" \| "minimal" \| "low" \| "medium" \| "high" \| "xhigh" \| "auto"` | OpenAI reasoning models |
+| `reasoning_effort` | `"none" \| "minimal" \| "low" \| "medium" \| "high" \| "xhigh" \| "max" \| "auto"` | Canonical reasoning tiers; each model exposes only the values its catalog rule supports |
 | `reasoning_summary` | `"concise" \| "detailed" \| "never" \| "auto" \| "always"` | OpenAI reasoning summary style |
 | `thinking_level` | `"minimal" \| "low" \| "medium" \| "high"` | Gemini thinking depth |
 | `thinking_budget` | `integer` | Token budget for Anthropic/Gemini thinking |
