@@ -17,7 +17,8 @@ Source: workflow wf_26d010fe-aba (56 agents, 37 confirmed cracks, 4.4M tokens).
 
 ## Progress
 
-- [ ] Phase 0 — schema (`kg_chunks.deleted_at` + index; regen types)
+- [x] Phase 0 — schema (`kg_chunks.deleted_at` + index; regen types) — LIVE 2026-07-17 (index name is `kg_chunks_live_by_doc_idx`; FE types + aidream `KgChunks.deleted_at` regenerated; column is currently written/read by NOTHING — Phase 1/2 wire it)
+- [x] Pre-build adversarial verification (2026-07-17) — see PRE-BUILD VERIFICATION section; all premises confirmed against live DB + both repos; corrections folded into phases below
 - [ ] Phase 1 — per-document soft-delete/restore/purge authority
 - [ ] Phase 2 — close every read surface (search lanes + RLS + tools + central gate)
 - [ ] Phase 3 — canonical repoint triggers
@@ -26,6 +27,38 @@ Source: workflow wf_26d010fe-aba (56 agents, 37 confirmed cracks, 4.4M tokens).
 - [ ] Phase 6 — reprocess/replace/archive coherence
 - [ ] Capstone — BEFORE DELETE hard-delete guard (the invariant)
 - [ ] Adversarial pass #2 against the implementation
+
+## PRE-BUILD VERIFICATION (2026-07-17) — corrections that OVERRIDE the phase text where they conflict
+
+Every structural premise was re-verified against the live DB and both repos. All 6 `kg_chunks` RLS policy names, the 3 search-lane anchors, the FK cascade chain (`kg_chunks→processed_documents` CASCADE; 3 embeddings tables + `kg_chunk_entities` + `kg_edges` cascade off chunks), the cascade trigger body, and the FE anchors are exact. Corrections + additions:
+
+**V1 (CRITICAL, changes Phase 1/5): the existing file-keyed soft-delete uses `valid_to`, which is the exact bug this spec exists to kill.** `ingestion.py:1744 soft_delete_source_artifacts` sets `KgChunks.valid_to` (+ `DataStoreMembers.deleted_at`), and `:1773 restore_source_artifacts` CLEARS `valid_to` — restoring a file today resurrects superseded chunks. Phase 1 must ALSO convert these two file-keyed primitives to the new chunk `deleted_at` (restore clears only `deleted_at`), not just add the doc-scoped trio.
+
+**V2 (CRITICAL, rewrites Phase 2.3): do NOT add `deleted_at IS NULL` to `processed_documents_owner_all`.** It is `cmd=ALL`: gating it (a) makes the soft-delete UPDATE itself fail its own WITH CHECK re-check (the exact 42501 class fixed platform-wide 2026-07-04 — authenticated RLS never gates `deleted_at`), (b) blocks the owner's restore UPDATE and purge DELETE, and (c) kills the Decision-5 owner Trash view, which reads trashed rows via direct supabase-js. Correct scope: add `deleted_at IS NULL` only to the non-owner SELECT policies (`_org_member_select`, `_curator_select`, `_library_grant_select`; also review `_curator_update`). Owner sees their own trash by design — that IS the `include_deleted` read path. Same rule for `kg_chunks`: its 6 policies are SELECT-only so gating is safe, but if `kg_chunks_owner_select` is gated, the trash surface must never need owner chunk reads (it lists docs, so fine).
+
+**V3 (Phase 3.1 contradiction): "earliest non-deleted sibling" vs Decision 3 / Phase 3-4 verify "newest live sibling".** Decision 3 wins: repoint to the NEWEST live sibling.
+
+**V4 (Phase 3.2 is a no-op as described):** `pdf_set_canonical_bridge` writes only `WHERE canonical_processed_document_id IS NULL` — after a NULL reclaim, re-ingest already repoints. Keep 3.2 only as "verify bridge + new 3.1 trigger don't fight" (bridge fires AFTER INSERT; 3.1 fires AFTER UPDATE OF deleted_at — disjoint events, no conflict expected).
+
+**V5 (verified gate state):** `can_read_processed_document` / `can_curate_library_document` check only `data_store_members.deleted_at`, never the doc's own `deleted_at`/`archived_at` — Phase 2.2 needed exactly as written. Also `trg_processed_documents_file_assoc` already fires on `UPDATE OF deleted_at` (associations sync self-heals — no work needed).
+
+**V6 (Phase 2.4 additions — aidream read paths the spec missed):**
+- `browse.py` chunk/embedding count aggregations `:714`/`:724` filter NEITHER `valid_to` NOR `deleted_at` (worse than spec stated — they count superseded chunks today).
+- `rag_tool.py` parent fetch is `:261` (primary fetch `:222` and `:252` are `valid_to`-guarded; only the parent fetch is naked).
+- `document_content_tool.py` real defs: `_document_visible` :165, `_document_source_file_id` :177, `_rep_text` :196, `_rep_pages` :263, `_rep_knowledge_assets` :311; `document_search_tool.py` `_resolve_visible` :174; `list_library_documents` def :310 (filter at :345-346). Minor drift only — targets unchanged.
+- Hard-delete twins already exist for Phase 1.3: `ingestion.py:1794 purge_source_artifacts` (+ `delete_source_artifacts`) — extend/reuse, don't reinvent.
+
+**V7 (Phase 4 additions — FE read paths the spec missed; same fix class):**
+- `features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts:131-142` — studio list filters `archived_at` only, not `deleted_at`.
+- `features/pdf-extractor/hooks/usePdfExtractor.ts:330-342` — `loadHistory` same gap (single-doc load :202-211 is guarded).
+- `features/pdf-extractor/hooks/useDocumentLineage.ts:94-98` — `fetchProcessingChildren` has NO guard at all (parents/file-lineage reads are guarded).
+- `features/notes/hooks/useNoteIngestStatus.ts:47-51` — `archived_at` only (source_kind='note', outside file cascade, still leaks direct doc soft-delete).
+- Parent-doc-blind `processed_document_pages` reads (pages have no own `deleted_at`; each needs a guarded parent resolve OR relies on Phase 2.3 RLS): `features/pdf/scanner/processing.ts:38,46,92,165`, `features/rag/components/source-inspector/usePageBundle.ts:73`, `features/rag/hooks/usePageVerificationSummary.ts:89`, `features/page-extraction/hooks/useChunkPreview.ts:117`, `features/pdf-extractor/studio/PdfStudioReader.tsx:1613`, plus the spec's `useProcessedDocumentPages.ts:124-130`.
+- Low-severity: `features/files/redux/converters.ts:131,148,193` maps `canonical_processed_document_id` → war-room `hasExtraction` boolean; goes stale-true until Phase 3 repoints. No action beyond Phase 3.
+
+**V8 (Decision 5 scope-check): there is NO existing trash surface for library/processed documents** — only cloud-files has one (`app/(a)/files/trash`, and its restore UI is itself unwired per `CLOUD_FILES_RPC_DISPOSITIONS.md:88`). The Decision-5 Trash view is a net-new build; plan it as its own phase-5.5 work item, reusing the cloud-files trash patterns.
+
+**V9 (Phase 6.2 confirmed): `archive_processed_document` (dedup_service.py:912) sets only `archived_at` on the doc — chunks stay fully live in all 3 recall lanes.** Archived ≠ hidden today; Phase 2's chunk filter does NOT fix archive (chunks of archived docs have no marker at all). 6.2 must stamp `kg_chunks.deleted_at` on archive (or add an archived-doc join guard) — as written, but now confirmed-required, not speculative.
 
 # Wave A — Soft-Delete Implementation Spec (single build order)
 
@@ -64,7 +97,9 @@ The only shipped soft-delete/restore primitives are FILE-keyed (`ingestion.py:17
 **1.1 New matrx-rag primitives** — `packages/matrx-rag/matrx_rag/ingestion.py`:
 - `soft_delete_document_artifacts(processed_document_id)` → `UPDATE rag.kg_chunks SET deleted_at=now() WHERE processed_document_id=X AND deleted_at IS NULL` (leave `valid_to` untouched). Do NOT touch `data_store_members` (file-keyed) unless the file itself is being trashed.
 - `restore_document_artifacts(processed_document_id)` → `... SET deleted_at=NULL WHERE processed_document_id=X`.
-- `purge_document_artifacts(processed_document_id)` → the ONLY path that runs the real `.delete()` on chunks/pages/doc (embeddings cascade off chunk FK, intended here).
+- `purge_document_artifacts(processed_document_id)` → the ONLY path that runs the real `.delete()` on chunks/pages/doc (embeddings cascade off chunk FK, intended here). Reuse/extend the existing purge twins `purge_source_artifacts`/`delete_source_artifacts` (`ingestion.py:1794+`).
+
+**1.1b (V1 — mandatory):** convert the FILE-keyed `soft_delete_source_artifacts` (:1744) and `restore_source_artifacts` (:1773) from `valid_to` to the new `kg_chunks.deleted_at`. Today restore CLEARS `valid_to`, resurrecting superseded chunks — the exact conflation this spec forbids. Restore must clear only `deleted_at`.
 
 **1.2 Wrap in `source_lifecycle`** — `aidream/services/documents/source_lifecycle.py`: add a doc-level entry (`source_kind='processed_document'`) so all callers use one authority. Keep the file-keyed path for `cld_file` cascade only.
 
@@ -94,7 +129,7 @@ Dependency: Phase 0.
 
 **2.2 Central SECURITY DEFINER gate** — `public.can_read_processed_document` (and `can_curate_library_document`): add `AND d.deleted_at IS NULL AND d.archived_at IS NULL`. Provide a `purge`/`include_deleted` variant for the trash/restore surface only. This single change closes context_sources hop-1, resolver describe/materialize, curator + grant read paths.
 
-**2.3 `processed_documents` RLS**: add `AND deleted_at IS NULL` to `processed_documents_owner_all`, `_org_member_select`, `_curator_select`, `_library_grant_select` (direct supabase-js reads bypass app filters — doctrine is DB-as-authz).
+**2.3 `processed_documents` RLS** (REWRITTEN per V2): add `AND deleted_at IS NULL` to the non-owner SELECT policies only — `_org_member_select`, `_curator_select`, `_library_grant_select` (review `_curator_update` too). **NEVER gate `_owner_all`** — it's `cmd=ALL`; gating it 42501s the soft-delete UPDATE itself, blocks restore/purge, and kills the owner Trash view (owner-sees-own-trash IS the Decision-5 `include_deleted` path).
 
 **2.4 aidream tool/query read paths** — add `deleted_at__isnull=True` (or `.alive()`) at each:
 - `document_content_tool.py`: `_document_visible` :173, `_document_source_file_id` :181, `_rep_text` :204, `_rep_pages` header :266; page reads :221-227/:270 resolve parent doc header with `deleted_at__isnull=True` first (pages have no own `deleted_at`). Same in `_rep_knowledge_assets`.
@@ -115,7 +150,7 @@ Dependency: Phase 0 (column) + Phase 1 (something actually sets the marker).
 
 `files.canonical_processed_document_id` is first-writer-wins (`pdf_set_canonical_bridge`, AFTER INSERT, `WHERE … IS NULL`) and the FK is `ON DELETE SET NULL` (fires only on hard-delete). Soft-delete leaves it aimed at a trashed doc; purge SET-NULLs it forever and never reclaims.
 
-**3.1** New trigger `AFTER UPDATE OF deleted_at ON docproc.processed_documents`: for `derivation_kind IN ('initial_extract','legacy_import')` + `source_kind='cld_file'`, recompute `files.canonical_processed_document_id = earliest non-deleted sibling for that source_id` (NULL if none). Symmetric — covers soft-delete AND restore.
+**3.1** New trigger `AFTER UPDATE OF deleted_at ON docproc.processed_documents`: for `derivation_kind IN ('initial_extract','legacy_import')` + `source_kind='cld_file'`, recompute `files.canonical_processed_document_id = NEWEST non-deleted sibling for that source_id` (NULL if none; per Decision 3 / V3). Symmetric — covers soft-delete AND restore.
 
 **3.2** Make `pdf_set_canonical_bridge` tolerant of NULL reclaim on re-ingest (drop the strict first-writer guard for the NULL-reclaim case).
 
