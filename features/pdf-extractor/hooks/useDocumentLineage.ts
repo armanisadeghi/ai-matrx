@@ -96,6 +96,7 @@ async function fetchProcessingChildren(
       "id, name, derivation_kind, derivation_metadata, parent_processed_id, created_at",
     )
     .eq("parent_processed_id", docId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error || !data) return [];
   return (data as Record<string, unknown>[]).map((d) => ({

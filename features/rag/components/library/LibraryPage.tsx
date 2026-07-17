@@ -194,11 +194,12 @@ export function LibraryPage() {
       if (rpcError) throw new Error(rpcError.message);
       const result = data as unknown as {
         deleted_documents?: number;
-        deleted_pages?: number;
         deleted_chunks?: number;
+        skipped_canonical?: number;
       } | null;
+      const skipped = result?.skipped_canonical ?? 0;
       toast.success(
-        `Deleted ${result?.deleted_documents ?? 0} ${status} documents (${result?.deleted_pages ?? 0} pages, ${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()})`,
+        `Moved ${result?.deleted_documents ?? 0} ${status} documents to trash (${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()} hidden)${skipped > 0 ? `; ${skipped} canonical extract${skipped === 1 ? "" : "s"} skipped — delete those via their file` : ""}`,
       );
       setBulkConfirmStatus(null);
       setRefreshKey((n) => n + 1);
@@ -302,13 +303,13 @@ export function LibraryPage() {
     mode: "processing" | "file",
   ) => {
     const proceed = await confirm({
-      title: mode === "file" ? `Delete "${doc.name}"?` : "Delete processing?",
+      title: mode === "file" ? `Delete "${doc.name}"?` : "Delete document?",
       description:
         mode === "file"
-          ? `Removes the document, all ${RAG_VOCAB.segmentsShort.toLowerCase()}/embeddings, AND the source file from cloud storage. Cannot be undone.`
-          : `Removes ${RAG_VOCAB.segmentsShort.toLowerCase()} and embeddings but keeps the source file. You can re-process to rebuild.`,
+          ? `Moves the file and every derived document, ${RAG_VOCAB.segmentsShort.toLowerCase()}, and embedding to the trash. Restorable until purged.`
+          : `Moves this document and its ${RAG_VOCAB.segmentsShort.toLowerCase()} to the trash; the source file stays. Restorable until purged.`,
       variant: "destructive",
-      confirmLabel: mode === "file" ? "Delete file" : "Delete processing",
+      confirmLabel: mode === "file" ? "Delete file" : "Delete document",
     });
     if (!proceed) return;
     try {
@@ -319,14 +320,14 @@ export function LibraryPage() {
           { p_id: doc.id },
         );
         if (rpcError) throw new Error(rpcError.message);
-        toast.success(`Deleted file "${doc.name}"`);
+        toast.success(`Moved "${doc.name}" and its documents to trash`);
       } else {
         const { error: rpcError } = await ragDb(supabase).rpc(
           "fn_delete_library_document",
           { p_id: doc.id },
         );
         if (rpcError) throw new Error(rpcError.message);
-        toast.success(`Deleted processing for "${doc.name}"`);
+        toast.success(`Moved "${doc.name}" to trash`);
       }
       setRefreshKey((n) => n + 1);
     } catch (err) {

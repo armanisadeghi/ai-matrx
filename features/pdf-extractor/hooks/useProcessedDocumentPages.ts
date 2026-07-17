@@ -121,6 +121,18 @@ async function fetchProcessedDocumentPages(
   if (existing) return existing;
 
   const promise = (async () => {
+    // Pages have no lifecycle column — they follow their parent doc. Guard the
+    // parent so a soft-deleted/archived doc's pages never render (defense in
+    // depth on top of the gated resolvers upstream).
+    const { data: parentDoc, error: parentError } = await docprocDb(supabase)
+      .from("processed_documents")
+      .select("id")
+      .eq("id", processedDocumentId)
+      .is("deleted_at", null)
+      .is("archived_at", null)
+      .maybeSingle();
+    if (parentError) throw parentError;
+    if (!parentDoc) return [];
     const { data, error } = await docprocDb(supabase)
       .from("processed_document_pages")
       .select(

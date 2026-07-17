@@ -138,7 +138,20 @@ export async function resolveCanonicalProcessedDocumentId(
     .eq("id", fileId)
     .maybeSingle();
   if (bridgeError) throw bridgeError;
-  return bridge?.canonical_processed_document_id ?? null;
+  const canonicalId = bridge?.canonical_processed_document_id ?? null;
+  if (!canonicalId) return null;
+  // Never serve a trashed/archived canonical target — DB triggers repoint the
+  // bridge on soft-delete, but this guards the race and any stale pointer.
+  const { data: doc, error: docError } = await supabase
+    .schema("docproc")
+    .from("processed_documents")
+    .select("id")
+    .eq("id", canonicalId)
+    .is("deleted_at", null)
+    .is("archived_at", null)
+    .maybeSingle();
+  if (docError) throw docError;
+  return doc ? canonicalId : null;
 }
 
 /**

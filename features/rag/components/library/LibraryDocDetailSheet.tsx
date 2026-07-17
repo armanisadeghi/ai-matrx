@@ -199,14 +199,14 @@ export function LibraryDocDetailSheet({
         );
         if (rpcError) throw new Error(rpcError.message);
         const result = data as unknown as {
-          deleted_pages?: number;
+          deleted_documents?: number;
           deleted_chunks?: number;
           deleted_cld_file?: boolean;
         } | null;
         toast.success(
           result?.deleted_cld_file
-            ? `File deleted: ${result?.deleted_pages ?? 0} pages, ${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}, source file moved to trash.`
-            : `Processing deleted: ${result?.deleted_pages ?? 0} pages, ${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. (Source file was not a cld_files row, so the binary stays.)`,
+            ? `File and its ${result?.deleted_documents ?? 0} document${(result?.deleted_documents ?? 0) === 1 ? "" : "s"} moved to trash (${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()} hidden). Restorable from the trash.`
+            : `Document family moved to trash (${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()} hidden).`,
         );
       } else {
         // Processing-only delete — keeps the source binary.
@@ -216,11 +216,10 @@ export function LibraryDocDetailSheet({
         );
         if (rpcError) throw new Error(rpcError.message);
         const result = data as unknown as {
-          deleted_pages?: number;
           deleted_chunks?: number;
         } | null;
         toast.success(
-          `Processing deleted: ${result?.deleted_pages ?? 0} pages, ${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. Source file intact — re-process to rebuild.`,
+          `Document moved to trash (${result?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()} hidden). Source file intact.`,
         );
       }
       setConfirmDeleteOpen(false);

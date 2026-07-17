@@ -338,8 +338,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         )
         .eq("owner_id", userId)
         // Exclude archived docs (the canonical "removed from view" state —
-        // mirrors document-lookup.ts and usePdfStudioDocs).
+        // mirrors document-lookup.ts and usePdfStudioDocs) and trashed docs.
         .is("archived_at", null)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(HISTORY_PAGE_SIZE);
 

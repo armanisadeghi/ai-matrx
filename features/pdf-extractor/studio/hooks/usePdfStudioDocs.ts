@@ -138,7 +138,9 @@ export function usePdfStudioDocs(opts?: {
           // (mirrors document-lookup.ts). Dangling docs whose source binary
           // was lost in the 2026-05 AWS migration are archived, so this
           // keeps them out of the studio without destroying their text.
+          // Soft-deleted (trashed) docs are equally out of view.
           .is("archived_at", null)
+          .is("deleted_at", null)
           .order("created_at", { ascending: false })
           .limit(pageSize);
         if (err) throw err;
