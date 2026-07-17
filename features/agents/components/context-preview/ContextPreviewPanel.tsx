@@ -3,17 +3,16 @@
 /**
  * ContextPreviewPanel — "what the agent receives", for real.
  *
- * Two views:
- *   • Resolved (default) — the SERVER's answer, fetched from
- *     `POST /ai/context/preview`, which runs the exact same resolution code
- *     the agent-run path runs: the injected system-prompt context block
- *     (byte-identical), the resolved variables by injection tier, and the
- *     agent's variable/slot binding fill when an agent is active.
- *   • Attached — the client-side entries published for this conversation's
- *     turns (working doc, scratchpad, slots, ad-hoc) + the baseline note.
+ * Resolved view — the SERVER's answer from `POST /ai/context/preview`, which
+ * runs the exact resolution code the agent-run path runs (injected block,
+ * tiered variables, binding fill). Attached view — the client-side entries
+ * published for this conversation's turns.
  *
- * Rendered inside the non-blocking `contextPreviewPanel` overlay
- * (SidePanelSurface → MatrxDynamicPanelHost). Never a blocking Sheet.
+ * Rendered inside the non-blocking `contextPreviewPanel` overlay. Design
+ * rules for this surface: content is FOREGROUND, not dimmed (muted is for
+ * true hints only); primary accents mark the live/interactive bits; the
+ * injected block and values AUTO-GROW (the panel scrolls — no nested scroll
+ * areas); everything copyable gets a hover `InlineCopyButton`.
  */
 
 import { useMemo, useState } from "react";
@@ -21,6 +20,7 @@ import { AlertTriangle, Braces, FileCode2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
 import {
   useContextPreview,
   type ContextPreviewResponse,
@@ -44,16 +44,11 @@ function varFields(v: unknown): {
     const o = v as Record<string, unknown>;
     const raw = "value" in o ? o.value : v;
     const value =
-      typeof raw === "string"
-        ? raw
-        : raw == null
-          ? ""
-          : JSON.stringify(raw);
+      typeof raw === "string" ? raw : raw == null ? "" : JSON.stringify(raw);
     return {
       value,
       source: typeof o.source === "string" ? o.source : null,
-      description:
-        typeof o.description === "string" ? o.description : null,
+      description: typeof o.description === "string" ? o.description : null,
     };
   }
   return { value: v == null ? "" : String(v), source: null, description: null };
@@ -71,36 +66,39 @@ function VariableGroup({
   const keys = Object.keys(vars ?? {});
   if (keys.length === 0) return null;
   return (
-    <section className="px-4 pt-3">
+    <section className="px-4 pt-4">
       <div className="flex items-baseline gap-2">
-        <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary">
           {title}
         </h3>
-        <span className="text-[10px] text-muted-foreground/60">{hint}</span>
+        <span className="text-[10px] text-muted-foreground">{hint}</span>
       </div>
-      <ul className="mt-1.5 divide-y divide-border/60 rounded-md border border-border/60">
+      <ul className="mt-1.5 divide-y divide-border/60 rounded-md border border-border">
         {keys.sort().map((key) => {
           const f = varFields((vars as Record<string, unknown>)[key]);
           return (
-            <li key={key} className="px-2.5 py-2">
-              <div className="flex items-center gap-2">
-                <span className="min-w-0 flex-1 truncate font-mono text-xs font-medium text-foreground">
+            <li key={key} className="group/var relative px-2.5 py-2">
+              <div className="flex items-center gap-2 pr-7">
+                <span className="min-w-0 flex-1 truncate font-mono text-xs font-semibold text-foreground">
                   {key}
                 </span>
                 {f.source && (
-                  <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                     {f.source}
                   </span>
                 )}
               </div>
-              {f.description && (
-                <div className="mt-0.5 text-[11px] text-muted-foreground">
-                  {f.description}
-                </div>
-              )}
-              <div className="mt-1 max-h-20 overflow-y-auto whitespace-pre-wrap break-words rounded bg-muted/40 px-2 py-1 font-mono text-[11px] leading-relaxed text-muted-foreground scrollbar-thin-auto">
-                {f.value || <span className="italic opacity-70">(empty)</span>}
+              <div className="mt-1 whitespace-pre-wrap break-words rounded bg-muted/40 px-2 py-1 font-mono text-[11px] leading-relaxed text-foreground/90">
+                {f.value || (
+                  <span className="italic text-muted-foreground">(empty)</span>
+                )}
               </div>
+              <InlineCopyButton
+                content={f.value}
+                formatJson={false}
+                size="xs"
+                className="opacity-0 transition-opacity group-hover/var:opacity-100"
+              />
             </li>
           );
         })}
@@ -121,21 +119,29 @@ function ResolvedView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* Status strip — always visible so "when was this computed" is explicit. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border/60 bg-muted/30 px-4 py-2">
-        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-          {status === "ready" && data
-            ? `Resolved by the server — the same code path a real run uses.`
-            : status === "loading"
-              ? "Asking the server to resolve your context…"
-              : status === "error"
-                ? "The server could not resolve the preview."
-                : ""}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-1.5">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+            status === "error"
+              ? "bg-destructive/10 text-destructive"
+              : "bg-primary/10 text-primary",
+          )}
+        >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              status === "error" ? "bg-destructive" : "bg-primary",
+              status === "loading" && "animate-pulse",
+            )}
+          />
+          {status === "loading" ? "Resolving…" : "Server truth"}
         </span>
+        <span className="flex-1" />
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 gap-1 px-2 text-[11px]"
+          className="h-6 gap-1 px-2 text-[11px] text-primary hover:text-primary"
           onClick={refresh}
           disabled={status === "loading"}
         >
@@ -165,10 +171,6 @@ function ResolvedView({
             <div className="mt-1 break-words text-xs text-destructive/90">
               {error}
             </div>
-            <div className="mt-1.5 text-[11px] text-muted-foreground">
-              This is the real resolution endpoint — if it fails here, agent
-              runs still work, but the preview cannot show server truth.
-            </div>
           </div>
         )}
 
@@ -197,33 +199,36 @@ function ResolvedBody({
 
   return (
     <>
-      {/* The injected block — the headline: exact bytes into the system prompt. */}
       <section className="px-4 pt-3">
         <div className="flex items-baseline gap-2">
-          <h3 className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+          <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
             <FileCode2 className="h-3 w-3" />
             Injected context block
           </h3>
           {typeof data.block_byte_length === "number" &&
             data.block_byte_length > 0 && (
-              <span className="text-[10px] tabular-nums text-muted-foreground/60">
+              <span className="text-[10px] tabular-nums text-muted-foreground">
                 {data.block_byte_length.toLocaleString()} bytes
                 {data.block_producer ? ` · ${data.block_producer}` : ""}
               </span>
             )}
         </div>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">
-          Placed into the system prompt exactly as shown — byte-for-byte what a
-          run would inject right now.
-        </p>
         {block ? (
-          <pre className="mt-1.5 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/60 bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground/90 scrollbar-thin-auto">
-            {block}
-          </pre>
+          <div className="group/block relative mt-1.5">
+            {/* Auto-grows to full content — the panel scrolls, never this box. */}
+            <pre className="whitespace-pre-wrap break-words rounded-md border border-primary/20 bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
+              {block}
+            </pre>
+            <InlineCopyButton
+              content={block}
+              formatJson={false}
+              size="sm"
+              className="opacity-0 transition-opacity group-hover/block:opacity-100"
+            />
+          </div>
         ) : (
-          <div className="mt-1.5 rounded-md border border-border/60 bg-muted/30 px-2.5 py-2 text-xs italic text-muted-foreground">
-            No context block would be injected — no organization or scopes are
-            active.
+          <div className="mt-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs italic text-muted-foreground">
+            No block would be injected — no organization or scopes active.
           </div>
         )}
         {scopeLabels.length > 0 && (
@@ -231,7 +236,7 @@ function ResolvedBody({
             {scopeLabels.map((label) => (
               <span
                 key={label}
-                className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
               >
                 {label}
               </span>
@@ -242,42 +247,38 @@ function ResolvedBody({
 
       <VariableGroup
         title="Injected directly"
-        hint="merged into the prompt every turn"
+        hint="in the prompt every turn"
         vars={data.variables?.direct as Record<string, unknown> | undefined}
       />
       <VariableGroup
         title="Tool-accessible"
-        hint="the agent can fetch these on demand"
+        hint="fetched on demand"
         vars={
           data.variables?.tool_accessible as Record<string, unknown> | undefined
         }
       />
       <VariableGroup
         title="Searchable"
-        hint="reachable via search, never auto-sent"
+        hint="via search only"
         vars={data.variables?.searchable as Record<string, unknown> | undefined}
       />
 
       {agentId && data.bindings && (
-        <section className="px-4 pt-3">
-          <h3 className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+        <section className="px-4 pt-4">
+          <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
             <Braces className="h-3 w-3" />
             Agent variable &amp; slot fill
           </h3>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            How this agent&apos;s declared variables and context slots resolve
-            from your scopes.
-          </p>
           <VariableGroup
             title="Variables"
-            hint="scope-filled agent variables"
+            hint="scope-filled"
             vars={
               data.bindings.variables as Record<string, unknown> | undefined
             }
           />
           <VariableGroup
             title="Context slots"
-            hint="scope-filled context slots"
+            hint="scope-filled"
             vars={data.bindings.context as Record<string, unknown> | undefined}
           />
         </section>
@@ -308,8 +309,8 @@ export function ContextPreviewPanel({
             className={cn(
               "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
               view === id
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             {label}

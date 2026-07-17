@@ -24,6 +24,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
 import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
+import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { cn } from "@/lib/utils";
 
@@ -132,7 +133,7 @@ export function AttachedContextSection({
 
         {layers.count > 0 && (
           <>
-            <div className="px-4 pt-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+            <div className="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wider text-primary">
               Your active context
             </div>
             <ul className="divide-y divide-border/60">
@@ -149,16 +150,15 @@ export function AttachedContextSection({
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                       {layer.title}
                     </span>
-                    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                       {layer.typeLabel}
                     </span>
                   </li>
                 );
               })}
             </ul>
-            <div className="px-4 py-1.5 text-[11px] text-muted-foreground/80">
-              The Resolved view shows the exact details the agent receives for
-              these.
+            <div className="px-4 py-1.5 text-[11px] text-muted-foreground">
+              Exact details: see the Resolved view.
             </div>
           </>
         )}
@@ -170,15 +170,15 @@ export function AttachedContextSection({
           </div>
         ) : items.length > 0 ? (
           <>
-            <div className="px-4 pt-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+            <div className="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wider text-primary">
               Also attached this turn
             </div>
             <ul className="divide-y divide-border/60">
               {items.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <li key={item.key} className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                  <li key={item.key} className="group/entry relative px-4 py-3">
+                    <div className="flex items-center gap-2 pr-7">
                       <Icon
                         className={cn(
                           "h-4 w-4 shrink-0",
@@ -197,18 +197,24 @@ export function AttachedContextSection({
                     <div className="mt-0.5 pl-6 text-xs text-muted-foreground">
                       {item.kindLine}
                     </div>
-                    <div className="mt-1.5 max-h-24 overflow-hidden rounded-md border border-border/60 bg-muted/40 px-2 py-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                    <div className="mt-1.5 rounded-md border border-border/60 bg-muted/40 px-2 py-1.5 text-[11px] leading-relaxed text-foreground/90">
                       {item.preview ? (
                         <span className="line-clamp-4 whitespace-pre-wrap break-words">
                           {item.preview.slice(0, 600)}
                           {item.preview.length > 600 ? "…" : ""}
                         </span>
                       ) : (
-                        <span className="italic opacity-70">
+                        <span className="italic text-muted-foreground">
                           (empty — sent, but has no content yet)
                         </span>
                       )}
                     </div>
+                    <InlineCopyButton
+                      content={item.preview}
+                      formatJson={false}
+                      size="xs"
+                      className="opacity-0 transition-opacity group-hover/entry:opacity-100"
+                    />
                   </li>
                 );
               })}

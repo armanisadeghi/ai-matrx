@@ -2,30 +2,34 @@
 
 // features/scopes/components/active-context/ContextLensBar.tsx
 //
-// THE composer context control — one condensed pill with two segments:
+// THE composer context control — the Lens Chip (reimagine T2 face) grown into
+// ONE seamless pill with two zones and NO internal border:
 //
-//   [ 👁 Context │ ●● 1 org · 1 scope ⌄ ]
+//   [ 👁  ●● 1 org · 1 scope ⌄ ]
 //
-// Left segment  — "Context" doubles as the label for the whole control AND the
-//                 entry point to the context preview panel: exactly what the
-//                 agent will receive under the current settings (server truth).
-// Right segment — the Lens Chip picker (ActiveContextLensChip): edit the
-//                 active org / scopes / project / task.
+// Eye zone   — opens the context preview panel: exactly what the agent will
+//              receive under the current settings (server truth). Primary
+//              tint on hover/open.
+// Chip zone  — the canonical LensChip content (colored dots + count summary +
+//              chevron) opening the ActiveContextTree picker.
 //
-// Pure composition: it does not fork LensChip or the picker — it wraps the
-// existing ActiveContextLensChip and restyles it borderless inside the shared
-// pill. Hosts supply `onOpenPreview` (typically the contextPreviewPanel
-// overlay opener); without it the left segment renders as a plain label.
+// Pure composition: the picker wiring stays in ActiveContextLensChip; this
+// only supplies the shared pill chrome. Hosts pass `onOpenPreview`.
 
 import React from "react";
 import { Eye } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ActiveContextLensChip } from "./ActiveContextLensChip";
 
 export interface ContextLensBarProps {
   /** Opens the "what the agent receives" preview panel. */
   onOpenPreview?: () => void;
-  /** True while the preview panel is open — highlights the left segment. */
+  /** True while the preview panel is open — keeps the eye zone lit. */
   previewOpen?: boolean;
   align?: "start" | "center" | "end";
   className?: string;
@@ -40,40 +44,35 @@ export function ContextLensBar({
   return (
     <div
       className={cn(
-        "inline-flex h-6 shrink-0 items-center overflow-hidden rounded-full border border-border bg-card",
+        "inline-flex h-7 shrink-0 items-center rounded-full border border-border bg-card pl-1 pr-0.5 text-xs",
         className,
       )}
     >
-      <button
-        type="button"
-        onClick={onOpenPreview}
-        disabled={!onOpenPreview}
-        title="See exactly what the agent receives with your current context"
-        className={cn(
-          "group/ctx inline-flex h-full items-center gap-1 pl-2 pr-1.5",
-          "text-[10px] font-medium uppercase tracking-wider",
-          previewOpen
-            ? "bg-primary/10 text-primary"
-            : "text-muted-foreground/80",
-          onOpenPreview &&
-            !previewOpen &&
-            "transition-colors hover:bg-muted/60 hover:text-foreground",
-        )}
-      >
-        <Eye
-          className={cn(
-            "h-3 w-3",
-            previewOpen
-              ? "opacity-100"
-              : "opacity-70 transition-opacity group-hover/ctx:opacity-100",
-          )}
-        />
-        Context
-      </button>
-      <span aria-hidden className="h-3.5 w-px shrink-0 bg-border" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onOpenPreview}
+            disabled={!onOpenPreview}
+            aria-label="See exactly what the agent receives with your current context"
+            className={cn(
+              "inline-flex h-5 items-center gap-1 rounded-full px-1.5 transition-colors",
+              previewOpen
+                ? "bg-primary/15 text-primary"
+                : "text-primary/80 hover:bg-primary/10 hover:text-primary",
+            )}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            <span className="font-medium">Context</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          See exactly what the agent receives
+        </TooltipContent>
+      </Tooltip>
       <ActiveContextLensChip
         align={align}
-        className="h-full rounded-none border-0 bg-transparent px-2 text-[11px] hover:bg-muted/60"
+        className="h-5 rounded-full border-0 bg-transparent px-1.5 text-xs hover:bg-muted"
       />
     </div>
   );
