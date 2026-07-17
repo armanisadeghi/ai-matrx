@@ -2,6 +2,31 @@
 
 Source: workflow wf_26d010fe-aba (56 agents, 37 confirmed cracks, 4.4M tokens).
 
+## ARMAN DECISIONS (2026-07-17) — these override the spec's assumptions
+
+1. **Chunk hide marker** — NEW `rag.kg_chunks.deleted_at` (do NOT reuse `valid_to`; it means supersession).
+2. **Delete canonical extract directly** — BLOCKED. The `initial_extract` is only removable via the file path (delete/reprocess the file). Per-derivative delete is allowed for non-canonical derivations.
+3. **Canonical repoint on soft-delete** — immediately repoint `files.canonical_processed_document_id` to the newest live sibling (NULL if none); symmetric on restore.
+4. **"Delete file"** — soft-delete the WHOLE file family as one set (file + derivations + memberships), restore together.
+5. **Trash surface** — owner-only Trash view (view + restore + purge) via an `include_deleted` read path.
+6. **THE INVARIANT (load-bearing):** there is NO `active → deleted` path. Lifecycle is strictly
+   **active → soft-deleted → deleted**. Hard-delete (purge) is reachable ONLY from the Trash view, on a row
+   that is ALREADY soft-deleted. Enforce at the DB: a `BEFORE DELETE` guard on `docproc.processed_documents`
+   (and `rag.kg_chunks`) RAISES unless `OLD.deleted_at IS NOT NULL`. Added as the capstone AFTER every delete
+   path is converted to soft-delete (else it breaks live endpoints).
+
+## Progress
+
+- [ ] Phase 0 — schema (`kg_chunks.deleted_at` + index; regen types)
+- [ ] Phase 1 — per-document soft-delete/restore/purge authority
+- [ ] Phase 2 — close every read surface (search lanes + RLS + tools + central gate)
+- [ ] Phase 3 — canonical repoint triggers
+- [ ] Phase 4 — FE resolver guard
+- [ ] Phase 5 — collapse cascade authorities + atomicity
+- [ ] Phase 6 — reprocess/replace/archive coherence
+- [ ] Capstone — BEFORE DELETE hard-delete guard (the invariant)
+- [ ] Adversarial pass #2 against the implementation
+
 # Wave A — Soft-Delete Implementation Spec (single build order)
 
 Verified premise correction driving everything below: **`rag.kg_chunks` has NO `deleted_at`** (only `valid_from/valid_to`). `valid_to` = bitemporal *supersession* (used by reprocess/replace), NOT deletion — reusing it conflates delete with supersede and breaks restore (a `valid_to IS NOT NULL` restore resurrects superseded chunks). RAG search + every `kg_chunks` RLS policy gate on `c.valid_to IS NULL` only and never join `docproc.processed_documents`. So a doc-only `deleted_at` flip leaks 100% of chunk content. The spec adds a **dedicated `kg_chunks.deleted_at`**, propagates it to every read, keeps chunk ROWS (so the embeddings ON-DELETE-CASCADE never fires), and routes all three lifecycles through one authority.
