@@ -18,7 +18,7 @@ import {
   Globe,
   File,
   FileText,
-  Image,
+  Image as ImageIcon,
   Mic,
   Video,
   FolderKanban,
@@ -30,6 +30,8 @@ import {
   Captions,
   AudioLines,
   Notebook,
+  Loader2,
+  X,
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
@@ -56,6 +58,7 @@ import { useContextItemDrawer } from "@/features/agents/components/context-items
 import { normalizeResource } from "@/features/agents/components/context-items/normalize";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { DataRef } from "@/features/agents/types/message-types";
+import { InlineMediaRef } from "@/features/files";
 
 function getBlockTypeDisplay(blockType: ResourceBlockType) {
   const map: Record<
@@ -70,7 +73,7 @@ function getBlockTypeDisplay(blockType: ResourceBlockType) {
       label: "Text",
     },
     image: {
-      icon: Image,
+      icon: ImageIcon,
       label: "Image",
     },
     audio: {
@@ -212,6 +215,102 @@ interface ResourceChipProps {
   onOpen: () => void;
 }
 
+function getImageRef(source: unknown): string | null {
+  if (typeof source === "string" && source) return source;
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return null;
+  }
+
+  const data = source as Record<string, unknown>;
+  const fileId =
+    typeof data.file_id === "string"
+      ? data.file_id
+      : typeof data.fileId === "string"
+        ? data.fileId
+        : null;
+  if (fileId) return fileId;
+
+  const url =
+    typeof data.url === "string"
+      ? data.url
+      : typeof data.cdn_url === "string"
+        ? data.cdn_url
+        : typeof data.cdnUrl === "string"
+          ? data.cdnUrl
+          : null;
+  return url || null;
+}
+
+function ImageResourceThumbnail({
+  resource,
+  title,
+  onOpen,
+  onRemove,
+}: {
+  resource: ManagedResource;
+  title: string;
+  onOpen: () => void;
+  onRemove: () => void;
+}) {
+  const isPending =
+    resource.status === "pending" || resource.status === "resolving";
+  const isError = resource.status === "error";
+  const imageRef = getImageRef(resource.source);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.85 }}
+      className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-muted"
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`View image: ${title}`}
+        className="flex h-full w-full items-center justify-center"
+      >
+        {isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : isError ? (
+          <AlertCircle className="h-4 w-4 text-destructive" />
+        ) : imageRef ? (
+          <>
+            <InlineMediaRef
+              ref={imageRef}
+              size="fill"
+              fit="cover"
+              rounded="none"
+              fallback="skeleton"
+              errorFallback="icon"
+              alt={title}
+              className="transition-[filter] group-hover:brightness-90"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
+              <ImageIcon className="h-4 w-4 text-white drop-shadow" />
+            </div>
+          </>
+        ) : (
+          <ImageIcon className="h-5 w-5 text-muted-foreground" />
+        )}
+      </button>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onRemove();
+        }}
+        aria-label={`Remove ${title}`}
+        className="absolute right-0 top-0 z-10 rounded-bl-md bg-black/60 p-0.5 text-white opacity-0 transition-opacity hover:bg-destructive focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </motion.div>
+  );
+}
+
 function ResourceChip({
   resource,
   onRemove,
@@ -226,6 +325,17 @@ function ResourceChip({
   // SAME ResourceAttachmentTile so the row is uniform regardless of content.
   const display = getBlockTypeDisplay(resource.blockType);
   const label = getResourceLabel(resource);
+
+  if (resource.blockType === "image") {
+    return (
+      <ImageResourceThumbnail
+        resource={resource}
+        title={label}
+        onOpen={onOpen}
+        onRemove={onRemove}
+      />
+    );
+  }
 
   // Editable toggle only for reference resources the agent can write back, and
   // only once the resource is settled (no point toggling a pending/errored one).

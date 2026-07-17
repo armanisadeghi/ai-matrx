@@ -2,7 +2,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-07-16`
+**Last updated:** `2026-07-17`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -42,6 +42,8 @@ Admin/dev desktop targeting is an additive request overlay, not part of agent au
 ### Versioning
 
 Every Builder save = new `agent_definition` version. Runner + Chat default to the current pointer. **Shortcuts and Apps pin to a specific version** so embeds never break when the agent evolves. Drift is surfaced via **Find Usages & Drift** (below), never auto-resolved. See **AGENT_VERSIONING.md**.
+
+The `/agents/all` gallery also recognizes a complete version UUID in its normal search field. It resolves the RLS-authorized `agent.definition_version` row to its parent agent and numeric version, then offers the matching version page. This is the canonical UI entry point when a caller has only a version ID.
 
 ### Find Usages & Drift
 
@@ -191,6 +193,11 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Depends on:** `features/agent-context/` + `features/brokers/` (variable/context resolution), `features/api-integrations/` (MCP + external tools), `features/artifacts/` (rendering output), `features/tool-call-visualization/` (tool UI)
 - **Depended on by:** `features/agent-shortcuts/`, `features/agent-apps/`, `features/conversation/`, almost every user-facing surface
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
+
+## Change Log
+- `2026-07-17` — Fixed the shared Creator Panel Payload tab crash (`Cannot read properties of undefined (reading 'assistant')`): its memoized request-preview selector now includes `userPreferences`, matching `assembleRequest`'s USER-layer directive-policy dependency. Added focused regression coverage for default and explicit policies.
+
+- 2026-07-17 — Added global version-ID resolution to `/agents/all` search, linking an accessible version snapshot to its parent agent’s historical-version page.
 
 ---
 

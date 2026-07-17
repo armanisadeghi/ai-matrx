@@ -38,7 +38,7 @@ export const INTERACTION_MODES = ["turn", "single", "extraction", "realtime", "e
 export type InteractionMode = typeof INTERACTION_MODES[number];
 
 // The complete feature vocabulary present on live `ai.model_definition` rows
-// (swept 2026-07-12). Adding a NEW feature value to the DB requires adding it
+// (swept 2026-07-17). Adding a NEW feature value to the DB requires adding it
 // here — `parseCapabilities` screams (captureError "data-shape") on any value
 // it doesn't recognize instead of silently dropping it.
 export const FEATURE_KEYS = [
@@ -60,6 +60,8 @@ export const FEATURE_KEYS = [
   "fine_tuning",
   "batch_api",
   "prompt_caching",
+  "context_caching",
+  "partial_mode",
   // Extraction family (GLiNER2 / fastino models)
   "ner",
   "classification",

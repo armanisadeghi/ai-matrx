@@ -47,6 +47,7 @@ import type {
   UpdateFromSourceResult,
   PromoteVersionResult,
   AgentVersionSnapshot,
+  AgentVersionLookup,
   LinkedAgentRef,
   LinkedCounterpartResult,
   PersonalCopyResult,
@@ -383,6 +384,38 @@ export const fetchAgentVersionHistory = createAsyncThunk<
     if (error) throw pgErrorToError(error);
 
     return (data ?? []) as AgentVersionHistoryItem[];
+  },
+);
+
+/**
+ * Resolves an immutable agent-version UUID to its parent agent and numeric
+ * version. Unlike version history, callers do not need to know the parent
+ * agent first. RLS on agent.definition_version remains the authorization
+ * boundary for this lookup.
+ */
+export const resolveAgentVersionId = createAsyncThunk<
+  AgentVersionLookup | null,
+  string,
+  ThunkApi
+>(
+  "agentDefinition/resolveVersionId",
+  async (versionId) => {
+    const { data, error } = await supabase
+      .schema("agent")
+      .from("definition_version")
+      .select("id, agent_id, version_number, name")
+      .eq("id", versionId)
+      .maybeSingle();
+
+    if (error) throw pgErrorToError(error);
+    if (!data) return null;
+
+    return {
+      versionId: data.id,
+      agentId: data.agent_id,
+      versionNumber: data.version_number,
+      agentName: data.name,
+    };
   },
 );
 

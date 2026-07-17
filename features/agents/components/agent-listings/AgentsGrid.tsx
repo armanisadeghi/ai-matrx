@@ -4,9 +4,7 @@ import {
   useState,
   useTransition,
   useMemo,
-  useRef,
   useEffect,
-  type RefObject,
 } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -28,6 +26,7 @@ import {
   Webhook,
   Users,
   Network,
+  History,
 } from "lucide-react";
 import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
 import {
@@ -62,11 +61,17 @@ import {
   fetchAgentsList,
   deleteAgent,
   duplicateAgent,
+  resolveAgentVersionId,
 } from "@/features/agents/redux/agent-definition/thunks";
 import type { AgentSortOption } from "@/features/agents/redux/agent-consumers/slice";
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import type {
+  AgentDefinitionRecord,
+  AgentVersionLookup,
+} from "@/features/agents/types/agent-definition.types";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 const CONSUMER_ID = "agents-main";
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function AgentsSkeleton({ count = 4 }: { count?: number }) {
   return (
@@ -142,6 +147,40 @@ export function AgentsGrid() {
 
   const [filterDetailKey, setFilterDetailKey] = useState<string | null>(null);
   const [listSearchQ, setListSearchQ] = useState("");
+  const [versionLookup, setVersionLookup] = useState<AgentVersionLookup | null>(
+    null,
+  );
+  const [isVersionLookupLoading, setIsVersionLookupLoading] = useState(false);
+  const [versionLookupRequestId, setVersionLookupRequestId] = useState("");
+
+  const versionIdQuery = searchTerm.trim();
+  const isVersionIdQuery = UUID_PATTERN.test(versionIdQuery);
+
+  useEffect(() => {
+    if (!isVersionIdQuery) return undefined;
+
+    let active = true;
+    const timeoutId = window.setTimeout(() => {
+      setVersionLookupRequestId(versionIdQuery);
+      setIsVersionLookupLoading(true);
+      dispatch(resolveAgentVersionId(versionIdQuery))
+        .unwrap()
+        .then((result) => {
+          if (active) setVersionLookup(result);
+        })
+        .catch(() => {
+          if (active) setVersionLookup(null);
+        })
+        .finally(() => {
+          if (active) setIsVersionLookupLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [dispatch, isVersionIdQuery, versionIdQuery]);
 
   // Memoized selectors
   const selectFilteredOwned = useMemo(
@@ -202,35 +241,37 @@ export function AgentsGrid() {
   );
 
   // Sentinels for mobile infinite scroll
-  const ownedSentinelRef = useRef<HTMLDivElement>(null);
-  const sharedSentinelRef = useRef<HTMLDivElement>(null);
+  const [ownedSentinel, setOwnedSentinel] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const [sharedSentinel, setSharedSentinel] = useState<HTMLDivElement | null>(
+    null,
+  );
   useEffect(() => {
     if (!isMobile) return undefined;
-    const el = ownedSentinelRef.current;
-    if (!el || !hasMoreOwned) return undefined;
+    if (!ownedSentinel || !hasMoreOwned) return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) loadMoreList();
       },
       { rootMargin: "300px" },
     );
-    observer.observe(el);
+    observer.observe(ownedSentinel);
     return () => observer.disconnect();
-  }, [isMobile, hasMoreOwned, loadMoreList]);
+  }, [isMobile, hasMoreOwned, loadMoreList, ownedSentinel]);
 
   useEffect(() => {
     if (!isMobile) return undefined;
-    const el = sharedSentinelRef.current;
-    if (!el || !hasMoreShared) return undefined;
+    if (!sharedSentinel || !hasMoreShared) return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) loadMoreShared();
       },
       { rootMargin: "300px" },
     );
-    observer.observe(el);
+    observer.observe(sharedSentinel);
     return () => observer.disconnect();
-  }, [isMobile, hasMoreShared, loadMoreShared]);
+  }, [isMobile, hasMoreShared, loadMoreShared, sharedSentinel]);
 
   // Handlers
   const handleDeleteClick = (id: string, name: string) => {
@@ -278,6 +319,14 @@ export function AgentsGrid() {
     if (navigatingId) return;
     setNavigatingId(id);
     startTransition(() => router.push(path));
+  };
+
+  const handleVersionNavigate = () => {
+    if (!versionLookup || navigatingId) return;
+    handleNavigate(
+      versionLookup.versionId,
+      `/agents/${versionLookup.agentId}/v/${versionLookup.versionNumber}`,
+    );
   };
 
   const sortOptions: { value: AgentSortOption; label: string }[] = [
@@ -353,10 +402,10 @@ export function AgentsGrid() {
   const renderShowMore = (
     remaining: number,
     onMore: () => void,
-    sentinelRef: RefObject<HTMLDivElement | null>,
+    setSentinel: (node: HTMLDivElement | null) => void,
   ) =>
     isMobile ? (
-      <div ref={sentinelRef} className="h-8" />
+      <div ref={setSentinel} className="h-8" />
     ) : (
       <div className="mt-4 flex justify-center">
         <Button variant="outline" onClick={onMore} className="w-full md:w-auto">
@@ -375,7 +424,7 @@ export function AgentsGrid() {
             renderShowMore(
               totalOwnedAfterCards - ownedAgentListItems.length,
               loadMoreList,
-              ownedSentinelRef,
+              setOwnedSentinel,
             )}
         </>
       )}
@@ -392,7 +441,7 @@ export function AgentsGrid() {
             renderShowMore(
               totalSharedAfterCards - sharedAgentListItems.length,
               loadMoreShared,
-              sharedSentinelRef,
+              setSharedSentinel,
             )}
         </>
       )}
@@ -411,6 +460,44 @@ export function AgentsGrid() {
       <div className="flex-1 border-t border-border" />
     </div>
   );
+
+  const renderVersionLookup = () => {
+    if (!isVersionIdQuery) return null;
+
+    if (
+      isVersionLookupLoading &&
+      versionLookupRequestId === versionIdQuery
+    ) {
+      return (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+          <History className="h-4 w-4 animate-pulse" />
+          Looking up version ID…
+        </div>
+      );
+    }
+
+    if (!versionLookup || versionLookup.versionId !== versionIdQuery) return null;
+
+    return (
+      <button
+        type="button"
+        onClick={handleVersionNavigate}
+        disabled={navigatingId !== null}
+        className="mb-4 flex w-full items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-left transition-colors hover:bg-primary/10 disabled:cursor-wait"
+      >
+        <History className="h-4 w-4 shrink-0 text-primary" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-foreground">
+            {versionLookup.agentName ?? "Unnamed agent"}
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            Version ID match · v{versionLookup.versionNumber}
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
+    );
+  };
 
   return (
     <>
@@ -583,6 +670,7 @@ export function AgentsGrid() {
               : "pb-24 pt-[calc(var(--shell-header-h)+0.5rem)]"),
         )}
       >
+        {renderVersionLookup()}
         {isLoading ? (
           <AgentsSkeleton count={isMobile ? 4 : 8} />
         ) : activeTab === "mine" ? (

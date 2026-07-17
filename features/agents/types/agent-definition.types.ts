@@ -489,6 +489,20 @@ export interface AgentVersionSnapshot {
   ui_gates: UiGates;
 }
 
+/**
+ * Minimal parent-agent metadata resolved from an immutable version UUID.
+ *
+ * This powers the global version-ID affordance in the Agents gallery. The
+ * version table is queried under the caller's normal RLS permissions, so a
+ * version ID never reveals an agent the caller cannot otherwise access.
+ */
+export interface AgentVersionLookup {
+  versionId: string;
+  agentId: string;
+  versionNumber: number;
+  agentName: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Compile-time DB shape guards — zero runtime cost.
 //

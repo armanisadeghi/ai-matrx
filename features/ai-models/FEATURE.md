@@ -192,6 +192,8 @@ Phase D (2026-07-10) is DONE: the resolution layer (`ai.resolve_model_config` + 
 
 ## Change log
 
+- `2026-07-17` — **Kimi-K3 capability vocabulary is canonical.** Added the live catalog's `context_caching` and `partial_mode` feature flags to the shared capability vocabulary. The parser now retains both valid Kimi-K3 capabilities instead of raising a data-shape error and dropping them.
+
 - `2026-07-17` — **Embedding capability vocabulary is canonical.** Added the live catalog's `interaction: "embedding"`, `output: ["embedding"]`, and `dimension_reduction` feature to the shared capability vocabulary. The parser now preserves those valid values instead of emitting data-shape errors; the pure compatibility matrix still explicitly rejects embedding models from conversational routing.
 
 - `2026-07-16` — **The browser catalog is not an execution authority.** Removed the frontend launch gate that read `ai.model_config.capabilities` before every cold/direct or pinned shortcut launch. `ai.model_config` is correctly limited to selectable, non-deprecated models; using it to authorize execution incorrectly rejected valid historical pins. Model interaction validation and deprecated-model fallback are backend execution responsibilities; the frontend catalog remains a UI/authoring read model only.

@@ -42,6 +42,24 @@ describe("mergeAuditRecordIntoCapabilities", () => {
     });
   });
 
+  it("preserves Kimi-K3's live caching and partial-response capabilities", () => {
+    expect(
+      parseCapabilities({
+        input: ["text", "image", "video"],
+        output: ["text"],
+        features: ["context_caching", "partial_mode"],
+        interaction: "turn",
+        multilingual: true,
+      }),
+    ).toEqual({
+      input: ["text", "image", "video"],
+      output: ["text"],
+      features: ["context_caching", "partial_mode"],
+      interaction: "turn",
+      multilingual: true,
+    });
+  });
+
   it("untouched Save is lossless on an extraction-model row", () => {
     const edited = toAuditRecord(parseCapabilities(EXTRACTION_ROW));
     const merged = mergeAuditRecordIntoCapabilities(EXTRACTION_ROW, edited);
