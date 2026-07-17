@@ -402,30 +402,29 @@ export const EnhancedChatMarkdownInternal: React.FC<
     [messageInterleavedContent],
   );
 
-  // ── Settled-turn fold: thinking / generic tools / short asides → one
+  // ── Settled-turn fold: thinking / tool calls / short asides → one
   // "Worked for Ns" group. NEVER during a stream — live turns render every
   // item in real time; the fold is a post-hoc reorganization when content is
-  // settled (stream ended, or loaded from the DB). Tools with a
-  // result-is-purpose / stay-open renderer stay visible and break the run.
+  // settled (stream ended, or loaded from the DB). ALL tool calls fold —
+  // including the pretty deliverable cards (rag_search, document_search, …):
+  // one click on the group reveals everything, with those full cards rendered
+  // directly inside the linear expansion. Only real content (text, media,
+  // errors) stays outside the group.
   const isSettled = !isStreamActive;
 
   const workGroupedSlots = useMemo((): Array<
     GroupedSlot | AgentWorkFold<GroupedSlot>
   > => {
     if (!isSettled) return groupedSlots;
-    const toolClass = (callId: string): AgentWorkClass =>
-      getToolDisplayMode(toolLifecycleMap?.[callId]?.toolName ?? null) ===
-      "auto"
-        ? "work"
-        : "visible";
     return foldAgentWork(groupedSlots, {
       classify: (slot) => {
-        if (slot.kind === "thinking" || slot.kind === "status") return "work";
-        if (slot.kind === "tool") return toolClass(slot.callId);
-        if (slot.kind === "tool_batch") {
-          return slot.callIds.every((id) => toolClass(id) === "work")
-            ? "work"
-            : "visible";
+        if (
+          slot.kind === "thinking" ||
+          slot.kind === "status" ||
+          slot.kind === "tool" ||
+          slot.kind === "tool_batch"
+        ) {
+          return "work";
         }
         if (slot.kind === "render_block") {
           const rb = renderBlocksMap[slot.blockId];
@@ -453,20 +452,17 @@ export const EnhancedChatMarkdownInternal: React.FC<
     GroupedSegment | AgentWorkFold<GroupedSegment>
   > => {
     if (!isSettled) return groupedSegments;
-    const dbToolClass = (seg: ContentSegmentDbTool): AgentWorkClass =>
-      getToolDisplayMode(seg.record?.toolName ?? seg.stubName) === "auto"
-        ? "work"
-        : "visible";
     const dbToolSpan = (seg: ContentSegmentDbTool) =>
       toolSpan(seg.record?.startedAt, seg.record?.completedAt);
     return foldAgentWork(groupedSegments, {
       classify: (seg) => {
-        if (seg.type === "thinking" || seg.type === "status") return "work";
-        if (seg.type === "db_tool") return dbToolClass(seg);
-        if (seg.type === "db_tool_batch") {
-          return seg.segments.every((s) => dbToolClass(s) === "work")
-            ? "work"
-            : "visible";
+        if (
+          seg.type === "thinking" ||
+          seg.type === "status" ||
+          seg.type === "db_tool" ||
+          seg.type === "db_tool_batch"
+        ) {
+          return "work";
         }
         if (seg.type === "text") return classifyTextForFold(seg.content);
         return "visible";
