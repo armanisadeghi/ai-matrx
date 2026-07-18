@@ -9,7 +9,6 @@
 import { useEffect, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Popover,
@@ -22,6 +21,7 @@ import { RunSettingsQuickControls } from "@/features/agents/components/run-contr
 import { RunToolPicker } from "./RunToolPicker";
 import { RunSkillPicker } from "./RunSkillPicker";
 import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import {
   selectBuilderAdvancedSettings,
   selectShowVariablePanel,
@@ -61,6 +61,11 @@ interface QuicksetPanelProps {
   onToggleCreatorPanel: () => void;
 }
 
+/**
+ * One shared label column width for every quickset row so all controls line
+ * up in a single vertical rail (also used by SettingsRow / SurfaceSimulator
+ * in quickset mode — keep in sync with QUICKSET_ROW_GRID there).
+ */
 function Row({
   label,
   children,
@@ -69,9 +74,11 @@ function Row({
   children: ReactNode;
 }) {
   return (
-    <div className="grid min-h-9 grid-cols-3 items-center gap-3">
-      <span className="text-xs text-foreground">{label}</span>
-      <div className="col-span-2 min-w-0">{children}</div>
+    <div className="grid min-h-8 grid-cols-[9rem_minmax(0,1fr)] items-center gap-2">
+      <span className="truncate text-xs text-foreground" title={label}>
+        {label}
+      </span>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
@@ -112,14 +119,15 @@ function PickerRow({
     <Row label={label}>
       <Popover modal={false}>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 w-full justify-between text-xs font-normal"
+          {/* Borderless trigger — matches the canonical ModelListDropdown
+              trigger (no border/background, minimal padding). */}
+          <button
+            type="button"
+            className="inline-flex h-7 w-full items-center justify-between gap-1 rounded-md bg-transparent px-1 text-xs text-foreground/80 transition-colors hover:text-foreground"
           >
             <span className="truncate">{summary}</span>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          </Button>
+            <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+          </button>
         </PopoverTrigger>
         <PopoverContent
           align="end"
@@ -253,7 +261,7 @@ export function QuicksetPanel({
 
       <div className="space-y-1.5">
         <Row label="Active Context">
-          <span aria-hidden="true" />
+          <ActiveContextLensChip align="end" />
         </Row>
         <ToggleRow
           label="Working Document"
@@ -303,18 +311,6 @@ export function QuicksetPanel({
             <RunToolPicker conversationId={conversationId} />
           </div>
         </PickerRow>
-        <ToggleRow
-          label="Disable Tool Injection"
-          checked={settings.disableToolInjection ?? false}
-          onCheckedChange={(value) =>
-            dispatch(
-              setBuilderAdvancedSettings({
-                conversationId,
-                changes: { disableToolInjection: value },
-              }),
-            )
-          }
-        />
       </div>
 
       <Separator />

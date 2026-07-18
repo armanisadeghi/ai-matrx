@@ -178,11 +178,9 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
 
   if (sandboxBlocked) {
     return (
-      <div className="px-3 py-4">
-        <p className="text-sm font-medium text-foreground">Agent sandbox</p>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Unavailable in incognito mode. Your org sandbox, local PC, and surface
-          defaults are not attached — the agent runs without a bound filesystem.
+      <div className="px-3 py-3">
+        <p className="text-xs text-muted-foreground">
+          Sandbox unavailable in incognito mode.
         </p>
       </div>
     );
@@ -279,70 +277,61 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   return (
     <>
       <div className="flex flex-col">
-        <div className="border-b border-border px-3 py-2.5">
-          <p className="text-sm font-medium text-foreground">Agent sandbox</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            The box your agents read, write, and run commands in. Binds to every
-            conversation on THIS surface — not other surfaces.
-          </p>
-        </div>
-
-        {/* Current binding — only shown once liveness is confirmed. While we're
-            still checking we show a quiet "verifying" line; if the saved box is
-            gone we show a re-attach hint instead of pretending it's bound. */}
-        {resolved && bindingVerifying && (
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/40 text-[11px] text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+        {/* Bound-state strip — ALWAYS present, one line, no ambiguity. */}
+        {!resolved ? (
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
+            <span className="text-xs text-muted-foreground">
+              No sandbox bound
+            </span>
+          </div>
+        ) : bindingVerifying ? (
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
             Checking bound sandbox…
           </div>
-        )}
-
-        {resolved && bindingUnavailable && (
-          <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-amber-500/10">
-            <div className="min-w-0 flex items-center gap-2">
+        ) : bindingUnavailable ? (
+          <div className="flex items-center justify-between gap-2 border-b border-border bg-amber-500/10 px-3 py-2">
+            <span className="flex min-w-0 items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-              <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
-                Your previously bound sandbox is no longer available. Attach a
-                running one below.
-              </p>
-            </div>
+              <span className="truncate text-xs text-amber-700 dark:text-amber-300">
+                Bound sandbox is gone — pick another
+              </span>
+            </span>
             <button
               onClick={() => applyRef(null)}
-              className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
               title="Clear the stale binding"
             >
               <X className="h-3 w-3" />
               Clear
             </button>
           </div>
-        )}
-
-        {resolved && bindingConfirmed && (
-          <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-foreground truncate">
+        ) : bindingConfirmed ? (
+          <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2">
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+              <span className="truncate text-xs font-medium text-foreground">
                 {resolved.name ??
                   resolved.proxyUrl.match(/\/sandboxes\/([^/]+)/)?.[1] ??
                   resolved.rowId.slice(0, 8)}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                {resolvedSource === "override"
-                  ? "Pinned to this conversation"
-                  : "Bound for this surface (every chat here)"}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
+              </span>
+              <span className="shrink-0 rounded bg-muted px-1 py-px text-[9px] uppercase tracking-wide text-muted-foreground">
+                {resolvedSource === "override" ? "this chat" : "this surface"}
+              </span>
+            </span>
+            <div className="flex shrink-0 items-center gap-2">
               <button
                 onClick={() => setCloneOpen(true)}
-                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
                 title="Clone a git repo into this box"
               >
                 <GitBranch className="h-3 w-3" />
-                Clone repo
+                Clone
               </button>
               <button
                 onClick={() => applyRef(null)}
-                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+                className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-destructive"
                 title="Detach"
               >
                 <X className="h-3 w-3" />
@@ -350,7 +339,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
               </button>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Your computers (matrx-local PCs registered with a Cloudflare tunnel) */}
         {localPcs.length > 0 && (
@@ -472,12 +461,12 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
           </button>
 
           {canOverride && (
-            <label className="flex items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground cursor-pointer">
+            <label className="flex cursor-pointer items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground">
               <Checkbox
                 checked={overrideMode}
                 onCheckedChange={(v) => setOverrideMode(v === true)}
               />
-              Use only for this conversation (advanced)
+              Only this conversation
             </label>
           )}
         </div>

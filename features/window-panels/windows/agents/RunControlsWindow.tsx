@@ -19,6 +19,8 @@
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { TabbedBottomSheet } from "@/components/official/bottom-sheet/TabbedBottomSheet";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   RunControlsTabPanel,
@@ -43,6 +45,7 @@ function RunControlsWindowInner({
   onClose: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const rc = useRunControlsState(conversationId, includeAttach);
 
   const [tab, setTab] = useState<RunControlsTab>(() => {
@@ -57,6 +60,39 @@ function RunControlsWindowInner({
     attachResource(resource);
     close();
   };
+
+  // Mobile: never a draggable window — iOS-style bottom sheet with the same
+  // tabs (level 1 list → drill into a tab), matching RunControlsMenu's mobile
+  // presentation.
+  if (isMobile) {
+    return (
+      <TabbedBottomSheet
+        open
+        onOpenChange={(next) => {
+          if (!next) {
+            close();
+            onClose();
+          }
+        }}
+        title="Chat options"
+        tabs={rc.tabs.map((t) => ({
+          id: t.id,
+          label: t.label,
+          icon: t.icon,
+          trailing: rc.tabTrailing(t.id),
+          content: (
+            <RunControlsTabPanel
+              {...rc.panelProps}
+              activeTab={t.id}
+              fill
+              onResourceSelected={handleResourceSelected}
+              onClose={close}
+            />
+          ),
+        }))}
+      />
+    );
+  }
 
   return (
     <WindowPanel

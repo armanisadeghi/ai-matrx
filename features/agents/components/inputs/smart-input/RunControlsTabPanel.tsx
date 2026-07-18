@@ -44,8 +44,7 @@ import { RunModelPicker } from "@/features/agents/components/run-controls/RunMod
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { DocumentsWorkspace } from "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace";
 import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
-import { ActiveContextLayersPanel } from "@/features/scopes/components/active-context/ActiveContextLayersPanel";
+import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
 import {
   selectAttachmentCapabilities,
@@ -66,8 +65,8 @@ import {
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useOpenChatDebugWindow } from "@/features/overlays/openers/chatDebugWindow";
-import { useOpenAgentMemoryWindow } from "@/features/overlays/openers/agentMemoryWindow";
 import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
+import { AgentMemoryInlinePanel } from "@/features/agents/components/memory/components/AgentMemoryInlinePanel";
 import { QuicksetPanel } from "./QuicksetPanel";
 import type { Resource } from "@/features/agents/resources/types";
 
@@ -316,7 +315,6 @@ export function RunControlsTabPanel({
     fill ? "min-h-0 flex-1" : heightClassName,
   );
   const scrollClass = "h-full overflow-y-auto overscroll-contain";
-  const openMemoryWindow = useOpenAgentMemoryWindow();
   const openPromptPreview = useOpenPromptPreviewWindow();
 
   return (
@@ -339,14 +337,10 @@ export function RunControlsTabPanel({
         />
       )}
       {activeTab === "context" && (
-        <div className={scrollClass}>
-          <ActiveContextPanel checkboxVariant="standard" sectionHeight={220} />
-          <div className="border-t border-border px-3 py-2">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Selected context
-            </div>
-            <ActiveContextLayersPanel />
-          </div>
+        <div className={cn(scrollClass, "p-2")}>
+          {/* THE canonical compact Surface-A picker — same component as the
+              chat header's lens chip. */}
+          <ActiveContextTree maxHeight={420} />
         </div>
       )}
       {activeTab === "document" && (
@@ -380,23 +374,8 @@ export function RunControlsTabPanel({
         </div>
       )}
       {activeTab === "memory" && (
-        <div className={cn(scrollClass, "px-3 py-3")}>
-          <button
-            type="button"
-            onClick={() => {
-              openMemoryWindow();
-            }}
-            className="flex w-full items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <Brain className="h-5 w-5" />
-            </span>
-            <span className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">
-                What the agent remembers
-              </span>
-            </span>
-          </button>
+        <div className="h-full overflow-hidden">
+          <AgentMemoryInlinePanel />
         </div>
       )}
       {activeTab === "settings" && (

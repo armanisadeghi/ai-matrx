@@ -21,7 +21,6 @@
 import { useEffect, useState } from "react";
 import { Check, ChevronsUpDown, Monitor, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Command,
@@ -53,10 +52,16 @@ let surfaceCache: SurfaceOption[] | null = null;
 export function SurfaceSimulatorSelect({
   conversationId,
   compact = false,
+  quickset = false,
 }: {
   conversationId: string;
   /** Render as one label/control row for compact settings surfaces. */
   compact?: boolean;
+  /**
+   * Align to the quickset label-column grid (keep in sync with
+   * QuicksetPanel's Row / RunSettingsEditor's SettingsRow).
+   */
+  quickset?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const settings =
@@ -122,11 +127,13 @@ export function SurfaceSimulatorSelect({
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
+          {/* Borderless trigger — matches the canonical ModelListDropdown
+              trigger (no border/background, minimal padding). */}
+          <button
+            type="button"
             role="combobox"
             aria-expanded={open}
-            className="h-7 w-full justify-between text-xs font-normal"
+            className="inline-flex h-7 w-full items-center justify-between gap-1 rounded-md bg-transparent px-1 text-xs text-foreground/80 transition-colors hover:text-foreground"
           >
             <span className="flex items-center gap-1.5 truncate">
               <Monitor className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -135,7 +142,7 @@ export function SurfaceSimulatorSelect({
               </span>
             </span>
             <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50" />
-          </Button>
+          </button>
         </PopoverTrigger>
         <PopoverContent
           className="w-[var(--radix-popover-trigger-width)] p-0"
@@ -215,20 +222,35 @@ export function SurfaceSimulatorSelect({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-3 py-1">
-        <Label className="w-1/3 shrink-0 text-xs text-muted-foreground">
+      <div
+        className={cn(
+          "min-h-8 items-center py-0.5",
+          quickset
+            ? "grid grid-cols-[9rem_minmax(0,1fr)] gap-2"
+            : "flex gap-3",
+        )}
+      >
+        <Label
+          className={cn(
+            "shrink-0 truncate text-xs text-foreground",
+            !quickset && "w-[9rem]",
+          )}
+          title="Surface Simulator"
+        >
           Surface Simulator
         </Label>
-        <div className="min-w-0 flex-1">{picker}</div>
-        {override && (
-          <button
-            type="button"
-            onClick={() => setOverride(null)}
-            className="shrink-0 text-[10px] text-muted-foreground hover:text-destructive"
-          >
-            Clear
-          </button>
-        )}
+        <div className="flex min-w-0 items-center gap-1">
+          <div className="min-w-0 flex-1">{picker}</div>
+          {override && (
+            <button
+              type="button"
+              onClick={() => setOverride(null)}
+              className="shrink-0 text-[10px] text-muted-foreground hover:text-destructive"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
     );
   }

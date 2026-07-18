@@ -26,8 +26,8 @@
  * Scoped to THIS conversation — never edits the stored agent.
  */
 
-import { useEffect, useState } from "react";
-import { AlertTriangle, ChevronRight, RotateCcw } from "lucide-react";
+import { useEffect } from "react";
+import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllModels,
@@ -59,7 +59,6 @@ export function RunConfigOverrides({
   conversationId: string;
 }) {
   const dispatch = useAppDispatch();
-  const [open, setOpen] = useState(false);
   const overrideState = useAppSelector(
     selectInstanceOverrideState(conversationId),
   );
@@ -158,16 +157,8 @@ export function RunConfigOverrides({
 
   return (
     <div className="border-t border-border">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <span className="flex items-center gap-1.5">
-          <ChevronRight
-            className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`}
-          />
+      <div className="flex w-full items-center justify-between px-3 pb-1 pt-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Advanced settings
         </span>
         {overriddenCount > 0 && (
@@ -175,10 +166,9 @@ export function RunConfigOverrides({
             {overriddenCount}
           </span>
         )}
-      </button>
+      </div>
 
-      {open && (
-        <div className="flex flex-col gap-2.5 px-3 pb-3">
+      <div className="flex flex-col gap-2.5 px-3 pb-3">
           {orphanedKeys.length > 0 && (
             <div className="flex flex-col gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
               <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
@@ -250,8 +240,7 @@ export function RunConfigOverrides({
             Overrides apply to this conversation only. Resetting a value
             returns it to the agent default.
           </p>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

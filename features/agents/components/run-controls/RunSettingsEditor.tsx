@@ -87,12 +87,18 @@ function SettingsRow({
     <label
       htmlFor={id}
       className={cn(
-        "min-h-8 cursor-pointer items-center gap-3 py-1",
-        quickset ? "grid grid-cols-3" : "flex justify-between",
+        "min-h-8 cursor-pointer items-center py-0.5",
+        // Quickset rows share one label-column width so every control lines
+        // up — keep in sync with QuicksetPanel's Row grid.
+        quickset
+          ? "grid grid-cols-[9rem_minmax(0,1fr)] gap-2"
+          : "flex justify-between gap-3",
       )}
     >
-      <span className="text-xs text-foreground">{label}</span>
-      <span className={cn(quickset && "col-span-2")}>
+      <span className="truncate text-xs text-foreground" title={label}>
+        {label}
+      </span>
+      <span>
         <Switch id={id} checked={checked} onCheckedChange={onChange} />
       </span>
     </label>
@@ -118,10 +124,14 @@ export function RunSettingsQuickControls({
 
   return (
     <div className="space-y-0.5">
-      <SurfaceSimulatorSelect conversationId={conversationId} compact />
+      <SurfaceSimulatorSelect
+        conversationId={conversationId}
+        compact
+        quickset={quickset}
+      />
       <SettingsRow
         id={`disable-tool-injection-${conversationId}`}
-        label="Disable Tool Injection (This Run)"
+        label="Disable Tool Injection"
         checked={settings.disableToolInjection ?? false}
         quickset={quickset}
         onChange={(value) =>
@@ -292,7 +302,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                 )
               }
             >
-              <SelectTrigger className="h-7 w-44 text-xs">
+              <SelectTrigger className="h-7 w-44 border-0 bg-transparent px-1 text-xs shadow-none dark:bg-transparent">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
