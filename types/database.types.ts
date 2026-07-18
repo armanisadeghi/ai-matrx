@@ -7329,11 +7329,13 @@ export type Database = {
           is_default: boolean
           kind_definition_id: string
           metadata: Json
+          notes: string | null
           organization_id: string
           pinned_kind_version: number | null
           platform: string
           props_transform: string | null
           role: string
+          semver: string
           sort_order: number
           source: string
           updated_at: string
@@ -7352,11 +7354,13 @@ export type Database = {
           is_default?: boolean
           kind_definition_id: string
           metadata?: Json
+          notes?: string | null
           organization_id: string
           pinned_kind_version?: number | null
           platform: string
           props_transform?: string | null
           role: string
+          semver?: string
           sort_order?: number
           source?: string
           updated_at?: string
@@ -7375,11 +7379,13 @@ export type Database = {
           is_default?: boolean
           kind_definition_id?: string
           metadata?: Json
+          notes?: string | null
           organization_id?: string
           pinned_kind_version?: number | null
           platform?: string
           props_transform?: string | null
           role?: string
+          semver?: string
           sort_order?: number
           source?: string
           updated_at?: string
@@ -7389,6 +7395,99 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "kind_component_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kind_component_incident: {
+        Row: {
+          browser_info: string | null
+          component_id: string | null
+          component_key: string | null
+          component_semver: string | null
+          component_version: number | null
+          created_at: string
+          created_by: string | null
+          data_snapshot: Json | null
+          error_message: string
+          error_stack: string | null
+          error_type: string
+          id: string
+          kind: string
+          kind_definition_id: string
+          organization_id: string
+          platform: string | null
+          resolution_notes: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          role: string | null
+          session_id: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          browser_info?: string | null
+          component_id?: string | null
+          component_key?: string | null
+          component_semver?: string | null
+          component_version?: number | null
+          created_at?: string
+          created_by?: string | null
+          data_snapshot?: Json | null
+          error_message: string
+          error_stack?: string | null
+          error_type: string
+          id?: string
+          kind: string
+          kind_definition_id: string
+          organization_id: string
+          platform?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          role?: string | null
+          session_id?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          browser_info?: string | null
+          component_id?: string | null
+          component_key?: string | null
+          component_semver?: string | null
+          component_version?: number | null
+          created_at?: string
+          created_by?: string | null
+          data_snapshot?: Json | null
+          error_message?: string
+          error_stack?: string | null
+          error_type?: string
+          id?: string
+          kind?: string
+          kind_definition_id?: string
+          organization_id?: string
+          platform?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          role?: string | null
+          session_id?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_component_incident_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "kind_component"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_component_incident_kind_definition_id_fkey"
             columns: ["kind_definition_id"]
             isOneToOne: false
             referencedRelation: "kind_definition"
@@ -7611,6 +7710,71 @@ export type Database = {
           },
         ]
       }
+      kind_instance: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          id: string
+          kind_definition_id: string
+          kind_version: number
+          metadata: Json
+          organization_id: string
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          validated_at: string | null
+          validation_status: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data: Json
+          deleted_at?: string | null
+          id?: string
+          kind_definition_id: string
+          kind_version: number
+          metadata?: Json
+          organization_id: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          kind_definition_id?: string
+          kind_version?: number
+          metadata?: Json
+          organization_id?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_instance_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kind_surface: {
         Row: {
           created_at: string
@@ -7681,6 +7845,75 @@ export type Database = {
       }
     }
     Views: {
+      kind_component_version: {
+        Row: {
+          actor_id: string | null
+          component_id: string | null
+          component_key: string | null
+          component_source: string | null
+          config: Json | null
+          is_active: boolean | null
+          is_default: boolean | null
+          kind_definition_id: string | null
+          notes: string | null
+          occurred_at: string | null
+          operation: string | null
+          organization_id: string | null
+          pinned_kind_version: number | null
+          platform: string | null
+          props_transform: string | null
+          role: string | null
+          row_data: Json | null
+          semver: string | null
+          source: string | null
+          version_number: number | null
+        }
+        Insert: {
+          actor_id?: string | null
+          component_id?: string | null
+          component_key?: never
+          component_source?: never
+          config?: never
+          is_active?: never
+          is_default?: never
+          kind_definition_id?: never
+          notes?: never
+          occurred_at?: string | null
+          operation?: string | null
+          organization_id?: string | null
+          pinned_kind_version?: never
+          platform?: never
+          props_transform?: never
+          role?: never
+          row_data?: Json | null
+          semver?: never
+          source?: never
+          version_number?: number | null
+        }
+        Update: {
+          actor_id?: string | null
+          component_id?: string | null
+          component_key?: never
+          component_source?: never
+          config?: never
+          is_active?: never
+          is_default?: never
+          kind_definition_id?: never
+          notes?: never
+          occurred_at?: string | null
+          operation?: string | null
+          organization_id?: string | null
+          pinned_kind_version?: never
+          platform?: never
+          props_transform?: never
+          role?: never
+          row_data?: Json | null
+          semver?: never
+          source?: never
+          version_number?: number | null
+        }
+        Relationships: []
+      }
       kind_definition_version: {
         Row: {
           actor_id: string | null
@@ -7782,6 +8015,15 @@ export type Database = {
         Args: { p_kind_definition_id?: string }
         Returns: {
           example_id: string
+          kind: string
+          new_status: string
+          old_status: string
+        }[]
+      }
+      revalidate_kind_instances: {
+        Args: { p_kind_definition_id?: string }
+        Returns: {
+          instance_id: string
           kind: string
           new_status: string
           old_status: string

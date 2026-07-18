@@ -23,6 +23,7 @@ import {
   describeRoundTripDrift,
   fieldTypeLabel,
   initialValuesForVariables,
+  initialValuesFromInstance,
   KindInputPairingError,
   pairKindFieldsWithVariables,
 } from "../input/kind-input-values";
@@ -437,5 +438,52 @@ describe("assembled instance ⇄ validateStructuralLeg", () => {
     });
     expect(Object.keys(instance)).toContain(KIND_KEY);
     expect(validateStructuralLeg(instance, flashcardSetEmitted).ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P-2 instance persistence: the coercion INVERSE that prefires the edit form
+// ---------------------------------------------------------------------------
+
+describe("inputValueForKindValue / initialValuesFromInstance (edit-prefill inverse)", () => {
+  // Wide schema exercising every inverse branch.
+  const wideSchema: KindSchema = {
+    kind: "wide",
+    fields: {
+      name: { type: "string", required: true },
+      score: { type: "number", required: true },
+      active: { type: "boolean", required: false },
+      tags: { type: "string[]", required: false },
+      steps: { type: "array", itemKinds: ["step"], required: false },
+    },
+  };
+
+  it("round-trips every schema-valid value through coerceInputValueToKindValue", () => {
+    const pairs = pairKindFieldsWithVariables(wideSchema);
+    const instanceData: Record<string, unknown> = {
+      name: "Ridge",
+      score: 95,
+      active: true,
+      tags: ["a", "b"],
+      steps: [{ label: "x" }],
+    };
+    const values = initialValuesFromInstance(pairs, instanceData);
+    for (const pair of pairs) {
+      const outcome = coerceInputValueToKindValue(
+        pair.field,
+        values[pair.variable.name],
+      );
+      expect(outcome).toEqual({ status: "ok", value: instanceData[pair.fieldKey] });
+    }
+  });
+
+  it("falls back to variable defaults for keys the instance omits", () => {
+    const pairs = pairKindFieldsWithVariables(wideSchema);
+    const values = initialValuesFromInstance(pairs, { name: "Only" });
+    const namePair = pairs.find((p) => p.fieldKey === "name");
+    const scorePair = pairs.find((p) => p.fieldKey === "score");
+    if (!namePair || !scorePair) throw new Error("pair lookup failed");
+    expect(values[namePair.variable.name]).toBe("Only");
+    expect(values[scorePair.variable.name]).toBe(scorePair.variable.defaultValue);
   });
 });

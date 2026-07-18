@@ -36,4 +36,19 @@ export function shapeSchemaHref(kind: string): string {
   return `${shapeDetailHref(kind)}/schema`;
 }
 
+export function shapeInstancesHref(kind: string): string {
+  return `${shapeDetailHref(kind)}/instances`;
+}
+
+/**
+ * Canonical per-instance permalink — MUST stay in lockstep with the
+ * `content_ir_kind_instance` sharing-registry `url_path_template`
+ * (`/shapes/instances/{id}`). Resolved by `app/(core)/shapes/instances/[id]`,
+ * which looks up the instance's kind and redirects to
+ * `/shapes/[kind]/instances?i=<id>`.
+ */
+export function shapeInstancePermalink(id: string): string {
+  return `${SHAPES_ROUTE_BASE}/instances/${encodeURIComponent(id)}`;
+}
+
 export const SHAPES_NEW_HREF = `${SHAPES_ROUTE_BASE}/new`;

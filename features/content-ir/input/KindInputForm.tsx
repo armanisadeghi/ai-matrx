@@ -51,6 +51,7 @@ import {
   attributeStructuralErrors,
   fieldTypeLabel,
   initialValuesForVariables,
+  initialValuesFromInstance,
   pairKindFieldsWithVariables,
   type KindInputPair,
 } from "./kind-input-values";
@@ -67,6 +68,14 @@ export interface KindInputFormProps {
   onSubmit: (instance: unknown) => void | Promise<void>;
   submitLabel?: string;
   onCancel?: () => void;
+  /**
+   * Prefill the form from an existing instance value (edit flows). In
+   * bridged-form mode each field is seeded via `initialValuesFromInstance`
+   * (the exact coercion inverse); in instance-json mode the JSON draft is
+   * seeded with the pretty-printed value. A root `__kind` is ignored either
+   * way. Read once per kind load — not a controlled value.
+   */
+  initialValue?: unknown;
 }
 
 type FormState =
@@ -90,6 +99,7 @@ export default function KindInputForm({
   onSubmit,
   submitLabel = "Submit",
   onCancel,
+  initialValue,
 }: KindInputFormProps) {
   const [state, setState] = useState<FormState>({ status: "loading" });
   // Bridged-form draft, keyed by VARIABLE name (what the inputs collect).
@@ -149,8 +159,24 @@ export default function KindInputForm({
           path.mode === "bridged-form" && contract.schema
             ? pairKindFieldsWithVariables(contract.schema)
             : [];
-        setValues(initialValuesForVariables(pairs.map((p) => p.variable)));
-        setJsonDraft("");
+        // Prefill (edit flows): seed from the instance value when provided —
+        // the exact coercion inverse per field; JSON draft otherwise.
+        const seed =
+          initialValue !== null &&
+          typeof initialValue === "object" &&
+          !Array.isArray(initialValue)
+            ? (initialValue as Record<string, unknown>)
+            : null;
+        setValues(
+          seed && path.mode === "bridged-form"
+            ? initialValuesFromInstance(pairs, seed)
+            : initialValuesForVariables(pairs.map((p) => p.variable)),
+        );
+        setJsonDraft(
+          path.mode === "instance-json" && initialValue !== undefined
+            ? JSON.stringify(initialValue, null, 2)
+            : "",
+        );
         setState({
           status: "ready",
           path,
@@ -169,7 +195,7 @@ export default function KindInputForm({
     return () => {
       cancelled = true;
     };
-  }, [kind]);
+  }, [kind, initialValue]);
 
   if (state.status === "loading") {
     return (

@@ -11,19 +11,90 @@
  */
 
 import { useState } from "react";
-import { Check, Copy, Eye } from "lucide-react";
+import Link from "next/link";
+import { Check, CircleAlert, Copy, Eye, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import KindInputForm from "@/features/content-ir/input/KindInputForm";
-import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import KindInstanceRender, {
+  isRecordValue,
+} from "@/features/content-ir/studio/components/KindInstanceRender";
+import {
+  isValidatorDrift,
+  saveKindInstance,
+} from "@/features/content-ir/studio/instance-service";
+import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
 
 interface ShapeTestTabProps {
   kind: string;
   label: string;
+  /** `content_ir.kind_definition.id` — the Save target. */
+  kindDefinitionId: string;
+  /** The kind's CURRENT `version` — pinned onto saved instances. */
+  kindVersion: number;
 }
 
-export default function ShapeTestTab({ kind, label }: ShapeTestTabProps) {
+type SaveState =
+  | { status: "idle" }
+  | { status: "saving" }
+  | { status: "saved"; instanceId: string }
+  | { status: "drift"; message: string }
+  | { status: "error"; message: string };
+
+export default function ShapeTestTab({
+  kind,
+  label,
+  kindDefinitionId,
+  kindVersion,
+}: ShapeTestTabProps) {
   const [instance, setInstance] = useState<unknown>(null);
   const [renderKey, setRenderKey] = useState(0);
+  const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+
+  async function saveInstance(): Promise<void> {
+    if (!isRecordValue(instance)) {
+      toast.error("Only object instances can be saved.");
+      return;
+    }
+    setSaveState({ status: "saving" });
+    try {
+      const result = await saveKindInstance({
+        kindDefinitionId,
+        kindVersion,
+        value: instance,
+        organizationId,
+      });
+      if (isValidatorDrift(result)) {
+        // The DB trigger is the truth. Client-side ajv said valid, the
+        // trigger said otherwise — validator drift is a platform DEFECT:
+        // scream to the error store AND show the user.
+        const message = `Instance ${result.id} of kind "${kind}" was written but the DB validation trigger marked it "${result.validationStatus}" while the client-side ajv check passed. This is a validator-drift defect — report it.`;
+        captureError({ source: "content-ir", message });
+        setSaveState({ status: "drift", message });
+        return;
+      }
+      setSaveState({ status: "saved", instanceId: result.id });
+      toast.success(
+        result.title ? `Saved "${result.title}"` : "Instance saved",
+        {
+          description: `${label} v${result.kindVersion} — validation passed.`,
+          action: {
+            label: "View in Instances",
+            onClick: () => {
+              window.location.href = `${shapeInstancesHref(kind)}?i=${result.id}`;
+            },
+          },
+        },
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setSaveState({ status: "error", message });
+      toast.error("Failed to save the instance", { description: message });
+    }
+  }
 
   async function copyInstance(): Promise<void> {
     if (instance === null) return;
@@ -52,6 +123,7 @@ export default function ShapeTestTab({ kind, label }: ShapeTestTabProps) {
           onSubmit={(value) => {
             setInstance(value);
             setRenderKey((k) => k + 1);
+            setSaveState({ status: "idle" });
           }}
         />
       </section>
@@ -77,9 +149,43 @@ export default function ShapeTestTab({ kind, label }: ShapeTestTabProps) {
                 <Copy className="h-3.5 w-3.5" />
                 Copy JSON
               </button>
+              {saveState.status === "saved" ? (
+                <Link
+                  href={`${shapeInstancesHref(kind)}?i=${saveState.instanceId}`}
+                  className="flex h-7 items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-300"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  View in Instances
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void saveInstance()}
+                  disabled={saveState.status === "saving"}
+                  className="flex h-7 items-center gap-1.5 rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {saveState.status === "saving" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
+                  Save
+                </button>
+              )}
             </>
           )}
         </div>
+        {(saveState.status === "drift" || saveState.status === "error") && (
+          <div className="mb-2 flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
+            <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              {saveState.status === "drift" && (
+                <strong className="font-semibold">Validator drift: </strong>
+              )}
+              {saveState.message}
+            </span>
+          </div>
+        )}
         {instance === null ? (
           <div className="rounded-md border border-dashed border-border bg-card/50 px-4 py-10 text-center">
             <p className="text-sm text-muted-foreground">

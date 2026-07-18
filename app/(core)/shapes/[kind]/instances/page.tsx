@@ -1,11 +1,13 @@
-// /shapes/[kind]/test — the magic moment: fill the canonical KindInputForm
-// and watch YOUR component render the instance live through the real route.
+// /shapes/[kind]/instances — the user's saved kind_instance rows for this
+// shape: list (validation dot, pinned-version chip), render through the real
+// component, edit (prefilled KindInputForm), soft delete, honest repin, and
+// the read-only "View as table" Convert Pattern bridge for flat kinds.
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getShapeDetail } from "@/features/content-ir/studio/shape-detail-server";
 import ShapeDetailHeader from "@/features/content-ir/studio/components/ShapeDetailHeader";
-import ShapeTestTabLoader from "@/features/content-ir/studio/components/ShapeTestTabLoader";
+import ShapeInstancesTabLoader from "@/features/content-ir/studio/components/ShapeInstancesTabLoader";
 
 interface PageProps {
   params: Promise<{ kind: string }>;
@@ -13,10 +15,10 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { kind } = await params;
-  return { title: `Test ${decodeURIComponent(kind)} — Shapes` };
+  return { title: `Instances of ${decodeURIComponent(kind)} — Shapes` };
 }
 
-export default async function ShapeTestPage({ params }: PageProps) {
+export default async function ShapeInstancesPage({ params }: PageProps) {
   const { kind } = await params;
   const detail = await getShapeDetail(decodeURIComponent(kind));
   if (!detail) notFound();
@@ -26,11 +28,12 @@ export default async function ShapeTestPage({ params }: PageProps) {
       <ShapeDetailHeader kind={detail.kind} label={detail.label} />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mx-auto mt-3 max-w-6xl">
-          <ShapeTestTabLoader
+          <ShapeInstancesTabLoader
             kind={detail.kind}
             label={detail.label}
             kindDefinitionId={detail.id}
-            kindVersion={detail.version}
+            currentVersion={detail.version}
+            emittedJsonSchema={detail.emittedJsonSchema}
           />
         </div>
       </div>

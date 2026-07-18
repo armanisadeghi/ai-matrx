@@ -293,6 +293,54 @@ export function initialValuesForVariables(
   return values;
 }
 
+/**
+ * The EXACT inverse of `coerceInputValueToKindValue`: map one kind-space
+ * value back into the raw shape its `VariableInputComponent` edits, so a
+ * stored instance can prefill the form (edit flows). Round-trip law:
+ * `coerceInputValueToKindValue(field, inputValueForKindValue(field, v))`
+ * yields `v` for any schema-valid `v`.
+ */
+export function inputValueForKindValue(field: FieldSchema, value: unknown): unknown {
+  if (value === undefined || value === null) return undefined;
+  switch (field.type) {
+    case "string":
+    case "enum":
+    case "number":
+    case "boolean":
+      return value;
+    case "string[]":
+    case "number[]":
+    case "boolean[]":
+      return Array.isArray(value) ? value.map(String).join("\n") : String(value);
+    // Structured fields are JSON textareas both ways (R5 v1 posture).
+    case "array":
+    case "object":
+    case "inline_object":
+    case "record":
+    case "union":
+    case "json":
+    case "json[]":
+      return JSON.stringify(value, null, 2);
+  }
+}
+
+/**
+ * Seed form values from an existing instance's data (keyed by FIELD KEY),
+ * falling back to each variable's default for keys the instance omits.
+ */
+export function initialValuesFromInstance(
+  pairs: KindInputPair[],
+  instanceData: Record<string, unknown>,
+): Record<string, unknown> {
+  const values = initialValuesForVariables(pairs.map((p) => p.variable));
+  for (const pair of pairs) {
+    if (!(pair.fieldKey in instanceData)) continue;
+    const seeded = inputValueForKindValue(pair.field, instanceData[pair.fieldKey]);
+    if (seeded !== undefined) values[pair.variable.name] = seeded;
+  }
+  return values;
+}
+
 // ---------------------------------------------------------------------------
 // Round-trip drift — the losses[] report does NOT cover these
 // ---------------------------------------------------------------------------

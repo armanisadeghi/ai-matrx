@@ -61,6 +61,22 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: `${SHAPES_ROUTE_BASE}/[kind]/instances`,
+      label: "Shape instances",
+      description:
+        "My saved kind_instance rows for this kind: validation dot, pinned-version chip, render through the real component, edit (prefilled KindInputForm), soft delete, honest repin, flat-kind View-as-table snapshot.",
+      filePath: "app/(core)/shapes/[kind]/instances/page.tsx",
+      status: "Live",
+    },
+    {
+      url: `${SHAPES_ROUTE_BASE}/instances/[id]`,
+      label: "Instance permalink resolver",
+      description:
+        "Sharing-registry url_path_template target (/shapes/instances/{id}) — resolves the instance's kind and redirects to /shapes/[kind]/instances?i=<id>.",
+      filePath: "app/(core)/shapes/instances/[id]/page.tsx",
+      status: "Live",
+    },
+    {
       url: `${SHAPES_ROUTE_BASE}/[kind]/schema`,
       label: "Shape schema",
       description: "Read-only field table + emitted_json_schema behind a toggle.",
@@ -111,6 +127,28 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       name: "ShapesListClient",
       filePath: "features/content-ir/studio/components/ShapesListClient.tsx",
       description: "RLS-scoped list view (mine + platform sections).",
+      tier: "internal",
+    },
+    {
+      name: "ShapeInstancesTab",
+      filePath:
+        "features/content-ir/studio/components/ShapeInstancesTab.tsx",
+      description:
+        "Instances list + detail (render / edit / delete / repin / View-as-table), loaded ssr:false.",
+      tier: "internal",
+    },
+    {
+      name: "instance-service",
+      filePath: "features/content-ir/studio/instance-service.ts",
+      description:
+        "The ONE browser write/read path for content_ir.kind_instance (save / list / update / repin / soft delete; server-toolset parity).",
+      tier: "internal",
+    },
+    {
+      name: "message-kind-instances",
+      filePath: "features/content-ir/studio/message-kind-instances.ts",
+      description:
+        "Save-from-chat extraction (splitter + envelope reconstruction) behind the 'Save to my Shapes' message action.",
       tier: "internal",
     },
   ],

@@ -74,6 +74,9 @@ import { buildConversationMessageTitle } from "@/features/agents/utils/conversat
 import { buildTaskSeedFromMessage } from "./buildTaskSeedFromMessage";
 import { openAssistantMessageEditor } from "./openAssistantMessageEditor";
 import { hasConvertibleContent } from "./convertibleContent";
+import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -1338,6 +1341,80 @@ function convertMessageItem(ctx: MessageActionContext): MenuItem {
   };
 }
 
+/**
+ * ASSISTANT MESSAGES — "Save to my Shapes": persist a registered `__kind`
+ * block from this turn as a `content_ir.kind_instance` row (the Shape System
+ * persistence layer; same insert path as the Test tab's Save). Hot-path gate
+ * is CHEAP by design (`messageMayContainKindBlock` — a marker substring check
+ * + auth); the heavy extraction (splitter + registry warm + envelope
+ * reconstruction, reusing the artifact-materialization detection) lazy-loads
+ * on click. Unregistered kinds surface an honest error toast, never a write.
+ */
+function saveShapeInstanceItem(ctx: MessageActionContext): MenuItem {
+  const text = ctx.turnContent ?? ctx.content;
+  return {
+    key: "save-shape-instance",
+    icon: Boxes,
+    iconColor: "text-primary",
+    label: "Save to my Shapes",
+    action: async () => {
+      ctx.onClose();
+      const toastId = toast.loading("Saving shape instance…");
+      try {
+        const { saveKindInstancesFromMessage } =
+          await import("@/features/content-ir/studio/message-kind-instances");
+        const saved = await saveKindInstancesFromMessage({
+          text,
+          organizationId: selectEffectiveOrganizationId(ctx.getState()),
+        });
+        const drifted = saved.filter((s) => s.validationStatus !== "passed");
+        if (drifted.length > 0) {
+          // The DB trigger is the truth — surface a non-passed verdict loudly.
+          toast.error(
+            `Saved ${saved.length} instance${saved.length === 1 ? "" : "s"}, but ${drifted.length} did not pass validation`,
+            {
+              id: toastId,
+              description: drifted
+                .map((s) => `${s.label}: ${s.validationStatus}`)
+                .join("; "),
+            },
+          );
+          return;
+        }
+        const first = saved[0];
+        toast.success(
+          saved.length === 1
+            ? first.title
+              ? `Saved "${first.title}" to your Shapes`
+              : `Saved a ${first.label} instance`
+            : `Saved ${saved.length} instances to your Shapes`,
+          {
+            id: toastId,
+            description: `${first.label} v${first.kindVersion} — validation passed.`,
+            action: {
+              label: "View in Instances",
+              onClick: () =>
+                window.open(
+                  `${shapeInstancesHref(first.kind)}?i=${first.id}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                ),
+            },
+          },
+        );
+      } catch (err) {
+        toast.error("Failed to save to Shapes", {
+          id: toastId,
+          description: getErrorMessage(err, "Unknown error"),
+        });
+      }
+    },
+    category: "Actions",
+    showToast: false,
+    hidden: !ctx.isAuthenticated || !messageMayContainKindBlock(text),
+  };
+}
+
 function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
   const { conversationId, messageId, getState } = ctx;
   return [
@@ -1731,6 +1808,7 @@ export function getAssistantMessageActions(
     ...copyItems(ctx),
     ...assistantOnlyItems(ctx),
     convertMessageItem(ctx),
+    saveShapeInstanceItem(ctx),
     ...actionsItems(ctx),
     ...serverApiTestItems(ctx),
     ...appItems(ctx),
