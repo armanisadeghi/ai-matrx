@@ -8279,7 +8279,8 @@
           "context_state",
           "context_trimmed",
           "injection_consumed",
-          "provider_retry"
+          "provider_retry",
+          "citation"
         ],
         "title": "EventType",
         "type": "string"
@@ -8328,7 +8329,8 @@
       "context_state",
       "context_trimmed",
       "injection_consumed",
-      "provider_retry"
+      "provider_retry",
+      "citation"
     ]
   }
 }

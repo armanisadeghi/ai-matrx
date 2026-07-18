@@ -20236,7 +20236,7 @@
           "RAG"
         ],
         "summary": "Delete Library Document",
-        "description": "Delete one processed_documents row + its pages + its chunks.\n\nThe cld_files row is NOT touched — the binary lives on, only the\nextracted/chunked artifacts are removed. Re-process to rebuild.",
+        "description": "Soft-delete one processed document (trash — restorable, nothing erased).\n\nThe doc row, its chunks, and its doc-keyed store memberships get\n``deleted_at``; pages follow their parent. The cld_files row is NOT\ntouched. Canonical extracts (initial_extract/legacy_import) are rejected\nwith 409 — remove those via the file path. Hard erase happens only via the\npurge path from the Trash.",
         "operationId": "delete_library_document_rag_library__processed_document_id__delete",
         "parameters": [
           {
@@ -20755,7 +20755,7 @@
           "RAG"
         ],
         "summary": "Delete Library Document And Source",
-        "description": "Delete the processed document AND its source cld_files row.\n\nThe \"Delete file\" button calls this. Differs from\nDELETE /rag/library/{id} which only nukes the processing artifacts —\nthat variant is for when the user wants to re-process a file. This\nvariant is for \"I'm done with this file entirely; remove the binary\nfrom cloud storage too.\"",
+        "description": "Soft-delete the WHOLE file family as one set (trash — restorable).\n\nThe \"Delete file\" button calls this: the source cld_files row, every\nderivation, chunks, memberships, and suggestion rows all get\n``deleted_at`` in one transaction. Nothing is erased — the binary and all\nrows survive for restore; hard erase happens only via the purge path from\nthe Trash.",
         "operationId": "delete_library_document_and_source_rag_library__processed_document_id__full_delete",
         "parameters": [
           {
@@ -68860,6 +68860,11 @@
           "deleted_chunks": {
             "type": "integer",
             "title": "Deleted Chunks"
+          },
+          "skipped_canonical": {
+            "type": "integer",
+            "title": "Skipped Canonical",
+            "default": 0
           }
         },
         "type": "object",
@@ -87676,6 +87681,73 @@
             },
             "type": "array",
             "title": "Added Tool Ids"
+          },
+          "tools": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RegisteredToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/InlineToolSpec"
+                },
+                {
+                  "$ref": "#/components/schemas/AgentToolSpec"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "agent": "#/components/schemas/AgentToolSpec",
+                  "inline": "#/components/schemas/InlineToolSpec",
+                  "registered": "#/components/schemas/RegisteredToolSpec"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "tools_replace": {
+            "anyOf": [
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RegisteredToolSpec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InlineToolSpec"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AgentToolSpec"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "kind",
+                    "mapping": {
+                      "agent": "#/components/schemas/AgentToolSpec",
+                      "inline": "#/components/schemas/InlineToolSpec",
+                      "registered": "#/components/schemas/RegisteredToolSpec"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools Replace"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

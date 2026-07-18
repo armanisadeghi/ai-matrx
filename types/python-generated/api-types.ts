@@ -7488,10 +7488,13 @@ export interface paths {
         post?: never;
         /**
          * Delete Library Document
-         * @description Delete one processed_documents row + its pages + its chunks.
+         * @description Soft-delete one processed document (trash — restorable, nothing erased).
          *
-         *     The cld_files row is NOT touched — the binary lives on, only the
-         *     extracted/chunked artifacts are removed. Re-process to rebuild.
+         *     The doc row, its chunks, and its doc-keyed store memberships get
+         *     ``deleted_at``; pages follow their parent. The cld_files row is NOT
+         *     touched. Canonical extracts (initial_extract/legacy_import) are rejected
+         *     with 409 — remove those via the file path. Hard erase happens only via the
+         *     purge path from the Trash.
          */
         delete: operations["delete_library_document_rag_library__processed_document_id__delete"];
         options?: never;
@@ -7708,13 +7711,13 @@ export interface paths {
         post?: never;
         /**
          * Delete Library Document And Source
-         * @description Delete the processed document AND its source cld_files row.
+         * @description Soft-delete the WHOLE file family as one set (trash — restorable).
          *
-         *     The "Delete file" button calls this. Differs from
-         *     DELETE /rag/library/{id} which only nukes the processing artifacts —
-         *     that variant is for when the user wants to re-process a file. This
-         *     variant is for "I'm done with this file entirely; remove the binary
-         *     from cloud storage too."
+         *     The "Delete file" button calls this: the source cld_files row, every
+         *     derivation, chunks, memberships, and suggestion rows all get
+         *     ``deleted_at`` in one transaction. Nothing is erased — the binary and all
+         *     rows survive for restore; hard erase happens only via the purge path from
+         *     the Trash.
          */
         delete: operations["delete_library_document_and_source_rag_library__processed_document_id__full_delete"];
         options?: never;
@@ -24679,6 +24682,11 @@ export interface components {
             deleted_pages: number;
             /** Deleted Chunks */
             deleted_chunks: number;
+            /**
+             * Skipped Canonical
+             * @default 0
+             */
+            skipped_canonical?: number;
         };
         /** LibraryDocDetail */
         LibraryDocDetail: {
@@ -31755,6 +31763,11 @@ export interface components {
             is_version?: boolean;
             /** Added Tool Ids */
             added_tool_ids?: string[];
+            /** Tools */
+            tools?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[];
+            /** Tools Replace */
+            tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
+            client?: components["schemas"]["ClientContext"] | null;
         };
         /** ToolExecuteResponse */
         ToolExecuteResponse: {

@@ -2944,7 +2944,7 @@ export interface VideoOutputRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
-/** Web search results block — unregistered shape candidate (tool_io). */
+/** Web search results block — registered kind `search_results` (inactive; data-event arrival unchanged). */
 export interface SearchResultsRenderBlock {
   type: "search_results";
   content: string;
@@ -2952,7 +2952,7 @@ export interface SearchResultsRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
-/** URL fetch results block — unregistered shape candidate (tool_io). */
+/** URL fetch results block — registered kind `fetch_results` (inactive; data-event arrival unchanged). */
 export interface FetchResultsRenderBlock {
   type: "fetch_results";
   content: string;
@@ -2960,7 +2960,7 @@ export interface FetchResultsRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
-/** Prompt categorization result — unregistered shape candidate. */
+/** Prompt categorization result — registered kind `categorization_result` (inactive; data-event arrival unchanged). */
 export interface CategorizationResultRenderBlock {
   type: "categorization_result";
   content: string;
