@@ -201,6 +201,9 @@ interface InstanceCardProps {
     tunnelWsUrl: string,
   ) => Promise<void>;
   currentUrl: string;
+  /** Localhost URL of this same machine's engine, when discovered locally. */
+  localEngineUrl?: string | null;
+  onUseLocal?: (url: string) => void;
 }
 
 function InstanceCard({
@@ -210,6 +213,8 @@ function InstanceCard({
   onTest,
   onSaveTunnel,
   currentUrl,
+  localEngineUrl,
+  onUseLocal,
 }: InstanceCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -249,6 +254,11 @@ function InstanceCard({
             {isCurrent && (
               <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0 font-medium">
                 current
+              </span>
+            )}
+            {localEngineUrl && (
+              <span className="text-[10px] bg-blue-500/10 text-blue-600 px-1.5 py-0.5 rounded shrink-0 font-medium">
+                this device — local available
               </span>
             )}
           </div>
@@ -345,15 +355,29 @@ function InstanceCard({
               <span className="hidden sm:inline">Test</span>
             </Button>
           )}
-          {hasTunnel && (
+          {localEngineUrl && onUseLocal ? (
+            // Machine is reachable on localhost — steer to the direct path;
+            // routing through the tunnel from the same device is pure waste.
             <Button
               size="sm"
-              variant={isSelected ? "default" : "outline"}
+              variant="default"
               className="h-7 px-2.5 text-xs"
-              onClick={() => onSelect(inst)}
+              onClick={() => onUseLocal(localEngineUrl)}
+              title={`Connect directly via ${localEngineUrl}`}
             >
-              {isSelected ? "Selected" : "Use"}
+              Use local
             </Button>
+          ) : (
+            hasTunnel && (
+              <Button
+                size="sm"
+                variant={isSelected ? "default" : "outline"}
+                className="h-7 px-2.5 text-xs"
+                onClick={() => onSelect(inst)}
+              >
+                {isSelected ? "Selected" : "Use"}
+              </Button>
+            )
           )}
           <button
             onClick={() => setExpanded((v) => !v)}
@@ -659,17 +683,33 @@ export function InstanceSelectorModal({
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Registered Instances ({instances.length})
               </p>
-              {instances.map((inst) => (
-                <InstanceCard
-                  key={inst.id}
-                  inst={inst}
-                  isSelected={selectedId === inst.id}
-                  currentUrl={currentUrl}
-                  onSelect={handleSelectInstance}
-                  onTest={testInstance}
-                  onSaveTunnel={saveTunnelUrl}
-                />
-              ))}
+              {instances.map((inst) => {
+                const localMatch = inst.instance_id
+                  ? discoveredEngines.find(
+                      (e) => e.instanceId === inst.instance_id,
+                    )
+                  : undefined;
+                return (
+                  <InstanceCard
+                    key={inst.id}
+                    inst={inst}
+                    isSelected={selectedId === inst.id}
+                    currentUrl={currentUrl}
+                    onSelect={handleSelectInstance}
+                    onTest={testInstance}
+                    onSaveTunnel={saveTunnelUrl}
+                    localEngineUrl={localMatch?.url ?? null}
+                    onUseLocal={
+                      onSelectLocalEngine
+                        ? (url) => {
+                            onSelectLocalEngine(url);
+                            onClose();
+                          }
+                        : undefined
+                    }
+                  />
+                );
+              })}
             </div>
           )}
 

@@ -14,6 +14,8 @@ export interface LocalEngineDiscovery extends ConnectionInfo {
   label: string;
   availableTools: string[];
   version: string | null;
+  /** app_instances.instance_id of this engine (null on engines older than the 2026-07 build). */
+  instanceId: string | null;
 }
 
 async function buildAuthHeaders(): Promise<Record<string, string>> {
@@ -76,6 +78,7 @@ async function probePort(port: number): Promise<LocalEngineDiscovery | null> {
       label: LOCAL_ENGINE_PROFILES[profile].label,
       availableTools,
       version: healthData.version ?? null,
+      instanceId: healthData.instance_id ?? null,
     };
   } catch {
     return null;

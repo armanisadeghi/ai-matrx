@@ -7,6 +7,7 @@ import {
   Loader2,
   RefreshCw,
   Server,
+  Wifi,
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LOCAL_ENGINE_PROFILES, LOCAL_ENGINE_SCAN_LABEL } from "./constants";
 import { InstanceSelectorModal } from "./InstanceSelectorModal";
+import { isInstanceRemoteOnline } from "./useAppInstances";
 import type { UseMatrxLocalReturn } from "./useMatrxLocal";
 
 interface ConnectionBarProps {
@@ -37,6 +39,8 @@ export function ConnectionBar({
     discoveredEngines,
     discoveringEngines,
     selectEngine,
+    remoteInstances,
+    selectRemoteInstance,
     cancelAll,
     cancelRequest,
     useWebSocket,
@@ -64,6 +68,19 @@ export function ConnectionBar({
   const draftBaseUrl =
     draftUrlState.appliedUrl === baseUrl ? draftUrlState.value : baseUrl;
   const urlDirty = draftBaseUrl.trim().replace(/\/+$/, "") !== baseUrl;
+
+  // Remote (tunnel) chips: only instances reachable right now, and never for
+  // a machine whose engine is already discovered on localhost — local wins.
+  const localInstanceIds = new Set(
+    discoveredEngines
+      .map((e) => e.instanceId)
+      .filter((id): id is string => !!id),
+  );
+  const remoteChips = remoteInstances.filter(
+    (inst) =>
+      isInstanceRemoteOnline(inst) &&
+      !(inst.instance_id && localInstanceIds.has(inst.instance_id)),
+  );
 
   const engineHealthy =
     healthInfo &&
@@ -220,14 +237,47 @@ export function ConnectionBar({
             </div>
           )}
 
-          {discoveredEngines.length === 0 && !isDiscovering && (
-            <Badge
-              variant="outline"
-              className="h-6 text-[10px] font-normal text-muted-foreground shrink-0"
-            >
-              No local engines
-            </Badge>
+          {/* Remote instance chips — registered machines reachable via tunnel */}
+          {remoteChips.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap shrink-0">
+              {remoteChips.map((inst) => {
+                const url = inst.tunnel_url?.replace(/\/+$/, "") ?? "";
+                const isActive = baseUrl === url;
+                return (
+                  <button
+                    key={inst.id}
+                    type="button"
+                    onClick={() => selectRemoteInstance(inst)}
+                    className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-colors flex items-center gap-1.5 ${
+                      isActive
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted/40 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    }`}
+                    title={`Remote via tunnel · ${inst.instance_name || inst.hostname || "Unnamed"} · ${url}`}
+                  >
+                    <Wifi
+                      className={`w-3 h-3 shrink-0 ${isActive ? "text-primary" : "text-blue-500"}`}
+                    />
+                    <span className="truncate max-w-28">
+                      {inst.instance_name || inst.hostname || "Remote"}
+                    </span>
+                    <span className="text-[10px] opacity-70">remote</span>
+                  </button>
+                );
+              })}
+            </div>
           )}
+
+          {discoveredEngines.length === 0 &&
+            remoteChips.length === 0 &&
+            !isDiscovering && (
+              <Badge
+                variant="outline"
+                className="h-6 text-[10px] font-normal text-muted-foreground shrink-0"
+              >
+                No engines
+              </Badge>
+            )}
 
           {/* Manual health refresh */}
           <Button

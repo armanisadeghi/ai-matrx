@@ -74,6 +74,17 @@ export interface SourceMeta {
 export const APP_META: Record<string, SourceMeta> = {
   "matrx-admin": { label: "Matrx Admin", icon: Webhook },
   "matrx-scheduler": { label: "Scheduler", icon: CalendarClock, system: true },
+  // Rows the Python brain writes directly (podcast pipeline, canon bench,
+  // page extraction, RAG expansion, …) — all programmatic, never user chats.
+  aidream: { label: "Aidream Server", icon: Server, system: true },
+  // Server-side MCP agent-service executions — programmatic.
+  "mcp-agent-service": {
+    label: "MCP Agent Service",
+    icon: Server,
+    system: true,
+  },
+  // Workflow-engine node/run executions — programmatic.
+  workflow: { label: "Workflows", icon: Server, system: true },
   // `chat` is what the voice-agent persistence layer stamps (see
   // features/voice-agent/constants.ts → PERSISTENCE_SOURCE_APP).
   chat: { label: "Chat", icon: MessageSquare },
@@ -219,7 +230,9 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   research: { label: "Research", icon: Globe },
   dictionary: { label: "Dictionary", icon: Tag },
   "image-studio": { label: "Image Studio", icon: Image },
-  "pdf-extractor": { label: "PDF Extractor", icon: FileText },
+  // PDF Extractor runs (studio shortcuts, the chunker) are one-shot background
+  // runs on a document, not user chats — classified as automation.
+  "pdf-extractor": { label: "PDF Extractor", icon: FileText, system: true },
   "pro-textarea": { label: "ProTextarea", icon: PencilRuler },
   "surface-chrome": { label: "Surface Agents", icon: Bot },
   "tool-call-visualization": {
@@ -422,6 +435,37 @@ export function appLabel(app: string): string {
 
 export function featureLabel(feature: string): string {
   return featureMeta(feature).label;
+}
+
+/**
+ * Whether a conversation source is an automation ("auto") rather than a real
+ * user chat surface. True when either the app or the feature is system-marked.
+ * This is the ONE auto-vs-user classifier — there is no DB `is_auto` column;
+ * provenance (`source_app` / `source_feature`) + this registry is the signal.
+ */
+export function isAutoSource(
+  app: string | null | undefined,
+  feature: string | null | undefined,
+): boolean {
+  return !!appMeta(sourceKey(app)).system || !!featureMeta(sourceKey(feature)).system;
+}
+
+/**
+ * One-line human description of a conversation's provenance, e.g.
+ * "Matrx Admin · PDF Extractor · Auto". Used by the row "…" menu header so
+ * users can tell WHY a conversation matches (or escapes) their filter.
+ */
+export function describeSource(
+  app: string | null | undefined,
+  feature: string | null | undefined,
+): string {
+  const appKey = sourceKey(app);
+  const featureKey = sourceKey(feature);
+  const parts: string[] = [];
+  if (appKey !== EMPTY_SOURCE_KEY) parts.push(appLabel(appKey));
+  parts.push(featureLabel(featureKey));
+  if (isAutoSource(app, feature)) parts.push("Auto");
+  return parts.join(" · ");
 }
 
 // ── Surfaces exposed in Settings ─────────────────────────────────────────────

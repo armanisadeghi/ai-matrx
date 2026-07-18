@@ -82,6 +82,8 @@ export interface HealthInfo {
   status: string;
   uptime?: number;
   version?: string;
+  /** Stable machine identity (matches app_instances.instance_id). Engines ≥ the 2026-07 build report it. */
+  instance_id?: string | null;
   [key: string]: unknown;
 }
 

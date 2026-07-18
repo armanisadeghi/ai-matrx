@@ -51,6 +51,7 @@ import {
 import {
   EMPTY_SOURCE_KEY,
   FEATURE_GROUPS,
+  appLabel,
   appMeta,
   featureMeta,
   getSurfaceDefault,
@@ -58,6 +59,7 @@ import {
   sourceKey,
   type SurfaceFilterPref,
 } from "@/features/agents/redux/conversation-history/source-registry";
+import { SOURCE_APP } from "@/features/agents/types/instance.types";
 import type { SourceFacet } from "@/features/agents/redux/conversation-history/types";
 
 // ── Tree model ───────────────────────────────────────────────────────────────
@@ -165,12 +167,96 @@ function buildSourceTree(facets: SourceFacet[]): AppNode[] {
   return result;
 }
 
+/** All feature nodes in an app node (groups + ungrouped). */
+function appFeatureNodes(app: AppNode): FeatureNode[] {
+  const nodes: FeatureNode[] = [];
+  for (const g of app.groups) for (const f of g.features) nodes.push(f);
+  for (const f of app.features) nodes.push(f);
+  return nodes;
+}
+
 /** All feature keys present in an app node (groups + ungrouped). */
 function appFeatureKeys(app: AppNode): string[] {
-  const keys: string[] = [];
-  for (const g of app.groups) for (const f of g.features) keys.push(f.key);
-  for (const f of app.features) keys.push(f.key);
-  return keys;
+  return appFeatureNodes(app).map((f) => f.key);
+}
+
+/**
+ * A quick-filter preset: a named full selection (feature set + empty flag).
+ * "Auto" = system-marked features, plus every feature of a system-marked app.
+ */
+interface FilterPreset {
+  id: string;
+  label: string;
+  features: Set<string>;
+  includeEmpty: boolean;
+}
+
+function buildPresets(tree: AppNode[]): FilterPreset[] {
+  const all = new Set<string>();
+  const nonAuto = new Set<string>();
+  const thisApp = new Set<string>();
+  const thisAppNonAuto = new Set<string>();
+  let hasEmpty = false;
+  let thisAppHasEmpty = false;
+
+  for (const app of tree) {
+    const appSystem = !!appMeta(app.key).system;
+    const isThisApp = app.key === SOURCE_APP;
+    for (const node of appFeatureNodes(app)) {
+      if (node.key === EMPTY_SOURCE_KEY) {
+        hasEmpty = true;
+        if (isThisApp) thisAppHasEmpty = true;
+        continue;
+      }
+      all.add(node.key);
+      const auto = node.system || appSystem;
+      if (!auto) nonAuto.add(node.key);
+      if (isThisApp) {
+        thisApp.add(node.key);
+        if (!auto) thisAppNonAuto.add(node.key);
+      }
+    }
+  }
+
+  const presets: FilterPreset[] = [
+    { id: "all", label: "Everything", features: all, includeEmpty: hasEmpty },
+    {
+      id: "no-auto",
+      label: "No auto",
+      features: nonAuto,
+      includeEmpty: false,
+    },
+  ];
+  // Only offer the this-app presets when the app actually has conversations.
+  if (thisApp.size > 0 || thisAppHasEmpty) {
+    const label = appLabel(SOURCE_APP);
+    presets.push(
+      {
+        id: "this-app",
+        label,
+        features: thisApp,
+        includeEmpty: thisAppHasEmpty,
+      },
+      {
+        id: "this-app-no-auto",
+        label: `${label} · no auto`,
+        features: thisAppNonAuto,
+        includeEmpty: false,
+      },
+    );
+  }
+  return presets;
+}
+
+function sameSelection(
+  a: Set<string>,
+  aEmpty: boolean,
+  b: Set<string>,
+  bEmpty: boolean,
+): boolean {
+  if (aEmpty !== bEmpty || a.size !== b.size) return false;
+  for (const k of a) if (!b.has(k)) return false;
+  return true;
 }
 
 // ── Tri-state ────────────────────────────────────────────────────────────────
@@ -307,6 +393,27 @@ export const ConversationSourceFilterTree: React.FC<
 
   const clearAll = useCallback(() => commit(new Set(), false), [commit]);
 
+  // Replace the selection with EXACTLY these keys ("only" buttons + presets).
+  const onlyKeys = useCallback(
+    (keys: string[]) => {
+      const next = new Set<string>();
+      let nextEmpty = false;
+      for (const k of keys) {
+        if (k === EMPTY_SOURCE_KEY) nextEmpty = true;
+        else next.add(k);
+      }
+      commit(next, nextEmpty);
+    },
+    [commit],
+  );
+
+  const presets = useMemo(() => buildPresets(tree), [tree]);
+  const applyPreset = useCallback(
+    (preset: FilterPreset) =>
+      commit(new Set(preset.features), preset.includeEmpty),
+    [commit],
+  );
+
   // Every selectable leaf in the live tree (features + the empty/Generic node).
   const allFeatureKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -408,6 +515,36 @@ export const ConversationSourceFilterTree: React.FC<
           </button>
         </div>
 
+        {/* Quick filters — one-click full selections. Active preset is lit. */}
+        {tree.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-1.5">
+            {presets.map((preset) => {
+              const isActive = sameSelection(
+                selectedFeatures,
+                emptySelected,
+                preset.features,
+                preset.includeEmpty,
+              );
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  className={cn(
+                    "inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-medium transition-colors",
+                    isActive
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                  aria-pressed={isActive}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="max-h-[min(60dvh,420px)] overflow-y-auto py-1">
           {facetsStatus === "loading" && tree.length === 0 && (
             <div className="px-3 py-3 text-[11px] text-muted-foreground">
@@ -428,6 +565,7 @@ export const ConversationSourceFilterTree: React.FC<
               isFeatureChecked={isFeatureChecked}
               onToggleFeature={toggleFeature}
               onToggleKeys={toggleKeys}
+              onOnlyKeys={onlyKeys}
             />
           ))}
         </div>
@@ -513,12 +651,59 @@ const CheckMark: React.FC = () => (
   </svg>
 );
 
+/** Hover-revealed "only" affordance — replaces the selection with one subtree. */
+const OnlyButton: React.FC<{ onClick: () => void; label: string }> = ({
+  onClick,
+  label,
+}) => (
+  <button
+    type="button"
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className="hidden shrink-0 rounded px-1 text-[9px] font-semibold uppercase tracking-wide text-primary hover:bg-primary/10 group-hover/srcrow:inline-flex"
+    aria-label={label}
+    title={label}
+  >
+    only
+  </button>
+);
+
+/** OnlyButton twin for rows whose whole surface is already a <button>. */
+const OnlySpan: React.FC<{ onClick: () => void; label: string }> = ({
+  onClick,
+  label,
+}) => (
+  <span
+    role="button"
+    tabIndex={-1}
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className="hidden shrink-0 rounded px-1 text-[9px] font-semibold uppercase tracking-wide text-primary hover:bg-primary/10 group-hover/srcrow:inline-flex"
+    aria-label={label}
+    title={label}
+  >
+    only
+  </span>
+);
+
+/** Tiny muted pill marking automation sources in the tree. */
+const AutoBadge: React.FC = () => (
+  <span className="shrink-0 rounded-sm border border-border px-1 text-[8px] font-medium uppercase tracking-wide text-muted-foreground/70">
+    auto
+  </span>
+);
+
 interface AppRowProps {
   app: AppNode;
   selectedFeatures: Set<string>;
   isFeatureChecked: (key: string) => boolean;
   onToggleFeature: (key: string) => void;
   onToggleKeys: (keys: string[]) => void;
+  onOnlyKeys: (keys: string[]) => void;
 }
 
 const AppRow: React.FC<AppRowProps> = ({
@@ -527,15 +712,17 @@ const AppRow: React.FC<AppRowProps> = ({
   isFeatureChecked,
   onToggleFeature,
   onToggleKeys,
+  onOnlyKeys,
 }) => {
   const [open, setOpen] = useState(true);
   const keys = useMemo(() => appFeatureKeys(app), [app]);
   const tri = triFor(keys, selectedFeatures);
   const AppIcon = app.icon;
+  const appSystem = !!appMeta(app.key).system;
 
   return (
     <div className="px-1">
-      <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent/50">
+      <div className="group/srcrow flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent/50">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -557,6 +744,11 @@ const AppRow: React.FC<AppRowProps> = ({
         <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
           {app.label}
         </span>
+        {appSystem && <AutoBadge />}
+        <OnlyButton
+          onClick={() => onOnlyKeys(keys)}
+          label={`Show only ${app.label}`}
+        />
         <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
           {app.count}
         </span>
@@ -572,6 +764,7 @@ const AppRow: React.FC<AppRowProps> = ({
               isFeatureChecked={isFeatureChecked}
               onToggleFeature={onToggleFeature}
               onToggleKeys={onToggleKeys}
+              onOnlyKeys={onOnlyKeys}
             />
           ))}
           {app.features.map((feature) => (
@@ -580,6 +773,7 @@ const AppRow: React.FC<AppRowProps> = ({
               feature={feature}
               checked={isFeatureChecked(feature.key)}
               onToggle={() => onToggleFeature(feature.key)}
+              onOnly={() => onOnlyKeys([feature.key])}
             />
           ))}
         </div>
@@ -594,6 +788,7 @@ interface GroupRowProps {
   isFeatureChecked: (key: string) => boolean;
   onToggleFeature: (key: string) => void;
   onToggleKeys: (keys: string[]) => void;
+  onOnlyKeys: (keys: string[]) => void;
 }
 
 const GroupRow: React.FC<GroupRowProps> = ({
@@ -602,6 +797,7 @@ const GroupRow: React.FC<GroupRowProps> = ({
   isFeatureChecked,
   onToggleFeature,
   onToggleKeys,
+  onOnlyKeys,
 }) => {
   const [open, setOpen] = useState(false);
   const keys = useMemo(() => group.features.map((f) => f.key), [group]);
@@ -610,7 +806,7 @@ const GroupRow: React.FC<GroupRowProps> = ({
 
   return (
     <div>
-      <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent/50">
+      <div className="group/srcrow flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent/50">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -632,6 +828,10 @@ const GroupRow: React.FC<GroupRowProps> = ({
         <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground">
           {group.label}
         </span>
+        <OnlyButton
+          onClick={() => onOnlyKeys(keys)}
+          label={`Show only ${group.label}`}
+        />
         <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
           {group.count}
         </span>
@@ -644,6 +844,7 @@ const GroupRow: React.FC<GroupRowProps> = ({
               feature={feature}
               checked={isFeatureChecked(feature.key)}
               onToggle={() => onToggleFeature(feature.key)}
+              onOnly={() => onOnlyKeys([feature.key])}
             />
           ))}
         </div>
@@ -656,12 +857,14 @@ interface FeatureRowProps {
   feature: FeatureNode;
   checked: boolean;
   onToggle: () => void;
+  onOnly: () => void;
 }
 
 const FeatureRow: React.FC<FeatureRowProps> = ({
   feature,
   checked,
   onToggle,
+  onOnly,
 }) => {
   const FeatureIcon = feature.icon;
   return (
@@ -671,7 +874,7 @@ const FeatureRow: React.FC<FeatureRowProps> = ({
       aria-checked={checked}
       aria-label={feature.label}
       onClick={onToggle}
-      className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left hover:bg-accent/50"
+      className="group/srcrow flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left hover:bg-accent/50"
     >
       <span className="w-4" aria-hidden />
       <TriBox state={checked ? "checked" : "empty"} />
@@ -689,6 +892,8 @@ const FeatureRow: React.FC<FeatureRowProps> = ({
       >
         {feature.label}
       </span>
+      {feature.system && <AutoBadge />}
+      <OnlySpan onClick={onOnly} label={`Show only ${feature.label}`} />
       <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
         {feature.count}
       </span>

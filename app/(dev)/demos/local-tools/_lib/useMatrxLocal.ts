@@ -15,6 +15,11 @@ import {
   discoverPrimaryLocalEngines,
   type LocalEngineDiscovery,
 } from "./discoverLocalEngines";
+import {
+  fetchAppInstances,
+  isInstanceRemoteOnline,
+  type AppInstance,
+} from "./useAppInstances";
 import type {
   ActiveRequest,
   ConnectionStatus,
@@ -157,6 +162,11 @@ export interface UseMatrxLocalReturn {
   discoveringEngines: boolean;
   discover: () => Promise<void>;
   selectEngine: (url: string) => void;
+  /** Registered instances from app_instances (RLS-scoped to the signed-in user). */
+  remoteInstances: AppInstance[];
+  refreshRemoteInstances: () => Promise<AppInstance[]>;
+  /** Point the connection at a registered instance's tunnel URL. */
+  selectRemoteInstance: (inst: AppInstance) => void;
   connectWs: () => Promise<void>;
   disconnectWs: () => void;
   cancelAll: () => void;
@@ -237,6 +247,9 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     LocalEngineDiscovery[]
   >([]);
   const [discoveringEngines, setDiscoveringEngines] = useState(false);
+  // Registered instances from the DB — the remote-access path
+  const [remoteInstances, setRemoteInstances] = useState<AppInstance[]>([]);
+  const remoteInstancesRef = useRef<AppInstance[]>([]);
   const initialEnginePickRef = useRef(false);
   const lastScanSignatureRef = useRef("");
 
@@ -306,6 +319,29 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     }
   }, []);
 
+  // ── Registered remote instances (app_instances via Supabase, RLS-scoped) ─
+
+  const refreshRemoteInstances = useCallback(async (): Promise<
+    AppInstance[]
+  > => {
+    try {
+      const rows = await fetchAppInstances();
+      setRemoteInstances(rows);
+      remoteInstancesRef.current = rows;
+      return rows;
+    } catch (e) {
+      addLog("received", {
+        event: "remote_instances_error",
+        message: e instanceof Error ? e.message : "Failed to load instances",
+      });
+      return [];
+    }
+  }, [addLog]);
+
+  useEffect(() => {
+    void refreshRemoteInstances();
+  }, [refreshRemoteInstances]);
+
   // ── Port discovery (live 22140–22159 + dev 22240–22259) ─────────────────
 
   const applyDiscoveredEngine = useCallback((engine: LocalEngineDiscovery) => {
@@ -342,6 +378,38 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
           if (pick) {
             currentEngineFound = true;
             applyDiscoveredEngine(pick);
+          } else {
+            // No engine on localhost — fall back to the freshest registered
+            // instance that is reachable via its Cloudflare tunnel. Local
+            // always wins when present; the tunnel is the away-from-home path.
+            const remotes = remoteInstancesRef.current.length
+              ? remoteInstancesRef.current
+              : await refreshRemoteInstances();
+            const online = remotes.find(isInstanceRemoteOnline);
+            if (online?.tunnel_url) {
+              const url = online.tunnel_url.replace(/\/+$/, "");
+              setBaseUrl(url);
+              baseUrlRef.current = url;
+              scanControlsActiveUrl = false;
+              addLog("received", {
+                event: "remote_fallback",
+                instance: online.instance_name || online.hostname,
+                url,
+              });
+              try {
+                const res = await fetch(`${url}/health`, {
+                  signal: AbortSignal.timeout(5000),
+                });
+                setRestOnline(res.ok);
+                restOnlineRef.current = res.ok;
+              } catch {
+                setRestOnline(false);
+                restOnlineRef.current = false;
+              }
+              // The mount-time WS attempt targeted localhost and will fail;
+              // its auto-reconnect picks up the tunnel URL from baseUrlRef.
+              void connectWsRef.current();
+            }
           }
         } else if (currentMatch) {
           if (currentMatch.availableTools.length > 0) {
@@ -393,7 +461,7 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
         }
       }
     },
-    [addLog, applyDiscoveredEngine],
+    [addLog, applyDiscoveredEngine, refreshRemoteInstances],
   );
 
   const discover = useCallback(async () => {
@@ -624,6 +692,24 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
       discoveredEngines,
       disconnectWs,
     ],
+  );
+
+  const selectRemoteInstance = useCallback(
+    (inst: AppInstance) => {
+      if (!inst.tunnel_url) return;
+      const url = inst.tunnel_url.replace(/\/+$/, "");
+      setBaseUrl(url);
+      baseUrlRef.current = url;
+      setHealthInfo(null);
+      setPortInfo(null);
+      setAvailableTools([]);
+      disconnectWs();
+      setTimeout(() => {
+        void connectWsWithReconnect();
+      }, 100);
+      void checkRestStatus();
+    },
+    [checkRestStatus, connectWsWithReconnect, disconnectWs],
   );
 
   // Cleanup on unmount
@@ -912,6 +998,9 @@ export function useMatrxLocal(): UseMatrxLocalReturn {
     discoveringEngines,
     discover,
     selectEngine,
+    remoteInstances,
+    refreshRemoteInstances,
+    selectRemoteInstance,
     connectWs: connectWsWithReconnect,
     disconnectWs,
     cancelAll,

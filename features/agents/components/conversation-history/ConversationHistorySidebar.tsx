@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchConversationHistory,
+  fetchSourceFacets,
   type FetchConversationHistoryArgs,
 } from "@/features/agents/redux/conversation-history/thunks";
 import {
@@ -52,6 +53,7 @@ import {
   makeSelectConversationHistoryStatus,
   makeSelectGroupedByAgent,
   makeSelectGroupedByDate,
+  selectSourceFacets,
 } from "@/features/agents/redux/conversation-history/selectors";
 import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
@@ -59,7 +61,13 @@ import {
   setScopeAgentIds,
   setScopeGrouping,
   setScopeSearch,
+  setScopeSourceFilter,
 } from "@/features/agents/redux/conversation-history/slice";
+import {
+  EMPTY_SOURCE_KEY,
+  featureLabel,
+  sourceKey,
+} from "@/features/agents/redux/conversation-history/source-registry";
 import type { HistoryGrouping } from "@/features/agents/redux/conversation-history/types";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import { useSurfaceSourceFilter } from "@/features/agents/redux/conversation-history/useSurfaceSourceFilter";
@@ -67,7 +75,10 @@ import {
   renameConversation,
   setConversationFavorite,
 } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import {
+  buildConversationMenu,
+  type ConversationMenuContext,
+} from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "sonner";
@@ -334,6 +345,92 @@ function useConversationHistoryController(
     [getConversationHref],
   );
 
+  // ── Source provenance in the row menu ─────────────────────────────────────
+  // Facets power the "Hide <source>" action when the scope has NO filter
+  // (hide = allow-list of every known source minus this one).
+  const facets = useAppSelector(selectSourceFacets);
+  useEffect(() => {
+    if (surfaceId) void dispatch(fetchSourceFacets(undefined));
+  }, [dispatch, surfaceId]);
+
+  const commitSourceFilter = useCallback(
+    (features: Set<string>, includeEmpty: boolean) => {
+      dispatch(
+        setScopeSourceFilter({
+          scopeId,
+          includeSourceFeatures: Array.from(features),
+          includeSourceApps: [],
+          includeEmptySource: includeEmpty,
+        }),
+      );
+      void dispatch(fetchConversationHistory({ scopeId, replace: true }));
+    },
+    [dispatch, scopeId],
+  );
+
+  /**
+   * Builds the `source` block for `buildConversationMenu`: provenance labels
+   * always; "Show only" / "Hide" filter actions only on filterable surfaces.
+   */
+  const getSourceMenuCtx = useCallback(
+    (conv: ConversationListItem): ConversationMenuContext["source"] => {
+      if (!surfaceId) {
+        return { app: conv.sourceApp, feature: conv.sourceFeature };
+      }
+      const featureKey = sourceKey(conv.sourceFeature);
+      const isEmpty = featureKey === EMPTY_SOURCE_KEY;
+
+      // Effective selection: the feature allow-list plus any whole-app
+      // selections expanded through the live facets (mirrors the filter tree).
+      const selected = new Set(scope.includeSourceFeatures);
+      if (scope.includeSourceApps.length > 0) {
+        const apps = new Set(scope.includeSourceApps);
+        for (const f of facets) {
+          if (apps.has(sourceKey(f.sourceApp))) {
+            selected.add(sourceKey(f.sourceFeature));
+          }
+        }
+      }
+      selected.delete(EMPTY_SOURCE_KEY);
+      let includeEmpty = scope.includeEmptySource;
+      const unfiltered = selected.size === 0 && !includeEmpty;
+
+      return {
+        app: conv.sourceApp,
+        feature: conv.sourceFeature,
+        onShowOnly: () => {
+          commitSourceFilter(
+            isEmpty ? new Set<string>() : new Set([featureKey]),
+            isEmpty,
+          );
+          toast.success(`Showing only ${featureLabel(featureKey)}`);
+        },
+        onHide: () => {
+          let next: Set<string>;
+          if (unfiltered) {
+            // No filter = everything visible. Hiding one source means
+            // allow-listing every known source except this one.
+            next = new Set<string>();
+            let hasEmpty = false;
+            for (const f of facets) {
+              const k = sourceKey(f.sourceFeature);
+              if (k === EMPTY_SOURCE_KEY) hasEmpty = true;
+              else next.add(k);
+            }
+            includeEmpty = hasEmpty;
+          } else {
+            next = selected;
+          }
+          if (isEmpty) includeEmpty = false;
+          else next.delete(featureKey);
+          commitSourceFilter(next, includeEmpty);
+          toast.success(`Hiding ${featureLabel(featureKey)} here`);
+        },
+      };
+    },
+    [surfaceId, scope, facets, commitSourceFilter],
+  );
+
   return {
     scope,
     byDate,
@@ -351,6 +448,7 @@ function useConversationHistoryController(
     onToggleFavoriteResolved,
     favorites,
     resolveHref,
+    getSourceMenuCtx,
   };
 }
 
@@ -406,6 +504,7 @@ const DenseView: React.FC<
     onToggleFavoriteResolved,
     favorites,
     resolveHref,
+    getSourceMenuCtx,
   } = ctl;
 
   const empty =
@@ -489,6 +588,7 @@ const DenseView: React.FC<
                 onToggleFavorite={onToggleFavoriteResolved}
                 resolveHref={resolveHref}
                 surfaceKey={surfaceKey}
+                getSourceMenuCtx={getSourceMenuCtx}
               />
             ))}
           </Section>
@@ -516,6 +616,7 @@ const DenseView: React.FC<
                   onToggleFavorite={onToggleFavoriteResolved}
                   resolveHref={resolveHref}
                   surfaceKey={surfaceKey}
+                  getSourceMenuCtx={getSourceMenuCtx}
                 />
               ))}
             </Section>
@@ -543,6 +644,7 @@ const DenseView: React.FC<
                   onToggleFavorite={onToggleFavoriteResolved}
                   resolveHref={resolveHref}
                   surfaceKey={surfaceKey}
+                  getSourceMenuCtx={getSourceMenuCtx}
                   showAgentHint={false}
                 />
               ))}
@@ -610,6 +712,7 @@ const ConsumerView: React.FC<
     onLoadMore,
     favorites,
     resolveHref,
+    getSourceMenuCtx,
   } = ctl;
 
   const favoriteIds = useMemo(
@@ -718,6 +821,7 @@ const ConsumerView: React.FC<
             onOpen={onOpenConversation}
             openInPlace={openInPlace}
             resolveHref={resolveHref}
+            getSourceMenuCtx={getSourceMenuCtx}
           />
         )}
 
@@ -736,6 +840,7 @@ const ConsumerView: React.FC<
                   onOpen={onOpenConversation}
                   openInPlace={openInPlace}
                   resolveHref={resolveHref}
+                  getSourceMenuCtx={getSourceMenuCtx}
                 />
               ))}
             </ConsumerSection>
@@ -896,6 +1001,9 @@ interface RowProps {
   onToggleFavorite?: (conv: ConversationListItem) => void;
   resolveHref: (conv: ConversationListItem) => string;
   surfaceKey?: string;
+  getSourceMenuCtx?: (
+    conv: ConversationListItem,
+  ) => ConversationMenuContext["source"];
   showAgentHint?: boolean;
 }
 
@@ -908,6 +1016,7 @@ const Row: React.FC<RowProps> = ({
   onToggleFavorite,
   resolveHref,
   surfaceKey,
+  getSourceMenuCtx,
   showAgentHint = true,
 }) => {
   const dispatch = useAppDispatch();
@@ -971,6 +1080,7 @@ const Row: React.FC<RowProps> = ({
           isOwner: true,
           href: resolveHref(conv),
           surfaceKey,
+          source: getSourceMenuCtx?.(conv),
           dispatch,
         })
       }
@@ -1001,12 +1111,16 @@ const PinnedChatsSection: React.FC<{
   onOpen?: (conv: ConversationListItem) => void;
   openInPlace?: boolean;
   resolveHref: (conv: ConversationListItem) => string;
+  getSourceMenuCtx?: (
+    conv: ConversationListItem,
+  ) => ConversationMenuContext["source"];
 }> = ({
   pinned,
   activeConversationId,
   onOpen,
   openInPlace = false,
   resolveHref,
+  getSourceMenuCtx,
 }) => {
   const [open, setOpen] = useState(true);
   const [showAll, setShowAll] = useState(false);
@@ -1048,6 +1162,7 @@ const PinnedChatsSection: React.FC<{
               onOpen={onOpen}
               openInPlace={openInPlace}
               resolveHref={resolveHref}
+              getSourceMenuCtx={getSourceMenuCtx}
             />
           ))}
           {hasMorePins && (
@@ -1084,7 +1199,17 @@ const ConsumerRow: React.FC<{
   onOpen?: (conv: ConversationListItem) => void;
   openInPlace?: boolean;
   resolveHref: (conv: ConversationListItem) => string;
-}> = ({ conv, active, onOpen, openInPlace = false, resolveHref }) => {
+  getSourceMenuCtx?: (
+    conv: ConversationListItem,
+  ) => ConversationMenuContext["source"];
+}> = ({
+  conv,
+  active,
+  onOpen,
+  openInPlace = false,
+  resolveHref,
+  getSourceMenuCtx,
+}) => {
   const dispatch = useAppDispatch();
   const title = conv.title?.trim() || untitled(conv);
   const isStreaming = useAppSelector(selectIsStreaming(conv.conversationId));
@@ -1106,6 +1231,7 @@ const ConsumerRow: React.FC<{
           excludeFromKg: conv.excludeFromKg ?? false,
           isOwner: true,
           href: resolveHref(conv),
+          source: getSourceMenuCtx?.(conv),
           dispatch,
         })
       }

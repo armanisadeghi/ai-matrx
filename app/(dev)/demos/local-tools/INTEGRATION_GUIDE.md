@@ -83,6 +83,30 @@ async function isMatrxLocalRunning(): Promise<boolean> {
 }
 ```
 
+### Remote access (Cloudflare tunnel via `app_instances`)
+
+Every running engine registers itself in Supabase `public.app_instances`
+(RLS-scoped to its owner) and re-asserts `tunnel_url` / `tunnel_ws_url` /
+`tunnel_active` + `last_seen` on every heartbeat (~5 min). Quick-tunnel URLs
+(`*.trycloudflare.com`) **rotate on every engine restart** — never hardcode or
+hand-paste one; always read the current value from the DB
+(`_lib/useAppInstances.ts::fetchAppInstances`, freshness =
+`isInstanceRemoteOnline`, 10-min window matching `/api/compute-targets`).
+
+`useMatrxLocal` implements the canonical selection policy:
+
+1. Scan localhost (22140–22159 / 22240–22259). A local engine always wins.
+2. If nothing local, auto-fall back to the freshest online registered
+   instance's tunnel URL (`remote_fallback` log event).
+3. Remote chips in the ConnectionBar hide any instance whose `instance_id`
+   matches a locally-discovered engine (`/health` now returns `instance_id`
+   on engines newer than 1.3.125) — the tunnel is never offered for a machine
+   already reachable directly.
+
+The engine authorizes tool calls per owner: a Supabase JWT from a different
+user gets `403 Not authorized for this instance` even over a valid tunnel —
+test while signed in as the account the desktop app registered under.
+
 ---
 
 ## 2. REST API

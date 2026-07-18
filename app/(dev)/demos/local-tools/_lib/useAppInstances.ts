@@ -43,6 +43,35 @@ export interface InstanceWithStatus extends AppInstance {
 }
 
 // ---------------------------------------------------------------------------
+// Shared fetch + freshness helpers (also consumed by useMatrxLocal for the
+// remote-fallback path — keep the query in ONE place)
+// ---------------------------------------------------------------------------
+
+/** Same freshness window as /api/compute-targets — a tunnel whose engine
+ *  hasn't heartbeated in 10 minutes is treated as offline. */
+export const INSTANCE_ONLINE_WINDOW_MS = 10 * 60 * 1000;
+
+/** True when this registered instance is reachable from anywhere via its tunnel. */
+export function isInstanceRemoteOnline(
+    inst: Pick<AppInstance, 'tunnel_active' | 'tunnel_url' | 'last_seen'>,
+): boolean {
+    if (!inst.tunnel_active || !inst.tunnel_url) return false;
+    const t = inst.last_seen ? Date.parse(inst.last_seen) : 0;
+    return t > 0 && Date.now() - t <= INSTANCE_ONLINE_WINDOW_MS;
+}
+
+/** RLS-scoped direct read of the user's registered Matrx Local instances. */
+export async function fetchAppInstances(): Promise<AppInstance[]> {
+    const { data, error } = await supabase
+        .from('app_instances')
+        .select('id,instance_id,instance_name,platform,os_version,hostname,username,cpu_model,cpu_cores,ram_total_gb,is_active,last_seen,created_at,updated_at,tunnel_url,tunnel_active,tunnel_updated_at,tunnel_ws_url')
+        .is('deleted_at', null)
+        .order('last_seen', { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
@@ -56,16 +85,10 @@ export function useAppInstances() {
         setLoading(true);
         setError(null);
         try {
-            const { data, error: err } = await supabase
-                .from('app_instances')
-                .select('id,instance_id,instance_name,platform,os_version,hostname,username,cpu_model,cpu_cores,ram_total_gb,is_active,last_seen,created_at,updated_at,tunnel_url,tunnel_active,tunnel_updated_at,tunnel_ws_url')
-                .is('deleted_at', null)
-                .order('last_seen', { ascending: false });
-
-            if (err) throw new Error(err.message);
+            const data = await fetchAppInstances();
 
             setInstances(
-                (data ?? []).map(row => ({
+                data.map(row => ({
                     ...row,
                     restStatus: 'idle',
                     wsStatus: 'idle',

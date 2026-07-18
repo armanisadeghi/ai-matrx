@@ -392,6 +392,11 @@ export function ItemMenu({
           {resolved.header?.title && (
             <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
               {resolved.header.title}
+              {resolved.header.description && (
+                <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground/70">
+                  {resolved.header.description}
+                </span>
+              )}
             </DropdownMenuLabel>
           )}
           <MenuSections
@@ -435,7 +440,14 @@ export function ItemContextMenu({
           onKeyDown={makeShortcutHandler(resolved, () => setOpen(false))}
         >
           {resolved.header?.title && (
-            <ContextMenuLabel>{resolved.header.title}</ContextMenuLabel>
+            <ContextMenuLabel>
+              {resolved.header.title}
+              {resolved.header.description && (
+                <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground/70">
+                  {resolved.header.description}
+                </span>
+              )}
+            </ContextMenuLabel>
           )}
           <MenuSections
             family={contextFamily}

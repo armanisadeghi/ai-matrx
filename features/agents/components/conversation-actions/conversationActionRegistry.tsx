@@ -21,6 +21,8 @@ import {
   Pencil,
   ExternalLink,
   Link as LinkIcon,
+  ListFilter,
+  FilterX,
   Copy,
   Share2,
   Archive,
@@ -30,7 +32,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type {
+  ItemMenuConfig,
+  ItemMenuSection,
+} from "@/components/official/item/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
@@ -42,6 +47,11 @@ import {
   duplicateConversation,
 } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { softDeleteConversation } from "@/features/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk";
+import {
+  describeSource,
+  featureLabel,
+  sourceKey,
+} from "@/features/agents/redux/conversation-history/source-registry";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,14 +83,62 @@ export interface ConversationMenuContext {
   href: string;
   /** Agent-run focus key — when set, Duplicate jumps focus to the new copy. */
   surfaceKey?: string;
+  /**
+   * Provenance (`source_app` / `source_feature`) + optional filter actions.
+   * When set, the menu header shows WHERE the conversation came from
+   * ("Matrx Admin · PDF Extractor · Auto") and, if the callbacks are wired
+   * (surfaces with a source filter), offers "Show only …" / "Hide …" so users
+   * can prune a noisy unfiltered list row-by-row.
+   */
+  source?: {
+    app?: string | null;
+    feature?: string | null;
+    /** Filter the current scope to ONLY this conversation's source. */
+    onShowOnly?: () => void;
+    /** Remove this conversation's source from the current scope's view. */
+    onHide?: () => void;
+  };
   dispatch: AppDispatch;
 }
 
 export function buildConversationMenu(
   ctx: ConversationMenuContext,
 ): ItemMenuConfig {
+  const src = ctx.source;
+  const srcFeatureLabel = src ? featureLabel(sourceKey(src.feature)) : "";
+  const sourceSection: ItemMenuSection | null =
+    src && (src.onShowOnly || src.onHide)
+      ? {
+          id: "source",
+          label: "Source filter",
+          items: [
+            {
+              id: "source-show-only",
+              label: `Show only ${srcFeatureLabel}`,
+              icon: ListFilter,
+              description: "Filter this list to this source",
+              hidden: !src.onShowOnly,
+              onSelect: () => src.onShowOnly?.(),
+            },
+            {
+              id: "source-hide",
+              label: `Hide ${srcFeatureLabel}`,
+              icon: FilterX,
+              description: "Remove this source from this list",
+              hidden: !src.onHide,
+              onSelect: () => src.onHide?.(),
+            },
+          ],
+        }
+      : null;
+
   return {
-    header: { title: displayTitle(ctx.title) },
+    header: {
+      title: displayTitle(ctx.title),
+      description: src
+        ? describeSource(src.app, src.feature)
+        : undefined,
+    },
     sections: [
       {
         id: "actions",
@@ -139,6 +197,7 @@ export function buildConversationMenu(
           },
         ],
       },
+      ...(sourceSection ? [sourceSection] : []),
       {
         id: "manage",
         label: "Manage",
