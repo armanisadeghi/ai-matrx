@@ -16,7 +16,7 @@ export const SHAPES_FEATURE_LABEL = "Shapes";
  * string = not configured; the studio shows a LOUD not-configured state and
  * never silently falls back to another agent.
  */
-export const SHAPE_CREATOR_AGENT_ID = "";
+export const SHAPE_CREATOR_AGENT_ID = "4f4ffd49-db15-4a2e-b9fe-341ffafc1323"; // kind_creator (builtin, K2 lane 2026-07-18)
 
 /** Null when the creator agent is not configured yet (loud empty-state). */
 export function shapeCreatorAgentId(): string | null {
