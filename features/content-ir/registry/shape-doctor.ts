@@ -50,10 +50,13 @@
  *   (b) `definition`, `example` and `gate_structural` are NEVER exemptible
  *       (see `EXEMPTIBLE_COLUMNS`). A child kind's `kind_example` row is what
  *       the recomputed structural gate validates its schema against; without
- *       one the schema is unproven. R4 explicitly allows examples per kind, and
- *       5 child kinds already carry one (`recipe_ingredient`, `recipe_step`,
- *       `resource_item`, `resource_category`, `task_item`) — proof that
- *       `no-example` on a child is an achievable, REAL gap, not an impossibility.
+ *       one the schema is unproven. RATIFIED 2026-07-15 (Arman): EVERY kind
+ *       must carry a canonical example — nested-only children included; this
+ *       is policy, not aspiration. `no-example` fires when a kind has no
+ *       example at all, and `no-canonical-example` fires when it subsists on
+ *       non-canonical examples or interim `sample_data` — both yellows exist
+ *       so a regression from the every-kind-has-an-example state goes LOUD
+ *       instead of hiding in a silent warn cell.
  *
  *   (c) `is_active` is the escape hatch for class 2. Per R6 an ACTIVE kind
  *       asserts standalone render-trust at the resolver seam, so it is never
@@ -315,6 +318,7 @@ export type FindingCode =
   | "surface-token-undetectable" // an ACTIVE kind_surface token no host literal can fire
   // yellow
   | "no-example"
+  | "no-canonical-example" // example exists but none is canonical / only interim sample_data
   | "no-skill"
   | "no-content-block"
   | "stale-example"
@@ -645,8 +649,20 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
         status: "warn",
         detail: `no canonical example (${examples.length} non-canonical)`,
       };
+      yellows.push({
+        severity: "yellow",
+        code: "no-canonical-example",
+        kind: kind.kind,
+        message: `kind "${kind.kind}" has ${examples.length} example(s) but none is canonical — promote one (ratified 2026-07-15: every kind carries a canonical example)`,
+      });
     } else if (kind.sampleData !== null && kind.sampleData !== undefined) {
       example = { status: "warn", detail: "interim sample_data only" };
+      yellows.push({
+        severity: "yellow",
+        code: "no-canonical-example",
+        kind: kind.kind,
+        message: `kind "${kind.kind}" has only interim sample_data — author a canonical kind_example (ratified 2026-07-15: every kind carries a canonical example)`,
+      });
     } else {
       example = { status: "missing", detail: "no example and no sample_data" };
       yellows.push({

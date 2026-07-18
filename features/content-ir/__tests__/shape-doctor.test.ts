@@ -271,6 +271,46 @@ describe("shape doctor", () => {
     expect(row.assets.gate_structural.status).toBe("ok");
     expect(row.assets.gate_structural.detail).toContain("interim sample_data");
     expect(report.findings.some((f) => f.code === "no-example")).toBe(false);
+    // Ratified 2026-07-15: every kind carries a CANONICAL example — subsisting
+    // on interim sample_data is a loud yellow, not a silent warn cell.
+    const canonYellow = report.findings.find((f) => f.code === "no-canonical-example");
+    expect(canonYellow).toBeDefined();
+    expect(canonYellow?.severity).toBe("yellow");
+    expect(canonYellow?.kind).toBe("flashcard_set");
+  });
+
+  it("yellows `no-canonical-example` when only non-canonical examples exist", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [makeKind({ id: "k1", kind: "quiz_set" })],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: false, data: goodSample, updatedAt: T0 },
+        ],
+      }),
+    );
+
+    const row = report.rows[0];
+    expect(row.assets.example.status).toBe("warn");
+    expect(report.findings.some((f) => f.code === "no-example")).toBe(false);
+    const canonYellow = report.findings.find((f) => f.code === "no-canonical-example");
+    expect(canonYellow).toBeDefined();
+    expect(canonYellow?.kind).toBe("quiz_set");
+  });
+
+  it("emits NO example finding when a canonical example is present", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [makeKind({ id: "k1", kind: "quiz_set" })],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+      }),
+    );
+    expect(
+      report.findings.some(
+        (f) => f.code === "no-example" || f.code === "no-canonical-example",
+      ),
+    ).toBe(false);
   });
 
   it("yellows unregistered detector tokens but never control tags", () => {
