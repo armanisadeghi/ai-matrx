@@ -43,7 +43,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mic, Plus, Search, Webhook } from "lucide-react";
+import { Mic, MessageCircle, Plus, Search, Webhook } from "lucide-react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   Popover,
@@ -64,6 +64,10 @@ const CHAT_HISTORY_SEARCH_SCOPE = "chat-route-search";
 
 /** Voice agent route. */
 const VOICE_AGENT_HREF = "/chat/voice";
+/** The chat start page — the default-agent landing. Mirrors the main app
+ *  nav's "Chat" item (same icon/label/href) so this rail exposes the same
+ *  "reset to the start page" action once the chat menu is embedded. */
+const CHAT_HOME_HREF = "/chat/new";
 
 /** Canonical chrome-row class — identical to NavItem.tsx PLUS the
  *  `shell-nav-stable` height modifier so the row height stays the same
@@ -87,6 +91,8 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
   const store = useAppStore();
   const { activeConversationId, activeAgentId } = parseChatPath(pathname);
   const isVoiceRoute = pathname.startsWith(VOICE_AGENT_HREF);
+  // Home = the bare `/chat` redirect target and its landing (`/chat/new`).
+  const isChatHome = pathname === "/chat" || pathname === CHAT_HOME_HREF;
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
 
   const handleNewChat = () => {
@@ -105,6 +111,25 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
     <div className="flex flex-1 min-h-0 flex-col gap-0.5">
       {/* ── CHROME ROWS ── identical DOM in both states. Icons NEVER move
             on collapse/expand. Order is fixed; positions are stable. */}
+
+      {/* Chat — the actual chat route itself, mirroring the main app nav's
+          "Chat" item (same MessageCircle icon, label, and `/chat/new` href).
+          Once this menu is embedded in the shell, it's the "reset to the
+          initial start page" affordance. A plain <Link> (like Voice agent),
+          NOT `beginFreshChat` — this returns to the default-agent landing
+          rather than starting a fresh turn with the active agent. */}
+      <Link
+        href={CHAT_HOME_HREF}
+        title="Chat"
+        aria-label="Chat"
+        aria-current={isChatHome ? "page" : undefined}
+        className={cn(NAV_ITEM_CLASS, isChatHome && "shell-active-pill")}
+      >
+        <span className="shell-nav-icon">
+          <MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+        </span>
+        <span className="shell-nav-label">Chat</span>
+      </Link>
 
       {/* New chat — clears stale surface focus and bumps the fresh-session
           nonce so `/chat/new` remints even when the path is unchanged.

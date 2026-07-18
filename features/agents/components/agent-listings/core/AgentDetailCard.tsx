@@ -9,6 +9,7 @@ import {
   Clock,
   Globe,
   ExternalLink,
+  MessageCircle,
   Rocket,
   CircleCheck,
 } from "lucide-react";
@@ -214,6 +215,15 @@ export function AgentDetailCard({ agent, onSelect }: AgentDetailCardProps) {
             </div>
           </HoverCardContent>
         </HoverCard>
+        <Link
+          href={`/chat/a/${agent.id}`}
+          onClick={(e) => e.stopPropagation()}
+          title="Open in chat"
+          aria-label="Open in chat"
+          className="flex items-center justify-center h-7 w-7 rounded-md border border-border bg-background text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors shrink-0"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+        </Link>
         <Link
           href={`/agents/${agent.id}`}
           target="_blank"
