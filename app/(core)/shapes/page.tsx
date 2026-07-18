@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { SHAPES_ROUTE_BASE } from "@/features/content-ir/studio/constants";
 import { ShapesListHeader } from "@/features/content-ir/studio/components/ShapesListHeader";
 import ShapesListClient from "@/features/content-ir/studio/components/ShapesListClient";
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 export default async function ShapesPage() {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) {
-    redirect("/login?next=/shapes");
+    redirect(`/login?next=${SHAPES_ROUTE_BASE}`);
   }
 
   return (

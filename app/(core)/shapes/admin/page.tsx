@@ -8,6 +8,10 @@
 
 import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
 import type { FeatureAdminMap } from "@/features/admin/types/featureAdminMap";
+import {
+  SHAPES_NEW_HREF,
+  SHAPES_ROUTE_BASE,
+} from "@/features/content-ir/studio/constants";
 
 const SHAPES_ADMIN_MAP: FeatureAdminMap = {
   name: "Shapes (studio)",
@@ -25,7 +29,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
 
   routes: [
     {
-      url: "/shapes",
+      url: SHAPES_ROUTE_BASE,
       label: "Shapes list",
       description:
         "List view (feature-entry doctrine): your shapes + platform library, search, Refresh, New.",
@@ -33,7 +37,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/shapes/new",
+      url: SHAPES_NEW_HREF,
       label: "New Shape (create with agent)",
       description:
         "Compose intent + sample data, hand off to the creator agent chat. Loud not-configured state until the agent id is set.",
@@ -41,7 +45,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/shapes/[kind]",
+      url: `${SHAPES_ROUTE_BASE}/[kind]`,
       label: "Shape preview",
       description:
         "Canonical kind_example rows rendered through the production applyIrKindRoute path.",
@@ -49,7 +53,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/shapes/[kind]/test",
+      url: `${SHAPES_ROUTE_BASE}/[kind]/test`,
       label: "Shape test",
       description:
         "KindInputForm → live render of the emitted instance (the magic-moment screen).",
@@ -57,7 +61,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/shapes/[kind]/schema",
+      url: `${SHAPES_ROUTE_BASE}/[kind]/schema`,
       label: "Shape schema",
       description: "Read-only field table + emitted_json_schema behind a toggle.",
       filePath: "app/(core)/shapes/[kind]/schema/page.tsx",

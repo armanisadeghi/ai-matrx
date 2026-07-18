@@ -21,6 +21,7 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * opt in. Add the next action's id to this union and register its handler.
  */
 import type { ShellNavPanelActionId } from "./nav-window-panels";
+import { SHAPES_ROUTE_BASE } from "@/features/content-ir/studio/constants";
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
 
 export type { ShellNavPanelActionId };
@@ -580,7 +581,7 @@ export const primaryNavItems: ShellNavItem[] = [
   {
     // User-facing Shape System studio (features/content-ir/studio/).
     label: "Shapes",
-    href: "/shapes",
+    href: SHAPES_ROUTE_BASE,
     iconName: "Shapes",
     section: "primary",
     profileMenu: true,

@@ -4,10 +4,11 @@
  * /shapes list view — the feature entry LIST page (the /agents doctrine:
  * everything the user can do, list-first, never a forced workspace).
  *
- * Two sections from ONE RLS-scoped read: "Your shapes" (org-owned rows the
- * viewer can see) and a visually secondary "Platform shapes" library
- * (visibility=public). Per row: open (detail), test, status (active +
- * has-component). Navigation uses useTransition with a per-row busy state.
+ * Two sections from ONE RLS-visible read, split by OWNERSHIP: "Your shapes"
+ * (rows the current auth user created) and a visually secondary "Platform
+ * shapes" library (public system kinds + granted rows). Per row: open
+ * (detail), test, status (active + has-component). Navigation uses
+ * useTransition with a per-row busy state.
  */
 
 import { useEffect, useState, useTransition } from "react";
@@ -23,6 +24,8 @@ import {
   Shapes,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -140,6 +143,7 @@ function SectionSkeleton() {
 
 export default function ShapesListClient() {
   const router = useRouter();
+  const currentUserId = useAppSelector(selectUserId);
   const [query, setQuery] = useState("");
   const [busyHref, setBusyHref] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -225,7 +229,7 @@ export default function ShapesListClient() {
       {state.status === "ready" &&
         (() => {
           const filtered = state.entries.filter((e) => matches(e, query));
-          const { mine, platform } = partitionShapes(filtered);
+          const { mine, platform } = partitionShapes(filtered, currentUserId);
           return (
             <div className="space-y-6">
               {/* Your shapes */}

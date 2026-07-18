@@ -18,11 +18,15 @@ import {
   shapeTestHref,
 } from "../studio/constants";
 
+const ME = "11111111-1111-1111-1111-111111111111";
+const TEAMMATE = "22222222-2222-2222-2222-222222222222";
+
 function row(overrides: Partial<ShapeDefinitionRowLite>): ShapeDefinitionRowLite {
   return {
     id: "00000000-0000-0000-0000-000000000001",
     kind: "flashcard_set",
     label: "Flashcard Set",
+    created_by: null,
     is_active: true,
     visibility: "public",
     metadata: {},
@@ -81,19 +85,41 @@ describe("buildShapeStudioList", () => {
   });
 });
 
-describe("partitionShapes", () => {
-  it("puts public rows in the platform section and everything else in mine", () => {
+describe("partitionShapes (ownership, not visibility)", () => {
+  it("mine = created_by me (even when PUBLIC); everything else visible = platform", () => {
     const entries = buildShapeStudioList(
       [
-        row({ id: "1", kind: "mine_org", label: "Mine", visibility: "org" }),
-        row({ id: "2", kind: "mine_private", label: "Private", visibility: "private" }),
-        row({ id: "3", kind: "platform", label: "Platform", visibility: "public" }),
+        // My own PUBLIC kind is still MINE.
+        row({ id: "1", kind: "my_public", label: "My Public", created_by: ME, visibility: "public" }),
+        row({ id: "2", kind: "my_internal", label: "My Internal", created_by: ME, visibility: "internal" }),
+        // A teammate's granted non-public kind is NOT mine.
+        row({ id: "3", kind: "granted_internal", label: "Granted", created_by: TEAMMATE, visibility: "internal" }),
+        // Platform/system kind (creator null).
+        row({ id: "4", kind: "system_public", label: "System", created_by: null, visibility: "public" }),
       ],
       new Set(),
     );
-    const { mine, platform } = partitionShapes(entries);
-    expect(mine.map((e) => e.kind).sort()).toEqual(["mine_org", "mine_private"]);
-    expect(platform.map((e) => e.kind)).toEqual(["platform"]);
+    const { mine, platform } = partitionShapes(entries, ME);
+    expect(mine.map((e) => e.kind).sort()).toEqual(["my_internal", "my_public"]);
+    expect(platform.map((e) => e.kind).sort()).toEqual([
+      "granted_internal",
+      "system_public",
+    ]);
+  });
+
+  it("mine is empty only when the user created nothing (or no user id)", () => {
+    const entries = buildShapeStudioList(
+      [
+        row({ id: "1", kind: "sys", label: "Sys", created_by: null }),
+        row({ id: "2", kind: "granted", label: "Granted", created_by: TEAMMATE, visibility: "internal" }),
+      ],
+      new Set(),
+    );
+    expect(partitionShapes(entries, ME).mine).toEqual([]);
+    // Null user id (session not hydrated) never claims ownership of null creators.
+    const anon = partitionShapes(entries, null);
+    expect(anon.mine).toEqual([]);
+    expect(anon.platform).toHaveLength(2);
   });
 });
 

@@ -1,9 +1,15 @@
 /**
  * Shapes studio catalog — the user-facing list read over
  * `content_ir.kind_definition` (+ `kind_component` for the has-component
- * flag). Browser-client reads, RLS-scoped: a user's list naturally shows
- * platform/public kinds plus their org's own kinds — no admin RPC, no
- * privilege-complete gather (that stays in admin/shape-doctor-server.ts).
+ * flag). Browser-client reads, RLS-visible per the live std_select policy
+ * (public/system kinds + rows the viewer created or was granted) — no admin
+ * RPC, no privilege-complete gather (that stays in admin/shape-doctor-server.ts).
+ *
+ * Display split is CREATOR-scoped: "Your shapes" = rows the current auth user
+ * created; everything else visible (platform kinds + granted rows) is the
+ * secondary platform/library section. Visibility is NOT ownership — a user's
+ * own public kind is still theirs, and a teammate's granted internal kind is
+ * not.
  *
  * Pure assembly (`buildShapeStudioList`, `partitionShapes`) is jest-testable;
  * `listShapesForUser` is the async browser assembler.
@@ -16,6 +22,8 @@ export interface ShapeListEntry {
   id: string;
   kind: string;
   label: string;
+  /** `created_by` — drives the creator-scoped "Your shapes" split. */
+  createdBy: string | null;
   isActive: boolean;
   visibility: string;
   /** `metadata.family` — machine-contract families vs display groups. */
@@ -27,9 +35,9 @@ export interface ShapeListEntry {
 }
 
 export interface ShapeStudioSections {
-  /** Kinds owned by the viewer's org(s) — the user's own shapes. */
+  /** Kinds the current auth user CREATED — "Your shapes". */
   mine: ShapeListEntry[];
-  /** Platform/public kinds — visually secondary in the list. */
+  /** Everything else visible (platform kinds + granted rows) — secondary. */
   platform: ShapeListEntry[];
 }
 
@@ -37,6 +45,7 @@ export interface ShapeDefinitionRowLite {
   id: string;
   kind: string;
   label: string;
+  created_by: string | null;
   is_active: boolean;
   visibility: string;
   metadata: Json;
@@ -76,6 +85,7 @@ export function buildShapeStudioList(
         id: d.id,
         kind: d.kind,
         label: d.label,
+        createdBy: d.created_by,
         isActive: d.is_active,
         visibility: d.visibility,
         family: familyOf(d.metadata),
@@ -88,15 +98,22 @@ export function buildShapeStudioList(
 }
 
 /**
- * Split the RLS-visible catalog for display: `public` rows are the platform
- * library (secondary); everything else the viewer can see is theirs (their
- * org's rows — RLS already did the authorization).
+ * Split the RLS-visible catalog for display by OWNERSHIP, not visibility:
+ * "mine" = rows the current auth user created (their own kinds stay theirs
+ * even when public); everything else visible (public system kinds + rows
+ * granted by teammates) is the platform/library section. RLS already did the
+ * authorization — this is purely a display partition.
  */
-export function partitionShapes(entries: ShapeListEntry[]): ShapeStudioSections {
+export function partitionShapes(
+  entries: ShapeListEntry[],
+  currentUserId: string | null,
+): ShapeStudioSections {
   const mine: ShapeListEntry[] = [];
   const platform: ShapeListEntry[] = [];
   for (const entry of entries) {
-    (entry.visibility === "public" ? platform : mine).push(entry);
+    const owned =
+      currentUserId !== null && entry.createdBy === currentUserId;
+    (owned ? mine : platform).push(entry);
   }
   return { mine, platform };
 }
@@ -109,7 +126,7 @@ export async function listShapesForUser(): Promise<ShapeListEntry[]> {
     supabase
       .schema("content_ir")
       .from("kind_definition")
-      .select("id,kind,label,is_active,visibility,metadata,version,updated_at")
+      .select("id,kind,label,created_by,is_active,visibility,metadata,version,updated_at")
       .is("deleted_at", null),
     supabase
       .schema("content_ir")
