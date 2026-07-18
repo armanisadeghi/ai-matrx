@@ -3,8 +3,12 @@
 /**
  * SchemaProposalBlock — renders a `schema_proposal` JSON block (what the "JSON
  * Schema Generator" agent emits: `{ name, schema, strict? }`) as a compact card
- * with a collapsed JSON preview and an "Apply to an agent" action that writes
- * the schema to a chosen agent's `agent.definition.output_schema`.
+ * with a collapsed JSON preview and two apply targets:
+ *   - "Apply to an agent" — writes the schema to a chosen agent's
+ *     `agent.definition.output_schema` (ApplySchemaDialog);
+ *   - "Create a Shape" — registers the schema as a content_ir kind with a
+ *     validated canonical example (CreateShapeDialog, lazy — heavy ajv +
+ *     converter chunk fetched only on click).
  *
  * Fail-safe: invalid/partial JSON renders the raw body in a muted <pre> (never
  * throws). The JSON preview reuses the shared JsonBlock viewer (lazy-loaded).
@@ -12,7 +16,8 @@
  */
 
 import React, { lazy, Suspense, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, FileJson, Wand2 } from "lucide-react";
+import nextDynamic from "next/dynamic";
+import { ChevronDown, ChevronRight, FileJson, Shapes, Wand2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +29,14 @@ const JsonBlock = lazy(() =>
     default: m.JsonBlock,
   })),
 );
+
+// Heavy on purpose (ajv + the content-ir converter/planner) — fetched only
+// after the user clicks "Create a Shape" (the conditional render below is the
+// deferral; ssr:false keeps it off the server render).
+const CreateShapeDialog = nextDynamic(() => import("./CreateShapeDialog"), {
+  ssr: false,
+  loading: () => null,
+});
 
 interface SchemaProposalBlockProps {
   content: string;
@@ -87,6 +100,9 @@ const SchemaProposalBlock: React.FC<SchemaProposalBlockProps> = ({
   }, [content, serverData]);
   const [expanded, setExpanded] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Mounted (and its chunk fetched) only while open — mount-per-open is also
+  // what resets the dialog's form state between proposals.
+  const [shapeDialogOpen, setShapeDialogOpen] = useState(false);
 
   // Fail-safe: not a valid proposal → show the raw body, never throw.
   if (!schema) {
@@ -112,10 +128,20 @@ const SchemaProposalBlock: React.FC<SchemaProposalBlockProps> = ({
             {schema.strict ? " · strict" : ""}
           </div>
         </div>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <Wand2 className="mr-1.5 h-3.5 w-3.5" />
-          Apply to an agent
-        </Button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShapeDialogOpen(true)}
+          >
+            <Shapes className="mr-1.5 h-3.5 w-3.5" />
+            Create a Shape
+          </Button>
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+            Apply to an agent
+          </Button>
+        </div>
       </div>
 
       <button
@@ -153,6 +179,14 @@ const SchemaProposalBlock: React.FC<SchemaProposalBlockProps> = ({
         onOpenChange={setDialogOpen}
         schema={schema}
       />
+
+      {shapeDialogOpen && (
+        <CreateShapeDialog
+          open={shapeDialogOpen}
+          onOpenChange={setShapeDialogOpen}
+          schema={schema}
+        />
+      )}
     </div>
   );
 };
