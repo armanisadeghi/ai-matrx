@@ -1,22 +1,25 @@
 "use client";
 
 /**
- * Kind Registry admin — /administration/kind-registry (super-admin gated by
- * the (admin) layout; no extra gate here).
+ * Schema Explorer & Export — the "Schema Export" tab of
+ * /administration/kind-registry (super-admin gated by the (admin) layout).
  *
  * Browse/search every kind the platform knows (compiled system kinds +
  * flexible_data Block Schemas rows, merged by `listAllKinds`), inspect
  * fields + facets + the uses / used-by reference graph, and EXPORT a
  * provider-ready JSON Schema for any kind — referenced kinds resolve into
- * `$defs` automatically via `kindSchemaToJsonSchema`.
+ * `$defs` automatically via `kindSchemaToJsonSchema`. Sized by its parent
+ * tab (h-full) — the page shell owns the viewport.
  */
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  Boxes,
   Copy,
+  ExternalLink,
+  FileJson,
   Loader2,
   RefreshCw,
   Search,
@@ -201,12 +204,12 @@ export default function KindRegistryAdminClient() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
-      <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-2.5 pr-14">
-        <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-          <Boxes className="h-4 w-4 text-sky-500" />
-          Kind Registry
-        </h1>
+    <div className="flex h-full flex-col overflow-hidden">
+      <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-2 pr-14">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <FileJson className="h-4 w-4 text-sky-500" />
+          Schema explorer &amp; export
+        </h2>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Badge variant="secondary">{stats.total} kinds</Badge>
           <span
@@ -344,6 +347,16 @@ export default function KindRegistryAdminClient() {
                     </span>
                     {selected.tier && (
                       <Badge variant="outline">{selected.tier}</Badge>
+                    )}
+                    {selected.dbRowId && (
+                      <Link
+                        href={`/administration/kind-registry/${selected.kind}`}
+                        className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                        title="Open the per-kind admin page (Preview / Gate / Schema / Assets)"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Detail page
+                      </Link>
                     )}
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">

@@ -1,13 +1,14 @@
 /**
  * KindStatusBoard — the LIVE twin of the generated SHAPES_STATUS.md matrix
- * (SHAPE_SYSTEM.md R10), rendered server-side at request time on
+ * (SHAPE_SYSTEM.md R10), rendered as the "Board" tab of
  * /administration/kind-registry.
  *
- * Server Component: runs the pure shape doctor against the live DB (via
- * shape-doctor-server.ts), diffs against the committed snapshot, and renders
- * the per-kind completeness matrix — red findings as red rows, snapshot drift
- * highlighted amber (FeatureAdminMap visual language). Every kind links to
- * its /administration/kind-registry/<kind> page.
+ * Pure presentational component: the page's Server Component runs the shape
+ * doctor once (buildKindStatusBoard in shape-doctor-server.ts) and passes the
+ * serializable model here, so the Catalog table and this board share ONE
+ * doctor run. Red findings render as red rows, snapshot drift amber
+ * (FeatureAdminMap visual language). Every kind links to its
+ * /administration/kind-registry/<kind> page.
  */
 
 import Link from "next/link";
@@ -24,12 +25,12 @@ import {
   type AssetColumn,
   type AssetStatus,
 } from "@/features/content-ir/registry/shape-doctor";
-import {
-  buildKindStatusBoard,
-  type KindBoardRow,
-} from "@/features/content-ir/admin/shape-doctor-server";
+import type {
+  KindBoardRow,
+  KindStatusBoardModel,
+} from "@/features/content-ir/admin/kind-detail-types";
 
-const COLUMN_HEADING: Record<AssetColumn, string> = {
+export const COLUMN_HEADING: Record<AssetColumn, string> = {
   definition: "Definition",
   example: "Example",
   gate_structural: "Gate",
@@ -39,7 +40,7 @@ const COLUMN_HEADING: Record<AssetColumn, string> = {
   surface: "Surface",
 };
 
-function StatusIcon({ status }: { status: AssetStatus }) {
+export function StatusIcon({ status }: { status: AssetStatus }) {
   switch (status) {
     case "ok":
       return <Check className="mx-auto h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />;
@@ -63,25 +64,11 @@ function rowTone(row: KindBoardRow): string {
   return "hover:bg-accent/30";
 }
 
-export default async function KindStatusBoard() {
-  let board: Awaited<ReturnType<typeof buildKindStatusBoard>>;
-  try {
-    board = await buildKindStatusBoard();
-  } catch (error) {
-    // Loud failure — never a fabricated matrix.
-    return (
-      <section className="border-b border-border bg-card">
-        <div className="flex items-center gap-2 border-b border-red-500/30 bg-red-500/5 px-4 py-2 text-sm text-red-700 dark:text-red-300">
-          <CircleAlert className="h-4 w-4 shrink-0" />
-          <span className="font-semibold">Shape doctor failed to run:</span>
-          <span className="font-mono text-xs">
-            {error instanceof Error ? error.message : String(error)}
-          </span>
-        </div>
-      </section>
-    );
-  }
-
+export default function KindStatusBoard({
+  board,
+}: {
+  board: KindStatusBoardModel;
+}) {
   const drifted = board.driftedRowCount > 0;
 
   return (

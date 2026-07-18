@@ -7,9 +7,58 @@
 
 import type { Json } from "@/types/database.types";
 import type {
+  AssetCell,
+  AssetColumn,
+  ShapeDoctorReport,
+  ShapeFinding,
   ShapeKindRow,
   SkillTeaching,
 } from "@/features/content-ir/registry/shape-doctor";
+
+// ─── Kind status board model (built server-side, rendered client-side) ──────
+
+export type BoardRowPresence = "both" | "live-only" | "snapshot-only";
+
+export interface KindBoardRow {
+  kind: string;
+  label: string;
+  isActive: boolean;
+  presence: BoardRowPresence;
+  /** Live cells (snapshot-only rows carry the snapshot's statuses, no details). */
+  cells: Record<AssetColumn, AssetCell>;
+  /** Cells whose status differs from the committed snapshot. */
+  driftedCells: AssetColumn[];
+  /** is_active flipped vs the snapshot. */
+  activeDrift: boolean;
+  /** Live RED finding codes naming this kind. */
+  redCodes: string[];
+  /** kind_definition.version — null for snapshot-only rows (gone from live DB). */
+  version: number | null;
+  /** kind_definition.visibility — null for snapshot-only rows. */
+  visibility: string | null;
+  /** Contract family from the committed content-ir contract manifest, when declared. */
+  family: string | null;
+  /** Live kind_component row count (0 for snapshot-only rows). */
+  componentCount: number;
+  /** Live kind_surface row count (0 for snapshot-only rows). */
+  surfaceCount: number;
+  /** Live kind_example row count (0 for snapshot-only rows). */
+  exampleCount: number;
+  /** At least one canonical kind_example row exists live. */
+  hasCanonicalExample: boolean;
+}
+
+export interface KindStatusBoardModel {
+  rows: KindBoardRow[];
+  redFindings: ShapeFinding[];
+  yellowFindingCount: number;
+  totals: ShapeDoctorReport["totals"];
+  driftedRowCount: number;
+  snapshotStamp: string;
+  excludedFromDrift: AssetColumn[];
+  warnings: string[];
+  generatedAt: string;
+}
 
 export interface KindComponentDetail {
   id: string;

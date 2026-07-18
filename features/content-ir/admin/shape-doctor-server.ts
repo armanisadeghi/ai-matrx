@@ -43,9 +43,12 @@ import {
   type DoctorDetectorToken,
   type DoctorKindEdge,
   type ShapeDoctorReport,
-  type ShapeFinding,
 } from "@/features/content-ir/registry/shape-doctor";
-import type { KindDetailData } from "@/features/content-ir/admin/kind-detail-types";
+import type {
+  KindBoardRow,
+  KindDetailData,
+  KindStatusBoardModel,
+} from "@/features/content-ir/admin/kind-detail-types";
 import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
@@ -416,34 +419,13 @@ interface SnapshotRow {
   assets: Record<string, string>;
 }
 
-export type BoardRowPresence = "both" | "live-only" | "snapshot-only";
-
-export interface KindBoardRow {
-  kind: string;
-  label: string;
-  isActive: boolean;
-  presence: BoardRowPresence;
-  /** Live cells (snapshot-only rows carry the snapshot's statuses, no details). */
-  cells: Record<AssetColumn, AssetCell>;
-  /** Cells whose status differs from the committed snapshot. */
-  driftedCells: AssetColumn[];
-  /** is_active flipped vs the snapshot. */
-  activeDrift: boolean;
-  /** Live RED finding codes naming this kind. */
-  redCodes: string[];
-}
-
-export interface KindStatusBoardModel {
-  rows: KindBoardRow[];
-  redFindings: ShapeFinding[];
-  yellowFindingCount: number;
-  totals: ShapeDoctorReport["totals"];
-  driftedRowCount: number;
-  snapshotStamp: string;
-  excludedFromDrift: AssetColumn[];
-  warnings: string[];
-  generatedAt: string;
-}
+// Board model types live in kind-detail-types.ts (pure, client-shareable —
+// keeps this module's `server-only` poison pill out of client chunks).
+export type {
+  BoardRowPresence,
+  KindBoardRow,
+  KindStatusBoardModel,
+} from "@/features/content-ir/admin/kind-detail-types";
 
 function snapshotStatus(value: string | undefined): AssetStatus | null {
   return value === "ok" || value === "warn" || value === "missing" || value === "n/a"
@@ -452,7 +434,36 @@ function snapshotStatus(value: string | undefined): AssetStatus | null {
 }
 
 export async function buildKindStatusBoard(): Promise<KindStatusBoardModel> {
-  const { report, excludedFromDrift, warnings } = await runLiveShapeDoctor();
+  const { report, db, excludedFromDrift, warnings } = await runLiveShapeDoctor();
+
+  // Catalog-column enrichment sources (all already gathered — no extra reads).
+  const dbKindBySlug = new Map(db.kinds.map((k) => [k.kind, k]));
+  const familyByKind = new Map(
+    committedContractManifest.contracts.map((c) => [c.kind, c.family]),
+  );
+  const componentCounts = new Map<string, number>();
+  for (const c of db.components) {
+    componentCounts.set(
+      c.kindDefinitionId,
+      (componentCounts.get(c.kindDefinitionId) ?? 0) + 1,
+    );
+  }
+  const surfaceCounts = new Map<string, number>();
+  for (const s of db.surfaces) {
+    surfaceCounts.set(
+      s.kindDefinitionId,
+      (surfaceCounts.get(s.kindDefinitionId) ?? 0) + 1,
+    );
+  }
+  const exampleCounts = new Map<string, number>();
+  const canonicalExampleIds = new Set<string>();
+  for (const e of db.examples) {
+    exampleCounts.set(
+      e.kindDefinitionId,
+      (exampleCounts.get(e.kindDefinitionId) ?? 0) + 1,
+    );
+    if (e.isCanonical) canonicalExampleIds.add(e.kindDefinitionId);
+  }
 
   const snapshotRows = new Map<string, SnapshotRow>(
     (committedSnapshot.rows as SnapshotRow[]).map((r) => [r.kind, r]),
@@ -483,6 +494,7 @@ export async function buildKindStatusBoard(): Promise<KindStatusBoardModel> {
       }
     }
 
+    const dbKind = dbKindBySlug.get(row.kind);
     return {
       kind: row.kind,
       label: row.label,
@@ -492,6 +504,13 @@ export async function buildKindStatusBoard(): Promise<KindStatusBoardModel> {
       driftedCells,
       activeDrift: snapshot ? snapshot.is_active !== row.isActive : false,
       redCodes: redCodesByKind.get(row.kind) ?? [],
+      version: dbKind?.version ?? null,
+      visibility: dbKind?.visibility ?? null,
+      family: familyByKind.get(row.kind) ?? null,
+      componentCount: dbKind ? (componentCounts.get(dbKind.id) ?? 0) : 0,
+      surfaceCount: dbKind ? (surfaceCounts.get(dbKind.id) ?? 0) : 0,
+      exampleCount: dbKind ? (exampleCounts.get(dbKind.id) ?? 0) : 0,
+      hasCanonicalExample: dbKind ? canonicalExampleIds.has(dbKind.id) : false,
     };
   });
 
@@ -513,6 +532,13 @@ export async function buildKindStatusBoard(): Promise<KindStatusBoardModel> {
       driftedCells: [],
       activeDrift: false,
       redCodes: [],
+      version: null,
+      visibility: null,
+      family: familyByKind.get(leftover.kind) ?? null,
+      componentCount: 0,
+      surfaceCount: 0,
+      exampleCount: 0,
+      hasCanonicalExample: false,
     });
   }
   rows.sort((a, b) => a.kind.localeCompare(b.kind));
