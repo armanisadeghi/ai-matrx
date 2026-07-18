@@ -85,6 +85,20 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-s
 
 First live rows: `stats_db_demo` (react + transform) and `diff_db_demo` (html) via `migrations/content_ir_db_source_demo_components.sql` — proof surfaces `/administration/kind-registry/stats|diff` Preview.
 
+## Streaming db/cloud kinds + the loading library (live 2026-07-18)
+
+**Any `__kind` known only to the DB renders LIVE during streaming, everywhere the accumulator runs.** The mechanism (all shipped, browser-verified on `wine_tasting`):
+
+- **Kind preservation (kernel):** the envelope NEVER blanks an identified kind. While the schema cold-fetches, `root.kind` carries the identified slug with `kindState: "pending_schema"`; if the region ends before the answer, the raw fallback PRESERVES the kind (`raw_object.kind`, schema-availability failures only — structural raws stay kind-less). `applyIrKindRoute` sends a known-but-unrenderable kind to the **generic structured viewer, never raw JSON**, and upgrades it the moment registries learn better. Genuinely kind-less JSON (`no __kind`) keeps legacy behavior byte-identically (test-pinned: `streaming-db-kind-preservation.test.ts`).
+- **Eager lightweight fetch:** the instant the parser identifies a cloud kind (`kind_identified`/`pending_schema`, surfaced through the session `onEvent` seam), the accumulator fires the schema cold-fetch AND `componentRegistry.requestComponent(kind,"web","output")` → `getKindComponentBySlug` (render-essential columns ONLY; deduped, miss-cached). Both registries also `ensureWarm()` at region open — the streaming path warms the COMPONENT registry too (its absence was the "shows as JSON" bug).
+- **Late-arrival repaint:** both registries carry monotonic versions; `useContentIrRegistryVersion()` (`react/use-registry-repaint.ts`, `useSyncExternalStore`) makes BlockRenderer re-run the route on the frozen envelope when a schema/component lands after finalize. Dispose stays — repaint works from the persisted envelope + registries, no session held open.
+
+**The loading library** (`features/content-ir/react/loading/`) — 20 hardcoded, zero-fetch loaders: `card list table timeline chart deck form media stat-grid document diagram chat gallery kanban tree code map progress minimal generic`. Selection: **`kind_definition.metadata.loading_component`** names a slug (read via the warm entries + cold fetch; the studio/creator agent sets it); missing/unknown → `generic`. Growing it = component in `kind-loading-components.tsx` + row in `kind-loading-registry.ts` + slug documented here.
+
+**The early-key contract** (teach emitters to order these keys FIRST in schema + samples): while a kind instance streams pre-schema, the parser emits un-validated top-level scalar `field` events and the tree accumulates them on the envelope's root value. The loading layer reads this default set: `title`, `description`, `loading_message`, `loading_subtext`, `icon` (an `ICON_HINTS` slug), `count` (drives skeleton row count). All optional; every loader renders bare. Once the schema lands, compliant snapshots supersede early values (unknown-to-schema keys become residue as usual).
+
+**The observed live sequence** (wine_tasting, browser-proven): fenced `__kind` json opens → generic loader with live early keys (title + loading_message + subtext) → definition warms → the kind's declared `card` loader (repaint) → schema resolved → route flips to the `db_kind_component` (the user's actual card, partial data streaming in) → complete. A plain `json` fence with no `__kind` stays a code block throughout.
+
 ## Historical stage roadmap (retained for implementation context)
 
 Current merge-ordered projects live in `/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md`; the line below records the earlier frontend-led sequencing and is not a current completion ledger.
@@ -122,6 +136,7 @@ Current merge-ordered projects live in `/Users/armanisadeghi/code/common-docs/co
 
 ## Change Log
 
+- 2026-07-18 — **Streaming db-kinds + loading library shipped** (see "Streaming db/cloud kinds"): envelope kind preservation through pending/raw (kernel, twinned), eager targeted schema+component fetch on `kind_identified`, registry version repaint (`useContentIrRegistryVersion`), 20-loader library + `metadata.loading_component` selection + the early-key contract; kind-preserved raws route to the generic viewer, never raw JSON. Browser-verified live on `wine_tasting` (loader with live early keys → card-loader upgrade → real db component; plain json fence unchanged).
 - 2026-07-17 — **DB kind components shipped (K1 — R1's `source='db'` is REAL).** Loader/resolver carry `component_source`/`props_transform`/`pinned_kind_version`; `applyIrKindRoute` db-override flip → `db_kind_component` (FE-synthesized, registered in block-dispatch); renderer `features/content-ir/react/db-component/` (shared allowlist compiler, error boundary → generic viewer, html iframe flavor); allowlist expansion ratified (full shadcn + cn + recharts + full hook set in `agent-apps/utils/allowed-imports.ts`); demo rows on stats (react) + diff (html) applied + ledgered + browser-verified. See "DB kind components" section.
 - 2026-07-17 — **"Create a Shape" apply target on `schema_proposal` blocks** (see The Convert Pattern bullet): user-created kinds from agent-proposed JSON Schemas through the canonical converter/planner, browser-RLS writes, trigger-verdict read-back, live-verified end-to-end (dialog → DB rows → /shapes/[kind] render). Dev harness: `/demos/schema-proposal-shape`.
 

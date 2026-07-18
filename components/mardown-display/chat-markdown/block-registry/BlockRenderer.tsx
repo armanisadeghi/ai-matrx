@@ -12,8 +12,12 @@ import {
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
+import { useContentIrRegistryVersion } from "@/features/content-ir/react/use-registry-repaint";
+import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
+import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
+import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
-import { Loader2 } from "lucide-react";
+import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 import {
   isBlockLoading,
   resolveBlockDispatch,
@@ -74,53 +78,51 @@ const ARTIFACT_LOADING_COMPONENTS: Partial<
 };
 
 /**
- * Neutral streaming skeleton for a JSON region whose kind is still resolving.
+ * The pending window for a streaming JSON region: the envelope exists but the
+ * region cannot render its real component yet — either the `__kind`
+ * discriminator hasn't streamed in (`kind` empty), or the kind IS identified
+ * but its schema is still cold-fetching (`kindState === "pending_schema"`, a
+ * db/cloud kind's window). Rendering the raw text here is the "shows the
+ * whole JSON, converts only when done" flash — instead the loading library
+ * renders (registry-driven, fed by the early keys). Gated on `type ===
+ * "code"` so a block the splitter/accumulator already typed keeps its own
+ * type-aware loader.
  *
- * A bare/fenced JSON region carries a `metadata.__ir` envelope but cannot know
- * its kind until the `__kind` discriminator streams in (the chat root has no
- * `expectedRootKind`, so there is no structural speculation). Until then the
- * block type is the untyped `"code"` — and rendering it verbatim is the
- * "shows the whole JSON, converts only when done" flash. While the region is
- * still streaming with an unresolved kind we show this instead; the instant the
- * kind resolves the block routes to its real component (with its own type-aware
- * loader), and if the region completes with NO kind it falls through to the raw
- * code block. Deliberately generic — we do not yet know which kind it is.
+ * Returns the envelope when pending so the caller can select + feed the
+ * loading component; null otherwise.
  */
-const PendingStructuredBlock: React.FC = () => (
-  <div
-    className="my-3 rounded-lg border border-border bg-card/50 p-4"
-    aria-busy="true"
-  >
-    <div className="mb-3 flex items-center gap-2">
-      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-      <span className="text-xs text-muted-foreground">Structured content</span>
-    </div>
-    <div className="space-y-2">
-      <div className="h-2.5 w-2/3 animate-pulse rounded bg-muted" />
-      <div className="h-2.5 w-1/2 animate-pulse rounded bg-muted" />
-      <div className="h-2.5 w-5/6 animate-pulse rounded bg-muted" />
-    </div>
-  </div>
-);
-
-/**
- * True when a block is an untyped JSON `code` region that is still streaming
- * and whose content-ir envelope has NOT yet resolved a kind. This is the
- * pending window in which a bare/fenced JSON block would otherwise flash its
- * raw text (see PendingStructuredBlock). Gated on `type === "code"` so a block
- * the splitter/accumulator already typed (quiz, flashcards, …) keeps its own
- * type-aware loader and is never masked by the generic skeleton.
- */
-function isPendingStructuredJson(block: {
+function pendingStructuredEnvelope(block: {
   type: string;
   metadata?: Record<string, unknown>;
-}): boolean {
-  if (block.type !== "code") return false;
+}): CanonicalBlockIR | null {
+  if (block.type !== "code") return null;
   const envelope = readEnvelope(block.metadata);
-  return (
-    !!envelope && !envelope.root.kind && envelope.root.status === "streaming"
-  );
+  if (!envelope || envelope.root.status !== "streaming") return null;
+  if (!envelope.root.kind || envelope.root.kindState === "pending_schema") {
+    return envelope;
+  }
+  return null;
 }
+
+/**
+ * The registry-driven pending loader: picks the kind's declared
+ * `loading_component` slug (kind_definition.metadata, read from the warm/cold
+ * registry) — generic default otherwise — and feeds it the early keys the
+ * parser has surfaced so far (title, loading_message, …).
+ */
+const PendingStructuredBlock: React.FC<{ envelope: CanonicalBlockIR }> = ({
+  envelope,
+}) => {
+  const kind = envelope.root.kind || undefined;
+  const slug = kind
+    ? (kindRegistry.getDefinition(kind)?.loadingComponent ?? null)
+    : null;
+  const early = earlyKeysFromValue(envelope.root.value, kind);
+  // createElement over JSX: the loader is a STATIC module-level component
+  // selected from the registry at render time (not created during render) —
+  // this form makes that legible to react-hooks/static-components.
+  return React.createElement(resolveKindLoadingComponent(slug), early);
+};
 
 /**
  * Renders individual content blocks through four ordered stages:
@@ -155,6 +157,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   replaceBlockContent,
   handleOpenEditor,
 }) => {
+  // Late-arrival repaint: `applyIrKindRoute` reads module-singleton registries
+  // synchronously. Subscribing to their versions makes a schema/component that
+  // lands AFTER this block rendered (cold fetch losing the race with region
+  // end) re-run the route on the frozen envelope — the block upgrades from
+  // raw/generic to its real component without any stream still being open.
+  useContentIrRegistryVersion();
+
   // Stage 1 — content-ir kind routing: a block whose metadata.__ir envelope
   // resolved a registered kind renders as that kind's component
   // (envelope-derived serverData) — e.g. bare/fenced JSON flashcard_set, which
@@ -221,14 +230,16 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     ],
   );
 
-  // Stage 2 — a JSON region still streaming with an unresolved kind renders a
-  // neutral skeleton, NOT its raw text — the moment `__kind` arrives it routes
-  // to the real component (Stage 1), and if it completes kind-less it falls
-  // through to the code block below. Kills the "shows the whole JSON, converts
-  // only when done" flash for bare/late-`__kind` JSON. (Placed after all hooks
-  // so the early return never changes hook order.)
-  if (isPendingStructuredJson(block)) {
-    return <PendingStructuredBlock key={index} />;
+  // Stage 2 — a JSON region still streaming whose kind is unresolved OR whose
+  // schema is still cold-fetching renders its loading component (registry-
+  // driven, early-key fed), NOT its raw text. The moment the schema lands the
+  // parser upgrades in place and Stage 1 routes to the real component; a
+  // region completing genuinely kind-less falls through to the code block
+  // below. (Placed after all hooks so the early return never changes hook
+  // order.)
+  const pendingEnvelope = pendingStructuredEnvelope(block);
+  if (pendingEnvelope) {
+    return <PendingStructuredBlock key={index} envelope={pendingEnvelope} />;
   }
 
   // Stage 3 — unified artifact renderer (Wave B): standalone materializable

@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D61 — /chat streams warn "state update on a component that hasn't mounted yet" (2026-07-18)
+
+Observed twice during a live `/chat` stream that rendered a `db_kind_component` (wine_tasting verification runs): React error "Can't perform a React state update on a component that hasn't mounted yet… side-effect in your render function". Source unattributed — plausible suspects are a render-time side-effect in the db-component compile path (`getOrCompileDbKindComponent` is called during render and its cache captures errors into a module store) or pre-existing chat-page code; no `[content-ir]` scream accompanied it and rendering was correct. Needs a React-owner pass to attribute (component stack via dev overlay) and move the offending side-effect into an effect. Not user-visible; filed so it doesn't vanish into a chat log.
+
 ### D60 — chat draft transfer never lands for VARIABLE-INPUT agents (2026-07-17)
 
 The `/chat/a/[agentId]` single-hop draft transfer (`chat-draft-transfer.ts`) now works for standard chat agents — the entry-existence race is fixed (ChatRoomClient gates the consume on `selectUserInputEntryExists`; before, `setUserInputText` silently dropped the write because the input entry is created only after the launcher's async agent fetch, losing every stashed draft). **Still broken for agents with launch variables/broker inputs** (repro: agent `a2525cd3` "Get Gemini Image" — stash consumed, dispatch fires, but the smart-input's message box stays empty; the plain-agent path verified working with `c50529ec`). Suspect: the variable-bearing smart input binds its message text differently from `AgentTextarea`'s `selectUserInputText`, or the instance is recreated when variables hydrate. Matters for the Shapes studio create-with-agent handoff (`features/content-ir/studio/components/NewShapeClient.tsx`) if K2's creator agent ships with launch variables. Also: the `setUserInputText` reducer's `if (!entry) return;` is a silent drop — should scream per loud-recovery doctrine.
