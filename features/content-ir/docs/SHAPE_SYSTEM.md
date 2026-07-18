@@ -78,9 +78,12 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-s
 - `props_transform` (optional) — `(data) => data` source compiled the same way, applied BEFORE the component (tool_ui transform semantics). Throwing/broken transform screams; untransformed value renders.
 - `config.allowed_imports` (string[]) narrows the scope; absent → the FULL registered allowlist (`getDefaultImportsForKindComponents` in `features/agent-apps/utils/allowed-imports.ts` — the ONE shared allowlist; every entry explicitly named, unknown identifiers keep the safe-proxy fallback).
 - `pinned_kind_version` rides the projection (reserved for version-pinned rendering).
-- Failure posture: compile error / render throw / unresolvable row → the kind's **generic structured viewer + loud report** (`captureError` source `content-ir`, one console scream per key) — never a blank hole, never hidden content.
+- **Row selection is deterministic:** `is_default DESC, sort_order ASC, created_at ASC, id ASC` (`sortKindComponentRows`, applied in SQL and client-side; first row per (kind, platform, role) wins). **`is_default` is a PREFERENCE among db rows, not a trust gate** — the trust gates are `is_active` (render trust, R6) and RLS editor access on the row itself.
+- Failure posture: compile error / render-or-lifecycle throw / unresolvable row → the kind's **generic structured viewer + loud report** (`captureError` source `content-ir`, one console scream per key) — never a blank hole, never hidden content. (React error boundaries catch render/lifecycle throws only; errors in async code, effects, and event handlers surface through the standard error capture, not the boundary.)
 
-Compile cache: one compile per (kind, platform, role) per session (`dbKindComponentCache.ts`; `invalidateDbKindComponent` for authoring surfaces). First live rows: `stats_db_demo` (react + transform) and `diff_db_demo` (html) via `migrations/content_ir_db_source_demo_components.sql` — proof surfaces `/administration/kind-registry/stats|diff` Preview.
+**Staleness contract — refresh-on-view, no push.** A server-side edit to a db row does NOT reach already-open clients (no realtime yet). The compile cache keys on the row's `updated_at` (one compile per row VERSION), and `refreshKindComponents()` / `subscribeKindComponents()` (`component-registry.ts`) re-fetch the warm list, replace the db tier, and notify — rate-limited + deduped, safe on every preview mount. `KindInstanceRender` (studio/admin previews) already calls it on mount; any authoring surface that edits a row calls it (or `invalidateDbKindComponent`) after save. Chat sessions pick up edits on the next warm load (new session).
+
+First live rows: `stats_db_demo` (react + transform) and `diff_db_demo` (html) via `migrations/content_ir_db_source_demo_components.sql` — proof surfaces `/administration/kind-registry/stats|diff` Preview.
 
 ## Historical stage roadmap (retained for implementation context)
 

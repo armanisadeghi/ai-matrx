@@ -63,19 +63,26 @@ export default function KindInstanceRender({
 }: KindInstanceRenderProps) {
   // Routing must be judged with the WARM tiers in (user kind definitions +
   // `kind_component` resolver rows — including source='db' user components).
-  // Kick both warms and re-render once they land; the compiled floor answers
-  // meanwhile, exactly as in production.
+  // Kick both warms and re-render once they land; then refresh-on-view
+  // (rate-limited + deduped) so an EDITED db component renders fresh here —
+  // server edits never push to open clients, this call is the contract.
   const [, setWarmTick] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    const rerender = () => {
+      if (!cancelled) setWarmTick((t) => t + 1);
+    };
+    const unsubscribe = componentRegistry.subscribe(rerender);
     void Promise.allSettled([
       kindRegistry.ensureWarm(),
       componentRegistry.ensureWarm(),
     ]).then(() => {
-      if (!cancelled) setWarmTick((t) => t + 1);
+      rerender();
+      void componentRegistry.refreshKindComponents();
     });
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, []);
 

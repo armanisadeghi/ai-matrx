@@ -37,7 +37,11 @@ import {
   resolveComponent,
 } from "../registry/component-registry";
 import { getSystemComponentEntries } from "../registry/system-components";
-import type { KindComponentProjection } from "../registry/schema-source-kind-components";
+import {
+  sortKindComponentRows,
+  type KindComponentProjection,
+} from "../registry/schema-source-kind-components";
+import { getOrCompileDbKindComponent } from "../react/db-component/dbKindComponentCache";
 import { envelopeFromCompleteValue } from "../core/normalize";
 import { IR_ENVELOPE_KEY } from "../core/ir-types";
 import { DbKindComponentImpl } from "../react/db-component/DbKindComponentImpl";
@@ -59,6 +63,9 @@ function dbRow(
     componentSource: null,
     propsTransform: null,
     pinnedKindVersion: null,
+    updatedAt: "2026-01-01T00:00:00Z",
+    createdAt: "2026-01-01T00:00:00Z",
+    id: "00000000-0000-0000-0000-000000000000",
     ...overrides,
   };
 }
@@ -121,6 +128,7 @@ describe("loader projection + resolver fields", () => {
       componentSource: null,
       propsTransform: null,
       pinnedKindVersion: null,
+      updatedAt: null,
     });
   });
 });
@@ -297,6 +305,106 @@ describe("DbKindComponentImpl — compile + render + error boundary", () => {
     expect(html).not.toContain("allow-same-origin");
     expect(html).toContain("matrx-kind-data");
     expect(html).toContain("k1_html");
+  });
+});
+
+describe("staleness — refresh re-keys the compile cache", () => {
+  it("an updated_at bump on the winning row produces a NEW compile (edited source renders)", () => {
+    const registry = new ComponentRegistry(getSystemComponentEntries);
+    const v1 = dbRow({
+      kind: "k1_stale",
+      componentKey: "k1_stale_view",
+      isActive: true,
+      componentSource:
+        'export default function V1({ data }) { return <div>v1:{data.title}</div>; }',
+      updatedAt: "2026-07-17T00:00:00Z",
+    });
+    registry.ingestDbRows([v1]);
+    const r1 = registry.resolve("k1_stale", "web", "output");
+    expect(r1).not.toBeNull();
+    const c1 = getOrCompileDbKindComponent("k1_stale", r1!);
+    expect(c1.ok).toBe(true);
+
+    // The edit: same key, new body, bumped updated_at — delivered by a
+    // refresh (replaceDbRows is refreshKindComponents' landing point).
+    registry.replaceDbRows([
+      {
+        ...v1,
+        componentSource:
+          'export default function V2({ data }) { return <div>v2:{data.title}</div>; }',
+        updatedAt: "2026-07-18T00:00:00Z",
+      },
+    ]);
+    const r2 = registry.resolve("k1_stale", "web", "output");
+    expect(r2?.updatedAt).toBe("2026-07-18T00:00:00Z");
+    const c2 = getOrCompileDbKindComponent("k1_stale", r2!);
+    expect(c2.ok).toBe(true);
+    // Different cache entries — the bump re-keyed; the stale compile is not served.
+    expect(c2.ok && c1.ok && c2.compiled.Component).not.toBe(
+      c1.ok ? c1.compiled.Component : null,
+    );
+    if (!c2.ok) throw new Error("expected c2.ok");
+    const html = renderToStaticMarkup(
+      React.createElement(c2.compiled.Component, {
+        data: { title: "X" },
+        kind: "k1_stale",
+        config: {},
+      }),
+    );
+    expect(html).toContain("v2:X");
+  });
+
+  it("replaceDbRows notifies subscribers and drops rows that disappeared", () => {
+    const registry = new ComponentRegistry(getSystemComponentEntries);
+    registry.ingestDbRows([
+      dbRow({ kind: "k1_gone", componentKey: "k1_gone_view", isActive: true }),
+    ]);
+    expect(registry.resolve("k1_gone", "web", "output")).not.toBeNull();
+
+    let notified = 0;
+    const unsubscribe = registry.subscribe(() => {
+      notified += 1;
+    });
+    registry.replaceDbRows([]);
+    expect(notified).toBe(1);
+    expect(registry.resolve("k1_gone", "web", "output")).toBeNull();
+    unsubscribe();
+  });
+});
+
+describe("deterministic db-row ordering", () => {
+  it("orders is_default DESC, sort_order ASC, created_at ASC, id ASC — equal-priority rows tie-break on created_at then id, never physical order", () => {
+    const base = {
+      is_default: false,
+      sort_order: 0,
+      created_at: "2026-07-17T00:00:00Z",
+    };
+    const rows = [
+      { ...base, id: "bbbbbbbb-0000-0000-0000-000000000000" },
+      { ...base, id: "aaaaaaaa-0000-0000-0000-000000000000" },
+      {
+        ...base,
+        created_at: "2026-07-16T00:00:00Z",
+        id: "cccccccc-0000-0000-0000-000000000000",
+      },
+      {
+        ...base,
+        sort_order: -1,
+        id: "dddddddd-0000-0000-0000-000000000000",
+      },
+      { ...base, is_default: true, id: "eeeeeeee-0000-0000-0000-000000000000" },
+    ];
+    expect(sortKindComponentRows(rows).map((r) => r.id[0])).toEqual([
+      "e", // is_default wins
+      "d", // lowest sort_order
+      "c", // earliest created_at
+      "a", // id tiebreak
+      "b",
+    ]);
+    // Input order irrelevant: reversed input, same verdict.
+    expect(sortKindComponentRows([...rows].reverse()).map((r) => r.id[0])).toEqual(
+      ["e", "d", "c", "a", "b"],
+    );
   });
 });
 

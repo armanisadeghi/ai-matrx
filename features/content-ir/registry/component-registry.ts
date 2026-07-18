@@ -63,6 +63,12 @@ export interface ComponentResolution {
   propsTransform: string | null;
   /** `source='db'` rows only: pinned kind version (null = current). */
   pinnedKindVersion: number | null;
+  /**
+   * `source='db'` rows only: the row's `updated_at` — the compile-cache
+   * staleness key (a refresh with a newer row recompiles automatically).
+   * Null for compiled entries.
+   */
+  updatedAt: string | null;
 }
 
 function keyOf(kind: string, platform: string, role: string): string {
@@ -74,6 +80,9 @@ export class ComponentRegistry {
   private readonly db = new Map<string, KindComponentProjection>();
   private warmPromise: Promise<void> | null = null;
   private warmFailureLogged = false;
+  private lastRefreshAt = 0;
+  private refreshPromise: Promise<void> | null = null;
+  private readonly listeners = new Set<() => void>();
 
   /**
    * Entries arrive as a THUNK, resolved on first use: the compiled bootstrap
@@ -117,6 +126,7 @@ export class ComponentRegistry {
         componentSource: dbRow.componentSource,
         propsTransform: dbRow.propsTransform,
         pinnedKindVersion: dbRow.pinnedKindVersion,
+        updatedAt: dbRow.updatedAt,
       };
     }
 
@@ -131,6 +141,7 @@ export class ComponentRegistry {
         componentSource: null,
         propsTransform: null,
         pinnedKindVersion: null,
+        updatedAt: null,
       };
     }
 
@@ -152,6 +163,64 @@ export class ComponentRegistry {
       const key = keyOf(row.kind, row.platform, row.role);
       if (!this.db.has(key)) this.db.set(key, row);
     }
+  }
+
+  /**
+   * Refresh landing point: REPLACE the db tier wholesale (same
+   * first-row-per-key contract as ingestDbRows) so edits, deletions, and
+   * is_active flips all take effect. Notifies subscribers.
+   */
+  replaceDbRows(rows: KindComponentProjection[]): void {
+    this.db.clear();
+    this.ingestDbRows(rows);
+    for (const listener of this.listeners) listener();
+  }
+
+  /**
+   * Subscribe to db-tier replacements (refreshKindComponents). Returns the
+   * unsubscribe. Consumers use this to re-render when a refresh lands.
+   */
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  /**
+   * Refresh-on-view: re-fetch the warm list and REPLACE the db tier, so an
+   * edited `source='db'` component (its `updated_at` bump re-keys the
+   * compile cache) renders fresh on the next view. Deduped in-flight and
+   * rate-limited by `maxAgeMs` (default 10s) — mounting several previews
+   * costs one fetch. Server-side edits do NOT push to open clients (no
+   * realtime yet); the contract is refresh-on-view via this call.
+   */
+  refreshKindComponents(maxAgeMs = 10_000): Promise<void> {
+    if (this.refreshPromise) return this.refreshPromise;
+    if (Date.now() - this.lastRefreshAt < maxAgeMs) return Promise.resolve();
+
+    this.refreshPromise = listKindComponentsFromTables()
+      .then((rows) => {
+        this.lastRefreshAt = Date.now();
+        this.replaceDbRows(rows);
+      })
+      .catch((error) => {
+        // Loud recovery: the current tier keeps answering; a refresh failure
+        // is a real defect (same posture as the warm loader).
+        const message = `component-registry refresh failed (current resolver tier still serving): ${
+          error instanceof Error ? error.message : String(error)
+        }`;
+        console.error(`[content-ir] ${message}`);
+        captureError({
+          source: "content-ir",
+          message,
+          name: error instanceof Error ? error.name : undefined,
+          stack: error instanceof Error ? error.stack : undefined,
+          raw: error,
+        });
+      })
+      .finally(() => {
+        this.refreshPromise = null;
+      });
+    return this.refreshPromise;
   }
 
   /** One list fetch per app session; failed loads retry on the next call. */
@@ -201,4 +270,20 @@ export function resolveComponent(
   role: ComponentRole,
 ): ComponentResolution | null {
   return componentRegistry.resolve(kind, platform, role);
+}
+
+/**
+ * Refresh-on-view for `source='db'` components (module-level convenience over
+ * the singleton): re-fetches `kind_component`, replaces the db tier, notifies
+ * `subscribeKindComponents` listeners. Rate-limited + deduped — safe to call
+ * on every preview/authoring-surface mount. Server-side edits never push to
+ * open clients; call this (or wait for a fresh session) to see them.
+ */
+export function refreshKindComponents(maxAgeMs?: number): Promise<void> {
+  return componentRegistry.refreshKindComponents(maxAgeMs);
+}
+
+/** Subscribe to resolver db-tier replacements. Returns the unsubscribe. */
+export function subscribeKindComponents(listener: () => void): () => void {
+  return componentRegistry.subscribe(listener);
 }

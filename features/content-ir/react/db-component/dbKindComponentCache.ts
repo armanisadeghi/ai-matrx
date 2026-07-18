@@ -18,10 +18,11 @@
  *  - `config.allowed_imports` (string[]) narrows the scope; absent, the row
  *    gets the FULL registered allowlist (`getDefaultImportsForKindComponents`).
  *
- * Cache key: (kind, platform, role) — a resolver key maps to exactly one
- * winning DB row per session (the warm load runs once), so recompiling per
- * mount would be pure waste. `invalidateDbKindComponent` exists for authoring
- * surfaces that edit a row in-session.
+ * Cache key: (kind, platform, role, row.updated_at) — one compile per
+ * winning row VERSION. `refreshKindComponents()` (component-registry) is the
+ * staleness path: a re-warm delivering an edited row re-keys and recompiles
+ * naturally. `invalidateDbKindComponent` force-drops a key family. Server
+ * edits never push to open clients — the contract is refresh-on-view.
  */
 
 import type React from "react";
@@ -55,8 +56,16 @@ export type DbKindCompileResult =
 const cache = new Map<string, DbKindCompileResult>();
 const screamedKeys = new Set<string>();
 
-function cacheKey(kind: string, platform: string, role: string): string {
-  return `${kind}${platform}${role}`;
+function cacheKey(
+  kind: string,
+  platform: string,
+  role: string,
+  updatedAt: string | null,
+): string {
+  // `updatedAt` (the winning row's freshness) is part of the key: a refresh
+  // that delivers an edited row (bumped updated_at) recompiles automatically
+  // instead of serving the stale compile for the rest of the session.
+  return `${kind}${platform}${role}${updatedAt ?? ""}`;
 }
 
 /** Loud recovery: one console scream per key + structured capture. */
@@ -91,7 +100,7 @@ export function getOrCompileDbKindComponent(
   platform = "web",
   role = "output",
 ): DbKindCompileResult {
-  const key = cacheKey(kind, platform, role);
+  const key = cacheKey(kind, platform, role, resolution.updatedAt);
   const cached = cache.get(key);
   if (cached) return cached;
 
@@ -189,7 +198,11 @@ export function invalidateDbKindComponent(
   platform = "web",
   role = "output",
 ): void {
-  const key = cacheKey(kind, platform, role);
-  cache.delete(key);
-  screamedKeys.delete(key);
+  const prefix = `${kind}${platform}${role}`;
+  for (const key of [...cache.keys()]) {
+    if (key.startsWith(prefix)) cache.delete(key);
+  }
+  for (const key of [...screamedKeys]) {
+    if (key.startsWith(prefix)) screamedKeys.delete(key);
+  }
 }

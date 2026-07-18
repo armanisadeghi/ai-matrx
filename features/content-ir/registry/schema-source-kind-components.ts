@@ -51,6 +51,47 @@ export interface KindComponentProjection {
   propsTransform: string | null;
   /** Pin the component to a specific kind version (null = current). */
   pinnedKindVersion: number | null;
+  /**
+   * Row freshness — folded into the db-component compile-cache key so a
+   * re-warm (refreshKindComponents) naturally recompiles edited components.
+   */
+  updatedAt: string;
+  /** Deterministic-tiebreaker inputs (see sortKindComponentRows). */
+  createdAt: string;
+  id: string;
+}
+
+/**
+ * THE deterministic row order — the ingest contract (first row per (kind,
+ * platform, role) wins): `is_default DESC, sort_order ASC, created_at ASC,
+ * id ASC`. `is_default` is a PREFERENCE among db rows, not a trust gate;
+ * without the created_at/id tiebreakers two equal-priority rows would
+ * resolve by DB physical order. Applied in SQL AND re-applied here
+ * (defense in depth; also the unit-test seam).
+ */
+export function sortKindComponentRows<
+  T extends {
+    isActive?: boolean;
+    is_default?: boolean;
+    isDefault?: boolean;
+    sort_order?: number;
+    sortOrder?: number;
+    created_at?: string;
+    createdAt?: string;
+    id: string;
+  },
+>(rows: T[]): T[] {
+  const defaultOf = (r: T) => Boolean(r.is_default ?? r.isDefault);
+  const orderOf = (r: T) => r.sort_order ?? r.sortOrder ?? 0;
+  const createdOf = (r: T) => r.created_at ?? r.createdAt ?? "";
+  return [...rows].sort((a, b) => {
+    if (defaultOf(a) !== defaultOf(b)) return defaultOf(a) ? -1 : 1;
+    if (orderOf(a) !== orderOf(b)) return orderOf(a) - orderOf(b);
+    const ca = createdOf(a);
+    const cb = createdOf(b);
+    if (ca !== cb) return ca < cb ? -1 : 1;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
 }
 
 /**
@@ -83,11 +124,13 @@ export async function listKindComponentsFromTables(): Promise<
     .schema("content_ir")
     .from("kind_component")
     .select(
-      "kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version",
+      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at",
     )
     .is("deleted_at", null)
     .order("is_default", { ascending: false })
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
   if (error) {
     throw new KindComponentTablesError(
       `Failed to list kind_component: ${error.message}`,
@@ -113,7 +156,9 @@ export async function listKindComponentsFromTables(): Promise<
   for (const d of defs ?? []) slugById.set(d.id, d.kind);
 
   const out: KindComponentProjection[] = [];
-  for (const row of rows) {
+  // Re-apply the deterministic contract client-side (defense in depth — the
+  // SQL order above should already match; sortKindComponentRows is the truth).
+  for (const row of sortKindComponentRows(rows)) {
     const kind = slugById.get(row.kind_definition_id);
     if (!kind) {
       // Per-row resilience (loud recovery): a component row pointing at a
@@ -135,6 +180,9 @@ export async function listKindComponentsFromTables(): Promise<
       componentSource: row.component_source,
       propsTransform: row.props_transform,
       pinnedKindVersion: row.pinned_kind_version,
+      updatedAt: row.updated_at,
+      createdAt: row.created_at,
+      id: row.id,
     });
   }
   return out;
