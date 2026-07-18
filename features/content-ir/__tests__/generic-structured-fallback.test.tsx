@@ -85,6 +85,9 @@ function dbRow(
     role: "output",
     source: "bundled",
     config: {},
+    componentSource: null,
+    propsTransform: null,
+    pinnedKindVersion: null,
     ...overrides,
   };
 }

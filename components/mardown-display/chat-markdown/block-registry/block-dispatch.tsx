@@ -60,8 +60,14 @@ import { parseYouTubeUrl } from "@/lib/media/youtube";
 import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
 import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
 import { isInlineDecision } from "@/components/mardown-display/blocks/inline-decision/types";
-import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/react/kind-route";
+import {
+  DB_KIND_COMPONENT_KEY,
+  GENERIC_STRUCTURED_COMPONENT_KEY,
+} from "@/features/content-ir/react/kind-route";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
+// Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
+// its own chunk, fetched only when a block actually routed to a db component.
+import DbKindComponent from "@/features/content-ir/react/db-component/DbKindComponent";
 import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -232,10 +238,15 @@ export function isBlockLoading(block: {
  *  - `generic_structured` — produced ONLY by `applyIrKindRoute`'s R6 generic
  *    fallback (a KNOWN shape nothing render-trusted claims); never emitted
  *    upstream, so it has no vocabulary row. Shape-classified by construction.
+ *  - `db_kind_component` — produced ONLY by `applyIrKindRoute`'s db-override
+ *    flip (an ACTIVE `content_ir.kind_component` row with `source='db'` won
+ *    the resolution); never emitted upstream. Shape-classified by
+ *    construction.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
-  | typeof GENERIC_STRUCTURED_COMPONENT_KEY;
+  | typeof GENERIC_STRUCTURED_COMPONENT_KEY
+  | typeof DB_KIND_COMPONENT_KEY;
 
 /**
  * Detector-owned protocol tokens (crosswalk rows sourced ONLY from the
@@ -310,7 +321,8 @@ export type ShapeBlockType =
   | "map"
   | "stats"
   | "diff"
-  | typeof GENERIC_STRUCTURED_COMPONENT_KEY;
+  | typeof GENERIC_STRUCTURED_COMPONENT_KEY
+  | typeof DB_KIND_COMPONENT_KEY;
 
 /** Crosswalk classification: intentionally_opaque — deliberately untyped. */
 export type OpaqueBlockType = ServerOpaqueRenderBlock["type"];
@@ -1325,6 +1337,20 @@ const SHAPE_BLOCK_DISPATCH = {
   // applyIrKindRoute — nothing emits this block type upstream.
   [GENERIC_STRUCTURED_COMPONENT_KEY]: ({ block, index }) => (
     <GenericStructuredBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+
+  // The db-override flip (kind-route.ts): an ACTIVE `source='db'`
+  // kind_component row won the resolution — render the user-authored
+  // component (in-page allowlist compile, or the sandboxed iframe html
+  // flavor). The shell is lazy; errors fall back to the generic structured
+  // viewer inside the component, never a blank hole. Reached ONLY via
+  // applyIrKindRoute — nothing emits this block type upstream.
+  [DB_KIND_COMPONENT_KEY]: ({ block, index }) => (
+    <DbKindComponent
       key={index}
       content={block.content}
       metadata={block.metadata}

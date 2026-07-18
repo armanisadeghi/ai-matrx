@@ -103,6 +103,9 @@ function workflowInputRow(kind: string): KindComponentProjection {
     source: "bundled",
     isActive: true,
     config: {},
+    componentSource: null,
+    propsTransform: null,
+    pinnedKindVersion: null,
   };
 }
 
@@ -159,6 +162,9 @@ describe("decideKindInputPath — the routing law", () => {
     componentKey,
     source: "bundled",
     config: {},
+    componentSource: null,
+    propsTransform: null,
+    pinnedKindVersion: null,
     isActive: true,
     resolvedBy: "compiled" as const,
   });

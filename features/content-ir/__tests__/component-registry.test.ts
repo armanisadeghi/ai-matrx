@@ -42,6 +42,9 @@ function dbRow(
     source: "db",
     isActive: true,
     config: {},
+    componentSource: null,
+    propsTransform: null,
+    pinnedKindVersion: null,
     ...overrides,
   };
 }
@@ -113,6 +116,9 @@ describe("resolveComponent — compiled floor (pre-warm)", () => {
         componentKey: entry.componentKey,
         source: "bundled",
         config: {},
+        componentSource: null,
+        propsTransform: null,
+        pinnedKindVersion: null,
         isActive: true,
         resolvedBy: "compiled",
       } satisfies ComponentResolution);
@@ -144,6 +150,9 @@ describe("ComponentRegistry — DB tier", () => {
       config: { legacyBlockType: "flashcards" },
       isActive: true,
       resolvedBy: "db",
+      componentSource: null,
+      propsTransform: null,
+      pinnedKindVersion: null,
     });
     // The compiled floor is untouched underneath.
     expect(registry.hasCompiled("flashcard_set", "web", "output")).toBe(true);

@@ -75,6 +75,9 @@ function dbRow(
     role: "output",
     source: "db",
     config: {},
+    componentSource: null,
+    propsTransform: null,
+    pinnedKindVersion: null,
     ...overrides,
   };
 }

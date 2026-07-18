@@ -135,7 +135,13 @@ const DETECTOR_PROTOCOL_TOKENS = [
  * crosswalk-inputs gap) and `generic_structured` (produced only by
  * applyIrKindRoute's R6 fallback).
  */
-const FE_SYNTHESIZED_TYPES = ["media_block", "generic_structured"];
+const FE_SYNTHESIZED_TYPES = [
+  "media_block",
+  "generic_structured",
+  // Produced only by applyIrKindRoute's db-override flip (an active
+  // source='db' kind_component row winning the resolution).
+  "db_kind_component",
+];
 
 describe("block-dispatch registry", () => {
   it("covers every render-block vocabulary item in the crosswalk", () => {
