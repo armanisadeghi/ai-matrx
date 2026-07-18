@@ -217,10 +217,12 @@ export const Card = ({
             iosIconBg[color],
           )}
         >
-          {React.cloneElement(icon, {
-            className: cn("text-white", icon.props.className),
-            size: icon.props.size || 36,
-          })}
+          {React.isValidElement<{ className?: string; size?: number }>(icon)
+            ? React.cloneElement(icon, {
+                className: cn("text-white", icon.props.className),
+                size: icon.props.size || 36,
+              })
+            : icon}
         </div>
         {/* iOS label: small, centered, truncated */}
         <span className="text-[10.5px] font-medium text-center leading-tight text-foreground w-full truncate px-0.5">
@@ -249,10 +251,12 @@ export const Card = ({
     )}>
       <div className="flex flex-col items-center text-center space-y-3">
         <div className={cn("p-3 rounded-full", colorClass.iconBg)}>
-          {React.cloneElement(icon, { 
-            className: cn(colorClass.iconColor, icon.props.className),
-            size: icon.props.size || 28
-          })}
+          {React.isValidElement<{ className?: string; size?: number }>(icon)
+            ? React.cloneElement(icon, {
+                className: cn(colorClass.iconColor, icon.props.className),
+                size: icon.props.size || 28,
+              })
+            : icon}
         </div>
         <h3 className="font-semibold text-lg">{title}</h3>
         {description && (
