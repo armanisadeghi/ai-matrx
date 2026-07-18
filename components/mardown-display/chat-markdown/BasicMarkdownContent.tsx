@@ -34,6 +34,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import remarkMatrxVariable from "@/components/mardown-display/chat-markdown/matrx-variables/remarkMatrxVariable";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
+import remarkMatrxCite from "@/components/mardown-display/chat-markdown/citations/remarkMatrxCite";
+import { CitationMarkerInline } from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
 import {
   TableRenderPathDiagnostic,
   type TableRenderDiagnosticContext,
@@ -860,6 +862,12 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
         "matrx-variable": ({ node, ...props }: React.HTMLAttributes<HTMLElement> & ExtraProps) => (
           <MatrxVariableInline {...(props as React.ComponentProps<typeof MatrxVariableInline>)} />
         ),
+        // Inline citation marker `<matrxcite n="…" />` (emitted into display
+        // text by message-citations.insertCitationMarkers, converted to a
+        // `matrx-cite` element by remarkMatrxCite) → numbered superscript chip.
+        "matrx-cite": ({ node, ...props }: React.HTMLAttributes<HTMLElement> & ExtraProps) => (
+          <CitationMarkerInline {...(props as React.ComponentProps<typeof CitationMarkerInline>)} />
+        ),
         table: ({ node, children, ...props }) => (
           <div>
             <div className="my-3 overflow-x-auto rounded-md border border-border">
@@ -968,6 +976,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           remarkBreaks,
           [remarkMath, { singleDollarTextMath: false }],
           remarkMatrxVariable,
+          remarkMatrxCite,
         ]}
         rehypePlugins={[
           // Parse + sanitize allow-listed raw HTML (img/table/…) BEFORE KaTeX,

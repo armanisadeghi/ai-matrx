@@ -65,6 +65,7 @@ function makeRequest(overrides: Partial<ActiveRequest>): ActiveRequest {
     completedOperations: {},
     renderBlocks: {},
     renderBlockOrder: [],
+    liveCitations: [],
     toolLifecycle: {},
     pendingToolCalls: [],
     completion: null,

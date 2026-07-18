@@ -46,6 +46,7 @@ import { setRequestEditedText } from "../active-requests/active-requests.slice";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { editMessage } from "./edit-message.thunk";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
+import { stripCitationMarkers } from "../messages/message-citations";
 
 /** ms of idle time before the DB write fires. */
 const DB_DEBOUNCE_MS = 800;
@@ -85,8 +86,14 @@ interface CommitInlineEditArgs {
  * doesn't need to await this.
  */
 export const commitInlineContentEdit =
-  ({ conversationId, messageId, requestId, newText }: CommitInlineEditArgs) =>
+  ({ conversationId, messageId, requestId, newText: rawNewText }: CommitInlineEditArgs) =>
   (dispatch: AppDispatch, getState: () => RootState) => {
+    // Inline `<matrxcite n="…" />` citation markers are RENDER-ONLY — the
+    // displayed text a cited message hands to inline editors contains them,
+    // but they must never reach `cx_message.content` (or the DB). Strip once
+    // at this choke point so every downstream write is clean.
+    const newText = stripCitationMarkers(rawNewText);
+
     // ── 1. Sync the renderer immediately ────────────────────────────
     if (requestId) {
       dispatch(setRequestEditedText({ requestId, text: newText }));

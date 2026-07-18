@@ -40,6 +40,7 @@ import {
   selectRenderBlockCount,
   selectHasInlineError,
   selectProviderRetry,
+  selectLiveCitationSources,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -51,6 +52,12 @@ import {
   extractRecordError,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
+import {
+  buildMessageCitationIndex,
+  type MessageCitationSource,
+} from "@/features/agents/redux/execution-system/messages/message-citations";
+import { MessageCitationsProvider } from "@/components/mardown-display/chat-markdown/citations/MessageCitationsContext";
+import { MessageSourcesRow } from "../citations/MessageSourcesRow";
 import { AssistantError } from "../../run/AssistantError";
 import { BreathingOrb } from "./BreathingOrb";
 import { AssistantActionBar } from "./AssistantActionBar";
@@ -68,6 +75,9 @@ import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
+
+const _NO_LIVE_SOURCES: MessageCitationSource[] = [];
+const _selectNoLiveSources = () => _NO_LIVE_SOURCES;
 
 interface AgentAssistantMessageProps {
   conversationId: string;
@@ -175,8 +185,41 @@ export function AgentAssistantMessage({
     messageId ? selectMessageById(conversationId, messageId) : () => undefined,
   );
 
-  // Plain-text projection for action bar (copy / print / share).
+  // Plain-text projection for action bar (copy / print / share) — always
+  // marker-free.
   const flatText = extractFlatText(record);
+
+  // Settle-time citations: deduped numbered source list + per-block inline
+  // marker positions, built from the persisted text parts' `citations`
+  // arrays (canonical NormalizedCitation contract — see
+  // features/agents/redux/execution-system/messages/message-citations.ts).
+  // When the message carries citations, the RENDERED text gets inline
+  // `<matrxcite n="…" />` markers (numbered superscript chips); the plain
+  // `flatText` above stays untouched for copy/TTS/share.
+  const citationIndex = useMemo(
+    () => buildMessageCitationIndex(extractContentBlocks(record)),
+    [record],
+  );
+  const hasCitations = citationIndex.sources.length > 0;
+  const renderedText = hasCitations
+    ? extractFlatText(record, { withCitationMarkers: true })
+    : flatText;
+
+  // Live-stream citations: while this turn renders from the streaming source
+  // (requestId set — the whole session, per the lifetime rule), sources come
+  // from the request's accumulated `citation` events via the SAME dedupe/
+  // numbering core. The persisted index wins when it has data (reloaded
+  // turns); otherwise the live index feeds the inline chips + sources row —
+  // both are index-shape-agnostic.
+  const liveSourcesSelector = useMemo(
+    () =>
+      requestId ? selectLiveCitationSources(requestId) : _selectNoLiveSources,
+    [requestId],
+  );
+  const liveCitationSources = useAppSelector(liveSourcesSelector);
+  const displaySources = hasCitations
+    ? citationIndex.sources
+    : liveCitationSources;
 
   // Non-text blocks (images, audio, data events) that need direct rendering.
   // These bypass the markdown pipeline and go to BlockRenderer via the
@@ -409,6 +452,11 @@ export function AgentAssistantMessage({
   const containerRef = hideActionBar ? undefined : captureRef;
 
   return (
+    // Citation sources ride context down to the inline `<matrxcite>` marker
+    // chips rendered deep inside the markdown tree (CitationMarkerInline).
+    // `displaySources` covers both halves: persisted index for settled /
+    // reloaded turns, live request-derived index while streaming.
+    <MessageCitationsProvider sources={displaySources}>
     <div
       ref={containerRef}
       data-message-id={messageId ?? undefined}
@@ -448,13 +496,20 @@ export function AgentAssistantMessage({
             turnId={messageId}
             conversationId={conversationId}
             messageId={messageId ?? undefined}
-            content={flatText}
+            content={renderedText}
             isStreamActive={isStreamActive && !failed}
             hideCopyButton={true}
             allowFullScreenEditor={false}
             serverProcessedBlocks={serverProcessedBlocks}
             onContentChange={handleInlineContentChange}
           />
+          {/* Per-message citation sources footer — numbered chips matching
+              the inline markers above; renders only when sources exist.
+              During a live stream it appears as soon as the first citation
+              event lands and grows as sources accumulate. */}
+          {displaySources.length > 0 && (
+            <MessageSourcesRow sources={displaySources} className="mt-2" />
+          )}
           {/* While content is streaming, the breathing orb trails just below
               it, moving down as the message grows, then unmounts at completion
               (its slot becomes the action bar). The pre-token / "waiting for
@@ -490,6 +545,7 @@ export function AgentAssistantMessage({
         />
       )}
     </div>
+    </MessageCitationsProvider>
   );
 }
 

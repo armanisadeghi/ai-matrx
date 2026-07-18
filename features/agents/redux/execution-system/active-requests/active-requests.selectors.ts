@@ -62,6 +62,15 @@ import type {
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import {
+  buildLiveCitationIndex,
+  EMPTY_LIVE_CITATION_INDEX,
+  insertCitationMarkers,
+  type BlockCitationMarker,
+  type LiveCitationEntry,
+  type LiveCitationIndex,
+  type MessageCitationSource,
+} from "@/features/agents/redux/execution-system/messages/message-citations";
 
 /** Stable fallbacks — never inline `?? []` in selector outputs. */
 export const EMPTY_REQUEST_IDS: string[] = [];
@@ -446,6 +455,91 @@ export const selectKindEnvelope = (requestId: string, kind?: string) =>
         }
       }
       return null;
+    },
+  );
+
+// =============================================================================
+// Live Citation Selectors
+// =============================================================================
+
+/**
+ * Raw accumulated citation entries — stable ref, only grows. Input for the
+ * derived index below; components use the derived selectors.
+ */
+export const selectLiveCitations =
+  (requestId: string) =>
+  (state: RootState): LiveCitationEntry[] | undefined =>
+    state.activeRequests.byRequestId[requestId]?.liveCitations;
+
+/**
+ * The live citation index for a streaming request: deduped numbered sources
+ * + per-render-block inline markers, derived through the ONE citation core
+ * (`buildLiveCitationIndex` in messages/message-citations.ts — same dedupe/
+ * numbering as the settle-time `buildMessageCitationIndex`). Returns the
+ * stable `EMPTY_LIVE_CITATION_INDEX` when the request has no citations.
+ *
+ * Factory — memoize the instance per requestId in components.
+ */
+export const selectLiveCitationIndex = (requestId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.liveCitations,
+    (entries): LiveCitationIndex =>
+      entries && entries.length > 0
+        ? buildLiveCitationIndex(entries)
+        : EMPTY_LIVE_CITATION_INDEX,
+  );
+
+/** Deduped numbered sources for the live stream (footer chips + marker context). */
+export const selectLiveCitationSources = (requestId: string) =>
+  createSelector(
+    selectLiveCitationIndex(requestId),
+    (index): MessageCitationSource[] => index.sources,
+  );
+
+/** Inline markers keyed by client render blockId (streamed-text insertion). */
+export const selectLiveCitationMarkersByBlockId = (requestId: string) =>
+  createSelector(
+    selectLiveCitationIndex(requestId),
+    (index): Record<string, BlockCitationMarker[]> => index.markersByBlockId,
+  );
+
+/**
+ * The accumulated markdown display text WITH live inline citation markers
+ * (`<matrxcite n="…" />`) inserted per source render block — the
+ * citation-aware sibling of {@link selectAccumulatedText} for the PLAIN
+ * streaming markdown path (no unified special slots). Identical output to
+ * `selectAccumulatedText` when the request carries no citations (string
+ * value-equality keeps consumers render-stable). `editedText` supersedes
+ * and is returned untouched — markers never enter an edited body.
+ *
+ * DISPLAY-ONLY: markers exist in the returned string, never in state; every
+ * persistence path (stream commit via `assembleMessageParts` rawText,
+ * inline-edit commit's marker strip) stores clean text.
+ */
+export const selectAccumulatedTextWithCitationMarkers = (requestId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.editedText,
+    selectLiveCitationIndex(requestId),
+    (order, blocks, editedText, citationIndex): string => {
+      if (editedText !== null && editedText !== undefined) return editedText;
+      if (!order || !blocks || order.length === 0) return "";
+      const markersByBlockId = citationIndex.markersByBlockId;
+      return order
+        .map((id) => {
+          const content = blocks[id]?.content ?? "";
+          const markers = markersByBlockId[id];
+          return markers && markers.length > 0
+            ? insertCitationMarkers(content, markers)
+            : content;
+        })
+        .filter(Boolean)
+        .join("\n");
     },
   );
 

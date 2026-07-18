@@ -29,6 +29,7 @@ export const EventType = {
   CONTEXT_TRIMMED: "context_trimmed",
   INJECTION_CONSUMED: "injection_consumed",
   PROVIDER_RETRY: "provider_retry",
+  CITATION: "citation",
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -75,6 +76,11 @@ export type InitCompletionStatus =
 
 export interface ChunkPayload {
   text: string;
+}
+
+export interface CitationPayload {
+  block_index?: number | null;
+  citation: Record<string, unknown>;
 }
 
 export interface ReasoningChunkPayload {
@@ -3118,12 +3124,29 @@ export type ServerOnlyBlockType = ServerOnlyRenderBlock["type"];
 
 // --- Message Part Models (cx_message.content[] items) ---
 
+export interface NormalizedCitation {
+  kind: "document_char" | "document_page" | "document_block" | "search_result" | "web" | "grounding";
+  provider: "anthropic" | "openai" | "google" | "xai";
+  cited_text?: string | null;
+  title?: string | null;
+  url?: string | null;
+  source_index?: number;
+  file_id?: string | null;
+  page?: number | null;
+  end_page?: number | null;
+  source_start?: number | null;
+  source_end?: number | null;
+  answer_start?: number | null;
+  answer_end?: number | null;
+  raw?: Record<string, unknown>;
+}
+
 export interface TextPart {
   metadata?: Record<string, unknown>;
   type?: "text";
   text?: string;
   id?: string;
-  citations?: unknown[];
+  citations?: NormalizedCitation[];
 }
 
 export interface ThinkingPart {
@@ -3530,6 +3553,11 @@ export interface ProviderRetryEvent {
   data: ProviderRetryPayload;
 }
 
+export interface CitationEvent {
+  event: "citation";
+  data: CitationPayload;
+}
+
 /** Discriminated union — `event.event === "chunk"` narrows `data` automatically. */
 export type TypedStreamEvent =
   | ChunkEvent
@@ -3555,7 +3583,8 @@ export type TypedStreamEvent =
   | ContextStateEvent
   | ContextTrimmedEvent
   | InjectionConsumedEvent
-  | ProviderRetryEvent;
+  | ProviderRetryEvent
+  | CitationEvent;
 
 /**
  * @deprecated Use `TypedStreamEvent` instead — it provides automatic type narrowing
@@ -3685,6 +3714,10 @@ export function isInjectionConsumedEvent(e: TypedStreamEvent): e is { event: "in
 
 export function isProviderRetryEvent(e: TypedStreamEvent): e is { event: "provider_retry"; data: ProviderRetryPayload } {
   return e.event === "provider_retry";
+}
+
+export function isCitationEvent(e: TypedStreamEvent): e is { event: "citation"; data: CitationPayload } {
+  return e.event === "citation";
 }
 
 export function isCompactChunkEvent(e: unknown): e is CompactChunkEvent {

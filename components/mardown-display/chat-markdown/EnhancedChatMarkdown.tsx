@@ -23,16 +23,21 @@ import FullScreenMarkdownEditor from "./FullScreenMarkdownEditor";
 import { InlineStatusIndicator } from "./internal-handlers/InlineStatusIndicator";
 import { InlineThinkingSlot } from "./internal-handlers/InlineThinkingSlot";
 import {
-  selectAccumulatedText,
+  selectAccumulatedTextWithCitationMarkers,
   selectIsReasoningStreaming,
   selectUnifiedSlots,
   selectAllRenderBlocks,
   selectToolLifecycleMap,
+  selectLiveCitationMarkersByBlockId,
   SPECIAL_RENDER_BLOCK_TYPES,
   type ContentSegment,
   type ContentSegmentDbTool,
   type UnifiedSlot,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import {
+  insertCitationMarkers,
+  type BlockCitationMarker,
+} from "@/features/agents/redux/execution-system/messages/message-citations";
 import {
   foldAgentWork,
   SHORT_TEXT_FOLD_MAX,
@@ -115,6 +120,8 @@ const _selectEmptySegments = () => _EMPTY_SEGMENTS;
 const _selectEmptySlots = () => _EMPTY_SLOTS;
 const _selectEmptyRenderBlocks = () =>
   undefined as RenderBlockPayload[] | undefined;
+const _EMPTY_CITATION_MARKERS: Record<string, BlockCitationMarker[]> = {};
+const _selectEmptyCitationMarkers = () => _EMPTY_CITATION_MARKERS;
 
 // A run of this many or more consecutive tool calls (no text / thinking
 // between them) folds into a single expandable "N tool calls" line — the
@@ -289,11 +296,31 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const [editedContent, setEditedContent] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
+  // Citation-aware accumulated text: identical to selectAccumulatedText when
+  // the stream carries no citations; with live `citation` events it returns
+  // the same markdown with inline `<matrxcite n="…" />` markers stamped at
+  // each citation's arrival position (display-only — state and every persist
+  // path stay marker-free). Feeds the PLAIN streaming branch; the unified
+  // branch stamps the same markers per render block in renderGroupedSlot.
   const requestTextSelector = useMemo(
-    () => (requestId ? selectAccumulatedText(requestId) : _selectEmptyString),
+    () =>
+      requestId
+        ? selectAccumulatedTextWithCitationMarkers(requestId)
+        : _selectEmptyString,
     [requestId],
   );
   const requestText = useAppSelector(requestTextSelector);
+
+  const liveCitationMarkersSelector = useMemo(
+    () =>
+      requestId
+        ? selectLiveCitationMarkersByBlockId(requestId)
+        : _selectEmptyCitationMarkers,
+    [requestId],
+  );
+  const liveCitationMarkersByBlockId = useAppSelector(
+    liveCitationMarkersSelector,
+  );
 
   // Whether the model is in its reasoning phase — true both for token-streaming
   // reasoning and for the server's explicit reasoning STATUS event (models with
@@ -850,7 +877,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
       );
     }
     if (slot.kind === "render_block") {
-      const rb = renderBlocksMap[slot.blockId];
+      let rb = renderBlocksMap[slot.blockId];
       if (!rb) return null;
       // Media blocks (image_output / audio_output / video_output)
       // carry their payload on `data`, not `content`. Don't drop
@@ -861,6 +888,21 @@ export const EnhancedChatMarkdownInternal: React.FC<
         !rb.content?.trim()
       ) {
         return null;
+      }
+
+      // Live citations anchored to this text block: stamp the inline
+      // `<matrxcite n="…" />` markers at their arrival offsets before the
+      // content is split/rendered. Same core (`insertCitationMarkers`) and
+      // same renderer chip as the persisted path — display-only, the
+      // stored block content is never mutated.
+      if (rb.type === "text" && rb.content) {
+        const liveMarkers = liveCitationMarkersByBlockId[slot.blockId];
+        if (liveMarkers && liveMarkers.length > 0) {
+          rb = {
+            ...rb,
+            content: insertCitationMarkers(rb.content, liveMarkers),
+          };
+        }
       }
 
       // Text render_blocks may carry inline `<thinking>` /

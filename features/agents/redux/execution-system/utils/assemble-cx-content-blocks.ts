@@ -49,6 +49,7 @@ import { toCxMediaPart } from "@/features/files/blocks/image/adapters/to-cx-medi
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 import { SPECIAL_CODE_LANGUAGES } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import type { NormalizedCitation } from "@/features/agents/redux/execution-system/messages/message-citations";
 import { envelopeCacheFromEnvelopes } from "@/features/content-ir/core/envelope-cache";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 
@@ -253,21 +254,59 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
   // reuses them instead of re-parsing (content-ir Phase 5).
   let pendingEnvelopes: CanonicalBlockIR[] = [];
 
+  // Live citations grouped by their anchor render block (the client text
+  // block streaming when each `citation` event arrived — see
+  // LiveCitationEntry). A text run that consumes an anchor block collects
+  // its citations into `pendingCitations`, and the flushed CxTextContent
+  // carries them as its `citations` array — CLEAN canonical objects, never
+  // marker tags, mirroring what the server persists on its own text parts.
+  // Anchorless / unconsumed entries are appended to the LAST text part
+  // after the walk so no citation is ever dropped from the committed turn.
+  const citationsByAnchorBlockId = new Map<string, NormalizedCitation[]>();
+  const unanchoredCitations: NormalizedCitation[] = [];
+  for (const entry of request.liveCitations) {
+    if (entry.anchorBlockId === null) {
+      unanchoredCitations.push(entry.citation);
+      continue;
+    }
+    const list = citationsByAnchorBlockId.get(entry.anchorBlockId) ?? [];
+    list.push(entry.citation);
+    citationsByAnchorBlockId.set(entry.anchorBlockId, list);
+  }
+  let pendingCitations: NormalizedCitation[] = [];
+
+  const collectCitationsForBlockId = (blockId: string) => {
+    const list = citationsByAnchorBlockId.get(blockId);
+    if (list) {
+      pendingCitations.push(...list);
+      citationsByAnchorBlockId.delete(blockId);
+    }
+  };
+
   const flushPendingText = () => {
     if (pendingText.length > 0) {
       const cache = envelopeCacheFromEnvelopes(pendingEnvelopes);
       blocks.push({
         type: "text",
         text: pendingText,
+        ...(pendingCitations.length > 0
+          ? { citations: pendingCitations }
+          : {}),
         ...(cache ? { metadata: { [IR_ENVELOPE_KEY]: cache } } : {}),
       } as CxTextContent);
       pendingText = "";
+      pendingCitations = [];
+    } else if (pendingCitations.length > 0) {
+      // Collected citations but the run produced no text (empty-run edge) —
+      // reroute to the trailing fallback instead of dropping them.
+      unanchoredCitations.push(...pendingCitations);
+      pendingCitations = [];
     }
-    pendingEnvelopes = [];
     if (pendingMedia.length > 0) {
       for (const m of pendingMedia) blocks.push(m);
       pendingMedia.length = 0;
     }
+    pendingEnvelopes = [];
   };
 
   for (const entry of request.timeline) {
@@ -304,6 +343,8 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
           entry.blockEndIndex,
         );
         for (const blockId of rangeIds) {
+          // Citations anchored to this run's blocks ride the flushed part.
+          collectCitationsForBlockId(blockId);
           const block = request.renderBlocks[blockId];
           if (!block) continue;
           if (MEDIA_BLOCK_TYPES.has(block.type)) {
@@ -328,6 +369,7 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
         entry.blockEndIndex,
       );
       for (const blockId of rangeIds) {
+        collectCitationsForBlockId(blockId);
         const block = request.renderBlocks[blockId];
         if (!block) continue;
         if (MEDIA_BLOCK_TYPES.has(block.type)) {
@@ -488,6 +530,29 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
           text: reconstructed,
           ...(cache ? { metadata: { [IR_ENVELOPE_KEY]: cache } } : {}),
         } as CxTextContent);
+      }
+    }
+  }
+
+  // ── Citation fallback: never drop a captured citation ────────────────────
+  // Anything still unattached (anchorless entries, or anchors whose block
+  // never surfaced through a text run) lands on the LAST text part. The
+  // server-persisted row remains the source of truth for exact per-block
+  // placement; this client-side mirror guarantees the sources are present.
+  const leftoverCitations = [
+    ...unanchoredCitations,
+    ...Array.from(citationsByAnchorBlockId.values()).flat(),
+  ];
+  if (leftoverCitations.length > 0) {
+    for (let i = blocks.length - 1; i >= 0; i--) {
+      const block = blocks[i];
+      if (block.type === "text") {
+        const textBlock: CxTextContent = block;
+        textBlock.citations = [
+          ...(textBlock.citations ?? []),
+          ...leftoverCitations,
+        ];
+        break;
       }
     }
   }

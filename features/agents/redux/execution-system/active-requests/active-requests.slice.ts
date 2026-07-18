@@ -12,6 +12,7 @@
  *   init               → activeOperations (keyed by operation_id)
  *   completion         → completedOperations + completion (user_request)
  *   render_block      → renderBlocks (Record by blockId) + renderBlockOrder
+ *   citation           → liveCitations (validated + anchored at ingress)
  *   tool_event         → toolLifecycle (Record by callId) + pendingToolCalls
  *   data (typed)       → dataPayloads (typed, with `type` discriminator)
  *   warning            → warnings
@@ -52,6 +53,7 @@ import type {
   ErrorPayload,
   ProviderRetryPayload,
 } from "@/types/python-generated/stream-events";
+import type { LiveCitationEntry } from "@/features/agents/redux/execution-system/messages/message-citations";
 import { generateRequestId } from "../utils/ids";
 import { destroyInstance } from "../conversations/conversations.slice";
 
@@ -264,6 +266,7 @@ const activeRequestsSlice = createSlice({
         completedOperations: {},
         renderBlocks: {},
         renderBlockOrder: [],
+        liveCitations: [],
         toolLifecycle: {},
         pendingToolCalls: [],
         completion: null,
@@ -546,6 +549,26 @@ const activeRequestsSlice = createSlice({
       if (isNew) {
         request.renderBlockOrder.push(block.blockId);
       }
+    },
+
+    // ── Live Citations ─────────────────────────────────────────
+    //
+    // One entry per `citation` stream event, validated + anchored by
+    // process-stream at ingress (the thunk snapshots the last streaming
+    // text block + its content length). Small individual push — the live
+    // citation index / markers are DERIVED in selectors
+    // (selectLiveCitationIndex), never stored.
+
+    appendCitation(
+      state,
+      action: PayloadAction<{
+        requestId: string;
+        entry: LiveCitationEntry;
+      }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (!request) return;
+      request.liveCitations.push(action.payload.entry);
     },
 
     // ── Tool Lifecycle ─────────────────────────────────────────
@@ -1009,6 +1032,26 @@ const activeRequestsSlice = createSlice({
         (entry, i) => i < timelineLength || !contentKinds.has(entry.kind),
       );
 
+      // Citations the specialist streamed anchor to blocks that no longer
+      // exist — drop them with the content they cited. Anchorless entries
+      // (arrived before any text block) are conservatively dropped too: we
+      // cannot attribute them to caller vs specialist, and a stale citation
+      // surviving a rewind is worse than a missing one. Loud, never silent.
+      if (request.liveCitations.length > 0) {
+        const before = request.liveCitations.length;
+        request.liveCitations = request.liveCitations.filter(
+          (c) =>
+            c.anchorBlockId !== null &&
+            request.renderBlocks[c.anchorBlockId] !== undefined,
+        );
+        const dropped = before - request.liveCitations.length;
+        if (dropped > 0) {
+          console.warn(
+            `[citations] handoff rewind dropped ${dropped} live citation(s) anchored to rewound/unattributable blocks (request ${request.requestId})`,
+          );
+        }
+      }
+
       // Any run open at failure time belongs to the specialist (its handoff
       // tool_use closed the caller's run) — force-close WITHOUT emitting a
       // text_end, discarding the partial raw text.
@@ -1121,6 +1164,7 @@ const activeRequestsSlice = createSlice({
           completedOperations: {},
           renderBlocks: {},
           renderBlockOrder: [],
+          liveCitations: [],
           toolLifecycle: {},
           pendingToolCalls: [],
           completion: {
@@ -1193,6 +1237,7 @@ export const {
   trackOperationInit,
   trackOperationCompletion,
   upsertRenderBlock,
+  appendCitation,
   setRequestEditedText,
   clearRequestEditedText,
   upsertToolLifecycle,

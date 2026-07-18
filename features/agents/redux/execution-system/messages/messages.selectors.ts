@@ -34,6 +34,11 @@ import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/regio
 import { removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-utils";
 import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import {
+  buildMessageCitationIndex,
+  insertCitationMarkers,
+  type MessageCitationIndex,
+} from "./message-citations";
 
 export interface ExtractFlatTextOptions {
   /**
@@ -41,6 +46,15 @@ export interface ExtractFlatTextOptions {
    * `<thinking>` tags. Default false — copy/TTS/save paths want answer text only.
    */
   includeThinking?: boolean;
+  /**
+   * When true, inserts inline `<matrxcite n="…" />` citation markers into
+   * cited text blocks (rendered as numbered superscript chips by the markdown
+   * pipeline). RENDER PATH ONLY — the default stays marker-free so plain
+   * consumers (copy, TTS, share, save) never see markers. One canonical
+   * implementation: the marker logic lives in ./message-citations and is
+   * shared with `selectMessageInterleavedContent` (never re-implement it).
+   */
+  withCitationMarkers?: boolean;
 }
 
 const EMPTY_RECORDS: MessageRecord[] = [];
@@ -284,6 +298,7 @@ export function extractFlatText(
 ): string {
   if (!record) return "";
   const includeThinking = options?.includeThinking ?? false;
+  const withCitationMarkers = options?.withCitationMarkers ?? false;
   const blocks = Array.isArray(record.content)
     ? (record.content as Array<{
         type?: string;
@@ -291,9 +306,15 @@ export function extractFlatText(
         metadata?: Record<string, unknown>;
       }>)
     : [];
+  // Citation markers (render path only): the index is keyed by part index in
+  // `record.content`, so the same loop index resolves each block's markers.
+  const citationIndex: MessageCitationIndex | null = withCitationMarkers
+    ? buildMessageCitationIndex(blocks)
+    : null;
   let out = "";
   let prevWasText = false;
-  for (const b of blocks) {
+  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
+    const b = blocks[blockIndex];
     if (!includeThinking && b.type && NON_ANSWER_BLOCK_TYPES.has(b.type)) {
       continue;
     }
@@ -316,7 +337,11 @@ export function extractFlatText(
       // newline separator.
       const isText = b.type === "text" || b.type === undefined;
       if (out.length > 0 && !(isText && prevWasText)) out += "\n";
-      out += b.text;
+      const markers = citationIndex?.markersByPartIndex[blockIndex];
+      out +=
+        markers && markers.length > 0
+          ? insertCitationMarkers(b.text, markers)
+          : b.text;
       prevWasText = isText;
     }
   }
@@ -504,8 +529,16 @@ export const selectMessageInterleavedContent = (
         if (rec?.callId) toolCallByCallId.set(rec.callId, rec);
       }
 
+      // Per-message citation index (stable EMPTY ref when no citations).
+      // Markers must be inserted by THIS walker too — the flat-text walker
+      // (`extractFlatText`) and this interleaved walker are the two known
+      // content walks; both route the marker logic through
+      // ./message-citations (never a per-walker re-implementation).
+      const citationIndex = buildMessageCitationIndex(parts);
+
       const segments: ContentSegment[] = [];
-      for (const part of parts) {
+      for (let partIndex = 0; partIndex < parts.length; partIndex++) {
+        const part = parts[partIndex];
         // Materialized artifacts are stored as plain text — `<artifact id=uuid>
         // body</artifact>` (vision R1) — so they flow through the normal `text`
         // path below; the splitter detects the tag and BlockRenderer renders it
@@ -514,9 +547,13 @@ export const selectMessageInterleavedContent = (
           case "text": {
             const text = (part as { text?: string }).text;
             if (text) {
+              const markers = citationIndex.markersByPartIndex[partIndex];
               segments.push({
                 type: "text",
-                content: text,
+                content:
+                  markers && markers.length > 0
+                    ? insertCitationMarkers(text, markers)
+                    : text,
               } satisfies ContentSegmentText);
             }
             break;

@@ -41,6 +41,7 @@ import type {
 import type { components } from "@/types/python-generated/api-types";
 import type { BackendChannel } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
 import type { ResolvedSandboxRef } from "@/lib/sandbox/active-binding";
+import type { LiveCitationEntry } from "@/features/agents/redux/execution-system/messages/message-citations";
 
 // =============================================================================
 // Client-Side Metrics
@@ -218,6 +219,20 @@ export interface ActiveRequest {
   renderBlocks: Record<string, RenderBlockPayload>;
   /** Ordered list of blockIds preserving server emission order */
   renderBlockOrder: string[];
+
+  // ── Citations (live stream) ─────────────────────────────────
+  /**
+   * `citation` stream events accumulated in arrival order, validated at
+   * ingress (`parseNormalizedCitation`) and anchored to the client text
+   * render block that was streaming when each arrived. Consumed by
+   * `selectLiveCitationIndex` → `buildLiveCitationIndex` (the ONE citation
+   * core, features/agents/redux/execution-system/messages/message-citations.ts)
+   * for live inline markers + the sources row, and by
+   * `assembleMessageParts` to stamp clean `citations` onto the committed
+   * text parts. Marker tags are NEVER stored here or anywhere in state —
+   * insertion is render-time only.
+   */
+  liveCitations: LiveCitationEntry[];
 
   // ── Tool Lifecycle ───────────────────────────────────────────
   /** Delegations that need client action (unchanged from before) */

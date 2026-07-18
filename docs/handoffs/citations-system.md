@@ -11,40 +11,56 @@ vision: []
 
 > "Including citations is actually one of the biggest missing pieces in our system. But I think it needs a focused session where we not only focus on making sure we're getting citation data properly from each provider since they all handle it differently, but we also need to make sure that we are properly setting up our UI so that when we get that information, we actually use it properly because currently we don't. And, also, making sure that the enabling process is properly set. Although the reality is that we wanna make sure that it's the default on all requests. There's no reason to ever not include citations unless something is there that I'm missing."
 
-(inferred) Three pillars, equal weight: **capture** (per-provider ingestion into one normalized shape), **enable-by-default** (citations on for every request that can carry them; surface a reason loudly if a path can't), **render** (real citation UI — inline cited spans, source chips, click-through to the document/page — not just "don't break the text").
+Ratified 2026-07-17: default-ON for all user-facing surfaces, explicitly + loudly OFF for machine-consumed runs (structured output, voice, internal); both settle-time UI and live streaming built. No user-facing toggle — default-on IS the vision.
 
-## Context — what's true today (verified 2026-07-16)
+## Canonical citation schema (ratified — the FE contract)
 
-- Anthropic returns cited answers as MANY `text` blocks split mid-sentence, each with a `citations` array. We store blocks verbatim in `cx_message.content` (`chat.message`); persistence is faithful.
-- **Nothing in either repo enables citations today.** Exhaustive grep of aidream + matrx-frontend found zero `citations: {enabled: true}` — yet two conversations on 2026-07-16 (first ever) came back citation-split (e.g. conversation `883f68c6-55b2-485d-9ae6-124716a495a6`, message `b4bea16c-4f7d-468c-b658-77b20bba631a`). Empirical API tests show documents do NOT auto-cite (tested haiku-4.5 + sonnet-5: text doc, base64 PDF, doc-in-tool_result — all no citations without explicit enable). **Unresolved: what triggered it.** First job of the session: reproduce and pin the trigger (suspect: a Sonnet-5/API-side behavior change for document-grounded turns, or an enabler outside code).
-- Zero stored messages have non-empty citations (30-day scan). `"citations": []` in stored blocks is a `TextPart` schema default, not evidence data existed.
-- The full Anthropic ingest path is already lossless when citations DO arrive — verified live: SDK stream accumulation → `TextContent.from_anthropic` → `metadata["citations"]` → `to_storage_dict` top-level `citations` → `validate_message_content` → DB.
+`NormalizedCitation`, defined in aidream `packages/matrx-ai/matrx_ai/config/citations.py`, generated into FE `types/python-generated/stream-events.ts` (never hand-edit; regen from aidream ROOT: `uv run python scripts/generate_types.py stream` → writes `aidream/api/generated/stream-events.ts` → copy to FE). Per-text-block, stored top-level on `TextPart.citations`, in-memory `TextContent.metadata["citations"]`:
+
+```jsonc
+{
+  "kind": "document_char|document_page|document_block|search_result|web|grounding",
+  "provider": "anthropic|openai|google|xai",
+  "cited_text": "…", "title": "…", "url": "…",
+  "source_index": 0, "file_id": null,
+  "page": 1, "end_page": null,
+  "source_start": 0, "source_end": 0,     // offsets INTO THE SOURCE (Anthropic)
+  "answer_start": 0, "answer_end": 0,     // offsets INTO THE ANSWER (OpenAI/Gemini)
+  "raw": {}                                // original provider payload, always kept
+}
+```
+
+Live wire fixtures from all four providers: aidream `packages/matrx-ai/tests/fixtures/citations/`.
+
+## Trigger — PINNED (2026-07-16 mystery, solved 2026-07-17)
+
+The Anthropic server `web_search` tool (`internal_web_search: true`) activates citation machinery — blocks split into citable spans — but `document_search` tool-result text is NOT a citable source, so `citations` stayed `[]`. Evidence: `chat.request_snapshot` `d39c97d4` (no `citations` string in the outbound request; server web_search tool present). Real fix for tool-result citability = emit Anthropic `search_result` blocks from document tools (open item below).
 
 ## Resources
 
-- **aidream — provider layer:** `packages/matrx-ai/matrx_ai/providers/anthropic/anthropic_api.py` (`_handle_event`, `citations_delta` branch documented), `providers/anthropic/translator.py`, `config/unified_content.py` (`TextContent.from_anthropic` / `to_storage_dict` / `reconstruct_content` — the canonical citations home is `metadata["citations"]`), `config/message_config.py` (`parse_content` — now round-trips top-level citations; fixed 2026-07-16), `db/message_parts.py` (`TextPart.citations`).
-- **aidream — where document blocks are built** (the places an `citations: {enabled: true}` default belongs): `config/media_config.py` `DocumentContent.to_anthropic` (~line 1550), tool-result documents `tools/models.py` `_build_document_ref_blocks`, boundary resolver `providers/unified_client.py` (`_annotate_and_resolve_image_refs`, document handling).
-- **aidream — xai already normalizes** provider citations to `metadata["citations"]`: `providers/xai/translator.py:372` — use as the pattern for OpenAI (Responses API annotations/url_citation), Google (grounding metadata), web_search server tools.
-- **FE — render path:** `features/agents/redux/execution-system/messages/messages.selectors.ts` `extractFlatText` (concatenates consecutive text blocks directly; regression test `messages/__tests__/extract-flat-text.test.ts`), display component `features/agents/components/messages-display/assistant/AgentAssistantMessage.tsx`, markdown pipeline `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx`. Chat FEATURE: `features/agents/components/chat/FEATURE.md`.
-- **FE — types:** `types/python-generated/stream-events.ts` (`MessagePart`) — regenerate from aidream (`uv run python scripts/generate_types.py stream` in `packages/matrx-ai`), never hand-edit.
-- **Test login:** `http://localhost:<port>/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/chat` or `/login` `admin@admin.com` / `Password1234#`. Live repro asset: attach a PDF in `/chat` and ask a question that quotes it.
-- **Repro scripts pattern:** direct-API probes from 2026-07-16 session used `uv run python` in aidream root with `.env` sourced — cheap way to test per-provider citation shapes before wiring.
+- **aidream:** schema+normalizers `config/citations.py`; ingestion `config/unified_content.py` (all `TextContent.from_*`) + `providers/{google,xai}/translator.py`; enable gate `config/media_config.py` `_anthropic_citation_fields` + `providers/anthropic/translator.py` (machine-run strip); stream emit `providers/{anthropic,openai,google}/*_api.py`; event `packages/matrx-connect/matrx_connect/context/events.py` (`EventType.CITATION`, `CitationPayload`); tests `packages/matrx-ai/tests/test_citations_normalization.py`, `packages/matrx-connect/tests/test_citation_event.py`.
+- **FE:** ONE citation core `features/agents/redux/execution-system/messages/message-citations.ts` (parse/dedupe/markers — extend this, never fork); persisted path `messages.selectors.ts` (`extractFlatText({withCitationMarkers})`); live path `process-stream.ts` `isCitationEvent` → `active-requests.slice.ts` `liveCitations` → `active-requests.selectors.ts`; render `components/mardown-display/chat-markdown/citations/` (remark plugin + chip + context) + `features/agents/components/messages-display/citations/MessageSourcesRow.tsx`; click-through reuses `features/rag/components/source-inspector/useOpenCitation.ts` (PDF at exact page). Edit-save preservation: `features/cx-chat/utils/buildContentBlocksForSave.ts` + test.
+- **Repro:** e2e probe pattern (real APIs through the real matrx-ai stack, wire capture via `outbound_capture.py` with `AppContext.snapshot=True`); dev test conversation with real-shaped citation data: `/chat/c17a7100-0000-4000-8000-c17a71000001` (admin user).
+- **Test login:** `/login` `admin@admin.com` / `Password1234#`.
 
-## Remaining work
+## Remaining work (ranked by user-visible impact)
 
-1. **Pin the trigger.** Reproduce the 2026-07-16 multi-block responses (attached-PDF chat, Sonnet 5) and determine what enabled the splitting. Capture the outbound wire request (`AppContext.snapshot` → `providers/outbound_capture.py`) to see exactly what Anthropic received. Until this is known, "default-on" work is guessing.
-2. **Enable citations by default on every Anthropic document surface:** user-attached documents (`DocumentContent.to_anthropic`), documents inside tool results (`_build_document_ref_blocks` output path), text-source documents. Default ON per Arman; if a request shape cannot carry citations, that's fine — but never silently strip a document's citability. Add `title`/`context` where we have them (filename, page map) so citations are meaningful.
-3. **Per-provider capture matrix.** For each live provider (Anthropic, OpenAI Responses, Google/Gemini grounding, xAI, web-search server tools): what citation/annotation data exists, where it arrives (stream event + final message), and normalize ALL of it into one canonical shape in `metadata["citations"]` (with a `provider` discriminator or a normalized cross-provider schema — design this deliberately; it becomes the FE contract via `TextPart`). Extend `TextPart`/generated types accordingly and regenerate both type sets.
-4. **Stream citations to the FE live.** `_handle_event` currently no-ops `citations_delta`; decide the stream event shape (likely a per-block metadata event or fold into the block system) so the FE can show cited spans during the stream, not only after settle.
-5. **Citation UI.** Currently none. Build: inline rendering of cited spans (subtle highlight/superscript marker on the cited text), a per-message sources list (document title + page), click-through to the source (attached document → open viewer at page via the PDF domain `features/pdf/`; web citation → external link). Respect existing patterns: RAG already renders citation chips (`features/research/components/sources/`, rag events) — reuse, don't fork a second citation UI.
-6. **Round-trip guard tests.** aidream: a test asserting a citation-bearing block survives parse → storage → reconstruct → provider resend. FE: extend `extract-flat-text.test.ts` when citation spans get their own renderer.
+1. **Deploy + real-stream verification.** aidream citation commits are local-only (not pushed; interleaved with a parallel wave-a session's commits — coordinate the push). Nothing cites in prod until aidream deploys. After deploy: one REAL streamed `/chat` conversation with an attached PDF — confirm live chips mid-stream, settle, reload. (Live path has unit coverage only; settle-time UI was browser-verified against real-shaped seeded data.)
+2. **`document_index` → our `file_id`.** `normalize_anthropic_citation` hard-codes `file_id=None` (documented in its docstring) — thread request-time document order to ingestion so document citations click through to the actual attached PDF at page. Highest-value single fix.
+3. **Make tool-result documents citable.** `document_search`/RAG tools return plain text snippets; convert to Anthropic `search_result` content blocks (source/title, citations enabled) so the pinned-trigger scenario produces REAL citations.
+4. **Machine-run seams.** Only `response_format` gates today; no voice/internal path sets `config.metadata["citations_enabled"]=False` yet (none currently attaches documents). Verify the page-extraction pipeline sets `response_format` (flagged in review); add explicit set-points when other machine paths gain documents.
+5. **Provider tail.** xAI emits no live `citation` events (settle-only; also attaches the full citation list to every text block — fine while responses are single-block). generic_openai/Groq/Moonshot/Cerebras/Together have zero citation code (matters if a citation-capable model fronts them, e.g. Perplexity).
+6. **Marker robustness follow-ups.** Answer-offset insertion is surrogate-pair-safe but not markdown-structure-aware (an offset landing inside a link/code construct can degrade rendering — Anthropic's block-end mode, the dominant path, is safe). Inline chip tap targets ~18px (<44px mobile guidance — conscious superscript tradeoff; revisit on a mobile pass).
+7. **Pre-existing, widened blast radius:** aidream `config/tools_config.py` `_serialize_block_for_anthropic` bare-except silently drops a document block on any serialization error — should scream.
 
 ## Done
 
-- FE renders provider multi-text-block messages as one continuous string — `messages.selectors.ts` + regression test (2026-07-16).
-- aidream `parse_content` round-trips top-level `citations` into metadata; `citations_delta` branch documented — commit `377e274b2`.
-- Anthropic ingest path (stream → final message → storage dict) verified lossless against the live API.
+- Canonical NormalizedCitation schema + per-provider normalization (Anthropic/OpenAI/Google/xAI), lossless parse→storage→reconstruct→resend round-trip, typed `TextPart.citations` — aidream `config/citations.py` + 27 tests.
+- Citations default-ON on every Anthropic document shape with title/context; loud machine-run strip — verified on the live wire (outbound capture) via a 6-assertion e2e probe through the real stack, all passed (incl. Gemini grounding).
+- `citation` stream event (typed, all emitters), emitted live by Anthropic/OpenAI mid-stream + Google at settle; normalization failure skips that citation loudly, never aborts the answer (adversarial-review fix).
+- FE settle-time + live citation UI: inline numbered superscript chips (remark `matrxcite`), quote popovers, deduped Sources footer, click-through via canonical `useOpenCitation`; markers render-only (stripped at every persistence path); inline-edit preserves citations (adversarial-review fix + regression test). Browser-verified.
+- Adversarial review (3× Sonnet agents: backend, FE, vision-gap): both "ship-with-fixes" verdicts → every confirmed finding fixed same-session (stream-abort guards, edit-save citation loss, dedupe collision, surrogate-pair safety, rewind loudness); "hand-mirrored generated types" finding disproven (FE file byte-identical to fresh regen).
 
 ## Decisions needed
 
-- **Situation:** Citations add response latency/size and split text into many blocks; some surfaces (voice, structured-output extraction, internal system runs) consume answers as plain text and gain nothing. **Decide:** truly ALL requests default-on, or default-on for user-facing chat/document surfaces and off for system/extraction runs? (Arman's stated default: all, unless something's missing — the session should confirm no such blocker exists and note any found.)
+- **Situation:** Agents' own RAG/document-search tools emit a separate, older `rag.citation` stream event (aidream `packages/matrx-rag/matrx_rag/rag_events.py`) that no chat UI consumes; provider-native citations now render through the new chat citation UI. Two citation channels exist side by side. **Decide:** should tool-search citations feed the SAME chat citation UI (one sources footer mixing provider + RAG citations), or stay separate (e.g. rendered only inside tool-call visualizations)? Recommendation: same UI — one citation system; requires mapping `rag.citation` → NormalizedCitation and consuming it in `process-stream.ts`.

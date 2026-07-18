@@ -47,6 +47,7 @@ import {
   isContextStateEvent,
   isContextTrimmedEvent,
   isInjectionConsumedEvent,
+  isCitationEvent,
   isValueStoredEvent,
   isContextGroomedEvent,
   type ConversationIdData,
@@ -87,7 +88,9 @@ import {
   setCompletion,
   setProviderRetry,
   updateExtractedJson,
+  appendCitation,
 } from "../active-requests/active-requests.slice";
+import { parseNormalizedCitation } from "../messages/message-citations";
 import { confirmServerSync } from "../conversations/conversations.slice";
 import { receivedFsChange } from "@/features/code/redux/fsChangesSlice";
 import {
@@ -2153,6 +2156,62 @@ export async function processStream({
       } else if (isContextTrimmedEvent(event)) {
         otherEvents++;
         dispatch(applyContextTrimmed(event.data));
+      } else if (isCitationEvent(event)) {
+        otherEvents++;
+        // Live per-block citation (CitationPayload: { block_index,
+        // citation: NormalizedCitation }). Validate at ingress through the
+        // ONE citation core (parseNormalizedCitation), then accumulate on
+        // the request with an ANCHOR snapshot: the last client text render
+        // block + its content length RIGHT NOW. `dispatchBatch()` already
+        // flushed all buffered text (this is the non-chunk path), and
+        // citation events trail the text they cite, so "current end of
+        // streamed text" is the live answer position for the inline marker.
+        // (The accumulator may hold a final partial LINE not yet flushed
+        // into the block — a marker landing a few chars early mid-stream is
+        // acceptable; the persisted offsets take over at settle/reload.)
+        // The raw payload is already preserved verbatim in rawEvents by the
+        // appendRawEvent above — nothing is dropped on a parse failure.
+        const parsedCitation = parseNormalizedCitation(event.data.citation);
+        if (!parsedCitation) {
+          // Loud: the backend violated the ratified NormalizedCitation
+          // contract (docs/handoffs/citations-system.md). Never throw — the
+          // stream continues; settle-time render still has the DB truth.
+          console.warn(
+            `[stream:${requestId.slice(0, 8)}] Malformed citation event payload — violates the NormalizedCitation contract; skipped for live render (preserved in rawEvents).`,
+            event.data,
+          );
+        } else {
+          const reqSnapshot =
+            getState().activeRequests.byRequestId[requestId];
+          let anchorBlockId: string | null = null;
+          let anchorOffset: number | null = null;
+          if (reqSnapshot) {
+            for (
+              let i = reqSnapshot.renderBlockOrder.length - 1;
+              i >= 0;
+              i--
+            ) {
+              const candidate =
+                reqSnapshot.renderBlocks[reqSnapshot.renderBlockOrder[i]];
+              if (candidate && candidate.type === "text") {
+                anchorBlockId = candidate.blockId;
+                anchorOffset = (candidate.content ?? "").length;
+                break;
+              }
+            }
+          }
+          dispatch(
+            appendCitation({
+              requestId,
+              entry: {
+                providerBlockIndex: event.data.block_index ?? null,
+                anchorBlockId,
+                anchorOffset,
+                citation: parsedCitation,
+              },
+            }),
+          );
+        }
       } else if (isInjectionConsumedEvent(event)) {
         otherEvents++;
         // Inbox delivery ack — full queued→delivered UI lands with turn-boundary
