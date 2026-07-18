@@ -16,7 +16,7 @@
 
 ## Open work, ranked
 
-1. **Brief 5 — aidream single enforcement kernel. `notes_adapter` first, URGENT correctness bug:** `aidream/services/virtual/adapters/notes_adapter.py` filters `created_by == user_id`, so any shared note (direct share OR the new scope-sharing) is readable in the UI but **invisible to that user's agent note tools** — this directly undercuts Brief 2's promise. Fix = swap owner-filters for `iam.has_access_for` (mirror `file_access/resolver.py`). Then `rag/access.py` (near-deletion — `has_access_for` already special-cases data-store grants), then `scraper/access.py` (M, no behavior change expected).
+1. ~~Brief 5~~ **✅ DONE 2026-07-16** (aidream `67aa9722d`): notes adapter + rag + scraper + the matrx-ai `note` tool (which had NO per-user check — any agent could touch any note by id) all ride `iam.has_access_for`; live-verified with a real shared note; 54 tests green. Residue: scraper's owner/`is_public` fast-path dies when scraper tables canonicalize; set-shaped list filters stay direct by design. Details: DECISION_BRIEFS.md Brief 5 header.
 2. **Brief 1 — Module Settings as the one org-admin knob** (option A recommended; includes the agent/skill `moduleKey()="definition"` collision fix). First action: check `agent.default_visibility` live.
 3. **Brief 3 — shared-with-me + mine-first list contract** (A+C recommended; `get_prompts_shared_with_me` already dropped).
 4. **Brief 4 — `/p/e` allowlist → registry flag** (S).
