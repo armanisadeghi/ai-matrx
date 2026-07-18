@@ -31,11 +31,11 @@ Only **94 of 2,712 assistant messages (3.5%)** across **72 of 1,469 conversation
 ## Remaining work (ranked; lanes A–D are independent, no file overlap)
 
 1. **Lane A — attach render_block skills so agents can actually emit.** Curate the high-value skills (flashcard_set, quiz_set, timeline, comparison_set, mermaid) onto default/general chat agents via `agent.definition.skill_config.included`, and/or auto-`list` render_block skills in `resolver.py` so every agent sees them by name and can `skill_get`. Backend + DB rows only. Trap: verify prompt-cache stability stays intact (additive only).
-2. **Lane D — discovery chips + click-to-convert.** (a) Shape chips in `QuicksetPanel` ("Flashcards", "Quiz", …) that add the skill to the run's `included` via RunSkillPicker plumbing. (b) A "Convert to flashcards/quiz" message/block action feeding the selected table/list to the existing structured-output agents — the ratified convert pattern's first chat affordance. Smart-input + messageActionRegistry only.
-3. **Deferred — workflow demand** (31 defs, 69 runs/30d, envelopes consumed only by Studio): plumbing done; gap is usage, not integration.
+2. **Deferred — workflow demand** (31 defs, 69 runs/30d, envelopes consumed only by Studio): plumbing done; gap is usage, not integration.
 
 ## Done
 
+- Lane D — shape discovery chips ("Shapes" row in Quickset: Flashcards/Quiz/Timeline/Comparison/Diagram, gated on the live skill list, toggling `addedSkills` → `skill_config.included`) + "Convert to flashcards / quiz…" on assistant messages with a table/list (`messageActionRegistry` → canonical `ConvertContentDialog`; artifact lineage-links to the conversation; SHAPE_SYSTEM.md Convert Pattern lists chat as a shipped surface). Browser-verified end-to-end (chip → in-chat flashcard block; convert → real fc_set). `flashcard-set` skill re-activated in `skill.definition`.
 - Lane B — "Bind to a kind" picker + matches/drift indicator in the builder's Output Schema tab — see `features/agents/components/settings-management/output-schema/` (kindBinding.ts golden-tested byte-equal to flashcard_set's live `emitted_block_schema`).
 - Lane C — education content rendering is kind-aware (`onboard/SummaryDetail.tsx` → `MarkdownStream`; all other surfaces already kind-correct) — see `features/education/FEATURE.md`.
 
