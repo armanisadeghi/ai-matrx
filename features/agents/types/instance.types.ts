@@ -278,6 +278,7 @@ export const SOURCE_FEATURES = [
   "research",
   "code-editor",
   "context-menu-demo",
+  "agent-assignment-demo",
   "notes",
   "cms-hub",
   "cms-site",

@@ -21,9 +21,10 @@
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --monitor    # poll Vercel deployment status after push
 #
-# Before versioning, the CX source-attribution audit is blocking. After a
-# successful push, the remaining release quality gates run in ADVISORY mode
-# (doctrine, UI primitives, migration ledger, dead-relations).
+# NOTHING in this script blocks a release except git itself. All quality
+# gates (CX source-attribution, doctrine, UI primitives, migration ledger,
+# dead-relations) run in ADVISORY mode — they scream loudly, repeat at the
+# end, and always let the ship proceed.
 # Manual hard-fail: pnpm check:release-gates:strict
 #
 # --monitor requires either:
@@ -192,11 +193,26 @@ EOF
 fi
 
 # A source_app/source_feature typo is persisted permanently and corrupts every
-# attribution view downstream. This is intentionally blocking and runs before
-# package.json, commits, or tags are mutated.
-info "Validating CX source attribution (blocking)..."
-pnpm check:source-attribution
-ok "CX source attribution is registered."
+# attribution view downstream. ADVISORY ONLY — no check ever blocks a release;
+# only git can stop the ship. It screams loudly and prints the exact fix.
+info "Validating CX source attribution (advisory, never blocking)..."
+if ! pnpm check:source-attribution; then
+    echo "" >&2
+    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}" >&2
+    echo -e "${RED}║  SOURCE-ATTRIBUTION VIOLATIONS — release continues anyway   ║${NC}" >&2
+    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}" >&2
+    echo -e "${RED}  Unregistered source_app/source_feature values are being written${NC}" >&2
+    echo -e "${RED}  to the DB permanently. Fix NOW (it will nag on every release):${NC}" >&2
+    echo -e "${YELLOW}    1. See the file:line list above for each violation.${NC}" >&2
+    echo -e "${YELLOW}    2. Register the value in the attribution registry, or correct${NC}" >&2
+    echo -e "${YELLOW}       the call to use an already-registered source_feature.${NC}" >&2
+    echo -e "${YELLOW}    3. Re-run: pnpm check:source-attribution${NC}" >&2
+    echo "" >&2
+    SOURCE_ATTRIBUTION_FAILED=true
+else
+    ok "CX source attribution is registered."
+    SOURCE_ATTRIBUTION_FAILED=false
+fi
 
 # ── Read current version ─────────────────────────────────────────────────────
 CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null) \
@@ -351,6 +367,14 @@ echo ""
 info "Running advisory release quality gates (post-push, non-blocking)..."
 # Explicit --advisory + || true so a future strict default cannot abort release.
 bash "$SCRIPT_DIR/run-release-gates.sh" --advisory || true
+
+# Re-nag at the very end so an attribution failure is the last thing on screen.
+if [[ "${SOURCE_ATTRIBUTION_FAILED:-false}" == "true" ]]; then
+    echo "" >&2
+    echo -e "${RED}REMINDER: source-attribution violations shipped in ${NEW_VERSION}.${NC}" >&2
+    echo -e "${RED}Fix them and they stop nagging: pnpm check:source-attribution${NC}" >&2
+    echo "" >&2
+fi
 
 # ── Vercel deployment monitor ─────────────────────────────────────────────────
 _monitor_vercel() {
