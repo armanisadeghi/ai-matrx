@@ -328,10 +328,10 @@ export function QuicksetPanel({
         {/* Shape discovery chips — one-click add of the high-value render_block
             skills (Flashcards / Quiz / Timeline / Comparison / Diagram). Same
             addedSkills state as the picker above; chips show only for skills
-            that exist + are active in the live list. */}
-        <Row label="Shapes">
-          <ShapeChipsRow conversationId={conversationId} />
-        </Row>
+            that exist + are active in the live list. ShapeChipsRow renders the
+            labeled Row itself so a cold skills slice / zero resolved chips
+            shows nothing instead of an empty "Shapes" label row. */}
+        <ShapeChipsRow conversationId={conversationId} row={Row} />
       </div>
 
       <Separator />
