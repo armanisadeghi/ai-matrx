@@ -160,7 +160,10 @@ const PROTOCOL_ITEMS: ReadonlyMap<string, string> = new Map([
 const SCALAR_GENERIC_ITEMS: ReadonlyMap<string, string> = new Map([
   ["text", "generic text primitive (also registered as the workflow_io `text` generic for I/O gating)"],
   ["code", "generic code primitive"],
-  ["table", "generic markdown table primitive"],
+  [
+    "table",
+    "generic markdown table primitive — ratified 2026-07-15: markdown-first + click-to-convert (the Convert Pattern, SHAPE_SYSTEM.md); never auto-kind. Tables stay markdown in message content, render through the rich table component, and become a live udt_datasets table ONLY via the explicit Convert button.",
+  ],
   ["image", "generic media primitive"],
   ["video", "generic media primitive"],
   ["audio", "generic media primitive (markdown audio link block)"],
@@ -196,19 +199,16 @@ const OPAQUE_ITEMS: ReadonlyMap<string, string> = new Map([
  * Structured contracts that SHOULD be kinds but are not registered yet —
  * `shape` with kind: null. Closing one of these means registering the kind
  * and replacing the entry here with nothing (the live-slug rule takes over).
+ *
+ * 2026-07-17: emptied — the last 7 candidates (chart, map, stats, diff,
+ * search_results, fetch_results, categorization_result) were registered as
+ * INACTIVE kinds via migrations/content_ir_register_candidate_kinds.sql;
+ * their rows now classify through the live-slug rule. NOTE: `table` was
+ * never a candidate and never will be — ratified 2026-07-15 as permanently
+ * scalar_generic (markdown-first + click-to-convert; see its rationale in
+ * SCALAR_GENERIC_ITEMS and the Convert Pattern section of SHAPE_SYSTEM.md).
  */
-const SHAPE_CANDIDATES: ReadonlyMap<string, string> = new Map([
-  ["chart", "structured chart spec (client block + artifact type) — unregistered shape candidate"],
-  ["map", "structured map spec (client block + artifact type) — unregistered shape candidate"],
-  ["stats", "structured stats spec (client block + artifact type) — unregistered shape candidate"],
-  ["diff", "structured diff spec (client block + artifact type) — unregistered shape candidate"],
-  ["search_results", "typed server search-result display — candidate for data-only kind binding via tool_io"],
-  ["fetch_results", "typed server fetch-result display — candidate for data-only kind binding via tool_io"],
-  [
-    "categorization_result",
-    "typed server categorization output display — candidate for data-only kind binding",
-  ],
-]);
+const SHAPE_CANDIDATES: ReadonlyMap<string, string> = new Map([]);
 
 /** Static alias → registered kind slug (detector tokens, artifact aliases, legacy names). */
 const KIND_ALIASES: ReadonlyMap<string, string> = new Map([

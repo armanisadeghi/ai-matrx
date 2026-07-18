@@ -1,5 +1,5 @@
 {
-  "generated_for": "714-kinds+15eb5272cba2",
+  "generated_for": "721-kinds+b18f2b0e4405",
   "columns": [
     "definition",
     "example",
@@ -3483,6 +3483,34 @@
       }
     },
     {
+      "kind": "categorization_result",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "chart",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "comparison_criterion",
       "is_active": false,
       "family": null,
@@ -3595,6 +3623,20 @@
       }
     },
     {
+      "kind": "diff",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "enhanced_flashcard",
       "is_active": false,
       "family": null,
@@ -3606,6 +3648,20 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "fetch_results",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -3704,6 +3760,20 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "map",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -4236,6 +4306,34 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "search_results",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "stats",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -10047,6 +10145,90 @@
       "severity": "yellow",
       "code": "detector-token-unregistered",
       "message": "detector token \"schema_proposal\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "categorization_result",
+      "message": "kind \"categorization_result\" has no content block referencing \"__kind\": \"categorization_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "chart",
+      "message": "kind \"chart\" has no content block referencing \"__kind\": \"chart\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "diff",
+      "message": "kind \"diff\" has no content block referencing \"__kind\": \"diff\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "fetch_results",
+      "message": "kind \"fetch_results\" has no content block referencing \"__kind\": \"fetch_results\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "map",
+      "message": "kind \"map\" has no content block referencing \"__kind\": \"map\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "search_results",
+      "message": "kind \"search_results\" has no content block referencing \"__kind\": \"search_results\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "stats",
+      "message": "kind \"stats\" has no content block referencing \"__kind\": \"stats\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "categorization_result",
+      "message": "kind \"categorization_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "chart",
+      "message": "kind \"chart\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "diff",
+      "message": "kind \"diff\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "fetch_results",
+      "message": "kind \"fetch_results\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "map",
+      "message": "kind \"map\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "search_results",
+      "message": "kind \"search_results\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "stats",
+      "message": "kind \"stats\" has no render_block skill teaching it"
     }
   ]
 }
