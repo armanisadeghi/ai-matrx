@@ -23,7 +23,7 @@ export default function SchedulesPage() {
         }
         center={
           tasks.length > 0 ? (
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
+            <span className="hidden sm:inline text-xs text-muted-foreground whitespace-nowrap">
               {tasks.length} schedule{tasks.length === 1 ? "" : "s"}
               {" · "}
               {tasks.filter((t) => t.enabled).length} enabled

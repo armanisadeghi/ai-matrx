@@ -29,7 +29,10 @@ export default function TemplatesIndexPage() {
         </div>
       </PageHeader>
       <div className="h-full overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-6 py-6">
+        <div
+          className="max-w-5xl mx-auto px-6 pb-6"
+          style={{ paddingTop: "calc(var(--shell-header-h) + 1.5rem)" }}
+        >
           <p className="text-sm text-muted-foreground mb-6">
             Preview each UI pattern for agent apps. Click a template to see
             it in action with mock data.

@@ -15,7 +15,6 @@ export default function AllContextItemsPage() {
         <div className="flex items-center w-full min-w-0 gap-0 p-0">
           <ChevronLeftTapButton
             onClick={() => router.back()}
-            variant="transparent"
             ariaLabel="Back"
           />
           <h1 className="ml-2 text-sm font-medium text-foreground truncate">

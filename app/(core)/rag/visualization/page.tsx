@@ -26,7 +26,7 @@ export default function Page() {
           </>
         }
       />
-      <div className="h-full overflow-auto bg-background">
+      <div className="h-full overflow-auto bg-background pt-[var(--shell-header-h)]">
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
         <header className="space-y-1.5">
           <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
