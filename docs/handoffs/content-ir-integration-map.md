@@ -1,54 +1,66 @@
 ---
 status: active
-updated: 2026-07-17
-repos: [matrx-frontend, aidream]
+updated: 2026-07-18
+repos: [matrx-frontend, aidream, common-docs]
 vision: [/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md, /Users/armanisadeghi/code/common-docs/content-ir-system/OWNER_BRIEF.md]
 ---
 
-# Content IR — integration pull-through (make agents actually emit shapes)
+# Content IR / Shape System — complete state + what remains
 
-## Vision — Arman's words
+The cross-repo system-of-record (evidence, counts, acceptance criteria) is `common-docs/content-ir-system/FEATURE.md`. THIS doc is the working handoff: Arman's vision, exactly where we are, and what's next.
 
-- "We haven't been able to do anything with this system because it's just sitting and not doing anything because it's not being integrated so your first task is to **fully integrate it**."
-- On tables (ratified pattern, applies platform-wide): "tables need to stay exactly as they are… markdown core content… but there is a button to convert. Not only do we want to keep this but this is a **CRITICAL pattern to document, appreciate and adopt**. Some items simply don't start and instantly be the `__kind` but you **click to convert**!"
-- On enforcement: tools first ("shouldn't tools be the easiest because it's something that should just work and it's easy to test"); actions/workflows were never officially rolled out (~1 real action user).
+## Vision — Arman's words (verbatim, ratified 2026-07-15 → 2026-07-18)
 
-## The measured problem (live DB, 14-day window, 2026-07-15)
+- **What this system IS:** "It's important that you understand THE ONLY reason we have built all of this content_ir stuff is so that users can create whatever they want for inputs, outputs, streaming, tools, workflows, and more and have it all instantly render for them in react, our extension, matrx local, and our soon to come mobile app. **THIS IS the system. It's not a feature, it is it!**"
+- **The north star (NOW LIVE):** "The true value of these kinds can only be realized when we have it FULLY AVAILABLE for users, not for me and the admins. When we can have OUR agent we create that will do this for a user, then we will have massive adoption: 1. Create the kind based on the user's data. 2. Create the custom component for the user. 3. Create the agent skills and render blocks for the user. 4. Then, the user can test it out and the real magic is when the user sees a COMPLETELY customized, beautiful component that they designed with an agent."
+- **Unification endgame:** "the goal is to eventually **eliminate tools components** because their results are nothing more than a `__kind` so then we don't need tool components and all of that." (kind components subsume `tool.ui` renderers; the kindcomp toolset is the successor.)
+- **Component trust model:** "absolutely must be SUPER open so we need to do allowlist and **massively expand our allow list**. This is literally what our app does so we can't limit the user, we need to make our safety systems better when we get users fully on it." Iframes are ALSO supported "for a totally different reason… html/js and giving users even more options" — an option, never a trust tier.
+- **Tables / the Convert Pattern:** "tables need to stay exactly as they are… markdown core content… but there is a button to convert. Not only do we want to keep this but this is a **CRITICAL pattern to document, appreciate and adopt**. Some items simply don't start and instantly be the `__kind` but you **click to convert**!"
+- **Production agents:** "I can't roll out a system that is only partially created… we would never 'auto-list' a tool like that for all agents… 95% of our calls are designed to be highly deterministic and with small models." Agent rollout comes LAST, "and the agents part will be easy."
+- **Workflows:** "I also want to actually launch workflows but I won't put any time into that system until I'm certain that the inputs and outputs for all fully and properly use the system and there is nothing left to do."
+- **Enforcement:** tools first ("it's easy to test and fix"); every kind gets an example; the 6 gated inactive roots are test kinds.
 
-Only **94 of 2,712 assistant messages (3.5%)** across **72 of 1,469 conversations (~5%)** carried any `__kind` block. Every meaningful emitter is an education agent with a hand-bound `output_schema` (Flashcard Generator (K), Study Mind Map Generator, …). The **45 render_block skills produce ~zero emission** — only 10 of 645 active agents have any `skill_config`, mostly `(sample)` demos. Counting caveat: use `strpos(content,'__kind')`, never `LIKE '%__kind%'` (`_` is a LIKE wildcard; it over-counts).
+## Current state (2026-07-18, all verified live)
+
+**The user loop is LIVE, end-to-end browser-verified, and first-try-polished:**
+- `/shapes` (list, creator-scoped "Your shapes" + platform library) → `/shapes/new` (intent + sample → chat handoff) → conversation with **`kind_creator`** (`4f4ffd49-db15-4a2e-b9fe-341ffafc1323`, prompt v2, 13 authz-hardened tools) → kind + `source='db'` component + skill + content block created → `/shapes/[kind]` Preview / **Test** (form → live render of the user's data through their own component).
+- **Demo left for Arman:** `/shapes/wine_tasting` + `/shapes/wine_tasting/test`; the conversation that built it: `/chat/4ec4285e-c9ba-4b92-9727-73d6dcffd170`.
+- First-try polish shipped: props contract taught + write-time lint (flat-props refused), input row seeded at `kind_create`, fielded Test form for flat samples (all-or-nothing honesty), `props_transform` semantics documented, agent guidance points back to /shapes.
+
+**Platform layer (Waves 0–1, all adversarially reviewed):** 786-item vocabulary crosswalk (0 unclassified) + coverage gates; KindSchema expressivity (json-any, unions, open objects, roots); A3 machinery live-but-OFF (versioned kind refs, admission gate `enforce=false`, derived-on-write example validation via pg_jsonschema, `MATRX_KINDS_ENFORCE_*` env flags, non-retryable contract violations, admission at run AND resume); 22/22 live workflow definitions canonical; envelope parity all families; generated detector bootstraps both runtimes; BlockRenderer = declarative crosswalk-mirrored dispatch registry; guidance kits for all six gated roots; every kind has a passing canonical example (~725 passed / 0 failed).
+
+**Integration layer (Wave 3 + K-wave):** builder "Bind to a kind" picker; education renders kind-aware; Shapes chips in Quickset + "Convert to…" message action (canonical dialog, manual-only per ruling); schema_proposal → "Create a Shape" (warnings acknowledged, rollback, 12-kind cap); `source='db'` components render via the massively-expanded allowlist (+ html iframe flavor), refresh-on-view staleness contract; D2 workflow envelope handoff (elided-on-wire, Studio trusted path); D3 artifacts (unbind, registry-driven edit, notes materialization); agent-input bridge (typed schemas, wire-compatible); admin kind-registry rebuilt on canonical MatrxDataTable.
+
+**Key invariants to never violate:** table never auto-kinds (click-to-convert); production agents untouched until 100% complete; user kinds are private-by-default, RLS/`iam.has_access_for` is the ONE authz truth (tools delegate to it); `generic_structured` is the only routable input key today; DB components receive the payload as `props.data`.
 
 ## Resources
 
-- Skill injection: `aidream/packages/matrx-ai/matrx_ai/skills/resolver.py:89-105` (included → full body) vs `:61-65` (everyone else gets a one-line overview); merge at `aidream/aidream/services/tooling/skill_merge.py:333-420`. Preamble frozen per request (`skill_merge.py:13,18`) — attaching skills is additive/cache-safe.
-- The working emission channel: `aidream/aidream/services/ai_execution/ai_task.py:46,76-95,243-273` — `output_schema` → `agent_output_contract` → `response_format_for_kind`. Live and proven.
-- Builder output-schema UI (kind-aware since Lane B): `features/agents/components/settings-management/output-schema/OutputSchemaTab.tsx`; kind catalog reader: `features/content-ir/registry/kind-catalog.ts`.
-- Kind-aware renderer: `EnhancedChatMarkdown` → `components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx`. Education instead uses `BasicMarkdownContent` (no kind detection).
-- Per-run skill picker plumbing: `features/agents/components/inputs/smart-input/RunSkillPicker.tsx`, mounted in `QuicksetPanel`/`RunControlsTabPanel`.
-- Message actions: `features/agents/.../message-options/messageActionRegistry.ts`. Generative-only creation exemplar: `features/flashcards/components/create/CreateFromTopic.tsx`.
-- Test: dev-login per CLAUDE.md; `/chat` "make me 5 flashcards…" exercises the render path.
-- Chat linkage for metrics: `chat.conversation.initial_agent_id` (message-level `agent_id` is null); live agents table is `agent.definition`.
+- Studio: `features/content-ir/studio/` (+ `app/(core)/shapes/`); creator agent constant: `studio/constants.ts#SHAPE_CREATOR_AGENT_ID`.
+- DB components: `features/content-ir/react/db-component/` + SHAPE_SYSTEM.md § "DB kind components" (props contract, flavors, staleness contract); shared compiler/allowlist: `features/agent-apps/utils/{compile-slot,allowed-imports}.ts`.
+- Creator toolset: aidream `packages/matrx-ai/matrx_ai/tools/implementations/{kind_shared,kind_authoring,kind_component}.py`; agent spec `internal_agents/kind_creator.md`; E2E: `matrx_ai/tools/tests/run_kind_tools_e2e.py`.
+- Component versioning/incidents: `content_ir.kind_component_version` view + `kind_component_incident` (kc_001).
+- Enforcement: aidream `docs/workflow/KINDS_ROLLOUT.md` (flags, escalation matrix, B5 status); admission: `content_ir.admission_config`.
+- Coverage: `pnpm check:shapes` / `check:shapes:crosswalk` / `check:content-ir:strict`; board `/administration/kind-registry`.
+- Test login: dev-login per CLAUDE.md; metrics caveat: count `__kind` via `strpos`, never `LIKE '%__kind%'`.
 
-## Remaining work
+## Remaining work (ranked)
 
-1. **Deploy aidream to prod** (owner ask, still open — `bash scripts/release.sh`): everything server-side (envelope producer, typed agent projections, tool stamping, the kind_creator agent + toolset, enforcement machinery OFF) is on `main` but inert in prod until deployed. After deploy: read tool_io drift logs → tools-first enforcement flip per the ratified order.
-2. **North-star riders** (the loop is LIVE and first-try-polished; these deepen it): FE incident reporter (render errors → `content_ir.kind_component_incident` so the agent's resolve loop sees real crashes), richer dedicated input components beyond `generic_structured`, tool_ui subsumption (kind components absorb tool renderers — the ratified unification endgame), agent bulk-bind of the 578 variable-carrying agents once the bridge soaks, D4 extras (React Native/Vite platform bindings).
-3. **Deferred — workflow launch** (Arman): "I won't put any time into that system until I'm certain that the inputs and outputs for all fully and properly use the system and there is nothing left to do." E1 (unified pipeline) also remains its own campaign.
+1. **Deploy aidream to prod** (`bash scripts/release.sh` — Arman or a session with the permission; also in `.matrx/ARMAN_TASKS.md` item 0). Everything server-side is on `main` but inert in prod: kind_creator + toolset, envelope producer, typed agent projections, tool stamping, enforcement machinery (OFF). **After deploy:** read `tool_io` drift logs for a few days → flip `MATRX_KINDS_ENFORCE_TOOL_IO` first per the ratified tools-first order → then the other families as their logs come clean → then delete the hand-coded detector literals (gated on the flip). Post-soak: drop `content_ir._backup_*` tables + the two `matrx_orm.yaml` exclude lines.
+2. **FE incident reporter** — render errors from db components currently scream to the error store but do NOT write `content_ir.kind_component_incident` rows, so the agent's `kindcomp_get_context`/`resolve_incident` loop never sees real crashes. Wire the DbKindComponent error boundary to insert incidents (org-scoped, RLS-gated). This closes the self-healing loop the toolset was built for.
+3. **Richer input components** — `generic_structured` is the only input key; the fielded form covers flat schemas only. Next: nested-object form support in the bridge, then dedicated input components as a kind_component role='input' ecosystem (users will want custom input UIs too — same db-component machinery).
+4. **tool_ui subsumption** (the ratified endgame) — migrate tool renderers onto kind components: tool results are already `tool_io_*` kinds; plan = point tool result rendering through `resolveComponent`, port `tool.ui` rows to `kind_component`, retire `DbToolRenderer`. Design first; touches tool-call-visualization + workflow-emit.
+5. **Agent bulk-bind** — the 578 variable-carrying agents onto kind-bound contracts once the W3-A bridge has soaked in prod (blocked on item 1's deploy).
+6. **Cross-platform bindings** — extension / matrx-local / mobile renderers for kinds (the vision names all four surfaces; only web + workflow-studio Vite exist today). React Native bindings = D4's remaining half.
+7. **Workflow launch** — gated on Arman's bar: every workflow input/output fully on the system with "nothing left to do." Dynamic contract publisher for `io.user_input` (P9) is the known gap. E1 (unified TurnAssembler pipeline) remains its own campaign, last by design.
+8. **Small known items:** FOUND_DEFECTS D60 residual (launch-variable agents don't surface stashed drafts — plain agents fixed); education convert-dialog branding when opened from general chat (latent UX note); `item_presentation` Python detector gap (shrink-only ratchet); 2 pre-existing `system_instruction_persist_roundtrip` failures in aidream (spawned task).
 
-## Rulings (Arman, 2026-07-17)
+## Done (compact — details in FEATURE docs + git)
 
-- **Lane A is cancelled, not pending.** "We would never auto-list a tool like that for all agents… 95% of our calls are designed to be highly deterministic and with small models." Production agents are not touched until the system is fully complete ("I can't roll out a system that is only partially created"). Skill availability = opt-in affordances (the chips) only.
-- The education-agent concentration is recency, not signal — they were simply the agents created while this feature was under development.
-- The convert-style tool is liked and "we would use it in many places" — but manual, never auto.
+- North-star loop live + verified + polished (see Current state) — waves K1–K5 + P0/P2 passes, 2026-07-18.
+- Waves 0–1 (adapter spine, contracts, enforcement machinery, coverage, detection, dispatch, guidance) — 2026-07-15.
+- Wave 3 (inputs D1, workflow handoff D2, artifacts D3, agent-input bridge) + integration lanes B/C/D — 2026-07-15→17.
+- Every lane adversarially reviewed; all findings fixed (incl. the K2 authz hardening: reads viewer-gated, writes via live `iam.has_access_for`, incident payloads editor-only).
 
-## Done
+## Decisions needed
 
-- **THE NORTH STAR LOOP — LIVE and verified end-to-end (2026-07-18).** A real-user browser run proved all four steps: /shapes/new → conversation with `kind_creator` (`4f4ffd49-db15-4a2e-b9fe-341ffafc1323`, prompt v2) → kind + custom `source='db'` component + skill + content block created → Test tab renders the user's own data through their own component. Demo left in place: `/shapes/wine_tasting` (+ `/test`), conversation `/chat/4ec4285e-c9ba-4b92-9727-73d6dcffd170`. First-try polish landed post-verification (aidream `a1c4cd360`): props-contract taught + write-time lint (flat-props refused), input row seeded at kind_create, fielded Test form for flat samples, honest props_transform docs, agent guidance points at /shapes. P2s closed (`d82711208`): composer pre-init keystroke drop fixed never-drop + loud; row-click "misfire" proven an automation artifact, aria-labels hardened.
-- Lane K1 — `source='db'` kind components render live (react allowlist flavor + html iframe flavor), expanded allowlist, refresh-on-view staleness contract, deterministic row selection — see SHAPE_SYSTEM.md § DB kind components.
-- Lane K4 — schema_proposal "Create a Shape" apply target (converter warnings surfaced with explicit acknowledgment, rollback compensation, 12-kind cap) — see `features/agents/components/schema-proposal/`.
-- Lane K5 — review-findings sweep (parser-truth schemas for chart/diff/stats/map, ledger-consistent header fix, kindBinding gates, Quickset cosmetic).
-- Lane K3 — the user-facing Shapes studio (`app/(core)/shapes/` + `features/content-ir/studio/`): /shapes list (RLS-scoped mine + platform), /shapes/[kind] Preview/Test/Schema (Test = KindInputForm → live render through the real applyIrKindRoute path; preview engine extracted from admin, one engine), /shapes/new create-with-agent handoff to `/chat/a/[agentId]` via `stashChatDraftTransfer`, sidebar nav + /shapes/admin map. K2's creator-agent id is now pasted into `SHAPE_CREATOR_AGENT_ID` (2026-07-18) — a browser pass of /shapes/new → chat handoff is still owed.
-- Lane K2 — server-side creator toolsets + agent (aidream, 2026-07-18): `kind_*` (create from sample-data with inferred schema + validated canonical example / get / update_schema with stranded-example reporting / add_example / create_skill / create_content_block) + `kindcomp_*` (get_context / create_component / get_code / update_code / patch_code / update_settings / resolve_incident) — 13 `tool.definition` rows, drift-validator green, live E2E lifecycle proof (`matrx_ai/tools/tests/run_kind_tools_e2e.py`). DDL kc_001 (applied + ledgered): kind_component `semver`/`notes`, `_version_capture` history + `content_ir.kind_component_version` view, `content_ir.kind_component_incident` with canonical component RLS. **Creator agent `kind_creator`: `4f4ffd49-db15-4a2e-b9fe-341ffafc1323`** (v1 `fdb0ef64-ab2a-4ed6-b6d6-cbecc4a07649`), `agent_type='builtin'`, all 13 tools bound, four-step-loop prompt. Authz hardened post-review (aidream `db2969fe2`): reads viewer-gated / writes editor-gated through the live `iam.has_access_for`; incident data_snapshot payloads editor-only. Riders in common-docs content-ir FEATURE gap 10 (FE incident reporter, D4 sandboxed `source='db'` rendering, tool_ui subsumption).
-- Lane D — shape discovery chips ("Shapes" row in Quickset: Flashcards/Quiz/Timeline/Comparison/Diagram, gated on the live skill list, toggling `addedSkills` → `skill_config.included`) + "Convert to flashcards / quiz…" on assistant messages with a table/list (`messageActionRegistry` → canonical `ConvertContentDialog`; artifact lineage-links to the conversation; SHAPE_SYSTEM.md Convert Pattern lists chat as a shipped surface). Browser-verified end-to-end (chip → in-chat flashcard block; convert → real fc_set). `flashcard-set` skill re-activated in `skill.definition`.
-- Lane B — "Bind to a kind" picker + matches/drift indicator in the builder's Output Schema tab — see `features/agents/components/settings-management/output-schema/` (kindBinding.ts golden-tested byte-equal to flashcard_set's live `emitted_block_schema`).
-- Lane C — education content rendering is kind-aware (`onboard/SummaryDetail.tsx` → `MarkdownStream`; all other surfaces already kind-correct) — see `features/education/FEATURE.md`.
-
+None open. All rulings recorded above and in agent memory; the only owner ACTION is the deploy (Remaining #1).
