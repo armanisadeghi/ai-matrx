@@ -89,6 +89,11 @@ export interface JsonInspectorProps {
   onUpdate?: (next: unknown) => void;
   /** When true (default), the edit tab is read-only. Ignored without onUpdate. */
   editorReadOnly?: boolean;
+  /**
+   * When true (requires `onUpdate`), skip inspect tabs and render the CodeMirror
+   * editor pane directly — for form fields where editing must be obvious.
+   */
+  editOnly?: boolean;
   /** Forwarded to the outer wrapper. */
   className?: string;
 }
@@ -163,9 +168,12 @@ export function JsonInspector({
   defaultExpandDepth,
   onUpdate,
   editorReadOnly = false,
+  editOnly = false,
   className,
 }: JsonInspectorProps) {
   const editable = typeof onUpdate === "function";
+  const showEditOnly = editOnly && editable;
+
   const prettyJson = useMemo(() => formatJson(data, 2), [data]);
   const maxExpandDepth = useMemo(
     () => getJsonStructuralDepth(cleanJson(data)),
@@ -247,6 +255,45 @@ export function JsonInspector({
       console.error("Failed to copy JSON:", err);
     }
   };
+
+  if (showEditOnly) {
+    return (
+      <div
+        className={cn(
+          "h-full flex flex-col bg-white dark:bg-zinc-800 rounded-lg overflow-hidden min-h-0",
+          className,
+        )}
+      >
+        <div className="flex items-center gap-1.5 px-1.5 py-1 border-b border-border flex-shrink-0">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className={ICON_BUTTON_CLS}
+              title={backLabel}
+              aria-label={backLabel}
+            >
+              <ChevronLeft className={ICON_CLS} />
+            </button>
+          )}
+          {label !== undefined && label !== null && label !== "" && (
+            <h2 className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate shrink-0">
+              {label}
+            </h2>
+          )}
+          <div className="flex-1" />
+          <span className="text-[10px] text-muted-foreground">
+            Changes apply on blur
+          </span>
+        </div>
+        <JsonEditorPane
+          value={data}
+          onUpdate={onUpdate}
+          readOnly={editorReadOnly}
+          className="flex-1 min-h-0"
+        />
+      </div>
+    );
+  }
 
   return (
     <div

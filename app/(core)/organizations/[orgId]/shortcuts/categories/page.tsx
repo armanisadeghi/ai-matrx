@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { Eye, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
+import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,40 +118,35 @@ export default function OrgCategoriesPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
-      <div className="flex-shrink-0 p-4 border-b border-border bg-card flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold text-foreground truncate">
-              Organization Categories
-            </h1>
-            {!canWrite && (
-              <Badge
-                variant="outline"
-                className="text-[11px] inline-flex items-center gap-1"
-              >
-                <Eye className="h-3 w-3" />
-                Read-only
-              </Badge>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground truncate">
-            Categories shared across {organizationName}.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
+      <PageHeaderRightPortal>
+        <TapTargetButton
+          icon={
+            <RefreshCw
+              className={isLoading ? "animate-spin" : undefined}
+            />
+          }
           onClick={() => refetch()}
           disabled={isLoading}
-        >
-          <RefreshCw
-            className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
-      </div>
+          ariaLabel="Refresh"
+          tooltip="Refresh"
+        />
+      </PageHeaderRightPortal>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+1rem)]">
+        <div className="flex items-center gap-2 mb-4">
+          <p className="text-xs text-muted-foreground">
+            Categories shared across {organizationName}.
+          </p>
+          {!canWrite && (
+            <Badge
+              variant="outline"
+              className="text-[11px] inline-flex items-center gap-1"
+            >
+              <Eye className="h-3 w-3" />
+              Read-only
+            </Badge>
+          )}
+        </div>
         <CategoryTree
           scope={SCOPE}
           scopeId={organizationId}

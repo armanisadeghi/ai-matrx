@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Ellipsis,
   FileSpreadsheet,
   Loader2,
   Plus,
@@ -17,6 +18,11 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { TapTargetButton, TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import {
+  BottomSheet,
+  BottomSheetHeader,
+  BottomSheetBody,
+} from "@/components/official/bottom-sheet/BottomSheet";
 
 import {
   createWorkbook,
@@ -78,6 +84,9 @@ export default function WorkbooksLandingPage() {
   const [smartFile, setSmartFile] = useState<File | null>(null);
   const [smartDialogOpen, setSmartDialogOpen] = useState(false);
   const [smartCommitting, setSmartCommitting] = useState(false);
+  // Mobile-only "more" sheet holding Smart import + Import — the icon row
+  // collides with the shell avatar below `sm`, see core-route-headers skill.
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -317,40 +326,109 @@ export default function WorkbooksLandingPage() {
         }
         right={
           <div className="flex items-center gap-0.5">
-            <TapTargetButton
-              icon={<Sparkles className="h-4 w-4" />}
-              ariaLabel="Smart import"
-              tooltip="Auto-detect whether your file is a typed dataset or a workbook"
-              disabled={importing || creating || smartCommitting}
-              onClick={() => smartFileInputRef.current?.click()}
-            />
-            <TapTargetButton
-              icon={
-                importing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )
-              }
-              ariaLabel="Import XLSX / CSV"
-              disabled={importing || creating || smartCommitting}
-              onClick={() => fileInputRef.current?.click()}
-            />
-            <TapTargetButtonSolid
-              icon={
-                creating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )
-              }
-              label="New workbook"
-              disabled={creating || importing || smartCommitting}
-              onClick={handleCreate}
-            />
+            {/* Desktop: full row of actions. Mobile: collapse Smart import +
+                Import behind one "More" sheet trigger — three icons plus a
+                solid pill overflowed past the avatar at 375px. */}
+            <div className="hidden sm:flex items-center gap-0.5">
+              <TapTargetButton
+                icon={<Sparkles className="h-4 w-4" />}
+                ariaLabel="Smart import"
+                tooltip="Auto-detect whether your file is a typed dataset or a workbook"
+                disabled={importing || creating || smartCommitting}
+                onClick={() => smartFileInputRef.current?.click()}
+              />
+              <TapTargetButton
+                icon={
+                  importing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )
+                }
+                ariaLabel="Import XLSX / CSV"
+                disabled={importing || creating || smartCommitting}
+                onClick={() => fileInputRef.current?.click()}
+              />
+            </div>
+            <div className="shrink-0 sm:hidden">
+              <TapTargetButton
+                icon={<Ellipsis className="h-4 w-4" />}
+                ariaLabel="More import options"
+                disabled={importing || creating || smartCommitting}
+                onClick={() => setMobileActionsOpen(true)}
+              />
+            </div>
+            {/* Solid primary: labeled pill on desktop, icon-only on mobile —
+                the labeled pill alone overflowed into the avatar at 375px. */}
+            <div className="hidden shrink-0 sm:block">
+              <TapTargetButtonSolid
+                icon={
+                  creating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )
+                }
+                label="New workbook"
+                disabled={creating || importing || smartCommitting}
+                onClick={handleCreate}
+              />
+            </div>
+            <div className="shrink-0 sm:hidden">
+              <TapTargetButtonSolid
+                icon={
+                  creating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )
+                }
+                ariaLabel="New workbook"
+                disabled={creating || importing || smartCommitting}
+                onClick={handleCreate}
+              />
+            </div>
           </div>
         }
       />
+      <BottomSheet
+        open={mobileActionsOpen}
+        onOpenChange={setMobileActionsOpen}
+        title="Import workbook"
+      >
+        <BottomSheetHeader title="Import" />
+        <BottomSheetBody>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 px-5 min-h-[52px] border-b border-white/[0.06] active:bg-white/5 transition-colors disabled:opacity-50"
+            disabled={importing || creating || smartCommitting}
+            onClick={() => {
+              setMobileActionsOpen(false);
+              smartFileInputRef.current?.click();
+            }}
+          >
+            <Sparkles className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="text-left">
+              <div className="text-[15px]">Smart import</div>
+              <div className="text-xs text-muted-foreground">
+                Auto-detect whether your file is a typed dataset or a workbook
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 px-5 min-h-[52px] active:bg-white/5 transition-colors disabled:opacity-50"
+            disabled={importing || creating || smartCommitting}
+            onClick={() => {
+              setMobileActionsOpen(false);
+              fileInputRef.current?.click();
+            }}
+          >
+            <Upload className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="text-[15px]">Import XLSX / CSV</span>
+          </button>
+        </BottomSheetBody>
+      </BottomSheet>
       <div className="h-full overflow-y-auto scrollbar-none">
         <div className="w-full space-y-4 p-4">
           {loading && (

@@ -60,6 +60,12 @@ neither prompt blocks nor run inputs: a canonical
   resources globally discoverable. Adding requires `editor` access to both the
   agent and source resource, because attachment conveys access to other agent
   viewers. Removal requires agent `editor` access.
+- In Builder, Resources is one compact top-row beside Variables and Context:
+  horizontally scrolling canonical resource chips followed by **Add** and
+  **Batch add**. Both actions reuse `ResourcePickerMenu`; batch mode keeps the
+  picker open for repeated selections. File edges render through
+  `FileResourceChip`, so click/hover/details behavior is identical to Stored
+  Files everywhere else. Never mount the large `AssociationList` browser here.
 
 ### Versioning
 
@@ -217,6 +223,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-17` — Replaced the oversized Agent Resources association browser with the Variables-style compact row, canonical resource picker, batch-add mode, and Stored Files chips/details; confirmed the manager has one Builder mount point.
 - `2026-07-17` — Fixed the shared Creator Panel Payload tab crash (`Cannot read properties of undefined (reading 'assistant')`): its memoized request-preview selector now includes `userPreferences`, matching `assembleRequest`'s USER-layer directive-policy dependency. Added focused regression coverage for default and explicit policies.
 
 - 2026-07-17 — Added global version-ID resolution to `/agents/all` search, linking an accessible version snapshot to its parent agent’s historical-version page.

@@ -41,7 +41,10 @@ export default async function KnowledgeGraphPage({
           </div>
         </div>
       </PageHeader>
-      <div className="h-full overflow-hidden bg-textured">
+      <div
+        className="h-full overflow-hidden bg-textured"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
         <KnowledgeGraphClient
           orgParam={org ?? null}
           scopeParam={scope ?? null}

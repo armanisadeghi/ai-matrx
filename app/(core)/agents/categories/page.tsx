@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,29 +102,22 @@ export default function UserCategoriesPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
-      <div className="flex-shrink-0 p-4 border-b border-border bg-card flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">
+      <PageHeader>
+        <div className="flex items-center w-full min-w-0 gap-0 p-0">
+          <h1 className="text-sm font-medium text-foreground truncate">
             My Categories
           </h1>
-          <p className="text-xs text-muted-foreground">
-            Your personal categories across every placement type.
-          </p>
+          <div className="ml-auto flex items-center">
+            <RefreshCwTapButton
+              onClick={() => refetch()}
+              disabled={isLoading}
+              ariaLabel="Refresh categories"
+            />
+          </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isLoading}
-        >
-          <RefreshCw
-            className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
-      </div>
+      </PageHeader>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+1rem)]">
         <CategoryTree
           scope={SCOPE}
           categories={categories}

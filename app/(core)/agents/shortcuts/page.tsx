@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { List } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { PlusTapButton, ListTapButton } from "@/components/icons/tap-buttons";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { PromoteToGlobalModal } from "@/features/agent-shortcuts/components/PromoteToGlobalModal";
 import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
@@ -74,21 +73,37 @@ export default function UserShortcutsPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
-      <ShortcutList
-        scope={SCOPE}
-        onCreate={handleCreate}
-        onEdit={handleEdit}
-        onDuplicate={handleDuplicate}
-        onPromoteToGlobal={isAdmin ? handlePromoteToGlobal : undefined}
-        toolbarSlot={
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/agents/shortcuts/all">
-              <List className="h-4 w-4 mr-2" />
-              Browse all shortcuts
-            </Link>
-          </Button>
-        }
-      />
+      <PageHeader>
+        <div className="flex items-center w-full min-w-0 gap-0 p-0">
+          <h1 className="text-sm font-medium text-foreground truncate">
+            My Shortcuts
+          </h1>
+          <div className="ml-auto flex items-center">
+            <ListTapButton
+              href="/agents/shortcuts/all"
+              ariaLabel="Browse all shortcuts"
+              tooltip="Browse all shortcuts"
+            />
+            <PlusTapButton
+              variant="solid"
+              label="New"
+              onClick={handleCreate}
+              ariaLabel="New shortcut"
+            />
+          </div>
+        </div>
+      </PageHeader>
+
+      <div className="flex-1 min-h-0 pt-[var(--shell-header-h)]">
+        <ShortcutList
+          scope={SCOPE}
+          onCreate={handleCreate}
+          onEdit={handleEdit}
+          onDuplicate={handleDuplicate}
+          onPromoteToGlobal={isAdmin ? handlePromoteToGlobal : undefined}
+          hideTitleBar
+        />
+      </div>
 
       <ShortcutForm
         scope={SCOPE}

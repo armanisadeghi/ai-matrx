@@ -419,9 +419,9 @@ export function TranscriptViewer() {
               </div>
             </div>
           ) : (
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-xl font-bold text-foreground">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl font-bold text-foreground truncate">
                   {activeTranscript.title}
                 </h1>
                 {activeTranscript.description && (
@@ -440,7 +440,7 @@ export function TranscriptViewer() {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex flex-wrap items-center justify-end gap-1 shrink-0 self-end sm:self-auto">
                 <ReferenceCopyButton
                   referenceType="transcript"
                   id={activeTranscript.id}

@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ImageIcon, Zap } from "lucide-react";
-import { PlusTapButton } from "@/components/icons/tap-buttons";
-import { Button } from "@/components/ui/button";
+import { ImageIcon } from "lucide-react";
+import { PlusTapButton, ZapTapButton } from "@/components/icons/tap-buttons";
 import { IMAGES_ROOT_PATH, findImagesRoute } from "./imagesRoutes";
 
 export function ImagesListHeader() {
@@ -29,18 +27,13 @@ export function ImagesListHeader() {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
-        <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
-          <Link href="/images/studio" aria-label="Open Image Studio">
-            <Zap className="mr-1.5 h-4 w-4" />
-            <span className="hidden text-xs font-medium sm:inline">
-              Studio
-            </span>
-          </Link>
-        </Button>
-        <Link href="/images/upload">
-          <PlusTapButton ariaLabel="Upload image" />
-        </Link>
+      <div className="hidden shrink-0 items-center gap-1 sm:flex">
+        <ZapTapButton
+          href="/images/studio"
+          ariaLabel="Open Image Studio"
+          label="Studio"
+        />
+        <PlusTapButton href="/images/upload" ariaLabel="Upload image" />
       </div>
     </div>
   );

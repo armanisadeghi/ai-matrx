@@ -76,6 +76,8 @@ export interface ShortcutListProps extends ScopeProps {
   readonly?: boolean;
   placementFilter?: string;
   toolbarSlot?: React.ReactNode;
+  /** (core) route consumers render title + primary actions in the shell PageHeader instead — set true to suppress this component's own title/action row. */
+  hideTitleBar?: boolean;
 }
 
 export function ShortcutList({
@@ -89,6 +91,7 @@ export function ShortcutList({
   readonly = false,
   placementFilter: placementFilterProp,
   toolbarSlot,
+  hideTitleBar = false,
 }: ShortcutListProps) {
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -325,21 +328,23 @@ export function ShortcutList({
     return (
       <div className={`flex flex-col h-full ${className ?? ""}`}>
         <div className="flex flex-col gap-2 p-3 border-b border-border bg-card">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Shortcuts</h2>
-            <div className="flex gap-1.5">
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-              {toolbarSlot}
-              {!readonly && onCreate && (
-                <Button size="sm" onClick={onCreate}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  New
+          {!hideTitleBar && (
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Shortcuts</h2>
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" onClick={() => refetch()}>
+                  <RefreshCw className="h-3.5 w-3.5" />
                 </Button>
-              )}
+                {toolbarSlot}
+                {!readonly && onCreate && (
+                  <Button size="sm" onClick={onCreate}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    New
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
           <Input
             placeholder="Search shortcuts..."
             value={searchQuery}
@@ -453,28 +458,38 @@ export function ShortcutList({
     <TooltipProvider>
       <div className={`flex flex-col h-full ${className ?? ""}`}>
         <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Shortcuts</h2>
-            <div className="flex gap-2">
-              {hasActiveFilters && (
-                <Button onClick={clearFilters} variant="outline" size="sm">
-                  <X className="h-4 w-4 mr-2" />
-                  Clear Filters
+          {!hideTitleBar && (
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Shortcuts</h2>
+              <div className="flex gap-2">
+                {hasActiveFilters && (
+                  <Button onClick={clearFilters} variant="outline" size="sm">
+                    <X className="h-4 w-4 mr-2" />
+                    Clear Filters
+                  </Button>
+                )}
+                <Button onClick={() => refetch()} variant="outline" size="sm">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
                 </Button>
-              )}
-              <Button onClick={() => refetch()} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-              {toolbarSlot}
-              {!readonly && onCreate && (
-                <Button onClick={onCreate} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Shortcut
-                </Button>
-              )}
+                {toolbarSlot}
+                {!readonly && onCreate && (
+                  <Button onClick={onCreate} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Shortcut
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+          {hideTitleBar && hasActiveFilters && (
+            <div className="flex justify-end">
+              <Button onClick={clearFilters} variant="outline" size="sm">
+                <X className="h-4 w-4 mr-2" />
+                Clear Filters
+              </Button>
+            </div>
+          )}
 
           <div className="grid grid-cols-4 gap-2">
             <Card>

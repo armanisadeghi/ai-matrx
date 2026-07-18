@@ -6,7 +6,7 @@ import { CreateConsole } from "./_components/CreateConsole";
 // Server entry. All interactivity lives in <CreateConsole/> (client).
 export default function CreateEpisodePageE() {
   return (
-    <div className="h-page w-full overflow-hidden bg-textured">
+    <div className="h-full w-full overflow-hidden bg-textured">
       <CreateConsole />
     </div>
   );

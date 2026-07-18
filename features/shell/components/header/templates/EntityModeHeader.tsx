@@ -48,6 +48,8 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+const EXTERNAL_HREF_RE = /^(https?:|mailto:|tel:)/;
+
 export interface EntityOption {
   label: string;
   href: string;
@@ -269,8 +271,15 @@ export function EntityModeHeader({
                   disabled={a.disabled}
                   onClick={() => {
                     setSheetOpen(false);
-                    if (a.href) router.push(a.href);
-                    else a.onPress?.();
+                    if (a.href) {
+                      if (EXTERNAL_HREF_RE.test(a.href)) {
+                        window.open(a.href, "_blank", "noopener,noreferrer");
+                      } else {
+                        router.push(a.href);
+                      }
+                    } else {
+                      a.onPress?.();
+                    }
                   }}
                   className={cn(
                     "flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06] last:border-0",

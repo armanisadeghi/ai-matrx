@@ -1,9 +1,9 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/tools", {
-  title: "Tools",
-  description: "Tools for working with documents.",
-  letter: "TL",
+export const metadata = createRouteMetadata("/tools/scanner", {
+  title: "Document Scanner",
+  description: "Quickly scan documents and convert them to PDF.",
+  letter: "DS",
 });
 
 export default function ToolsLayout({

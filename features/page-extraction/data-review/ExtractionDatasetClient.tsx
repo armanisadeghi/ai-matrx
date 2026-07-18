@@ -475,7 +475,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             )}
           </div>
 
-          <div className="ml-auto shrink-0 flex items-center">
+          <div className="ml-auto flex min-w-0 max-w-[60vw] items-center overflow-x-auto sm:max-w-none sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {job && (
               <ContextStatusButton
                 subject={{

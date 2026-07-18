@@ -166,7 +166,14 @@ export default function WorkbookPage({
           ) : undefined
         }
       />
-      <div className="h-full w-full overflow-hidden">
+      {/* Single full-page editor: Univer renders its own static top toolbar
+          (Editing / Save now / Export / History), so the surface must start
+          BELOW the glass header rather than scroll behind it — otherwise
+          Univer's toolbar collides with the back button + name field. */}
+      <div
+        className="h-full w-full overflow-hidden"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
         {permsResolved && workbook ? (
           <WorkbookEditor
             workbookId={id}

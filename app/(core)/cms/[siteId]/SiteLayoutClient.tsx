@@ -23,17 +23,21 @@ import {
   buildSiteStructureXml,
   type SiteStructureCurrent,
 } from "@/features/cms/utils/buildSiteStructureXml";
-import { Loader2, AlertCircle, FileText, Puzzle, Settings } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  FileText,
+  Puzzle,
+  Settings,
+  ExternalLink,
+  Plus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
-import {
-  ChevronLeftTapButton,
-  ExternalLinkTapButton,
-  PlusTapButton,
-} from "@/components/icons/tap-buttons";
-import { CmsSiteSwitcher } from "@/features/cms/components/CmsSiteSwitcher";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
+import { usePathname } from "next/navigation";
 
 interface SiteContextValue {
   site: ClientSite;
@@ -64,6 +68,15 @@ export function useSiteContext() {
   return ctx;
 }
 
+/** Sub-view suffix (mode) so switching sites in the entity dropdown keeps
+ *  the current sub-view (pages / components / settings). */
+function subViewSuffix(pathname: string, siteId: string): string {
+  const rest = pathname.slice(`/cms/${siteId}`.length);
+  if (rest.startsWith("/components")) return "/components";
+  if (rest.startsWith("/settings")) return "/settings";
+  return "";
+}
+
 /** Header shown while the site is loading/errored — back affordance only, so
  *  the shell row is never dead. */
 function SiteHeaderFallback() {
@@ -81,10 +94,12 @@ export default function SiteLayoutClient({
 }) {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const siteId = params.siteId as string;
   const [site, setSite] = useState<ClientSite | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [allSites, setAllSites] = useState<ClientSite[]>([]);
 
   const [pages, setPages] = useState<ClientPageSummary[]>([]);
   const [pagesLoading, setPagesLoading] = useState(true);
@@ -140,6 +155,18 @@ export default function SiteLayoutClient({
     refreshPages();
     refreshComponents();
   }, [fetchSite, refreshPages, refreshComponents]);
+
+  useEffect(() => {
+    CmsSiteService.listSites()
+      .then(setAllSites)
+      .catch((err: unknown) => {
+        console.error(
+          "[cms] site switcher list failed:",
+          extractErrorMessage(err),
+        );
+        setAllSites([]);
+      });
+  }, []);
 
   const buildStructureXml = useCallback(
     (current?: SiteStructureCurrent) => {
@@ -208,43 +235,39 @@ export default function SiteLayoutClient({
         buildStructureXml,
       }}
     >
-      <RouteHeader
-        left={
-          <>
-            <ChevronLeftTapButton href="/cms" ariaLabel="All sites" />
-            <CmsSiteSwitcher siteId={siteId} siteName={site.name} />
-          </>
-        }
-        center={
-          <RouteModeNav
-            items={[
-              { name: "Pages", href: `/cms/${siteId}`, icon: FileText },
-              {
-                name: "Components",
-                href: `/cms/${siteId}/components`,
-                icon: Puzzle,
-              },
-              {
-                name: "Settings",
-                href: `/cms/${siteId}/settings`,
-                icon: Settings,
-              },
-            ]}
-          />
-        }
-        right={
-          <>
-            <ExternalLinkTapButton
-              ariaLabel="Open live site"
-              href={clientSiteRootUrl(site.slug)}
-              className="hidden sm:inline-flex"
-            />
-            <PlusTapButton
-              ariaLabel="New page"
-              href={`/cms/${siteId}/pages/new`}
-            />
-          </>
-        }
+      <EntityModeHeader
+        backHref="/cms"
+        entityLabel={site.name}
+        entityOptions={allSites.map((s) => ({
+          label: s.name,
+          href: `/cms/${s.id}${subViewSuffix(pathname, siteId)}`,
+          active: s.id === siteId,
+        }))}
+        modes={[
+          { name: "Pages", href: `/cms/${siteId}`, icon: FileText },
+          {
+            name: "Components",
+            href: `/cms/${siteId}/components`,
+            icon: Puzzle,
+          },
+          {
+            name: "Settings",
+            href: `/cms/${siteId}/settings`,
+            icon: Settings,
+          },
+        ]}
+        actions={[
+          {
+            label: "Open live site",
+            icon: ExternalLink,
+            href: clientSiteRootUrl(site.slug),
+          },
+          {
+            label: "New page",
+            icon: Plus,
+            href: `/cms/${siteId}/pages/new`,
+          },
+        ]}
       />
       <div className="h-full flex flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="flex-1 min-h-0 overflow-hidden">{children}</div>

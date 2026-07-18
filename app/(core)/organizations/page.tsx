@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -274,6 +275,7 @@ export default function OrganizationsPage() {
   const suggestions = useScopeSuggestions();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
+  const isMobile = useIsMobile();
 
   const filtered = query
     ? filterAndSortBySearch(organizations, query, [
@@ -299,13 +301,17 @@ export default function OrganizationsPage() {
         right={
           <TapTargetButtonSolid
             icon={<Plus className="h-4 w-4" />}
-            label="New organization"
+            label={isMobile ? undefined : "New organization"}
+            ariaLabel="New organization"
             onClick={() => setCreateOpen(true)}
           />
         }
       />
       <div className="h-full overflow-y-auto bg-textured">
-        <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
+        <div
+          className="max-w-5xl mx-auto p-4 md:p-6 space-y-6"
+          style={{ paddingTop: "calc(var(--shell-header-h) + 1rem)" }}
+        >
           {/* Stats + search */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-5 flex-wrap">

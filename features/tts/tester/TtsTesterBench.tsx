@@ -60,7 +60,7 @@ export function TtsTesterBench() {
 
   return (
     <div className="mx-auto flex h-full max-w-5xl flex-col overflow-hidden bg-textured">
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+1rem)]">
         <p className="mb-4 text-xs text-muted-foreground">
           Side-by-side Cartesia comparison on Sonic 3.5 (latest format:
           generation_config speed/volume/emotion). The default A/B compares the

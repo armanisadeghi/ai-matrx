@@ -4,7 +4,6 @@ import React, { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Building2,
   Eye,
   FileText,
   Folder,
@@ -14,10 +13,11 @@ import {
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { useOrgShortcutsContext } from "./OrgShortcutsContext";
+import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
+import { TapTargetButton } from "@/components/icons/TapTargetButton";
 
 const SCOPE = "organization" as const;
 
@@ -91,45 +91,32 @@ export default function OrgShortcutsDashboardPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 p-4 border-b border-border bg-card">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">
-                Organization Shortcuts
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Managing{" "}
-                <Badge variant="outline" className="ml-0.5 text-[11px]">
-                  organization
-                </Badge>{" "}
-                scope for{" "}
-                <span className="font-medium text-foreground">
-                  {organizationName}
-                </span>
-                . Visible to every member.
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
+      <PageHeaderRightPortal>
+        <TapTargetButton
+          icon={
             <RefreshCw
-              className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+              className={isLoading ? "animate-spin" : undefined}
             />
-            Refresh
-          </Button>
-        </div>
-      </div>
+          }
+          onClick={() => refetch()}
+          disabled={isLoading}
+          ariaLabel="Refresh"
+          tooltip="Refresh"
+        />
+      </PageHeaderRightPortal>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4 max-w-5xl mx-auto">
+        <div className="p-4 pt-[calc(var(--shell-header-h)+1rem)] space-y-4 max-w-5xl mx-auto">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
+            <span className="whitespace-nowrap">Managing</span>
+            <Badge variant="outline" className="text-[11px]">
+              organization
+            </Badge>
+            <span className="whitespace-nowrap">scope for</span>
+            <span className="font-medium text-foreground">
+              {organizationName}
+            </span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-3">

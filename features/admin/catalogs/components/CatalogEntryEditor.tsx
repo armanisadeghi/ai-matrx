@@ -19,7 +19,7 @@
 // deployed it falls back to a browser HEAD with honest CORS labeling. An
 // unreachable artifact warns loudly but can be overridden.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   AlertTriangle,
@@ -52,12 +52,15 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { createClient } from "@/utils/supabase/client";
-import JsonFieldEditor from "@/features/ai-models/components/JsonFieldEditor";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
   isConflictError,
   rpcErrorMessage,
 } from "@/features/admin/shared/admin-rpc-errors";
-import { UrlProbeField, formatBytes } from "@/features/admin/shared/UrlProbeField";
+import {
+  UrlProbeField,
+  formatBytes,
+} from "@/features/admin/shared/UrlProbeField";
 import { probeArtifactUrl } from "@/features/admin/catalogs/resolver";
 import type { ArtifactProbeResult } from "@/features/admin/catalogs/resolver";
 import { CatalogHistoryPanel } from "@/features/admin/catalogs/components/CatalogHistoryPanel";
@@ -109,9 +112,7 @@ interface PendingSave {
 }
 
 type ArtifactProbe =
-  | { status: "idle" }
-  | { status: "probing" }
-  | ArtifactProbeResult;
+  { status: "idle" } | { status: "probing" } | ArtifactProbeResult;
 
 function pendingSnapshotJson(app: string, pending: PendingSave): string {
   return entrySnapshotJson({
@@ -173,7 +174,12 @@ export function CatalogEntryEditor({
   );
   const [isActive, setIsActive] = useState(row?.is_active ?? false);
   const [payload, setPayload] = useState<Record<string, unknown>>(() => {
-    if (row && typeof row.payload === "object" && row.payload !== null && !Array.isArray(row.payload)) {
+    if (
+      row &&
+      typeof row.payload === "object" &&
+      row.payload !== null &&
+      !Array.isArray(row.payload)
+    ) {
       return row.payload as Record<string, unknown>;
     }
     return seed?.payload ?? {};
@@ -194,6 +200,14 @@ export function CatalogEntryEditor({
 
   const activeKindDef = kindDef(kind);
   const payloadValidation = validatePayload(kind, payload);
+
+  const handlePayloadUpdate = useCallback((next: unknown) => {
+    if (typeof next === "object" && next !== null && !Array.isArray(next)) {
+      setPayload(
+        Object.fromEntries(Object.entries(next)) as Record<string, unknown>,
+      );
+    }
+  }, []);
 
   // Dual-gate probe: while the save confirm is open for an ACTIVE entry with
   // an artifact URL, probe it and surface the outcome inside the dialog.
@@ -787,18 +801,17 @@ export function CatalogEntryEditor({
         {fieldErrors.payload ? (
           <p className="text-xs text-destructive">{fieldErrors.payload}</p>
         ) : null}
-        <JsonFieldEditor
-          title={`Payload (${kind})`}
-          description="Validated against the kind schema — unknown keys round-trip unchanged"
-          data={payload}
-          defaultExpanded
-          onSave={async (data) => {
-            const next: Record<string, unknown> = Object.fromEntries(
-              Object.entries(data),
-            );
-            setPayload(next);
-          }}
-        />
+        <p className="text-xs text-muted-foreground">
+          Validated against the kind schema — unknown keys round-trip unchanged
+        </p>
+        <div className="h-96 min-h-72 overflow-hidden rounded-md border border-border">
+          <JsonInspector
+            data={payload}
+            editOnly
+            onUpdate={handlePayloadUpdate}
+            className="h-full min-h-0 rounded-none border-0"
+          />
+        </div>
       </section>
 
       <section className="space-y-1.5">
@@ -962,7 +975,9 @@ export function CatalogEntryEditor({
         onOpenChange={(open) => {
           if (!open && !deleting) setDeleteOpen(false);
         }}
-        title={row ? `Delete ${row.app}/${row.kind}/${row.key}?` : "Delete entry?"}
+        title={
+          row ? `Delete ${row.app}/${row.kind}/${row.key}?` : "Delete entry?"
+        }
         description="The entry disappears from every client on its next catalog refresh. Its final state is snapshotted to history, but there is no undo button — restoring means re-creating it."
         contentClassName="sm:max-w-3xl"
         content={

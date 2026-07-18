@@ -102,8 +102,8 @@ export default function ScraperSearchAndScrapePage() {
     >
       {/* Search toolbar */}
       <div className="flex-shrink-0 px-3 py-2 border-b border-border/50">
-        <div className="max-w-full mx-auto flex gap-2 items-end flex-wrap">
-          <div className="flex-1 min-w-[200px]">
+        <div className="max-w-full mx-auto flex flex-col sm:flex-row gap-2 sm:items-end">
+          <div className="w-full sm:flex-1 sm:min-w-[200px]">
             <Label
               htmlFor="keyword"
               className="text-xs text-muted-foreground mb-1 block"
@@ -121,60 +121,64 @@ export default function ScraperSearchAndScrapePage() {
               style={{ fontSize: "16px" }}
             />
           </div>
-          <div className="w-24">
-            <Label
-              htmlFor="maxPages"
-              className="text-xs text-muted-foreground mb-1 block"
-            >
-              Max pages
-            </Label>
-            <Input
-              id="maxPages"
-              type="number"
-              min="1"
-              max="20"
-              value={maxPages}
-              onChange={(e) => setMaxPages(e.target.value)}
-              disabled={isLoading}
-              className="h-8 text-sm"
-              style={{ fontSize: "16px" }}
-            />
-          </div>
-          <div className="flex items-center gap-1.5 pb-0.5">
-            <Switch
-              id="useCache"
-              checked={useCache}
-              onCheckedChange={setUseCache}
-              disabled={isLoading}
-            />
-            <Label htmlFor="useCache" className="text-xs">
-              Cache
-            </Label>
-          </div>
-          {allResults.length > 0 && (
-            <Button
-              onClick={handleClear}
-              variant="outline"
-              size="sm"
-              className="h-8"
-            >
-              <X className="w-3.5 h-3.5 mr-1" />
-              Clear
-            </Button>
-          )}
-          <Button
-            onClick={handleSearchAndScrape}
-            disabled={!keyword.trim() || isLoading}
-            size="sm"
-            className="h-8 gap-1.5"
-          >
-            {isLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Zap className="w-3.5 h-3.5" />
+          <div className="flex items-end gap-2 flex-wrap">
+            <div className="w-24">
+              <Label
+                htmlFor="maxPages"
+                className="text-xs text-muted-foreground mb-1 block"
+              >
+                Max pages
+              </Label>
+              <Input
+                id="maxPages"
+                type="number"
+                min="1"
+                max="20"
+                value={maxPages}
+                onChange={(e) => setMaxPages(e.target.value)}
+                disabled={isLoading}
+                className="h-8 text-sm"
+                style={{ fontSize: "16px" }}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 pb-1.5">
+              <Switch
+                id="useCache"
+                checked={useCache}
+                onCheckedChange={setUseCache}
+                disabled={isLoading}
+              />
+              <Label htmlFor="useCache" className="text-xs">
+                Cache
+              </Label>
+            </div>
+            {allResults.length > 0 && (
+              <Button
+                onClick={handleClear}
+                variant="outline"
+                size="sm"
+                className="h-8"
+              >
+                <X className="w-3.5 h-3.5 mr-1" />
+                Clear
+              </Button>
             )}
-            {isLoading ? (statusMessage ?? "Processing...") : "Search & Scrape"}
-          </Button>
+            <Button
+              onClick={handleSearchAndScrape}
+              disabled={!keyword.trim() || isLoading}
+              size="sm"
+              className="h-8 gap-1.5"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Zap className="w-3.5 h-3.5" />
+              )}
+              {isLoading
+                ? (statusMessage ?? "Processing...")
+                : "Search & Scrape"}
+            </Button>
+          </div>
         </div>
         {hasError && (
           <Alert variant="destructive" className="mt-2 py-2">

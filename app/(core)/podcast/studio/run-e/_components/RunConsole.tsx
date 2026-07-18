@@ -22,9 +22,10 @@
 //
 // Demo: replays MOCK_EVENTS through the REAL reduce() over ~45s. No backend.
 
-import Link from "next/link";
-import { ArrowLeft, AudioLines, RotateCcw } from "lucide-react";
+import { AudioLines, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { useMockRun } from "./useMockRun";
 import { Pipeline } from "./Pipeline";
 import { StageMonitor } from "./StageMonitor";
@@ -43,17 +44,11 @@ export function RunConsole() {
   const progress = Math.round(state.progress);
 
   return (
-    <div className="flex h-full flex-col">
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <header className="shrink-0 border-b border-border bg-card/60 px-3 pr-14 backdrop-blur-sm sm:px-4">
-        <div className="flex h-12 items-center gap-3">
-          <Link
-            href="/podcast/studio"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            aria-label="Back to studio"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+    <>
+      {/* ── Header (shell injection) ────────────────────────────────────── */}
+      <PageHeader>
+        <div className="flex w-full min-w-0 items-center gap-2">
+          <ChevronLeftTapButton href="/podcast/studio" ariaLabel="Back to studio" />
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <AudioLines className="h-4 w-4" />
           </span>
@@ -63,7 +58,7 @@ export function RunConsole() {
                 ? "Episode ready"
                 : state.title || "Producing your episode"}
             </h1>
-            <p className="truncate text-[11px] text-muted-foreground">
+            <p className="hidden truncate text-[11px] text-muted-foreground sm:block">
               {isDone ? (
                 "All stages complete"
               ) : (
@@ -77,7 +72,7 @@ export function RunConsole() {
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {isDone && (
-              <span className="hidden text-xs text-muted-foreground sm:inline">
+              <span className="hidden text-xs text-muted-foreground lg:inline">
                 Produced in <Elapsed startedAt={startedAt} stopped />
               </span>
             )}
@@ -88,14 +83,16 @@ export function RunConsole() {
               className="gap-1.5"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              {isDone ? "Replay" : "Restart demo"}
+              <span className="hidden sm:inline">{isDone ? "Replay" : "Restart demo"}</span>
             </Button>
           </div>
         </div>
+      </PageHeader>
 
+      <div className="flex h-full flex-col">
         {/* Live progress bar — only while running. */}
         {!isDone && (
-          <div className="pb-2.5">
+          <div className="shrink-0 px-3 pt-[calc(var(--shell-header-h)+0.5rem)] pb-2.5 sm:px-4">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
@@ -104,52 +101,52 @@ export function RunConsole() {
             </div>
           </div>
         )}
-      </header>
 
-      {/* ── Body ─────────────────────────────────────────────────────────── */}
-      {isDone ? (
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
-          <FinishedPlayer state={state} />
-        </div>
-      ) : (
-        <>
-          {/* Stacked (below lg): monitor → assets → pipeline, single scroll. */}
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto scrollbar-thin p-4 lg:hidden">
-            <div className="h-72">
-              <StageMonitor state={state} />
-            </div>
-            <Section title="Produced assets">
-              <AssetStrip images={state.images} videos={state.videos} />
-            </Section>
-            <Section title="Pipeline">
-              <Pipeline stages={state.stages} />
-            </Section>
+        {/* ── Body ─────────────────────────────────────────────────────── */}
+        {isDone ? (
+          <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin pt-[var(--shell-header-h)]">
+            <FinishedPlayer state={state} />
           </div>
-
-          {/* Pipeline rail + monitor stack (lg+). */}
-          <div className="hidden min-h-0 flex-1 lg:flex">
-            <aside className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card/40 p-4 scrollbar-thin">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Pipeline
-              </p>
-              <Pipeline stages={state.stages} />
-            </aside>
-
-            <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-              <div className="min-h-0 flex-1">
+        ) : (
+          <>
+            {/* Stacked (below lg): monitor → assets → pipeline, single scroll. */}
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto scrollbar-thin p-4 lg:hidden">
+              <div className="h-72">
                 <StageMonitor state={state} />
               </div>
-              <div className="shrink-0">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Produced assets
-                </p>
+              <Section title="Produced assets">
                 <AssetStrip images={state.images} videos={state.videos} />
-              </div>
-            </main>
-          </div>
-        </>
-      )}
-    </div>
+              </Section>
+              <Section title="Pipeline">
+                <Pipeline stages={state.stages} />
+              </Section>
+            </div>
+
+            {/* Pipeline rail + monitor stack (lg+). */}
+            <div className="hidden min-h-0 flex-1 lg:flex">
+              <aside className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card/40 p-4 scrollbar-thin">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Pipeline
+                </p>
+                <Pipeline stages={state.stages} />
+              </aside>
+
+              <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4">
+                <div className="min-h-0 flex-1">
+                  <StageMonitor state={state} />
+                </div>
+                <div className="shrink-0">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Produced assets
+                  </p>
+                  <AssetStrip images={state.images} videos={state.videos} />
+                </div>
+              </main>
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }
 

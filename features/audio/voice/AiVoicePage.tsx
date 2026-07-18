@@ -92,7 +92,7 @@ const AiVoicePage: React.FC = () => {
     }
 
     return (
-        <div className="h-full overflow-y-auto p-6 bg-background text-foreground">
+        <div className="h-full overflow-y-auto p-6 pt-[calc(var(--shell-header-h)+1rem)] bg-background text-foreground">
             <Tabs defaultValue="playground" className="w-full">
                 <TabsList className="mb-6">
                     <TabsTrigger value="playground">Voice Playground</TabsTrigger>

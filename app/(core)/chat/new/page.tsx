@@ -57,7 +57,7 @@ export default async function NewChatPage() {
 
 function NewChatLandingFallback() {
   return (
-    <div className="h-[calc(100dvh-var(--header-height,2.5rem))] overflow-hidden bg-textured">
+    <div className="h-full overflow-hidden bg-textured">
       <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
         <div className="w-full max-w-2xl flex flex-col items-center gap-7">
           <header className="flex flex-col items-center gap-1 text-center">

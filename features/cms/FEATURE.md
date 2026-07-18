@@ -258,6 +258,14 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-07-17` — **Header dedup: `SiteLayoutClient` now consumes `EntityModeHeader`** (the templated
+  agents-pattern header) instead of a hand-rolled `RouteHeader` + `CmsSiteSwitcher` composition.
+  Site-switch dropdown, mode nav, and actions are behavior-identical (switch keeps sub-view suffix);
+  mobile collapses to back + name + one `…` bottom drawer for free. Deleted `CmsSiteSwitcher.tsx`
+  (no other importers). Fixed a template bug found along the way: `EntityModeHeader`'s mobile drawer
+  routed every action through `router.push`, which silently mis-navigates on `http(s)/mailto/tel`
+  hrefs (e.g. "Open live site") — now `window.open`s external hrefs. Browser-verified desktop +
+  mobile (Pages/Components/Settings nav, dropdown, drawer, live-site link).
 - `2026-07-15` — **W2-B asset library shipped.** New `/api/cms/assets` route (see API list) +
   `CmsAssetService` + `AssetsPanel` tab on `/administration/cms-agents` (upload via
   `fileHandler.upload({preset:'web', visibility:'public'})` → durable CDN URL, grid, alt-text edit,

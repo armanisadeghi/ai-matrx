@@ -117,7 +117,12 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
         />
       </PageHeader>
 
-      <div className={cn("flex h-full overflow-hidden", className)}>
+      <div
+        className={cn(
+          "flex h-full overflow-hidden pt-[var(--shell-header-h)]",
+          className,
+        )}
+      >
         {/* Desktop Sidebar */}
         <div className="w-80 shrink-0 hidden md:block">
           <TranscriptsSidebar onCreateTranscript={handleCreateNew} />

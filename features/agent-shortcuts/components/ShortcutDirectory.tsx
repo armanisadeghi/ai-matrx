@@ -69,6 +69,8 @@ export interface ShortcutDirectoryProps {
   title?: string;
   manageHref?: string;
   manageLabel?: string;
+  /** (core) route consumers render title + primary actions in the shell PageHeader instead — set true to suppress this component's own title/action row. */
+  hideTitleBar?: boolean;
 }
 
 export function ShortcutDirectory({
@@ -76,6 +78,7 @@ export function ShortcutDirectory({
   title = "All Shortcuts",
   manageHref,
   manageLabel,
+  hideTitleBar = false,
 }: ShortcutDirectoryProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -413,36 +416,46 @@ export function ShortcutDirectory({
     <TooltipProvider>
       <div className="flex flex-col h-full overflow-hidden">
         <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-bold">{title}</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Browse every shortcut you can access. Paste a UUID to jump
-                directly.
-              </p>
+          {!hideTitleBar && (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-bold">{title}</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Browse every shortcut you can access. Paste a UUID to jump
+                  directly.
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                {manageHref && manageLabel && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={manageHref}>{manageLabel}</Link>
+                  </Button>
+                )}
+                {hasActiveFilters && (
+                  <Button onClick={clearFilters} variant="outline" size="sm">
+                    <X className="h-4 w-4 mr-2" />
+                    Clear Filters
+                  </Button>
+                )}
+                <Button
+                  onClick={() => void refetch()}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2 shrink-0">
-              {manageHref && manageLabel && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={manageHref}>{manageLabel}</Link>
-                </Button>
-              )}
-              {hasActiveFilters && (
-                <Button onClick={clearFilters} variant="outline" size="sm">
-                  <X className="h-4 w-4 mr-2" />
-                  Clear Filters
-                </Button>
-              )}
-              <Button
-                onClick={() => void refetch()}
-                variant="outline"
-                size="sm"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+          )}
+          {hideTitleBar && hasActiveFilters && (
+            <div className="flex justify-end">
+              <Button onClick={clearFilters} variant="outline" size="sm">
+                <X className="h-4 w-4 mr-2" />
+                Clear Filters
               </Button>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-3 gap-2 max-w-xl">
             <Card>
