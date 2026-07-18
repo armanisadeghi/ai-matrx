@@ -53,11 +53,9 @@ import {
   type CreateShapeResult,
 } from "./create-shape";
 
-// TODO(K3): point at the Shapes studio route (/shapes/[kind]) once it ships;
-// until then the admin kind-registry detail page is the canonical deep link.
-function kindDetailUrl(slug: string): string {
-  return `/administration/kind-registry/${encodeURIComponent(slug)}`;
-}
+// The Shapes studio detail route (/shapes/[kind]) — the user-facing home of
+// the created kind (the admin kind-registry page stays the diagnostics view).
+import { shapeDetailHref } from "@/features/content-ir/studio/constants";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -247,7 +245,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
       toast.success(`Shape "${rootSlug}" created`, {
         action: {
           label: "Open",
-          onClick: () => window.open(kindDetailUrl(rootSlug), "_blank"),
+          onClick: () => window.open(shapeDetailHref(rootSlug), "_blank"),
         },
       });
       setPendingFix(null);
@@ -394,7 +392,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
           {pendingFix && (
             <Button
               variant="outline"
-              onClick={() => window.open(kindDetailUrl(slug), "_blank")}
+              onClick={() => window.open(shapeDetailHref(slug), "_blank")}
             >
               <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
               Open kind
