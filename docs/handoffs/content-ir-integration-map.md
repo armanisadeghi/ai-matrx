@@ -28,10 +28,16 @@ Only **94 of 2,712 assistant messages (3.5%)** across **72 of 1,469 conversation
 - Test: dev-login per CLAUDE.md; `/chat` "make me 5 flashcards…" exercises the render path.
 - Chat linkage for metrics: `chat.conversation.initial_agent_id` (message-level `agent_id` is null); live agents table is `agent.definition`.
 
-## Remaining work (ranked; lanes A–D are independent, no file overlap)
+## Remaining work
 
-1. **Lane A — attach render_block skills so agents can actually emit.** Curate the high-value skills (flashcard_set, quiz_set, timeline, comparison_set, mermaid) onto default/general chat agents via `agent.definition.skill_config.included`, and/or auto-`list` render_block skills in `resolver.py` so every agent sees them by name and can `skill_get`. Backend + DB rows only. Trap: verify prompt-cache stability stays intact (additive only).
-2. **Deferred — workflow demand** (31 defs, 69 runs/30d, envelopes consumed only by Studio): plumbing done; gap is usage, not integration.
+1. **THE NORTH STAR — user-facing custom kinds (Arman, 2026-07-17, verbatim):** "The true value of these kinds can only be realized when we have it FULLY AVAILABLE for users, not for me and the admins. When we can have OUR agent we create that will do this for a user, then we will have massive adoption: 1. Create the kind based on the user's data. 2. Create the custom component for the user. 3. Create the agent skills and render blocks for the user. 4. Then, the user can test it out and the real magic is when the user sees a COMPLETELY customized, beautiful component that they designed with an agent." Requires D4 (sandboxed `source='db'` kind components) + a creator agent + a user test surface.
+2. **Deferred — workflow launch** (Arman): "I won't put any time into that system until I'm certain that the inputs and outputs for all fully and properly use the system and there is nothing left to do."
+
+## Rulings (Arman, 2026-07-17)
+
+- **Lane A is cancelled, not pending.** "We would never auto-list a tool like that for all agents… 95% of our calls are designed to be highly deterministic and with small models." Production agents are not touched until the system is fully complete ("I can't roll out a system that is only partially created"). Skill availability = opt-in affordances (the chips) only.
+- The education-agent concentration is recency, not signal — they were simply the agents created while this feature was under development.
+- The convert-style tool is liked and "we would use it in many places" — but manual, never auto.
 
 ## Done
 
@@ -39,6 +45,3 @@ Only **94 of 2,712 assistant messages (3.5%)** across **72 of 1,469 conversation
 - Lane B — "Bind to a kind" picker + matches/drift indicator in the builder's Output Schema tab — see `features/agents/components/settings-management/output-schema/` (kindBinding.ts golden-tested byte-equal to flashcard_set's live `emitted_block_schema`).
 - Lane C — education content rendering is kind-aware (`onboard/SummaryDetail.tsx` → `MarkdownStream`; all other surfaces already kind-correct) — see `features/education/FEATURE.md`.
 
-## Decisions needed
-
-- **Lane A curation.** Situation: attaching skills changes which agents advertise shape emission; "which default agents" is product curation. Decide: bless a curated default set (the general chat agents) vs auto-`list` for all agents vs both. Best-practice lean recorded in lane brief: auto-`list` platform-wide (discovery without prompt bloat) + `included` for a small curated set.
