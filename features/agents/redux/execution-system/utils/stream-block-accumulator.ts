@@ -39,6 +39,7 @@ import {
 } from "@/features/content-ir/session/session-manager";
 import type { ParseSession } from "@/features/content-ir/session/parse-session";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
+import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import {
   IR_ENVELOPE_KEY,
   type CanonicalBlockIR,
@@ -1054,12 +1055,29 @@ export class StreamBlockAccumulator {
   private irOpenRegion(): void {
     const identity = `${this.requestId}:${this.currentBlockId}`;
     try {
-      // Warm the user-kind tier once per app session (memoized, non-blocking).
+      // Warm BOTH registries once per app session (memoized, non-blocking):
+      // schemas alone can't render a db/cloud kind — without the component
+      // rows, `resolveComponent` answers null and the db flip never fires
+      // on the streaming path (the "shows as JSON" bug).
       void kindRegistry.ensureWarm();
+      void componentRegistry.ensureWarm();
       this.irSession = openParseSession({
         identity,
         schemas: kindRegistry.resolver(),
         onSchemaArrived: (deliver) => kindRegistry.onSchemaArrived(deliver),
+        // EAGER LIGHTWEIGHT FETCH: the instant a cloud kind is identified
+        // mid-stream, fire the schema cold-fetch (the parser also requests
+        // it — deduped) AND the targeted component fetch in parallel, so by
+        // the time the region completes both registries can answer.
+        onEvent: (event) => {
+          if (
+            event.type === "kind_identified" ||
+            event.type === "pending_schema"
+          ) {
+            kindRegistry.requestSchema(event.kind);
+            componentRegistry.requestComponent(event.kind, "web", "output");
+          }
+        },
       });
       this.irIdentities.push(identity);
       this.irRegionLineCount = 0;

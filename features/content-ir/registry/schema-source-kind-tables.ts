@@ -143,6 +143,7 @@ export function reconstructKindRegistry(
           ? { isActive: d.is_active }
           : {}),
         family: kindFamilyFromMetadata(d.metadata ?? null),
+        loadingComponent: kindLoadingComponentFromMetadata(d.metadata ?? null),
       });
     } catch (err) {
       console.warn(
@@ -193,16 +194,36 @@ export async function listKindSchemasFromTables(): Promise<BlockSchemaRegistry> 
   );
 }
 
+/** Cold-tier result: the schema plus the render-relevant definition metadata. */
+export interface KindSchemaAndMeta {
+  schema: KindSchema | null;
+  /** `metadata.loading_component` — loading-library slug (null = default). */
+  loadingComponent: string | null;
+}
+
 /** Cold tier: one kind by slug (+ its edges, child ids resolved), null when absent. */
 export async function getKindSchemaBySlugFromTables(
   kind: string,
 ): Promise<KindSchema | null> {
+  const result = await getKindSchemaAndMetaBySlugFromTables(kind);
+  return result?.schema ?? null;
+}
+
+/**
+ * Cold tier with render metadata: same single-kind read, but ALSO returns the
+ * definition's `loading_component` slug so the streaming loading layer can
+ * pick the right loader without a second round-trip. Null when the kind slug
+ * does not exist.
+ */
+export async function getKindSchemaAndMetaBySlugFromTables(
+  kind: string,
+): Promise<KindSchemaAndMeta | null> {
   const supabase = await getSupabase();
 
   const { data: def, error: defErr } = await supabase
     .schema("content_ir")
     .from("kind_definition")
-    .select("id, kind, label, data")
+    .select("id, kind, label, data, metadata")
     .eq("kind", kind)
     .is("deleted_at", null)
     .maybeSingle();
@@ -247,19 +268,24 @@ export async function getKindSchemaBySlugFromTables(
     }
   }
 
+  const loadingComponent = kindLoadingComponentFromMetadata(def.metadata ?? null);
   try {
-    return storageToKindSchema(def.kind, {
-      data: asStoredData(def.data, def.kind),
-      edges: specs,
-    });
+    return {
+      schema: storageToKindSchema(def.kind, {
+        data: asStoredData(def.data, def.kind),
+        edges: specs,
+      }),
+      loadingComponent,
+    };
   } catch (err) {
-    // A malformed kind reads as absent (→ compiled-floor fallback), never a throw.
+    // A malformed kind reads as schema-absent (→ compiled-floor fallback),
+    // never a throw — the loading slug still surfaces.
     console.warn(
       `[content_ir] cold-fetch skipped malformed kind "${kind}": ${
         err instanceof Error ? err.message : String(err)
       }`,
     );
-    return null;
+    return { schema: null, loadingComponent };
   }
 }
 
@@ -292,6 +318,21 @@ export const GENERATED_CONTRACT_FAMILY_VALUES: ReadonlySet<string> = new Set([
  * stamp `agent_io` / `tool_io` / `action_io` / `workflow_io`; some display
  * groups stamp e.g. `render_block`). Null for plain display kinds.
  */
+/**
+ * `kind_definition.metadata.loading_component` — the loading-library slug the
+ * render seam shows while an instance of this kind streams in (see
+ * features/content-ir/react/loading/). Null = the generic default.
+ */
+export function kindLoadingComponentFromMetadata(
+  metadata: Json | null,
+): string | null {
+  if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const slug = (metadata as Record<string, Json | undefined>).loading_component;
+  return typeof slug === "string" && slug.length > 0 ? slug : null;
+}
+
 export function kindFamilyFromMetadata(metadata: Json | null): string | null {
   if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
     return null;

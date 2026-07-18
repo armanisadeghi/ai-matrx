@@ -71,4 +71,11 @@ export interface KindDefinition {
   persistence?: { persistStructured: boolean };
   /** Future XML tags / kind aliases resolving to this kind. */
   discriminatorAliases?: string[];
+  /**
+   * Loading-library slug (`kind_definition.metadata.loading_component`) —
+   * which of the ~20 hardcoded loading components renders while this kind's
+   * instance streams in / its schema+component fetch is in flight. Null or
+   * unknown slugs fall back to the generic structured skeleton.
+   */
+  loadingComponent?: string | null;
 }

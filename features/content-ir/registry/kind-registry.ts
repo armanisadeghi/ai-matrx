@@ -21,7 +21,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { KindSchema } from "../core/kind-schema.types";
 import type { SchemaResolver } from "../core/kind-parser";
 import {
-  getKindSchemaBySlugFromTables,
+  getKindSchemaAndMetaBySlugFromTables,
   listKindSchemasFromTables,
 } from "./schema-source-kind-tables";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
@@ -35,6 +35,14 @@ class KindRegistry {
   private readonly inFlight = new Set<string>();
   private readonly misses = new Set<string>();
   private warmPromise: Promise<void> | null = null;
+  /**
+   * Monotonic registry version — bumps whenever definitions change (warm
+   * ingest, cold arrival, upsert). The render seam's repaint hook
+   * (useContentIrRegistryVersion) subscribes to this so a schema that lands
+   * AFTER a region finalized re-runs the kind route on the frozen envelope.
+   */
+  private version = 0;
+  private readonly versionListeners = new Set<() => void>();
 
   constructor(systemKinds: KindDefinition[]) {
     for (const def of systemKinds) {
@@ -71,13 +79,36 @@ class KindRegistry {
   upsertDefinition(def: KindDefinition): void {
     const existing = this.defs.get(def.kind);
     this.defs.set(def.kind, { ...existing, ...def });
+    this.bumpVersion();
+  }
+
+  /** Current registry version (repaint snapshot). */
+  getVersion(): number {
+    return this.version;
+  }
+
+  /** Subscribe to ANY definition change. Returns the unsubscribe. */
+  subscribeVersion(listener: () => void): () => void {
+    this.versionListeners.add(listener);
+    return () => {
+      this.versionListeners.delete(listener);
+    };
+  }
+
+  private bumpVersion(): void {
+    this.version += 1;
+    for (const listener of this.versionListeners) listener();
   }
 
   /** One list fetch per app session — resolves when user kinds are loaded. */
   ensureWarm(): Promise<void> {
     if (!this.warmPromise) {
       this.warmPromise = listKindSchemasFromTables()
-        .then(({ schemas }) => {
+        .then(({ schemas, entries }) => {
+          const loadingBySlug = new Map<string, string | null>();
+          for (const entry of entries) {
+            loadingBySlug.set(entry.slug, entry.loadingComponent ?? null);
+          }
           for (const [kind, schema] of Object.entries(schemas)) {
             const existing = this.defs.get(kind);
             // DB rows override the SCHEMA (content_ir is the source of
@@ -91,8 +122,10 @@ class KindRegistry {
               schema,
               schemaSource: "content_ir",
               tier: existing?.tier ?? "warm",
+              loadingComponent: loadingBySlug.get(kind) ?? null,
             });
           }
+          this.bumpVersion();
         })
         .catch((error) => {
           // Warm load failing must not kill streaming — cold fetches and
@@ -125,18 +158,19 @@ class KindRegistry {
         let schema = this.getSchema(kind) ?? null;
 
         if (!schema) {
-          schema = await getKindSchemaBySlugFromTables(kind);
-        }
-
-        if (schema) {
-          this.upsertDefinition({
-            kind,
-            schema,
-            schemaSource: "content_ir",
-            tier: "cold",
-          });
-        } else {
-          this.misses.add(kind);
+          const result = await getKindSchemaAndMetaBySlugFromTables(kind);
+          schema = result?.schema ?? null;
+          if (schema) {
+            this.upsertDefinition({
+              kind,
+              schema,
+              schemaSource: "content_ir",
+              tier: "cold",
+              loadingComponent: result?.loadingComponent ?? null,
+            });
+          } else {
+            this.misses.add(kind);
+          }
         }
 
         this.notifyArrival(kind, schema);

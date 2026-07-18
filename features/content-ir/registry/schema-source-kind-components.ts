@@ -155,6 +155,83 @@ export async function listKindComponentsFromTables(): Promise<
   const slugById = new Map<string, string>();
   for (const d of defs ?? []) slugById.set(d.id, d.kind);
 
+  return projectRows(rows, slugById);
+}
+
+/**
+ * COLD tier — the eager lightweight single-kind fetch (streaming path).
+ * The moment a cloud kind is identified mid-stream, this pulls ONLY that
+ * kind's resolver rows with ONLY the render-essential columns (the same
+ * columns the warm list reads — component body, transform, config, trust
+ * flags, freshness; nothing else). Two small reads: slug → definition id,
+ * then that definition's component rows. Returns [] for an unknown kind.
+ */
+export async function getKindComponentBySlug(
+  kind: string,
+  platform?: string,
+): Promise<KindComponentProjection[]> {
+  const supabase = await getSupabase();
+
+  const { data: def, error: defErr } = await supabase
+    .schema("content_ir")
+    .from("kind_definition")
+    .select("id, kind")
+    .eq("kind", kind)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (defErr) {
+    throw new KindComponentTablesError(
+      `Failed to resolve kind "${kind}" for component fetch: ${defErr.message}`,
+    );
+  }
+  if (!def) return [];
+
+  let query = supabase
+    .schema("content_ir")
+    .from("kind_component")
+    .select(
+      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at",
+    )
+    .eq("kind_definition_id", def.id)
+    .is("deleted_at", null)
+    .order("is_default", { ascending: false })
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  if (platform) {
+    query = query.eq("platform", platform);
+  }
+  const { data: rows, error } = await query;
+  if (error) {
+    throw new KindComponentTablesError(
+      `Failed to fetch kind_component for "${kind}": ${error.message}`,
+    );
+  }
+  if (!rows || rows.length === 0) return [];
+
+  return projectRows(rows, new Map([[def.id, def.kind]]));
+}
+
+type RawKindComponentRow = {
+  id: string;
+  kind_definition_id: string;
+  platform: string;
+  role: string;
+  component_key: string;
+  source: string;
+  is_active: boolean;
+  config: Json;
+  component_source: string | null;
+  props_transform: string | null;
+  pinned_kind_version: number | null;
+  updated_at: string;
+  created_at: string;
+};
+
+function projectRows(
+  rows: RawKindComponentRow[],
+  slugById: Map<string, string>,
+): KindComponentProjection[] {
   const out: KindComponentProjection[] = [];
   // Re-apply the deterministic contract client-side (defense in depth — the
   // SQL order above should already match; sortKindComponentRows is the truth).

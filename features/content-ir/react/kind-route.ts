@@ -198,6 +198,14 @@ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
   const kind = envelope.root.kind;
   if (!kind) return block; // raw / pending — legacy rendering stands
 
+  // An identified kind whose SCHEMA is still cold-fetching (pending_schema)
+  // has no compliant value yet — routing now would hand a component early
+  // scalars at best. The loading layer (BlockRenderer's pending stage, keyed
+  // by the kind's loading_component) owns this window; the parser upgrades
+  // in place the moment the schema lands, and end() converts a lost race to
+  // a kind-preserving raw — both of which route normally.
+  if (envelope.root.kindState === "pending_schema") return block;
+
   const def = kindRegistry.getDefinition(kind);
   const resolution = resolveComponent(kind, "web", "output");
 
@@ -277,6 +285,16 @@ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
   // study_pack_set, schema_showcase) without pretending they have renderers.
   if (def) {
     return routeToGeneric(block, resolution ? "inactive" : "no-component");
+  }
+
+  // A kind PRESERVED through a schema-availability raw fallback: the region
+  // declared `__kind`, but the schema never arrived before the region ended
+  // (cold fetch lost the race, or the kind has no definition row). The shape
+  // claims to be structured content, so it renders as the generic structured
+  // viewer — never a raw JSON dump — and the repaint hook upgrades it to the
+  // real component the moment the registries learn better.
+  if (envelope.root.kindState === "raw") {
+    return routeToGeneric(block, "no-component");
   }
 
   // A kind slug the platform has NO definition for (typo, foreign emitter, a

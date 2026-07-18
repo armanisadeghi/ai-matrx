@@ -82,6 +82,12 @@ export type BlockSchemaEntry = {
    * Null/undefined = plain display kind. content_ir source only.
    */
   family?: string | null;
+  /**
+   * Loading-library slug from `kind_definition.metadata.loading_component`
+   * (which hardcoded loading component to show while an instance streams).
+   * Null/undefined = generic default. content_ir source only.
+   */
+  loadingComponent?: string | null;
 };
 
 export type BlockSchemaRegistry = {

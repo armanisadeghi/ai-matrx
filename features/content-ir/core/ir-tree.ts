@@ -50,6 +50,30 @@ export class IrTree {
   private readonly rawPaths = new Map<string, string>(); // pathKey → reason
   private readonly dirty = new Set<string>();
 
+  /**
+   * KIND PRESERVATION (streaming db/cloud kinds): pathKey → identified kind
+   * for nodes whose kind is KNOWN (kind_identified / pending_schema) but that
+   * have no snapshot node yet because the schema is still cold-fetching.
+   * Without this, the envelope reports `kind: ""` for the whole pending
+   * window and the render seam can only show raw JSON.
+   */
+  private readonly identifiedKinds = new Map<string, string>();
+  /** pathKeys currently waiting on a schema cold fetch. */
+  private readonly pendingSchemaPaths = new Set<string>();
+  /**
+   * Early top-level scalar fields (title, loading_message, …) captured for
+   * identified-but-schema-pending nodes — the loading-component fuel. Scalars
+   * only (no live parser references can escape through here). Superseded the
+   * moment a real snapshot node exists.
+   */
+  private readonly earlyFields = new Map<string, Record<string, unknown>>();
+  /**
+   * pathKey → identified kind preserved through a SCHEMA-AVAILABILITY raw
+   * fallback (parser stamped `kind` on the raw_object event). Structural raws
+   * (missing __kind, duplicate key, validation failure) never land here.
+   */
+  private readonly rawKinds = new Map<string, string>();
+
   private regionStatus: "streaming" | "complete" | "error" = "streaming";
   private errorReason: string | null = null;
   private rootRawValue: Record<string, unknown> | null = null;
@@ -61,7 +85,36 @@ export class IrTree {
 
   applyEvent(event: KindStreamEvent): void {
     switch (event.type) {
+      case "kind_identified": {
+        this.identifiedKinds.set(irPathKey(event.path), event.kind);
+        this.dirty.add(irPathKey(event.path));
+        return;
+      }
+      case "pending_schema": {
+        const pathKey = irPathKey(event.path);
+        this.identifiedKinds.set(pathKey, event.kind);
+        this.pendingSchemaPaths.add(pathKey);
+        this.dirty.add(pathKey);
+        return;
+      }
+      case "field": {
+        // Only meaningful pre-schema: an identified node with NO snapshot yet
+        // accumulates its early scalar values for the loading component.
+        const parentKey = irPathKey(event.path.slice(0, -1));
+        if (this.nodes.has(parentKey)) return;
+        if (!this.identifiedKinds.has(parentKey)) return;
+        const v = event.value;
+        if (v !== null && typeof v === "object") return; // scalars only
+        const bucket = this.earlyFields.get(parentKey) ?? {};
+        bucket[event.key] = v;
+        this.earlyFields.set(parentKey, bucket);
+        this.dirty.add(parentKey);
+        return;
+      }
       case "block_snapshot": {
+        const pathKey = irPathKey(event.path);
+        this.pendingSchemaPaths.delete(pathKey);
+        this.earlyFields.delete(pathKey);
         this.upsertNode(event.path, {
           kind: event.kind,
           value: event.value,
@@ -71,6 +124,10 @@ export class IrTree {
         return;
       }
       case "raw_object": {
+        const pathKey = irPathKey(event.path);
+        this.pendingSchemaPaths.delete(pathKey);
+        this.earlyFields.delete(pathKey);
+        if (event.kind) this.rawKinds.set(pathKey, event.kind);
         this.markRaw(event.path, event.reason, event.value);
         return;
       }
@@ -304,20 +361,41 @@ export class IrTree {
 
     const isRaw = rootRawReason !== null;
 
+    // KIND PRESERVATION: a root that degraded raw purely because its schema
+    // never arrived (rawKinds) keeps its identified kind — the render seam
+    // routes it to the generic viewer / db component instead of raw JSON, and
+    // a late schema/component arrival can upgrade it via repaint. Structural
+    // raws (no entry in rawKinds) stay kind-less exactly as before. While
+    // STREAMING with a known-but-cold kind (no node yet), the identified kind
+    // + early scalar fields surface so the loading layer can render.
+    const identifiedKind = this.identifiedKinds.get("") ?? "";
+    const rootKind = isRaw
+      ? (this.rawKinds.get("") ?? "")
+      : (rootNode?.kind ?? (this.completedKind || identifiedKind));
+
     const root: IrStructuredNode = {
       role: "structured",
-      kind: isRaw ? "" : (rootNode?.kind ?? this.completedKind),
+      kind: rootKind,
       kindState: isRaw
         ? "raw"
         : rootNode
           ? rootNode.kindState
-          : this.regionStatus === "streaming"
-            ? "pending_kind"
-            : "raw",
+          : this.pendingSchemaPaths.has("")
+            ? "pending_schema"
+            : this.regionStatus === "streaming"
+              ? identifiedKind
+                ? "pending_schema"
+                : "pending_kind"
+              : "raw",
       discriminator: JSON_DISCRIMINATOR,
       path: [],
       status: this.regionStatus,
-      value: rootNode?.value ?? this.rootRawValue ?? {},
+      value:
+        rootNode?.value ??
+        this.rootRawValue ??
+        // Copy: the early-fields bucket keeps mutating as fields arrive; the
+        // envelope must be freezable (Redux dev-mode immutability).
+        (this.earlyFields.has("") ? { ...this.earlyFields.get("") } : {}),
       residue,
     };
 

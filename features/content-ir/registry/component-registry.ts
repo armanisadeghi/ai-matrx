@@ -29,6 +29,7 @@ import "./kind-registry";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { JsonObject } from "@/types/json";
 import {
+  getKindComponentBySlug,
   listKindComponentsFromTables,
   type KindComponentProjection,
 } from "./schema-source-kind-components";
@@ -83,6 +84,11 @@ export class ComponentRegistry {
   private lastRefreshAt = 0;
   private refreshPromise: Promise<void> | null = null;
   private readonly listeners = new Set<() => void>();
+  /** Cold single-kind fetch dedupe (streaming eager path). */
+  private readonly coldInFlight = new Set<string>();
+  private readonly coldMisses = new Set<string>();
+  /** Monotonic db-tier version — the repaint hook's snapshot key. */
+  private version = 0;
 
   /**
    * Entries arrive as a THUNK, resolved on first use: the compiled bootstrap
@@ -159,10 +165,19 @@ export class ComponentRegistry {
    * wins: rows arrive is_default-first / sort_order-asc from the source.
    */
   ingestDbRows(rows: KindComponentProjection[]): void {
+    let changed = false;
     for (const row of rows) {
       const key = keyOf(row.kind, row.platform, row.role);
-      if (!this.db.has(key)) this.db.set(key, row);
+      if (!this.db.has(key)) {
+        this.db.set(key, row);
+        changed = true;
+      }
     }
+    // Warm/cold ingest is a resolver-tier change the render seam must see —
+    // a db component landing AFTER a region finalized re-runs the route via
+    // the repaint hook. (Previously only refresh replacements notified, so
+    // the streaming path could never flip to a db component late.)
+    if (changed) this.notifyChanged();
   }
 
   /**
@@ -172,8 +187,61 @@ export class ComponentRegistry {
    */
   replaceDbRows(rows: KindComponentProjection[]): void {
     this.db.clear();
-    this.ingestDbRows(rows);
+    for (const row of rows) {
+      const key = keyOf(row.kind, row.platform, row.role);
+      if (!this.db.has(key)) this.db.set(key, row);
+    }
+    // A wholesale replace ALWAYS notifies (deletions/flips count too).
+    this.notifyChanged();
+  }
+
+  /** Current db-tier version (repaint snapshot). */
+  getVersion(): number {
+    return this.version;
+  }
+
+  private notifyChanged(): void {
+    this.version += 1;
     for (const listener of this.listeners) listener();
+  }
+
+  /**
+   * The eager lightweight single-kind fetch (streaming path): the moment a
+   * cloud kind is identified mid-stream, pull ONLY that kind's resolver rows
+   * (render-essential columns only) and ingest them so `resolveComponent`
+   * can answer before — or shortly after — the region completes. Deduped
+   * in-flight and by known-miss; kinds already resolvable are skipped.
+   * Fire-and-forget; failures are loud (the warm list remains the backstop).
+   */
+  requestComponent(kind: string, platform: string, role: ComponentRole): void {
+    if (this.resolve(kind, platform, role)) return;
+    if (this.coldInFlight.has(kind) || this.coldMisses.has(kind)) return;
+    this.coldInFlight.add(kind);
+
+    void (async () => {
+      try {
+        const rows = await getKindComponentBySlug(kind, platform);
+        if (rows.length === 0) {
+          this.coldMisses.add(kind);
+          return;
+        }
+        this.ingestDbRows(rows);
+      } catch (error) {
+        const message = `component-registry cold fetch failed for "${kind}": ${
+          error instanceof Error ? error.message : String(error)
+        }`;
+        console.error(`[content-ir] ${message}`);
+        captureError({
+          source: "content-ir",
+          message,
+          name: error instanceof Error ? error.name : undefined,
+          stack: error instanceof Error ? error.stack : undefined,
+          raw: error,
+        });
+      } finally {
+        this.coldInFlight.delete(kind);
+      }
+    })();
   }
 
   /**

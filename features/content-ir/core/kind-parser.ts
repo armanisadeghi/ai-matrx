@@ -123,6 +123,16 @@ export type KindStreamEvent =
       path: JsonPath;
       value: unknown;
       reason: string;
+      /**
+       * The kind that WAS identified for this node before it degraded raw —
+       * present ONLY for schema-availability failures ("no schema registered"
+       * for an identified/declared kind), never for structural failures
+       * (missing __kind, duplicate keys, schema violations). Consumers use it
+       * to preserve a known-but-unrenderable kind on the envelope so the
+       * render seam can route to the generic viewer (or upgrade when the
+       * schema arrives late) instead of dumping raw JSON.
+       */
+      kind?: string;
       at: number;
     }
   | {
@@ -285,6 +295,7 @@ export class KindStreamParser {
           safeCopy(value),
           `No block schema registered for "${kind}".`,
           at,
+          kind,
         );
       }
     }
@@ -327,6 +338,7 @@ export class KindStreamParser {
           safeCopy(value ?? {}),
           `No block schema registered for "${kind}".`,
           at,
+          kind,
         );
         this.closedPendingPaths.delete(pathKey);
         continue;
@@ -972,6 +984,7 @@ export class KindStreamParser {
         objectValue,
         `No block schema registered for "${kind}".`,
         at,
+        kind,
       );
       return;
     }
@@ -1014,6 +1027,7 @@ export class KindStreamParser {
         objectValue,
         `No block schema registered for "${kind}".`,
         at,
+        kind,
       );
       return;
     }
@@ -1115,6 +1129,7 @@ export class KindStreamParser {
     value: unknown,
     reason: string,
     at: number,
+    identifiedKind?: string,
   ): void {
     const pathKey = this.pathKey(path);
     if (this.rawObjectPaths.has(pathKey)) return;
@@ -1126,6 +1141,7 @@ export class KindStreamParser {
       path,
       value,
       reason,
+      ...(identifiedKind !== undefined && { kind: identifiedKind }),
       at,
     });
   }
@@ -1165,7 +1181,17 @@ export class KindStreamParser {
       return;
     }
 
-    if (!this.isAllowedSchemaField(parentPath, fieldKey, objectKind)) {
+    // PENDING-SCHEMA EARLY FIELDS: an identified kind whose schema hasn't
+    // arrived yet (cold fetch in flight) cannot validate fields — but its
+    // early top-level values (title, loading_message, …) are exactly what a
+    // loading component needs to render meaningfully DURING the wait. Emit
+    // them un-validated; once the schema lands, snapshots take over and the
+    // compliant value supersedes anything shown early.
+    const schemaResolved = this.lookupSchema(objectKind) !== undefined;
+    if (
+      schemaResolved &&
+      !this.isAllowedSchemaField(parentPath, fieldKey, objectKind)
+    ) {
       return;
     }
 

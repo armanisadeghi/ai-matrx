@@ -56,10 +56,31 @@ describe("applyIrKindRoute", () => {
     expect(applyIrKindRoute(block)).toBe(block);
   });
 
-  it("passes through raw/unregistered kinds by reference", () => {
+  it("routes a DECLARED-but-unregistered kind to the generic viewer (never raw JSON)", () => {
+    // The kind was identified from `__kind` but no schema exists — a
+    // known-but-unrenderable shape. The envelope preserves the kind through
+    // the raw fallback, and the route sends it to the generic structured
+    // viewer with the unverified affordance (streaming db-kinds mandate).
     const envelope = envelopeFor(
       JSON.stringify({ __kind: "not_registered_anywhere", a: 1 }),
     );
+    expect(envelope.root.kind).toBe("not_registered_anywhere");
+    expect(envelope.root.kindState).toBe("raw");
+    const block = {
+      type: "code",
+      content: "x",
+      metadata: { [IR_ENVELOPE_KEY]: envelope },
+    };
+    const routed = applyIrKindRoute(block);
+    expect(routed.type).toBe("generic_structured");
+    expect(
+      (routed.metadata as Record<string, unknown>).__ir_route,
+    ).toMatchObject({ by: "generic", unverified: true });
+  });
+
+  it("passes through genuinely kind-less raw JSON by reference (no __kind → legacy rendering)", () => {
+    const envelope = envelopeFor(JSON.stringify({ a: 1, b: [2, 3] }));
+    expect(envelope.root.kind).toBe("");
     const block = {
       type: "code",
       content: "x",
