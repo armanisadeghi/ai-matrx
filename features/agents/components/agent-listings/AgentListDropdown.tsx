@@ -24,8 +24,13 @@ import { AgentSortPanel } from "./core/AgentSortPanel";
 import { AgentCategoriesPanel } from "./core/AgentCategoriesPanel";
 import { AgentTagsPanel } from "./core/AgentTagsPanel";
 import { AgentMobileSubView } from "./core/AgentMobileSubView";
-import { PANEL_HEIGHT, LIST_MAX_HEIGHT } from "./core/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { RightPanel } from "./core/types";
+import { PANEL_HEIGHT, LIST_MAX_HEIGHT } from "./core/types";
 
 const CONSUMER_ID = "agent-list-dropdown";
 
@@ -40,6 +45,8 @@ interface AgentListDropdownProps {
   noBorder?: boolean;
   /** Use a compact (h-5) trigger instead of the default h-7. */
   compact?: boolean;
+  /** Route-scoped agent id — highlights + pins the current agent in the list. */
+  activeAgentId?: string | null;
   /**
    * Which side the desktop popover opens toward. Defaults to Radix's "bottom".
    * Pass "right" when the trigger lives in a narrow vertical rail (e.g. the
@@ -57,6 +64,7 @@ export function AgentListDropdown({
   triggerSlot,
   noBorder = false,
   compact = false,
+  activeAgentId: activeAgentIdProp,
   contentSide,
 }: AgentListDropdownProps) {
   const isMobile = useIsMobile();
@@ -76,24 +84,41 @@ export function AgentListDropdown({
     agents,
     isLoading,
     activeAgentId,
+    pinnedAgent,
     allCategories,
     allTags,
     consumer,
     tabCounts,
     activeFilterCount,
     hoveredAgent,
+    setHoveredAgent,
     ensureLoaded,
     handleSelectAgent: coreSelectAgent,
     handleAgentHover: coreAgentHover,
     handleAgentHoverEnd: coreAgentHoverEnd,
     handleDetailPanelMouseEnter,
     handleDetailPanelMouseLeave: coreDetailMouseLeave,
-  } = useAgentListCore({ consumerId: CONSUMER_ID, onSelect, navigateTo });
+  } = useAgentListCore({
+    consumerId: CONSUMER_ID,
+    onSelect,
+    navigateTo,
+    activeAgentIdOverride: activeAgentIdProp,
+  });
+
+  const showAssignedTooltip =
+    Boolean(activeAgentId) &&
+    label.trim().length > 0 &&
+    label !== "Select an agent" &&
+    label !== "Agents";
 
   const handleOpen = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (nextOpen) {
       ensureLoaded();
+      if (pinnedAgent && !isMobile) {
+        setHoveredAgent(pinnedAgent);
+        setRightPanel("detail");
+      }
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setRightPanel(null);
@@ -151,8 +176,9 @@ export function AgentListDropdown({
 
   const hasRightPanel = rightPanel !== null;
 
-  const trigger = triggerSlot ?? (
+  const triggerButton = triggerSlot ?? (
     <button
+      type="button"
       className={cn(
         "inline-flex items-center rounded-md text-xs font-medium transition-colors",
         "bg-background hover:bg-muted/50 text-foreground/80 hover:text-foreground",
@@ -161,9 +187,7 @@ export function AgentListDropdown({
         className,
       )}
     >
-      <span className="truncate max-w-[200px]" title={label}>
-        {label}
-      </span>
+      <span className="truncate max-w-[200px]">{label}</span>
       {activeFilterCount > 0 && (
         <span className="flex items-center justify-center w-4 h-4 rounded-md bg-primary text-primary-foreground text-[10px]">
           {activeFilterCount}
@@ -172,6 +196,24 @@ export function AgentListDropdown({
       <ChevronDown className="w-3 h-3 text-muted-foreground/60" />
     </button>
   );
+
+  const wrapTrigger = (
+    Trigger: typeof DrawerTrigger | typeof PopoverTrigger,
+  ) => {
+    if (!showAssignedTooltip) {
+      return <Trigger asChild>{triggerButton}</Trigger>;
+    }
+    return (
+      <Tooltip open={open ? false : undefined}>
+        <Trigger asChild>
+          <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
+        </Trigger>
+        <TooltipContent side="bottom" className="max-w-xs">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
 
   const listPanel = (
     <AgentListContent
@@ -194,6 +236,8 @@ export function AgentListDropdown({
       onFilterChipClick={handleFilterChipClick}
       rightPanel={rightPanel}
       tabCounts={tabCounts}
+      pinnedAgent={pinnedAgent}
+      listOpen={open}
     />
   );
 
@@ -201,7 +245,7 @@ export function AgentListDropdown({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={handleOpen}>
-        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+        {wrapTrigger(DrawerTrigger)}
         <DrawerContent className="h-[85dvh]">
           <DrawerTitle className="sr-only">Select Agent</DrawerTitle>
           <div className="flex flex-col overflow-hidden flex-1 min-h-0">
@@ -255,7 +299,7 @@ export function AgentListDropdown({
   // a stationary, reachable target.
   return (
     <Popover open={open} onOpenChange={handleOpen} modal={false}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      {wrapTrigger(PopoverTrigger)}
       <PopoverContent
         side={contentSide}
         align="start"

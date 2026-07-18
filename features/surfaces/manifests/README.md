@@ -10,7 +10,11 @@ This directory is the **single source of truth**. The DB is a synced reflection.
 2. **Declare the manifest.** Spread baseline values where they apply, append surface-specific values.
 
    ```ts
-   import type { SurfaceManifest, SurfaceValue, SurfaceScopePayload } from "@/features/surfaces/types";
+   import type {
+     SurfaceManifest,
+     SurfaceValue,
+     SurfaceScopePayload,
+   } from "@/features/surfaces/types";
    import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
    const surfaceSpecific: SurfaceValue[] = [
@@ -54,6 +58,12 @@ This directory is the **single source of truth**. The DB is a synced reflection.
 - **`alwaysAvailable: true`** — only set when the surface code _will_ populate this on every launch. Most things are `false`.
 - **`typicalCharCount`** — rough average after stringification. Binding UIs use this to warn when bound to a large value.
 - **`valueType`** — drives the binding UI input type. Almost everything stringifies for LLMs.
+- **`evidenceSources`** — activates the **Document Evidence System** when a
+  surface already knows a `processed_document_id`. The universal launcher adds
+  the lazy processed-document context pointer before mappings run, so clean/raw
+  text, RAG, selected PDF pages, and verification tools do not depend on an
+  agent-specific binding. Declare the source on the parent manifest; child
+  surfaces inherit it.
 
 ## Removing a manifest
 

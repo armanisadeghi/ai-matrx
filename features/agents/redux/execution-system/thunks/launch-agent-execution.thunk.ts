@@ -38,6 +38,7 @@ import {
 } from "@/features/surfaces/utils/merge-value-mappings";
 import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import {
   promptForValues,
   type ValuePromptField,
@@ -306,10 +307,14 @@ export const launchAgentExecution = createAsyncThunk<
   // surface — is left untouched so we don't fabricate a surface where there is
   // none. See features/surfaces/utils/baseline-scope.ts.
   const surfaceName = runtime?.surfaceName;
-  const applicationScope =
+  const baselineApplicationScope =
     runtime?.applicationScope !== undefined || surfaceName
       ? withBaselineScope(runtime?.applicationScope)
       : undefined;
+  const applicationScope =
+    surfaceName && baselineApplicationScope
+      ? withSurfaceDocumentEvidence(surfaceName, baselineApplicationScope)
+      : baselineApplicationScope;
   const userInput = runtime?.userInput;
   const originalText = runtime?.originalText;
   const widgetHandleId = runtime?.widgetHandleId;

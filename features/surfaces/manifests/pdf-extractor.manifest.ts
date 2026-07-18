@@ -188,6 +188,14 @@ const surfaceSpecific: SurfaceValue[] = [
 export const pdfExtractorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/pdf-extractor",
   label: "PDF Extractor",
+  evidenceSources: [
+    {
+      kind: "processed_document",
+      idValue: "processed_document_id",
+      fileIdValue: "file_id",
+      labelValue: "filename",
+    },
+  ],
   values: mergeBaselineValues(
     // Registry also injects the full baseline set. These overrides win so
     // the bind UI doesn't lead with generic editor labels ("Current

@@ -56,6 +56,14 @@ export type JsonValue =
 
 export type JsonTruncatorTab = "input" | "fields" | "output";
 
+function resolveInitialTab(
+  defaultTab: JsonTruncatorTab,
+  initialValue: string,
+): JsonTruncatorTab {
+  if (!initialValue.trim()) return "input";
+  return defaultTab;
+}
+
 export interface JsonTruncatorProps {
   initialValue?: string;
   /** Start in tabbed layout. Can be toggled at runtime if allowLayoutToggle is true. Default false. */
@@ -1856,7 +1864,9 @@ export function JsonTruncator({
   const [maxDepth, setMaxDepth] = useState<number | null>(defaultMaxDepth);
   const [actualDepth, setActualDepth] = useState<number | null>(null);
   const [highlightedOffset, setHighlightedOffset] = useState<number>(-1);
-  const [activeTab, setActiveTab] = useState<JsonTruncatorTab>(defaultTab);
+  const [activeTab, setActiveTab] = useState<JsonTruncatorTab>(() =>
+    resolveInitialTab(defaultTab, initialValue),
+  );
 
   const outputRef = useRef<HTMLTextAreaElement>(null);
 

@@ -20,6 +20,7 @@ import { ContextValuesResourcePicker } from "./ContextValuesResourcePicker";
 import { ToolsResourcePicker } from "./ToolsResourcePicker";
 import { SkillsResourcePicker } from "./SkillsResourcePicker";
 import { RunSettingsResourcePicker } from "./RunSettingsResourcePicker";
+import { ModelResourcePicker } from "./ModelResourcePicker";
 import {
   flattenResourcePickerItems,
   getVisibleResourcePickerCategories,
@@ -246,6 +247,15 @@ export function ResourcePickerMenu({
     if (activeView === "run_settings" && conversationId) {
       return (
         <RunSettingsResourcePicker
+          conversationId={conversationId}
+          onBack={() => setActiveView(null)}
+        />
+      );
+    }
+
+    if (activeView === "run_model" && conversationId) {
+      return (
+        <ModelResourcePicker
           conversationId={conversationId}
           onBack={() => setActiveView(null)}
         />

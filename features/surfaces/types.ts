@@ -25,12 +25,7 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 /** Logical type of a surface value. Most are stringified for LLMs at runtime. */
 export type SurfaceValueType =
-  | "string"
-  | "number"
-  | "boolean"
-  | "object"
-  | "array"
-  | "document";
+  "string" | "number" | "boolean" | "object" | "array" | "document";
 
 export interface SurfaceValue {
   /**
@@ -109,6 +104,30 @@ export interface SurfaceConfigNamespaceDecl {
 }
 
 // ---------------------------------------------------------------------------
+// SurfaceEvidenceSource — automatic Document Evidence System activation.
+// ---------------------------------------------------------------------------
+
+/**
+ * A processed-document pointer the surface guarantees it can derive from its
+ * runtime values. The universal launcher turns this declaration into a lazy
+ * `request.context` source before agent-variable mappings run, so document
+ * tools/context do not depend on an agent author manually mapping an id.
+ */
+export interface SurfaceProcessedDocumentEvidenceSource {
+  kind: "processed_document";
+  /** Surface value containing `docproc.processed_documents.id`. */
+  idValue: string;
+  /** Optional surface value containing the originating `files.files.id`. */
+  fileIdValue?: string;
+  /** Optional surface value used as the agent-facing document label. */
+  labelValue?: string;
+  /** Preferred primary text representation; omitted means clean-when-ready. */
+  representation?: "clean" | "raw";
+}
+
+export type SurfaceEvidenceSource = SurfaceProcessedDocumentEvidenceSource;
+
+// ---------------------------------------------------------------------------
 // SurfaceManifest — what a single surface declares.
 // ---------------------------------------------------------------------------
 
@@ -143,6 +162,12 @@ export interface SurfaceManifest {
   agentRoles?: readonly SurfaceAgentRole[];
   /** Config namespaces this surface consumes (code-only declaration). */
   configNamespaces?: readonly SurfaceConfigNamespaceDecl[];
+  /**
+   * Declarative inputs to the Document Evidence System. These are launch
+   * contracts, not bindable values and therefore are not mirrored to the DB.
+   * They inherit with the rest of the surface manifest.
+   */
+  evidenceSources?: readonly SurfaceEvidenceSource[];
   /**
    * Opt out of the automatic generic-baseline injection (`selection`,
    * `text_before`, `text_after`, `content`, `context`) performed in

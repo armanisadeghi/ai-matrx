@@ -102,8 +102,8 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
 // ---------------------------------------------------------------------------
 // Surface inheritance (v1) — `inheritsFrom` resolution.
 //
-// A child manifest inherits its parent's values, agent roles, and config
-// namespaces, overriding per key (value `name` / role `name` / `namespace`).
+// A child manifest inherits its parent's values, agent roles, config
+// namespaces, and evidence sources, overriding per key.
 // Parent entries come FIRST so child declarations win, mirroring the
 // launch-time binding-layer merge (parent layers weakest, child strongest —
 // resolved in bind-agent-to-surface.service.ts `fetchSurfaceBindingLayers`).
@@ -155,12 +155,21 @@ export function getSurfaceAncestry(surfaceName: string): string[] {
   return chain;
 }
 
-/** Merge parent → child (child wins) for values / roles / config namespaces. */
+/** Merge parent → child (child wins) for all inheritable declarations. */
 function withInheritance(m: SurfaceManifest): SurfaceManifest {
   const ancestry = getSurfaceAncestry(m.surfaceName);
   if (ancestry.length === 0) return m;
 
-  const lineage = [...ancestry.map((name) => RAW_INDEX.get(name)!), m];
+  const lineage = [
+    ...ancestry.map((name) => {
+      const layer = RAW_INDEX.get(name);
+      if (!layer) {
+        throw new Error(`[surfaces] missing inherited manifest "${name}"`);
+      }
+      return layer;
+    }),
+    m,
+  ];
 
   const valuesByName = new Map<string, SurfaceManifest["values"][number]>();
   const rolesByName = new Map<
@@ -171,10 +180,17 @@ function withInheritance(m: SurfaceManifest): SurfaceManifest {
     string,
     NonNullable<SurfaceManifest["configNamespaces"]>[number]
   >();
+  const evidenceByIdentity = new Map<
+    string,
+    NonNullable<SurfaceManifest["evidenceSources"]>[number]
+  >();
   for (const layer of lineage) {
     for (const v of layer.values) valuesByName.set(v.name, v);
     for (const r of layer.agentRoles ?? []) rolesByName.set(r.name, r);
     for (const n of layer.configNamespaces ?? []) nsByName.set(n.namespace, n);
+    for (const source of layer.evidenceSources ?? []) {
+      evidenceByIdentity.set(`${source.kind}:${source.idValue}`, source);
+    }
   }
 
   return {
@@ -185,6 +201,9 @@ function withInheritance(m: SurfaceManifest): SurfaceManifest {
       : {}),
     ...(nsByName.size > 0
       ? { configNamespaces: Array.from(nsByName.values()) }
+      : {}),
+    ...(evidenceByIdentity.size > 0
+      ? { evidenceSources: Array.from(evidenceByIdentity.values()) }
       : {}),
   };
 }
@@ -213,7 +232,7 @@ function withInjectedBaselines(m: SurfaceManifest): SurfaceManifest {
 
 /**
  * All registered surface manifests, with inheritance resolved (parent values /
- * roles / config namespaces merged in, child wins per key) and generic
+ * roles / config namespaces / evidence sources merged in, child wins per key) and generic
  * baselines guaranteed.
  */
 export const ALL_MANIFESTS: readonly SurfaceManifest[] = RAW_MANIFESTS.map(

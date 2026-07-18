@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   CheckSquare,
+  Cpu,
   File,
   FileText,
   Globe,
@@ -34,6 +35,7 @@ export type ResourcePickerViewId =
   | "tools"
   | "skills"
   | "run_settings"
+  | "run_model"
   | null;
 
 export type ResourcePickerMenuItem = {
@@ -57,7 +59,7 @@ export type ResourcePickerMenuCategory = {
   items: ResourcePickerMenuItem[];
 };
 
-/** Canonical attach-menu order — MATRX first, then web ingress. */
+/** Canonical attach-menu order — MATRX, web ingress, then this-run controls. */
 export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
   {
     category: "MATRX",
@@ -114,35 +116,6 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
     ],
   },
   {
-    category: "This run",
-    items: [
-      {
-        id: "tools",
-        label: "Tools",
-        icon: Wrench,
-        iconClassName: "text-amber-600 dark:text-amber-400",
-        requiresCapability: null,
-        requiresConversation: true,
-      },
-      {
-        id: "skills",
-        label: "Skills",
-        icon: Lightbulb,
-        iconClassName: "text-yellow-600 dark:text-yellow-400",
-        requiresCapability: null,
-        requiresConversation: true,
-      },
-      {
-        id: "run_settings",
-        label: "Settings",
-        icon: Settings2,
-        iconClassName: "text-muted-foreground",
-        requiresCapability: null,
-        requiresConversation: true,
-      },
-    ],
-  },
-  {
     category: "From the web",
     items: [
       {
@@ -186,6 +159,43 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         icon: Mic,
         iconClassName: "text-pink-600 dark:text-pink-400",
         requiresCapability: "supportsAudio",
+      },
+    ],
+  },
+  {
+    category: "This run",
+    items: [
+      {
+        id: "tools",
+        label: "Tools",
+        icon: Wrench,
+        iconClassName: "text-amber-600 dark:text-amber-400",
+        requiresCapability: null,
+        requiresConversation: true,
+      },
+      {
+        id: "skills",
+        label: "Skills",
+        icon: Lightbulb,
+        iconClassName: "text-yellow-600 dark:text-yellow-400",
+        requiresCapability: null,
+        requiresConversation: true,
+      },
+      {
+        id: "run_settings",
+        label: "Settings",
+        icon: Settings2,
+        iconClassName: "text-muted-foreground",
+        requiresCapability: null,
+        requiresConversation: true,
+      },
+      {
+        id: "run_model",
+        label: "Model",
+        icon: Cpu,
+        iconClassName: "text-primary",
+        requiresCapability: null,
+        requiresConversation: true,
       },
     ],
   },

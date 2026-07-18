@@ -613,7 +613,7 @@ export function FileContextMenu({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setInfoOpen(true)}>
                     <Info className="mr-2 h-4 w-4" />
-                    File info dialog
+                    Info
                     <DropdownMenuShortcut>{cmd}I</DropdownMenuShortcut>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleShowVersions}>

@@ -70,6 +70,8 @@ const Wrap = forwardRef<
     iconColor,
     hoverBgColor,
     activeBgColor,
+    // AITapButtonProps passthrough — not a DOM attribute (see ai-tap-buttons Wrap)
+    colored: _colored,
     ...props
   },
   ref,

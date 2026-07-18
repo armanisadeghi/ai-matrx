@@ -44,7 +44,10 @@ export function ContextLensBar({
   return (
     <div
       className={cn(
-        "inline-flex h-7 shrink-0 items-center rounded-full border border-border bg-card pl-1 pr-0.5 text-xs",
+        "group inline-flex h-7 shrink-0 items-center rounded-full border bg-card pl-1 pr-0.5 text-xs transition-colors",
+        previewOpen
+          ? "border-primary/50 hover:border-primary/70"
+          : "border-border hover:border-primary/45",
         className,
       )}
     >
@@ -59,7 +62,7 @@ export function ContextLensBar({
               "inline-flex h-5 items-center gap-1 rounded-full px-1.5 transition-colors",
               previewOpen
                 ? "bg-primary/15 text-primary"
-                : "text-primary/80 hover:bg-primary/10 hover:text-primary",
+                : "text-primary/80 group-hover:bg-primary/10 group-hover:text-primary",
             )}
           >
             <Eye className="h-3.5 w-3.5" />
@@ -72,7 +75,7 @@ export function ContextLensBar({
       </Tooltip>
       <ActiveContextLensChip
         align={align}
-        className="h-5 rounded-full border-0 bg-transparent px-1.5 text-xs hover:bg-muted"
+        className="h-5 rounded-full border-0 bg-transparent px-1.5 text-xs hover:bg-muted/60 group-hover:bg-primary/5"
       />
     </div>
   );

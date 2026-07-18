@@ -126,7 +126,7 @@ export function ComputeLensBar({
   return (
     <div
       className={cn(
-        "inline-flex h-7 min-w-0 items-center rounded-full border border-border bg-card pl-1 pr-0.5 text-xs",
+        "group inline-flex h-7 min-w-0 items-center rounded-full border border-border bg-card pl-1 pr-0.5 text-xs transition-colors hover:border-secondary/45",
         className,
       )}
     >
@@ -138,7 +138,7 @@ export function ComputeLensBar({
             disabled={disabled && !loading}
             className={cn(
               "inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-1.5 transition-colors",
-              "text-secondary/90 hover:bg-secondary/10 hover:text-secondary",
+              "text-secondary/90 group-hover:bg-secondary/10 group-hover:text-secondary",
               disabled && !loading && "cursor-not-allowed opacity-50",
             )}
             aria-label="Open sandbox and computer settings"
@@ -164,7 +164,7 @@ export function ComputeLensBar({
         <span className="mx-0.5 h-4 w-px shrink-0 bg-border/80" aria-hidden />
       ) : null}
 
-      <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
+      <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden group-hover:bg-secondary/[0.04] rounded-full transition-colors">
         {visibleTargets.map((target) => (
           <TargetChip
             key={target.id}
@@ -189,7 +189,7 @@ export function ComputeLensBar({
         <button
           type="button"
           onClick={onOpenPanel}
-          className="inline-flex h-5 shrink-0 items-center gap-0.5 rounded-full px-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          className="inline-flex h-5 shrink-0 items-center gap-0.5 rounded-full px-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground group-hover:text-secondary/80"
           aria-label={
             overflowCount > 0
               ? `${overflowCount} more compute targets — open full list`

@@ -52,6 +52,7 @@ interface AgentHeaderMobileProps {
 
 export function AgentHeaderMobile({
   agentId,
+  agentName,
   basePath = "/agents",
 }: AgentHeaderMobileProps) {
   const router = useRouter();
@@ -96,6 +97,8 @@ export function AgentHeaderMobile({
         {/* Left: Agent selector */}
         <AgentListDropdown
           onSelect={handleAgentSelect}
+          activeAgentId={agentId}
+          label={agentName?.trim() || "Select agent"}
           triggerSlot={
             <button
               className="flex h-9 w-9 shrink-0 items-center justify-center bg-transparent transition-transform active:scale-95 outline-none cursor-pointer"

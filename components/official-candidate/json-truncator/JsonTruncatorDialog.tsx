@@ -40,8 +40,8 @@ export interface JsonTruncatorDialogProps
   onClose: () => void;
   title?: string;
   id?: string;
-  /** Which tab to show inside the overlay. Defaults to "fields" since the
-   *  caller likely pre-loaded data and wants to jump straight to analysis. */
+  /** Which tab to show when `initialValue` is non-empty. Empty input always
+   *  opens on the Input tab regardless of this value. Defaults to "fields". */
   defaultTab?: JsonTruncatorTab;
 }
 

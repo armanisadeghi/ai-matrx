@@ -52,11 +52,16 @@ export function AgentListInlinePicker({
     tabCounts,
     activeFilterCount,
     hoveredAgent,
+    pinnedAgent,
     ensureLoaded,
     handleSelectAgent: coreSelectAgent,
     handleAgentHover,
     handleAgentHoverEnd,
-  } = useAgentListCore({ consumerId, onSelect });
+  } = useAgentListCore({
+    consumerId,
+    onSelect,
+    activeAgentIdOverride: activeAgentId,
+  });
 
   useEffect(() => {
     ensureLoaded();
@@ -142,6 +147,8 @@ export function AgentListInlinePicker({
         onFilterChipClick={handleFilterChipClick}
         rightPanel={null}
         tabCounts={tabCounts}
+        pinnedAgent={pinnedAgent}
+        listOpen
       />
     </div>
   );

@@ -64,6 +64,7 @@ export function AgentSelectorIsland({
       <AgentListDropdown
         onSelect={handleAgentSelect}
         label={displayName}
+        activeAgentId={agentId}
         triggerSlot={triggerSlot}
         noBorder
       />

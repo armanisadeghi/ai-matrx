@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { agentListEmptyLabel } from "@/features/agents/constants/agent-list-labels";
 import type { UseAgentConsumerReturn } from "@/features/agents/hooks/useAgentConsumer";
@@ -31,6 +32,10 @@ export interface AgentListContentProps {
   onFilterChipClick: (panel: "sort" | "categories" | "tags") => void;
   rightPanel: RightPanel;
   tabCounts: AgentListTabCounts;
+  /** Resolved current agent — pinned at the top when the list opens. */
+  pinnedAgent?: AgentDefinitionRecord | null;
+  /** When true, scroll the list to the pinned row (top). */
+  listOpen?: boolean;
 }
 
 export function AgentListContent({
@@ -53,8 +58,17 @@ export function AgentListContent({
   onFilterChipClick,
   rightPanel,
   tabCounts,
+  pinnedAgent = null,
+  listOpen = false,
 }: AgentListContentProps) {
+  const listScrollRef = useRef<HTMLDivElement>(null);
   const isSystemTab = consumer.tab === "system";
+
+  useEffect(() => {
+    if (listOpen && pinnedAgent) {
+      listScrollRef.current?.scrollTo({ top: 0 });
+    }
+  }, [listOpen, pinnedAgent?.id]);
 
   const emptyLabel = agentListEmptyLabel(consumer.tab);
 
@@ -88,18 +102,40 @@ export function AgentListContent({
       <div className="h-px bg-border shrink-0" />
 
       {/* Agent list */}
-      <div className="overflow-y-auto flex-1 min-h-0">
+      <div ref={listScrollRef} className="overflow-y-auto flex-1 min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span className="text-xs">Loading...</span>
           </div>
-        ) : agents.length === 0 ? (
+        ) : agents.length === 0 && !pinnedAgent ? (
           <div className="flex flex-col items-center py-8 text-muted-foreground">
             <span className="text-xs">{emptyLabel}</span>
           </div>
         ) : (
           <div className="py-0.5">
+            {pinnedAgent && (
+              <>
+                <div className="px-3 pt-1.5 pb-0.5">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Current agent
+                  </span>
+                </div>
+                <AgentRow
+                  key={`pinned-${pinnedAgent.id}`}
+                  agent={pinnedAgent}
+                  isActive
+                  isHovered={hoveredAgent?.id === pinnedAgent.id}
+                  isMobile={isMobile}
+                  onClick={() => onSelectAgent(pinnedAgent)}
+                  href={resolveAgentHref?.(pinnedAgent)}
+                  onHover={() => onAgentHover(pinnedAgent)}
+                  onHoverEnd={() => onAgentHoverEnd(pinnedAgent)}
+                  onDetailPress={() => onDetailPress(pinnedAgent)}
+                />
+                <div className="mx-2 my-0.5 h-px bg-border" />
+              </>
+            )}
             {agents.map((agent) => (
               <AgentRow
                 key={agent.id}
@@ -114,6 +150,11 @@ export function AgentListContent({
                 onDetailPress={() => onDetailPress(agent)}
               />
             ))}
+            {agents.length === 0 && pinnedAgent && (
+              <div className="flex flex-col items-center py-4 text-muted-foreground">
+                <span className="text-xs">{emptyLabel}</span>
+              </div>
+            )}
           </div>
         )}
       </div>

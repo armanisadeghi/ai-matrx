@@ -80,6 +80,7 @@ export function ChatRunHeader({
           <AgentListDropdown
             onSelect={handleAgentSelect}
             label={label}
+            activeAgentId={activeAgentId}
             compact
             noBorder
           />

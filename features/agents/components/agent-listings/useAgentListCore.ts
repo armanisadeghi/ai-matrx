@@ -26,6 +26,7 @@ import type { AgentListTabCounts } from "./core/AgentListTabs";
 import {
   selectAgentsSliceStatus,
   selectActiveAgentId,
+  selectAgentById,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
 import { setActiveAgentId } from "@/features/agents/redux/agent-definition/slice";
@@ -35,6 +36,8 @@ export interface AgentListCoreOptions {
   consumerId: string;
   onSelect?: (agentId: string) => void;
   navigateTo?: string;
+  /** Route-scoped agent id (chat/builder headers). Overrides Redux activeAgentId. */
+  activeAgentIdOverride?: string | null;
 }
 
 /**
@@ -50,6 +53,7 @@ export function useAgentListCore({
   consumerId,
   onSelect,
   navigateTo,
+  activeAgentIdOverride,
 }: AgentListCoreOptions) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -71,7 +75,11 @@ export function useAgentListCore({
   );
   const agents = useAppSelector(selectFiltered);
   const sliceStatus = useAppSelector(selectAgentsSliceStatus);
-  const activeAgentId = useAppSelector(selectActiveAgentId);
+  const reduxActiveAgentId = useAppSelector(selectActiveAgentId);
+  const activeAgentId = activeAgentIdOverride ?? reduxActiveAgentId;
+  const pinnedAgent = useAppSelector((state) =>
+    activeAgentId ? selectAgentById(state, activeAgentId) : undefined,
+  );
   const allCategories = useAppSelector(selectAllAgentCategories);
   const allTags = useAppSelector(selectAllAgentTags);
   const tabCounts: AgentListTabCounts = {
@@ -181,6 +189,7 @@ export function useAgentListCore({
     agents,
     isLoading,
     activeAgentId,
+    pinnedAgent,
     allCategories,
     allTags,
     consumer,

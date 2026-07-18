@@ -4,15 +4,15 @@
  * PlusAttachMenu — the `+` quick menu on the Smart Input (desktop).
  *
  * Layout (top → bottom):
- *   1. ResourcePickerMenu (MATRX attach sources + web ingress) — flex-1 scroll
- *   2. Model override row (borderless)
- *   3. Working doc / Scratchpad switches
- *   4. ContextLensBar (same control as the composer rail)
- *   5. ComputeLensBar — sandbox + local PC (up to two inline chips)
- *   6. [compact only] Enter / auto-clear toggles
+ *   1. ResourcePickerMenu (attach sources + **This run** at bottom) — flex-1 scroll
+ *   2. Working doc / Scratchpad switches
+ *   3. ContextLensBar (same control as the composer rail)
+ *   4. ComputeLensBar — sandbox + local PC (up to two inline chips)
+ *   5. [compact only] Enter / auto-clear toggles
+ *   6. Advanced settings → full Chat Options window
  *
- * Tools, Skills, and Settings (no model) live in ResourcePickerMenu under
- * "This run" — same in-place drill-in as Files / Webpage.
+ * **This run** (Tools, Skills, Settings, Model) drills in-place like Files.
+ * Advanced settings opens the run-controls window for deeper overrides.
  *
  * Shell height is fixed at open (`PLUS_ATTACH_MENU_HEIGHT_CLASS`); only the
  * attach-list zone scrolls. Footer chrome is shrink-0 so capability filtering
@@ -20,7 +20,7 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { CornerDownLeft, RefreshCcw } from "lucide-react";
+import { CornerDownLeft, RefreshCcw, SlidersHorizontal } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
@@ -29,7 +29,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
@@ -220,16 +219,6 @@ export function PlusAttachMenu({
         </div>
 
         <div className="flex shrink-0 flex-col">
-          <div className="flex items-center gap-2 px-2 py-1.5">
-            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-              Model
-            </span>
-            <QuickRunModelSelect
-              conversationId={conversationId}
-              className="h-6 min-w-0 flex-1"
-            />
-          </div>
-
           <DocumentSwitchesRow conversationId={conversationId} />
 
           <ContextLensMenuRow conversationId={conversationId} />
@@ -274,6 +263,18 @@ export function PlusAttachMenu({
               )}
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              openRunControlsWindow({ conversationId, initialTab: "settings" });
+            }}
+            className="flex w-full items-center gap-2 border-t border-border px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+            Advanced settings
+          </button>
         </div>
       </PopoverContent>
     </Popover>
