@@ -1,5 +1,5 @@
 {
-  "generated_for": "721-kinds+b18f2b0e4405",
+  "generated_for": "721-kinds+00833128f4ca",
   "columns": [
     "definition",
     "example",
@@ -3630,7 +3630,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "missing",
+        "component": "ok",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -4330,7 +4330,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "missing",
+        "component": "ok",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"

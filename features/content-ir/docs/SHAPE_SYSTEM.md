@@ -30,7 +30,7 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-s
 
 | # | Ruling |
 |---|---|
-| R1 | Component resolver = `content_ir.kind_component` ((kind, platform, role) → `component_key`; platforms incl. `react-native`; `source: bundled\|db`, db = web sandbox only). `skill.render_definition` stays the palette; `skill.render_component` gets graveyarded (Stage 3). |
+| R1 | Component resolver = `content_ir.kind_component` ((kind, platform, role) → `component_key`; platforms incl. `react-native`; `source: bundled\|db`, db = web sandbox only — **db source is LIVE**, see "DB kind components"). `skill.render_definition` stays the palette; `skill.render_component` gets graveyarded (Stage 3). |
 | R2 | Detection registry = `content_ir.kind_surface` (UNIQUE (surface_type, token); named `parser_strategy` implemented in BOTH runtimes; generator emits byte-identical compiled bootstraps both sides). Control tags (thinking/reasoning/plan/…) are NOT Shapes — code-owned. |
 | R3 | Wire formats: `__kind` = the one internal content representation · `metadata.__ir` = parse-provenance cache (never authored) · MatrxEnvelope = the action protocol, untouched. |
 | R4 | Samples live in `kind_example` (version-bound, many per kind@version, `is_canonical` partial-unique, `source: authored\|captured\|migrated\|synthetic`); fresh-capture via `kind_definition.capture_until/capture_target`; `sample_data` migrates then DROPS. |
@@ -67,6 +67,20 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/content-ir-s
 - **Coverage classes** (`kind_component` role='input', web; migration `migrations/content_ir_input_component_bindings.sql`, applied + ledgered): **generic** = 20 active display roots + 16 workflow-I/O structural kinds (36 DB rows) — plus a compiled input floor for EVERY system kind (`system-components.ts`, DB rows override). **Non-interactive by classification** = the 635 data-only generated contracts (tool_io/action_io/agent_io/workflow_io) — machine-filled; fabricating forms for them is forbidden. **Dedicated** = none yet; the mermaid workbench was evaluated and rejected (artifact surface, no controlled onChange) — a dedicated binding lands only WITH its `KindInputForm` routing, since unrouted keys refuse.
 - **Value layer**: `input/kind-input-values.ts` (pure; promoted from admin/) — variable string-space → kind typed-space coercion, instance assembly, ajv error attribution. Shared by the form and the admin Inputs lab.
 - **Proof surfaces**: `/administration/kind-registry/<kind>?tab=try-input` (the form consumed as a feature would) and `?tab=inputs` (the bridge diagnostics lab). Tests: `__tests__/kind-input-form.test.ts` (key parity, coverage, routing law, valid/invalid emission).
+
+## DB kind components (`source='db'`, live 2026-07-17)
+
+**R1's db source is REAL: a `kind_component` row can carry the component itself.** Ratified architecture (Arman, 2026-07-17): user components run via the **in-page allowlist compile** — the shared Agent Apps compiler (`compileSlotComponent` over `buildComponentScope`, allowlist deliberately WIDE per the ratification) — with an **iframe/html flavor as a user OPTION** (not a trust tier). Renderer: `features/content-ir/react/db-component/` (lazy shell → Impl, Babel never in the main bundle — the DbToolRenderer pattern).
+
+**The db-row contract** (`content_ir.kind_component`):
+- `source='db'` + `is_active=true` + non-empty `component_source` → `applyIrKindRoute` flips the block to `db_kind_component` — **db overrides bundled AND the compiled bridge** (R6); inactive rows do not route; an active db row with NO body **screams and falls through** to bundled behavior (never un-renders).
+- `component_source` — react flavor (default): TSX/JSX; must `export default` a component receiving **`{ data, kind, config }`** (`data` = the kind instance value). html flavor (`config.flavor='html'`): a full HTML document rendered via srcDoc `sandbox="allow-scripts allow-forms"` — **NEVER `allow-same-origin`**; kind data arrives via BOTH the appended `<script type="application/json" id="matrx-kind-data">` slot (`{kind, data}`, read after load) and a `{type:'matrx:kind-data', kind, data}` postMessage on load (`KindHtmlFrame.tsx`).
+- `props_transform` (optional) — `(data) => data` source compiled the same way, applied BEFORE the component (tool_ui transform semantics). Throwing/broken transform screams; untransformed value renders.
+- `config.allowed_imports` (string[]) narrows the scope; absent → the FULL registered allowlist (`getDefaultImportsForKindComponents` in `features/agent-apps/utils/allowed-imports.ts` — the ONE shared allowlist; every entry explicitly named, unknown identifiers keep the safe-proxy fallback).
+- `pinned_kind_version` rides the projection (reserved for version-pinned rendering).
+- Failure posture: compile error / render throw / unresolvable row → the kind's **generic structured viewer + loud report** (`captureError` source `content-ir`, one console scream per key) — never a blank hole, never hidden content.
+
+Compile cache: one compile per (kind, platform, role) per session (`dbKindComponentCache.ts`; `invalidateDbKindComponent` for authoring surfaces). First live rows: `stats_db_demo` (react + transform) and `diff_db_demo` (html) via `migrations/content_ir_db_source_demo_components.sql` — proof surfaces `/administration/kind-registry/stats|diff` Preview.
 
 ## Historical stage roadmap (retained for implementation context)
 
@@ -105,6 +119,7 @@ Current merge-ordered projects live in `/Users/armanisadeghi/code/common-docs/co
 
 ## Change Log
 
+- 2026-07-17 — **DB kind components shipped (K1 — R1's `source='db'` is REAL).** Loader/resolver carry `component_source`/`props_transform`/`pinned_kind_version`; `applyIrKindRoute` db-override flip → `db_kind_component` (FE-synthesized, registered in block-dispatch); renderer `features/content-ir/react/db-component/` (shared allowlist compiler, error boundary → generic viewer, html iframe flavor); allowlist expansion ratified (full shadcn + cn + recharts + full hook set in `agent-apps/utils/allowed-imports.ts`); demo rows on stats (react) + diff (html) applied + ledgered + browser-verified. See "DB kind components" section.
 - 2026-07-17 — **"Create a Shape" apply target on `schema_proposal` blocks** (see The Convert Pattern bullet): user-created kinds from agent-proposed JSON Schemas through the canonical converter/planner, browser-RLS writes, trigger-verdict read-back, live-verified end-to-end (dialog → DB rows → /shapes/[kind] render). Dev harness: `/demos/schema-proposal-shape`.
 
 - 2026-07-17 — **Candidate registration + Convert Pattern ratified in-doc.** The crosswalk's last 7 unregistered shape candidates (chart, map, stats, diff, search_results, fetch_results, categorization_result) registered as INACTIVE kinds with converter-emitted (ts) / pydantic-verbatim (python) schemas + REAL-validated canonical examples (`migrations/content_ir_register_candidate_kinds.sql`, applied + ledgered + live-verified; no `kind_surface` rows — arrival unchanged by law; inactive because no compiled kind-route bridge exists, so the dual gate's render leg cannot pass). `SHAPE_CANDIDATES` in the crosswalk generator is now EMPTY; `table`'s scalar_generic rationale + aidream `NON_ENVELOPE_BLOCK_TYPES["table"]` now encode the ratified markdown-first + click-to-convert ruling. New "The Convert Pattern" section above is the doctrine.
