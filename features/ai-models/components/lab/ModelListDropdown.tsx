@@ -1630,11 +1630,6 @@ export function ModelListDropdown({
           </span>
         )}
       </span>
-      {activeFilterCount > 0 && (
-        <span className="flex h-4 items-center justify-center rounded bg-primary px-1 text-[10px] text-primary-foreground">
-          {activeFilterCount}
-        </span>
-      )}
       <ChevronDown className="h-3 w-3 text-muted-foreground/60" />
     </button>
   );

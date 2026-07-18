@@ -234,7 +234,9 @@ export function PlusAttachMenu({
             type="button"
             onClick={() => {
               setOpen(false);
-              openRunControlsWindow({ conversationId, initialTab: "settings" });
+              // No initialTab — the window's default (Quickset) is the
+              // canonical landing tab for every caller.
+              openRunControlsWindow({ conversationId });
             }}
             className="flex w-full items-center gap-2 border-t border-border px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
           >
