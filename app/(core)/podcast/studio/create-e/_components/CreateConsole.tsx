@@ -33,10 +33,8 @@
 //   • Demo: Generate routes to /podcast/studio/run-e (no backend).
 
 import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   AudioLines,
   Loader2,
   Radio,
@@ -49,6 +47,8 @@ import {
   Disc3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -142,75 +142,76 @@ export function CreateConsole() {
     />
   );
 
+  // Single `children` tree with inner responsive classes; the desktop/mobile
+  // PageHeader props also work (the shell.css display-override bug they hit
+  // was fixed 2026-07-17) — this shape is kept because the two variants share
+  // most of their markup.
+  const header = (
+    <div className="flex w-full min-w-0 items-center gap-1.5 sm:gap-2">
+      <ChevronLeftTapButton href="/podcast/studio" ariaLabel="Back to studio" />
+      <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary lg:flex">
+        <AudioLines className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1 shrink leading-tight lg:flex-none">
+        <h1 className="truncate text-sm font-semibold text-foreground">
+          New episode
+        </h1>
+        <p className="hidden truncate text-[11px] text-muted-foreground lg:block">
+          Source → script → cover → video → audio
+        </p>
+      </div>
+
+      {/* Mobile/tablet pane toggles (below lg) */}
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobilePane("source")}
+          aria-label="Choose source"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobilePane("preview")}
+          aria-label="Episode preview"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary"
+        >
+          <Disc3 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Desktop generate (lg+) */}
+      <Button
+        onClick={handleGenerate}
+        disabled={!canGenerate || busy}
+        className="ml-auto hidden h-9 shrink-0 gap-2 shadow-sm lg:flex"
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Radio className="h-4 w-4" />
+        )}
+        {busy ? "Starting…" : "Generate episode"}
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="flex h-full flex-col">
-      {/* ── Top utility bar ──────────────────────────────────────────────── */}
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-card/60 px-3 pr-14 backdrop-blur-sm sm:px-4">
-        <Link
-          href="/podcast/studio"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          aria-label="Back to studio"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div className="flex min-w-0 shrink items-center gap-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <AudioLines className="h-4 w-4" />
-          </span>
-          <div className="min-w-0 leading-tight">
-            <h1 className="truncate text-sm font-semibold text-foreground">
-              New episode
-            </h1>
-            <p className="hidden truncate text-[11px] text-muted-foreground sm:block">
-              Source → script → cover → video → audio
-            </p>
-          </div>
-        </div>
+    <>
+      {/* ── Header (shell injection) ────────────────────────────────────── */}
+      <PageHeader>{header}</PageHeader>
 
-        {/* Mobile/tablet pane toggles (below lg) */}
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 lg:hidden">
-          <button
-            type="button"
-            onClick={() => setMobilePane("source")}
-            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
-            Source
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobilePane("preview")}
-            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground"
-          >
-            <Disc3 className="h-3.5 w-3.5 shrink-0 text-primary" />
-            Preview
-          </button>
-        </div>
-
-        {/* Desktop generate (lg+) */}
-        <Button
-          onClick={handleGenerate}
-          disabled={!canGenerate || busy}
-          className="ml-auto hidden h-9 shrink-0 gap-2 shadow-sm lg:flex"
-        >
-          {busy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Radio className="h-4 w-4" />
-          )}
-          {busy ? "Starting…" : "Generate episode"}
-        </Button>
-      </header>
-
-      {/* ── Body ─────────────────────────────────────────────────────────── */}
-      <div className="relative flex min-h-0 flex-1">
+      <div className="flex h-full flex-col">
+        {/* ── Body ─────────────────────────────────────────────────────── */}
+        <div className="relative flex min-h-0 flex-1">
         {/* Left rail (lg+) */}
-        <aside className="hidden w-64 shrink-0 overflow-y-auto border-r border-border bg-card/40 scrollbar-thin lg:block">
+        <aside className="hidden w-64 shrink-0 overflow-y-auto border-r border-border bg-card/40 pt-[var(--shell-header-h)] scrollbar-thin lg:block">
           {sourceRail}
         </aside>
 
         {/* Center stage */}
-        <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin">
+        <main className="min-w-0 flex-1 overflow-y-auto pt-[var(--shell-header-h)] scrollbar-thin lg:pt-0">
           <div className="mx-auto max-w-2xl px-4 py-5 sm:px-6 sm:py-6">
             <SourceStage
               source={activeSource}
@@ -262,13 +263,13 @@ export function CreateConsole() {
         </main>
 
         {/* Right preview (lg+) */}
-        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border bg-card/40 scrollbar-thin lg:block">
+        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border bg-card/40 pt-[var(--shell-header-h)] scrollbar-thin lg:block">
           {preview}
         </aside>
 
         {/* Mobile/tablet drawers (below lg only) */}
         {mobilePane && (
-          <div className="absolute inset-0 z-20 flex flex-col bg-background lg:hidden">
+          <div className="absolute inset-0 z-20 flex flex-col bg-background pt-[var(--shell-header-h)] lg:hidden">
             <div className="flex h-11 shrink-0 items-center justify-between border-b border-border px-4">
               <span className="text-sm font-semibold text-foreground">
                 {mobilePane === "source" ? "Choose a source" : "Episode preview"}
@@ -287,8 +288,9 @@ export function CreateConsole() {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

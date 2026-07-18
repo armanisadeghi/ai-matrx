@@ -1020,9 +1020,11 @@ button.shell-nav-flyout-item {
 
 /* Injection wrapper — spans the full center zone width so variant roots
    can use flex left/center/right layout inside it. Height matches the
-   left/right anchors (2.75rem) for consistent vertical alignment. */
+   left/right anchors (2.75rem) for consistent vertical alignment.
+   NO `display` here: shell.css is un-layered, so a display set here would
+   beat Tailwind's layered `hidden`/`lg:flex` utilities and break the
+   PageHeader desktop/mobile breakpoint split — markup supplies `flex`. */
 .shell-header-inject {
-  display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;

@@ -22,7 +22,7 @@ export default function PageHeaderRightPortal({
   if (!target) return null;
 
   return createPortal(
-    <div className="shell-header-inject">{children}</div>,
+    <div className="shell-header-inject flex">{children}</div>,
     target,
   );
 }

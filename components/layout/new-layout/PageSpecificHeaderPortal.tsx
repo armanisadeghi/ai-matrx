@@ -26,7 +26,7 @@ export function PageSpecificHeader({ children }: PageSpecificHeaderProps) {
 
   if (targetElement.id === "shell-header-center") {
     return createPortal(
-      <div className="shell-header-inject">{children}</div>,
+      <div className="shell-header-inject flex">{children}</div>,
       targetElement,
     );
   }

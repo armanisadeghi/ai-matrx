@@ -27,7 +27,7 @@ export default function PageHeaderPortal({ desktop, mobile, children }: PageHead
   return createPortal(
     <>
       {children && (
-        <div className="shell-header-inject">{children}</div>
+        <div className="shell-header-inject flex">{children}</div>
       )}
       {desktop && (
         <div className="shell-header-inject hidden lg:flex">{desktop}</div>
