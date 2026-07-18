@@ -191,9 +191,14 @@ async function* _parseNdjsonStream(
     } catch (err) {
       if (err instanceof BackendApiError) {
         pushItem(err);
-      } else if (!(err instanceof Error && err.name === "AbortError")) {
-        // AbortError is the normal cancellation path — suppress it.
-        // Only log unexpected errors (network failures, etc.).
+      } else if (
+        !signal?.aborted &&
+        !(err instanceof Error && err.name === "AbortError")
+      ) {
+        // Cancellation is the normal path. Chromium commonly rejects the
+        // pending read with AbortError; Safari may reject the same aborted read
+        // with TypeError("Load failed"). The signal is the cross-browser source
+        // of truth, so only log failures when it is still live.
         console.error("[stream-parser] readLoop error:", err);
       }
     } finally {

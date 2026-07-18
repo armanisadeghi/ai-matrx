@@ -68,16 +68,14 @@ interface AgentRunRaw {
   created_at: string | null;
   updated_at: string | null;
   agent_run_stage?: StageRowRaw[] | null;
-  pc_studio_run_assets?: AssetRowRaw[] | null;
 }
 
 const RUN_SELECT =
   "id,status,request,result,episode_id,last_heartbeat_at,created_at,updated_at," +
   "agent_run_stage(stage_key,status,output,error,started_at,finished_at)";
 
-const RUN_DETAIL_SELECT =
-  RUN_SELECT +
-  ",pc_studio_run_assets(asset_kind,slot,url,prompt,model_alias,is_manual,status,superseded_by)";
+const ASSET_SELECT =
+  "asset_kind,slot,url,prompt,model_alias,is_manual,status,superseded_by";
 
 // ── projection helpers (port of the former Python read endpoints) ──────────────
 
@@ -328,13 +326,28 @@ export async function fetchPodcastRunDetail(
   const now = Date.now();
   const { data, error } = await supabase
     .schema("chat").from("agent_run")
-    .select(RUN_DETAIL_SELECT)
+    .select(RUN_SELECT)
     .is("deleted_at", null)
     .eq("id", runId)
     .eq("kind", "podcast")
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) throw error;
+  if (!data) return null;
+
+  // `agent_run` lives in `chat`, while its editable asset catalog lives in
+  // `podcast`. PostgREST resolves embedded resources inside the active schema
+  // profile, so asking the chat query to embed `pc_studio_run_assets` produces
+  // PGRST200 even though the cross-schema FK exists. Keep both reads inside
+  // their owning exposed schemas (and therefore their own RLS policies), then
+  // compose the detail DTO here.
+  const { data: assetData, error: assetError } = await supabase
+    .schema("podcast").from("pc_studio_run_assets")
+    .select(ASSET_SELECT)
+    .eq("run_id", runId);
+  if (assetError) throw assetError;
+
   const run = data as unknown as AgentRunRaw;
+  const assetRows = (assetData ?? []) as unknown as AssetRowRaw[];
   const stages = run.agent_run_stage ?? [];
   const byKey = new Map(stages.map((s) => [s.stage_key, s]));
   const request = run.request ?? {};
@@ -362,7 +375,7 @@ export async function fetchPodcastRunDetail(
     official_video_url: official,
     image_descriptions: imageDescriptions,
     video_descriptions: videoDescriptions,
-    assets: buildAssetsMerged(stages, run.pc_studio_run_assets ?? []),
+    assets: buildAssetsMerged(stages, assetRows),
     stages: [...stages]
       .sort((a, b) => (a.stage_key < b.stage_key ? -1 : 1))
       .map((s) => ({
