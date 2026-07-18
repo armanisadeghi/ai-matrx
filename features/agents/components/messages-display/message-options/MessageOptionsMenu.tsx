@@ -68,6 +68,12 @@ export interface MessageOptionsMenuProps {
   onRequestEditHistory?: () => void;
   /** Number of archived versions on this message. */
   contentHistoryCount?: number;
+  /**
+   * Called when the user picks "Convert to flashcards / quiz…" (assistant
+   * messages with a table/list). The host owns the ConvertContentDialog so
+   * it survives this menu closing. Omit to hide the item.
+   */
+  onRequestConvert?: () => void;
 }
 
 export function MessageOptionsMenu({
@@ -87,6 +93,7 @@ export function MessageOptionsMenu({
   onRequestDelete,
   onRequestEditHistory,
   contentHistoryCount = 0,
+  onRequestConvert,
 }: MessageOptionsMenuProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -147,6 +154,7 @@ export function MessageOptionsMenu({
     onRequestEditHistory,
     contentHistoryCount,
     isAdmin,
+    onRequestConvert,
   };
 
   const menuItems =

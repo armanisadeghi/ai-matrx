@@ -20,6 +20,7 @@ import { QuickRunModelSelect } from "@/features/agents/components/run-controls/R
 import { RunSettingsQuickControls } from "@/features/agents/components/run-controls/RunSettingsEditor";
 import { RunToolPicker } from "./RunToolPicker";
 import { RunSkillPicker } from "./RunSkillPicker";
+import { ShapeChipsRow } from "./ShapeChipsRow";
 import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import {
@@ -315,14 +316,23 @@ export function QuicksetPanel({
 
       <Separator />
 
-      <PickerRow
-        label="Skills"
-        summary={`${addedSkills.length} skills`}
-      >
-        <div className="h-[26rem]">
-          <RunSkillPicker conversationId={conversationId} />
-        </div>
-      </PickerRow>
+      <div className="space-y-1.5">
+        <PickerRow
+          label="Skills"
+          summary={`${addedSkills.length} skills`}
+        >
+          <div className="h-[26rem]">
+            <RunSkillPicker conversationId={conversationId} />
+          </div>
+        </PickerRow>
+        {/* Shape discovery chips — one-click add of the high-value render_block
+            skills (Flashcards / Quiz / Timeline / Comparison / Diagram). Same
+            addedSkills state as the picker above; chips show only for skills
+            that exist + are active in the live list. */}
+        <Row label="Shapes">
+          <ShapeChipsRow conversationId={conversationId} />
+        </Row>
+      </div>
 
       <Separator />
 

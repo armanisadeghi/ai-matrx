@@ -42,6 +42,7 @@ import {
   ListFilter,
   History,
   Layers,
+  Boxes,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import {
@@ -72,6 +73,7 @@ import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
 import { buildTaskSeedFromMessage } from "./buildTaskSeedFromMessage";
 import { openAssistantMessageEditor } from "./openAssistantMessageEditor";
+import { hasConvertibleContent } from "./convertibleContent";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -146,6 +148,15 @@ export interface MessageActionContext {
   onRequestEditHistory?: () => void;
   /** Number of archived versions in cx_message.content_history. */
   contentHistoryCount: number;
+  /**
+   * Optional callback fired when the user picks "Convert to flashcards /
+   * quiz" on an assistant message (the ratified click-to-convert pattern —
+   * content starts generic markdown, converts on explicit click). The host
+   * action bar owns the ConvertContentDialog (the ONE convert-source dialog,
+   * features/education/convert) so it survives this menu closing. Omitted →
+   * the item hides.
+   */
+  onRequestConvert?: () => void;
   /**
    * True when the viewer is a super admin. Gates the "Server API (test)"
    * section that exposes the new Python-backed conversation endpoints
@@ -1286,6 +1297,47 @@ function creatorItems(ctx: MessageActionContext): MenuItem[] {
 // ASSISTANT-ONLY EXTRAS
 // ============================================================================
 
+/**
+ * ASSISTANT MESSAGES — "Convert to flashcards / quiz…" (first chat
+ * implementation of the ratified convert pattern: content starts as generic
+ * markdown and converts on EXPLICIT click, it never auto-shapes). Shows only
+ * when the turn carries convertible structure (a markdown table or a list —
+ * `hasConvertibleContent`). The click hands off to the host action bar, which
+ * owns the canonical ConvertContentDialog (features/education/convert — the
+ * ONE convert-source dialog; its generators reuse the exact structured-output
+ * launch mechanism CreateFromTopic uses). Never a bespoke generation path.
+ */
+function convertMessageItem(ctx: MessageActionContext): MenuItem {
+  const { conversationId, messageId, onRequestConvert, onClose } = ctx;
+  const text = ctx.turnContent ?? ctx.content;
+  return {
+    key: "convert-to-study",
+    icon: Boxes,
+    iconColor: "text-primary",
+    label: "Convert to flashcards / quiz…",
+    action: () => {
+      if (
+        !requireAuth(
+          ctx,
+          "convert-to-study",
+          "Convert content",
+          "Sign in to convert this response into flashcards, a quiz, and more.",
+        )
+      )
+        return;
+      onClose();
+      onRequestConvert?.();
+    },
+    category: "Actions",
+    showToast: false,
+    hidden:
+      !onRequestConvert ||
+      !conversationId ||
+      !messageId ||
+      !hasConvertibleContent(text),
+  };
+}
+
 function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
   const { conversationId, messageId, getState } = ctx;
   return [
@@ -1678,6 +1730,7 @@ export function getAssistantMessageActions(
     ...creatorItems(ctx),
     ...copyItems(ctx),
     ...assistantOnlyItems(ctx),
+    convertMessageItem(ctx),
     ...actionsItems(ctx),
     ...serverApiTestItems(ctx),
     ...appItems(ctx),

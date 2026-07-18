@@ -54,9 +54,24 @@ import {
   selectShowAssistantMessageOptions,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { EditHistoryDialog } from "../message-options/EditHistoryDialog";
 import { extractErrorMessage } from "@/utils/errors";
+import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
+
+// The canonical convert-source dialog (features/education/convert — the ONE
+// dispatch for "turn this content into study artifacts"). Heavy (entitlement
+// guard + compliance gate + eight generator rows) — code-split and mounted
+// only after the user actually picks "Convert to flashcards / quiz…".
+const ConvertContentDialog = dynamic(
+  () =>
+    import("@/features/education/convert/ConvertContentDialog").then(
+      (m) => m.ConvertContentDialog,
+    ),
+  { ssr: false },
+);
 
 function serializeSaveError(error: unknown): {
   logPayload: Record<string, unknown>;
@@ -145,6 +160,11 @@ export function AssistantActionBar({
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editHistoryOpen, setEditHistoryOpen] = useState(false);
+  // True once the user has opened Convert at least once — gates BOTH mount and
+  // the dynamic chunk load (never pay for the education convert stack until a
+  // convert is actually requested).
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [convertMounted, setConvertMounted] = useState(false);
   const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
 
   // Single subscription to the message record. Everything below derives.
@@ -158,6 +178,9 @@ export function AssistantActionBar({
   );
   const isLatestAssistant = useAppSelector(
     selectIsLatestAssistantMessage(conversationId, messageId),
+  );
+  const conversationTitle = useAppSelector(
+    selectConversationTitle(conversationId),
   );
 
   const content = useMemo(() => extractFlatText(record), [record]);
@@ -430,6 +453,10 @@ export function AssistantActionBar({
             onRequestDelete={() => setDeleteDialogOpen(true)}
             onRequestEditHistory={() => setEditHistoryOpen(true)}
             contentHistoryCount={contentHistoryCount}
+            onRequestConvert={() => {
+              setConvertMounted(true);
+              setConvertOpen(true);
+            }}
           />
         </Suspense>
       )}
@@ -449,6 +476,28 @@ export function AssistantActionBar({
         conversationId={conversationId}
         messageId={messageId}
       />
+
+      {/* The ratified click-to-convert pattern's chat affordance: the turn's
+          markdown (table / list) converts into real study artifacts on
+          explicit click via the ONE convert-source dialog. Lineage links the
+          artifact back to this conversation. */}
+      {convertMounted && (
+        <ConvertContentDialog
+          open={convertOpen}
+          onOpenChange={setConvertOpen}
+          origin={{
+            kind: "paste",
+            entityType: "conversation",
+            entityId: conversationId,
+            title:
+              buildConversationMessageTitle(
+                conversationTitle,
+                messagePosition,
+              ) ?? "Chat response",
+          }}
+          text={copySpeakContent}
+        />
+      )}
     </>
   );
 }
