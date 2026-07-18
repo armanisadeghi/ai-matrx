@@ -47,12 +47,7 @@ import {
 // ─── Public types (exported so consumers can reference them) ─────────────────
 
 export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export type JsonTruncatorTab = "input" | "fields" | "output";
 

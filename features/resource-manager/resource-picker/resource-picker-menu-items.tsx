@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   CheckSquare,
-  Cpu,
   File,
   FileText,
   Globe,
@@ -35,7 +34,6 @@ export type ResourcePickerViewId =
   | "tools"
   | "skills"
   | "run_settings"
-  | "run_model"
   | null;
 
 export type ResourcePickerMenuItem = {
@@ -155,10 +153,11 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
       },
       {
         id: "audio",
-        label: "Audio",
+        label: "Voice Pad",
         icon: Mic,
         iconClassName: "text-pink-600 dark:text-pink-400",
         requiresCapability: "supportsAudio",
+        requiresConversation: true,
       },
     ],
   },
@@ -189,14 +188,6 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         requiresCapability: null,
         requiresConversation: true,
       },
-      {
-        id: "run_model",
-        label: "Model",
-        icon: Cpu,
-        iconClassName: "text-primary",
-        requiresCapability: null,
-        requiresConversation: true,
-      },
     ],
   },
 ];
@@ -214,6 +205,8 @@ export type ResourcePickerAttachmentCapabilities = {
 
 export type ResourcePickerMenuOptions = {
   conversationId?: string;
+  /** Restrict a reused picker to the resource kinds its host can persist. */
+  allowedViewIds?: readonly Exclude<ResourcePickerViewId, null>[];
 };
 
 /** True when the item should appear in the attach menu for this model/surface. */
@@ -223,6 +216,9 @@ export function isResourcePickerItemAvailable(
   options?: ResourcePickerMenuOptions,
 ): boolean {
   if (item.requiresConversation && !options?.conversationId) return false;
+  if (options?.allowedViewIds && !options.allowedViewIds.includes(item.id)) {
+    return false;
+  }
   if (!item.requiresCapability) return true;
   return capabilities?.[item.requiresCapability] === true;
 }

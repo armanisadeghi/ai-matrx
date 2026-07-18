@@ -72,7 +72,7 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { MakerBrandGlyph } from "@/components/icons/MakerBrandGlyph";
-import { MakerTapButton } from "@/components/icons/MakerTapButton";
+import { ServiceBrandGlyph } from "@/components/icons/ServiceBrandGlyph";
 import {
   useModelCatalog,
   INPUT_MODALITIES,
@@ -791,6 +791,74 @@ function ChipToggle({
   );
 }
 
+/** Maker filter tile — brand glyph + truncated name in a grid cell. */
+function MakerFilterButton({
+  maker,
+  active,
+  onClick,
+}: {
+  maker: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      aria-label={`Filter by ${maker}`}
+      onClick={onClick}
+      className={cn(
+        "flex min-w-0 items-center gap-1.5 rounded-md border px-1.5 py-1 text-left transition-colors",
+        active
+          ? "border-primary bg-primary/10 text-foreground"
+          : "border-border text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <MakerBrandGlyph maker={maker} colored className="h-3.5 w-3.5 shrink-0" />
+      <span
+        className="truncate text-[11px] font-medium leading-tight"
+        title={maker}
+      >
+        {maker}
+      </span>
+    </button>
+  );
+}
+
+/** Service filter tile — tier glyph or maker logo + truncated name. */
+function ServiceFilterButton({
+  service,
+  active,
+  onClick,
+}: {
+  service: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      aria-label={`Filter by ${service}`}
+      onClick={onClick}
+      className={cn(
+        "flex min-w-0 items-center gap-1.5 rounded-md border px-1.5 py-1 text-left transition-colors",
+        active
+          ? "border-primary bg-primary/10 text-foreground"
+          : "border-border text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <ServiceBrandGlyph service={service} className="h-3.5 w-3.5 shrink-0" />
+      <span
+        className="truncate text-[11px] font-medium leading-tight"
+        title={service}
+      >
+        {service}
+      </span>
+    </button>
+  );
+}
+
 function TriStateChips({
   value,
   onChange,
@@ -987,36 +1055,6 @@ function FiltersPanel({
         </div>
       </FilterSection>
 
-      <FilterSection label="Features">
-        <div className="flex flex-wrap gap-1">
-          {FEATURE_BUCKET_ORDER.map((b) => (
-            <ChipToggle
-              key={b}
-              active={filters.features.has(b)}
-              onClick={() => toggleFeature(b)}
-            >
-              {FEATURE_BUCKETS[b].label}
-            </ChipToggle>
-          ))}
-        </div>
-      </FilterSection>
-
-      <FilterSection label="Interaction">
-        <div className="flex flex-wrap gap-1">
-          {(["any", "turn", "single", "extraction", "realtime"] as const).map(
-            (i) => (
-              <ChipToggle
-                key={i}
-                active={filters.interaction === i}
-                onClick={() => setFilters((f) => ({ ...f, interaction: i }))}
-              >
-                {i === "any" ? "Any" : INTERACTION_LABEL[i]}
-              </ChipToggle>
-            ),
-          )}
-        </div>
-      </FilterSection>
-
       <ChipToggle
         active={filters.multilingualOnly}
         onClick={() =>
@@ -1075,14 +1113,12 @@ function FiltersPanel({
           >
             Any
           </ChipToggle>
-          <div className="flex flex-wrap">
+          <div className="grid grid-cols-4 gap-1">
             {makerOptions.map((maker) => (
-              <MakerTapButton
+              <MakerFilterButton
                 key={maker}
                 maker={maker}
-                variant={filters.makers.has(maker) ? "glass" : "transparent"}
-                colored
-                ariaLabel={`Filter by ${maker}`}
+                active={filters.makers.has(maker)}
                 onClick={() => toggleSetValue("makers", maker)}
               />
             ))}
@@ -1091,7 +1127,56 @@ function FiltersPanel({
       </FilterSection>
 
       {/* Branded serving names ONLY (served_via) — never a real vendor. */}
-      <FilterSection label={SERVICE_LABEL}>{setChip("services")}</FilterSection>
+      <FilterSection label={SERVICE_LABEL}>
+        <div className="space-y-2">
+          <ChipToggle
+            active={filters.services.size === 0}
+            onClick={() => setFilters((f) => ({ ...f, services: new Set() }))}
+          >
+            Any
+          </ChipToggle>
+          <div className="grid grid-cols-4 gap-1">
+            {serviceOptions.map((service) => (
+              <ServiceFilterButton
+                key={service}
+                service={service}
+                active={filters.services.has(service)}
+                onClick={() => toggleSetValue("services", service)}
+              />
+            ))}
+          </div>
+        </div>
+      </FilterSection>
+
+      <FilterSection label="Features">
+        <div className="flex flex-wrap gap-1">
+          {FEATURE_BUCKET_ORDER.map((b) => (
+            <ChipToggle
+              key={b}
+              active={filters.features.has(b)}
+              onClick={() => toggleFeature(b)}
+            >
+              {FEATURE_BUCKETS[b].label}
+            </ChipToggle>
+          ))}
+        </div>
+      </FilterSection>
+
+      <FilterSection label="Interaction">
+        <div className="flex flex-wrap gap-1">
+          {(["any", "turn", "single", "extraction", "realtime"] as const).map(
+            (i) => (
+              <ChipToggle
+                key={i}
+                active={filters.interaction === i}
+                onClick={() => setFilters((f) => ({ ...f, interaction: i }))}
+              >
+                {i === "any" ? "Any" : INTERACTION_LABEL[i]}
+              </ChipToggle>
+            ),
+          )}
+        </div>
+      </FilterSection>
     </div>
   );
 }

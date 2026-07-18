@@ -2,11 +2,14 @@ import type { ComponentType } from "react";
 import type { AITapButtonProps } from "@/components/icons/ai-tap-buttons";
 import {
   AnthropicTapButton,
+  ByteDanceTapButton,
+  CanopyTapButton,
   CerebrasTapButton,
   ClaudeTapButton,
   CpuTapButton,
   DeepSeekTapButton,
   ElevenLabsTapButton,
+  FastinoTapButton,
   FluxTapButton,
   GeminiTapButton,
   GoogleTapButton,
@@ -14,20 +17,25 @@ import {
   GroqTapButton,
   HuggingFaceTapButton,
   IdeogramTapButton,
+  KuaishouTapButton,
   LlamaTapButton,
   LumaTapButton,
   MetaTapButton,
   MicrosoftTapButton,
+  MiniMaxTapButton,
   MistralTapButton,
   MoonshotTapButton,
   NvidiaTapButton,
   OpenAITapButton,
   PerplexityTapButton,
   QwenTapButton,
+  RecraftTapButton,
   ReplicateTapButton,
   RunwayTapButton,
   TogetherTapButton,
+  WanTapButton,
   XaiTapButton,
+  ZaiTapButton,
 } from "@/components/icons/ai-tap-buttons";
 import { RobotTapButton } from "@/components/icons/tap-buttons";
 
@@ -59,6 +67,14 @@ export type MakerBrandId =
   | "ideogram"
   | "runway"
   | "luma"
+  | "bytedance"
+  | "kuaishou"
+  | "minimax"
+  | "recraft"
+  | "canopy"
+  | "fastino"
+  | "wan"
+  | "zai"
   | "matrx"
   | "cpu";
 
@@ -91,6 +107,14 @@ const MAKER_BRAND_COMPONENTS: Record<MakerBrandId, MakerTapComponent> = {
   ideogram: IdeogramTapButton,
   runway: RunwayTapButton,
   luma: LumaTapButton,
+  bytedance: ByteDanceTapButton,
+  kuaishou: KuaishouTapButton,
+  minimax: MiniMaxTapButton,
+  recraft: RecraftTapButton,
+  canopy: CanopyTapButton,
+  fastino: FastinoTapButton,
+  wan: WanTapButton,
+  zai: ZaiTapButton,
   matrx: RobotTapButton as MakerTapComponent,
   cpu: CpuTapButton,
 };
@@ -129,6 +153,14 @@ const MAKER_EXACT: Record<string, MakerBrandId> = {
   ideogram: "ideogram",
   runway: "runway",
   luma: "luma",
+  bytedance: "bytedance",
+  kuaishou: "kuaishou",
+  minimax: "minimax",
+  recraft: "recraft",
+  "canopy labs": "canopy",
+  fastino: "fastino",
+  wan: "wan",
+  "z.ai": "zai",
   "ai matrx": "matrx",
 };
 
@@ -166,6 +198,19 @@ export function resolveMakerBrandId(
   if (key.includes("ideogram")) return "ideogram";
   if (key.includes("runway")) return "runway";
   if (key.includes("luma")) return "luma";
+  if (
+    key.includes("bytedance") ||
+    key.includes("doubao") ||
+    key.includes("seedance")
+  )
+    return "bytedance";
+  if (key.includes("kuaishou") || key.includes("kling")) return "kuaishou";
+  if (key.includes("minimax")) return "minimax";
+  if (key.includes("recraft")) return "recraft";
+  if (key.includes("canopy")) return "canopy";
+  if (key.includes("fastino")) return "fastino";
+  if (key === "wan" || key.startsWith("wan ")) return "wan";
+  if (key.includes("z.ai") || key.includes("zhipu")) return "zai";
   if (key.includes("matrx")) return "matrx";
 
   return "cpu";

@@ -5,14 +5,14 @@
  *
  * Layout (top → bottom):
  *   1. ResourcePickerMenu (attach sources + **This run** at bottom) — flex-1 scroll
- *   2. Working doc / Scratchpad switches
- *   3. ContextLensBar (same control as the composer rail)
- *   4. ComputeLensBar — sandbox + local PC (up to two inline chips)
- *   5. [compact only] Enter / auto-clear toggles
- *   6. Advanced settings → full Chat Options window
+ *   2. Model override row (borderless dropdown)
+ *   3. Advanced Settings Window → full Chat Options window
+ *   4. Working doc / Scratchpad switches
+ *   5. ContextLensBar
+ *   6. ComputeLensBar
+ *   7. [compact only] Enter / auto-clear toggles
  *
- * **This run** (Tools, Skills, Settings, Model) drills in-place like Files.
- * Advanced settings opens the run-controls window for deeper overrides.
+ * **This run** (Tools, Skills, Settings) drills in-place like Files.
  *
  * Shell height is fixed at open (`PLUS_ATTACH_MENU_HEIGHT_CLASS`); only the
  * attach-list zone scrolls. Footer chrome is shrink-0 so capability filtering
@@ -29,6 +29,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
@@ -219,6 +220,28 @@ export function PlusAttachMenu({
         </div>
 
         <div className="flex shrink-0 flex-col">
+          <div className="flex items-center gap-2 border-t border-border px-2 py-1.5">
+            <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+              Model
+            </span>
+            <QuickRunModelSelect
+              conversationId={conversationId}
+              className="h-6 min-w-0 flex-1"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              openRunControlsWindow({ conversationId, initialTab: "settings" });
+            }}
+            className="flex w-full items-center gap-2 border-t border-border px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+            Advanced Settings Window
+          </button>
+
           <DocumentSwitchesRow conversationId={conversationId} />
 
           <ContextLensMenuRow conversationId={conversationId} />
@@ -263,18 +286,6 @@ export function PlusAttachMenu({
               )}
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              openRunControlsWindow({ conversationId, initialTab: "settings" });
-            }}
-            className="flex w-full items-center gap-2 border-t border-border px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
-            Advanced settings
-          </button>
         </div>
       </PopoverContent>
     </Popover>

@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { Upload } from "lucide-react";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
 import { CloudFolders, InlineMediaRef } from "@/features/files";
+import { MediaVariableInput } from "@/features/agents/components/inputs/input-components/MediaVariableInput";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,6 +46,9 @@ import { CloudFolders, InlineMediaRef } from "@/features/files";
 
 export type BlockType =
   "text" | "image" | "audio" | "video" | "youtube_video" | "document";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface FieldConfig {
   key: string;
@@ -130,14 +134,9 @@ const BLOCK_TYPES: BlockTypeConfig[] = [
     icon: <FileText className="w-3.5 h-3.5" />,
     fields: [
       {
-        key: "url",
-        label: "Document URL or {{variable}}",
-        placeholder: "https://example.com/document.pdf",
-      },
-      {
-        key: "mime_type",
-        label: "MIME type or {{variable}}",
-        placeholder: "application/pdf",
+        key: "file_id",
+        label: "File or {{variable}}",
+        placeholder: "Choose a file or enter {{variable}}",
       },
     ],
   },
@@ -271,7 +270,13 @@ export function BlockEditor({
     config
       ? Object.fromEntries(
           config.fields.map((f) => {
-            const v = initialValues[f.key];
+            // Transparently upgrade historical document blocks that stored a
+            // cld_files UUID in `url`. The editor now presents one canonical
+            // file reference and saves owned files under `file_id`.
+            const v =
+              config.type === "document" && f.key === "file_id"
+                ? (initialValues.file_id ?? initialValues.url)
+                : initialValues[f.key];
             return [f.key, typeof v === "string" ? v : ""];
           }),
         )
@@ -297,6 +302,18 @@ export function BlockEditor({
       // mime types) safely trim — those values shouldn't have surrounding
       // whitespace.
       if (!raw.trim()) return;
+      if (config.type === "document" && key === "file_id") {
+        const value = raw.trim();
+        // A library selection and a variable both belong in the canonical
+        // file_id slot. Preserve external URL support without asking for MIME;
+        // the server detects it from the resolved resource.
+        if (value.includes("{{") || UUID_PATTERN.test(value)) {
+          block.file_id = value;
+        } else {
+          block.url = value;
+        }
+        return;
+      }
       block[key] = multiline ? raw : raw.trim();
     });
     const meta = pairsToMetadata(metadataPairs);
@@ -355,13 +372,30 @@ export function BlockEditor({
 
       {config.fields.map(({ key, label, placeholder, multiline }) => {
         const showImageUpload = config.type === "image" && key === "url";
+        const showDocumentFilePicker =
+          config.type === "document" && key === "file_id";
         return (
           <div key={key} className="flex flex-col gap-1">
             {label && (
               <Label className="text-xs text-muted-foreground">{label}</Label>
             )}
             <div className="flex items-start gap-1 w-full">
-              {multiline ? (
+              {showDocumentFilePicker ? (
+                <div className="w-full">
+                  <MediaVariableInput
+                    value={values[key] ?? ""}
+                    onChange={(value) => setValue(key, value)}
+                    variableName="document"
+                    mediaKind="document"
+                    compact
+                  />
+                  <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+                    This sends a file in this message. Use a {"{{variable}}"}
+                    for a per-run file, or Agent Resources for permanent
+                    knowledge.
+                  </p>
+                </div>
+              ) : multiline ? (
                 <Textarea
                   autoFocus={key === config.fields[0].key}
                   value={values[key] ?? ""}
@@ -472,7 +506,11 @@ export function BlockRow({
   const fieldRows =
     config?.fields
       .map(({ key, label: fieldLabel }) => {
-        const val = block[key] as string | undefined;
+        const val = (
+          type === "document" && key === "file_id"
+            ? (block.file_id ?? block.url)
+            : block[key]
+        ) as string | undefined;
         if (!val) return null;
         return { key, label: fieldLabel.replace(/ or \{\{.*?\}\}/, ""), val };
       })

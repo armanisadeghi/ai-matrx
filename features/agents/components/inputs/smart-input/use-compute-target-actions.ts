@@ -97,6 +97,7 @@ export function useComputeTargetActions(conversationId: string) {
   );
 
   const boundTarget = binding.status === "verified" ? binding.target : null;
+  const hasBinding = !!binding.ref;
   const availableTargets = useMemo(
     () =>
       (data?.targets ?? []).filter(
@@ -159,6 +160,7 @@ export function useComputeTargetActions(conversationId: string) {
     loading: loading || binding.isChecking,
     sandboxBlocked,
     boundTarget,
+    hasBinding,
     bindingStatus: binding.status,
     availableTargets,
     visibleTargets: visible,

@@ -20,7 +20,6 @@ import { ContextValuesResourcePicker } from "./ContextValuesResourcePicker";
 import { ToolsResourcePicker } from "./ToolsResourcePicker";
 import { SkillsResourcePicker } from "./SkillsResourcePicker";
 import { RunSettingsResourcePicker } from "./RunSettingsResourcePicker";
-import { ModelResourcePicker } from "./ModelResourcePicker";
 import {
   flattenResourcePickerItems,
   getVisibleResourcePickerCategories,
@@ -28,7 +27,7 @@ import {
 } from "./resource-picker-menu-items";
 
 interface ResourcePickerMenuProps {
-  onResourceSelected: (resource: any) => void;
+  onResourceSelected(resource: unknown): void;
   onClose: () => void;
   /** Required for Tools / Skills / Settings in-place pickers. */
   conversationId?: string;
@@ -41,6 +40,8 @@ interface ResourcePickerMenuProps {
   onSettingsClick?: () => void;
   onDebugClick?: () => void;
   showDebugActive?: boolean;
+  /** Limit the canonical picker to resource kinds supported by this host. */
+  allowedViewIds?: readonly Exclude<ResourcePickerViewId, null>[];
 }
 
 export function ResourcePickerMenu({
@@ -51,6 +52,7 @@ export function ResourcePickerMenu({
   onSettingsClick,
   onDebugClick,
   showDebugActive,
+  allowedViewIds,
 }: ResourcePickerMenuProps) {
   const [activeView, setActiveView] = useState<ResourcePickerViewId>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
@@ -64,7 +66,7 @@ export function ResourcePickerMenu({
   const menuItems = flattenResourcePickerItems();
   const visibleCategories = getVisibleResourcePickerCategories(
     attachmentCapabilities,
-    { conversationId },
+    { conversationId, allowedViewIds },
   );
 
   // Show specific resource picker based on selection
@@ -207,11 +209,19 @@ export function ResourcePickerMenu({
     }
 
     if (activeView === "audio") {
+      if (!conversationId) {
+        return (
+          <div className="p-3 text-xs text-muted-foreground">
+            Open a conversation to use Voice Pad.
+          </div>
+        );
+      }
       return (
         <AudioResourcePicker
+          conversationId={conversationId}
           onBack={() => setActiveView(null)}
           onSelect={(audioData) => {
-            onResourceSelected({ type: "audio", data: audioData });
+            onResourceSelected(audioData);
           }}
         />
       );
@@ -247,15 +257,6 @@ export function ResourcePickerMenu({
     if (activeView === "run_settings" && conversationId) {
       return (
         <RunSettingsResourcePicker
-          conversationId={conversationId}
-          onBack={() => setActiveView(null)}
-        />
-      );
-    }
-
-    if (activeView === "run_model" && conversationId) {
-      return (
-        <ModelResourcePicker
           conversationId={conversationId}
           onBack={() => setActiveView(null)}
         />

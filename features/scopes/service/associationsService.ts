@@ -425,6 +425,82 @@ export const associationsService = {
   },
 
   // ──────────────────────────────────────────────────────────────────
+  //  AGENT RESOURCES — authorized container membership.
+  // ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Permanently attach a resource to an agent. The dedicated RPC enforces the
+   * stronger authoring contract this containment edge requires: editor access
+   * to both the agent and source resource. The stored edge is
+   * still the canonical platform association (`role=agent_resource`).
+   */
+  async addAgentResource(args: {
+    agentId: string;
+    sourceType: string;
+    sourceId: string;
+    label?: string;
+    metadata?: Json;
+  }): Promise<ScopesRpcResult<{ id: string }>> {
+    try {
+      requireUserId();
+      const sourceType = normalizeEntityToken(args.sourceType);
+      const bad = firstError(
+        checkUuid("agentId", args.agentId),
+        checkToken("sourceType", sourceType),
+        checkUuid("sourceId", args.sourceId),
+      );
+      if (bad) return { ok: false, error: bad };
+      const { data, error } = await supabase.rpc(
+        "agent_resource_add" as never,
+        {
+          p_agent_id: args.agentId,
+          p_source_type: sourceType,
+          p_source_id: args.sourceId,
+          p_label: args.label,
+          p_metadata: args.metadata ?? {},
+        } as never,
+      );
+      if (error) return err(...mapPgErrorPair(error));
+      if (!data || typeof data !== "string") {
+        return err("internal", "agent_resource_add returned no association id");
+      }
+      return ok({ id: data });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** Remove one permanent Agent Resource edge. */
+  async removeAgentResource(args: {
+    agentId: string;
+    sourceType: string;
+    sourceId: string;
+  }): Promise<ScopesRpcResult<null>> {
+    try {
+      requireUserId();
+      const sourceType = normalizeEntityToken(args.sourceType);
+      const bad = firstError(
+        checkUuid("agentId", args.agentId),
+        checkToken("sourceType", sourceType),
+        checkUuid("sourceId", args.sourceId),
+      );
+      if (bad) return { ok: false, error: bad };
+      const { error } = await supabase.rpc(
+        "agent_resource_remove" as never,
+        {
+          p_agent_id: args.agentId,
+          p_source_type: sourceType,
+          p_source_id: args.sourceId,
+        } as never,
+      );
+      if (error) return err(...mapPgErrorPair(error));
+      return ok(null);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
   //  WRITE — purge EVERY edge touching one entity (both directions).
   // ──────────────────────────────────────────────────────────────────
 

@@ -42,6 +42,8 @@ export interface TapButtonProps {
   tooltipAlign?: "start" | "center" | "end";
   /** Inline caption after the icon — see TapTargetButton `label`. */
   label?: string;
+  /** Passthrough from AITapButtonProps / MakerTapButton — stripped before DOM. */
+  colored?: boolean;
 }
 
 // ---------------------------------------------------------------------------

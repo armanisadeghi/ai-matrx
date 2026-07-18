@@ -5,6 +5,7 @@ import { AgentVariablesManager } from "@/features/agents/components/variables-ma
 import { AgentContextSlotsManager } from "../context-slots-management/AgentContextSlotsManager";
 import { AgentBuilderMessagesArea } from "./AgentBuilderLeftPanelContent";
 import { AddMessageButtons } from "./AddMessageButtons";
+import { AgentResourcesManager } from "./AgentResourcesManager";
 
 interface AgentBuilderLeftPanelProps {
   agentId: string;
@@ -37,6 +38,7 @@ export function AgentBuilderLeftPanel({ agentId }: AgentBuilderLeftPanelProps) {
         <AgentModelConfiguration agentId={agentId} />
         <AgentVariablesManager agentId={agentId} />
         <AgentContextSlotsManager agentId={agentId} />
+        <AgentResourcesManager agentId={agentId} />
       </div>
 
       <Suspense fallback={<MessagesAreaSkeleton />}>

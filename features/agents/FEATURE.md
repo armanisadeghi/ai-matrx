@@ -39,6 +39,28 @@ Admin/dev desktop targeting is an additive request overlay, not part of agent au
 - **Context slots** are optional, auto-filled from ambient sources (user profile, org, active project, scope mappings). Their absence is graceful.
 - **Everything else** is fetched on demand via tool call, not injection.
 
+### Agent Resources
+
+**Agent Resources** are durable content attached to the agent itself. They are
+neither prompt blocks nor run inputs: a canonical
+`resource → agent` `platform.associations` edge with
+`role="agent_resource"` makes the resource available on every invocation.
+
+- Use **Agent Resources** for permanent knowledge such as a handbook, corpus,
+  note, transcript, workbook, or data store.
+- Use a **document variable** for a file selected independently on each run.
+- Use a **document message block** only when the file must be sent in that exact
+  authored message. Owned files persist as `file_id`; MIME is resolved by the
+  server and is never an authoring requirement.
+- Files enter the backend Document Evidence System: processed text is primary,
+  while RAG, raw/clean representations, selected physical PDF pages, and
+  verification tools are auto-injected.
+- Sharing the agent conveys contextual `viewer` access to attached resources,
+  capped by `platform.association_types`. Reachability does not make those
+  resources globally discoverable. Adding requires `editor` access to both the
+  agent and source resource, because attachment conveys access to other agent
+  viewers. Removal requires agent `editor` access.
+
 ### Versioning
 
 Every Builder save = new `agent_definition` version. Runner + Chat default to the current pointer. **Shortcuts and Apps pin to a specific version** so embeds never break when the agent evolves. Drift is surfaced via **Find Usages & Drift** (below), never auto-resolved. See **AGENT_VERSIONING.md**.

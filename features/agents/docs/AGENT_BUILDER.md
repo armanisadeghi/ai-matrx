@@ -12,6 +12,11 @@
 
 The Builder is the forge where engineers craft an agent's identity — instructions, model, settings, tools, variables, context slots, permissions. **It is the only surface that ships the full agent definition in the API payload.** Every other surface (Runner, Chat, Shortcut, App) sends only the agent ID and lets the server hydrate the definition from cache.
 
+Permanent content is configured separately under **Agent Resources**. The
+Builder stores only the durable `resource → agent` association; execution reads
+those associations server-side, so Runner, Chat, workflows, and agent-to-agent
+calls receive the same resources without copying IDs into every payload.
+
 This payload difference is the Builder's reason to exist: it lets engineers test an agent exactly as it will run, with zero dependence on server cache state.
 
 ---

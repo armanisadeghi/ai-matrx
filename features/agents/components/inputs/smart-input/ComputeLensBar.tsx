@@ -6,7 +6,7 @@
  * chips, overflow + chevron opens the full Sandbox panel in run-controls window.
  */
 
-import { Box, ChevronDown, Loader2, Monitor } from "lucide-react";
+import { Box, ChevronDown, Loader2, Monitor, Unplug } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -107,6 +107,7 @@ export function ComputeLensBar({
   const {
     loading,
     boundTarget,
+    hasBinding,
     visibleTargets,
     overflowCount,
     totalCount,
@@ -184,6 +185,25 @@ export function ComputeLensBar({
           </button>
         ) : null}
       </div>
+
+      {hasBinding ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => applyBinding(null)}
+              className="inline-flex h-5 shrink-0 items-center rounded-full px-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              aria-label="Detach compute"
+            >
+              <Unplug className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            Detach
+            {boundTarget?.name ? ` ${boundTarget.name}` : " connected compute"}
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
 
       {(overflowCount > 0 || totalCount > 0) && (
         <button

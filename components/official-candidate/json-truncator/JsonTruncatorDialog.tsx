@@ -30,7 +30,10 @@ import {
  *  `isOpen` + `onClose` themselves), so we narrow to that branch before
  *  Omit-ing. Without the Extract, JSX spread inference flips toward the
  *  overlay branch and demands `overlayId`. */
-type InlineWindowPanelProps = Extract<WindowPanelProps, { onClose: () => void }>;
+type InlineWindowPanelProps = Extract<
+  WindowPanelProps,
+  { onClose: () => void }
+>;
 
 export interface JsonTruncatorDialogProps
   extends

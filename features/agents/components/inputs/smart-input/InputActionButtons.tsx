@@ -193,10 +193,6 @@ export function InputActionButtons({
           includeAttach={showAttachments}
         />
 
-        {/* Quick toggles + links for the working document / scratchpad and
-            active context — the fast path that complements the `+` menu. */}
-        <ContextDocsMenu conversationId={conversationId} />
-
         {/* Bound sandbox / local PC only — connect via `+` → ComputeLensBar. */}
         <DesktopPresenceIndicator conversationId={conversationId} />
 
