@@ -319,6 +319,20 @@ describe("findTakenSlugs", () => {
     );
     expect(taken.sort()).toEqual(["compiled_kind", "db_kind"]);
   });
+
+  it("refuses route-reserved slugs (static /shapes segments) without needing the DB", async () => {
+    // "instances"/"new"/"admin" are shadowed by static route segments — a
+    // kind with one of these slugs would be unreachable at /shapes/[kind].
+    const { client } = makeMockClient();
+    const taken = await findTakenSlugs(
+      client,
+      ["instances", "new", "admin", "free_kind"],
+      () => false,
+    );
+    // The three reserved slugs are taken by construction; a normal free slug
+    // still comes back available.
+    expect(taken.sort()).toEqual(["admin", "instances", "new"]);
+  });
 });
 
 // ---------------------------------------------------------------------------

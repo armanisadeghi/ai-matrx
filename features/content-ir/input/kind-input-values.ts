@@ -347,6 +347,22 @@ export function inputValueForKindValue(field: FieldSchema, value: unknown): unkn
  * Seed form values from an existing instance's data (keyed by FIELD KEY),
  * falling back to each variable's default for keys the instance omits.
  */
+/**
+ * Field keys the instance stores as the literal empty string "" — feed this
+ * into `assembleKindInstance`'s `emptyStringFields` so the "" survives the
+ * edit round-trip (empty input on these keys means "", never omit).
+ */
+export function emptyStringSeededFields(
+  pairs: KindInputPair[],
+  instanceData: Record<string, unknown>,
+): ReadonlySet<string> {
+  const keys = new Set<string>();
+  for (const pair of pairs) {
+    if (instanceData[pair.fieldKey] === "") keys.add(pair.fieldKey);
+  }
+  return keys;
+}
+
 export function initialValuesFromInstance(
   pairs: KindInputPair[],
   instanceData: Record<string, unknown>,

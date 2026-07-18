@@ -23,6 +23,7 @@ import {
   describeRoundTripDrift,
   fieldTypeLabel,
   initialValuesForVariables,
+  emptyStringSeededFields,
   initialValuesFromInstance,
   KindInputPairingError,
   pairKindFieldsWithVariables,
@@ -475,6 +476,41 @@ describe("inputValueForKindValue / initialValuesFromInstance (edit-prefill inver
       );
       expect(outcome).toEqual({ status: "ok", value: instanceData[pair.fieldKey] });
     }
+  });
+
+  it('round-trips a stored empty string "" (edit untouched → re-save → identical data)', () => {
+    // F3 edge: isEmptyRaw("") makes coercion OMIT the key, so without the
+    // emptyStringFields channel a required-"" field that validated on save
+    // would be DROPPED on re-save and fail. The seeded-empty set closes it.
+    const schema: KindSchema = {
+      kind: "wide",
+      fields: {
+        name: { type: "string", required: true },
+        note: { type: "string", required: false },
+      },
+    };
+    const pairs = pairKindFieldsWithVariables(schema);
+    const stored: Record<string, unknown> = { name: "", note: "kept" };
+
+    const values = initialValuesFromInstance(pairs, stored);
+    const emptyStringFields = emptyStringSeededFields(pairs, stored);
+    expect([...emptyStringFields]).toEqual(["name"]);
+
+    // Edit untouched → re-save: the "" survives, byte-identical data.
+    const { instance, coercionErrors, omittedFields } = assembleKindInstance(
+      "wide",
+      pairs,
+      values,
+      { emptyStringFields },
+    );
+    expect(coercionErrors).toEqual({});
+    expect(omittedFields).toEqual([]);
+    expect(instance).toEqual({ [KIND_KEY]: "wide", name: "", note: "kept" });
+
+    // Without the seeded set (fresh-create path) behavior is unchanged: empty
+    // still means omitted.
+    const fresh = assembleKindInstance("wide", pairs, values);
+    expect(fresh.omittedFields).toEqual(["name"]);
   });
 
   it("falls back to variable defaults for keys the instance omits", () => {

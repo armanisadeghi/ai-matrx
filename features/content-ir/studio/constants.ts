@@ -24,6 +24,18 @@ export function shapeCreatorAgentId(): string | null {
   return id.length > 0 ? id : null;
 }
 
+/**
+ * Slugs shadowed by the STATIC route segments under `app/(core)/shapes/` —
+ * a kind named one of these would be unreachable (`/shapes/instances` etc.
+ * resolves to the static segment, never `[kind]`). Creation paths refuse
+ * them. Adding a static segment under /shapes = add its slug here.
+ */
+export const RESERVED_SHAPE_SLUGS: ReadonlySet<string> = new Set([
+  "instances",
+  "new",
+  "admin",
+]);
+
 export function shapeDetailHref(kind: string): string {
   return `${SHAPES_ROUTE_BASE}/${encodeURIComponent(kind)}`;
 }

@@ -49,6 +49,7 @@ import { decideKindInputPath, type KindInputPath } from "./kind-input-resolution
 import {
   assembleKindInstance,
   attributeStructuralErrors,
+  emptyStringSeededFields,
   fieldTypeLabel,
   initialValuesForVariables,
   initialValuesFromInstance,
@@ -88,6 +89,8 @@ type FormState =
       schema: KindSchema | null;
       emittedJsonSchema: Json | null;
       pairs: KindInputPair[];
+      /** Fields the initialValue stored as "" — kept as "" on empty input. */
+      emptyStringFields: ReadonlySet<string>;
     };
 
 function refusalMessage(kind: string, detail: string): string {
@@ -183,6 +186,10 @@ export default function KindInputForm({
           schema: contract.schema,
           emittedJsonSchema: contract.emittedJsonSchema,
           pairs,
+          emptyStringFields:
+            seed && path.mode === "bridged-form"
+              ? emptyStringSeededFields(pairs, seed)
+              : new Set<string>(),
         });
       } catch (error) {
         if (cancelled) return;
@@ -227,7 +234,7 @@ export default function KindInputForm({
     );
   }
 
-  const { path, emittedJsonSchema, pairs } = state;
+  const { path, emittedJsonSchema, pairs, emptyStringFields } = state;
   const schemaMissing = emittedJsonSchema === null;
 
   async function emit(instance: unknown): Promise<void> {
@@ -246,7 +253,9 @@ export default function KindInputForm({
   }
 
   async function submitBridgedForm(): Promise<void> {
-    const assembled = assembleKindInstance(kind, pairs, values);
+    const assembled = assembleKindInstance(kind, pairs, values, {
+      emptyStringFields,
+    });
     setCoercionErrors(assembled.coercionErrors);
     if (Object.keys(assembled.coercionErrors).length > 0) {
       setStructuralDetail(null);

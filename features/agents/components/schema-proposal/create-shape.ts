@@ -48,6 +48,7 @@ import {
   validateStructuralLeg,
   type LegResult,
 } from "@/features/content-ir/registry/kind-dual-gate";
+import { RESERVED_SHAPE_SLUGS } from "@/features/content-ir/studio/constants";
 
 /** The minimal client contract (the browser `supabase` singleton satisfies it). */
 export type ShapeWriteClient = SupabaseClient<Database>;
@@ -274,7 +275,12 @@ export async function findTakenSlugs(
   slugs: string[],
   registryHas: (slug: string) => boolean,
 ): Promise<string[]> {
-  const taken = new Set(slugs.filter((s) => registryHas(s)));
+  // Route-reserved slugs (static segments under /shapes) are unavailable by
+  // construction — a kind named "instances" would be unreachable. Seeded as
+  // taken so BOTH the live hint and the submit-time defense refuse them.
+  const taken = new Set(
+    slugs.filter((s) => RESERVED_SHAPE_SLUGS.has(s) || registryHas(s)),
+  );
   const remaining = slugs.filter((s) => !taken.has(s));
   if (remaining.length > 0) {
     const { data, error } = await client

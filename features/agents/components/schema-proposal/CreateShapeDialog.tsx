@@ -57,9 +57,18 @@ import {
 
 // The Shapes studio detail route (/shapes/[kind]) — the user-facing home of
 // the created kind (the admin kind-registry page stays the diagnostics view).
-import { shapeDetailHref } from "@/features/content-ir/studio/constants";
+import {
+  RESERVED_SHAPE_SLUGS,
+  shapeDetailHref,
+} from "@/features/content-ir/studio/constants";
 
-type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
+type SlugStatus =
+  | "idle"
+  | "checking"
+  | "available"
+  | "taken"
+  | "invalid"
+  | "reserved";
 
 interface CreateShapeDialogProps {
   open: boolean;
@@ -157,13 +166,18 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
     // plannedSlugsKey is the stable identity of plannedSlugs.
   }, [open, slug, plannedSlugs, plannedSlugsKey]);
 
+  // Route-reserved slugs (static segments under /shapes — a kind named
+  // "instances" would be unreachable) refuse SYNCHRONOUSLY with their own
+  // status; findTakenSlugs seeds them too as the submit-time defense.
   const slugStatus: SlugStatus = !isValidKindSlug(slug)
     ? "invalid"
-    : slugCheck?.slug === slug
-      ? slugCheck.taken
-        ? "taken"
-        : "available"
-      : "checking";
+    : plannedSlugs.some((s) => RESERVED_SHAPE_SLUGS.has(s))
+      ? "reserved"
+      : slugCheck?.slug === slug
+        ? slugCheck.taken
+          ? "taken"
+          : "available"
+        : "checking";
 
   const parseSample = (): unknown | undefined => {
     try {
@@ -318,6 +332,11 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
         ? { text: "Available", tone: "ok" }
         : slugStatus === "taken"
           ? { text: "Already in use", tone: "bad" }
+          : slugStatus === "reserved"
+            ? {
+                text: "Reserved by the /shapes routes — pick a different slug",
+                tone: "bad",
+              }
           : slugStatus === "invalid"
             ? {
                 text: "Lowercase letters, digits and underscores only",
@@ -484,6 +503,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                 disabled={
                   creating ||
                   slugStatus === "taken" ||
+                  slugStatus === "reserved" ||
                   slugStatus === "invalid" ||
                   planErrors.length > 0
                 }
