@@ -62,11 +62,20 @@ export function isValidatorDrift(result: KindInstanceWriteResult): boolean {
 export interface SaveKindInstanceArgs {
   /** `content_ir.kind_definition.id` of the kind being instantiated. */
   kindDefinitionId: string;
-  /** The kind's CURRENT `version` — pinned onto the instance at write. */
+  /**
+   * The kind's version AS THE CALLER KNOWS IT (page-load snapshot). The save
+   * re-reads the definition's LIVE version and pins THAT; this field only
+   * detects a mid-session bump (`versionBumped` on the result).
+   */
   kindVersion: number;
   /** The instance value (may carry a root `__kind`; stripped before write). */
   value: Record<string, unknown>;
-  /** The CALLER's active org (never the kind's org). Required by contract. */
+  /**
+   * The CALLER's org (never the kind's). Callers read
+   * `selectEffectiveOrganizationId`, which falls back to the personal org —
+   * so this is normally always set; null happens only pre-bootstrap, and the
+   * throw in `saveKindInstance` is that backstop, not the norm.
+   */
   organizationId: string | null;
   /** Explicit display title; derived from the data when omitted. */
   title?: string | null;
@@ -78,13 +87,46 @@ export interface SaveKindInstanceArgs {
   titleKey?: string | null;
 }
 
+export interface SaveKindInstanceResult extends KindInstanceWriteResult {
+  /**
+   * True when the definition's live version differed from the caller's
+   * snapshot (built mid-session, e.g. via the creator agent) — the instance
+   * was pinned to the FRESH version (strictly better than a stale pin; the
+   * trigger validates against it). Callers surface a small notice.
+   */
+  versionBumped: boolean;
+}
+
+/** Live `version` + `emitted_json_schema` of a definition — freshness read. */
+async function fetchLiveDefinition(
+  kindDefinitionId: string,
+): Promise<{ version: number; emittedJsonSchema: Json | null }> {
+  const { data, error } = await supabase
+    .schema("content_ir")
+    .from("kind_definition")
+    .select("version,emitted_json_schema")
+    .eq("id", kindDefinitionId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`Failed to read the kind definition: ${error.message}`);
+  }
+  if (!data) {
+    throw new Error(
+      "The kind definition no longer resolves (deleted or access revoked).",
+    );
+  }
+  return { version: data.version, emittedJsonSchema: data.emitted_json_schema };
+}
+
 /**
- * Insert ONE instance and read the trigger's verdict back. Throws on any DB
- * failure (including a missing org — the caller must have an active org).
+ * Insert ONE instance pinned to the definition's LIVE version (re-read at
+ * save time — never the page-load snapshot) and read the trigger's verdict
+ * back. Throws on any DB failure.
  */
 export async function saveKindInstance(
   args: SaveKindInstanceArgs,
-): Promise<KindInstanceWriteResult> {
+): Promise<SaveKindInstanceResult> {
   const { kindDefinitionId, kindVersion, value, organizationId, title, titleKey } = args;
   if (!organizationId) {
     throw new Error(
@@ -97,13 +139,14 @@ export async function saveKindInstance(
     throw new Error("Not signed in — cannot save the instance.");
   }
 
+  const live = await fetchLiveDefinition(kindDefinitionId);
   const data = stripRootKind(value);
   const { data: row, error } = await supabase
     .schema("content_ir")
     .from("kind_instance")
     .insert({
       kind_definition_id: kindDefinitionId,
-      kind_version: kindVersion,
+      kind_version: live.version,
       data: data as Json,
       title: deriveInstanceTitle(data, title, titleKey),
       organization_id: organizationId,
@@ -119,6 +162,7 @@ export async function saveKindInstance(
     title: row.title,
     validationStatus: row.validation_status,
     kindVersion: row.kind_version,
+    versionBumped: live.version !== kindVersion,
   };
 }
 
@@ -211,30 +255,32 @@ export interface RepinKindInstanceArgs {
   id: string;
   /** The instance's CURRENT stored data (pure, no `__kind`). */
   data: Record<string, unknown>;
-  /** The kind's current `version` to pin onto. */
-  currentVersion: number;
-  /** The kind's current `emitted_json_schema` — the honesty gate. */
-  emittedJsonSchema: Json | null;
+  /**
+   * The instance's kind — the LIVE version + `emitted_json_schema` are
+   * re-read here at repin time, never trusted from a page-load snapshot.
+   */
+  kindDefinitionId: string;
 }
 
 /**
- * Repin a stale-pinned instance onto the kind's CURRENT version — P-1's
+ * Repin a stale-pinned instance onto the kind's LIVE current version — P-1's
  * honest rule: the data MUST validate against the current schema first;
  * refused loudly otherwise (throws with the ajv detail). Never a blind bump.
  */
 export async function repinKindInstance(
   args: RepinKindInstanceArgs,
 ): Promise<KindInstanceWriteResult> {
-  const leg = validateStructuralLeg(args.data, args.emittedJsonSchema);
+  const live = await fetchLiveDefinition(args.kindDefinitionId);
+  const leg = validateStructuralLeg(args.data, live.emittedJsonSchema);
   if (!leg.ok) {
     throw new Error(
-      `Repin refused — the data does not validate against the CURRENT schema (v${args.currentVersion}): ${leg.detail ?? "validation failed"}. Edit the instance to match the current schema, then repin.`,
+      `Repin refused — the data does not validate against the CURRENT schema (v${live.version}): ${leg.detail ?? "validation failed"}. Edit the instance to match the current schema, then repin.`,
     );
   }
   const { data: row, error } = await supabase
     .schema("content_ir")
     .from("kind_instance")
-    .update({ kind_version: args.currentVersion, updated_by: await currentUserId() })
+    .update({ kind_version: live.version, updated_by: await currentUserId() })
     .eq("id", args.id)
     .select("id,title,validation_status,kind_version")
     .single();

@@ -50,16 +50,14 @@ import {
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import { getKindInputContractBySlug } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
-import type { Json } from "@/types/database.types";
 
 interface ShapeInstancesTabProps {
   kind: string;
   label: string;
   kindDefinitionId: string;
-  /** The kind definition's CURRENT version (pinned-chip + repin target). */
+  /** Page-load snapshot of the kind's version — pinned-chip display only.
+   * Repin re-reads the LIVE version + schema inside `repinKindInstance`. */
   currentVersion: number;
-  /** The kind's current emitted_json_schema — the repin honesty gate. */
-  emittedJsonSchema: Json | null;
   /** `metadata.title_key` — the per-kind instance-title override (or null). */
   titleKey: string | null;
 }
@@ -90,11 +88,12 @@ function flatFieldKeys(schema: KindSchema | null): string[] | null {
   return keys;
 }
 
-function cellValue(value: unknown): unknown {
+/** Dataset columns are string-typed — every cell is stringified (scalars too). */
+function cellValue(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (Array.isArray(value)) return value.map(String).join(", ");
   if (typeof value === "object") return JSON.stringify(value);
-  return value;
+  return String(value);
 }
 
 function statusDotClass(status: string): string {
@@ -119,7 +118,6 @@ export default function ShapeInstancesTab({
   label,
   kindDefinitionId,
   currentVersion,
-  emittedJsonSchema,
   titleKey,
 }: ShapeInstancesTabProps) {
   const searchParams = useSearchParams();
@@ -228,8 +226,7 @@ export default function ShapeInstancesTab({
       const result = await repinKindInstance({
         id: selected.id,
         data: selectedData,
-        currentVersion,
-        emittedJsonSchema,
+        kindDefinitionId,
       });
       await reload();
       setVerdictWarning(null);

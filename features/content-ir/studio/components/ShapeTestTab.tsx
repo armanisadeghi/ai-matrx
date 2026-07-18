@@ -41,7 +41,7 @@ interface ShapeTestTabProps {
 type SaveState =
   | { status: "idle" }
   | { status: "saving" }
-  | { status: "saved"; instanceId: string }
+  | { status: "saved"; instanceId: string; pinnedVersion: number; versionBumped: boolean }
   | { status: "drift"; message: string }
   | { status: "error"; message: string };
 
@@ -80,7 +80,12 @@ export default function ShapeTestTab({
         setSaveState({ status: "drift", message });
         return;
       }
-      setSaveState({ status: "saved", instanceId: result.id });
+      setSaveState({
+        status: "saved",
+        instanceId: result.id,
+        pinnedVersion: result.kindVersion,
+        versionBumped: result.versionBumped,
+      });
       toast.success(
         result.title ? `Saved "${result.title}"` : "Instance saved",
         {
@@ -179,6 +184,16 @@ export default function ShapeTestTab({
             </>
           )}
         </div>
+        {saveState.status === "saved" && saveState.versionBumped && (
+          <div className="mb-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+            <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              This shape was updated to v{saveState.pinnedVersion} since you
+              opened this page — the instance was saved against v
+              {saveState.pinnedVersion}.
+            </span>
+          </div>
+        )}
         {(saveState.status === "drift" || saveState.status === "error") && (
           <div className="mb-2 flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
             <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />

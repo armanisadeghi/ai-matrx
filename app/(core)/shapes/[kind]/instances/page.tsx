@@ -33,7 +33,6 @@ export default async function ShapeInstancesPage({ params }: PageProps) {
             label={detail.label}
             kindDefinitionId={detail.id}
             currentVersion={detail.version}
-            emittedJsonSchema={detail.emittedJsonSchema}
             titleKey={detail.titleKey}
           />
         </div>
