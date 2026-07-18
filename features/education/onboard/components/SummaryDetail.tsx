@@ -5,12 +5,18 @@
 // Viewer for a grounded study summary (study_media, media_kind='summary').
 // Renders the markdown + key points + the P0 TrustEnvelope citations, and
 // offers Markdown export (data-ownership). Reads via studyMediaService (RLS).
+//
+// The body renders through MarkdownStream — the kind-aware rich-document
+// engine (already code-split, ssr:false, via its shell) — NOT the kind-blind
+// BasicMarkdownContent. Summary agents emit real markdown that can carry
+// `__kind` fenced blocks (flashcard_set, diagram_spec, tables, mermaid, …);
+// this is the education-side half of the Content IR integration (Lane C).
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, ListChecks, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import MarkdownStream from "@/components/MarkdownStream";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
@@ -115,7 +121,7 @@ export function SummaryDetail({ id }: { id: string }) {
       )}
 
       <div className="prose-sm max-w-none">
-        <BasicMarkdownContent content={markdown} showCopyButton={false} />
+        <MarkdownStream content={markdown} hideCopyButton />
       </div>
 
       {trust && trust.citations.length > 0 && (
