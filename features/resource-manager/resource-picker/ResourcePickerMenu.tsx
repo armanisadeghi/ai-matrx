@@ -1,25 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  FileText,
-  StickyNote,
-  CheckSquare,
-  Table2,
-  Globe,
-  Workflow,
-  ChevronLeft,
-  ChevronRight,
-  Upload,
-  Image,
-  File,
-  Mic,
-  Notebook,
-  Settings2,
-  Bug,
-} from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
+import { ChevronLeft, ChevronRight, Settings2, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { NotesResourcePicker } from "./NotesResourcePicker";
 import { TasksResourcePicker } from "./TasksResourcePicker";
 import { FilesResourcePicker } from "./FilesResourcePicker";
@@ -32,26 +16,21 @@ import { FileUrlResourcePicker } from "./FileUrlResourcePicker";
 import { AudioResourcePicker } from "./AudioResourcePicker";
 import { WorkbooksResourcePicker } from "./WorkbooksResourcePicker";
 import { DocumentsResourcePicker } from "./DocumentsResourcePicker";
-
-type ResourceType =
-  | "upload"
-  | "storage"
-  | "notes"
-  | "tasks"
-  | "workbooks"
-  | "documents"
-  | "tables"
-  | "webpage"
-  | "youtube"
-  | "image_url"
-  | "file_url"
-  | "audio"
-  | "brokers"
-  | null;
+import { ContextValuesResourcePicker } from "./ContextValuesResourcePicker";
+import { ToolsResourcePicker } from "./ToolsResourcePicker";
+import { SkillsResourcePicker } from "./SkillsResourcePicker";
+import { RunSettingsResourcePicker } from "./RunSettingsResourcePicker";
+import {
+  flattenResourcePickerItems,
+  getVisibleResourcePickerCategories,
+  type ResourcePickerViewId,
+} from "./resource-picker-menu-items";
 
 interface ResourcePickerMenuProps {
   onResourceSelected: (resource: any) => void;
   onClose: () => void;
+  /** Required for Tools / Skills / Settings in-place pickers. */
+  conversationId?: string;
   attachmentCapabilities?: {
     supportsImageUrls?: boolean;
     supportsFileUrls?: boolean;
@@ -66,121 +45,26 @@ interface ResourcePickerMenuProps {
 export function ResourcePickerMenu({
   onResourceSelected,
   onClose,
+  conversationId,
   attachmentCapabilities,
   onSettingsClick,
   onDebugClick,
   showDebugActive,
 }: ResourcePickerMenuProps) {
-  const [activeView, setActiveView] = useState<ResourceType>(null);
+  const [activeView, setActiveView] = useState<ResourcePickerViewId>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
 
   // Helper to switch views and carry over the URL
-  const switchToView = (view: ResourceType, url: string) => {
+  const switchToView = (view: ResourcePickerViewId, url: string) => {
     setCurrentUrl(url);
     setActiveView(view);
   };
 
-  const resourceCategories = [
-    {
-      category: "Files",
-      items: [
-        {
-          id: "upload",
-          label: "Upload Files",
-          icon: Upload,
-          requiresCapability: null,
-        },
-      ],
-    },
-    {
-      category: "Web",
-      items: [
-        {
-          id: "webpage",
-          label: "Webpage",
-          icon: Globe,
-          requiresCapability: null,
-        },
-        {
-          id: "image_url",
-          label: "Image URL",
-          icon: Image,
-          requiresCapability: "supportsImageUrls" as const,
-        },
-        {
-          id: "file_url",
-          label: "File URL",
-          icon: File,
-          requiresCapability: "supportsFileUrls" as const,
-        },
-        {
-          id: "youtube",
-          label: "YouTube",
-          icon: Youtube,
-          requiresCapability: "supportsYoutubeVideos" as const,
-        },
-      ],
-    },
-    {
-      category: "Matrx",
-      items: [
-        {
-          id: "storage",
-          label: "Stored Files",
-          icon: FileText,
-          requiresCapability: null,
-        },
-        {
-          id: "tables",
-          label: "Tables",
-          icon: Table2,
-          requiresCapability: null,
-        },
-        {
-          id: "notes",
-          label: "Notes",
-          icon: StickyNote,
-          requiresCapability: null,
-        },
-        {
-          id: "tasks",
-          label: "Tasks",
-          icon: CheckSquare,
-          requiresCapability: null,
-        },
-        {
-          id: "workbooks",
-          label: "Workbooks",
-          icon: Notebook,
-          requiresCapability: null,
-        },
-        {
-          id: "documents",
-          label: "Documents",
-          icon: FileText,
-          requiresCapability: null,
-        },
-        {
-          id: "brokers",
-          label: "Brokers",
-          icon: Workflow,
-          requiresCapability: null,
-        },
-      ],
-    },
-  ];
-
-  // Check if a resource is enabled based on capabilities
-  const isResourceEnabled = (resource: {
-    requiresCapability: string | null;
-  }) => {
-    if (!resource.requiresCapability) return true;
-    return (
-      attachmentCapabilities?.[
-        resource.requiresCapability as keyof typeof attachmentCapabilities
-      ] === true
-    );
-  };
+  const menuItems = flattenResourcePickerItems();
+  const visibleCategories = getVisibleResourcePickerCategories(
+    attachmentCapabilities,
+    { conversationId },
+  );
 
   // Show specific resource picker based on selection
   if (activeView) {
@@ -332,28 +216,62 @@ export function ResourcePickerMenu({
       );
     }
 
-    // Add other resource pickers here as they're implemented
-    const currentResource = resourceCategories
-      .flatMap((cat) => cat.items)
-      .find((r) => r.id === activeView);
+    if (activeView === "context_values") {
+      return (
+        <ContextValuesResourcePicker
+          onBack={() => setActiveView(null)}
+          onSelect={onResourceSelected}
+        />
+      );
+    }
+
+    if (activeView === "tools" && conversationId) {
+      return (
+        <ToolsResourcePicker
+          conversationId={conversationId}
+          onBack={() => setActiveView(null)}
+        />
+      );
+    }
+
+    if (activeView === "skills" && conversationId) {
+      return (
+        <SkillsResourcePicker
+          conversationId={conversationId}
+          onBack={() => setActiveView(null)}
+        />
+      );
+    }
+
+    if (activeView === "run_settings" && conversationId) {
+      return (
+        <RunSettingsResourcePicker
+          conversationId={conversationId}
+          onBack={() => setActiveView(null)}
+        />
+      );
+    }
+
+    // Placeholder views
+    const currentResource = menuItems.find((r) => r.id === activeView);
 
     return (
       <div className="p-3">
-        <div className="flex items-center gap-2 mb-3">
+        <div className="mb-3 flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             className="h-6 w-6 p-0"
             onClick={() => setActiveView(null)}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-sm font-medium text-foreground">
             {currentResource?.label}
           </span>
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
-          Coming soon...
+        <div className="py-8 text-center text-xs text-muted-foreground">
+          Coming soon…
         </div>
       </div>
     );
@@ -362,36 +280,31 @@ export function ResourcePickerMenu({
   // Main menu view
   return (
     <div className="py-1">
-      {resourceCategories.map((category) => (
+      {visibleCategories.map((category) => (
         <div key={category.category}>
-          <div className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-0.5 mt-1">
+          <div className="mt-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {category.category}
           </div>
           {category.items.map((resource) => {
             const Icon = resource.icon;
-            const isEnabled = isResourceEnabled(resource);
             return (
               <Button
                 key={resource.id}
                 variant="ghost"
                 size="sm"
-                disabled={!isEnabled}
-                className="group w-full justify-start h-6 text-xs px-2 py-0 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-none"
-                onClick={() => setActiveView(resource.id as ResourceType)}
-                title={
-                  !isEnabled ? "Not supported by current model" : undefined
-                }
+                className="group h-6 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60"
+                onClick={() => setActiveView(resource.id)}
               >
-                <Icon className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-                <span className="text-gray-900 dark:text-gray-100 font-normal">
+                <Icon
+                  className={cn(
+                    "mr-1.5 h-3.5 w-3.5 shrink-0",
+                    resource.iconClassName,
+                  )}
+                />
+                <span className="font-normal text-foreground">
                   {resource.label}
                 </span>
-                {!isEnabled && (
-                  <span className="ml-2 text-[8px] px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400">
-                    N/A
-                  </span>
-                )}
-                <ChevronRight className="w-3 h-3 ml-1.5 flex-shrink-0 text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors" />
+                <ChevronRight className="ml-1.5 h-3 w-3 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-muted-foreground" />
               </Button>
             );
           })}
@@ -404,7 +317,7 @@ export function ResourcePickerMenu({
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start h-6 text-xs px-2 py-0 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-none"
+              className="h-6 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60"
               onClick={() => {
                 onSettingsClick();
                 onClose();
@@ -420,7 +333,7 @@ export function ResourcePickerMenu({
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start h-6 text-xs px-2 py-0 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-none"
+              className="h-6 w-full justify-start rounded-none px-2 py-0 text-xs hover:bg-muted/60"
               onClick={() => {
                 onDebugClick();
                 onClose();

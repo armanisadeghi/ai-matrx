@@ -10,6 +10,7 @@ import {
   type DocumentRow,
 } from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { usePickerInputFocus } from "./usePickerInputFocus";
 
 interface DocumentsResourcePickerProps {
   onBack: () => void;
@@ -21,6 +22,7 @@ export function DocumentsResourcePicker({
   onSelect,
 }: DocumentsResourcePickerProps) {
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const searchInputRef = usePickerInputFocus();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,6 +76,7 @@ export function DocumentsResourcePicker({
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
+            ref={searchInputRef}
             type="text"
             placeholder="Search..."
             value={searchQuery}

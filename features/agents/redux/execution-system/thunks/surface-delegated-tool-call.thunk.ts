@@ -55,6 +55,7 @@ import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-too
 import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
 import { dispatchScribeTool } from "@/features/agents/scribe-tools/dispatcher/dispatch-scribe-tool.thunk";
 import { getLiveDesktopInstance } from "../client-capabilities/desktop-presence";
+import { watchDesktopDelegation } from "./watch-desktop-delegation.thunk";
 
 /**
  * Desktop mega-tools bound to the `matrx-local` executor (tool.definition
@@ -249,6 +250,13 @@ export const surfaceDelegatedToolCall = (
         if (desktop) {
           console.info(
             `[desktop-native] '${toolName}' (call ${callId}) left pending for desktop "${desktop.instanceName}" — the matrx-local engine executes and resumes it.`,
+          );
+          dispatch(
+            watchDesktopDelegation({
+              conversationId,
+              userRequestId: requestId,
+              callId,
+            }),
           );
           return;
         }

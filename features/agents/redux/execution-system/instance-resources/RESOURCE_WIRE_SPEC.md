@@ -82,6 +82,12 @@ editor pills.
 | `input_list` | `bookmarks` | list bookmark objects — same: `full_list`/`list_group`/`list_item` → `picklist`/`picklist_group`/`picklist_item` |
 | `input_data` | `refs` | data ref objects |
 
+Context-value attachments intentionally use a `text` block whose text is the
+canonical `context_value` Matrx reference fence. The per-send reference stager
+resolves that pointer from `(scope_id, context_item_id)` every turn, so the
+attachment stays live. Do not route this through `input_context`; that wire
+shape remains unfinished in aidream.
+
 > **Bookmarks are reference items.** The bookmark shapes are the CANONICAL generated wire
 > types (`types/python-generated/stream-events.ts`) — re-exported from `message-types.ts`, not
 > hand-redefined. Identity ids are authoritative; `table_name`/`list_name`/`column_display_name`/

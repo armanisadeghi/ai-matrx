@@ -37,11 +37,6 @@ const StackedVariableInputs = dynamic(
 import { TapTargetButtonTransparent } from "@/components/icons/TapTargetButton";
 import { PlusTapButton } from "@/components/icons/tap-buttons";
 import { InputActionButtons } from "./InputActionButtons";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 // Instance-system state
@@ -52,10 +47,6 @@ import {
   addResource,
   removeResource,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
-import {
-  refineBlockType,
-  resourceDataToSource,
-} from "@/features/agents/redux/execution-system/instance-resources/resource-source";
 import { fileIdToMediaRef } from "@/features/files";
 import {
   selectIsExecuting,
@@ -73,10 +64,10 @@ import {
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ResourceChips } from "@/features/agents/resources/ResourceChips";
-import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
 import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
+import { PlusAttachMenu } from "@/features/agents/components/inputs/smart-input/PlusAttachMenu";
 import { toast } from "sonner";
 import type {
   ManagedResource,
@@ -87,38 +78,6 @@ import type { Resource } from "@/features/agents/resources/types";
 /** Map user-upload MIME to API content-block type (see ResourceBlockType). */
 function uploadMimeToBlockType(mime: string): ResourceBlockType {
   return mime.startsWith("image/") ? "image" : "document";
-}
-
-/** Map ResourcePickerMenu payload types → instance ResourceBlockType. */
-function pickerResourceTypeToBlockType(type: string): ResourceBlockType {
-  switch (type) {
-    case "image_url":
-    case "image":
-      return "image";
-    case "youtube":
-      return "youtube_video";
-    case "webpage":
-      return "input_webpage";
-    case "notes":
-    case "note":
-      return "input_notes";
-    case "tasks":
-    case "task":
-      return "input_task";
-    case "tables":
-    case "table":
-      return "input_table";
-    case "audio":
-      return "audio";
-    case "brokers":
-      return "input_data";
-    case "file_url":
-    case "file":
-    case "upload":
-    case "storage":
-    default:
-      return "document";
-  }
 }
 // ============================================================================
 // PROPS
@@ -311,9 +270,6 @@ export function ConversationInput({
     }
   }, [showModelPicker, showSettings, availableModels.length, dispatch]);
 
-  // ── Resource picker state ──────────────────────────────────────────────────
-  const [isResourcePickerOpen, setIsResourcePickerOpen] = useState(false);
-
   // ── File upload ────────────────────────────────────────────────────────────
   const { upload, uploading: isUploading } = useFileUpload();
 
@@ -352,25 +308,6 @@ export function ConversationInput({
       }
     },
     [dispatch, conversationId, upload, uploadBucket, uploadPath],
-  );
-
-  const handleResourceSelected = useCallback(
-    (resource: { type: string; data: unknown }) => {
-      // Same deal as SmartAgentResourcePickerButton: refine "document"
-      // → "image"/"video"/"audio" when the underlying data has a real
-      // image/video/audio MIME so the AI sees it as the right kind.
-      const baseBlockType = pickerResourceTypeToBlockType(resource.type);
-      const blockType = refineBlockType(baseBlockType, resource.data);
-      dispatch(
-        addResource({
-          conversationId,
-          blockType,
-          source: resourceDataToSource(blockType, resource.data),
-        }),
-      );
-      setIsResourcePickerOpen(false);
-    },
-    [dispatch, conversationId],
   );
 
   // ── Clipboard paste ────────────────────────────────────────────────────────
@@ -537,12 +474,15 @@ export function ConversationInput({
         {/* Textarea row — + button, textarea, icons, send */}
         <div className="flex items-center">
           {showResourcePicker && (
-            <Popover
-              open={isResourcePickerOpen}
-              onOpenChange={setIsResourcePickerOpen}
-            >
-              <PopoverTrigger asChild>
-                {isUploading ? (
+            <PlusAttachMenu
+              conversationId={conversationId}
+              foldToolbarExtras={compact}
+              onDebugClick={isAdmin ? openDebugWindow : undefined}
+              showDebugActive={isAdmin}
+              side="top"
+              align="start"
+              trigger={
+                isUploading ? (
                   <TapTargetButtonTransparent
                     ariaLabel="Uploading..."
                     icon={
@@ -554,30 +494,9 @@ export function ConversationInput({
                     variant="transparent"
                     ariaLabel="Add attachments"
                   />
-                )}
-              </PopoverTrigger>
-              <PopoverContent
-                side="top"
-                align="start"
-                className="w-56 p-0"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-              >
-                <ResourcePickerMenu
-                  onResourceSelected={handleResourceSelected}
-                  onClose={() => setIsResourcePickerOpen(false)}
-                  attachmentCapabilities={
-                    attachmentCapabilities ?? {
-                      supportsImageUrls: true,
-                      supportsFileUrls: true,
-                      supportsYoutubeVideos: true,
-                      supportsAudio: true,
-                    }
-                  }
-                  onDebugClick={isAdmin ? openDebugWindow : undefined}
-                  showDebugActive={isAdmin}
-                />
-              </PopoverContent>
-            </Popover>
+                )
+              }
+            />
           )}
 
           <textarea

@@ -14,13 +14,11 @@
  *                             off for this chat (same as the docs-menu switch).
  *   • Scratchpad            → same canvas toggle + X (per-conversation gate).
  *   • Agent lists           → plan / tasks / todos (the `TaskPanel` drawer).
- *   • Working context       → `ContextLensBar` — ONE pill: the "Context"
- *                             segment opens the contextPreviewPanel overlay
- *                             (server-resolved "what the agent receives"),
- *                             the Lens Chip segment opens the ContextTree
- *                             picker popover (never a layers drawer).
  *   • Any other live context entry the agent or user set (slot / ad-hoc) —
  *     click opens the detail sheet; X removes the entry from context.
+ *
+ * Working context (scopes + preview) lives in the `+` attach menu
+ * (`ContextLensBar` row) — not duplicated on this rail.
  *
  * Pills are TINY on purpose: icon + one word. The full name, status, and click
  * hint live in the tooltip. Keep it that way — the composer is not a dashboard.
@@ -33,8 +31,7 @@
  * Mobile-friendly: the most important pills stay inline; the rest collapse into
  * a clean "…" overflow menu so the rail never wraps or crowds the composer.
  *
- * Always mounts the ContextLensBar (working context + preview entry). Other
- * pills appear only when the conversation has surfaceable attachments — safe
+ * Always mounts nothing when there are no surfaceable attachments — safe
  * in every SmartAgentInput.
  */
 
@@ -105,9 +102,6 @@ import {
   unsubscribeAgentLists,
 } from "@/features/agents/ui-first-tools/redux/agent-lists.thunks";
 import { TaskPanel } from "@/features/agents/ui-first-tools/ui/lists/TaskPanel";
-import { ContextLensBar } from "@/features/scopes/components/active-context/ContextLensBar";
-import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
-import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 
 interface ConversationContextRailProps {
   conversationId: string;
@@ -220,12 +214,6 @@ export function ConversationContextRail({
   } | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [listsOpen, setListsOpen] = useState(false);
-  // "What the agent receives" — server-resolved preview in the non-blocking
-  // contextPreviewPanel overlay (opened from the ContextLensBar's left segment).
-  const openContextPreview = useOpenContextPreviewPanel();
-  const previewOpen = useAppSelector((s) =>
-    selectIsOverlayOpen(s, "contextPreviewPanel"),
-  );
 
   const closeOtherSurfaces = () => {
     setListsOpen(false);
@@ -287,9 +275,7 @@ export function ConversationContextRail({
     setListsOpen(true);
   };
 
-  // ── Assemble the rail in priority order ────────────────────────────────────
-  // Working context (Scopes) is NOT a rail pill — it is `ActiveContextLensChip`
-  // rendered beside the Eye/Context control (popover, never a layers drawer).
+  // ── Working context (Scopes) lives in PlusAttachMenu's ContextLensBar row.
   const items = useMemo<RailItem[]>(() => {
     const out: RailItem[] = [];
     const valued = entries.filter(entryHasValue);
@@ -455,19 +441,12 @@ export function ConversationContextRail({
     };
   }, [items, maxInline]);
 
+  if (items.length === 0) return null;
+
   return (
     <div
       className={cn("flex min-w-0 items-center gap-1.5 px-0.5 pb-1", className)}
     >
-      <ContextLensBar
-        previewOpen={previewOpen}
-        onOpenPreview={() =>
-          openContextPreview({
-            conversationId,
-            agentId: agentId ?? undefined,
-          })
-        }
-      />
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
         {inline.map((item) => (
           <RailPill key={item.id} item={item} />

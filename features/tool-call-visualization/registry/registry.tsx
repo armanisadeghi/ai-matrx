@@ -13,6 +13,7 @@ import {
   Table2,
   Sheet,
   BookText,
+  BookOpenText,
   NotebookPen,
   Globe,
   Telescope,
@@ -81,6 +82,9 @@ import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
 import { RagSearchInline } from "../renderers/rag-search/RagSearchInline";
 import { RagSearchOverlay } from "../renderers/rag-search/RagSearchOverlay";
 import { DocumentSearchInline } from "../renderers/document-search/DocumentSearchInline";
+import { RagListSourcesInline } from "../renderers/rag-list-sources/RagListSourcesInline";
+import { RagChunkInline } from "../renderers/rag-get-chunk/RagChunkInline";
+import { DocumentContentInline } from "../renderers/document-content/DocumentContentInline";
 import { RandomWheelInline } from "../renderers/random-wheel";
 import { NoteToolInline } from "../renderers/note/NoteToolInline";
 import { NoteToolOverlay } from "../renderers/note/NoteToolOverlay";
@@ -844,6 +848,91 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
+  rag_list_sources: {
+    toolName: "rag_list_sources",
+    displayName: "Indexed Sources",
+    phaseLabels: {
+      running: "Listing indexed sources",
+      complete: "Listed indexed sources",
+      errorPrefix: "Couldn't list indexed sources",
+    },
+    resultsLabel: "Sources",
+    InlineComponent: RagListSourcesInline,
+    OverlayComponent: RagListSourcesInline,
+    chrome: "card",
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      const sources = Array.isArray(result?.sources)
+        ? (result.sources as unknown[])
+        : null;
+      if (!sources) return null;
+      return `${sources.length} ${sources.length === 1 ? "source" : "sources"}`;
+    },
+  },
+
+  rag_get_chunk: {
+    toolName: "rag_get_chunk",
+    displayName: "Passage",
+    phaseLabels: {
+      running: "Reading the passage",
+      complete: "Read the passage",
+      errorPrefix: "Couldn't read the passage",
+    },
+    resultsLabel: "Passage",
+    InlineComponent: RagChunkInline,
+    OverlayComponent: RagChunkInline,
+    chrome: "card",
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      const tokens =
+        typeof result?.token_count === "number"
+          ? (result.token_count as number)
+          : null;
+      const pages = Array.isArray(result?.page_numbers)
+        ? (result.page_numbers as unknown[]).filter(
+            (p) => typeof p === "number",
+          )
+        : [];
+      const parts: string[] = [];
+      if (pages.length)
+        parts.push(
+          pages.length === 1 ? `Page ${pages[0]}` : `${pages.length} pages`,
+        );
+      if (tokens != null) parts.push(`${tokens.toLocaleString()} tokens`);
+      return parts.length ? parts.join(" · ") : null;
+    },
+  },
+
+  document_content: {
+    toolName: "document_content",
+    displayName: "Document Content",
+    phaseLabels: {
+      running: "Reading the document",
+      complete: "Read the document",
+      errorPrefix: "Couldn't read the document",
+    },
+    resultsLabel: "Document Content",
+    InlineComponent: DocumentContentInline,
+    OverlayComponent: DocumentContentInline,
+    chrome: "card",
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      const name = typeof result?.name === "string" ? result.name : null;
+      const rep =
+        (typeof result?.representation === "string" &&
+          result.representation) ||
+        getArg<string>(entry, "representation") ||
+        null;
+      const parts: string[] = [];
+      if (name) parts.push(name);
+      if (rep) parts.push(rep.replaceAll("_", " "));
+      return parts.length ? parts.join(" · ") : null;
+    },
+  },
+
   ctx_get: {
     toolName: "ctx_get",
     displayName: "Context",
@@ -1387,6 +1476,9 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "core_web_read_web_pages",
   "rag_search",
   "document_search", // same retrieval family as rag_search — sources ARE the deliverable
+  "rag_list_sources", // the indexed-source inventory IS the answer
+  "rag_get_chunk", // the passage text IS the answer
+  "document_content", // the fetched pages/text ARE the answer
   "get_user_lists",
   "seo_check_meta_tags_batch",
   "seo_check_meta_titles",
@@ -1457,6 +1549,9 @@ const TOOL_GLYPHS: Record<string, ToolGlyphSpec> = {
   news_get_headlines: { icon: Newspaper, accent: "rose" },
   rag_search: { icon: Search, accent: "cyan" },
   document_search: { icon: FileSearch, accent: "cyan" },
+  rag_list_sources: { icon: LibraryBig, accent: "cyan" },
+  rag_get_chunk: { icon: FileText, accent: "cyan" },
+  document_content: { icon: BookOpenText, accent: "cyan" },
   // data / sql / ctx / memory
   sql: { icon: Database, accent: "green" },
   db_query: { icon: Database, accent: "green" },

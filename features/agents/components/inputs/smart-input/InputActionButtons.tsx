@@ -197,8 +197,7 @@ export function InputActionButtons({
             active context — the fast path that complements the `+` menu. */}
         <ContextDocsMenu conversationId={conversationId} />
 
-        {/* Shown only while a matrx-local desktop engine is online — this
-            turn will declare the `desktop-native` capability. */}
+        {/* Bound sandbox / local PC only — connect via `+` → ComputeLensBar. */}
         <DesktopPresenceIndicator conversationId={conversationId} />
 
         {shouldShowVariables && showVariableIcon && (

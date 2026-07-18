@@ -41,7 +41,7 @@ import {
   lookupFileDocument,
   peekFileDocument,
   type FileDocumentState,
-} from "@/features/files/api/document-lookup";
+} from "@/features/files";
 import {
   cleanDocumentLabel,
   documentAttachLabelFromState,
@@ -77,6 +77,7 @@ export function resourceTypeToBlockType(
     transcript_session: "input_transcript_session",
     workbook: "input_workbook",
     document: "input_document",
+    context_value: "text",
   };
   return map[type] ?? "text";
 }
@@ -116,6 +117,8 @@ export function resourceLabel(resource: Resource): string {
       return resource.data.name ?? "Workbook";
     case "document":
       return resource.data.title ?? "Document";
+    case "context_value":
+      return resource.data.label ?? "Context value";
     default:
       return "Resource";
   }
@@ -380,7 +383,9 @@ export function useAttachResource(
       dispatch,
       conversationId,
       blockType,
-      resource.data,
+      resource.type === "context_value"
+        ? resource.data.referenceFence
+        : resource.data,
       resourcePreviewLabel,
     );
   };

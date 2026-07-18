@@ -18,6 +18,7 @@ import {
   getAllFolders,
 } from "@/features/notes/utils/folderUtils";
 import type { Note } from "@/features/notes/types";
+import { usePickerInputFocus } from "./usePickerInputFocus";
 
 interface NotesResourcePickerProps {
   onBack: () => void;
@@ -29,6 +30,7 @@ export function NotesResourcePicker({
   onSelect,
 }: NotesResourcePickerProps) {
   const { notes, isLoading } = useNotes();
+  const searchInputRef = usePickerInputFocus();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
@@ -115,6 +117,7 @@ export function NotesResourcePicker({
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <Input
+            ref={searchInputRef}
             type="text"
             placeholder="Search..."
             value={searchQuery}

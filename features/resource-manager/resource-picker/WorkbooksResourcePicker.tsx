@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { listAccessibleWorkbooks } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { usePickerInputFocus } from "./usePickerInputFocus";
 
 interface WorkbooksResourcePickerProps {
   onBack: () => void;
@@ -18,6 +19,7 @@ export function WorkbooksResourcePicker({
   onSelect,
 }: WorkbooksResourcePickerProps) {
   const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
+  const searchInputRef = usePickerInputFocus();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,6 +73,7 @@ export function WorkbooksResourcePicker({
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
+            ref={searchInputRef}
             type="text"
             placeholder="Search..."
             value={searchQuery}

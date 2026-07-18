@@ -239,6 +239,21 @@ export interface DocumentResourceData {
   title?: string;
 }
 
+/**
+ * A live context cell reference. `referenceFence` is the canonical Matrx
+ * envelope pointer resolved by aidream on every send; it is not a value
+ * snapshot.
+ */
+export interface ContextValueResourceData {
+  id: string;
+  scope_id: string;
+  context_item_id: string;
+  label: string;
+  scope_name?: string;
+  context_item_name?: string;
+  referenceFence: string;
+}
+
 // ===========================
 // Unified Resource Type
 // ===========================
@@ -262,7 +277,8 @@ export type Resource =
   | { type: "transcript"; data: TranscriptResourceData }
   | { type: "transcript_session"; data: TranscriptSessionResourceData }
   | { type: "workbook"; data: WorkbookResourceData }
-  | { type: "document"; data: DocumentResourceData };
+  | { type: "document"; data: DocumentResourceData }
+  | { type: "context_value"; data: ContextValueResourceData };
 
 // ===========================
 // Resource Formatting Config

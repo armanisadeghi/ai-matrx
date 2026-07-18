@@ -68,6 +68,8 @@ export interface PickNode {
   orgId: string | null;
   typeId?: string;
   scopeId?: string;
+  /** Present only for `item` nodes; avoids reparsing the composite node id. */
+  contextItemId?: string;
 }
 
 export const nodeKey = (n: Pick<PickNode, "kind" | "id">): string =>
@@ -371,6 +373,7 @@ export function itemNodeOf(
     orgId: scope.orgId,
     typeId: scope.typeId,
     scopeId: scope.id,
+    contextItemId: item.id,
   };
 }
 

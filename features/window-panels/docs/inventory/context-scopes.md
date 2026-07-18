@@ -3,6 +3,7 @@
 > Panels: `contextSwitcherWindow`, `scopeEditWindow`, `hierarchyCreationWindow`, `contextAssignmentWindow`, `projectsWindow`, `createProjectWindow`, `creatorHub`, `resourcePickerWindow`, `itemDetailWindow`.
 > Legend: ✓ present · ◑ partial · ✗ missing · — n/a. Priority P0/P1/P2 · Effort S/M/L.
 > Filled 2026-06-23. See master `PANEL_INVENTORY.md` for column contracts.
+> Updated 2026-07-17: `contextSwitcherWindow` now hosts the canonical full Miller Columns Surface-A picker; the old bare `HierarchyTree` assessment below is superseded.
 
 ## Chunk-level findings (read first)
 
@@ -20,7 +21,7 @@
 
 | Panel | Domain | Purpose | Maturity | Create(M/I/AI) | Seed | Edit | Manage | Rel | Exec | Fidelity gap | Domain family (siblings) | Consolidation verdict | Action (P·E) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| contextSwitcherWindow | Scopes/Context | Read+select GLOBAL active context (org/scope/project/task) | Partial | ✗/✗/✗ | — | ◑ select-only | ✗ | ✓ sets active ctx | — | bare `HierarchyTree` in a 360×480 box; no header actions/footer/sidebar; can't manage scopes | scopeEdit, hierarchyCreation, contextAssignment(unreg) | keep-separate-justified (Surface-A selector, distinct from CRUD) | enrich + surface (P2·M) |
+| contextSwitcherWindow | Scopes/Context | Read+select GLOBAL active context (org/type/scope/item/project/task) | Solid | ✗/✗/✗ | — | ✓ full Miller selection | ✗ | ✓ sets active ctx | — | full 4-column OR-merged browser; item checks are session-local by design | scopeEdit, hierarchyCreation, contextAssignment(unreg) | keep-separate-justified (Surface-A selector, distinct from CRUD) | add bespoke entry points (P2·S) |
 | scopeEditWindow | Scopes | Create/edit ONE scope (canonical `ScopeForm`) | Solid | ✓/✗/✗ | ◑ parentScopeId preset | ✓ | ✗ | ◑ parent nesting | — | single-item only; no list/manage; opened from 1 site | contextSwitcher, hierarchyCreation, contextAssignment | keep-separate-justified (single-scope CRUD core) | add Tools-Grid tile + surface (P2·S) |
 | hierarchyCreationWindow | Scopes/Hierarchy | Create org / project / task (mode by `entityType`) | Partial | ✓/✗/✗ | ✓ presetContext + tile seed | ✗ | ✗ | ◑ creates under preset parent | — | thin name+desc form; overlaps `createProjectWindow` (richer, AI) for projects; no tasks-rich form | createProject, scopeEdit | **merge-candidate** (project branch duplicates createProjectWindow; route project→createProjectWindow, keep org/task) | consolidation review (P2·M) |
 | contextAssignmentWindow (UNREGISTERED) | Scopes/Context | Tag ONE entity to scopes (LOCAL, `ctx_scope_assignments`) | Solid (as component) | ✓ inline quick-add scopes/tasks | — | ✓ | ◑ multi-section | ✓ entity↔scope | — | not overlay-registered → not openable from anywhere; demo-only | contextSwitcher, scopeEdit | register as overlay OR keep inline-only (per scopes-team approval) | register overlay (P2·M) |
@@ -36,7 +37,7 @@
 
 | Panel | Header actions | Footer (+variant) | Sidebar | 2nd panel | Tabs | Persist (collect/urlSync/heavy/autosave) | Pop-out | Tray (snap/preview) | Ref/callback | Surface reg | Std ctrls (agents/help) | Help-assistant ctx | Canonical core | E2E state | Underused utilities | Action (P·E) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| contextSwitcherWindow | ✗ | ✗ | ✗ | ✗ | — | ✗/✗/✗/✗ | default | default | opener (no cb) | ✗ | ✗ | ✗ | ◑ canonical `HierarchyTree` + `useHierarchyReduxBridge` | ✓ DB→Redux `appContextSlice` (Surface-A writer) | header/footer/surface/help; urlSync | add surface+std-ctrls (P2·M) |
+| contextSwitcherWindow | ✗ | ✓ core footer | ✗ | ✗ | — | ✗/✗/✗/✗ | default | default | opener (no cb) | ✗ | ✗ | ✗ | ✓ canonical `MillerColumnsCore` + `ActiveMillerColumns` | ✓ DB→Redux `appContextSlice` (Surface-A writer) | surface/help; urlSync | add surface+std-ctrls (P2·S) |
 | scopeEditWindow | ✗ | ✗ (form buttons in body) | ✗ | ✗ | — | ✗/✗/✗/✗ | default | default | opener (no cb) | ✗ | ✗ | ✗ | ✓ canonical `ScopeForm` (createScope/updateScope thunks) | ✓ DB→Redux scope slices (self-hydrates on open) | footerRight for actions; surface/help | move actions→footer; surface (P2·S) |
 | hierarchyCreationWindow | ✗ | ✓ bar (Cancel/Create) | ✗ | ✗ | — | ✗/✗/✗/✗ | default | default | opener (no cb) | ✗ | ✗ | ✗ | ◑ own form (NOT shared with createProject/scopeEdit) | ◑ writes via `useHierarchy` mutations (react-query, not slice) | surface/help; AI-create (has none) | merge project branch; surface (P2·M) |
 | contextAssignmentWindow (UNREG) | ✗ | ◑ field owns footer | ✗ | ✗ | — | ✗/✗/✗/✗ (inline-controlled) | default | default | ✗ (no opener) | ✗ | ✗ | ✗ | ✓ canonical `ContextAssignmentField` (setEntityScopes chokepoint) | ✓ DB→Redux scope tree + 60s TTL data cache | overlayId, opener, tray, surface | register overlay+opener (P2·M) |
@@ -66,7 +67,7 @@
 
 ## Notes / evidence
 - Surface registration: grep of `features/surfaces` for all 8 overlayIds = **0 hits** → none is a registered surface (S3 rollout).
-- `contextSwitcherWindow` is a **Surface-A writer** — `useHierarchyReduxBridge` dispatches `setOrganization`/`setScopeSelections`/`setProject`/`setTask` to `appContextSlice` (the load-bearing global-context invariant). Correct, not a bug.
+- `contextSwitcherWindow` is a **Surface-A writer** — `ActiveMillerColumns` maps its controlled selection through `applyDenseSelectionToRedux` → `setFullContext` without touching `conversation_id` (the load-bearing global-context invariant). Correct, not a bug.
 - `scopeEditWindow` self-hydrates the agent-context scope slices on open (`fetchScopeTypes`/`fetchScopes`) because it can be opened from a surface reading a different tree.
 - `createProjectWindow` callback contract mirrors curated-icon-picker / image-uploader; `callbacks.ts` documents the 4-step group/emit/dispose flow. War-room picker auto-selects the created project via `onCreated`.
 - `creatorHub` footer uses self-reading status units (mirror `NoteMetadataBar`) — a good footer-status pattern, but it is hand-rolled, not the S2 help-assistant KV wiring.

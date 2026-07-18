@@ -150,6 +150,39 @@ export const categoryIcons: Record<ComponentCategory, React.ReactNode> = {
 
 export const componentList: ComponentEntry[] = [
   {
+    id: "miller-columns-context-picker",
+    name: "Miller Columns Context Picker",
+    path: "features/scopes/components/active-context/miller-columns/MillerColumns.tsx",
+    description:
+      "Canonical context selector with full and five-row condensed variants, plus popover and WindowPanel hosts.",
+    categories: ["selectors", "navigation", "containers", "modals"],
+    tags: [
+      "context",
+      "scope",
+      "miller columns",
+      "popover",
+      "window panel",
+      "project",
+      "task",
+    ],
+  },
+  {
+    id: "drill-deck-context-picker",
+    name: "Drill Deck Context Picker",
+    path: "features/scopes/components/active-context/drill-deck/DrillDeck.tsx",
+    description:
+      "Canonical one-column context navigator for narrow rails, drawers, and resource-selection flows.",
+    categories: ["selectors", "navigation", "containers"],
+    tags: [
+      "context",
+      "scope",
+      "drill deck",
+      "resource picker",
+      "smart input",
+      "drawer",
+    ],
+  },
+  {
     id: "icon-dropdown-menu",
     name: "Icon Dropdown Menu",
     path: "components/official/IconDropdownMenu.tsx",

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { ScopeGlyph } from "@/features/scope-system/components/ScopeGlyph";
 import {
   commitSelection,
   MODE_LABEL,
@@ -67,9 +67,9 @@ export function KindGlyph({ node }: { node: PickNode }) {
       />
     );
   if (node.kind === "type") {
-    const Icon = resolveIcon(node.iconName);
     return (
-      <Icon
+      <ScopeGlyph
+        icon={node.iconName}
         className={cn(
           "h-3.5 w-3.5 shrink-0",
           node.color?.fg ?? "text-muted-foreground",
@@ -202,12 +202,18 @@ export function PickerFooter({
   engine,
   mode,
   dense,
+  beforeActions,
+  onCommit,
   /** Demo/debug only — production Surface-A engines write inside `toggle`. */
   onLiveEmit,
 }: {
   engine: SelectionEngine;
   mode: PickerMode;
   dense?: boolean;
+  /** Compact sibling controls (for example Project / Task selectors). */
+  beforeActions?: React.ReactNode;
+  /** Real host commit. Falls back to the demo logger only when omitted. */
+  onCommit?: (nodes: SelectionEngine["nodes"]) => void;
   onLiveEmit?: (nodes: SelectionEngine["nodes"]) => void;
 }) {
   const live = mode !== "assignment";
@@ -235,6 +241,7 @@ export function PickerFooter({
             : "Nothing selected"
           : summarizeSelection(engine.nodes)}
       </span>
+      {beforeActions}
       {engine.count > 0 && (
         <button
           type="button"
@@ -253,7 +260,11 @@ export function PickerFooter({
         <button
           type="button"
           disabled={engine.count === 0}
-          onClick={() => commitSelection(mode, engine.nodes)}
+          onClick={() =>
+            onCommit
+              ? onCommit(engine.nodes)
+              : commitSelection(mode, engine.nodes)
+          }
           className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/85 disabled:opacity-40"
         >
           {MODE_LABEL[mode]}

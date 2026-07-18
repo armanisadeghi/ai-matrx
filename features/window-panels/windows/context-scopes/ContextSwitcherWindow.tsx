@@ -1,8 +1,7 @@
 "use client";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { HierarchyTree } from "@/features/agent-context/components/hierarchy-selection/HierarchyTree";
-import { useHierarchyReduxBridge } from "@/features/agent-context/components/hierarchy-selection/useReduxBridge";
+import { ActiveMillerColumns } from "@/features/scopes/components/active-context/miller-columns/ActiveMillerColumns";
 
 export interface ContextSwitcherWindowProps {
   isOpen: boolean;
@@ -15,26 +14,24 @@ export function ContextSwitcherWindow({
   onClose,
   instanceId = "default",
 }: ContextSwitcherWindowProps) {
-  const { value, onChange } = useHierarchyReduxBridge();
-
   if (!isOpen) return null;
 
   return (
     <WindowPanel
       id={`context-switcher-${instanceId}`}
-      title="Context"
+      title="Working Context"
       onClose={onClose}
-      minWidth={320}
-      minHeight={400}
-      width={360}
-      height={480}
+      minWidth={680}
+      minHeight={500}
+      width={940}
+      height={650}
       position="center"
       overlayId="contextSwitcherWindow"
+      bodyClassName="p-0 overflow-hidden"
     >
-      <HierarchyTree
-        levels={["organization", "scope", "project", "task"]}
-        value={value}
-        onChange={onChange}
+      <ActiveMillerColumns
+        variant="full"
+        className="h-full rounded-none border-0"
       />
     </WindowPanel>
   );

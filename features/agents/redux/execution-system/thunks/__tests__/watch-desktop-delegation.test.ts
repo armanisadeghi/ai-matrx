@@ -1,0 +1,141 @@
+const mockFetchPending = jest.fn((conversationId: string) => ({
+  kind: "pending" as const,
+  conversationId,
+}));
+const mockLoadConversation = jest.fn((args: { conversationId: string }) => ({
+  kind: "load" as const,
+  ...args,
+}));
+const mockResumeInstance = jest.fn(
+  (args: { conversationId: string; userRequestId: string }) => ({
+    kind: "resume" as const,
+    ...args,
+  }),
+);
+const mockHasAbortController = jest.fn(() => false);
+
+jest.mock("@/features/agents/api/fetch-pending-calls", () => ({
+  fetchConversationPendingCallsStrict: mockFetchPending,
+}));
+jest.mock("../load-conversation.thunk", () => ({
+  loadConversation: mockLoadConversation,
+}));
+jest.mock("../resume-instance.thunk", () => ({
+  resumeInstance: mockResumeInstance,
+}));
+jest.mock("../abort-registry", () => ({
+  hasAbortController: mockHasAbortController,
+}));
+
+import {
+  __resetDesktopDelegationWatchesForTests,
+  watchDesktopDelegation,
+} from "../watch-desktop-delegation.thunk";
+
+interface PendingRow {
+  call_id: string;
+  user_request_id: string;
+}
+
+describe("watchDesktopDelegation", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+    __resetDesktopDelegationWatchesForTests();
+  });
+
+  afterEach(() => {
+    __resetDesktopDelegationWatchesForTests();
+    jest.useRealTimers();
+  });
+
+  it("waits for every parallel call before hydrating and resuming", async () => {
+    const pendingResponses: PendingRow[][] = [
+      [{ call_id: "call-2", user_request_id: "request-1" }],
+      [],
+    ];
+    let status = "paused";
+    let loadCount = 0;
+    const dispatch = jest.fn((action: { kind: string }) => {
+      if (action.kind === "pending") {
+        return Promise.resolve(pendingResponses.shift() ?? []);
+      }
+      if (action.kind === "load") {
+        loadCount += 1;
+        return { unwrap: () => Promise.resolve() };
+      }
+      if (action.kind === "resume") {
+        status = "complete";
+        return Promise.resolve({ type: "instances/resume/fulfilled" });
+      }
+      throw new Error(`Unexpected dispatch: ${action.kind}`);
+    });
+    const getState = () => ({
+      conversations: {
+        byConversationId: { "conversation-1": { status } },
+      },
+    });
+
+    const first = watchDesktopDelegation({
+      conversationId: "conversation-1",
+      userRequestId: "request-1",
+      callId: "call-1",
+    })(dispatch as never, getState as never, undefined);
+    const second = watchDesktopDelegation({
+      conversationId: "conversation-1",
+      userRequestId: "request-1",
+      callId: "call-2",
+    })(dispatch as never, getState as never, undefined);
+
+    expect(second).toBe(first);
+    await jest.advanceTimersByTimeAsync(750);
+    expect(mockLoadConversation).not.toHaveBeenCalled();
+    expect(mockResumeInstance).not.toHaveBeenCalled();
+
+    await jest.advanceTimersByTimeAsync(750);
+    await first;
+    expect(mockResumeInstance).toHaveBeenCalledTimes(1);
+    expect(loadCount).toBe(2); // resolved tool rows, then winning continuation
+  });
+
+  it("retries a transient resolved-tool hydration failure", async () => {
+    let status = "paused";
+    let loadCount = 0;
+    const dispatch = jest.fn((action: { kind: string }) => {
+      if (action.kind === "pending") return Promise.resolve([]);
+      if (action.kind === "load") {
+        loadCount += 1;
+        return {
+          unwrap: () =>
+            loadCount === 1
+              ? Promise.reject(new Error("temporary Supabase outage"))
+              : Promise.resolve(),
+        };
+      }
+      if (action.kind === "resume") {
+        status = "complete";
+        return Promise.resolve({ type: "instances/resume/fulfilled" });
+      }
+      throw new Error(`Unexpected dispatch: ${action.kind}`);
+    });
+    const getState = () => ({
+      conversations: {
+        byConversationId: { "conversation-1": { status } },
+      },
+    });
+
+    const watch = watchDesktopDelegation({
+      conversationId: "conversation-1",
+      userRequestId: "request-1",
+      callId: "call-1",
+    })(dispatch as never, getState as never, undefined);
+
+    await jest.advanceTimersByTimeAsync(750);
+    expect(mockResumeInstance).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(750);
+    await watch;
+
+    expect(loadCount).toBe(3); // failed hydrate, successful hydrate, final hydrate
+    expect(mockResumeInstance).toHaveBeenCalledTimes(1);
+  });
+});

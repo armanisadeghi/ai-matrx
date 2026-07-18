@@ -30,6 +30,7 @@ import {
   Captions,
   AudioLines,
   Notebook,
+  Layers,
   Loader2,
   X,
 } from "lucide-react";
@@ -59,6 +60,7 @@ import { normalizeResource } from "@/features/agents/components/context-items/no
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { DataRef } from "@/features/agents/types/message-types";
 import { InlineMediaRef } from "@/features/files";
+import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
 
 function getBlockTypeDisplay(blockType: ResourceBlockType) {
   const map: Record<
@@ -158,6 +160,13 @@ function getBlockTypeDisplay(blockType: ResourceBlockType) {
     },
   };
   return map[blockType] ?? map.text;
+}
+
+function isContextValueResource(resource: ManagedResource): boolean {
+  if (resource.blockType !== "text" || typeof resource.source !== "string") {
+    return false;
+  }
+  return parseReferenceFence(resource.source)?.envelope.type === "context_value";
 }
 
 function basename(path: string): string {
@@ -323,7 +332,9 @@ function ResourceChip({
 
   // Every attachment — files, media, notes, tasks, everything — renders as the
   // SAME ResourceAttachmentTile so the row is uniform regardless of content.
-  const display = getBlockTypeDisplay(resource.blockType);
+  const display = isContextValueResource(resource)
+    ? { icon: Layers, label: "Context value" }
+    : getBlockTypeDisplay(resource.blockType);
   const label = getResourceLabel(resource);
 
   if (resource.blockType === "image") {

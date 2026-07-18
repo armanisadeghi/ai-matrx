@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  createDraft,
   useSelectionEngine,
   type PickerMode,
   type SelectionEngine,
@@ -304,6 +305,7 @@ export default function ContextReimaginePage() {
                   <DrillDeck
                     engine={engine}
                     mode={mode}
+                    onCreate={createDraft}
                     className="h-[420px] w-[260px]"
                   />
                 </div>
@@ -335,6 +337,7 @@ export default function ContextReimaginePage() {
                 <MillerColumns
                   engine={engine}
                   mode={mode}
+                  onCreate={createDraft}
                   className="h-[480px] w-full"
                 />
               )}
@@ -343,6 +346,23 @@ export default function ContextReimaginePage() {
             <VariantCard
               wide
               no="I5"
+              title="Miller Columns · condensed"
+              blurb="The compact official face. Every hierarchy column is capped at five visible rows; Project and Task collapse into one footer button each beside Clear and Assign. Same engine, same selection, no reduced semantics."
+            >
+              {(engine, mode) => (
+                <MillerColumns
+                  engine={engine}
+                  mode={mode}
+                  variant="condensed"
+                  onCreate={createDraft}
+                  className="h-[300px] w-full"
+                />
+              )}
+            </VariantCard>
+
+            <VariantCard
+              wide
+              no="I6"
               title="Context Matrix"
               blurb="The map — kept as a VISUALIZATION, not a picker: the future landing-page view of everything you have (all orgs → one org → one type → one scope) and what's missing. Every org a swimlane, every type a row, every scope a cell; search dims instead of reflowing; a cell's chevron opens its item strip inline."
             >

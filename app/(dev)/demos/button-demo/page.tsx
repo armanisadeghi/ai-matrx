@@ -13,6 +13,15 @@ import {
   DeepSeekTapButton,
   FluxTapButton,
   GrokTapButton,
+  GroqTapButton,
+  TogetherTapButton,
+  CerebrasTapButton,
+  MicrosoftTapButton,
+  MoonshotTapButton,
+  QwenTapButton,
+  IdeogramTapButton,
+  RunwayTapButton,
+  LumaTapButton,
   MistralTapButton,
   PerplexityTapButton,
   PowerTapButton,
@@ -220,6 +229,33 @@ export default function ButtonDemoPage() {
           <Labeled label="Flux">
             <FluxTapButton colored />
           </Labeled>
+          <Labeled label="Groq">
+            <GroqTapButton colored />
+          </Labeled>
+          <Labeled label="Together">
+            <TogetherTapButton colored />
+          </Labeled>
+          <Labeled label="Cerebras">
+            <CerebrasTapButton colored />
+          </Labeled>
+          <Labeled label="Microsoft">
+            <MicrosoftTapButton colored />
+          </Labeled>
+          <Labeled label="Moonshot">
+            <MoonshotTapButton colored />
+          </Labeled>
+          <Labeled label="Qwen">
+            <QwenTapButton colored />
+          </Labeled>
+          <Labeled label="Ideogram">
+            <IdeogramTapButton colored />
+          </Labeled>
+          <Labeled label="Runway">
+            <RunwayTapButton colored />
+          </Labeled>
+          <Labeled label="Luma">
+            <LumaTapButton colored />
+          </Labeled>
           <Labeled label="CPU">
             <CpuTapButton />
           </Labeled>
@@ -273,6 +309,33 @@ export default function ButtonDemoPage() {
           </Labeled>
           <Labeled label="Flux">
             <FluxTapButton />
+          </Labeled>
+          <Labeled label="Groq">
+            <GroqTapButton />
+          </Labeled>
+          <Labeled label="Together">
+            <TogetherTapButton />
+          </Labeled>
+          <Labeled label="Cerebras">
+            <CerebrasTapButton />
+          </Labeled>
+          <Labeled label="Microsoft">
+            <MicrosoftTapButton />
+          </Labeled>
+          <Labeled label="Moonshot">
+            <MoonshotTapButton />
+          </Labeled>
+          <Labeled label="Qwen">
+            <QwenTapButton />
+          </Labeled>
+          <Labeled label="Ideogram">
+            <IdeogramTapButton />
+          </Labeled>
+          <Labeled label="Runway">
+            <RunwayTapButton />
+          </Labeled>
+          <Labeled label="Luma">
+            <LumaTapButton />
           </Labeled>
           <Labeled label="CPU">
             <CpuTapButton />

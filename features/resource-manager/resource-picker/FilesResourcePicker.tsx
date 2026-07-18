@@ -65,6 +65,7 @@ import {
   cldSourceFileIdsFromStudioDocs,
   usePdfStudioDocs,
 } from "@/features/pdf-extractor/studio/hooks/usePdfStudioDocs";
+import { usePickerInputFocus } from "./usePickerInputFocus";
 
 /** Same cap as `buildRows` recents filter in the files list. */
 /** Two viewports worth of rows; never mount a 100-item thumbnail fan-out. */
@@ -487,6 +488,7 @@ export function FilesResourcePicker({
   const allFiles = useAppSelector(selectAllFilesArray);
 
   const fileMutation = useFileMutation();
+  const searchInputRef = usePickerInputFocus();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<PickerViewMode>("list");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -820,6 +822,7 @@ export function FilesResourcePicker({
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <Input
+            ref={searchInputRef}
             type="text"
             placeholder={
               isPdfExtractorFilter

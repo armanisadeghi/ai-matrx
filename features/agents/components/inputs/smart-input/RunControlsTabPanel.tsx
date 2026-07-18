@@ -322,6 +322,7 @@ export function RunControlsTabPanel({
       {activeTab === "attach" && (
         <div className={scrollClass}>
           <ResourcePickerMenu
+            conversationId={conversationId}
             onResourceSelected={onResourceSelected}
             onClose={onClose}
             attachmentCapabilities={attachmentCapabilities}

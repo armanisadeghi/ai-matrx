@@ -71,6 +71,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { MakerBrandGlyph } from "@/components/icons/MakerBrandGlyph";
+import { MakerTapButton } from "@/components/icons/MakerTapButton";
 import {
   useModelCatalog,
   INPUT_MODALITIES,
@@ -478,7 +480,14 @@ function ModelDetailCard({
               {model.name}
             </div>
             {model.maker && (
-              <div className="text-xs text-muted-foreground">{model.maker}</div>
+              <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                <MakerBrandGlyph
+                  maker={model.maker}
+                  colored
+                  className="h-3.5 w-3.5"
+                />
+                <span>{model.maker}</span>
+              </div>
             )}
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
@@ -1058,7 +1067,28 @@ function FiltersPanel({
       )}
 
       {/* Maker + Service at the BOTTOM of the filter area (owner spec). */}
-      <FilterSection label="Maker">{setChip("makers")}</FilterSection>
+      <FilterSection label="Maker">
+        <div className="space-y-2">
+          <ChipToggle
+            active={filters.makers.size === 0}
+            onClick={() => setFilters((f) => ({ ...f, makers: new Set() }))}
+          >
+            Any
+          </ChipToggle>
+          <div className="flex flex-wrap">
+            {makerOptions.map((maker) => (
+              <MakerTapButton
+                key={maker}
+                maker={maker}
+                variant={filters.makers.has(maker) ? "glass" : "transparent"}
+                colored
+                ariaLabel={`Filter by ${maker}`}
+                onClick={() => toggleSetValue("makers", maker)}
+              />
+            ))}
+          </div>
+        </div>
+      </FilterSection>
 
       {/* Branded serving names ONLY (served_via) — never a real vendor. */}
       <FilterSection label={SERVICE_LABEL}>{setChip("services")}</FilterSection>
@@ -1103,7 +1133,7 @@ function ModelRow({
       }}
       onMouseEnter={onHover}
       className={cn(
-        "grid w-full cursor-pointer grid-cols-[auto_minmax(0,72px)_minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
+        "grid w-full cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
         "hover:bg-muted/60 focus:bg-muted/60 focus:outline-none",
         selected && "bg-muted",
       )}
@@ -1126,10 +1156,10 @@ function ModelRow({
         <Star className={cn("h-3 w-3", isFavorite && "fill-amber-400")} />
       </button>
       <span
-        className="truncate text-[11px] text-muted-foreground"
+        className="flex w-5 justify-center"
         title={model.maker ?? undefined}
       >
-        {model.maker ?? "—"}
+        <MakerBrandGlyph maker={model.maker} colored className="h-3.5 w-3.5" />
       </span>
       <span className="flex min-w-0 items-center gap-1.5">
         <span className="truncate text-xs font-medium text-foreground">
@@ -1495,18 +1525,18 @@ export function ModelListDropdown({
     <button
       type="button"
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground/80 transition-colors hover:bg-muted/50 hover:text-foreground",
+        "inline-flex h-7 items-center gap-1 rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
         className,
       )}
     >
       <span className="flex min-w-0 items-center gap-1.5">
         {selected ? (
           <>
-            {selected.maker && (
-              <span className="truncate text-muted-foreground">
-                {selected.maker}
-              </span>
-            )}
+            <MakerBrandGlyph
+              maker={selected.maker}
+              colored
+              className="h-3.5 w-3.5 shrink-0"
+            />
             <span className="truncate">{selected.name}</span>
           </>
         ) : (
@@ -1591,9 +1621,9 @@ export function ModelListDropdown({
       </div>
 
       {/* Column header */}
-      <div className="grid grid-cols-[auto_minmax(0,72px)_minmax(0,1fr)_auto_auto_auto] gap-2 border-b border-border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] gap-2 border-b border-border px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
         <span className="w-4" />
-        <span>Maker</span>
+        <span className="w-5" title="Maker" aria-label="Maker" />
         <span>Name</span>
         <span>Speed</span>
         <span

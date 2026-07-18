@@ -25,6 +25,7 @@ import { callApi } from "@/lib/api/call-api";
 import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import type { components } from "@/types/python-generated/api-types";
 
 // ── Local types ──────────────────────────────────────────────────────────────
 //
@@ -36,25 +37,7 @@ import type { RootState } from "@/lib/redux/store";
 //     import type { components } from "@/types/python-generated/api-types";
 //     export type PendingCallSummary = components["schemas"]["PendingCallSummary"];
 
-export interface PendingCallSummary {
-  /** cx_tool_call.id */
-  id: string;
-  /** call_id the model emitted and that tool_results will reference */
-  call_id: string;
-  conversation_id: string;
-  user_request_id: string | null;
-  /** cx_message.id of the assistant message that produced this tool call */
-  message_id: string | null;
-  /** Tool registry name (e.g. widget_text_replace, or any client-delegated tool) */
-  tool_name: string;
-  arguments: Record<string, unknown>;
-  /** Iteration within the originating loop (useful for ordering in the UI) */
-  iteration: number;
-  /** ISO-8601 (when the cx_tool_call row was first created) */
-  created_at: string | null;
-  /** ISO-8601. After this the server sweeps the row to error/client_tool_timeout. */
-  expires_at: string | null;
-}
+export type PendingCallSummary = components["schemas"]["PendingCallSummary"];
 
 // ── Thunks ───────────────────────────────────────────────────────────────────
 
@@ -73,11 +56,9 @@ export const fetchConversationPendingCalls = (
   return async (dispatch) => {
     const result = await dispatch(
       callApi({
-        // Until python-generated types regenerate, cast at the `path` boundary.
-        // The underlying URL is correct; TS just hasn't learned it yet.
-        path: "/ai/conversation/{conversation_id}/pending_calls" as never,
+        path: "/ai/conversation/{conversation_id}/pending_calls",
         method: "GET",
-        pathParams: { conversation_id: conversationId } as never,
+        pathParams: { conversation_id: conversationId },
       }),
     );
     if (result.error) {
@@ -87,6 +68,33 @@ export const fetchConversationPendingCalls = (
         result.error,
       );
       return [];
+    }
+    return (result.data ?? []) as PendingCallSummary[];
+  };
+};
+
+/** Same read as above, but transport/server errors reject instead of becoming []. */
+export const fetchConversationPendingCallsStrict = (
+  conversationId: string,
+): ThunkAction<
+  Promise<PendingCallSummary[]>,
+  RootState,
+  unknown,
+  UnknownAction
+> => {
+  return async (dispatch) => {
+    const result = await dispatch(
+      callApi({
+        path: "/ai/conversation/{conversation_id}/pending_calls",
+        method: "GET",
+        pathParams: { conversation_id: conversationId },
+      }),
+    );
+    if (result.error) {
+      throw new Error(
+        result.error.message ??
+          `Pending-call check failed with HTTP ${result.error.status ?? "unknown"}`,
+      );
     }
     return (result.data ?? []) as PendingCallSummary[];
   };
@@ -105,7 +113,7 @@ export const fetchUserPendingCalls = (): ThunkAction<
   return async (dispatch) => {
     const result = await dispatch(
       callApi({
-        path: "/ai/user/pending_calls" as never,
+        path: "/ai/user/pending_calls",
         method: "GET",
       }),
     );

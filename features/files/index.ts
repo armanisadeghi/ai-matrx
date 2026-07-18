@@ -266,6 +266,7 @@ export type { RagStatus } from "@/features/files/types";
 export { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
 export {
   lookupFileDocument,
+  peekFileDocument,
   type FileDocumentState,
 } from "@/features/files/api/document-lookup";
 

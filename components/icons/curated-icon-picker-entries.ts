@@ -11,6 +11,15 @@ import {
   MetaTapButton,
   LlamaTapButton,
   DeepSeekTapButton,
+  GroqTapButton,
+  TogetherTapButton,
+  CerebrasTapButton,
+  MicrosoftTapButton,
+  MoonshotTapButton,
+  QwenTapButton,
+  IdeogramTapButton,
+  RunwayTapButton,
+  LumaTapButton,
   MistralTapButton,
   PerplexityTapButton,
   FluxTapButton,
@@ -102,6 +111,60 @@ export const CURATED_PICKER_AI_BRANDS: CuratedPickerAiTapEntry[] = [
     Component: DeepSeekTapButton,
   },
   {
+    label: "Groq",
+    selectValue: "Zap",
+    colored: true,
+    Component: GroqTapButton,
+  },
+  {
+    label: "Together",
+    selectValue: "Share2",
+    colored: true,
+    Component: TogetherTapButton,
+  },
+  {
+    label: "Cerebras",
+    selectValue: "Cpu",
+    colored: true,
+    Component: CerebrasTapButton,
+  },
+  {
+    label: "Microsoft",
+    selectValue: "FcBusiness",
+    colored: true,
+    Component: MicrosoftTapButton,
+  },
+  {
+    label: "Moonshot",
+    selectValue: "Moon",
+    colored: true,
+    Component: MoonshotTapButton,
+  },
+  {
+    label: "Qwen",
+    selectValue: "Sparkles",
+    colored: true,
+    Component: QwenTapButton,
+  },
+  {
+    label: "Ideogram",
+    selectValue: "Image",
+    colored: true,
+    Component: IdeogramTapButton,
+  },
+  {
+    label: "Runway",
+    selectValue: "Video",
+    colored: true,
+    Component: RunwayTapButton,
+  },
+  {
+    label: "Luma",
+    selectValue: "Box",
+    colored: true,
+    Component: LumaTapButton,
+  },
+  {
     label: "Mistral",
     selectValue: "Activity",
     colored: true,
@@ -174,12 +237,7 @@ export const CURATED_PICKER_AI_ACTIONS: CuratedPickerAiTapEntry[] = [
 ];
 
 export type CuratedPickerTabId =
-  | "all"
-  | "svg"
-  | "icons"
-  | "lucideWeb"
-  | "aiBrands"
-  | "aiActions";
+  "all" | "svg" | "icons" | "lucideWeb" | "aiBrands" | "aiActions";
 
 export const CURATED_PICKER_TABS: {
   id: CuratedPickerTabId;

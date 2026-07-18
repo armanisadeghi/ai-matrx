@@ -32,12 +32,18 @@ import {
   X,
   Loader2,
   AlertCircle,
-  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useFileUpload, useFileSrc, InlineMediaRef } from "@/features/files";
+import {
+  useFileDocument,
+  useFileUpload,
+  useFileSrc,
+  FileRagBadge,
+  FileResourceChip,
+  InlineMediaRef,
+} from "@/features/files";
 import {
   FilesResourcePicker,
   type FilesResourcePickerFilter,
@@ -163,6 +169,9 @@ export function MediaVariableInput({
   // URL values render directly. Don't try to render URL paths through
   // useFileSrc — only file_ids belong there.
   const previewSrc = isFileId ? resolvedSrc : stored;
+  const { state: documentState } = useFileDocument(
+    mediaKind === "document" && isFileId ? stored : null,
+  );
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -229,7 +238,40 @@ export function MediaVariableInput({
   return (
     <div className={cn("space-y-1.5", compact && "space-y-1")}>
       {/* Filled state — preview + clear */}
-      {stored && (
+      {stored && isFileId && (
+        <div className="space-y-1.5 rounded-md border border-border bg-muted/40 p-2">
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <FileResourceChip
+              fileId={stored}
+              onRemove={onClear}
+              className="min-w-0 max-w-full"
+            />
+            {mediaKind === "document" ? (
+              <FileRagBadge
+                fileId={stored}
+                showRagStatus
+                iconOnly={false}
+                className="shrink-0"
+              />
+            ) : null}
+          </div>
+          {mediaKind === "document" ? (
+            <p className="text-[10px] leading-snug text-muted-foreground">
+              {documentState.status === "loading"
+                ? "Checking processed document…"
+                : documentState.status === "found"
+                  ? "Processed document detected — clean/raw text, RAG, pages, and derivations become available to the agent automatically."
+                  : documentState.status === "absent"
+                    ? "Original file selected. Process it for RAG to add clean/raw text, search, pages, and derivations."
+                    : documentState.status === "unavailable"
+                      ? "File selected; processed-document status is temporarily unavailable."
+                      : "File selected by file_id."}
+            </p>
+          ) : null}
+        </div>
+      )}
+
+      {stored && !isFileId && (
         <div className="flex items-stretch gap-2 px-2 py-1.5 rounded-md border border-border bg-muted/40">
           {hasThumbnail ? (
             <InlineMediaRef
@@ -245,13 +287,7 @@ export function MediaVariableInput({
             />
           ) : (
             <div className="h-10 w-10 rounded bg-background flex items-center justify-center shrink-0 border border-border">
-              {isFileId && !resolvedSrc ? (
-                <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-              ) : isFileId ? (
-                <Database className="w-4 h-4 text-blue-500" />
-              ) : (
-                <Icon className="w-4 h-4 text-muted-foreground" />
-              )}
+              <Icon className="w-4 h-4 text-muted-foreground" />
             </div>
           )}
           <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -262,7 +298,7 @@ export function MediaVariableInput({
               {describeValue(stored)}
             </span>
             <span className="text-[10px] text-muted-foreground capitalize">
-              {isFileId ? `${meta.label} · file_id` : meta.label}
+              {meta.label}
             </span>
           </div>
           <Button
