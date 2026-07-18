@@ -16,7 +16,7 @@
  * Items, so the two surfaces never drift.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +54,10 @@ import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBui
 import { createList } from "@/features/user-lists/service";
 import { CustomComponentConfigurator } from "./CustomComponentConfigurator";
 import { ContextItemBindingEditor } from "./ContextItemBindingEditor";
+import {
+  isAutoAssignValue,
+  supportsRandomAssignment,
+} from "@/features/agents/utils/auto-assignment";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -94,11 +98,17 @@ export function AgentVariableEditor({
   const buildAgentScope = useAgentBuilderSurfaceScope(agentId);
 
   // Name buffer — local draft for editing; resets when the variable changes.
-  const [nameDraft, setNameDraft] = useState(variableName);
+  const [nameDraftState, setNameDraftState] = useState({
+    sourceName: variableName,
+    value: variableName,
+  });
+  const nameDraft =
+    nameDraftState.sourceName === variableName
+      ? nameDraftState.value
+      : variableName;
+  const setNameDraft = (value: string) =>
+    setNameDraftState({ sourceName: variableName, value });
   const [isConvertingPicklist, setIsConvertingPicklist] = useState(false);
-  useEffect(() => {
-    setNameDraft(variableName);
-  }, [variableName]);
 
   if (!variable) {
     return (
@@ -171,7 +181,14 @@ export function AgentVariableEditor({
 
   const handleCustomComponentChange = (
     next: VariableCustomComponent | undefined,
-  ) => updateVariable({ customComponent: next });
+  ) =>
+    updateVariable({
+      customComponent: next,
+      ...(isAutoAssignValue(variable.defaultValue) &&
+      !supportsRandomAssignment(next)
+        ? { defaultValue: "" }
+        : {}),
+    });
 
   const handleBindingChange = (next: ContextItemBinding | undefined) =>
     updateVariable({ binding: next });
@@ -264,6 +281,7 @@ export function AgentVariableEditor({
         max: effective.max,
         step: effective.step,
         structuredList: { listId },
+        randomAssignment: effective.randomAssignment,
       });
 
       updateVariable({
@@ -294,6 +312,7 @@ export function AgentVariableEditor({
     max: effective.max,
     step: effective.step,
     structuredList: effective.structuredList,
+    randomAssignment: effective.randomAssignment,
   });
 
   const defaultValueStr = String(variable.defaultValue ?? "");
@@ -392,6 +411,7 @@ export function AgentVariableEditor({
           value={variable.customComponent}
           onChange={handleCustomComponentChange}
           readonly={readonly}
+          allowAutomaticAssignment
         />
       )}
 
@@ -438,7 +458,9 @@ export function AgentVariableEditor({
               <span className="text-muted-foreground italic">None</span>
             )}
           </p>
-        ) : componentType === "textarea" && !isPicklistBound ? (
+        ) : componentType === "textarea" &&
+          !isPicklistBound &&
+          !effective.randomAssignment ? (
           <Textarea
             autoGrow
             value={defaultValueStr}
@@ -449,7 +471,7 @@ export function AgentVariableEditor({
           />
         ) : (
           <VariableInputComponent
-            value={isPicklistBound ? variable.defaultValue : defaultValueStr}
+            value={variable.defaultValue}
             onChange={handleDefaultValueChange}
             variableName={variableName || "variable"}
             customComponent={previewCc}

@@ -3,6 +3,7 @@
  */
 
 import { readPicklistSelection } from "@/features/matrx-envelope/referenceFence";
+import { isAutoAssignValue } from "./auto-assignment";
 
 /**
  * Sanitizes a variable name for use in {{variable_name}} placeholders.
@@ -81,6 +82,7 @@ export const formatVariableDisplayName = (name: string): string =>
  * is shown to a user, so a reference never renders as raw JSON or "[object Object]".
  */
 export const variableValueToDisplay = (value: unknown): string => {
+  if (isAutoAssignValue(value)) return "Random on run";
   const isPicklistValue =
     (typeof value === "string" && value.includes("```matrx")) ||
     (Array.isArray(value) &&

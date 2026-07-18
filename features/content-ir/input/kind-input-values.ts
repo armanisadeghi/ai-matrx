@@ -256,21 +256,40 @@ export interface AssembledKindInstance {
  * `instance` is keyed by FIELD KEY (that is what the kind's schema declares).
  * The pair list is the only thing that knows both.
  */
+export interface AssembleKindInstanceOptions {
+  /**
+   * Field keys whose value was SEEDED as the literal empty string "" from an
+   * existing instance (edit flows — see `emptyStringSeededFields`). For these
+   * keys an empty string input means "" — the stored value — not "the user
+   * supplied nothing", so the key is kept instead of omitted. Without this, a
+   * required string field legitimately holding "" would be DROPPED on re-save
+   * and fail validation though the original passed (round-trip asymmetry).
+   */
+  emptyStringFields?: ReadonlySet<string>;
+}
+
 export function assembleKindInstance(
   kind: string,
   pairs: KindInputPair[],
   values: Record<string, unknown>,
+  options?: AssembleKindInstanceOptions,
 ): AssembledKindInstance {
   const instance: Record<string, unknown> = { [KIND_KEY]: kind };
   const coercionErrors: Record<string, string> = {};
   const omittedFields: string[] = [];
 
   for (const pair of pairs) {
-    const outcome = coerceInputValueToKindValue(
-      pair.field,
-      values[pair.variable.name],
-    );
+    const raw = values[pair.variable.name];
+    const outcome = coerceInputValueToKindValue(pair.field, raw);
     if (outcome.status === "omitted") {
+      if (
+        options?.emptyStringFields?.has(pair.fieldKey) &&
+        typeof raw === "string" &&
+        raw.trim() === ""
+      ) {
+        instance[pair.fieldKey] = "";
+        continue;
+      }
       omittedFields.push(pair.fieldKey);
       continue;
     }

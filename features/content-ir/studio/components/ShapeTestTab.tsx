@@ -34,6 +34,8 @@ interface ShapeTestTabProps {
   kindDefinitionId: string;
   /** The kind's CURRENT `version` — pinned onto saved instances. */
   kindVersion: number;
+  /** `metadata.title_key` — the per-kind instance-title override (or null). */
+  titleKey: string | null;
 }
 
 type SaveState =
@@ -48,6 +50,7 @@ export default function ShapeTestTab({
   label,
   kindDefinitionId,
   kindVersion,
+  titleKey,
 }: ShapeTestTabProps) {
   const [instance, setInstance] = useState<unknown>(null);
   const [renderKey, setRenderKey] = useState(0);
@@ -66,6 +69,7 @@ export default function ShapeTestTab({
         kindVersion,
         value: instance,
         organizationId,
+        titleKey,
       });
       if (isValidatorDrift(result)) {
         // The DB trigger is the truth. Client-side ajv said valid, the

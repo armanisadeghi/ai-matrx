@@ -42,6 +42,7 @@ import {
 } from "@/features/agents/utils/variable-customcomponent";
 import { OptionsEditor } from "./OptionsEditor";
 import { StructuredListBindingEditor } from "./StructuredListBindingEditor";
+import { hasRandomOptionSource } from "@/features/agents/utils/auto-assignment";
 
 interface CustomComponentConfiguratorProps {
   /** Current custom component config (undefined = bare textarea). */
@@ -49,12 +50,15 @@ interface CustomComponentConfiguratorProps {
   /** Emits the rebuilt config (or undefined when it normalizes back to a bare textarea). */
   onChange: (next: VariableCustomComponent | undefined) => void;
   readonly?: boolean;
+  /** Agent-variable-only capability; context-item components do not own assignment policy. */
+  allowAutomaticAssignment?: boolean;
 }
 
 export function CustomComponentConfigurator({
   value,
   onChange,
   readonly,
+  allowAutomaticAssignment = false,
 }: CustomComponentConfiguratorProps) {
   const componentType: VariableComponentType = value?.type ?? "textarea";
   const meta = getComponentTypeMeta(componentType);
@@ -80,6 +84,8 @@ export function CustomComponentConfigurator({
   const handleStructuredListChange = (
     structuredList: StructuredListBinding | undefined,
   ) => update({ structuredList });
+  const handleRandomAssignmentChange = (randomAssignment: boolean) =>
+    update({ randomAssignment });
 
   return (
     <div className="space-y-3">
@@ -179,6 +185,24 @@ export function CustomComponentConfigurator({
               />
             </div>
           )}
+        </div>
+      )}
+
+      {allowAutomaticAssignment && hasRandomOptionSource(value) && (
+        <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+          <div className="min-w-0">
+            <Label className="text-sm cursor-pointer">
+              Allow random assignment
+            </Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Lets callers ask the server to choose one option securely at run time.
+            </p>
+          </div>
+          <Switch
+            checked={effective.randomAssignment}
+            onCheckedChange={handleRandomAssignmentChange}
+            disabled={readonly}
+          />
         </div>
       )}
 

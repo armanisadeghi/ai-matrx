@@ -7,6 +7,7 @@
 import "server-only";
 
 import { createClient } from "@/utils/supabase/server";
+import { kindTitleKeyFromMetadata } from "./instance-title";
 import type { Json } from "@/types/database.types";
 
 export interface ShapeDetail {
@@ -19,6 +20,8 @@ export interface ShapeDetail {
   updatedAt: string;
   fieldData: Json | null;
   emittedJsonSchema: Json | null;
+  /** `metadata.title_key` — the per-kind instance-title override (or null). */
+  titleKey: string | null;
 }
 
 /** Null on missing / RLS-denied — the route 404s. Throws on a real DB error. */
@@ -30,7 +33,7 @@ export async function getShapeDetail(
     .schema("content_ir")
     .from("kind_definition")
     .select(
-      "id,kind,label,is_active,visibility,version,updated_at,data,emitted_json_schema",
+      "id,kind,label,is_active,visibility,version,updated_at,data,emitted_json_schema,metadata",
     )
     .eq("kind", kindSlug)
     .is("deleted_at", null)
@@ -49,5 +52,6 @@ export async function getShapeDetail(
     updatedAt: data.updated_at,
     fieldData: data.data,
     emittedJsonSchema: data.emitted_json_schema,
+    titleKey: kindTitleKeyFromMetadata(data.metadata),
   };
 }

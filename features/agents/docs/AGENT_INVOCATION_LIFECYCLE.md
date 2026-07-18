@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** 1 (sub-feature of `features/agents/`)
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-07-18`
 
 > Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This doc is the endpoint routing contract — the rules for which URL, which payload, which mode. Canonical source in code: [`features/agents/types/conversation-invocation.types.ts`](../types/conversation-invocation.types.ts).
 
@@ -50,6 +50,7 @@ This routing table is the single contract the entire invocation pipeline enforce
 **Invariants:**
 - `assembleRequest` never reads `agentDefinition`. The agent ID on the instance is the only link back to the definition, and the server resolves it (except in Builder `manual` mode, where the full definition is on `invocation.builder.*`).
 - Payload is ALWAYS snake_case. Client is camelCase. Conversion happens once, at the boundary.
+- An opted-in random choice is represented in `variables` by the exact object `{type:"auto_assign",strategy:"random"}`. Consumer surfaces never preselect an option; stored-agent execution resolves against the server-loaded definition. Builder manual execution additionally sends `variable_definitions` because its unsaved definition is the source of truth.
 
 ---
 
@@ -156,6 +157,7 @@ Server hydrates the definition from the agent ID (current pointer or pinned vers
 
 ## Change log
 
+- `2026-07-18` — codex: Documented the automatic-assignment marker and Builder-only live `variable_definitions` companion payload.
 - `2026-04-22` — claude: initial doc. Canonical endpoint matrix extracted from `agent-system-mental-model.md` §4 and `conversation-invocation.types.ts`.
 
 ---

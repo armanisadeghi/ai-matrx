@@ -100,6 +100,16 @@ export interface StructuredListBinding {
   multiple?: boolean;
 }
 
+export interface VariableAssignmentConfig {
+  /** Allow the caller to ask the server to choose one eligible option cryptographically at random. */
+  random?: boolean;
+}
+
+export interface AutoAssignValue {
+  type: "auto_assign";
+  strategy: "random";
+}
+
 // (Legacy `picklist_ref` envelope + `isPicklistRef` guard removed 2026-07-08 — every stored
 // value was backfilled to the canonical ```matrx reference fence; the ONLY wire value of a
 // picklist-bound variable is the fence from `referenceFence.ts#buildPicklistItemFence`.)
@@ -126,6 +136,8 @@ export interface VariableCustomComponent {
    * `structured_list` only. Do not emit this key.
    */
   picklist?: StructuredListBinding;
+  /** Automatic-assignment strategies explicitly enabled by the agent author. */
+  assignment?: VariableAssignmentConfig;
   /**
    * Preserved config fragments for other component types.
    * Written when the user edits a field that isn't used by the current type

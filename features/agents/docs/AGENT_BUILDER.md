@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** 1 (sub-feature of `features/agents/`)
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-07-18`
 
 > Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This doc drills into the Builder surface specifically.
 
@@ -116,6 +116,7 @@ Every context slot declares whether the agent may CHANGE its value or only READ 
 1. The Edit Variable modal writes each field directly to `agentDefinition` Redux.
 2. Help Text is a `ProTextarea` on `matrx-user/agent-builder`; its live scope includes the full agent snapshot plus the focused variable (`variable_name`, `variable_help_text`, `variable_json`, and editable-target metadata).
 3. Static option variables can be converted into a user picklist: existing option text seeds both the public label and the hidden injected text, the variable is immediately rebound to the new picklist, and the picklist editor link opens `/lists/{id}` for refinement.
+4. A variable with static options or a Structured List may enable **Allow random assignment**. This persists `customComponent.assignment.random=true`; it does not choose a value while authoring. The Default Value input and every Smart Agent Input surface can then store/send `{type:"auto_assign",strategy:"random"}`. Manual runs include the live unsaved `variable_definitions` alongside values so the server resolves against exactly what Builder displays.
 
 ---
 
@@ -142,6 +143,7 @@ Every context slot declares whether the agent may CHANGE its value or only READ 
 
 ## Change log
 
+- `2026-07-18` — codex: Choice-backed variables can opt into server-side random assignment; Builder defaults and runtime inputs share the exact typed marker, and manual payloads carry live variable definitions for authoritative resolution.
 - `2026-07-17` — claude: Output Schema tab gains "Bind to a kind" (Content IR registry picker), live "Matches kind X" indicator + drift note; same apply/save path.
 - `2026-06-23` — codex: Edit Variable modal Help Text now uses agent-aware `ProTextarea`; long default option text wraps; static options can convert to a linked picklist.
 - `2026-04-22` — claude: initial doc extracted from `agent-system-mental-model.md` §1 and related sources.

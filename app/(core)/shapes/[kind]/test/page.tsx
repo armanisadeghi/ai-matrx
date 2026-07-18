@@ -31,6 +31,7 @@ export default async function ShapeTestPage({ params }: PageProps) {
             label={detail.label}
             kindDefinitionId={detail.id}
             kindVersion={detail.version}
+            titleKey={detail.titleKey}
           />
         </div>
       </div>

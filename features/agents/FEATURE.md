@@ -2,7 +2,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-07-17`
+**Last updated:** `2026-07-18`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -36,6 +36,7 @@ Admin/dev desktop targeting is an additive request overlay, not part of agent au
 ### Variables vs. context slots
 
 - **Variables** are required inputs — missing them leaves the agent confused. Bound by name from `invocation.inputs.variables`.
+- Choice-backed variables may opt into automatic random assignment with `customComponent.assignment.random=true`. Smart Agent Input then sends the exact object marker `{type:"auto_assign",strategy:"random"}`; it never chooses in the browser. The server selects from the definition's authoritative static options or Structured List with OS-backed cryptographic randomness.
 - **Context slots** are optional, auto-filled from ambient sources (user profile, org, active project, scope mappings). Their absence is graceful.
 - **Everything else** is fetched on demand via tool call, not injection.
 
@@ -380,6 +381,7 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-07-18` — **Random automatic assignment for choice variables.** Agent Builder can opt a static-option or Structured List variable into `assignment.random`; every surface using `VariableInputComponent` gains an “Assign randomly” control and sends the exact typed marker instead of preselecting in the browser. Manual Builder requests also carry live `variable_definitions`, so unsaved option changes are authoritative for tests. Human-readable displays render “Random on run.” Aidream validates opt-in and option source, chooses with `secrets.choice`, and routes Structured List results through the existing secret-safe picklist resolver.
 - `2026-07-17` — **Smart Input can attach live Context Values.** `ResourcePickerMenu → Context Values` now hosts the canonical narrow Drill Deck, where organization/type/scope rows navigate and only context-item leaves select. Each selected `(scope_id, context_item_id)` cell becomes a compact Context value attachment backed by the canonical `context_value` Matrx reference fence; aidream resolves the live cell on every send rather than receiving a stale snapshot. This stays on the supported text/fence path instead of adopting the unfinished `input_context` structured block.
 - `2026-07-17` — **`AgentFlexiblePanel` default size matches `AgentFullModal`.** Initial window is now `768×85vh` (was `500×800`) so `flexible-panel` launches feel equivalent to the old full modal; mins raised to `480×320`.
 - `2026-07-15` — **Builder tool save looked like it stuck but tools vanished on reload.** Save correctly wrote `agent.definition.tools`; `dbRowToAgentDefinition` preferred stale `tool_config.tools` (often `[]`) and masked the column. Fixed: read assignment from `tools` / `custom_tools` only; `tool_config` is flags-only (`auto_tools_disabled`). Scrubbed dead `tool_config.tools` keys live (`migrations/agent_tool_config_strip_assignment_key.sql`).

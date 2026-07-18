@@ -417,6 +417,10 @@ export async function assembleManualRequest(
   if (Object.keys(variables).length > 0) {
     request.variables = variables as Record<string, unknown>;
   }
+  if (agent.variableDefinitions?.length) {
+    (request as Record<string, unknown>).variable_definitions =
+      agent.variableDefinitions;
+  }
   if (context) request.context = context;
   if (injection.tools_replace)
     request.tools_replace =

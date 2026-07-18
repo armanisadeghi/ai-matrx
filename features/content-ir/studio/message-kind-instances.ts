@@ -26,6 +26,7 @@ import {
   saveKindInstance,
   type KindInstanceWriteResult,
 } from "./instance-service";
+import { kindTitleKeyFromMetadata } from "./instance-title";
 import { supabase } from "@/utils/supabase/client";
 
 export interface ExtractedKindBlock {
@@ -107,7 +108,7 @@ export async function saveKindInstancesFromMessage(args: {
   const { data: defs, error } = await supabase
     .schema("content_ir")
     .from("kind_definition")
-    .select("id,kind,label,version")
+    .select("id,kind,label,version,metadata")
     .in("kind", slugs)
     .is("deleted_at", null);
   if (error) {
@@ -127,6 +128,7 @@ export async function saveKindInstancesFromMessage(args: {
       kindVersion: def.version,
       value: block.value,
       organizationId: args.organizationId,
+      titleKey: kindTitleKeyFromMetadata(def.metadata),
     });
     saved.push({ ...result, kind: def.kind, label: def.label });
   }

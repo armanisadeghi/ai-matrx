@@ -9,8 +9,9 @@
  *
  *   - `data` stores PURE data — a root `__kind` marker is stripped before
  *     write (parsers re-add envelopes; storage is payload-only).
- *   - `title` is app-derived from title/name-ish keys (`INSTANCE_TITLE_KEYS`
- *     mirrors the server's `_TITLE_KEYS`) unless an explicit title is given.
+ *   - `title` is app-derived (see `./instance-title.ts` — explicit → the
+ *     kind's `metadata.title_key` override → the shared `INSTANCE_TITLE_KEYS`
+ *     list, mirroring the server's `derive_title`) unless explicit.
  *   - `kind_version` pins the kind's CURRENT version at write time.
  *   - `validation_status` is DERIVED by the DB BEFORE trigger — every write
  *     here reads the verdict back and returns it as the truth. A client-side
@@ -27,17 +28,8 @@
 import { supabase } from "@/utils/supabase/client";
 import { KIND_KEY } from "../core/kind-schema.types";
 import { validateStructuralLeg } from "../registry/kind-dual-gate";
+import { deriveInstanceTitle } from "./instance-title";
 import type { Json } from "@/types/database.types";
-
-/** Mirrors aidream `kind_instance._TITLE_KEYS` — keep the two in lockstep. */
-export const INSTANCE_TITLE_KEYS = [
-  "title",
-  "name",
-  "label",
-  "heading",
-  "subject",
-  "customer",
-] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -49,22 +41,6 @@ export function stripRootKind(value: Record<string, unknown>): Record<string, un
   const { [KIND_KEY]: _dropped, ...rest } = value;
   void _dropped;
   return rest;
-}
-
-/**
- * Explicit title wins; else the first non-empty string under a title/name-ish
- * key of the payload object (server `derive_title` parity).
- */
-export function deriveInstanceTitle(
-  data: Record<string, unknown>,
-  explicit?: string | null,
-): string | null {
-  if (explicit && explicit.trim()) return explicit.trim();
-  for (const key of INSTANCE_TITLE_KEYS) {
-    const value = data[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-  }
-  return null;
 }
 
 export interface KindInstanceWriteResult {
@@ -94,6 +70,12 @@ export interface SaveKindInstanceArgs {
   organizationId: string | null;
   /** Explicit display title; derived from the data when omitted. */
   title?: string | null;
+  /**
+   * The kind's `metadata.title_key` override (see `./instance-title.ts`) —
+   * pass `kindTitleKeyFromMetadata(kind_definition.metadata)` so per-kind
+   * title fields (e.g. wine_tasting's `wine_name`) derive a title.
+   */
+  titleKey?: string | null;
 }
 
 /**
@@ -103,7 +85,7 @@ export interface SaveKindInstanceArgs {
 export async function saveKindInstance(
   args: SaveKindInstanceArgs,
 ): Promise<KindInstanceWriteResult> {
-  const { kindDefinitionId, kindVersion, value, organizationId, title } = args;
+  const { kindDefinitionId, kindVersion, value, organizationId, title, titleKey } = args;
   if (!organizationId) {
     throw new Error(
       "No active organization — cannot save the instance. Select an organization and retry.",
@@ -123,7 +105,7 @@ export async function saveKindInstance(
       kind_definition_id: kindDefinitionId,
       kind_version: kindVersion,
       data: data as Json,
-      title: deriveInstanceTitle(data, title),
+      title: deriveInstanceTitle(data, title, titleKey),
       organization_id: organizationId,
       created_by: userId,
     })
@@ -187,6 +169,8 @@ export interface UpdateKindInstanceArgs {
   id: string;
   /** Full replacement payload (root `__kind` stripped before write). */
   value: Record<string, unknown>;
+  /** The kind's `metadata.title_key` override — same contract as save. */
+  titleKey?: string | null;
 }
 
 async function currentUserId(): Promise<string> {
@@ -206,7 +190,7 @@ export async function updateKindInstance(
     .from("kind_instance")
     .update({
       data: data as Json,
-      title: deriveInstanceTitle(data),
+      title: deriveInstanceTitle(data, null, args.titleKey),
       updated_by: await currentUserId(),
     })
     .eq("id", args.id)

@@ -425,6 +425,7 @@ export const UnifiedImageBlockRenderer: React.FC<
                 alt={block.fileName ?? "Image"}
                 width={block.width ?? undefined}
                 height={block.height ?? undefined}
+                onClick={handleExpand}
                 className={[
                   // When dimensions are known, the wrapper has the exact
                   // intrinsic size via aspect-ratio + capped width. The
@@ -434,8 +435,8 @@ export const UnifiedImageBlockRenderer: React.FC<
                   // h-auto) — there will be a small jump in that case,
                   // but it's the best we can do without metadata.
                   dimsKnown
-                    ? "block w-full h-full object-contain rounded-lg"
-                    : "block max-w-full h-auto max-h-[28rem] object-contain rounded-lg min-h-[200px] min-w-[280px]",
+                    ? "block w-full h-full object-contain rounded-lg cursor-zoom-in"
+                    : "block max-w-full h-auto max-h-[28rem] object-contain rounded-lg min-h-[200px] min-w-[280px] cursor-zoom-in",
                   "transition-opacity duration-500 ease-in-out",
                   imageLoaded ? "opacity-100" : "opacity-0",
                 ].join(" ")}
@@ -452,8 +453,27 @@ export const UnifiedImageBlockRenderer: React.FC<
               />
             )}
 
+            {/* Touch devices have no hover state, so the desktop toolbar is
+                undiscoverable there. Keep one explicit menu affordance in the
+                image's top-right corner; it opens the same canonical action
+                drawer that long-press uses. */}
+            {isMobile && imageLoaded && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDrawerOpen(true);
+                }}
+                className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur transition-colors hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                aria-label="Image options"
+                aria-haspopup="dialog"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            )}
+
             {/* Hover toolbar (desktop) */}
-            <div className="absolute bottom-0 left-0 right-0 flex items-center justify-end gap-0.5 px-1.5 py-1.5 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-gradient-to-t from-black/60 via-black/20 to-transparent">
+            <div className="absolute bottom-0 left-0 right-0 hidden items-center justify-end gap-0.5 rounded-b-lg bg-gradient-to-t from-black/60 via-black/20 to-transparent px-1.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 md:flex">
               <ToolbarButton onClick={handleExpand} title="Expand">
                 <Maximize2 className="w-3.5 h-3.5" />
               </ToolbarButton>

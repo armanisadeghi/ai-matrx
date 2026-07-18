@@ -13,8 +13,8 @@
  *   - `VideoSharePopover` wraps the Share button (same share-link path as
  *     images).
  *   - Hover toolbar (Expand, Download, Copy link, Share, "…"), a "…"
- *     DropdownMenu, a right-click ContextMenu, and a mobile long-press
- *     Drawer — all driven by one action set.
+ *     DropdownMenu, a right-click ContextMenu, and a mobile "…" button /
+ *     long-press Drawer — all driven by one action set.
  *   - Expand → fullscreen lightbox (large `<video controls autoPlay>` + a
  *     close button).
  *   - `extraActions` (optional) — domain actions folded into the ONE menu
@@ -279,8 +279,26 @@ export const UnifiedVideoBlockRenderer: React.FC<
               />
             )}
 
+            {/* Touch devices cannot reveal the hover toolbar. Keep the
+                canonical action drawer discoverable with one explicit menu
+                button, matching the image renderer. */}
+            {isMobile && src && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDrawerOpen(true);
+                }}
+                className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur transition-colors hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                aria-label="Video options"
+                aria-haspopup="dialog"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            )}
+
             {/* Hover toolbar (desktop) */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-end gap-0.5 px-1.5 py-1.5 rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-gradient-to-b from-black/60 via-black/20 to-transparent">
+            <div className="absolute left-0 right-0 top-0 hidden items-center justify-end gap-0.5 rounded-t-lg bg-gradient-to-b from-black/60 via-black/20 to-transparent px-1.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 md:flex">
               <ToolbarButton onClick={handleExpand} title="Expand">
                 <Maximize2 className="w-3.5 h-3.5" />
               </ToolbarButton>

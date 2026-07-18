@@ -118,6 +118,8 @@ export interface BuildCustomComponentInput {
   step?: number;
   /** Structured-list binding — type-independent, always carried top-level (never stashed). */
   structuredList?: StructuredListBinding;
+  /** Whether this variable accepts the server-side random auto-assignment marker. */
+  randomAssignment?: boolean;
 }
 
 /**
@@ -184,7 +186,17 @@ export function buildCustomComponent(
     cc.structured_list = input.structuredList;
   }
 
-  if (type === "textarea" && !cc.stash && !cc.structured_list) return undefined;
+  if (input.randomAssignment) {
+    cc.assignment = { random: true };
+  }
+
+  if (
+    type === "textarea" &&
+    !cc.stash &&
+    !cc.structured_list &&
+    !cc.assignment
+  )
+    return undefined;
   return cc;
 }
 
@@ -194,7 +206,9 @@ export function buildCustomComponent(
  */
 export function extractEffectiveValues(
   cc: VariableCustomComponent | undefined,
-): Required<Omit<BuildCustomComponentInput, "type" | "structuredList">> & {
+): Required<
+  Omit<BuildCustomComponentInput, "type" | "structuredList">
+> & {
   type: VariableComponentType;
   structuredList: StructuredListBinding | undefined;
 } {
@@ -207,6 +221,7 @@ export function extractEffectiveValues(
     max: readMax(cc) as number,
     step: readStep(cc),
     structuredList: readStructuredList(cc),
+    randomAssignment: cc?.assignment?.random === true,
   };
 }
 
@@ -233,7 +248,8 @@ export function normalizeCustomComponent(
     next.type === "textarea" &&
     !next.stash &&
     !next.structured_list &&
-    !next.picklist
+    !next.picklist &&
+    !next.assignment
   )
     return undefined;
   return next;

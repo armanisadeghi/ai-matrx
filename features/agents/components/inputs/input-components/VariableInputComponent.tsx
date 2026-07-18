@@ -28,6 +28,13 @@ import {
 import { formatText } from "@/utils/text/text-case-converter";
 import { Label } from "@/components/ui/label";
 import { useContainerWidth } from "./useContainerColumns";
+import { Button } from "@/components/ui/button";
+import { Dices } from "lucide-react";
+import {
+  isAutoAssignValue,
+  RANDOM_AUTO_ASSIGN_VALUE,
+  supportsRandomAssignment,
+} from "@/features/agents/utils/auto-assignment";
 
 interface VariableInputComponentProps {
   /**
@@ -85,11 +92,14 @@ export function VariableInputComponent({
   const options = customComponent?.options ?? [];
   const hasOptions = options.length > 0;
   const sharedProps = { compact, wizardMode, containerWidth };
+  const randomAssignmentEnabled = supportsRandomAssignment(customComponent);
+  const isRandomAssignment = isAutoAssignValue(value);
+  const effectiveValue = isRandomAssignment ? "" : value;
 
   // Text-style inputs (everything except the media types) have a string
   // contract. Media types receive the raw `value` so they can read MediaRef
   // fields directly.
-  const stringValue = toStringValue(value);
+  const stringValue = toStringValue(effectiveValue);
   const stringOnChange = (v: string) => onChange(v);
 
   const fallbackTextarea = (
@@ -112,7 +122,7 @@ export function VariableInputComponent({
   if (customComponent && readStructuredList(customComponent)?.listId) {
     inputComponent = (
       <PicklistVariableInput
-        value={value}
+        value={effectiveValue}
         onChange={onChange}
         variableName={formattedName}
         customComponent={customComponent}
@@ -124,7 +134,7 @@ export function VariableInputComponent({
       case "image":
         inputComponent = (
           <ImageVariableInput
-            value={value}
+            value={effectiveValue}
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
@@ -134,7 +144,7 @@ export function VariableInputComponent({
       case "audio":
         inputComponent = (
           <AudioVariableInput
-            value={value}
+            value={effectiveValue}
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
@@ -144,7 +154,7 @@ export function VariableInputComponent({
       case "video":
         inputComponent = (
           <VideoVariableInput
-            value={value}
+            value={effectiveValue}
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
@@ -154,7 +164,7 @@ export function VariableInputComponent({
       case "document":
         inputComponent = (
           <DocumentVariableInput
-            value={value}
+            value={effectiveValue}
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
@@ -164,7 +174,7 @@ export function VariableInputComponent({
       case "youtube":
         inputComponent = (
           <YoutubeVariableInput
-            value={value}
+            value={effectiveValue}
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
@@ -335,7 +345,7 @@ export function VariableInputComponent({
       case "currency":
         inputComponent = (
           <CurrencyVariableInput
-            value={value}
+            value={effectiveValue}
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
@@ -376,6 +386,21 @@ export function VariableInputComponent({
       )}
 
       {inputComponent}
+      {randomAssignmentEnabled && (
+        <div className="flex justify-end pt-1">
+          <Button
+            type="button"
+            variant={isRandomAssignment ? "secondary" : "outline"}
+            size="sm"
+            className={compact ? "h-7 text-xs" : undefined}
+            onClick={() => onChange(RANDOM_AUTO_ASSIGN_VALUE)}
+            aria-pressed={isRandomAssignment}
+          >
+            <Dices className="h-3.5 w-3.5" />
+            {isRandomAssignment ? "Random on run" : "Assign randomly"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -21,8 +21,9 @@ import {
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { InlineMediaRef } from "@/features/files";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
+import { videoBlockFromMediaRef } from "@/features/files/blocks/adapters/from-media-ref";
+import { UnifiedVideoBlockRenderer } from "@/features/files/blocks/video/UnifiedVideoBlockRenderer";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
 import { EpisodeContentStudio } from "@/features/podcasts/studio/components/EpisodeContentStudio";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -139,6 +140,9 @@ export function StudioRunView({ runId }: { runId: string }) {
   // the user can see/play it; absence on a finished multi-asset run is called
   // out (loud) rather than left silently missing.
   const mergedVideoUrl = state.officialVideoUrl;
+  const mergedVideoBlock = videoBlockFromMediaRef(
+    podcastMediaRef(mergedVideoUrl),
+  );
   const doneMediaCount =
     state.images.filter((s) => s.status === "done" && s.url).length +
     state.videos.filter((s) => s.status === "done" && s.url).length;
@@ -163,7 +167,7 @@ export function StudioRunView({ runId }: { runId: string }) {
           {/* The merged episode video — the primary, share-ready video stitched
               from every clip + still. Shown first so it reads as the hero/default
               cover. */}
-          {mergedVideoUrl && (
+          {mergedVideoBlock && (
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
               <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -175,18 +179,9 @@ export function StudioRunView({ runId }: { runId: string }) {
                 </span>
               </div>
               <div className="relative aspect-video w-full bg-black">
-                <InlineMediaRef
-                  ref={podcastMediaRef(mergedVideoUrl)}
-                  as="video"
-                  size="fill"
-                  fit="contain"
-                  rounded="none"
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="absolute inset-0"
-                  alt="Episode video"
-                />
+                <div className="absolute inset-0 [&_.group]:m-0 [&_.group]:h-full [&_.group]:w-full [&_.group>video]:h-full [&_.group>video]:max-h-none [&_.group>video]:w-full [&_.group>video]:min-h-0 [&_.group>video]:min-w-0 [&_.group>video]:rounded-none [&_.group>video]:object-contain">
+                  <UnifiedVideoBlockRenderer block={mergedVideoBlock} />
+                </div>
               </div>
             </div>
           )}

@@ -60,6 +60,8 @@ interface ShapeInstancesTabProps {
   currentVersion: number;
   /** The kind's current emitted_json_schema — the repin honesty gate. */
   emittedJsonSchema: Json | null;
+  /** `metadata.title_key` — the per-kind instance-title override (or null). */
+  titleKey: string | null;
 }
 
 type ListState =
@@ -118,6 +120,7 @@ export default function ShapeInstancesTab({
   kindDefinitionId,
   currentVersion,
   emittedJsonSchema,
+  titleKey,
 }: ShapeInstancesTabProps) {
   const searchParams = useSearchParams();
   const requestedId = searchParams.get("i");
@@ -186,7 +189,7 @@ export default function ShapeInstancesTab({
   async function handleEditSubmit(value: unknown): Promise<void> {
     if (!selected || !isRecordValue(value)) return;
     try {
-      const result = await updateKindInstance({ id: selected.id, value });
+      const result = await updateKindInstance({ id: selected.id, value, titleKey });
       await reload();
       setEditing(false);
       if (isValidatorDrift(result)) {

@@ -56,6 +56,7 @@ function makeState(
     customTools?: Array<Record<string, unknown>>;
     mcpServers?: string[];
     settings?: Record<string, unknown>;
+    variableDefinitions?: Array<Record<string, unknown>>;
     parentAgentId?: string | null;
     isVersion?: boolean;
     history?: Array<{ id: string; role: string; content: unknown }>;
@@ -111,7 +112,7 @@ function makeState(
           customTools: partial.customTools ?? [],
           mcpServers: partial.mcpServers ?? [],
           settings: partial.settings ?? {},
-          variableDefinitions: [],
+          variableDefinitions: partial.variableDefinitions ?? [],
           contextSlots: [],
           parentAgentId: partial.parentAgentId ?? null,
           isVersion: partial.isVersion ?? false,
@@ -207,6 +208,26 @@ describe("assembleManualRequest — live read contract", () => {
       ]),
     );
     expect(payload!.messages![0]).toEqual(priming[0]);
+  });
+
+  test("manual payload carries live variable definitions for server-side assignment", async () => {
+    const variableDefinitions = [
+      {
+        name: "tone",
+        defaultValue: { type: "auto_assign", strategy: "random" },
+        customComponent: {
+          type: "select",
+          options: ["warm", "direct"],
+          assignment: { random: true },
+        },
+      },
+    ];
+    const state = makeState({ variableDefinitions });
+    const payload = await assembleManualRequest(state, CONVERSATION_ID);
+
+    expect(
+      (payload as Record<string, unknown>).variable_definitions,
+    ).toEqual(variableDefinitions);
   });
 
   test("messages[] appends prior committed history from the messages slice", async () => {
