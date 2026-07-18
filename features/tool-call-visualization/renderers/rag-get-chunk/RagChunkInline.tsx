@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FileText, Maximize2, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  Maximize2,
+  PanelRight,
+  SquareArrowOutUpRight,
+  AlertCircle,
+} from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { isTerminal, resultAsObject } from "../_shared";
@@ -77,6 +83,8 @@ function formatPages(pages: number[]): string | null {
 
 export function RagChunkInline({
   entry,
+  onOpenOverlay,
+  onOpenWindowPanel,
   expanded,
   onToggleExpanded,
 }: ToolRendererProps) {
@@ -139,25 +147,48 @@ export function RagChunkInline({
   };
   const href = citationHrefFor(synth);
 
-  const actions: EntityAction[] = chunk.sourceId
-    ? [
-        {
-          label: "Open source",
-          icon: Maximize2,
-          onSelect: () =>
-            openCitation({
-              sourceKind: chunk.sourceKind,
-              sourceId: chunk.sourceId,
-              chunkId: chunk.chunkId,
-              pageNumber: chunk.pageNumbers[0] ?? null,
-              pageNumbers: chunk.pageNumbers.length ? chunk.pageNumbers : null,
-              snippet: chunk.content.slice(0, 300),
-              fileName: resolvedName,
-              href,
-            }),
-        },
-      ]
-    : [];
+  const actions: EntityAction[] = [
+    ...(chunk.sourceId
+      ? [
+          {
+            label: "Open source",
+            icon: SquareArrowOutUpRight,
+            onSelect: () =>
+              openCitation({
+                sourceKind: chunk.sourceKind,
+                sourceId: chunk.sourceId,
+                chunkId: chunk.chunkId,
+                pageNumber: chunk.pageNumbers[0] ?? null,
+                pageNumbers: chunk.pageNumbers.length
+                  ? chunk.pageNumbers
+                  : null,
+                snippet: chunk.content.slice(0, 300),
+                fileName: resolvedName,
+                href,
+              }),
+          } satisfies EntityAction,
+        ]
+      : []),
+    ...(onOpenWindowPanel
+      ? [
+          {
+            label: "Open in window",
+            icon: PanelRight,
+            onSelect: () => onOpenWindowPanel(),
+            separatorBefore: chunk.sourceId !== "",
+          } satisfies EntityAction,
+        ]
+      : []),
+    ...(onOpenOverlay
+      ? [
+          {
+            label: "Fullscreen",
+            icon: Maximize2,
+            onSelect: () => onOpenOverlay(),
+          } satisfies EntityAction,
+        ]
+      : []),
+  ];
 
   return (
     <EntityCard

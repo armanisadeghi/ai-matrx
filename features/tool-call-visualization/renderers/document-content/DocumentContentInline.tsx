@@ -5,6 +5,8 @@ import {
   BookOpenText,
   FileText,
   Maximize2,
+  PanelRight,
+  SquareArrowOutUpRight,
   AlertCircle,
 } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
@@ -209,6 +211,8 @@ function AssetsBody({ result }: { result: Record<string, unknown> }) {
 
 export function DocumentContentInline({
   entry,
+  onOpenOverlay,
+  onOpenWindowPanel,
   expanded,
   onToggleExpanded,
 }: ToolRendererProps) {
@@ -269,15 +273,36 @@ export function DocumentContentInline({
     (typeof result.document_id === "string" && result.document_id) ||
     getArg<string>(entry, "document_id") ||
     null;
-  const actions: EntityAction[] = docId
-    ? [
-        {
-          label: "Open document viewer",
-          icon: Maximize2,
-          href: `/rag/viewer/${encodeURIComponent(docId)}`,
-        },
-      ]
-    : [];
+  const actions: EntityAction[] = [
+    ...(docId
+      ? [
+          {
+            label: "Open document viewer",
+            icon: SquareArrowOutUpRight,
+            href: `/rag/viewer/${encodeURIComponent(docId)}`,
+          } satisfies EntityAction,
+        ]
+      : []),
+    ...(onOpenWindowPanel
+      ? [
+          {
+            label: "Open in window",
+            icon: PanelRight,
+            onSelect: () => onOpenWindowPanel(),
+            separatorBefore: docId != null,
+          } satisfies EntityAction,
+        ]
+      : []),
+    ...(onOpenOverlay
+      ? [
+          {
+            label: "Fullscreen",
+            icon: Maximize2,
+            onSelect: () => onOpenOverlay(),
+          } satisfies EntityAction,
+        ]
+      : []),
+  ];
 
   return (
     <EntityCard

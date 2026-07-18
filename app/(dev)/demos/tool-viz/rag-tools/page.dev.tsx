@@ -252,6 +252,11 @@ function Section({
 }
 
 export default function RagToolsDemoPage() {
+  // Gallery-only stubs so the "Open in ▾" menu (window panel + fullscreen)
+  // renders here; in chat the shell supplies the real handlers.
+  const openOverlay = () => console.log("[rag-tools demo] onOpenOverlay");
+  const openWindowPanel = () =>
+    console.log("[rag-tools demo] onOpenWindowPanel");
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8">
       <div>
@@ -265,27 +270,27 @@ export default function RagToolsDemoPage() {
       </div>
 
       <Section title="rag_list_sources">
-        <RagListSourcesInline entry={listSourcesEntry} isPersisted />
+        <RagListSourcesInline entry={listSourcesEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
       <Section title="rag_get_chunk (with parent context)">
-        <RagChunkInline entry={getChunkEntry} isPersisted />
+        <RagChunkInline entry={getChunkEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
       <Section title="document_content — pages index">
-        <DocumentContentInline entry={docPagesEntry} isPersisted />
+        <DocumentContentInline entry={docPagesEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
       <Section title="document_content — clean text">
-        <DocumentContentInline entry={docCleanEntry} isPersisted />
+        <DocumentContentInline entry={docCleanEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
       <Section title="document_content — pdf extract">
-        <DocumentContentInline entry={docPdfEntry} isPersisted />
+        <DocumentContentInline entry={docPdfEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
       <Section title="error state">
-        <RagChunkInline entry={errorEntry} isPersisted />
+        <RagChunkInline entry={errorEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
     </div>
   );

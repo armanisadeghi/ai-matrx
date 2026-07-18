@@ -8,12 +8,14 @@ import {
   AudioLines,
   Globe,
   AlertCircle,
+  Maximize2,
+  PanelRight,
   type LucideIcon,
 } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { isTerminal, resultAsObject } from "../_shared";
-import { EntityCard } from "../_shared-entity/EntityCard";
+import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { useFileNode } from "@/features/files";
 import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
@@ -187,6 +189,8 @@ function SourceRow({ source }: { source: ParsedSource }) {
 
 export function RagListSourcesInline({
   entry,
+  onOpenOverlay,
+  onOpenWindowPanel,
   expanded,
   onToggleExpanded,
 }: ToolRendererProps) {
@@ -217,6 +221,27 @@ export function RagListSourcesInline({
     ? `${sources.length} ${sources.length === 1 ? "source" : "sources"} · ${totalChunks.toLocaleString()} chunks`
     : null;
 
+  const actions: EntityAction[] = [
+    ...(onOpenWindowPanel
+      ? [
+          {
+            label: "Open in window",
+            icon: PanelRight,
+            onSelect: () => onOpenWindowPanel(),
+          } satisfies EntityAction,
+        ]
+      : []),
+    ...(onOpenOverlay
+      ? [
+          {
+            label: "Fullscreen",
+            icon: Maximize2,
+            onSelect: () => onOpenOverlay(),
+          } satisfies EntityAction,
+        ]
+      : []),
+  ];
+
   return (
     <EntityCard
       expanded={expanded}
@@ -225,7 +250,7 @@ export function RagListSourcesInline({
       accent="cyan"
       title="Indexed knowledge"
       subtitle={subtitle}
-      actions={[]}
+      actions={actions}
     >
       {sources.length ? (
         <div className="max-h-[440px] space-y-0.5 overflow-y-auto p-1.5">
