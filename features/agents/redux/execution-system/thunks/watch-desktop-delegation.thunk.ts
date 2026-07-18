@@ -14,7 +14,7 @@ const FAILURE_NOTICE_THRESHOLD = 8;
 const RESUME_RETRY_MS = 5_000;
 
 interface WatchState {
-  callIds: Set<string>;
+  callIdsByLifecycle: Map<string, Set<string>>;
   cancelled: boolean;
   promise: Promise<void>;
 }
@@ -27,6 +27,26 @@ function sleep(ms: number): Promise<void> {
 
 function watchKey(conversationId: string, userRequestId: string): string {
   return `${conversationId}:${userRequestId}`;
+}
+
+function addLifecycleCall(
+  state: WatchState,
+  lifecycleRequestId: string,
+  callId: string,
+): void {
+  const callIds = state.callIdsByLifecycle.get(lifecycleRequestId) ?? new Set();
+  callIds.add(callId);
+  state.callIdsByLifecycle.set(lifecycleRequestId, callIds);
+}
+
+function allCallIds(state: WatchState): string[] {
+  return Array.from(
+    new Set(
+      Array.from(state.callIdsByLifecycle.values()).flatMap((callIds) =>
+        Array.from(callIds),
+      ),
+    ),
+  );
 }
 
 const UUID_PATTERN =
@@ -63,23 +83,50 @@ export const watchDesktopDelegation = (
         userRequestId: args.userRequestId,
       });
     }
-    const key = watchKey(conversationId, userRequestId ?? lifecycleRequestId);
+    let key = watchKey(conversationId, userRequestId ?? lifecycleRequestId);
     const existing = watches.get(key);
     if (existing) {
-      existing.callIds.add(callId);
+      addLifecycleCall(existing, lifecycleRequestId, callId);
       return existing.promise;
     }
 
     const state: WatchState = {
-      callIds: new Set([callId]),
+      callIdsByLifecycle: new Map(),
       cancelled: false,
       promise: Promise.resolve(),
     };
+    addLifecycleCall(state, lifecycleRequestId, callId);
     state.promise = (async () => {
       let hydratedAfterResolution = false;
       let consecutiveFailures = 0;
       let failureNotified = false;
       let nextResumeAt = 0;
+      let nextFallbackHydrateAt = 0;
+
+      const adoptUserRequestId = (candidate: string | undefined): boolean => {
+        const recovered = asServerUserRequestId(candidate);
+        if (!recovered) return true;
+        userRequestId = recovered;
+
+        const recoveredKey = watchKey(conversationId, recovered);
+        if (recoveredKey === key) return true;
+
+        const competing = watches.get(recoveredKey);
+        if (competing && competing !== state) {
+          for (const [requestId, delegatedCallIds] of state.callIdsByLifecycle) {
+            for (const delegatedCallId of delegatedCallIds) {
+              addLifecycleCall(competing, requestId, delegatedCallId);
+            }
+          }
+          state.cancelled = true;
+          return false;
+        }
+
+        if (watches.get(key) === state) watches.delete(key);
+        key = recoveredKey;
+        watches.set(key, state);
+        return true;
+      };
 
       const recordFailure = (message: string, error: unknown) => {
         consecutiveFailures += 1;
@@ -100,13 +147,46 @@ export const watchDesktopDelegation = (
         consecutiveFailures = 0;
       };
 
+      const reconcileAllLifecycles = () => {
+        for (const [requestId, delegatedCallIds] of state.callIdsByLifecycle) {
+          dispatch(
+            reconcilePersistedToolLifecycle({
+              requestId,
+              callIds: Array.from(delegatedCallIds),
+            }),
+          );
+        }
+      };
+
+      const hydrateResolvedTools = async (): Promise<boolean> => {
+        if (hydratedAfterResolution) return true;
+        try {
+          await dispatch(loadConversation({ conversationId })).unwrap();
+          hydratedAfterResolution = true;
+          reconcileAllLifecycles();
+          recordSuccess();
+          return true;
+        } catch (error) {
+          recordFailure("[desktop-native] resolved-tool rehydrate failed", error);
+          return false;
+        }
+      };
+
       while (!state.cancelled) {
         await sleep(POLL_MS);
         if (state.cancelled) return;
 
         // Logout/conversation teardown removes the instance. Do not leave a
         // module-level poll alive after its owning Redux state is gone.
-        if (!getState().conversations.byConversationId[conversationId]) return;
+        const owningInstance =
+          getState().conversations.byConversationId[conversationId];
+        if (!owningInstance) return;
+        if (
+          owningInstance.status === "error" ||
+          owningInstance.status === "cancelled"
+        ) {
+          return;
+        }
 
         let pending;
         try {
@@ -122,16 +202,18 @@ export const watchDesktopDelegation = (
         }
         if (!userRequestId) {
           const matchingCall = pending.find((call) =>
-            state.callIds.has(call.call_id),
+            allCallIds(state).includes(call.call_id),
           );
-          userRequestId = asServerUserRequestId(
-            matchingCall?.user_request_id ?? undefined,
-          );
+          if (
+            !adoptUserRequestId(matchingCall?.user_request_id ?? undefined)
+          ) {
+            return;
+          }
         }
         const requestPending = pending.filter((call) =>
           userRequestId
             ? call.user_request_id === userRequestId
-            : state.callIds.has(call.call_id),
+            : allCallIds(state).includes(call.call_id),
         );
         if (requestPending.length > 0) {
           // Parallel and re-delegated calls share one request. Never hydrate or
@@ -147,39 +229,101 @@ export const watchDesktopDelegation = (
         // state, so it must never run over an active stream.
         if (hasAbortController(conversationId)) continue;
 
-        // The desktop can claim a call before our first poll. Without a
-        // server UUID the browser must not attempt /resume; Matrx Local owns
-        // the durable continuation and a later hydration will pick it up.
+        // The desktop can claim and resolve a call before our first poll. In
+        // that case pending_calls no longer contains the row, so hydrate the
+        // persisted observability ledger and recover the server request UUID
+        // from its call-id index.
         if (!userRequestId) {
-          recordFailure(
-            "[desktop-native] waiting for persisted user_request_id",
-            new Error(`No server request UUID is known for call ${callId}`),
-          );
-          continue;
+          if (Date.now() < nextFallbackHydrateAt) continue;
+          if (!(await hydrateResolvedTools())) continue;
+          const observability = getState().observability;
+          const recovered = allCallIds(state).find((delegatedCallId) => {
+            const toolCallId = observability.toolCallsByCallId[delegatedCallId];
+            return toolCallId
+              ? asServerUserRequestId(
+                  observability.toolCalls[toolCallId]?.userRequestId ?? undefined,
+                )
+              : undefined;
+          });
+          const recoveredToolCallId = recovered
+            ? observability.toolCallsByCallId[recovered]
+            : undefined;
+          const recoveredUserRequestId = recoveredToolCallId
+            ? observability.toolCalls[recoveredToolCallId]?.userRequestId
+            : undefined;
+          if (!adoptUserRequestId(recoveredUserRequestId ?? undefined)) return;
+          if (!userRequestId) {
+            hydratedAfterResolution = false;
+            nextFallbackHydrateAt = Date.now() + RESUME_RETRY_MS;
+            recordFailure(
+              "[desktop-native] waiting for persisted user_request_id",
+              new Error(`No server request UUID is known for call ${callId}`),
+            );
+            continue;
+          }
         }
 
-        if (!hydratedAfterResolution) {
+        if (!(await hydrateResolvedTools())) continue;
+        const hydratedInstance =
+          getState().conversations.byConversationId[conversationId];
+        if (!hydratedInstance) return;
+        if (
+          hydratedInstance.status === "error" ||
+          hydratedInstance.status === "cancelled"
+        ) {
+          return;
+        }
+        if (hydratedInstance.status === "complete") {
           try {
             await dispatch(loadConversation({ conversationId })).unwrap();
-            hydratedAfterResolution = true;
+            reconcileAllLifecycles();
+            return;
           } catch (error) {
             recordFailure(
-              "[desktop-native] resolved-tool rehydrate failed",
+              "[desktop-native] winning continuation rehydrate failed",
               error,
             );
             continue;
           }
-          dispatch(
-            reconcilePersistedToolLifecycle({
-              requestId: lifecycleRequestId,
-              callIds: Array.from(state.callIds),
-            }),
-          );
-          recordSuccess();
         }
 
         if (Date.now() < nextResumeAt) continue;
-        await dispatch(resumeInstance({ conversationId, userRequestId }));
+        try {
+          await dispatch(
+            resumeInstance({ conversationId, userRequestId }),
+          ).unwrap();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (message.includes("resume_conflict")) {
+            // resumeInstance owns its bounded conflict retry schedule. Remain
+            // as an observer so the winning continuation is still hydrated.
+            nextResumeAt = Date.now() + RESUME_RETRY_MS;
+            continue;
+          }
+          if (
+            message.includes("already in progress") ||
+            message.includes("already claimed for this user_request") ||
+            message.includes("stream already in flight")
+          ) {
+            nextResumeAt = Date.now() + RESUME_RETRY_MS;
+            continue;
+          }
+
+          const rejectedInstance =
+            getState().conversations.byConversationId[conversationId];
+          if (!rejectedInstance) return;
+          if (
+            rejectedInstance.status === "error" ||
+            rejectedInstance.status === "cancelled"
+          ) {
+            return;
+          }
+          recordFailure("[desktop-native] continuation resume failed", error);
+          toast.error("Desktop tool continuation failed", {
+            description: message,
+          });
+          return;
+        }
         if (state.cancelled) return;
 
         const instance =
@@ -203,12 +347,7 @@ export const watchDesktopDelegation = (
         // tool rows into this tab. Retry transient hydration failures.
         try {
           await dispatch(loadConversation({ conversationId })).unwrap();
-          dispatch(
-            reconcilePersistedToolLifecycle({
-              requestId: lifecycleRequestId,
-              callIds: Array.from(state.callIds),
-            }),
-          );
+          reconcileAllLifecycles();
           return;
         } catch (error) {
           recordFailure(

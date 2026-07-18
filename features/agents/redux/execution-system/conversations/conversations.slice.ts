@@ -262,7 +262,12 @@ const conversationsSlice = createSlice({
       const { conversationId } = action.payload;
       const existing = state.byConversationId[conversationId];
       if (existing) {
+        const terminalRuntimeStatus =
+          existing.status === "cancelled" || existing.status === "error"
+            ? existing.status
+            : null;
         Object.assign(existing, action.payload);
+        if (terminalRuntimeStatus) existing.status = terminalRuntimeStatus;
         existing.conversationId = conversationId;
         existing.cacheOnly = false;
       } else {
