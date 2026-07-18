@@ -94,6 +94,26 @@ export function isInputDraftProtected(
  * `scope` is the call site (e.g. "markInputPersisted", "clearUserInput") so the
  * offending path is obvious in the console.
  */
+/**
+ * LOUD capture notice. `setUserInputText` fired for a conversation whose entry
+ * doesn't exist yet (composer typeable before `createInstanceFull` landed —
+ * the entry-creation race). The keystroke is CAPTURED, never dropped: the
+ * reducer creates the entry on the spot and instance init merges into it. We
+ * still scream (once per occurrence) because a wide window here means the
+ * launcher is slow or a surface mounted the composer without initializing.
+ */
+export function reportPreInitInputCapture(
+  conversationId: string,
+  textLength: number,
+): void {
+  console.warn(
+    `[smart-input/PRE-INIT] setUserInputText ran before the input entry for ` +
+      `conversation "${conversationId}" existed (${textLength} chars). The ` +
+      `text was CAPTURED (entry created early; init preserves it) — nothing ` +
+      `was lost. See input-draft-protection.ts.`,
+  );
+}
+
 export function reportInputDraftViolation(
   scope: string,
   conversationId: string,

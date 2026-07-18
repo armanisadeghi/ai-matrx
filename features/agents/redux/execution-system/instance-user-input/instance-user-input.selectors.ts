@@ -38,10 +38,12 @@ export const selectInputCharCount =
 
 /**
  * Whether the instance's input entry exists yet (created by
- * `createInstanceFull` AFTER the launcher's async agent fetch). Writers that
- * dispatch `setUserInputText` on a fresh conversation MUST gate on this —
- * the reducer silently drops writes for missing entries (the draft-transfer
- * race: consume-then-dispatch before the entry exists loses the draft).
+ * `createInstanceFull` AFTER the launcher's async agent fetch). Since
+ * 2026-07-18 `setUserInputText` no longer drops writes for missing entries —
+ * it creates the entry (pre-init capture, never-drop doctrine) and init
+ * preserves the draft. Single-use writers (e.g. the draft-transfer stash,
+ * which pops sessionStorage) should still gate on this to keep their
+ * consume-then-dispatch step idempotent and loudly ordered.
  */
 export const selectUserInputEntryExists =
   (conversationId: string) =>

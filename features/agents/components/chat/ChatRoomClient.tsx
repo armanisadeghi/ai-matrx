@@ -305,10 +305,11 @@ export function ChatRoomClient({
   // requires `state.instanceUserInput.byConversationId[cid]` to exist.
   // GOTCHA (fixed 2026-07-17): `liveConversationId` is a client UUID set
   // immediately, but the input ENTRY is created by `createInstanceFull` only
-  // after the launcher's async agent fetch — and `setUserInputText` silently
-  // drops writes for missing entries. Consuming the stash before the entry
-  // exists lost every /chat/a/[agentId] draft transfer. Gate on entry
-  // existence so the effect re-runs (and only then pops the single-use stash).
+  // after the launcher's async agent fetch — and `setUserInputText` used to
+  // silently drop writes for missing entries (since 2026-07-18 it captures
+  // them instead). Consuming the stash before the entry existed lost every
+  // /chat/a/[agentId] draft transfer. Keep gating on entry existence so the
+  // single-use sessionStorage pop happens exactly once, post-init.
   const draftInputEntryReady = useAppSelector((state) =>
     liveConversationId
       ? selectUserInputEntryExists(liveConversationId)(state)

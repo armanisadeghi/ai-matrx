@@ -72,6 +72,7 @@ function ShapeRow({
       <button
         type="button"
         onClick={onOpen}
+        aria-label={`Open ${entry.label}`}
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
       >
         <span
@@ -111,6 +112,7 @@ function ShapeRow({
         size="sm"
         className="h-7 shrink-0 gap-1.5 px-2 text-xs text-muted-foreground"
         onClick={onTest}
+        aria-label={`Test ${entry.label}`}
         title="Fill the form and see it render"
       >
         {busyHref === testHref ? (

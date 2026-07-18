@@ -23,6 +23,7 @@ import { createInstanceFull } from "../create-instance-full";
 import {
   isInputDraftProtected,
   reportInputDraftViolation,
+  reportPreInitInputCapture,
 } from "./input-draft-protection";
 
 // =============================================================================
@@ -112,15 +113,19 @@ const instanceUserInputSlice = createSlice({
     ) {
       const {
         conversationId,
-        text = "",
+        text,
         lastSubmittedText = "",
         lastSubmittedUserValues = {},
         originalSubmittedText,
         originalSubmittedUserValues,
       } = action.payload;
+      // A pre-init entry may already exist: `setUserInputText` creates one for
+      // keystrokes typed before instance init lands (never-drop doctrine).
+      // An init with no explicit text MUST preserve that live draft.
+      const existing = state.byConversationId[conversationId];
       state.byConversationId[conversationId] = {
         conversationId,
-        text,
+        text: text ?? existing?.text ?? "",
         messageParts: null,
         submissionPhase: "idle",
         lastSubmittedText,
@@ -144,8 +149,29 @@ const instanceUserInputSlice = createSlice({
       }>,
     ) {
       const { conversationId, text, userValues = {} } = action.payload;
-      const entry = state.byConversationId[conversationId];
-      if (!entry) return;
+      let entry = state.byConversationId[conversationId];
+      if (!entry) {
+        // PRE-INIT CAPTURE — never drop a keystroke. The composer renders (and
+        // is typeable) as soon as the client conversation UUID exists, but the
+        // entry lands only when `createInstanceFull` resolves its async agent
+        // fetch. Dropping writes here silently ate fast-typed text (the D60
+        // class). Create the entry now; instance init MERGES into it and
+        // preserves this draft (see initInstanceUserInput/createInstanceFull).
+        reportPreInitInputCapture(conversationId, text.length);
+        entry = {
+          conversationId,
+          text: "",
+          messageParts: null,
+          submissionPhase: "idle",
+          lastSubmittedText: "",
+          lastSubmittedUserValues: {},
+          originalSubmittedText: undefined,
+          originalSubmittedUserValues: undefined,
+          _undoPast: [],
+          _undoFuture: [],
+        };
+        state.byConversationId[conversationId] = entry;
+      }
 
       const snapshot = captureSnapshot(entry, userValues);
       pushSnapshot(entry, snapshot);
@@ -388,9 +414,13 @@ const instanceUserInputSlice = createSlice({
     // Atomic creation — mirrors initInstanceUserInput's default entry shape.
     builder.addCase(createInstanceFull, (state, action) => {
       const { conversationId, userInput } = action.payload;
+      // Preserve a pre-init draft: `setUserInputText` may have created this
+      // entry for keystrokes typed while the launcher's async agent fetch was
+      // in flight (never-drop doctrine). Init must not clobber it.
+      const existing = state.byConversationId[conversationId];
       state.byConversationId[conversationId] = {
         conversationId,
-        text: userInput?.text ?? "",
+        text: userInput?.text ?? existing?.text ?? "",
         messageParts: null,
         submissionPhase: "idle",
         lastSubmittedText: userInput?.lastSubmittedText ?? "",
