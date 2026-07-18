@@ -1069,6 +1069,9 @@ export class StreamBlockAccumulator {
         // mid-stream, fire the schema cold-fetch (the parser also requests
         // it — deduped) AND the targeted component fetch in parallel, so by
         // the time the region completes both registries can answer.
+        // (web, output) is DELIBERATE: chat streaming renders exactly that
+        // surface; other roles/platforms ride the warm/refresh path by
+        // design (see SHAPE_SYSTEM.md § streaming db/cloud kinds).
         onEvent: (event) => {
           if (
             event.type === "kind_identified" ||

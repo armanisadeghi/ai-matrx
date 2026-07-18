@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
 import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
@@ -12,7 +12,7 @@ import {
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
-import { useContentIrRegistryVersion } from "@/features/content-ir/react/use-registry-repaint";
+import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
@@ -157,19 +157,26 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   replaceBlockContent,
   handleOpenEditor,
 }) => {
-  // Late-arrival repaint: `applyIrKindRoute` reads module-singleton registries
-  // synchronously. Subscribing to their versions makes a schema/component that
-  // lands AFTER this block rendered (cold fetch losing the race with region
-  // end) re-run the route on the frozen envelope — the block upgrades from
-  // raw/generic to its real component without any stream still being open.
-  useContentIrRegistryVersion();
+  // Late-arrival repaint, GRANULAR: subscribe to THIS block's envelope kind
+  // only — a schema/component that lands after this block rendered (cold
+  // fetch losing the race with region end) re-runs the route on the frozen
+  // envelope, while arrivals for OTHER kinds never touch this block.
+  const envelopeKind = readEnvelope(rawBlock.metadata)?.root.kind || null;
+  const kindRouteVersion = useContentIrKindVersion(envelopeKind);
 
   // Stage 1 — content-ir kind routing: a block whose metadata.__ir envelope
   // resolved a registered kind renders as that kind's component
   // (envelope-derived serverData) — e.g. bare/fenced JSON flashcard_set, which
   // the legacy detectors can only call "code". Everything else passes through
   // untouched.
-  const block = applyIrKindRoute(rawBlock);
+  // Explicit useMemo is CORRECT here: React Compiler is OFF in this repo
+  // (next.config.js reactCompiler: false), and the route must re-execute
+  // only when the block itself or its kind's registry version changes —
+  // not on every parent render.
+  const block = useMemo(() => {
+    void kindRouteVersion; // registry-arrival invalidation key
+    return applyIrKindRoute(rawBlock);
+  }, [rawBlock, kindRouteVersion]);
 
   // Per-conversation display flags. When a surface has `hideReasoning` or
   // `hideToolResults` set on its `instanceUIState`, the matching block

@@ -84,11 +84,21 @@ export class ComponentRegistry {
   private lastRefreshAt = 0;
   private refreshPromise: Promise<void> | null = null;
   private readonly listeners = new Set<() => void>();
-  /** Cold single-kind fetch dedupe (streaming eager path). */
+  /**
+   * Cold single-kind fetch dedupe (streaming eager path). In-flight is keyed
+   * by (kind, platform) — the fetch unit; misses are keyed by (kind,
+   * platform, role) so a miss on web/output never suppresses other roles,
+   * and CLEARED on every wholesale refresh (a component created mid-session
+   * becomes eagerly fetchable again — misses are cheap to re-verify).
+   */
   private readonly coldInFlight = new Set<string>();
   private readonly coldMisses = new Set<string>();
   /** Monotonic db-tier version — the repaint hook's snapshot key. */
   private version = 0;
+  /** Per-kind versions + listeners (granular repaint) + wholesale epoch. */
+  private readonly kindVersions = new Map<string, number>();
+  private readonly kindListeners = new Map<string, Set<() => void>>();
+  private epoch = 0;
 
   /**
    * Entries arrive as a THUNK, resolved on first use: the compiled bootstrap
@@ -165,19 +175,22 @@ export class ComponentRegistry {
    * wins: rows arrive is_default-first / sort_order-asc from the source.
    */
   ingestDbRows(rows: KindComponentProjection[]): void {
-    let changed = false;
+    const changedKinds = new Set<string>();
     for (const row of rows) {
       const key = keyOf(row.kind, row.platform, row.role);
       if (!this.db.has(key)) {
         this.db.set(key, row);
-        changed = true;
+        changedKinds.add(row.kind);
       }
     }
     // Warm/cold ingest is a resolver-tier change the render seam must see —
     // a db component landing AFTER a region finalized re-runs the route via
-    // the repaint hook. (Previously only refresh replacements notified, so
-    // the streaming path could never flip to a db component late.)
-    if (changed) this.notifyChanged();
+    // the repaint hook. Per-kind bumps keep the repaint granular: only
+    // mounted blocks of the changed kinds re-render.
+    if (changedKinds.size > 0) {
+      for (const kind of changedKinds) this.bumpKind(kind);
+      this.notifyChanged();
+    }
   }
 
   /**
@@ -187,17 +200,47 @@ export class ComponentRegistry {
    */
   replaceDbRows(rows: KindComponentProjection[]): void {
     this.db.clear();
+    // Wholesale invalidation: every recorded miss is stale (a component
+    // created mid-session must become eagerly fetchable again).
+    this.coldMisses.clear();
     for (const row of rows) {
       const key = keyOf(row.kind, row.platform, row.role);
       if (!this.db.has(key)) this.db.set(key, row);
     }
-    // A wholesale replace ALWAYS notifies (deletions/flips count too).
+    // A wholesale replace ALWAYS notifies (deletions/flips count too), and
+    // bumps the epoch so EVERY per-kind subscriber re-snapshots.
+    this.epoch += 1;
+    for (const set of this.kindListeners.values()) {
+      for (const listener of set) listener();
+    }
     this.notifyChanged();
   }
 
   /** Current db-tier version (repaint snapshot). */
   getVersion(): number {
     return this.version;
+  }
+
+  /** Per-kind version (+ wholesale epoch). The granular repaint snapshot. */
+  getKindVersion(kind: string): number {
+    return this.epoch + (this.kindVersions.get(kind) ?? 0);
+  }
+
+  /** Subscribe to db-tier changes for ONE kind (+ wholesale replaces). */
+  subscribeKind(kind: string, listener: () => void): () => void {
+    const set = this.kindListeners.get(kind) ?? new Set();
+    set.add(listener);
+    this.kindListeners.set(kind, set);
+    return () => {
+      set.delete(listener);
+      if (set.size === 0) this.kindListeners.delete(kind);
+    };
+  }
+
+  private bumpKind(kind: string): void {
+    this.kindVersions.set(kind, (this.kindVersions.get(kind) ?? 0) + 1);
+    const listeners = this.kindListeners.get(kind);
+    if (listeners) for (const listener of listeners) listener();
   }
 
   private notifyChanged(): void {
@@ -215,17 +258,23 @@ export class ComponentRegistry {
    */
   requestComponent(kind: string, platform: string, role: ComponentRole): void {
     if (this.resolve(kind, platform, role)) return;
-    if (this.coldInFlight.has(kind) || this.coldMisses.has(kind)) return;
-    this.coldInFlight.add(kind);
+    const missKey = keyOf(kind, platform, role);
+    const flightKey = `${kind}${platform}`;
+    if (this.coldInFlight.has(flightKey) || this.coldMisses.has(missKey)) {
+      return;
+    }
+    this.coldInFlight.add(flightKey);
 
     void (async () => {
       try {
         const rows = await getKindComponentBySlug(kind, platform);
-        if (rows.length === 0) {
-          this.coldMisses.add(kind);
-          return;
-        }
         this.ingestDbRows(rows);
+        // Record the miss for exactly the requested (kind, platform, role) —
+        // rows may exist for OTHER roles on this platform; those must not be
+        // suppressed, and this one must not be re-fetched until a refresh.
+        if (!this.resolve(kind, platform, role)) {
+          this.coldMisses.add(missKey);
+        }
       } catch (error) {
         const message = `component-registry cold fetch failed for "${kind}": ${
           error instanceof Error ? error.message : String(error)
@@ -239,7 +288,7 @@ export class ComponentRegistry {
           raw: error,
         });
       } finally {
-        this.coldInFlight.delete(kind);
+        this.coldInFlight.delete(flightKey);
       }
     })();
   }
@@ -264,6 +313,9 @@ export class ComponentRegistry {
   refreshKindComponents(maxAgeMs = 10_000): Promise<void> {
     if (this.refreshPromise) return this.refreshPromise;
     if (Date.now() - this.lastRefreshAt < maxAgeMs) return Promise.resolve();
+    // Any refresh intent invalidates recorded misses immediately (also
+    // cleared in replaceDbRows when the fetch lands) — cheap to re-verify.
+    this.coldMisses.clear();
 
     this.refreshPromise = listKindComponentsFromTables()
       .then((rows) => {

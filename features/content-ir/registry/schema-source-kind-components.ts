@@ -190,7 +190,7 @@ export async function getKindComponentBySlug(
     .schema("content_ir")
     .from("kind_component")
     .select(
-      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at",
+      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, is_default, sort_order",
     )
     .eq("kind_definition_id", def.id)
     .is("deleted_at", null)
@@ -226,6 +226,13 @@ type RawKindComponentRow = {
   pinned_kind_version: number | null;
   updated_at: string;
   created_at: string;
+  /**
+   * Selected by the cold single-kind fetch so the client-side defense sort
+   * (`sortKindComponentRows`) can actually act on them; the warm list omits
+   * them (SQL order is authoritative there) — hence optional.
+   */
+  is_default?: boolean;
+  sort_order?: number;
 };
 
 function projectRows(

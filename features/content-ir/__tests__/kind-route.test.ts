@@ -56,16 +56,41 @@ describe("applyIrKindRoute", () => {
     expect(applyIrKindRoute(block)).toBe(block);
   });
 
-  it("routes a DECLARED-but-unregistered kind to the generic viewer (never raw JSON)", () => {
-    // The kind was identified from `__kind` but no schema exists — a
-    // known-but-unrenderable shape. The envelope preserves the kind through
-    // the raw fallback, and the route sends it to the generic structured
-    // viewer with the unverified affordance (streaming db-kinds mandate).
+  it("passes an UNREGISTERED __kind raw through by reference (teaching content stays readable JSON)", () => {
+    // The kind was identified from `__kind` but the platform has NO
+    // definition for it (typo / hypothetical example in teaching content).
+    // The envelope preserves the kind (so a late registration can upgrade
+    // via repaint), but the route does NOT claim the shape — the raw code
+    // block stands, untouched and by reference.
     const envelope = envelopeFor(
       JSON.stringify({ __kind: "not_registered_anywhere", a: 1 }),
     );
     expect(envelope.root.kind).toBe("not_registered_anywhere");
     expect(envelope.root.kindState).toBe("raw");
+    const block = {
+      type: "code",
+      content: "x",
+      metadata: { [IR_ENVELOPE_KEY]: envelope },
+    };
+    expect(applyIrKindRoute(block)).toBe(block);
+  });
+
+  it("routes a REGISTERED kind's schema-race raw to the generic viewer (never raw JSON)", () => {
+    // The db-kind case the preservation was built for: the kind's definition
+    // IS registered (schema arrived — e.g. via the eager fetch — after the
+    // region ended raw). Known-but-unrenderable → generic structured viewer
+    // with the unverified affordance.
+    const envelope = envelopeFor(
+      JSON.stringify({ __kind: "route_race_registered_kind", a: 1 }),
+    );
+    expect(envelope.root.kind).toBe("route_race_registered_kind");
+    expect(envelope.root.kindState).toBe("raw");
+    kindRegistry.upsertDefinition({
+      kind: "route_race_registered_kind",
+      schema: { kind: "route_race_registered_kind", fields: {} },
+      schemaSource: "content_ir",
+      tier: "cold",
+    });
     const block = {
       type: "code",
       content: "x",

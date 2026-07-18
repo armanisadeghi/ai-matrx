@@ -138,4 +138,101 @@ describe("componentRegistry version tick + cold single-kind fetch", () => {
 
     expect(mockBySlug).toHaveBeenCalledTimes(1);
   });
+
+  it("miss cache is keyed by (kind, platform, role) — an output miss never suppresses input", async () => {
+    const registry = new ComponentRegistry(() => []);
+    // The platform fetch returns ONLY an input-role row: output records a
+    // miss, but a later input request must resolve from the ingested row
+    // (and never be suppressed by the output miss).
+    mockBySlug.mockResolvedValue([
+      dbRow({ kind: "k_roles", componentKey: "input_comp", role: "input" }),
+    ]);
+
+    registry.requestComponent("k_roles", "web", "output");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(registry.resolve("k_roles", "web", "output")).toBeNull();
+    expect(registry.resolve("k_roles", "web", "input")).toMatchObject({
+      componentKey: "input_comp",
+    });
+
+    // Output stays miss-cached (no second fetch)…
+    registry.requestComponent("k_roles", "web", "output");
+    expect(mockBySlug).toHaveBeenCalledTimes(1);
+    // …while input resolves without needing any fetch at all.
+    registry.requestComponent("k_roles", "web", "input");
+    expect(mockBySlug).toHaveBeenCalledTimes(1);
+  });
+
+  it("a wholesale refresh clears recorded misses: miss → create row → refresh → eager fetch works", async () => {
+    const registry = new ComponentRegistry(() => []);
+    mockBySlug.mockResolvedValue([]);
+
+    // 1. Miss recorded.
+    registry.requestComponent("late_created", "web", "output");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockBySlug).toHaveBeenCalledTimes(1);
+    registry.requestComponent("late_created", "web", "output");
+    expect(mockBySlug).toHaveBeenCalledTimes(1); // suppressed
+
+    // 2. The component is created mid-session; a refresh lands (its list
+    //    fetch may even race and not carry the row — the CLEAR is the point).
+    mockList.mockResolvedValue([]);
+    await registry.refreshKindComponents(0);
+
+    // 3. The eager path fetches again — the miss is no longer sticky.
+    mockBySlug.mockResolvedValue([
+      dbRow({ kind: "late_created", componentKey: "late_comp" }),
+    ]);
+    registry.requestComponent("late_created", "web", "output");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockBySlug).toHaveBeenCalledTimes(2);
+    expect(registry.resolve("late_created", "web", "output")).toMatchObject({
+      componentKey: "late_comp",
+    });
+  });
+});
+
+describe("granular per-kind repaint versions", () => {
+  it("kindRegistry: a bump for kind X notifies ONLY kind-X subscribers", () => {
+    const seenX = jest.fn();
+    const seenY = jest.fn();
+    const unsubX = kindRegistry.subscribeKind("gran_kind_x", seenX);
+    const unsubY = kindRegistry.subscribeKind("gran_kind_y", seenY);
+    const versionYBefore = kindRegistry.getKindVersion("gran_kind_y");
+
+    kindRegistry.upsertDefinition({
+      kind: "gran_kind_x",
+      schema: { kind: "gran_kind_x", fields: {} },
+      schemaSource: "content_ir",
+      tier: "cold",
+    });
+
+    expect(seenX).toHaveBeenCalledTimes(1);
+    expect(seenY).not.toHaveBeenCalled();
+    expect(kindRegistry.getKindVersion("gran_kind_y")).toBe(versionYBefore);
+
+    unsubX();
+    unsubY();
+  });
+
+  it("componentRegistry: ingest bumps only the ingested kinds; replaceDbRows (epoch) reaches everyone", () => {
+    const registry = new ComponentRegistry(() => []);
+    const seenX = jest.fn();
+    const seenY = jest.fn();
+    registry.subscribeKind("gran_x", seenX);
+    registry.subscribeKind("gran_y", seenY);
+
+    registry.ingestDbRows([dbRow({ kind: "gran_x", componentKey: "cx" })]);
+    expect(seenX).toHaveBeenCalledTimes(1);
+    expect(seenY).not.toHaveBeenCalled();
+    const versionYBefore = registry.getKindVersion("gran_y");
+
+    // Wholesale replace = epoch bump: every per-kind snapshot changes.
+    registry.replaceDbRows([]);
+    expect(seenY).toHaveBeenCalledTimes(1);
+    expect(registry.getKindVersion("gran_y")).toBeGreaterThan(versionYBefore);
+  });
 });

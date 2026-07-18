@@ -287,20 +287,16 @@ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
     return routeToGeneric(block, resolution ? "inactive" : "no-component");
   }
 
-  // A kind PRESERVED through a schema-availability raw fallback: the region
-  // declared `__kind`, but the schema never arrived before the region ended
-  // (cold fetch lost the race, or the kind has no definition row). The shape
-  // claims to be structured content, so it renders as the generic structured
-  // viewer — never a raw JSON dump — and the repaint hook upgrades it to the
-  // real component the moment the registries learn better.
-  if (envelope.root.kindState === "raw") {
-    return routeToGeneric(block, "no-component");
-  }
-
-  // A kind slug the platform has NO definition for (typo, foreign emitter, a
-  // kind_component row pointing at nothing we can describe) is genuinely
-  // unknown — we cannot claim to "know this shape", so the strangler seam
-  // holds and legacy rendering stands, untouched and by reference.
+  // A kind slug the platform has NO definition for (typo, foreign emitter,
+  // TEACHING CONTENT showing an example __kind payload for a hypothetical
+  // kind) is genuinely unknown — we cannot claim to "know this shape", so
+  // the strangler seam holds and legacy rendering (a readable raw code
+  // block) stands, untouched and by reference. Note the boundary: a
+  // kind-PRESERVED raw (schema-race/db-kind case) whose definition IS
+  // registered never reaches here — `def` resolves above and it routes
+  // (bridge / db flip / generic viewer); registration is what separates
+  // "known but unrenderable" from "not ours to claim". The repaint hook
+  // upgrades this block the moment the registries learn the kind.
   return block;
 }
 

@@ -43,6 +43,15 @@ class KindRegistry {
    */
   private version = 0;
   private readonly versionListeners = new Set<() => void>();
+  /**
+   * PER-KIND versions + listeners — the granular repaint seam. A cold/warm
+   * arrival for kind X must re-render ONLY mounted blocks of kind X (the
+   * global counter would re-run the route on every block in every
+   * conversation). `epoch` covers wholesale invalidation (rare).
+   */
+  private readonly kindVersions = new Map<string, number>();
+  private readonly kindListeners = new Map<string, Set<() => void>>();
+  private epoch = 0;
 
   constructor(systemKinds: KindDefinition[]) {
     for (const def of systemKinds) {
@@ -79,7 +88,30 @@ class KindRegistry {
   upsertDefinition(def: KindDefinition): void {
     const existing = this.defs.get(def.kind);
     this.defs.set(def.kind, { ...existing, ...def });
+    this.bumpKind(def.kind);
     this.bumpVersion();
+  }
+
+  /** Per-kind version (+ the global epoch). The repaint hook's snapshot. */
+  getKindVersion(kind: string): number {
+    return this.epoch + (this.kindVersions.get(kind) ?? 0);
+  }
+
+  /** Subscribe to changes for ONE kind (+ epoch-wide invalidations). */
+  subscribeKind(kind: string, listener: () => void): () => void {
+    const set = this.kindListeners.get(kind) ?? new Set();
+    set.add(listener);
+    this.kindListeners.set(kind, set);
+    return () => {
+      set.delete(listener);
+      if (set.size === 0) this.kindListeners.delete(kind);
+    };
+  }
+
+  private bumpKind(kind: string): void {
+    this.kindVersions.set(kind, (this.kindVersions.get(kind) ?? 0) + 1);
+    const listeners = this.kindListeners.get(kind);
+    if (listeners) for (const listener of listeners) listener();
   }
 
   /** Current registry version (repaint snapshot). */
@@ -124,6 +156,7 @@ class KindRegistry {
               tier: existing?.tier ?? "warm",
               loadingComponent: loadingBySlug.get(kind) ?? null,
             });
+            this.bumpKind(kind);
           }
           this.bumpVersion();
         })
