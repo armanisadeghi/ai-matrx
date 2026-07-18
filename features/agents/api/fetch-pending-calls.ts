@@ -62,7 +62,6 @@ export const fetchConversationPendingCalls = (
       }),
     );
     if (result.error) {
-      // eslint-disable-next-line no-console
       console.warn(
         "[fetch-pending-calls] conversation fetch failed",
         result.error,
@@ -118,7 +117,6 @@ export const fetchUserPendingCalls = (): ThunkAction<
       }),
     );
     if (result.error) {
-      // eslint-disable-next-line no-console
       console.warn("[fetch-pending-calls] user fetch failed", result.error);
       return [];
     }
