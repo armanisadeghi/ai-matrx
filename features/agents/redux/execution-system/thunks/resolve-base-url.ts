@@ -231,7 +231,9 @@ export function resolveBackendForConversation(
     // "Conversation not found". Only take the override channel when a live
     // binding confirms this conversation is genuinely attached to that box.
     const ref = resolveAgentSandboxRef(state, conversationId);
-    if (ref) {
+    // A local-pc binding belongs to the direct localhost branch below. A stale
+    // sandbox override must not outrank it and redirect the user's local turn.
+    if (ref && ref.kind !== "local-pc") {
       const baseUrl = overrideUrl.endsWith("/")
         ? overrideUrl.slice(0, -1)
         : overrideUrl;

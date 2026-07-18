@@ -95,7 +95,10 @@ import { setUserVariableValues } from "../instance-variable-values/instance-vari
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { selectResourcePayloads } from "../instance-resources/instance-resources.selectors";
-import { resolveBackendForConversation } from "./resolve-base-url";
+import {
+  resolveBackendForConversation,
+  warmLocalEngineForConversation,
+} from "./resolve-base-url";
 import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
 import {
   selectActiveServer,
@@ -630,6 +633,7 @@ export const executeManualInstance = createAsyncThunk<
         dispatch(clearMemoryToggleRequest());
       }
 
+      await warmLocalEngineForConversation(state, conversationId);
       const backend = resolveBackendForConversation(state, conversationId);
       if (!backend) throw new Error("No backend URL configured");
       const baseUrl = backend.baseUrl;

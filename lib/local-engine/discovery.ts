@@ -32,6 +32,7 @@ const POSITIVE_TTL_MS = 60_000;
 const NEGATIVE_TTL_MS = 15_000;
 
 const LOG = "[local-engine]";
+const DEV_OVERRIDE_ENV = "NEXT_PUBLIC_LOCAL_ENGINE_BASE_URL";
 
 export interface LocalEngineInfo {
   /** e.g. "http://127.0.0.1:22140" — no trailing slash. */
@@ -45,6 +46,7 @@ export interface LocalEngineInfo {
 }
 
 interface HealthBody {
+  service?: string;
   status?: string;
   version?: string;
   capabilities?: unknown;
@@ -54,14 +56,36 @@ let cached: LocalEngineInfo | null = null;
 let lastMissAt: number | null = null;
 let inflight: Promise<LocalEngineInfo | null> | null = null;
 
-async function probePort(port: number): Promise<LocalEngineInfo | null> {
-  const baseUrl = `http://127.0.0.1:${port}`;
+function developmentOverride(): { baseUrl: string; port: number } | null {
+  if (process.env.NODE_ENV === "production") return null;
+  const raw = process.env[DEV_OVERRIDE_ENV]?.trim();
+  if (!raw) return null;
+
+  try {
+    const url = new URL(raw);
+    const isLoopback = url.hostname === "127.0.0.1" || url.hostname === "localhost";
+    const port = Number(url.port);
+    if (url.protocol !== "http:" || !isLoopback || !Number.isInteger(port) || port < 1) {
+      throw new Error("override must be an HTTP loopback URL with an explicit port");
+    }
+    return { baseUrl: url.origin, port };
+  } catch (error) {
+    console.warn(`${LOG} ignoring invalid ${DEV_OVERRIDE_ENV}: ${String(error)}`);
+    return null;
+  }
+}
+
+async function probeBaseUrl(
+  baseUrl: string,
+  port: number,
+): Promise<LocalEngineInfo | null> {
   try {
     const res = await fetch(`${baseUrl}/health`, {
       signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     const body = (await res.json().catch(() => ({}))) as HealthBody;
+    if (body.service !== "matrx-local" || body.status !== "ok") return null;
     return {
       baseUrl,
       port,
@@ -76,6 +100,10 @@ async function probePort(port: number): Promise<LocalEngineInfo | null> {
   } catch {
     return null;
   }
+}
+
+async function probePort(port: number): Promise<LocalEngineInfo | null> {
+  return probeBaseUrl(`http://127.0.0.1:${port}`, port);
 }
 
 async function scan(): Promise<LocalEngineInfo | null> {
@@ -125,6 +153,21 @@ export async function discoverLocalEngine(options?: {
   if (inflight) return inflight;
 
   inflight = (async () => {
+    const override = developmentOverride();
+    if (override) {
+      const found = await probeBaseUrl(override.baseUrl, override.port);
+      if (found) {
+        cached = found;
+        lastMissAt = null;
+        console.info(`${LOG} using development engine override ${found.baseUrl}.`);
+        return found;
+      }
+      cached = null;
+      lastMissAt = Date.now();
+      console.warn(`${LOG} development engine override ${override.baseUrl} is not responding.`);
+      return null;
+    }
+
     // Stale positive cache → cheap single-port recheck first.
     if (cached) {
       const recheck = await probePort(cached.port);
