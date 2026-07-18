@@ -54,6 +54,13 @@ The cross-repo system-of-record (evidence, counts, acceptance criteria) is `comm
 7. **Workflow launch** — gated on Arman's bar: every workflow input/output fully on the system with "nothing left to do." Dynamic contract publisher for `io.user_input` (P9) is the known gap. E1 (unified TurnAssembler pipeline) remains its own campaign, last by design.
 8. **Small known items:** FOUND_DEFECTS D60 residual (launch-variable agents don't surface stashed drafts — plain agents fixed); education convert-dialog branding when opened from general chat (latent UX note); `item_presentation` Python detector gap (shrink-only ratchet); 2 pre-existing `system_instruction_persist_roundtrip` failures in aidream (spawned task).
 
+## Streaming + loading + persistence (Arman, 2026-07-18 morning — vision addendum)
+
+- **BUG (active):** MarkdownStream does not recognize db-component kinds during the stream — "It starts to show something, but then it just shows as JSON." Streaming recognition of cloud kinds must work "all across the system for streaming content everywhere."
+- **Eager lightweight fetch (verbatim intent):** "the moment a 'cloud kind' is recognized, it triggers a direct lightweight fetch of the core component and loading component, along with only any validation or things it needs for rendering. We cannot bloat the fetch with additional things that aren't needed for rendering."
+- **Hardcoded loading-component library:** ~20 customizable loading components permanently in the codebase (zero fetch delay), selectable per kind. Powered by **early-emitted keys in the `__kind` payload** — a default key set like `title`, `description`, `loading_message`, `loading_subtext` (+ a few more) emitted FIRST so the loading state renders meaningful content live while the rest streams. Kinds that can't render mid-stream get an optional custom loading component instead of a dead skeleton.
+- **User-kind persistence (to discuss, then build):** how user-defined kinds attain persistence and the rest of the platform kit — "users have plenty of places where they can have custom data shapes, especially udt datasets (highly flexible and fully customizable user tables)." Map what the artifact/materialization system already gives kinds vs what user kinds are missing; connect kinds ↔ udt datasets.
+
 ## Done (compact — details in FEATURE docs + git)
 
 - North-star loop live + verified + polished (see Current state) — waves K1–K5 + P0/P2 passes, 2026-07-18.
