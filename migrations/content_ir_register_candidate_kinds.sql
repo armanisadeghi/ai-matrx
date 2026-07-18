@@ -42,9 +42,10 @@
 -- (ratified 2026-07-15); it is deliberately NOT in this migration.
 --
 -- Version-bump trap: platform._touch_row bumps kind_definition.version on any
--- UPDATE, stranding version-bound kind_example rows. The freshness UPDATEs
--- below therefore fire ONLY when the emitted schema actually changed, and the
--- example inserts read kd.version after them in the same transaction.
+-- UPDATE, stranding version-bound kind_example rows. This file therefore
+-- performs NO UPDATEs — it is insert-only (guarded INSERT ... WHERE NOT
+-- EXISTS), and the example inserts read kd.version in the same transaction,
+-- so a fresh apply pins each canonical example at its definition's version.
 --
 -- Idempotent: re-apply is a no-op (never flips is_active, never bumps version).
 -- ============================================================================
