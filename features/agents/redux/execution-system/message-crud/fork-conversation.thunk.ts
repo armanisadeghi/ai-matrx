@@ -23,6 +23,10 @@ import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
+import {
+  sourceAppFromStorage,
+  sourceFeatureFromStorage,
+} from "@/features/agents/types/instance.types";
 import { hydrateConversation } from "../conversations/conversations.slice";
 import { hydrateMessages } from "../messages/messages.slice";
 import { setFocus } from "../conversation-focus/conversation-focus.slice";
@@ -131,8 +135,8 @@ export const forkConversation = createAsyncThunk<
         origin: "manual",
         shortcutId: null,
         status: "ready",
-        sourceApp: conv.source_app,
-        sourceFeature: conv.source_feature as never,
+        sourceApp: sourceAppFromStorage(conv.source_app),
+        sourceFeature: sourceFeatureFromStorage(conv.source_feature),
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
         createdBy: conv.created_by,

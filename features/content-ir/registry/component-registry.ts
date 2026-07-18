@@ -53,6 +53,16 @@ export interface ComponentResolution {
   isActive: boolean;
   /** Which tier produced this answer — the verification hook's `by`. */
   resolvedBy: "compiled" | "db";
+  /**
+   * `source='db'` rows only: the user-authored component body (TSX/JSX for
+   * the in-page allowlist compile, or an HTML document when
+   * `config.flavor='html'`). Always null for compiled/bundled entries.
+   */
+  componentSource: string | null;
+  /** `source='db'` rows only: optional `(data) => data` transform source. */
+  propsTransform: string | null;
+  /** `source='db'` rows only: pinned kind version (null = current). */
+  pinnedKindVersion: number | null;
 }
 
 function keyOf(kind: string, platform: string, role: string): string {
@@ -104,6 +114,9 @@ export class ComponentRegistry {
         config: dbRow.config,
         isActive: dbRow.isActive,
         resolvedBy: "db",
+        componentSource: dbRow.componentSource,
+        propsTransform: dbRow.propsTransform,
+        pinnedKindVersion: dbRow.pinnedKindVersion,
       };
     }
 
@@ -115,6 +128,9 @@ export class ComponentRegistry {
         config: compiledEntry.config,
         isActive: true, // trusted at bootstrap (R6)
         resolvedBy: "compiled",
+        componentSource: null,
+        propsTransform: null,
+        pinnedKindVersion: null,
       };
     }
 

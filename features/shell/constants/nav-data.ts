@@ -578,6 +578,18 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "emerald",
   },
   {
+    // User-facing Shape System studio (features/content-ir/studio/).
+    label: "Shapes",
+    href: "/shapes",
+    iconName: "Shapes",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Design custom structured-content shapes with an agent",
+    color: "violet",
+    guestHidden: true,
+  },
+  {
     label: "Reports",
     href: "/reports",
     iconName: "FileChartColumn",

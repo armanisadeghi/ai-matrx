@@ -17,15 +17,12 @@
  * imported statically and simply not rendered until its tab is active.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ChevronRight, Loader2 } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
-import type {
-  KindDetailData,
-  KindExampleListItem,
-} from "@/features/content-ir/admin/kind-detail-types";
+import type { KindDetailData } from "@/features/content-ir/admin/kind-detail-types";
+import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import KindPreviewTab from "@/features/content-ir/admin/KindPreviewTab";
 import KindSchemaTab from "@/features/content-ir/admin/KindSchemaTab";
 import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
@@ -84,11 +81,6 @@ function isTabId(value: string | undefined): value is TabId {
   return TABS.includes(value as TabId);
 }
 
-export type ExamplesState =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ready"; rows: KindExampleListItem[] };
-
 interface KindDetailClientProps {
   detail: KindDetailData;
   initialTab?: string;
@@ -99,50 +91,8 @@ export default function KindDetailClient({
   initialTab,
 }: KindDetailClientProps) {
   const [tab, setTab] = useState<TabId>(isTabId(initialTab) ? initialTab : "preview");
-  const [examples, setExamples] = useState<ExamplesState>({ status: "loading" });
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .schema("content_ir")
-        .from("kind_example")
-        .select(
-          "id,label,description,is_canonical,source,validation_status,kind_version,data,updated_at",
-        )
-        .eq("kind_definition_id", detail.id)
-        .is("deleted_at", null)
-        .order("is_canonical", { ascending: false })
-        .order("updated_at", { ascending: false });
-      if (cancelled) return;
-      if (error) {
-        setExamples({
-          status: "error",
-          message: `Failed to load kind_example rows: ${error.message}`,
-        });
-        return;
-      }
-      setExamples({
-        status: "ready",
-        rows: (data ?? []).map(
-          (r): KindExampleListItem => ({
-            id: r.id,
-            label: r.label,
-            description: r.description,
-            isCanonical: r.is_canonical,
-            source: r.source,
-            validationStatus: r.validation_status,
-            kindVersion: r.kind_version,
-            data: r.data,
-            updatedAt: r.updated_at,
-          }),
-        ),
-      });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [detail.id]);
+  // Shared example fetch — extracted to the studio module (one engine, no fork).
+  const examples = useKindExamples(detail.id);
 
   function selectTab(next: TabId) {
     setTab(next);

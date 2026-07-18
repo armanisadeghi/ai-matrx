@@ -37,6 +37,20 @@ export interface KindComponentProjection {
   source: string;
   isActive: boolean;
   config: JsonObject;
+  /**
+   * `source='db'` rows: the user-authored component body — TSX/JSX compiled
+   * in-page via the shared allowlist compiler, or (config.flavor='html') a
+   * full HTML document rendered in a sandboxed iframe. Null for bundled rows.
+   */
+  componentSource: string | null;
+  /**
+   * Optional transform applied to the kind instance value BEFORE it reaches
+   * the compiled component (same semantics as tool_ui's transform code): a
+   * compiled `(data) => data` function body. Null = pass the value through.
+   */
+  propsTransform: string | null;
+  /** Pin the component to a specific kind version (null = current). */
+  pinnedKindVersion: number | null;
 }
 
 /**
@@ -69,7 +83,7 @@ export async function listKindComponentsFromTables(): Promise<
     .schema("content_ir")
     .from("kind_component")
     .select(
-      "kind_definition_id, platform, role, component_key, source, is_active, config",
+      "kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version",
     )
     .is("deleted_at", null)
     .order("is_default", { ascending: false })
@@ -118,6 +132,9 @@ export async function listKindComponentsFromTables(): Promise<
       source: row.source,
       isActive: row.is_active,
       config: asConfigRecord(row.config, kind),
+      componentSource: row.component_source,
+      propsTransform: row.props_transform,
+      pinnedKindVersion: row.pinned_kind_version,
     });
   }
   return out;

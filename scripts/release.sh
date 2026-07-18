@@ -21,9 +21,9 @@
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --monitor    # poll Vercel deployment status after push
 #
-# After a successful push, runs release quality gates in ADVISORY mode
-# (doctrine, UI primitives, migration ledger, dead-relations) — loud only,
-# never blocks or delays the ship. Only git itself may stop a push.
+# Before versioning, the CX source-attribution audit is blocking. After a
+# successful push, the remaining release quality gates run in ADVISORY mode
+# (doctrine, UI primitives, migration ledger, dead-relations).
 # Manual hard-fail: pnpm check:release-gates:strict
 #
 # --monitor requires either:
@@ -190,6 +190,13 @@ EOF
         fi
     fi
 fi
+
+# A source_app/source_feature typo is persisted permanently and corrupts every
+# attribution view downstream. This is intentionally blocking and runs before
+# package.json, commits, or tags are mutated.
+info "Validating CX source attribution (blocking)..."
+pnpm check:source-attribution
+ok "CX source attribution is registered."
 
 # ── Read current version ─────────────────────────────────────────────────────
 CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null) \

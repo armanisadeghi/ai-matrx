@@ -24,7 +24,7 @@ import {
 } from "@/features/content-ir/registry/kind-dual-gate";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import type { Json } from "@/types/database.types";
-import type { ExamplesState } from "@/features/content-ir/admin/KindDetailClient";
+import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 
 const PASTED = "__pasted__";
 

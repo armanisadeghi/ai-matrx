@@ -47,6 +47,7 @@
     "find-circular": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1",
     "find-circular:count": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1 | grep 'Found'",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
+    "check:source-attribution": "tsx scripts/check-source-attribution.ts",
     "check:doctrine": "tsx scripts/check-doctrine.ts",
     "check:doctrine:staged": "tsx scripts/check-doctrine.ts --staged",
     "check:doctrine:strict": "tsx scripts/check-doctrine.ts --strict",

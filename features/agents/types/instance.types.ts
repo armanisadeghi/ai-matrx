@@ -72,9 +72,11 @@ export type InstanceOrigin =
  *   ❌ `demo`                        — WHICH demo? Name the route/component.
  *   ❌ `programmatic`                — NOT a surface. Hooks/helpers pick the real caller.
  *
- * One literal per `ui_surface` / mount point (UnifiedAgentContextMenu, ProTextarea,
- * ProInput, window panel, route). Never borrow a "closest" feature name — traces
- * must identify the real caller. Add new values under the matching module group below.
+ * One literal per conversation-producing mount point (UnifiedAgentContextMenu,
+ * ProTextarea, ProInput, window panel, route). This is provenance metadata; it
+ * does not need to equal a `ui.ui_surface.name`. Never borrow a "closest" feature
+ * name — traces must identify the real caller. Add new values under the matching
+ * module group below.
  *
  * Registry labels/icons/grouping: `features/agents/redux/conversation-history/source-registry.ts`
  */
@@ -99,6 +101,8 @@ export type SourceFeature =
   | "chat-interface"
   /** Pop-over Quick Chat from the Quick Access menu (`QuickChatSheet`). */
   | "quick-chat"
+  /** Persisted xAI Realtime voice conversations. */
+  | "voice-agent"
   /** Right-click context menu on rendered assistant markdown (MarkdownStream). */
   | "assistant-message"
 
@@ -250,11 +254,149 @@ export type SourceFeature =
    *  features/education/convert/ + features/education/onboard/. */
   | "education-ingest";
 
+/** Runtime mirror of SourceFeature for release validation and stored-row guards. */
+export const SOURCE_FEATURES = [
+  "agent-builder",
+  "agent-runner",
+  "agent-tester",
+  "agent-launcher-sidebar",
+  "agent-creator-panel",
+  "agent-generator",
+  "agent-advanced-editor-window",
+  "agent-content-window",
+  "agent-run-window",
+  "agent-run-history-window",
+  "agent-runs-sidebar",
+  "agent-comparison",
+  "chat-route",
+  "chat-interface",
+  "quick-chat",
+  "voice-agent",
+  "assistant-message",
+  "agent-app",
+  "prompt-app",
+  "research",
+  "code-editor",
+  "context-menu-demo",
+  "notes",
+  "cms-hub",
+  "cms-site",
+  "cms-page",
+  "cms-component",
+  "html-page",
+  "transcripts",
+  "transcript-studio",
+  "transcription-cleanup",
+  "dictionary",
+  "tasks",
+  "task-create",
+  "projects",
+  "project-create",
+  "scraper",
+  "files",
+  "documents",
+  "working-document",
+  "scratchpad",
+  "udt-data-tables",
+  "udt-picklists",
+  "messages",
+  "canvas",
+  "mermaid-workbench",
+  "ai-results",
+  "content-extractor",
+  "extractor-chunker",
+  "pdf-widgets",
+  "analysis-studio",
+  "scanner",
+  "pdf-extractor",
+  "image-studio",
+  "rag-search",
+  "pro-textarea",
+  "surface-chrome",
+  "tool-call-visualization",
+  "education-flashcards",
+  "education-fastfire-grade",
+  "education-fastfire-help",
+  "education-fastfire-review",
+  "education-fastfire-tts",
+  "education-flashcards-help",
+  "education-flashcards-review",
+  "education-flashcards-coach",
+  "education-mindmap",
+  "education-tutor",
+  "education-planner",
+  "education-analytics",
+  "education-assessment",
+  "education-assessment-grade",
+  "education-ingest",
+] as const satisfies readonly SourceFeature[];
+
+type RegisteredSourceFeature = (typeof SOURCE_FEATURES)[number];
+type SourceFeatureMissingFromRegistry = Exclude<
+  SourceFeature,
+  RegisteredSourceFeature
+>;
+type RegistryValueMissingFromSourceFeature = Exclude<
+  RegisteredSourceFeature,
+  SourceFeature
+>;
+const SOURCE_FEATURE_REGISTRY_IS_EXHAUSTIVE: [
+  SourceFeatureMissingFromRegistry,
+  RegistryValueMissingFromSourceFeature,
+] extends [never, never]
+  ? true
+  : never = true;
+void SOURCE_FEATURE_REGISTRY_IS_EXHAUSTIVE;
+
+const SOURCE_FEATURE_SET: ReadonlySet<string> = new Set(SOURCE_FEATURES);
+
+export function isSourceFeature(value: string): value is SourceFeature {
+  return SOURCE_FEATURE_SET.has(value);
+}
+
+declare const UNREGISTERED_SOURCE_FEATURE: unique symbol;
+export type UnregisteredSourceFeature = string & {
+  readonly [UNREGISTERED_SOURCE_FEATURE]: true;
+};
+export type SourceFeatureValue = SourceFeature | UnregisteredSourceFeature;
+
+/** Preserve DB fidelity while preventing new producer call sites from inventing strings. */
+export function sourceFeatureFromStorage(value: string): SourceFeatureValue {
+  if (isSourceFeature(value)) return value;
+  console.warn(
+    `[source-attribution] Loaded unregistered source_feature ${JSON.stringify(value)} from storage.`,
+  );
+  return value as UnregisteredSourceFeature;
+}
+
 // Anti-patterns — never add these. Name the actual surface instead.
 // | "demo"         — WHICH demo? Be SPECIFIC (route, panel, window).
 // | "programmatic" — NOT a feature surface. Pick the real caller's slug.
 
-export const SOURCE_APP = "matrx-admin" as const;
+export const SOURCE_APPS = ["matrx-admin", "matrx-frontend", "chat"] as const;
+export type SourceApp = (typeof SOURCE_APPS)[number];
+export const SOURCE_APP = "matrx-admin" satisfies SourceApp;
+
+const SOURCE_APP_SET: ReadonlySet<string> = new Set(SOURCE_APPS);
+
+export function isSourceApp(value: string): value is SourceApp {
+  return SOURCE_APP_SET.has(value);
+}
+
+declare const UNREGISTERED_SOURCE_APP: unique symbol;
+export type UnregisteredSourceApp = string & {
+  readonly [UNREGISTERED_SOURCE_APP]: true;
+};
+export type SourceAppValue = SourceApp | UnregisteredSourceApp;
+
+/** Preserve DB fidelity while preventing new producer call sites from inventing strings. */
+export function sourceAppFromStorage(value: string): SourceAppValue {
+  if (isSourceApp(value)) return value;
+  console.warn(
+    `[source-attribution] Loaded unregistered source_app ${JSON.stringify(value)} from storage.`,
+  );
+  return value as UnregisteredSourceApp;
+}
 
 export type ApiEndpointMode = "agent" | "manual";
 
@@ -314,8 +456,8 @@ export interface ExecutionInstance {
   origin: InstanceOrigin;
   shortcutId: string | null;
   status: InstanceStatus;
-  sourceApp: string;
-  sourceFeature: SourceFeature;
+  sourceApp: SourceAppValue;
+  sourceFeature: SourceFeatureValue;
   /** True until the server confirms this conversation ID via X-Conversation-ID header */
   cacheOnly: boolean;
   createdAt: string;

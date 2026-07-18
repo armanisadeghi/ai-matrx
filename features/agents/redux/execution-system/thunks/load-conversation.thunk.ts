@@ -20,6 +20,10 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import {
+  sourceAppFromStorage,
+  sourceFeatureFromStorage,
+} from "@/features/agents/types/instance.types";
 
 import {
   hydrateConversation,
@@ -190,10 +194,8 @@ export const loadConversation = createAsyncThunk<
         origin: "manual",
         shortcutId: null,
         status: "ready",
-        sourceApp: conv.source_app,
-        // Cast is safe — source_feature is stored as a plain string on the row
-        // but the client-side type narrows to a known enum.
-        sourceFeature: conv.source_feature as never,
+        sourceApp: sourceAppFromStorage(conv.source_app),
+        sourceFeature: sourceFeatureFromStorage(conv.source_feature),
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
         createdBy: conv.created_by,

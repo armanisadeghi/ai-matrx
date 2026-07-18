@@ -223,6 +223,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-17` — Made conversation provenance release-safe: `SourceFeature` now has an exhaustive runtime registry, stored unknowns cross one loud branded boundary instead of `as never`, and `release.sh` blocks on a repository-wide literal `source_app` / `source_feature` audit.
 - `2026-07-17` — Replaced the oversized Agent Resources association browser with the Variables-style compact row, canonical resource picker, batch-add mode, and Stored Files chips/details; confirmed the manager has one Builder mount point.
 - `2026-07-17` — Fixed the shared Creator Panel Payload tab crash (`Cannot read properties of undefined (reading 'assistant')`): its memoized request-preview selector now includes `userPreferences`, matching `assembleRequest`'s USER-layer directive-policy dependency. Added focused regression coverage for default and explicit policies.
 

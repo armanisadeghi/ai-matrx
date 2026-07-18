@@ -1,8 +1,22 @@
 /**
- * Single source of truth for allowed imports in Agent Apps.
- * Ported verbatim from features/prompt-apps/utils/allowed-imports.ts —
- * ALLOWED_IMPORTS_CONFIG, the safe-proxy behavior, and scope builders are
- * security-critical. Do not widen this list without a separate review.
+ * Single source of truth for allowed imports in the SHARED in-page allowlist
+ * compiler (`compile-slot.ts`) — consumed by Agent Apps, the DB tool renderer
+ * (features/tool-call-visualization/db-renderer), and DB kind components
+ * (features/content-ir/react/db-component).
+ *
+ * 2026-07-17 ratified expansion (Arman): user components compiled in-page are
+ * the core delivery mechanism of the platform, so this allowlist is
+ * deliberately WIDE — every shadcn ui primitive the async dynamic-react
+ * registry (features/dynamic-react/toolRendererScope.ts) already proved, plus
+ * `cn`, recharts, and the full common React hook set. Rules that still hold:
+ *  - every entry is EXPLICITLY named (no wildcard require) and documented;
+ *  - unknown identifiers keep the safe-proxy fallback (never a crash);
+ *  - no entry may expose supabase clients, fetch wrappers, Redux internals,
+ *    or anything that widens data reach beyond what the page already has.
+ * Bundle note: this module lives ONLY in lazy chunks (compile-slot is reached
+ * via `next/dynamic` shells), so sync `require()` additions here grow those
+ * lazy chunks, never the main bundle. recharts is the one heavy add; it ships
+ * in the same lazy compile chunk and is documented as such.
  */
 
 import React from "react";
@@ -49,7 +63,19 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     path: "react",
     loader: () => require("react"),
     scopeStrategy: "named",
-    exports: ["useState", "useEffect", "useMemo", "useCallback", "useRef"],
+    exports: [
+      "useState",
+      "useEffect",
+      "useMemo",
+      "useCallback",
+      "useRef",
+      "useReducer",
+      "useContext",
+      "useId",
+      "useTransition",
+      "useDeferredValue",
+      "Fragment",
+    ],
     exportMap: {
       default: "React",
     },
@@ -149,6 +175,114 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     loader: () => require("@/components/ui/tabs"),
     scopeStrategy: "spread", // Tabs, TabsList, TabsTrigger, TabsContent
   },
+
+  // ── 2026-07-17 ratified expansion (see module header) ─────────────────────
+  // Each entry mirrors the identically-named capability the async
+  // dynamic-react registry already proved safe (toolRendererScope.ts).
+  {
+    path: "@/lib/utils",
+    loader: () => require("@/lib/utils"),
+    scopeStrategy: "named",
+    exports: ["cn"], // className merge only — nothing else from the util barrel
+  },
+  {
+    path: "@/components/ui/badge",
+    loader: () => require("@/components/ui/badge"),
+    scopeStrategy: "named",
+    exports: ["Badge"],
+  },
+  {
+    path: "@/components/ui/tooltip",
+    loader: () => require("@/components/ui/tooltip"),
+    scopeStrategy: "spread", // Tooltip, TooltipTrigger, TooltipContent, TooltipProvider
+  },
+  {
+    path: "@/components/ui/accordion",
+    loader: () => require("@/components/ui/accordion"),
+    scopeStrategy: "spread", // Accordion, AccordionItem, AccordionTrigger, AccordionContent
+  },
+  {
+    path: "@/components/ui/collapsible",
+    loader: () => require("@/components/ui/collapsible"),
+    scopeStrategy: "spread", // Collapsible, CollapsibleTrigger, CollapsibleContent
+  },
+  {
+    path: "@/components/ui/progress",
+    loader: () => require("@/components/ui/progress"),
+    scopeStrategy: "named",
+    exports: ["Progress"],
+  },
+  {
+    path: "@/components/ui/separator",
+    loader: () => require("@/components/ui/separator"),
+    scopeStrategy: "named",
+    exports: ["Separator"],
+  },
+  {
+    path: "@/components/ui/scroll-area",
+    loader: () => require("@/components/ui/scroll-area"),
+    scopeStrategy: "spread", // ScrollArea, ScrollBar
+  },
+  {
+    path: "@/components/ui/dialog",
+    loader: () => require("@/components/ui/dialog"),
+    scopeStrategy: "spread", // Dialog, DialogTrigger, DialogContent, ...
+  },
+  {
+    path: "@/components/ui/sheet",
+    loader: () => require("@/components/ui/sheet"),
+    scopeStrategy: "spread", // Sheet, SheetTrigger, SheetContent, ...
+  },
+  {
+    path: "@/components/ui/dropdown-menu",
+    loader: () => require("@/components/ui/dropdown-menu"),
+    scopeStrategy: "spread", // DropdownMenu, DropdownMenuTrigger, ...
+  },
+  {
+    path: "@/components/ui/table",
+    loader: () => require("@/components/ui/table"),
+    scopeStrategy: "spread", // Table, TableHeader, TableBody, TableRow, TableCell, ...
+  },
+  {
+    path: "@/components/ui/checkbox",
+    loader: () => require("@/components/ui/checkbox"),
+    scopeStrategy: "named",
+    exports: ["Checkbox"],
+  },
+  {
+    path: "@/components/ui/radio-group",
+    loader: () => require("@/components/ui/radio-group"),
+    scopeStrategy: "spread", // RadioGroup, RadioGroupItem
+  },
+  {
+    path: "@/components/ui/popover",
+    loader: () => require("@/components/ui/popover"),
+    scopeStrategy: "spread", // Popover, PopoverTrigger, PopoverContent
+  },
+  {
+    path: "@/components/ui/avatar",
+    loader: () => require("@/components/ui/avatar"),
+    scopeStrategy: "spread", // Avatar, AvatarImage, AvatarFallback
+  },
+  {
+    path: "@/components/ui/alert",
+    loader: () => require("@/components/ui/alert"),
+    scopeStrategy: "spread", // Alert, AlertTitle, AlertDescription
+  },
+  {
+    path: "@/components/ui/skeleton",
+    loader: () => require("@/components/ui/skeleton"),
+    scopeStrategy: "named",
+    exports: ["Skeleton"],
+  },
+  {
+    // The app's bundled chart library (already proven in the dynamic-react
+    // registry). Heavy — but this whole module only lives in lazy compile
+    // chunks, so recharts joins those chunks and never the main bundle.
+    path: "recharts",
+    loader: () => require("recharts"),
+    scopeStrategy: "spread", // ResponsiveContainer, LineChart, BarChart, Pie, XAxis, ...
+  },
 ];
 
 /**
@@ -177,6 +311,19 @@ export function getDefaultImportsForNewApps(): string[] {
     "@/components/ui/switch",
     "@/components/ui/tabs",
   ];
+}
+
+/**
+ * Default allowlist for DB kind components (content_ir.kind_component,
+ * source='db'): the FULL registered scope. Ratified 2026-07-17 — user kind
+ * components are the platform's core delivery mechanism, so they default to
+ * everything the allowlist knows; a row can narrow (or someday extend) via
+ * `config.allowed_imports`. Spread-precedence is `allowedImports` order:
+ * recharts is last, so its `Tooltip` wins over the ui tooltip — same
+ * deterministic rule as the dynamic-react registry.
+ */
+export function getDefaultImportsForKindComponents(): string[] {
+  return getAllowedImportsList();
 }
 
 /**
@@ -407,6 +554,31 @@ export function getImportDescription(importPath: string): string {
     "@/components/ui/switch": "Switch component",
     "@/components/ui/tabs":
       "Tabs components (Tabs, TabsList, TabsTrigger, TabsContent)",
+    "@/lib/utils": "cn() className merge utility",
+    "@/components/ui/badge": "Badge component",
+    "@/components/ui/tooltip":
+      "Tooltip components (Tooltip, TooltipTrigger, TooltipContent, TooltipProvider)",
+    "@/components/ui/accordion":
+      "Accordion components (Accordion, AccordionItem, AccordionTrigger, AccordionContent)",
+    "@/components/ui/collapsible":
+      "Collapsible components (Collapsible, CollapsibleTrigger, CollapsibleContent)",
+    "@/components/ui/progress": "Progress bar component",
+    "@/components/ui/separator": "Separator component",
+    "@/components/ui/scroll-area": "ScrollArea components (ScrollArea, ScrollBar)",
+    "@/components/ui/dialog": "Dialog components (Dialog, DialogTrigger, DialogContent, ...)",
+    "@/components/ui/sheet": "Sheet components (Sheet, SheetTrigger, SheetContent, ...)",
+    "@/components/ui/dropdown-menu":
+      "Dropdown menu components (DropdownMenu, DropdownMenuTrigger, ...)",
+    "@/components/ui/table":
+      "Table components (Table, TableHeader, TableBody, TableRow, TableCell, ...)",
+    "@/components/ui/checkbox": "Checkbox component",
+    "@/components/ui/radio-group": "Radio group components (RadioGroup, RadioGroupItem)",
+    "@/components/ui/popover": "Popover components (Popover, PopoverTrigger, PopoverContent)",
+    "@/components/ui/avatar": "Avatar components (Avatar, AvatarImage, AvatarFallback)",
+    "@/components/ui/alert": "Alert components (Alert, AlertTitle, AlertDescription)",
+    "@/components/ui/skeleton": "Skeleton loading component",
+    recharts:
+      "Charts and graphs (recharts: ResponsiveContainer, LineChart, BarChart, PieChart, ...)",
   };
 
   return descriptions[importPath] || importPath;

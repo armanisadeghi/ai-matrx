@@ -13,6 +13,7 @@
  * while streaming (the accumulator refreshes the envelope every flush).
  */
 
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { envelopeFromCompleteValue } from "../core/normalize";
 import { readObjectKind } from "../core/kind-schema.types";
 import { kindRegistry } from "../registry/kind-registry";
@@ -43,6 +44,73 @@ export const IR_ROUTE_KEY = "__ir_route" as const;
  * unified renderer's switch (BlockRenderer) as a block type.
  */
 export const GENERIC_STRUCTURED_COMPONENT_KEY = "generic_structured" as const;
+
+/**
+ * The block type a DB-sourced (user-authored) kind component renders as —
+ * consumed by the dispatch registry as `DbKindComponent` (the in-page
+ * allowlist-compiled React flavor, or the sandboxed-iframe html flavor when
+ * the row's `config.flavor === 'html'`). FE-synthesized: produced ONLY here,
+ * never emitted upstream.
+ */
+export const DB_KIND_COMPONENT_KEY = "db_kind_component" as const;
+
+/**
+ * A DB row is render-trusted as a USER component when it is active, declares
+ * `source='db'` (R1: db = web sandbox only), and actually carries a component
+ * body. An active db-source row WITHOUT a body is a data defect — reported
+ * loudly by the caller, which then falls through to the bundled behavior
+ * (never un-render).
+ */
+function isDbSourceResolution(
+  resolution: ComponentResolution | null,
+): resolution is ComponentResolution {
+  return (
+    resolution !== null &&
+    resolution.resolvedBy === "db" &&
+    resolution.source === "db" &&
+    resolution.isActive
+  );
+}
+
+const reportedSourcelessDbRows = new Set<string>();
+
+/** Loud recovery: an active source='db' row with no component_source. */
+function reportDbRowWithoutSource(kind: string): void {
+  const message = `[content-ir] kind_component for "${kind}" declares source='db' + is_active but has NO component_source — data defect; falling through to bundled rendering.`;
+  if (!reportedSourcelessDbRows.has(kind)) {
+    reportedSourcelessDbRows.add(kind);
+    console.error(message);
+  }
+  captureError({ source: "content-ir", message, raw: { kind } });
+}
+
+/**
+ * The db-override flip (deliverable of the 2026-07-17 ratified architecture):
+ * an ACTIVE `source='db'` row carrying a component body wins over BOTH the
+ * compiled bridge and any bundled resolution (R6: db overrides bundled). The
+ * block re-types to `db_kind_component`; the renderer re-resolves the row and
+ * compiles/sandboxes it. Returns null when the db flip does not apply.
+ */
+function routeToDbComponent<T extends IrRoutableBlock>(
+  block: T,
+  kind: string,
+  resolution: ComponentResolution | null,
+): T | null {
+  if (!isDbSourceResolution(resolution)) return null;
+  if (!resolution.componentSource || !resolution.componentSource.trim()) {
+    reportDbRowWithoutSource(kind);
+    return null;
+  }
+  if (block.type === DB_KIND_COMPONENT_KEY) return block;
+  return {
+    ...block,
+    type: DB_KIND_COMPONENT_KEY,
+    // The compiled/sandboxed component reads the envelope, never the raw
+    // region's annotation serverData (same poison rule as bridged kinds).
+    serverData: undefined,
+    metadata: withRouteMarker(block.metadata, resolution),
+  };
+}
 
 /** Why a block landed on the generic viewer instead of a real renderer. */
 export type GenericFallbackReason =
@@ -132,6 +200,14 @@ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
 
   const def = kindRegistry.getDefinition(kind);
   const resolution = resolveComponent(kind, "web", "output");
+
+  // ── DB user-component path — db overrides bundled (ruling R6) ───────────
+  // An active `source='db'` row with a component body wins over the compiled
+  // bridge AND any bundled resolution. Checked FIRST so a user's registered
+  // component actually renders; a defective row (no source) screams and
+  // falls through to today's behavior — never un-renders.
+  const dbRouted = routeToDbComponent(block, kind, resolution);
+  if (dbRouted) return dbRouted;
 
   // ── Compiled-bridge path — trusted at bootstrap (ruling R6) ─────────────
   // A kind carrying a legacyBlockType facet ALWAYS routes: today's behavior
