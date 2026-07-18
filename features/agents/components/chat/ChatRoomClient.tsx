@@ -36,7 +36,10 @@ import {
 } from "./agent-context/buildChatContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import {
+  selectUserInputEntryExists,
+  selectUserInputText,
+} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   extractFlatText,
   selectConversationMessages,
@@ -300,10 +303,21 @@ export function ChatRoomClient({
   // in-progress draft in sessionStorage keyed to this agent's id. We apply it
   // once the launcher has created the instance entry — `setUserInputText`
   // requires `state.instanceUserInput.byConversationId[cid]` to exist.
+  // GOTCHA (fixed 2026-07-17): `liveConversationId` is a client UUID set
+  // immediately, but the input ENTRY is created by `createInstanceFull` only
+  // after the launcher's async agent fetch — and `setUserInputText` silently
+  // drops writes for missing entries. Consuming the stash before the entry
+  // exists lost every /chat/a/[agentId] draft transfer. Gate on entry
+  // existence so the effect re-runs (and only then pops the single-use stash).
+  const draftInputEntryReady = useAppSelector((state) =>
+    liveConversationId
+      ? selectUserInputEntryExists(liveConversationId)(state)
+      : false,
+  );
   const draftAppliedRef = useRef<string | null>(null);
   useEffect(() => {
     if (conversationIdProp) return; // existing conversation, not a chip target
-    if (!liveConversationId) return;
+    if (!liveConversationId || !draftInputEntryReady) return;
     if (draftAppliedRef.current === liveConversationId) return;
     const transfer = consumeChatDraftTransfer(agentId);
     if (!transfer) {
@@ -317,7 +331,13 @@ export function ChatRoomClient({
         text: transfer.text,
       }),
     );
-  }, [conversationIdProp, liveConversationId, agentId, dispatch]);
+  }, [
+    conversationIdProp,
+    liveConversationId,
+    draftInputEntryReady,
+    agentId,
+    dispatch,
+  ]);
 
   // ── Post-submit URL promotion (only on /chat/new + /chat/a/[agentId]) ─────
   // The launcher pre-creates an instance with a client UUID, but the

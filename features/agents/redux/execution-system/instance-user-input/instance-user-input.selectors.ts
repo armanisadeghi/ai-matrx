@@ -36,6 +36,18 @@ export const selectInputCharCount =
   (state: RootState): number =>
     state.instanceUserInput.byConversationId[conversationId]?.text?.length ?? 0;
 
+/**
+ * Whether the instance's input entry exists yet (created by
+ * `createInstanceFull` AFTER the launcher's async agent fetch). Writers that
+ * dispatch `setUserInputText` on a fresh conversation MUST gate on this —
+ * the reducer silently drops writes for missing entries (the draft-transfer
+ * race: consume-then-dispatch before the entry exists loses the draft).
+ */
+export const selectUserInputEntryExists =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    state.instanceUserInput.byConversationId[conversationId] !== undefined;
+
 export const selectHasUserInput =
   (conversationId: string) =>
   (state: RootState): boolean => {

@@ -10,6 +10,7 @@
  */
 
 import type { Json } from "@/types/database.types";
+import { GENERATED_CONTRACT_FAMILY_VALUES } from "../registry/schema-source-kind-tables";
 
 export interface ShapeListEntry {
   id: string;
@@ -55,12 +56,21 @@ function familyOf(metadata: Json): string | null {
   return null;
 }
 
-/** Pure merge: definition rows + active-component definition ids → entries. */
+/**
+ * Pure merge: definition rows + active-component definition ids → entries.
+ * Machine-contract kinds (`metadata.family` in agent_io / tool_io / action_io /
+ * workflow_io) are EXCLUDED — they are generated I/O contracts, not shapes a
+ * user browses, previews, or tests.
+ */
 export function buildShapeStudioList(
   defs: ShapeDefinitionRowLite[],
   activeComponentDefinitionIds: ReadonlySet<string>,
 ): ShapeListEntry[] {
   return defs
+    .filter((d) => {
+      const family = familyOf(d.metadata);
+      return family === null || !GENERATED_CONTRACT_FAMILY_VALUES.has(family);
+    })
     .map(
       (d): ShapeListEntry => ({
         id: d.id,

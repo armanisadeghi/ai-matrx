@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D60 — chat draft transfer never lands for VARIABLE-INPUT agents (2026-07-17)
+
+The `/chat/a/[agentId]` single-hop draft transfer (`chat-draft-transfer.ts`) now works for standard chat agents — the entry-existence race is fixed (ChatRoomClient gates the consume on `selectUserInputEntryExists`; before, `setUserInputText` silently dropped the write because the input entry is created only after the launcher's async agent fetch, losing every stashed draft). **Still broken for agents with launch variables/broker inputs** (repro: agent `a2525cd3` "Get Gemini Image" — stash consumed, dispatch fires, but the smart-input's message box stays empty; the plain-agent path verified working with `c50529ec`). Suspect: the variable-bearing smart input binds its message text differently from `AgentTextarea`'s `selectUserInputText`, or the instance is recreated when variables hydrate. Matters for the Shapes studio create-with-agent handoff (`features/content-ir/studio/components/NewShapeClient.tsx`) if K2's creator agent ships with launch variables. Also: the `setUserInputText` reducer's `if (!entry) return;` is a silent drop — should scream per loud-recovery doctrine.
+
 ### D59 — CRITICAL: follow-up turns must CONFIRM identity-context changes with the user (2026-07-15)
 **Very serious.** Context (`organization_id`, `project_id`, `task_id`, `scope_ids`, `source_*`, agent identity) must not silently drift between turns. Required: FE reads previous (`metadata.last_request_context` from BE) + current AppContext; if they differ, **prompt the user to confirm** before POST — only explicit user-driven actions may change context without that prompt. Today: yellow console warn at call time (`warn-request-context-drift.ts`) + BE stream warning `request_context_changed` — **neither blocks nor confirms**. Twin entry: aidream `FOUND_DEFECTS.md`. Owner: Arman (confirm UX).
 

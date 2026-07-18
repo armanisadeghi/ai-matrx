@@ -53,6 +53,21 @@ describe("buildShapeStudioList", () => {
     });
   });
 
+  it("excludes generated machine-contract families (agent_io / tool_io / action_io / workflow_io)", () => {
+    const entries = buildShapeStudioList(
+      [
+        row({ id: "1", kind: "a_out", label: "A", metadata: { family: "agent_io" } }),
+        row({ id: "2", kind: "t_out", label: "T", metadata: { family: "tool_io" } }),
+        row({ id: "3", kind: "w_out", label: "W", metadata: { family: "workflow_io" } }),
+        row({ id: "4", kind: "act", label: "Act", metadata: { family: "action_io" } }),
+        row({ id: "5", kind: "flash", label: "Flash", metadata: { family: "render_block" } }),
+        row({ id: "6", kind: "plain", label: "Plain", metadata: {} }),
+      ],
+      new Set(),
+    );
+    expect(entries.map((e) => e.kind).sort()).toEqual(["flash", "plain"]);
+  });
+
   it("treats non-object / familyless metadata as family: null", () => {
     const entries = buildShapeStudioList(
       [
