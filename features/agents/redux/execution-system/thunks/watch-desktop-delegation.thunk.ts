@@ -11,6 +11,7 @@ import { reconcilePersistedToolLifecycle } from "../active-requests/active-reque
 
 const POLL_MS = 750;
 const FAILURE_NOTICE_THRESHOLD = 8;
+const RESUME_RETRY_MS = 5_000;
 
 interface WatchState {
   callIds: Set<string>;
@@ -60,6 +61,7 @@ export const watchDesktopDelegation = (
       let hydratedAfterResolution = false;
       let consecutiveFailures = 0;
       let failureNotified = false;
+      let nextResumeAt = 0;
 
       const recordFailure = (message: string, error: unknown) => {
         consecutiveFailures += 1;
@@ -107,6 +109,7 @@ export const watchDesktopDelegation = (
           // Parallel and re-delegated calls share one request. Never hydrate or
           // resume until the server says every sibling has resolved.
           hydratedAfterResolution = false;
+          nextResumeAt = 0;
           recordSuccess();
           continue;
         }
@@ -136,6 +139,7 @@ export const watchDesktopDelegation = (
           recordSuccess();
         }
 
+        if (Date.now() < nextResumeAt) continue;
         await dispatch(resumeInstance({ conversationId, userRequestId }));
         if (state.cancelled) return;
 
@@ -146,6 +150,7 @@ export const watchDesktopDelegation = (
           // Either a sibling/re-entrant tool is now pending or another resume
           // owner still has the server claim. Re-read the ledger; do not assume
           // a fulfilled thunk means the continuation completed.
+          nextResumeAt = Date.now() + RESUME_RETRY_MS;
           continue;
         }
         if (instance.status === "error" || instance.status === "cancelled") {

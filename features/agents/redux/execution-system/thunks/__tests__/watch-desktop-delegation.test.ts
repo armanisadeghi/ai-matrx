@@ -177,7 +177,7 @@ describe("watchDesktopDelegation", () => {
 
     await jest.advanceTimersByTimeAsync(750);
     expect(loadCount).toBe(1);
-    await jest.advanceTimersByTimeAsync(750);
+    await jest.advanceTimersByTimeAsync(5_250);
     await watch;
 
     expect(resumeCount).toBe(2);
