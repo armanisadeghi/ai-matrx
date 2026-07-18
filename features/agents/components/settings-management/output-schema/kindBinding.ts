@@ -29,8 +29,10 @@ import type { OutputSchema } from "@/features/agents/types/json-schema";
 
 /**
  * Families that must never appear in the binder: generated data-only machine
- * contracts for tools / actions / workflow edges. `agent_io` stays eligible —
- * those rows ARE published agent output contracts (the proven channel).
+ * contracts for tools / actions / workflow edges. `agent_io` is NOT excluded —
+ * those rows ARE published agent output contracts (the proven channel) — but
+ * it earns no gate bypass: an agent_io row passes the same `is_active` gate
+ * as every other kind below.
  */
 const EXCLUDED_FAMILIES: ReadonlySet<string> = new Set([
   "tool_io",
@@ -43,11 +45,11 @@ const EXCLUDED_FAMILIES: ReadonlySet<string> = new Set([
  *
  *   - excluded machine-contract families (tool_io / action_io / workflow_io)
  *     never show;
- *   - `agent_io` contract kinds show (they are live agent output schemas);
- *   - display kinds with a DB row require the dual-gate `is_active` verdict
- *     (Arman's law: is_active gates render trust);
- *   - compiled-only system kinds (no DB row → no verdict) stay eligible —
- *     shipped code is the platform floor;
+ *   - kinds with a DB row — `agent_io` contracts included — require the
+ *     dual-gate `is_active` verdict (Arman's law: is_active gates trust);
+ *   - compiled-only system kinds (no DB row → usually no verdict) stay
+ *     eligible — shipped code is the platform floor — UNLESS the entry is
+ *     explicitly marked inactive;
  *   - schema-less (scalar/passthrough) kinds are noise for structured output.
  */
 export function isKindBindable(entry: KindCatalogEntry): boolean {
@@ -55,9 +57,8 @@ export function isKindBindable(entry: KindCatalogEntry): boolean {
     return false;
   }
   if (Object.keys(entry.fields).length === 0) return false;
-  if (entry.family === "agent_io") return true;
   if (entry.dbRowId !== null) return entry.isActive === true;
-  return entry.source === "system";
+  return entry.source === "system" && entry.isActive !== false;
 }
 
 /** The picker's list: bindable entries, sorted by kind slug. */

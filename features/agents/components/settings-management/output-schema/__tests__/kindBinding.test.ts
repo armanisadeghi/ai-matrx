@@ -82,9 +82,34 @@ describe("isKindBindable / listBindableKinds", () => {
     ).toBe(true);
   });
 
-  it("includes agent_io contract kinds regardless of display gating", () => {
+  it("excludes compiled-only system kinds explicitly marked inactive", () => {
+    expect(
+      isKindBindable(
+        entry({ dbRowId: null, isActive: false, source: "system" }),
+      ),
+    ).toBe(false);
+  });
+
+  it("excludes rowless non-system kinds even without an inactive verdict", () => {
+    expect(
+      isKindBindable(
+        entry({ dbRowId: null, isActive: null, source: "content_ir" }),
+      ),
+    ).toBe(false);
+  });
+
+  it("includes ACTIVE agent_io contract kinds", () => {
     expect(isKindBindable(entry({ family: "agent_io", isActive: true }))).toBe(
       true,
+    );
+  });
+
+  it("excludes agent_io contract kinds whose row is inactive (same is_active gate)", () => {
+    expect(isKindBindable(entry({ family: "agent_io", isActive: false }))).toBe(
+      false,
+    );
+    expect(isKindBindable(entry({ family: "agent_io", isActive: null }))).toBe(
+      false,
     );
   });
 
