@@ -9,6 +9,9 @@ _Last updated: 2026-07-15_
 
 ## Active (ranked — quickest wins first)
 
+0. **Deploy aidream to prod** (`bash scripts/release.sh` in aidream) — everything from the 2026-07-15 Content IR sweep (envelope producer, typed agent projections, enforcement machinery OFF, tool/action stamping) is on `main` but inert until deployed. The agent's session couldn't run it (permission classifier). After deploy: agents read the `tool_io` drift logs and bring you the evidence for the tools-first enforcement flip you ratified. Also still pending post-soak: drop `content_ir._backup_kind_example_20260715` + `_backup_kind_surface_20260715` (+ the two `matrx_orm.yaml` exclude lines).
+   _Already ratified 2026-07-15 (recorded here for the log): tools-first flips after drift evidence; `table` stays markdown-first with click-to-convert (pattern being documented); every kind gets an example; 7 candidates being registered non-breaking; the 6 gated roots stay inactive (test kinds); integration-first is the priority._
+
 ### 1. Approve/reject the 3 defect→task promotions (seconds)
 Open `FOUND_DEFECTS.md` → `## Pending Arman review` (prepared 2026-07-12): D34.2 capability fields, D45 mobile flashcard rendering, D31(d) `check:definer-grants` CI guard. Say yes/no per item in chat; the next agent moves approved ones to AGENT_TASKS.
 
