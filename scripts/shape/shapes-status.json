@@ -1,5 +1,5 @@
 {
-  "generated_for": "721-kinds+00833128f4ca",
+  "generated_for": "764-kinds+53b24a9280b6",
   "columns": [
     "definition",
     "example",
@@ -194,6 +194,34 @@
     },
     {
       "kind": "action_io_action_admin_sql_update_9c3829bd_output",
+      "is_active": true,
+      "family": "action_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "action_io_action_ai_agent_assignment_batch_5f89e4a3_input",
+      "is_active": true,
+      "family": "action_io",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "action_io_action_ai_agent_assignment_batch_5f89e4a3_output",
       "is_active": true,
       "family": "action_io",
       "assets": {
@@ -3637,6 +3665,20 @@
       }
     },
     {
+      "kind": "employee_of_the_week",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "enhanced_flashcard",
       "is_active": false,
       "family": null,
@@ -3676,6 +3718,20 @@
         "skill": "n/a",
         "content_block": "ok",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "flashcard_deck",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -4758,7 +4814,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_files_6b8436a8_fbbf_46d4_bb83_85eab389939f_54770017_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -4772,7 +4828,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_input_84351d23_d243_49f8_8c6e_cdff17df83f9_68a4df5e_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -4786,7 +4842,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_mac_c59c135e_d32f_42d3_bd79_a6f91d9edbcb_88f339f0_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -4800,7 +4856,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_media_1e9ed061_31e3_4fbf_91af_4098daf053ae_c9679622_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -4814,7 +4870,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_ner_d9cdd93e_8a56_474a_b892_365f56967a6c_b2eafe10_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -4828,7 +4884,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_shell_e29c04f3_f052_4f9a_b99c_76b0f0276523_00f51cf6_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -4842,7 +4898,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_system_b8a8fbe2_e5f8_4d47_908f_83b61a1e934b_cc320008_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -4856,7 +4912,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_web_b8e0d991_f8f7_4b28_a2b6_ca45ca5b005b_333efe32_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -4870,7 +4926,7 @@
     },
     {
       "kind": "tool_io_bundle_list_desktop_windows_a5d87063_9aa7_4fcb_a842_1fafeb42ef94_65481f4b_input",
-      "is_active": true,
+      "is_active": false,
       "family": "tool_io",
       "assets": {
         "definition": "ok",
@@ -6689,6 +6745,510 @@
       }
     },
     {
+      "kind": "tool_io_instance_create_a8dc859f_de59_44b4_8d1c_a8c5a778c0a1_0375c939_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_create_a8dc859f_de59_44b4_8d1c_a8c5a778c0a1_0375c939_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_delete_0be4bb80_869a_45f6_932f_c7a8e8b40bd2_387b880b_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_delete_0be4bb80_869a_45f6_932f_c7a8e8b40bd2_387b880b_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_get_f43d093a_fea0_4c94_bb7a_d782a564cced_ac77bf8d_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_get_f43d093a_fea0_4c94_bb7a_d782a564cced_ac77bf8d_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_list_497ab0b4_7f7a_4ada_8d05_c396c6dfc477_10314dfb_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_list_497ab0b4_7f7a_4ada_8d05_c396c6dfc477_10314dfb_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_update_fdb47179_930c_44aa_8694_3ab967454996_202c7dcf_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_instance_update_fdb47179_930c_44aa_8694_3ab967454996_202c7dcf_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_add_example_4e4784c4_e0c1_4f26_a8ca_6b49f53a328d_3d9fa8d6_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_add_example_4e4784c4_e0c1_4f26_a8ca_6b49f53a328d_3d9fa8d6_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_create_670a1fd1_081a_41bc_b5ed_36cebef459f5_0b0f4d89_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_create_670a1fd1_081a_41bc_b5ed_36cebef459f5_0b0f4d89_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_create_content_block_937fe4bf_83d5_41c8_9b4b_34b00009dcd1_4e32f3b9_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_create_content_block_937fe4bf_83d5_41c8_9b4b_34b00009dcd1_4e32f3b9_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_create_skill_1f6147fd_70f8_413f_a191_410bdd9b4063_99cc78c9_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_create_skill_1f6147fd_70f8_413f_a191_410bdd9b4063_99cc78c9_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_get_53592aa2_fc62_4bd2_923f_88a368b675c9_cdf18574_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_get_53592aa2_fc62_4bd2_923f_88a368b675c9_cdf18574_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_update_schema_d53a4021_d0b9_4cb2_ab04_dd48487d1616_19b2a03f_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kind_update_schema_d53a4021_d0b9_4cb2_ab04_dd48487d1616_19b2a03f_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_create_component_478a46af_6b15_4e88_aed7_82e9d9dc4f88_d439fb8c_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_create_component_478a46af_6b15_4e88_aed7_82e9d9dc4f88_d439fb8c_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_get_code_eeded970_e440_4624_a691_2c57e1ebe9b3_0af584bf_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_get_code_eeded970_e440_4624_a691_2c57e1ebe9b3_0af584bf_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_get_context_15fd12b9_c744_4828_93cc_b2f428ef6995_c3af2a73_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_get_context_15fd12b9_c744_4828_93cc_b2f428ef6995_c3af2a73_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_patch_code_1a136a85_7975_4301_9ae0_bc53ec8a27d6_845721cf_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_patch_code_1a136a85_7975_4301_9ae0_bc53ec8a27d6_845721cf_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_resolve_incident_11604569_c2b3_461c_8ad7_57b9f82013e8_c4641a72_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_resolve_incident_11604569_c2b3_461c_8ad7_57b9f82013e8_c4641a72_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_update_code_46f638db_48b3_449b_ad26_63fbae0333eb_534fe537_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_update_code_46f638db_48b3_449b_ad26_63fbae0333eb_534fe537_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_update_settings_f47ab968_f23b_4ccb_8c0e_738f813dce1d_4ba85fe4_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_kindcomp_update_settings_f47ab968_f23b_4ccb_8c0e_738f813dce1d_4ba85fe4_output",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
       "kind": "tool_io_knowledge_navigate_81f0241d_8218_46ae_9254_67ad0d47a1e1_e99e14ea_input",
       "is_active": true,
       "family": "tool_io",
@@ -6816,6 +7376,20 @@
     },
     {
       "kind": "tool_io_local_browser_5703e56e_c73b_41e5_b118_3c770fa48666_4d2b07fb_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_local_browser_5703e56e_c73b_41e5_b118_3c770fa48666_4d2b07fb_output",
       "is_active": true,
       "family": "tool_io",
       "assets": {
@@ -6984,6 +7558,20 @@
     },
     {
       "kind": "tool_io_local_screen_bd730c6b_9d91_4c81_a96a_a041b86a682e_584c38fa_input",
+      "is_active": true,
+      "family": "tool_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "tool_io_local_screen_bd730c6b_9d91_4c81_a96a_a041b86a682e_584c38fa_output",
       "is_active": true,
       "family": "tool_io",
       "assets": {
@@ -9027,6 +9615,20 @@
       }
     },
     {
+      "kind": "wine_tasting",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "workflow_io_control_branch_a21c7117_input",
       "is_active": true,
       "family": "workflow_io",
@@ -10173,6 +10775,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "flashcard_deck",
+      "message": "kind \"flashcard_deck\" has no content block referencing \"__kind\": \"flashcard_deck\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "map",
       "message": "kind \"map\" has no content block referencing \"__kind\": \"map\""
     },
@@ -10187,6 +10795,12 @@
       "code": "no-content-block",
       "kind": "stats",
       "message": "kind \"stats\" has no content block referencing \"__kind\": \"stats\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "action_io_action_ai_agent_assignment_batch_5f89e4a3_input",
+      "message": "kind \"action_io_action_ai_agent_assignment_batch_5f89e4a3_input\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -10215,6 +10829,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "flashcard_deck",
+      "message": "kind \"flashcard_deck\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "map",
       "message": "kind \"map\" has no render_block skill teaching it"
     },
@@ -10229,6 +10849,60 @@
       "code": "no-skill",
       "kind": "stats",
       "message": "kind \"stats\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_files_6b8436a8_fbbf_46d4_bb83_85eab389939f_54770017_input",
+      "message": "kind \"tool_io_bundle_list_desktop_files_6b8436a8_fbbf_46d4_bb83_85eab389939f_54770017_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_input_84351d23_d243_49f8_8c6e_cdff17df83f9_68a4df5e_input",
+      "message": "kind \"tool_io_bundle_list_desktop_input_84351d23_d243_49f8_8c6e_cdff17df83f9_68a4df5e_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_mac_c59c135e_d32f_42d3_bd79_a6f91d9edbcb_88f339f0_input",
+      "message": "kind \"tool_io_bundle_list_desktop_mac_c59c135e_d32f_42d3_bd79_a6f91d9edbcb_88f339f0_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_media_1e9ed061_31e3_4fbf_91af_4098daf053ae_c9679622_input",
+      "message": "kind \"tool_io_bundle_list_desktop_media_1e9ed061_31e3_4fbf_91af_4098daf053ae_c9679622_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_ner_d9cdd93e_8a56_474a_b892_365f56967a6c_b2eafe10_input",
+      "message": "kind \"tool_io_bundle_list_desktop_ner_d9cdd93e_8a56_474a_b892_365f56967a6c_b2eafe10_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_shell_e29c04f3_f052_4f9a_b99c_76b0f0276523_00f51cf6_input",
+      "message": "kind \"tool_io_bundle_list_desktop_shell_e29c04f3_f052_4f9a_b99c_76b0f0276523_00f51cf6_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_system_b8a8fbe2_e5f8_4d47_908f_83b61a1e934b_cc320008_input",
+      "message": "kind \"tool_io_bundle_list_desktop_system_b8a8fbe2_e5f8_4d47_908f_83b61a1e934b_cc320008_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_web_b8e0d991_f8f7_4b28_a2b6_ca45ca5b005b_333efe32_input",
+      "message": "kind \"tool_io_bundle_list_desktop_web_b8e0d991_f8f7_4b28_a2b6_ca45ca5b005b_333efe32_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "tool_io_bundle_list_desktop_windows_a5d87063_9aa7_4fcb_a842_1fafeb42ef94_65481f4b_input",
+      "message": "kind \"tool_io_bundle_list_desktop_windows_a5d87063_9aa7_4fcb_a842_1fafeb42ef94_65481f4b_input\" example is older than the kind definition (example 2026-07-15T23:37:04.153867+00:00 < kind 2026-07-18T20:37:57.179374+00:00) — revalidate/recapture"
     }
   ]
 }

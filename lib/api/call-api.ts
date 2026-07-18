@@ -1103,6 +1103,83 @@ export function callAgentStart(options: CallAgentStartOptions) {
   });
 }
 
+// ─── Agent assignments: durable coordinated execution ──────────────────────
+
+export type AgentAssignmentRunBody =
+  components["schemas"]["AgentAssignmentRunRequest"];
+export type AgentAssignmentBatchResult =
+  components["schemas"]["AssignmentBatchResult"];
+
+export interface CallAgentAssignmentsOptions {
+  body: AgentAssignmentRunBody;
+  signal?: AbortSignal;
+  scopeOverrides?: Partial<CallScope>;
+  onStreamEvent?: (event: TypedStreamEvent) => void;
+  onStreamComplete?: (
+    requestId: string | null,
+    conversationId: string | null,
+  ) => void;
+  onStreamError?: (error: ApiCallError) => void;
+  _testOverrides?: TestOverrides;
+}
+
+export function callAgentAssignments(options: CallAgentAssignmentsOptions) {
+  return callApi({
+    path: "/ai/agent-assignments",
+    method: "POST",
+    body: options.body,
+    stream: true,
+    signal: options.signal,
+    scopeOverrides: options.scopeOverrides,
+    onStreamEvent: options.onStreamEvent,
+    onStreamComplete: options.onStreamComplete,
+    onStreamError: options.onStreamError,
+    _testOverrides: options._testOverrides,
+  });
+}
+
+export function callAgentAssignmentSession(
+  sessionId: string,
+): ThunkAction<
+  Promise<ApiCallResult<AgentAssignmentBatchResult>>,
+  RootState,
+  unknown,
+  Action
+> {
+  return callApi({
+    path: "/ai/agent-assignments/sessions/{session_id}",
+    method: "GET",
+    pathParams: { session_id: sessionId },
+    stream: false,
+  }) as ThunkAction<
+    Promise<ApiCallResult<AgentAssignmentBatchResult>>,
+    RootState,
+    unknown,
+    Action
+  >;
+}
+
+export function callCancelAgentAssignmentSession(
+  sessionId: string,
+): ThunkAction<
+  Promise<ApiCallResult<AgentAssignmentBatchResult>>,
+  RootState,
+  unknown,
+  Action
+> {
+  return callApi({
+    path: "/ai/agent-assignments/sessions/{session_id}/cancel",
+    method: "POST",
+    pathParams: { session_id: sessionId },
+    stream: false,
+  }) as ThunkAction<
+    Promise<ApiCallResult<AgentAssignmentBatchResult>>,
+    RootState,
+    unknown,
+    Action
+  >;
+}
+
 // ─── Agent Blocks: Start new block-streaming conversation ────────────────────
 
 export interface CallAgentBlocksStartOptions {

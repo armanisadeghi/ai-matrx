@@ -77,6 +77,7 @@ import urlSyncReducer from "./slices/urlSyncSlice";
 
 import agentCacheReducer from "./slices/agentCacheSlice";
 import agentDefinitionReducer from "@/features/agents/redux/agent-definition/slice";
+import { agentAssignmentsReducer } from "@/features/agents/redux/agent-assignments/agent-assignments.slice";
 import agentComparisonReducer from "@/features/agent-comparison/redux/battleSlice";
 import agentComparisonSettingsReducer from "@/features/agent-comparison/modes/settings/redux/slice";
 import agentComparisonSystemPromptReducer from "@/features/agent-comparison/modes/system-prompt/redux/slice";
@@ -275,6 +276,7 @@ export const slimReducerMap = {
 
   // NEW AGENTS SYSTEM =======================================================
   agentDefinition: agentDefinitionReducer,
+  agentAssignments: agentAssignmentsReducer,
   conversationList: conversationListReducer,
   conversationHistory: conversationHistoryReducer,
   agentShortcut: agentShortcutReducer,

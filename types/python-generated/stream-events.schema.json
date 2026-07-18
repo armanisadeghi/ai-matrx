@@ -1647,6 +1647,52 @@
     "title": "PersistenceResult",
     "type": "object"
   },
+  "AssignmentProgressData": {
+    "additionalProperties": false,
+    "description": "Durable coordinated-assignment progress for API and workflow UIs.",
+    "properties": {
+      "type": {
+        "const": "assignment_progress",
+        "default": "assignment_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      },
+      "completed": {
+        "minimum": 0,
+        "title": "Completed",
+        "type": "integer"
+      },
+      "total": {
+        "minimum": 0,
+        "title": "Total",
+        "type": "integer"
+      },
+      "status": {
+        "enum": [
+          "pending",
+          "running",
+          "completed",
+          "partially_failed",
+          "failed",
+          "cancelled"
+        ],
+        "title": "Status",
+        "type": "string"
+      }
+    },
+    "required": [
+      "session_id",
+      "completed",
+      "total",
+      "status"
+    ],
+    "title": "AssignmentProgressData",
+    "type": "object"
+  },
   "ConversationIdData": {
     "additionalProperties": false,
     "properties": {
@@ -8192,23 +8238,14 @@
     "type": "object"
   },
   "ToolCompletedData": {
+    "$defs": {
+      "JsonValue": {}
+    },
     "additionalProperties": false,
     "properties": {
       "result": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "additionalProperties": true,
-            "type": "object"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "default": null,
-        "title": "Result"
+        "$ref": "#/$defs/JsonValue",
+        "default": null
       }
     },
     "title": "ToolCompletedData",

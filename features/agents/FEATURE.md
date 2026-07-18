@@ -102,6 +102,9 @@ Find every place an agent is used and detect when a usage no longer matches the 
 **API endpoints**
 
 - `POST /ai/agents/{id}` — first turn of a new conversation (agent mode)
+- `POST /ai/agent-assignments` — start/resume a durable coordinated variable batch
+- `GET /ai/agent-assignments/sessions/{id}` — read durable batch progress/results
+- `POST /ai/agent-assignments/sessions/{id}/cancel` — cancel unfinished batch items
 - `POST /ai/conversations/{conversationId}` — subsequent turns
 - `POST /ai/chat` — ephemeral turns (no DB persistence)
 - `POST /prompts` — Builder-mode raw request
@@ -182,6 +185,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - [`docs/AGENT_VERSIONING.md`](./docs/AGENT_VERSIONING.md) — version semantics + pin-by-version for Shortcuts/Apps
 - [`docs/AGENT_INVOCATION_LIFECYCLE.md`](./docs/AGENT_INVOCATION_LIFECYCLE.md) — endpoint routing, Builder vs Runner payloads, ephemeral branch
 - [`docs/AGENT_ORCHESTRATION.md`](./docs/AGENT_ORCHESTRATION.md) — maxIterations, retries, self-correction, state persistence
+- [`docs/AGENT_ASSIGNMENTS.md`](./docs/AGENT_ASSIGNMENTS.md) — secure random variables, coordinated batch plans, durable API sessions, and demo UI
 - [`docs/AGENT_SETS.md`](./docs/AGENT_SETS.md) — Agent Sets (Orchestrators): agent→agent M2M on `platform.associations` (no `agent_set` table), drag-drop React Flow set builder — + [`docs/AGENT_SETS_ROADMAP.md`](./docs/AGENT_SETS_ROADMAP.md) (path to full runtime delegation)
 - [`docs/STREAMING_SYSTEM.md`](./docs/STREAMING_SYSTEM.md) — canonical NDJSON streaming contract (anchor for the whole app)
 - **Find Usages & Drift** — section above + the Agents admin map at `/agents/admin`; reports module at [`features/reports/FEATURE.md`](../reports/FEATURE.md)
@@ -224,6 +228,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-18` — Added direct typed APIs and `/demos/agent-assignments` for secure single-variable random assignment plus durable paired, independent-random, and Cartesian agent batches with progress, resume, cancellation, and Content IR-backed contracts.
 - `2026-07-17` — Made conversation provenance release-safe: `SourceFeature` now has an exhaustive runtime registry, stored unknowns cross one loud branded boundary instead of `as never`, and `release.sh` blocks on a repository-wide literal `source_app` / `source_feature` audit.
 - `2026-07-17` — Replaced the oversized Agent Resources association browser with the Variables-style compact row, canonical resource picker, batch-add mode, and Stored Files chips/details; confirmed the manager has one Builder mount point.
 - `2026-07-17` — Fixed the shared Creator Panel Payload tab crash (`Cannot read properties of undefined (reading 'assistant')`): its memoized request-preview selector now includes `userPreferences`, matching `assembleRequest`'s USER-layer directive-policy dependency. Added focused regression coverage for default and explicit policies.
@@ -381,6 +386,7 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-07-18` — **Coordinated assignment API and demo.** Added strict generated API and stream types, RTK-managed batch state, durable polling/resume/cancel behavior, and `/demos/agent-assignments` covering paired rows, random batches, Cartesian enumeration, and the normal single-random marker path. See `docs/AGENT_ASSIGNMENTS.md`.
 - `2026-07-18` — **Random automatic assignment for choice variables.** Agent Builder can opt a static-option or Structured List variable into `assignment.random`; every surface using `VariableInputComponent` gains an “Assign randomly” control and sends the exact typed marker instead of preselecting in the browser. Manual Builder requests also carry live `variable_definitions`, so unsaved option changes are authoritative for tests. Human-readable displays render “Random on run.” Aidream validates opt-in and option source, chooses with `secrets.choice`, and routes Structured List results through the existing secret-safe picklist resolver.
 - `2026-07-17` — **Smart Input can attach live Context Values.** `ResourcePickerMenu → Context Values` now hosts the canonical narrow Drill Deck, where organization/type/scope rows navigate and only context-item leaves select. Each selected `(scope_id, context_item_id)` cell becomes a compact Context value attachment backed by the canonical `context_value` Matrx reference fence; aidream resolves the live cell on every send rather than receiving a stale snapshot. This stays on the supported text/fence path instead of adopting the unfinished `input_context` structured block.
 - `2026-07-17` — **`AgentFlexiblePanel` default size matches `AgentFullModal`.** Initial window is now `768×85vh` (was `500×800`) so `flexible-panel` launches feel equivalent to the old full modal; mins raised to `480×320`.

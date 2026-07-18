@@ -1379,6 +1379,129 @@
         }
       }
     },
+    "/ai/agent-assignments": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Run Assignments",
+        "operationId": "run_assignments_ai_agent_assignments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentAssignmentRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/agent-assignments/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get Session",
+        "operationId": "get_session_ai_agent_assignments_sessions__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentBatchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/agent-assignments/sessions/{session_id}/cancel": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Cancel Session",
+        "operationId": "cancel_session_ai_agent_assignments_sessions__session_id__cancel_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentBatchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/mock-stream/{scenario}": {
       "post": {
         "tags": [
@@ -12590,6 +12713,27 @@
         }
       }
     },
+    "/admin/cx-explorer/attribution-registry": {
+      "get": {
+        "tags": [
+          "Admin / CX Explorer"
+        ],
+        "summary": "Get Attribution Registry",
+        "operationId": "get_attribution_registry_admin_cx_explorer_attribution_registry_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CxAttributionRegistry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/cx-explorer/facets": {
       "get": {
         "tags": [
@@ -12694,10 +12838,10 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 100,
+              "maximum": 500,
               "minimum": 1,
               "description": "Max entries per facet axis",
-              "default": 20,
+              "default": 100,
               "title": "Facet Limit"
             },
             "description": "Max entries per facet axis"
@@ -12742,6 +12886,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -40590,6 +40794,125 @@
         ],
         "title": "AdminSearchResponse"
       },
+      "AgentAssignmentRunRequest": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentStartStrictInput"
+          },
+          "plan": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CoordinatedRowsPlan"
+              },
+              {
+                "$ref": "#/components/schemas/IndependentRandomPlan"
+              },
+              {
+                "$ref": "#/components/schemas/CartesianPlan"
+              }
+            ],
+            "title": "Plan",
+            "discriminator": {
+              "propertyName": "strategy",
+              "mapping": {
+                "cartesian": "#/components/schemas/CartesianPlan",
+                "coordinated_rows": "#/components/schemas/CoordinatedRowsPlan",
+                "independent_random": "#/components/schemas/IndependentRandomPlan"
+              }
+            }
+          },
+          "session_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Key",
+            "description": "Optional caller-owned idempotency key. Workflow execution identity is used when omitted, so a node retry resumes the same session."
+          },
+          "max_attempts": {
+            "type": "integer",
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Max Attempts",
+            "default": 3
+          },
+          "lease_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 30,
+            "title": "Lease Seconds",
+            "default": 900
+          },
+          "max_concurrency": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Max Concurrency",
+            "default": 5
+          },
+          "retry_delay_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 0,
+            "title": "Retry Delay Seconds",
+            "default": 0
+          },
+          "metadata": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent",
+          "plan"
+        ],
+        "title": "AgentAssignmentRunRequest",
+        "description": "HTTP form of the workflow batch input with client-injected scope support."
+      },
       "AgentBlocksStartRequest": {
         "properties": {
           "user_input": {
@@ -41609,6 +41932,306 @@
         },
         "type": "object",
         "title": "AgentStartRequest"
+      },
+      "AgentStartStrictInput": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Agent Id",
+            "description": "UUID of the agent (or agent version, when is_version=true).",
+            "ui:widget": "agent_picker"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version",
+            "description": "If true, `agent_id` is treated as a pinned version_id instead of a current-agent id.",
+            "default": false,
+            "ui:widget": "toggle"
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input",
+            "description": "User message to append before running. Accepts a string or a list of content parts.",
+            "ui:multiline_rows": 3,
+            "ui:widget": "textarea"
+          },
+          "variables": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Variables",
+            "description": "Agent variable overrides for this invocation.",
+            "ui:widget": "json"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Overrides",
+            "description": "LLM parameter overrides (temperature, max_tokens, model, ...). Validated against LLMParams by the host's AgentStartRequest on entry.",
+            "ui:widget": "json"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "Continue an existing conversation. Leave blank for a fresh thread."
+          },
+          "is_new": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is New",
+            "description": "Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing), None = default behavior."
+          },
+          "ide_state": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ide State",
+            "description": "IDE / editor state from the caller (vsc_* variables, active file, selection, diagnostics, workspace, git). Validated against the host's IdeState model on entry.",
+            "ui:widget": "json"
+          },
+          "context": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Context",
+            "description": "Deferred context objects keyed by name (context / context_patch payloads).",
+            "ui:widget": "json"
+          },
+          "writable_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable Variables",
+            "description": "Variables the agent is allowed to mutate at runtime via context_patch."
+          },
+          "allow_context_create": {
+            "type": "boolean",
+            "title": "Allow Context Create",
+            "description": "Permit the agent to spawn new context objects via the context tool's create action.",
+            "default": false
+          },
+          "tools": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "Additive ToolSpec list merged into the agent's resolved tool set. Each item is {kind: 'registered'|'inline'|'agent', ...}; validated against the host's ToolSpec union on entry.",
+            "ui:widget": "json"
+          },
+          "tools_replace": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools Replace",
+            "description": "When set, this list becomes the agent's ENTIRE tool set for the turn — capability defaults and the agent's own declared tools are skipped. Same ToolSpec item shape as `tools`.",
+            "ui:widget": "json"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature"
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "default": true
+          },
+          "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "default": false
+          },
+          "block_mode": {
+            "type": "boolean",
+            "title": "Block Mode",
+            "default": false
+          },
+          "snapshot": {
+            "type": "boolean",
+            "title": "Snapshot",
+            "default": false
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory",
+            "description": "True = enable OM and persist on conversation; False = disable and persist; None = inherit persisted state."
+          },
+          "memory_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Model"
+          },
+          "memory_scope": {
+            "type": "string",
+            "title": "Memory Scope",
+            "default": "thread"
+          },
+          "cache_bypass": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Bypass",
+            "description": "Per-call cache invalidation flags ({conversation, agent, tools, models}). Validated against the host's CacheBypass model on entry.",
+            "ui:widget": "json"
+          },
+          "max_iterations": {
+            "type": "integer",
+            "maximum": 500,
+            "minimum": 1,
+            "title": "Max Iterations",
+            "default": 100
+          },
+          "max_retries_per_iteration": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Max Retries Per Iteration",
+            "default": 2
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent_id"
+        ],
+        "title": "AgentStartStrictInput",
+        "description": "Workflow-side request body for the ``ai.agent.start`` action.\n\nField names are kept identical to ``aidream.api.routers.agents.AgentStartRequest``\nso the action's input form is a 1:1 mirror of the API contract. Types\nthat live in the host application (``IdeState``, ``CacheBypass``) are\naccepted as ``dict`` and validated by the host-injected request class\non the boundary."
       },
       "AgentSummary": {
         "properties": {
@@ -44865,6 +45488,315 @@
         ],
         "title": "AssetVariant"
       },
+      "AssignmentBatchResult": {
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/AssignmentSessionSummary"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentItemResult"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session",
+          "items"
+        ],
+        "title": "AssignmentBatchResult"
+      },
+      "AssignmentError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Message"
+          },
+          "retryable": {
+            "type": "boolean",
+            "title": "Retryable"
+          },
+          "details": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "title": "AssignmentError"
+      },
+      "AssignmentItemResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "ordinal": {
+            "type": "integer",
+            "title": "Ordinal"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentItemStatus"
+          },
+          "values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Values"
+          },
+          "output": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "output_kind_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind Version"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "runtime_execution_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime Execution Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssignmentError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "ordinal",
+          "key",
+          "status",
+          "values"
+        ],
+        "title": "AssignmentItemResult"
+      },
+      "AssignmentItemStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "leased",
+          "running",
+          "completed",
+          "retryable_failed",
+          "terminal_failed",
+          "cancelled"
+        ],
+        "title": "AssignmentItemStatus"
+      },
+      "AssignmentOrder": {
+        "type": "string",
+        "enum": [
+          "declared",
+          "random"
+        ],
+        "title": "AssignmentOrder"
+      },
+      "AssignmentRow": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Values"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "values"
+        ],
+        "title": "AssignmentRow"
+      },
+      "AssignmentSessionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "running",
+          "completed",
+          "partially_failed",
+          "failed",
+          "cancelled"
+        ],
+        "title": "AssignmentSessionStatus"
+      },
+      "AssignmentSessionSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key"
+          },
+          "plan_fingerprint": {
+            "type": "string",
+            "title": "Plan Fingerprint"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentSessionStatus"
+          },
+          "total_items": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Total Items"
+          },
+          "pending_items": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Pending Items"
+          },
+          "running_items": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Running Items"
+          },
+          "completed_items": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Completed Items"
+          },
+          "failed_items": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Failed Items"
+          },
+          "cancelled_items": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Cancelled Items"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "idempotency_key",
+          "plan_fingerprint",
+          "status",
+          "total_items",
+          "pending_items",
+          "running_items",
+          "completed_items",
+          "failed_items",
+          "cancelled_items",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AssignmentSessionSummary"
+      },
+      "AssignmentUniqueness": {
+        "type": "string",
+        "enum": [
+          "allow_repeats",
+          "without_replacement"
+        ],
+        "title": "AssignmentUniqueness"
+      },
       "AudioStyle": {
         "type": "string",
         "enum": [
@@ -47680,6 +48612,50 @@
         ],
         "title": "CancelRunResponse"
       },
+      "CartesianPlan": {
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "const": "cartesian",
+            "title": "Strategy",
+            "default": "cartesian"
+          },
+          "variables": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Variables"
+          },
+          "order": {
+            "$ref": "#/components/schemas/AssignmentOrder",
+            "default": "declared"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100000,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "variables"
+        ],
+        "title": "CartesianPlan"
+      },
       "CatalogEntryResponse": {
         "properties": {
           "id": {
@@ -49573,6 +50549,21 @@
               }
             ],
             "title": "Variables"
+          },
+          "variable_definitions": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variable Definitions"
           },
           "ide_state": {
             "anyOf": [
@@ -53068,6 +54059,46 @@
         "title": "ConversationRecord",
         "description": "Conversation row as returned by ``CxConversation.to_dict()``.\n\nORM ``to_dict`` projections evolve with the schema (status / metadata /\nflags), so ``extra=\"allow\"`` keeps the wire shape backward-compatible.\n``user_id`` mirrors ``created_by`` for clients not yet on the cutover."
       },
+      "CoordinatedRowsPlan": {
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "const": "coordinated_rows",
+            "title": "Strategy",
+            "default": "coordinated_rows"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentRow"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Rows"
+          },
+          "order": {
+            "$ref": "#/components/schemas/AssignmentOrder",
+            "default": "declared"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rows"
+        ],
+        "title": "CoordinatedRowsPlan"
+      },
       "CopyFileRequest": {
         "properties": {
           "target_path": {
@@ -54251,6 +55282,39 @@
         "type": "object",
         "title": "CustomToolInputSchema"
       },
+      "CxAttributionRegistry": {
+        "properties": {
+          "source_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Apps"
+          },
+          "source_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Features"
+          },
+          "source_feature_patterns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Feature Patterns"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_apps",
+          "source_features",
+          "source_feature_patterns"
+        ],
+        "title": "CxAttributionRegistry"
+      },
       "CxExplorerFacetEntry": {
         "properties": {
           "value": {
@@ -54290,6 +55354,14 @@
             "type": "array",
             "title": "Source App",
             "description": "Distinct (source_app, count). Drives the app filter."
+          },
+          "source_feature": {
+            "items": {
+              "$ref": "#/components/schemas/CxExplorerFacetEntry"
+            },
+            "type": "array",
+            "title": "Source Feature",
+            "description": "Distinct (source_feature, count). Drives the searchable feature filter."
           }
         },
         "additionalProperties": false,
@@ -54297,7 +55369,8 @@
         "required": [
           "totals",
           "status",
-          "source_app"
+          "source_app",
+          "source_feature"
         ],
         "title": "CxExplorerFacets"
       },
@@ -56222,6 +57295,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -65010,6 +66138,44 @@
           "status"
         ],
         "title": "InboxMutationResponse"
+      },
+      "IndependentRandomPlan": {
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "const": "independent_random",
+            "title": "Strategy",
+            "default": "independent_random"
+          },
+          "variables": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Variables"
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Count"
+          },
+          "uniqueness": {
+            "$ref": "#/components/schemas/AssignmentUniqueness",
+            "default": "allow_repeats"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "variables",
+          "count"
+        ],
+        "title": "IndependentRandomPlan"
       },
       "IndexRepositoryResponse": {
         "properties": {
@@ -81509,6 +82675,16 @@
             "title": "Root Path",
             "description": "Workspace root inside the sandbox",
             "default": "/home/agent"
+          },
+          "target_kind": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "local_machine"
+            ],
+            "title": "Target Kind",
+            "description": "Semantic filesystem namespace. This is explicit so routing never guesses the target OS or machine kind from path syntax.",
+            "default": "sandbox"
           }
         },
         "type": "object",
@@ -91781,6 +92957,19 @@
         ],
         "title": "ValidationResult"
       },
+      "VariableAssignmentSpec": {
+        "properties": {
+          "random": {
+            "type": "boolean",
+            "title": "Random",
+            "description": "Allow callers to request a server-side random option assignment.",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "VariableAssignmentSpec"
+      },
       "VariableComponentSpec": {
         "properties": {
           "type": {
@@ -91866,6 +93055,17 @@
             "title": "Step",
             "description": "Step for number / slider."
           },
+          "structured_list": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PicklistBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Bind the options to a user structured list."
+          },
           "picklist": {
             "anyOf": [
               {
@@ -91875,7 +93075,18 @@
                 "type": "null"
               }
             ],
-            "description": "Bind the options to a user picklist."
+            "description": "Legacy read-only alias for structured_list."
+          },
+          "assignment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VariableAssignmentSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Server-side automatic-assignment strategies enabled here."
           }
         },
         "additionalProperties": true,

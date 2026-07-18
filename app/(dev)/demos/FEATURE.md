@@ -38,6 +38,9 @@ competing with the one persistent shell header.
 
 ## Change log
 
+- 2026-07-18 — Added `/demos/agent-assignments`, an API-backed UI for secure
+  single random variables and durable coordinated, random, and Cartesian agent
+  batches with progress, resume, cancellation, and result inspection.
 - 2026-07-16 — Added one scope-style, shell-injected breadcrumb header for the complete `/demos/**` tree. Every breadcrumb level exposes filesystem-derived sibling routes.
 - 2026-07-15 — Root `/demos` uses recursive `RouteIndexPage`; removed legacy section and `/demo` redirects; `general` basePath → `/demos/general`.
 - 2026-07-03 — Doc added; route-discovery wired for agents, blocks, scopes, sync-demo, and nested test layouts.

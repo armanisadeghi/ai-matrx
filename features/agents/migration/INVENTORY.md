@@ -181,6 +181,7 @@ Prompt-adjacent surfaces discovered during later phases that are **out of the cu
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-18 | codex | Added the agent-native coordinated assignment API and `/demos/agent-assignments` UI. It uses ordinary agent execution and adds no legacy prompt surface or migration boundary. |
 | 2026-07-17 | codex | Added the agent-native Smart Input Context Values attachment flow through the canonical Resource Picker and Matrx reference-fence pipeline. No legacy prompt surface or migration boundary was added. |
 | 2026-07-15 | codex | Retired the isolated legacy development voice-assistant/debate provider actions and redirected their demo routes to `/voice/playground`; no agent migration boundary or active recipe conversion was introduced. |
 | 2026-07-15 | codex | D31 audit found two surviving legacy-named prompt-app RPCs backed by canonical `app.definition`/`agent.definition`; added them to the Phase-19 inventory and hardened their visibility/editor boundaries without extending the legacy system. |

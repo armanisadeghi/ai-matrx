@@ -375,6 +375,14 @@ export interface DataPayload {
   type: string;
 }
 
+export interface AssignmentProgressData {
+  type?: "assignment_progress";
+  session_id: string;
+  completed: number;
+  total: number;
+  status: "pending" | "running" | "completed" | "partially_failed" | "failed" | "cancelled";
+}
+
 export interface AudioOutputData {
   type?: "audio_output";
   url: string;
@@ -1350,6 +1358,7 @@ export interface WorkflowStepData {
 }
 
 export type TypedDataPayload =
+  | AssignmentProgressData
   | AudioOutputData
   | AudioStreamChunkData
   | AudioStreamEndData
@@ -1677,7 +1686,7 @@ export interface ToolResultPreviewData {
 }
 
 export interface ToolCompletedData {
-  result?: string | Record<string, unknown> | null;
+  result?: JsonValue;
 }
 
 export interface ToolErrorData {
@@ -1762,7 +1771,7 @@ export interface ToolResultPreviewToolEvent {
 }
 
 export interface ToolCompletedData {
-  result?: string | Record<string, unknown> | null;
+  result?: JsonValue;
 }
 
 export interface ToolCompletedToolEvent {

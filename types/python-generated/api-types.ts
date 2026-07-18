@@ -704,6 +704,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/agent-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Assignments */
+        post: operations["run_assignments_ai_agent_assignments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/agent-assignments/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session */
+        get: operations["get_session_ai_agent_assignments_sessions__session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/agent-assignments/sessions/{session_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Session */
+        post: operations["cancel_session_ai_agent_assignments_sessions__session_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/mock-stream/{scenario}": {
         parameters: {
             query?: never;
@@ -4834,6 +4885,23 @@ export interface paths {
         patch: operations["update_tool_admin_tools__name__patch"];
         trace?: never;
     };
+    "/admin/cx-explorer/attribution-registry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Attribution Registry */
+        get: operations["get_attribution_registry_admin_cx_explorer_attribution_registry_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/cx-explorer/facets": {
         parameters: {
             query?: never;
@@ -4865,6 +4933,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14627,6 +14719,50 @@ export interface components {
             /** Latency Ms */
             latency_ms: number;
         };
+        /**
+         * AgentAssignmentRunRequest
+         * @description HTTP form of the workflow batch input with client-injected scope support.
+         */
+        AgentAssignmentRunRequest: {
+            agent: components["schemas"]["AgentStartStrictInput"];
+            /** Plan */
+            plan: components["schemas"]["CoordinatedRowsPlan"] | components["schemas"]["IndependentRandomPlan"] | components["schemas"]["CartesianPlan"];
+            /**
+             * Session Key
+             * @description Optional caller-owned idempotency key. Workflow execution identity is used when omitted, so a node retry resumes the same session.
+             */
+            session_key?: string | null;
+            /**
+             * Max Attempts
+             * @default 3
+             */
+            max_attempts?: number;
+            /**
+             * Lease Seconds
+             * @default 900
+             */
+            lease_seconds?: number;
+            /**
+             * Max Concurrency
+             * @default 5
+             */
+            max_concurrency?: number;
+            /**
+             * Retry Delay Seconds
+             * @default 0
+             */
+            retry_delay_seconds?: number;
+            /** Metadata */
+            metadata?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+        };
         /** AgentBlocksStartRequest */
         AgentBlocksStartRequest: {
             /** User Input */
@@ -15040,6 +15176,158 @@ export interface components {
             skill_config?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * AgentStartStrictInput
+         * @description Workflow-side request body for the ``ai.agent.start`` action.
+         *
+         *     Field names are kept identical to ``aidream.api.routers.agents.AgentStartRequest``
+         *     so the action's input form is a 1:1 mirror of the API contract. Types
+         *     that live in the host application (``IdeState``, ``CacheBypass``) are
+         *     accepted as ``dict`` and validated by the host-injected request class
+         *     on the boundary.
+         */
+        AgentStartStrictInput: {
+            /**
+             * Agent Id
+             * @description UUID of the agent (or agent version, when is_version=true).
+             */
+            agent_id: string;
+            /**
+             * Is Version
+             * @description If true, `agent_id` is treated as a pinned version_id instead of a current-agent id.
+             * @default false
+             */
+            is_version?: boolean;
+            /**
+             * User Input
+             * @description User message to append before running. Accepts a string or a list of content parts.
+             */
+            user_input?: string | {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+            /**
+             * Variables
+             * @description Agent variable overrides for this invocation.
+             */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Config Overrides
+             * @description LLM parameter overrides (temperature, max_tokens, model, ...). Validated against LLMParams by the host's AgentStartRequest on entry.
+             */
+            config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Conversation Id
+             * @description Continue an existing conversation. Leave blank for a fresh thread.
+             */
+            conversation_id?: string | null;
+            /**
+             * Is New
+             * @description Explicit assertion about whether this is a new conversation. True = create new (409 if id already exists), False = continue (404 if id missing), None = default behavior.
+             */
+            is_new?: boolean | null;
+            /**
+             * Ide State
+             * @description IDE / editor state from the caller (vsc_* variables, active file, selection, diagnostics, workspace, git). Validated against the host's IdeState model on entry.
+             */
+            ide_state?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Context
+             * @description Deferred context objects keyed by name (context / context_patch payloads).
+             */
+            context?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Writable Variables
+             * @description Variables the agent is allowed to mutate at runtime via context_patch.
+             */
+            writable_variables?: string[];
+            /**
+             * Allow Context Create
+             * @description Permit the agent to spawn new context objects via the context tool's create action.
+             * @default false
+             */
+            allow_context_create?: boolean;
+            /**
+             * Tools
+             * @description Additive ToolSpec list merged into the agent's resolved tool set. Each item is {kind: 'registered'|'inline'|'agent', ...}; validated against the host's ToolSpec union on entry.
+             */
+            tools?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /**
+             * Tools Replace
+             * @description When set, this list becomes the agent's ENTIRE tool set for the turn — capability defaults and the agent's own declared tools are skipped. Same ToolSpec item shape as `tools`.
+             */
+            tools_replace?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @default true
+             */
+            store?: boolean;
+            /**
+             * Debug
+             * @default false
+             */
+            debug?: boolean;
+            /**
+             * Block Mode
+             * @default false
+             */
+            block_mode?: boolean;
+            /**
+             * Snapshot
+             * @default false
+             */
+            snapshot?: boolean;
+            /**
+             * Memory
+             * @description True = enable OM and persist on conversation; False = disable and persist; None = inherit persisted state.
+             */
+            memory?: boolean | null;
+            /** Memory Model */
+            memory_model?: string | null;
+            /**
+             * Memory Scope
+             * @default thread
+             */
+            memory_scope?: string;
+            /**
+             * Cache Bypass
+             * @description Per-call cache invalidation flags ({conversation, agent, tools, models}). Validated against the host's CacheBypass model on entry.
+             */
+            cache_bypass?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Max Iterations
+             * @default 100
+             */
+            max_iterations?: number;
+            /**
+             * Max Retries Per Iteration
+             * @default 2
+             */
+            max_retries_per_iteration?: number;
         };
         /**
          * AgentSummary
@@ -16305,6 +16593,116 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
         };
+        /** AssignmentBatchResult */
+        AssignmentBatchResult: {
+            session: components["schemas"]["AssignmentSessionSummary"];
+            /** Items */
+            items: components["schemas"]["AssignmentItemResult"][];
+        };
+        /** AssignmentError */
+        AssignmentError: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Retryable */
+            retryable: boolean;
+            /** Details */
+            details?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** AssignmentItemResult */
+        AssignmentItemResult: {
+            /** Id */
+            id: string;
+            /** Ordinal */
+            ordinal: number;
+            /** Key */
+            key: string;
+            status: components["schemas"]["AssignmentItemStatus"];
+            /** Values */
+            values: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            output?: components["schemas"]["JsonValue"];
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Output Kind Version */
+            output_kind_version?: number | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Runtime Execution Id */
+            runtime_execution_id?: string | null;
+            error?: components["schemas"]["AssignmentError"] | null;
+        };
+        /**
+         * AssignmentItemStatus
+         * @enum {string}
+         */
+        AssignmentItemStatus: "pending" | "leased" | "running" | "completed" | "retryable_failed" | "terminal_failed" | "cancelled";
+        /**
+         * AssignmentOrder
+         * @enum {string}
+         */
+        AssignmentOrder: "declared" | "random";
+        /** AssignmentRow */
+        AssignmentRow: {
+            /** Key */
+            key: string;
+            /** Values */
+            values: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Metadata */
+            metadata?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /**
+         * AssignmentSessionStatus
+         * @enum {string}
+         */
+        AssignmentSessionStatus: "pending" | "running" | "completed" | "partially_failed" | "failed" | "cancelled";
+        /** AssignmentSessionSummary */
+        AssignmentSessionSummary: {
+            /** Id */
+            id: string;
+            /** Idempotency Key */
+            idempotency_key: string;
+            /** Plan Fingerprint */
+            plan_fingerprint: string;
+            status: components["schemas"]["AssignmentSessionStatus"];
+            /** Total Items */
+            total_items: number;
+            /** Pending Items */
+            pending_items: number;
+            /** Running Items */
+            running_items: number;
+            /** Completed Items */
+            completed_items: number;
+            /** Failed Items */
+            failed_items: number;
+            /** Cancelled Items */
+            cancelled_items: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Completed At */
+            completed_at?: string | null;
+        };
+        /**
+         * AssignmentUniqueness
+         * @enum {string}
+         */
+        AssignmentUniqueness: "allow_repeats" | "without_replacement";
         /**
          * AudioStyle
          * @enum {string}
@@ -17416,6 +17814,22 @@ export interface components {
             /** Task Cancelled */
             task_cancelled: boolean;
         };
+        /** CartesianPlan */
+        CartesianPlan: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            strategy: "cartesian";
+            /** Variables */
+            variables: {
+                [key: string]: components["schemas"]["JsonValue"][];
+            };
+            /** @default declared */
+            order?: components["schemas"]["AssignmentOrder"];
+            /** Limit */
+            limit?: number | null;
+        };
         /** CatalogEntryResponse */
         CatalogEntryResponse: {
             /** Id */
@@ -17864,6 +18278,10 @@ export interface components {
             variables?: {
                 [key: string]: unknown;
             } | null;
+            /** Variable Definitions */
+            variable_definitions?: {
+                [key: string]: unknown;
+            }[] | null;
             ide_state?: components["schemas"]["IdeState"] | null;
             sandbox?: components["schemas"]["SandboxBindingRequest"] | null;
             /**
@@ -19072,6 +19490,20 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** CoordinatedRowsPlan */
+        CoordinatedRowsPlan: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            strategy: "coordinated_rows";
+            /** Rows */
+            rows: components["schemas"]["AssignmentRow"][];
+            /** @default declared */
+            order?: components["schemas"]["AssignmentOrder"];
+            /** Limit */
+            limit?: number | null;
+        };
         /** CopyFileRequest */
         CopyFileRequest: {
             /**
@@ -19567,6 +19999,15 @@ export interface components {
             /** Required */
             required?: string[];
         };
+        /** CxAttributionRegistry */
+        CxAttributionRegistry: {
+            /** Source Apps */
+            source_apps: string[];
+            /** Source Features */
+            source_features: string[];
+            /** Source Feature Patterns */
+            source_feature_patterns: string[];
+        };
         /** CxExplorerFacetEntry */
         CxExplorerFacetEntry: {
             /** Value */
@@ -19587,6 +20028,11 @@ export interface components {
              * @description Distinct (source_app, count). Drives the app filter.
              */
             source_app: components["schemas"]["CxExplorerFacetEntry"][];
+            /**
+             * Source Feature
+             * @description Distinct (source_feature, count). Drives the searchable feature filter.
+             */
+            source_feature: components["schemas"]["CxExplorerFacetEntry"][];
         };
         /**
          * CxExplorerTotals
@@ -20207,6 +20653,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -23493,6 +23966,22 @@ export interface components {
             injection_id: string;
             /** Status */
             status: string;
+        };
+        /** IndependentRandomPlan */
+        IndependentRandomPlan: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            strategy: "independent_random";
+            /** Variables */
+            variables: {
+                [key: string]: components["schemas"]["JsonValue"][];
+            };
+            /** Count */
+            count: number;
+            /** @default allow_repeats */
+            uniqueness?: components["schemas"]["AssignmentUniqueness"];
         };
         /** IndexRepositoryResponse */
         IndexRepositoryResponse: {
@@ -29456,6 +29945,13 @@ export interface components {
              * @default /home/agent
              */
             root_path?: string;
+            /**
+             * Target Kind
+             * @description Semantic filesystem namespace. This is explicit so routing never guesses the target OS or machine kind from path syntax.
+             * @default sandbox
+             * @enum {string}
+             */
+            target_kind?: "sandbox" | "local_machine";
         };
         /**
          * SandboxBindingState
@@ -33114,6 +33610,17 @@ export interface components {
              */
             issues?: components["schemas"]["ValidationIssue"][];
         };
+        /** VariableAssignmentSpec */
+        VariableAssignmentSpec: {
+            /**
+             * Random
+             * @description Allow callers to request a server-side random option assignment.
+             * @default false
+             */
+            random?: boolean;
+        } & {
+            [key: string]: unknown;
+        };
         /**
          * VariableComponentSpec
          * @description The input component a variable renders as (customComponent).
@@ -33154,8 +33661,12 @@ export interface components {
              * @description Step for number / slider.
              */
             step?: number | null;
-            /** @description Bind the options to a user picklist. */
+            /** @description Bind the options to a user structured list. */
+            structured_list?: components["schemas"]["PicklistBinding"] | null;
+            /** @description Legacy read-only alias for structured_list. */
             picklist?: components["schemas"]["PicklistBinding"] | null;
+            /** @description Server-side automatic-assignment strategies enabled here. */
+            assignment?: components["schemas"]["VariableAssignmentSpec"] | null;
         } & {
             [key: string]: unknown;
         };
@@ -35069,6 +35580,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvalidateAgentCacheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_assignments_ai_agent_assignments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentAssignmentRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_ai_agent_assignments_sessions__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentBatchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_session_ai_agent_assignments_sessions__session_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentBatchResult"];
                 };
             };
             /** @description Validation Error */
@@ -42579,6 +43185,26 @@ export interface operations {
             };
         };
     };
+    get_attribution_registry_admin_cx_explorer_attribution_registry_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CxAttributionRegistry"];
+                };
+            };
+        };
+    };
     get_facets_admin_cx_explorer_facets_get: {
         parameters: {
             query?: {
@@ -42637,6 +43263,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
