@@ -35,6 +35,7 @@ import type { ThunkAction } from "redux-thunk";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import { toast } from "sonner";
 
 import {
   addPendingToolCall,
@@ -246,11 +247,35 @@ export const surfaceDelegatedToolCall = (
     // falls through to the loud unsupported error instead of wedging forever.
     if (isDesktopDelegatedToolName(toolName)) {
       dispatch(setInstanceStatus({ conversationId, status: "paused" }));
-      void getLiveDesktopInstance().then((desktop) => {
-        if (desktop) {
-          console.info(
-            `[desktop-native] '${toolName}' (call ${callId}) left pending for desktop "${desktop.instanceName}" — the matrx-local engine executes and resumes it.`,
+      void getLiveDesktopInstance()
+        .then((desktop) => {
+          if (desktop) {
+            console.info(
+              `[desktop-native] '${toolName}' (call ${callId}) left pending for desktop "${desktop.instanceName}" — the matrx-local engine executes and resumes it.`,
+            );
+            dispatch(
+              watchDesktopDelegation({
+                conversationId,
+                userRequestId: requestId,
+                callId,
+              }),
+            );
+            return;
+          }
+          console.error(
+            `[desktop-native] '${toolName}' was delegated but no desktop is online — posting unsupported_client_tool so the turn doesn't wedge.`,
           );
+          postUnsupportedError();
+        })
+        .catch((error) => {
+          console.error(
+            `[desktop-native] presence lookup failed for '${toolName}' — retaining the call for durable desktop reconciliation.`,
+            error,
+          );
+          toast.error("Desktop connection status is unavailable", {
+            description:
+              "The tool call is still waiting safely and will be reconciled when the desktop responds.",
+          });
           dispatch(
             watchDesktopDelegation({
               conversationId,
@@ -258,13 +283,7 @@ export const surfaceDelegatedToolCall = (
               callId,
             }),
           );
-          return;
-        }
-        console.error(
-          `[desktop-native] '${toolName}' was delegated but no desktop is online — posting unsupported_client_tool so the turn doesn't wedge.`,
-        );
-        postUnsupportedError();
-      });
+        });
       return;
     }
 

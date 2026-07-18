@@ -13,6 +13,7 @@ const mockResumeInstance = jest.fn(
   }),
 );
 const mockHasAbortController = jest.fn(() => false);
+const mockToastError = jest.fn();
 
 jest.mock("@/features/agents/api/fetch-pending-calls", () => ({
   fetchConversationPendingCallsStrict: mockFetchPending,
@@ -25,6 +26,9 @@ jest.mock("../resume-instance.thunk", () => ({
 }));
 jest.mock("../abort-registry", () => ({
   hasAbortController: mockHasAbortController,
+}));
+jest.mock("sonner", () => ({
+  toast: { error: mockToastError },
 }));
 
 import {
@@ -56,7 +60,8 @@ describe("watchDesktopDelegation", () => {
     ];
     let status = "paused";
     let loadCount = 0;
-    const dispatch = jest.fn((action: { kind: string }) => {
+    const dispatch = jest.fn((action: { kind?: string; type?: string }) => {
+      if (action.type) return action;
       if (action.kind === "pending") {
         return Promise.resolve(pendingResponses.shift() ?? []);
       }
@@ -101,7 +106,8 @@ describe("watchDesktopDelegation", () => {
   it("retries a transient resolved-tool hydration failure", async () => {
     let status = "paused";
     let loadCount = 0;
-    const dispatch = jest.fn((action: { kind: string }) => {
+    const dispatch = jest.fn((action: { kind?: string; type?: string }) => {
+      if (action.type) return action;
       if (action.kind === "pending") return Promise.resolve([]);
       if (action.kind === "load") {
         loadCount += 1;
@@ -137,5 +143,83 @@ describe("watchDesktopDelegation", () => {
 
     expect(loadCount).toBe(3); // failed hydrate, successful hydrate, final hydrate
     expect(mockResumeInstance).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not repeatedly hydrate while another runner owns resume", async () => {
+    let status = "paused";
+    let loadCount = 0;
+    let resumeCount = 0;
+    const dispatch = jest.fn((action: { kind?: string; type?: string }) => {
+      if (action.type) return action;
+      if (action.kind === "pending") return Promise.resolve([]);
+      if (action.kind === "load") {
+        loadCount += 1;
+        return { unwrap: () => Promise.resolve() };
+      }
+      if (action.kind === "resume") {
+        resumeCount += 1;
+        status = resumeCount === 1 ? "paused" : "complete";
+        return Promise.resolve({ type: "instances/resume/fulfilled" });
+      }
+      throw new Error(`Unexpected dispatch: ${action.kind}`);
+    });
+    const getState = () => ({
+      conversations: {
+        byConversationId: { "conversation-1": { status } },
+      },
+    });
+
+    const watch = watchDesktopDelegation({
+      conversationId: "conversation-1",
+      userRequestId: "request-1",
+      callId: "call-1",
+    })(dispatch as never, getState as never, undefined);
+
+    await jest.advanceTimersByTimeAsync(750);
+    expect(loadCount).toBe(1);
+    await jest.advanceTimersByTimeAsync(750);
+    await watch;
+
+    expect(resumeCount).toBe(2);
+    expect(loadCount).toBe(2); // initial resolution + one final authoritative read
+  });
+
+  it("surfaces prolonged ledger failures while continuing to retry", async () => {
+    let status = "paused";
+    let pendingAttempts = 0;
+    const dispatch = jest.fn((action: { kind?: string; type?: string }) => {
+      if (action.type) return action;
+      if (action.kind === "pending") {
+        pendingAttempts += 1;
+        return pendingAttempts <= 8
+          ? Promise.reject(new Error("persistent API failure"))
+          : Promise.resolve([]);
+      }
+      if (action.kind === "load") {
+        return { unwrap: () => Promise.resolve() };
+      }
+      if (action.kind === "resume") {
+        status = "complete";
+        return Promise.resolve({ type: "instances/resume/fulfilled" });
+      }
+      throw new Error(`Unexpected dispatch: ${action.kind}`);
+    });
+    const getState = () => ({
+      conversations: {
+        byConversationId: { "conversation-1": { status } },
+      },
+    });
+
+    const watch = watchDesktopDelegation({
+      conversationId: "conversation-1",
+      userRequestId: "request-1",
+      callId: "call-1",
+    })(dispatch as never, getState as never, undefined);
+
+    await jest.advanceTimersByTimeAsync(750 * 9);
+    await watch;
+
+    expect(mockToastError).toHaveBeenCalledTimes(1);
+    expect(pendingAttempts).toBe(9);
   });
 });

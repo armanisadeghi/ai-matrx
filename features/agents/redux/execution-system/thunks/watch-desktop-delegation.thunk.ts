@@ -1,13 +1,16 @@
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { ThunkAction } from "redux-thunk";
+import { toast } from "sonner";
 
 import { fetchConversationPendingCallsStrict } from "@/features/agents/api/fetch-pending-calls";
 import type { RootState } from "@/lib/redux/store";
 import { hasAbortController } from "./abort-registry";
 import { loadConversation } from "./load-conversation.thunk";
 import { resumeInstance } from "./resume-instance.thunk";
+import { reconcilePersistedToolLifecycle } from "../active-requests/active-requests.slice";
 
 const POLL_MS = 750;
+const FAILURE_NOTICE_THRESHOLD = 8;
 
 interface WatchState {
   callIds: Set<string>;
@@ -55,6 +58,27 @@ export const watchDesktopDelegation = (
     };
     state.promise = (async () => {
       let hydratedAfterResolution = false;
+      let consecutiveFailures = 0;
+      let failureNotified = false;
+
+      const recordFailure = (message: string, error: unknown) => {
+        consecutiveFailures += 1;
+        console.warn(message, { conversationId, userRequestId, error });
+        if (
+          consecutiveFailures >= FAILURE_NOTICE_THRESHOLD &&
+          !failureNotified
+        ) {
+          failureNotified = true;
+          toast.error("Desktop tool status is unavailable", {
+            description:
+              "The chat is still retrying its connection to the server. Your local tool result has not been discarded.",
+          });
+        }
+      };
+
+      const recordSuccess = () => {
+        consecutiveFailures = 0;
+      };
 
       while (!state.cancelled) {
         await sleep(POLL_MS);
@@ -70,14 +94,12 @@ export const watchDesktopDelegation = (
             fetchConversationPendingCallsStrict(conversationId),
           );
         } catch (error) {
-          console.warn("[desktop-native] pending-call reconciliation failed", {
-            conversationId,
-            userRequestId,
+          recordFailure(
+            "[desktop-native] pending-call reconciliation failed",
             error,
-          });
+          );
           continue;
         }
-
         const requestPending = pending.filter(
           (call) => call.user_request_id === userRequestId,
         );
@@ -85,6 +107,7 @@ export const watchDesktopDelegation = (
           // Parallel and re-delegated calls share one request. Never hydrate or
           // resume until the server says every sibling has resolved.
           hydratedAfterResolution = false;
+          recordSuccess();
           continue;
         }
 
@@ -98,13 +121,19 @@ export const watchDesktopDelegation = (
             await dispatch(loadConversation({ conversationId })).unwrap();
             hydratedAfterResolution = true;
           } catch (error) {
-            console.warn("[desktop-native] resolved-tool rehydrate failed", {
-              conversationId,
-              userRequestId,
+            recordFailure(
+              "[desktop-native] resolved-tool rehydrate failed",
               error,
-            });
+            );
             continue;
           }
+          dispatch(
+            reconcilePersistedToolLifecycle({
+              requestId: userRequestId,
+              callIds: Array.from(state.callIds),
+            }),
+          );
+          recordSuccess();
         }
 
         await dispatch(resumeInstance({ conversationId, userRequestId }));
@@ -117,7 +146,6 @@ export const watchDesktopDelegation = (
           // Either a sibling/re-entrant tool is now pending or another resume
           // owner still has the server claim. Re-read the ledger; do not assume
           // a fulfilled thunk means the continuation completed.
-          hydratedAfterResolution = false;
           continue;
         }
         if (instance.status === "error" || instance.status === "cancelled") {
@@ -131,13 +159,18 @@ export const watchDesktopDelegation = (
         // tool rows into this tab. Retry transient hydration failures.
         try {
           await dispatch(loadConversation({ conversationId })).unwrap();
+          dispatch(
+            reconcilePersistedToolLifecycle({
+              requestId: userRequestId,
+              callIds: Array.from(state.callIds),
+            }),
+          );
           return;
         } catch (error) {
-          console.warn("[desktop-native] final continuation rehydrate failed", {
-            conversationId,
-            userRequestId,
+          recordFailure(
+            "[desktop-native] final continuation rehydrate failed",
             error,
-          });
+          );
         }
       }
     })().finally(() => {

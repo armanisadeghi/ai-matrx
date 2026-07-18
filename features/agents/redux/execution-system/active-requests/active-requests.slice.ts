@@ -766,6 +766,24 @@ const activeRequestsSlice = createSlice({
       }
     },
 
+    reconcilePersistedToolLifecycle(
+      state,
+      action: PayloadAction<{ requestId: string; callIds: string[] }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (!request) return;
+      const reconciled = new Set(action.payload.callIds);
+      for (const callId of reconciled) {
+        // The observability/tool-call slice now holds the authoritative DB
+        // record. Removing the live stub prevents a stale `started` entry from
+        // overlaying that completed record in the tool-call window.
+        delete request.toolLifecycle[callId];
+      }
+      for (const call of request.pendingToolCalls) {
+        if (reconciled.has(call.callId)) call.resolved = true;
+      }
+    },
+
     // ── Completion ─────────────────────────────────────────────
 
     setCompletion(
@@ -1244,6 +1262,7 @@ export const {
   addPendingToolCall,
   resolveToolCall,
   failPendingToolLifecycle,
+  reconcilePersistedToolLifecycle,
   setCompletion,
   appendDataPayload,
   addWarning,
