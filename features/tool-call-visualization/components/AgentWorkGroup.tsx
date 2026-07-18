@@ -3,9 +3,9 @@
 /**
  * AgentWorkGroup
  *
- * The SETTLED-turn fold: a run of thinking runs, generic tool calls, and
- * short spoken asides collapses into ONE quiet line — "Worked for 26s" —
- * that expands to the original items rendered flat below it.
+ * The SETTLED-turn fold: a run of thinking runs, tool calls, and short
+ * spoken asides collapses into ONE quiet line — "Worked for 26s" — that
+ * expands to the original items rendered flat below it.
  *
  * Design constraints (owner-specified, mirror of `ToolCallBatch`):
  *   - The group is JUST a line. No card, no border, no indent, no left rail —
@@ -19,6 +19,13 @@
  *     User preference "verbose" keeps it open. A user click sticks for the
  *     session (survives remounts and the live→persisted flip) via
  *     `toolCardUiSession`.
+ *   - **ONE header per logical turn.** A multi-iteration turn spans several
+ *     `cx_message` rows, each with its own fold — inside an
+ *     `AgentWorkTurnProvider` (mounted by `AssistantTurnGroup`) all of a
+ *     turn's groups merge: the first renders the single "Worked for Ns"
+ *     header with SUMMED duration/steps, the rest render children only, and
+ *     one click expands everything. Never "Worked for 4s" stacked on
+ *     "Worked for 3s".
  *
  * The header sells the work: duration when timestamps exist ("Worked for
  * 26s"), step count otherwise ("Worked through 6 steps").
@@ -32,6 +39,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 
 import { formatWorkDuration } from "../grouping/foldAgentWork";
+import { useAgentWorkTurnMembership } from "./agentWorkTurn";
 import {
   getToolCardUserChoice,
   setToolCardUserChoice,
@@ -44,6 +52,8 @@ export interface AgentWorkGroupProps {
    * (e.g. `agent-work:<first callId or seq>`).
    */
   sessionKey: string | null;
+  /** Position of this group within its message — orders groups in a turn. */
+  order?: number;
   /** Wall-clock span of the folded work, when computable. */
   durationMs: number | null;
   /** Human step count (thinking runs + individual tool calls + asides). */
@@ -57,6 +67,7 @@ export interface AgentWorkGroupProps {
 
 export const AgentWorkGroup: React.FC<AgentWorkGroupProps> = ({
   sessionKey,
+  order = 0,
   durationMs,
   stepCount,
   conversationId,
@@ -65,11 +76,33 @@ export const AgentWorkGroup: React.FC<AgentWorkGroupProps> = ({
 }) => {
   const userPref = useAppSelector(selectToolDisplayPreference(conversationId));
 
+  // Turn-level coordination (null outside an AssistantTurnGroup).
+  const turn = useAgentWorkTurnMembership({
+    id: sessionKey ?? `agent-work-order-${order}`,
+    order,
+    durationMs,
+    stepCount,
+  });
+
   const [userChoice, setUserChoiceState] = useState<boolean | null>(() =>
     getToolCardUserChoice(sessionKey),
   );
+
   // Settled process noise defaults collapsed; "verbose" users see everything.
-  const isExpanded = userChoice ?? userPref === "verbose";
+  // In turn mode the choice is SHARED across the turn's groups.
+  const standaloneExpanded = userChoice ?? userPref === "verbose";
+  const isExpanded = turn
+    ? (turn.expandedChoice ?? userPref === "verbose")
+    : standaloneExpanded;
+
+  const toggle = () => {
+    if (turn) {
+      turn.setExpanded(!isExpanded);
+    } else {
+      setToolCardUserChoice(sessionKey, !isExpanded);
+      setUserChoiceState(!isExpanded);
+    }
+  };
 
   // Mount the body once it has EVER been open so the close animates and the
   // children keep their state; a never-opened group never mounts its items
@@ -77,32 +110,38 @@ export const AgentWorkGroup: React.FC<AgentWorkGroupProps> = ({
   const [hasEverExpanded, setHasEverExpanded] = useState<boolean>(isExpanded);
   if (isExpanded && !hasEverExpanded) setHasEverExpanded(true);
 
+  // In turn mode only the FIRST group renders the header, with the turn's
+  // aggregate numbers; the rest are headerless bodies driven by the shared
+  // expand state.
+  const showHeader = !turn || turn.isPrimary;
+  const headerDurationMs = turn ? turn.totalDurationMs : durationMs;
+  const headerStepCount = turn ? turn.totalStepCount || stepCount : stepCount;
+
   const label =
-    durationMs !== null
-      ? `Worked for ${formatWorkDuration(durationMs)}`
-      : `Worked through ${stepCount} ${stepCount === 1 ? "step" : "steps"}`;
+    headerDurationMs !== null
+      ? `Worked for ${formatWorkDuration(headerDurationMs)}`
+      : `Worked through ${headerStepCount} ${headerStepCount === 1 ? "step" : "steps"}`;
 
   return (
     <div className={cn("group/agentwork relative w-full mb-2", className)}>
-      <button
-        type="button"
-        onClick={() => {
-          setToolCardUserChoice(sessionKey, !isExpanded);
-          setUserChoiceState(!isExpanded);
-        }}
-        className="flex w-full items-center gap-1.5 text-left"
-      >
-        {/* Same font/size as body markdown + tool lines, just dimmer — reads
-            as part of the response, not a separate widget. */}
-        <span className="truncate font-sans text-sm leading-relaxed tracking-wide text-muted-foreground">
-          {label}
-        </span>
-        {isExpanded ? (
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        )}
-      </button>
+      {showHeader && (
+        <button
+          type="button"
+          onClick={toggle}
+          className="flex w-full items-center gap-1.5 text-left"
+        >
+          {/* Same font/size as body markdown + tool lines, just dimmer — reads
+              as part of the response, not a separate widget. */}
+          <span className="truncate font-sans text-sm leading-relaxed tracking-wide text-muted-foreground">
+            {label}
+          </span>
+          {isExpanded ? (
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          )}
+        </button>
+      )}
 
       {/* Expanded body: the original items rendered FLAT below the line — no
           rail, no indent, no grouping box. Animates via the grid-rows trick
@@ -117,7 +156,9 @@ export const AgentWorkGroup: React.FC<AgentWorkGroupProps> = ({
           )}
         >
           <div className="overflow-hidden">
-            <div className="mt-1 space-y-4">{children}</div>
+            <div className={cn(showHeader && "mt-1", "space-y-4")}>
+              {children}
+            </div>
           </div>
         </div>
       )}

@@ -33,11 +33,12 @@ export type AgentWorkClass = "work" | "shortText" | "visible";
 
 /**
  * A text item at or under this many trimmed characters may fold into an
- * agent-work group when it sits BETWEEN work items. Roughly two sentences —
- * long enough for "Got it. Let me fix the department references.", short
- * enough that real content never disappears.
+ * agent-work group when it sits BETWEEN work items. Roughly a short
+ * paragraph — long enough for the agent's mid-work narration ("I'm
+ * expanding the search to identify all instances where…"), short enough
+ * that real content never disappears.
  */
-export const SHORT_TEXT_FOLD_MAX = 240;
+export const SHORT_TEXT_FOLD_MAX = 400;
 
 /** A group must actually hide a back-and-forth: at least this many items. */
 export const AGENT_WORK_MIN_ITEMS = 2;

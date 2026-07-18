@@ -1080,6 +1080,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                   <AgentWorkGroup
                     key={`agent-work-${slot.items[0]?.seq ?? i}`}
                     sessionKey={`agent-work:${requestId}:${slot.items[0]?.seq ?? i}`}
+                    order={i}
                     durationMs={slot.durationMs}
                     stepCount={slot.stepCount}
                     conversationId={conversationId}
@@ -1098,6 +1099,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                     <AgentWorkGroup
                       key={`agent-work-${messageId ?? ""}-${segIdx}`}
                       sessionKey={`agent-work:${messageId ?? conversationId ?? ""}:${segIdx}`}
+                      order={segIdx}
                       durationMs={segment.durationMs}
                       stepCount={segment.stepCount}
                       conversationId={conversationId}

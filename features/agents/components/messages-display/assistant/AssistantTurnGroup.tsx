@@ -39,6 +39,10 @@ import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCaptureP
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
 import { AssistantActionBar } from "./AssistantActionBar";
 import { collapseByRequestId } from "./collapse-by-request-id";
+import {
+  AgentWorkTurnProvider,
+  AgentWorkMemberScope,
+} from "@/features/tool-call-visualization/components/agentWorkTurn";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
 import {
   isWarRoomThreadAgentSurface,
@@ -144,22 +148,31 @@ export function AssistantTurnGroup({
       {/* Sub-messages render flush — no spacer / divider / chrome between
           iterations. Tool cards and thinking blocks already provide all
           the visual rhythm a multi-step turn needs. */}
-      {members.map((m) => (
-        <AgentAssistantMessage
-          key={m.key}
-          conversationId={conversationId}
-          requestId={m.requestId ?? undefined}
-          messageId={m.messageId ?? undefined}
-          isStreamActive={m.isStreamActive}
-          surfaceKey={surfaceKey}
-          compact={compact}
-          // Suppress every per-member bar (including the latest's): the
-          // group's trailing bar below owns chrome for the whole turn,
-          // so Copy / Speak / Print can aggregate across iterations.
-          hideActionBar={true}
-          deferColdMarkdown={deferColdMarkdown}
-        />
-      ))}
+      {/* AgentWorkTurnProvider merges the per-iteration "Worked for Ns"
+          folds into ONE header for the whole turn (summed duration, shared
+          one-click expand) — a multi-iteration turn must never read as
+          "Worked for 4s" stacked on "Worked for 3s". */}
+      <AgentWorkTurnProvider
+        turnKey={anchorMessageId ?? lastMember?.key ?? conversationId}
+      >
+        {members.map((m, idx) => (
+          <AgentWorkMemberScope key={m.key} index={idx}>
+            <AgentAssistantMessage
+              conversationId={conversationId}
+              requestId={m.requestId ?? undefined}
+              messageId={m.messageId ?? undefined}
+              isStreamActive={m.isStreamActive}
+              surfaceKey={surfaceKey}
+              compact={compact}
+              // Suppress every per-member bar (including the latest's): the
+              // group's trailing bar below owns chrome for the whole turn,
+              // so Copy / Speak / Print can aggregate across iterations.
+              hideActionBar={true}
+              deferColdMarkdown={deferColdMarkdown}
+            />
+          </AgentWorkMemberScope>
+        ))}
+      </AgentWorkTurnProvider>
 
       {/* File strips for rows the requestId collapse dropped: AI-edit
           snapshots keyed to an intermediate iteration's messageId must keep
