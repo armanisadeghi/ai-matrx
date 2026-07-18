@@ -26759,6 +26759,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      agent_resource_add: {
+        Args: {
+          p_agent_id: string
+          p_label?: string
+          p_metadata?: Json
+          p_source_id: string
+          p_source_type: string
+        }
+        Returns: string
+      }
+      agent_resource_remove: {
+        Args: { p_agent_id: string; p_source_id: string; p_source_type: string }
+        Returns: undefined
+      }
       agent_set_list: {
         Args: never
         Returns: {

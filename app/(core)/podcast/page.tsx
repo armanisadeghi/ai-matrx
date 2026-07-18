@@ -20,9 +20,7 @@ export default async function PodcastsIndexPage() {
 
     return (
         <>
-        <PageHeader>
-            <span className="ml-2 text-sm font-medium text-foreground truncate">Podcasts</span>
-        </PageHeader>
+        <PageHeader />
         <div className="h-full w-full overflow-y-auto overscroll-contain bg-background">
             {/* Header */}
             <div className="relative overflow-hidden bg-zinc-900 px-4 pt-10 pb-12">

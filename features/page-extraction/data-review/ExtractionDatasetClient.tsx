@@ -475,33 +475,39 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             )}
           </div>
 
-          <div className="ml-auto flex min-w-0 max-w-[60vw] items-center overflow-x-auto sm:max-w-none sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="ml-auto flex shrink-0 items-center">
             {job && (
-              <ContextStatusButton
-                subject={{
-                  entityType: EXTRACTION_ENTITY_TYPE,
-                  entityId: job.id,
-                  title: job.name,
-                  subtitle: "Extraction dataset",
-                  icon: Layers,
-                }}
-                onSaved={(r) => r.ok && toast.success("Context updated")}
-              />
+              <span className="hidden sm:inline-flex">
+                <ContextStatusButton
+                  subject={{
+                    entityType: EXTRACTION_ENTITY_TYPE,
+                    entityId: job.id,
+                    title: job.name,
+                    subtitle: "Extraction dataset",
+                    icon: Layers,
+                  }}
+                  onSaved={(r) => r.ok && toast.success("Context updated")}
+                />
+              </span>
             )}
-            <RunsPopover
-              jobId={jobId}
-              selectedRunId={selectedRunId}
-              onSelectRun={setSelectedRunId}
-              onChanged={() => void loadResults()}
-              iconOnly
-            />
-            <SendToMenu
-              name={job?.name ?? "extraction"}
-              columns={exportColumns}
-              rows={exportRows}
-              disabled={loading}
-              iconOnly
-            />
+            <span className="hidden sm:inline-flex">
+              <RunsPopover
+                jobId={jobId}
+                selectedRunId={selectedRunId}
+                onSelectRun={setSelectedRunId}
+                onChanged={() => void loadResults()}
+                iconOnly
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <SendToMenu
+                name={job?.name ?? "extraction"}
+                columns={exportColumns}
+                rows={exportRows}
+                disabled={loading}
+                iconOnly
+              />
+            </span>
             <ExportMenu
               name={job?.name ?? "extraction"}
               columns={exportColumns}

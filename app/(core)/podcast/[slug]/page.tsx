@@ -4,6 +4,8 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { PodcastEpisodePage } from "@/features/podcasts/components/player/PodcastEpisodePage";
 import { PodcastShowPage } from "@/features/podcasts/components/player/PodcastShowPage";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import type {
   PcArticle,
   PcEpisode,
@@ -159,10 +161,19 @@ export default async function PodcastPage({
       .eq("episode_id", result.data.id)
       .eq("status", "published");
     return (
-      <PodcastEpisodePage
-        episode={result.data}
-        articles={(articles ?? []) as PcArticle[]}
-      />
+      <>
+        <PageHeader>
+          <ChevronLeftTapButton
+            href={result.data.show ? `/podcast/${result.data.show.slug}` : "/podcast"}
+            variant="glass"
+            ariaLabel="Back"
+          />
+        </PageHeader>
+        <PodcastEpisodePage
+          episode={result.data}
+          articles={(articles ?? []) as PcArticle[]}
+        />
+      </>
     );
   }
 
@@ -177,9 +188,14 @@ export default async function PodcastPage({
     .order("episode_number", { ascending: true, nullsFirst: false });
 
   return (
-    <PodcastShowPage
-      show={result.data}
-      episodes={(episodes ?? []) as PcEpisode[]}
-    />
+    <>
+      <PageHeader>
+        <ChevronLeftTapButton href="/podcast" variant="glass" ariaLabel="Back" />
+      </PageHeader>
+      <PodcastShowPage
+        show={result.data}
+        episodes={(episodes ?? []) as PcEpisode[]}
+      />
+    </>
   );
 }

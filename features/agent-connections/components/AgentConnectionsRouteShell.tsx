@@ -7,10 +7,16 @@ import { Handle } from "@/app/(dev)/demos/resizables/_lib/Handle";
 import { RegisteredPanel } from "@/app/(dev)/demos/resizables/_lib/RegisteredPanel";
 import { PanelControlProvider } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AgentConnectionsSidebar } from "./AgentConnectionsSidebar";
 import { AgentConnectionsHeaderControls } from "./AgentConnectionsHeaderControls";
 import { AgentConnectionsNavProvider } from "./AgentConnectionsNavContext";
 import { AGENT_CONNECTIONS_BASE } from "../routing";
+
+/** Runtime-only default: mobile always starts with the section list
+ * collapsed so the main content doesn't get squeezed into a ~280px sliver
+ * on first paint. The toggle in the header still opens it on tap. */
+const MOBILE_DEFAULT_LAYOUT: Layout = { sidebar: 0, main: 100 };
 
 const GROUP_ID = "agent-connections";
 const GROUP_KEY = "root";
@@ -37,6 +43,14 @@ export function AgentConnectionsRouteShell({
   cookieName,
   children,
 }: Props) {
+  const isMobile = useIsMobile();
+  // Mobile gets its own cookie namespace + always-collapsed default so its
+  // runtime layout never overwrites the desktop-authored saved width — and
+  // a `key` swap forces a clean remount (fresh defaultLayout) at the
+  // breakpoint boundary instead of carrying over stale panel-library state.
+  const effectiveCookieName = isMobile ? `${cookieName}:mobile` : cookieName;
+  const effectiveDefaultLayout = isMobile ? MOBILE_DEFAULT_LAYOUT : defaultLayout;
+
   return (
     <PanelControlProvider>
       <PageHeader>
@@ -44,11 +58,12 @@ export function AgentConnectionsRouteShell({
       </PageHeader>
       <AgentConnectionsNavProvider mode="route">
         <ClientGroup
+          key={isMobile ? "mobile" : "desktop"}
           id={GROUP_ID}
           groupKey={GROUP_KEY}
-          cookieName={cookieName}
+          cookieName={effectiveCookieName}
           orientation="horizontal"
-          defaultLayout={defaultLayout}
+          defaultLayout={effectiveDefaultLayout}
           className="h-full w-full"
         >
           <RegisteredPanel

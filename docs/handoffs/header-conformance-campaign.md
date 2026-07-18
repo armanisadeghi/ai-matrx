@@ -9,48 +9,30 @@ vision: [.claude/skills/core-route-headers/SKILL.md, features/shell/components/h
 
 ## Vision — Arman's words
 
-> "The entire point of this system and this UI is lost… If we're going to shit away the header that the app has given us, then the app will just use it itself to do what it needs. I worked tirelessly for months to eliminate everything from the header to give that space to the pages."
-
 > "ABSOLUTELY NO BORDERS or color differences on the header. Must be transparent with glass buttons."
-
-> "NOTICE THERE IS NO STUPID TITLE and DESCRIPTION! AI Agents love putting that garbage but you don't put that inside of a dashboard."
-
-> "The best mobile experience is when you don't try to cram things… on mobile we should always prefer as few things in the header as possible and just putting everything into a bottom drawer."
-
-> "Figure out how to make the organization scope header page wrapper into a template, and then figure out how to take what agents have to make that into a wrapper and just simplify it." — done: the two templates below. Every remaining fix should CONSUME them, not hand-roll.
-
-> "Notice how absolutely random the page widths are… schedules/id ≈768px… on desktop we need to use the space." (separate follow-up, not header work)
-
-Buttons: glass tap targets only (match the app), primary action = solid primary pill with its name, delete = solid destructive pill with its name (white text — `TapTargetButtonDestructive`), icon-only actions always tooltip. See `/demos/button-demo`.
+> "NOTICE THERE IS NO STUPID TITLE and DESCRIPTION! …you don't put that inside of a dashboard."
+> "On mobile we should always prefer as few things in the header as possible and just putting everything into a bottom drawer."
+> "Notice how absolutely random the page widths are… on desktop we need to use the space." (widths = separate sweep, item 3)
 
 ## Resources
 
-- **Skill (read first, it is the whole recipe):** `.claude/skills/core-route-headers/SKILL.md` — failure classes, gold standards, fix recipes, gotchas, browser-verify protocol.
-- **Templates (consume, don't hand-roll):**
-  - `features/shell/components/header/templates/EntityModeHeader.tsx` — agents pattern for any `[id]` route. Reference consumer: `/schedules/[id]` (`features/scheduling/components/detail/ScheduleDetail.tsx`).
-  - `features/shell/components/header/templates/CrumbTrailHeader.tsx` — org/scopes breadcrumb pattern for drill-downs.
-  - Primitives: `RouteHeader`, `RouteModeNav`, `PageHeader` (same dir); tap buttons `components/icons/tap-buttons.tsx` + `TapTargetButton(Destructive|Solid|Group)`.
-- **Spec:** `features/shell/components/header/variants/USAGE.md`.
-- **Detection:** `pnpm check:page-headers` (markers KNOWN NARROW — add new faux combos to `scripts/check-page-headers.ts`); `grep -rln "calc(100dvh\|calc(100vh\|h-screen\|h-page" "app/(core)" --include="*.tsx"`.
-- **Verify:** session dev server + `http://localhost:<port>/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/<route>`; or `/login` `admin@admin.com` / `Password1234#`. Screenshot desktop 1280 AND mobile 375 — a flaw in your own screenshot is a failure.
-- Exceptions that must NOT be "fixed": `/administration/*`, `(transitional)`, `(legacy)` sit BELOW the header by design.
+- Recipe: `.claude/skills/core-route-headers/SKILL.md`. Spec: `features/shell/components/header/variants/USAGE.md`.
+- Templates: `features/shell/components/header/templates/EntityModeHeader.tsx` (+ `CrumbTrailHeader.tsx`); reference consumer `features/scheduling/components/detail/ScheduleDetail.tsx`.
+- Detection: `pnpm check:page-headers`; `grep -rln "calc(100dvh\|calc(100vh\|h-screen\|h-page" "app/(core)" --include="*.tsx"`. Both are at ZERO real hits in (core) as of 2026-07-14 (only education files + one comment match) — keep them at zero.
+- Verify: session dev server + `/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/<route>`; both 1280 and 375.
 
-## Remaining work
+## Remaining work (from the wave-2 browser-verify pass — each was seen live)
 
-1. **Browser-verify pass over the fleet wave.** 35 route families were fixed by agents (commit `baa9dd59d`) while the dev server was down, so **none were visually verified**. Walk each family per the skill's verify protocol, both viewports; fix what the eye catches. Highest-value first: `/notes`, `/files`, `/transcripts`, `/projects`, `/data`, `/organizations/**`, `/artifacts`, `/code`.
-2. **Residual faux headers (4):** `app/(core)/agents/categories/page.tsx`, `app/(core)/agents/shortcuts/edit/[id]/page.tsx`, `app/(core)/organizations/[orgId]/shortcuts/page.tsx` + `.../shortcuts/categories/page.tsx`. Use `EntityModeHeader`/`RouteHeader`.
-3. **Residual banned heights (12 files, list via the grep above):** tasks (layout + new), chat/new, agents/new/import, agents/shortcuts/edit, podcast/studio (run-e, create-e), education ×5 (education is another active session's territory — coordinate before touching).
-4. **Agents family sub-pages** were deliberately excluded from the fleet (gold-standard family) but `categories`, `shortcuts/**`, `new/import` don't conform — fix with the templates.
-5. **Migrate the two bespoke implementations onto the templates when touched:** `features/cms/components/CmsSiteSwitcher.tsx` + `CmsHubHeader.tsx` (→ `EntityModeHeader` internals), `features/scope-system/components/ScopeBreadcrumb.tsx` (→ `CrumbTrailHeader` core). Behavior identical; this is dedup only.
-6. **agent-connections mobile:** the two-pane resizable shell has no narrow-viewport fallback (stacked/drawer) — flagged by the fleet, out of header scope, needs a decision-free mobile-first pass.
-7. **Page-width normalization** (Arman: "back in 1998") — separate sweep; do NOT bundle into header fixes beyond trivial `max-w-3xl → max-w-5xl` bumps where already editing.
-8. In-flight in separate sessions (don't duplicate): avatar collision in `FeatureAdminPage` shared header; messaging build/refactor (`features/messaging/components/shell/`).
+1. **/messages/[conversationId] crashes on load** — reproducible runtime error adding `presence` callbacks (realtime). Messaging is mid-refactor (`features/messaging/components/shell/`); whoever owns that refactor fixes it — invoke the `supabase-realtime` skill.
+2. **Mobile-broken body layouts** (header rows are fine; bodies don't adapt at 375): `/lists/v1|v2|v3` fixed two-column editors; `/code` IDE workspace (no stacked/drawer fallback); `/agent-connections` two-pane shell; `/data/[id]` table toolbar overlap; `/agents/shortcuts/all` table overflow. Each is a mobile-first pass per `.cursor/skills/ios-mobile-first/SKILL.md`, not a header fix.
+3. **Page-width normalization** — the "1998 widths" sweep (e.g. `max-w-3xl` crammed forms on desktop). Needs Arman's target rules before fleeting.
+4. **/legal/ca-wc/pd-ratings-calculator mobile**: 5 header items, no bottom-sheet collapse — port to `EntityModeHeader` actions.
+5. **/images + /images/studio in-body hero blocks** (big title + description in a dashboard) — decide keep-as-landing vs strip; likely strip per doctrine.
+6. Small verified-live defects logged by agents, unrelated to headers, worth triage into the task system (`/task-hygiene`): /artifacts card stuck in isNavigating spinner; /files table row click side-effect creates a real share link; /voice/playground Cartesia voice-list ParseError; /transcripts/scribe nested-button console errors; app-wide "state update before mount" console error (seen on /scraper + home).
+7. **Education route files** (`app/(core)/education/**` heights) — owned by the active education session; do not touch from this campaign.
 
 ## Done
 
-- Skill authored + hardened — `.claude/skills/core-route-headers/SKILL.md`.
-- Templates built + browser-proven both viewports — `features/shell/components/header/templates/`.
-- `TapTargetButtonDestructive` reusable + labeled primary/destructive header pills — `components/icons/TapTargetButton.tsx`.
-- `RouteModeNav` w-full measurement trap fixed — `features/shell/components/header/RouteModeNav.tsx`.
-- Reference fixes: CMS family, schedules family (incl. `[id]` view/edit on `EntityModeHeader`), /suggestions, /agents/all mobile, agent build mobile header re-enabled.
-- Fleet wave over 35 (core) families — commit `baa9dd59d`; faux headers 59→4 marker hits, banned heights 59→12 files.
+- Skill + spec + templates + `TapTargetButtonDestructive`; `RouteModeNav` measurement fix; shell.css inject display bug (`5523ac373`).
+- Wave 1: 35 families fixed (`baa9dd59d`). Wave 2: residuals + CMS template dedup + ALL families browser-verified at both viewports, fixes applied inline (`b510ea043`, `0edc52815`). Faux headers and banned heights in (core): **zero**.
+- False alarm cleared: EntityModeHeader mobile drawer reported broken by one verify agent — re-tested directly, works.
