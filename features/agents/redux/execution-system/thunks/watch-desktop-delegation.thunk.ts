@@ -29,9 +29,19 @@ function watchKey(conversationId: string, userRequestId: string): string {
   return `${conversationId}:${userRequestId}`;
 }
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function asServerUserRequestId(value: string | undefined): string | undefined {
+  return value && UUID_PATTERN.test(value) ? value : undefined;
+}
+
 export interface WatchDesktopDelegationArgs {
   conversationId: string;
-  userRequestId: string;
+  /** Redux execution key (`req_...`) used only for visible lifecycle state. */
+  lifecycleRequestId: string;
+  /** Persisted chat.user_request UUID. Never substitute the Redux request key. */
+  userRequestId?: string;
   callId: string;
 }
 
@@ -44,8 +54,16 @@ export const watchDesktopDelegation = (
   args: WatchDesktopDelegationArgs,
 ): ThunkAction<Promise<void>, RootState, unknown, UnknownAction> => {
   return (dispatch, getState) => {
-    const { conversationId, userRequestId, callId } = args;
-    const key = watchKey(conversationId, userRequestId);
+    const { conversationId, lifecycleRequestId, callId } = args;
+    let userRequestId = asServerUserRequestId(args.userRequestId);
+    if (args.userRequestId && !userRequestId) {
+      console.error("[desktop-native] ignored invalid server user_request_id", {
+        conversationId,
+        callId,
+        userRequestId: args.userRequestId,
+      });
+    }
+    const key = watchKey(conversationId, userRequestId ?? lifecycleRequestId);
     const existing = watches.get(key);
     if (existing) {
       existing.callIds.add(callId);
@@ -102,8 +120,18 @@ export const watchDesktopDelegation = (
           );
           continue;
         }
-        const requestPending = pending.filter(
-          (call) => call.user_request_id === userRequestId,
+        if (!userRequestId) {
+          const matchingCall = pending.find((call) =>
+            state.callIds.has(call.call_id),
+          );
+          userRequestId = asServerUserRequestId(
+            matchingCall?.user_request_id ?? undefined,
+          );
+        }
+        const requestPending = pending.filter((call) =>
+          userRequestId
+            ? call.user_request_id === userRequestId
+            : state.callIds.has(call.call_id),
         );
         if (requestPending.length > 0) {
           // Parallel and re-delegated calls share one request. Never hydrate or
@@ -119,6 +147,17 @@ export const watchDesktopDelegation = (
         // state, so it must never run over an active stream.
         if (hasAbortController(conversationId)) continue;
 
+        // The desktop can claim a call before our first poll. Without a
+        // server UUID the browser must not attempt /resume; Matrx Local owns
+        // the durable continuation and a later hydration will pick it up.
+        if (!userRequestId) {
+          recordFailure(
+            "[desktop-native] waiting for persisted user_request_id",
+            new Error(`No server request UUID is known for call ${callId}`),
+          );
+          continue;
+        }
+
         if (!hydratedAfterResolution) {
           try {
             await dispatch(loadConversation({ conversationId })).unwrap();
@@ -132,7 +171,7 @@ export const watchDesktopDelegation = (
           }
           dispatch(
             reconcilePersistedToolLifecycle({
-              requestId: userRequestId,
+              requestId: lifecycleRequestId,
               callIds: Array.from(state.callIds),
             }),
           );
@@ -166,7 +205,7 @@ export const watchDesktopDelegation = (
           await dispatch(loadConversation({ conversationId })).unwrap();
           dispatch(
             reconcilePersistedToolLifecycle({
-              requestId: userRequestId,
+              requestId: lifecycleRequestId,
               callIds: Array.from(state.callIds),
             }),
           );

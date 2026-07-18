@@ -46,9 +46,10 @@ export const surfaceColdPendingCalls = (
         surfaceDelegatedToolCall({
           conversationId,
           // The persisted suspended turn. Resume keys off the server's
-          // continuation_needed response, not this id — it's only used here for
-          // lifecycle bookkeeping, so fall back gracefully if ever absent.
+          // durable UUID; Redux lifecycle bookkeeping uses the same value for
+          // a cold load because there is no live client request key to retain.
           requestId: call.user_request_id ?? `cold-${call.call_id}`,
+          userRequestId: call.user_request_id ?? undefined,
           callId: call.call_id,
           toolName: call.tool_name,
           // Reconstruct the live `tool_delegated` data shape ({ arguments })

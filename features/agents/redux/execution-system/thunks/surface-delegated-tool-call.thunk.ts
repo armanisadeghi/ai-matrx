@@ -73,12 +73,12 @@ function isDesktopDelegatedToolName(toolName: string): boolean {
 export interface SurfaceDelegatedToolCallArgs {
   conversationId: string;
   /**
-   * The owning request. Live: the active stream's requestId. Cold-resume: the
-   * persisted `user_request_id` (the suspended turn that /resume will continue).
-   * Used only for lifecycle bookkeeping — the answer + resume path key off
-   * conversationId / call_id.
+   * The client-side execution request key used by Redux lifecycle state. This
+   * is deliberately not the persisted chat.user_request UUID.
    */
   requestId: string;
+  /** The server-owned chat.user_request UUID used for ledger reads and resume. */
+  userRequestId?: string;
   callId: string;
   toolName: string;
   /** The `tool_delegated` event `data` (`{ arguments: {...} }`). */
@@ -95,7 +95,15 @@ export const surfaceDelegatedToolCall = (
   args: SurfaceDelegatedToolCallArgs,
 ): ThunkAction<void, RootState, unknown, UnknownAction> => {
   return (dispatch) => {
-    const { conversationId, requestId, callId, toolName, data, event } = args;
+    const {
+      conversationId,
+      requestId,
+      userRequestId,
+      callId,
+      toolName,
+      data,
+      event,
+    } = args;
 
     dispatch(
       addPendingToolCall({
@@ -256,7 +264,8 @@ export const surfaceDelegatedToolCall = (
             dispatch(
               watchDesktopDelegation({
                 conversationId,
-                userRequestId: requestId,
+                lifecycleRequestId: requestId,
+                userRequestId,
                 callId,
               }),
             );
@@ -279,7 +288,8 @@ export const surfaceDelegatedToolCall = (
           dispatch(
             watchDesktopDelegation({
               conversationId,
-              userRequestId: requestId,
+              lifecycleRequestId: requestId,
+              userRequestId,
               callId,
             }),
           );

@@ -41,6 +41,9 @@ interface PendingRow {
   user_request_id: string;
 }
 
+const USER_REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+const LIFECYCLE_REQUEST_ID = "req_client-lifecycle";
+
 describe("watchDesktopDelegation", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -55,7 +58,7 @@ describe("watchDesktopDelegation", () => {
 
   it("waits for every parallel call before hydrating and resuming", async () => {
     const pendingResponses: PendingRow[][] = [
-      [{ call_id: "call-2", user_request_id: "request-1" }],
+      [{ call_id: "call-2", user_request_id: USER_REQUEST_ID }],
       [],
     ];
     let status = "paused";
@@ -83,12 +86,14 @@ describe("watchDesktopDelegation", () => {
 
     const first = watchDesktopDelegation({
       conversationId: "conversation-1",
-      userRequestId: "request-1",
+      lifecycleRequestId: LIFECYCLE_REQUEST_ID,
+      userRequestId: USER_REQUEST_ID,
       callId: "call-1",
     })(dispatch as never, getState as never, undefined);
     const second = watchDesktopDelegation({
       conversationId: "conversation-1",
-      userRequestId: "request-1",
+      lifecycleRequestId: LIFECYCLE_REQUEST_ID,
+      userRequestId: USER_REQUEST_ID,
       callId: "call-2",
     })(dispatch as never, getState as never, undefined);
 
@@ -100,6 +105,10 @@ describe("watchDesktopDelegation", () => {
     await jest.advanceTimersByTimeAsync(750);
     await first;
     expect(mockResumeInstance).toHaveBeenCalledTimes(1);
+    expect(mockResumeInstance).toHaveBeenCalledWith({
+      conversationId: "conversation-1",
+      userRequestId: USER_REQUEST_ID,
+    });
     expect(loadCount).toBe(2); // resolved tool rows, then winning continuation
   });
 
@@ -132,7 +141,8 @@ describe("watchDesktopDelegation", () => {
 
     const watch = watchDesktopDelegation({
       conversationId: "conversation-1",
-      userRequestId: "request-1",
+      lifecycleRequestId: LIFECYCLE_REQUEST_ID,
+      userRequestId: USER_REQUEST_ID,
       callId: "call-1",
     })(dispatch as never, getState as never, undefined);
 
@@ -143,6 +153,50 @@ describe("watchDesktopDelegation", () => {
 
     expect(loadCount).toBe(3); // failed hydrate, successful hydrate, final hydrate
     expect(mockResumeInstance).toHaveBeenCalledTimes(1);
+  });
+
+  it("recovers the server UUID without using the Redux lifecycle key", async () => {
+    const pendingResponses: PendingRow[][] = [
+      [{ call_id: "call-1", user_request_id: USER_REQUEST_ID }],
+      [],
+    ];
+    let status = "paused";
+    const dispatch = jest.fn((action: { kind?: string; type?: string }) => {
+      if (action.type) return action;
+      if (action.kind === "pending") {
+        return Promise.resolve(pendingResponses.shift() ?? []);
+      }
+      if (action.kind === "load") {
+        return { unwrap: () => Promise.resolve() };
+      }
+      if (action.kind === "resume") {
+        status = "complete";
+        return Promise.resolve({ type: "instances/resume/fulfilled" });
+      }
+      throw new Error(`Unexpected dispatch: ${action.kind}`);
+    });
+    const getState = () => ({
+      conversations: {
+        byConversationId: { "conversation-1": { status } },
+      },
+    });
+
+    const watch = watchDesktopDelegation({
+      conversationId: "conversation-1",
+      lifecycleRequestId: LIFECYCLE_REQUEST_ID,
+      callId: "call-1",
+    })(dispatch as never, getState as never, undefined);
+
+    await jest.advanceTimersByTimeAsync(1_500);
+    await watch;
+
+    expect(mockResumeInstance).toHaveBeenCalledWith({
+      conversationId: "conversation-1",
+      userRequestId: USER_REQUEST_ID,
+    });
+    expect(mockResumeInstance).not.toHaveBeenCalledWith(
+      expect.objectContaining({ userRequestId: LIFECYCLE_REQUEST_ID }),
+    );
   });
 
   it("does not repeatedly hydrate while another runner owns resume", async () => {
@@ -171,7 +225,8 @@ describe("watchDesktopDelegation", () => {
 
     const watch = watchDesktopDelegation({
       conversationId: "conversation-1",
-      userRequestId: "request-1",
+      lifecycleRequestId: LIFECYCLE_REQUEST_ID,
+      userRequestId: USER_REQUEST_ID,
       callId: "call-1",
     })(dispatch as never, getState as never, undefined);
 
@@ -212,7 +267,8 @@ describe("watchDesktopDelegation", () => {
 
     const watch = watchDesktopDelegation({
       conversationId: "conversation-1",
-      userRequestId: "request-1",
+      lifecycleRequestId: LIFECYCLE_REQUEST_ID,
+      userRequestId: USER_REQUEST_ID,
       callId: "call-1",
     })(dispatch as never, getState as never, undefined);
 

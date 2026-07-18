@@ -1267,6 +1267,7 @@ export async function processStream({
             surfaceDelegatedToolCall({
               conversationId,
               requestId,
+              userRequestId: reservedUserRequestId ?? undefined,
               callId: toolData.call_id,
               toolName: toolData.tool_name,
               data: (toolData.data as Record<string, unknown>) ?? {},
@@ -1358,8 +1359,9 @@ export async function processStream({
             runToolStateEffects({
               toolName: toolData.tool_name,
               args:
-                getState().activeRequests.byRequestId[requestId]
-                  ?.toolLifecycle[toolData.call_id]?.arguments ?? {},
+                getState().activeRequests.byRequestId[requestId]?.toolLifecycle[
+                  toolData.call_id
+                ]?.arguments ?? {},
               result: rawResult,
               dispatch,
               getState,
@@ -2181,16 +2183,11 @@ export async function processStream({
             event.data,
           );
         } else {
-          const reqSnapshot =
-            getState().activeRequests.byRequestId[requestId];
+          const reqSnapshot = getState().activeRequests.byRequestId[requestId];
           let anchorBlockId: string | null = null;
           let anchorOffset: number | null = null;
           if (reqSnapshot) {
-            for (
-              let i = reqSnapshot.renderBlockOrder.length - 1;
-              i >= 0;
-              i--
-            ) {
+            for (let i = reqSnapshot.renderBlockOrder.length - 1; i >= 0; i--) {
               const candidate =
                 reqSnapshot.renderBlocks[reqSnapshot.renderBlockOrder[i]];
               if (candidate && candidate.type === "text") {
