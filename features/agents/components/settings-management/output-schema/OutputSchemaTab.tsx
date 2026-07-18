@@ -8,6 +8,13 @@
  * SettingsJsonEditor for editing + Apply. The "Validate" button runs advisory
  * checks (validateOutputSchema) and shows a report — it NEVER changes the
  * schema and is never applied automatically.
+ *
+ * "Bind to a kind" (KindBindPicker) writes a registered Content IR kind's
+ * canonical schema through the SAME apply path (setAgentOutputSchema) — the
+ * one-click version of the proven education-agent channel (aidream
+ * `output_schema` → `agent_output_contract` → `response_format_for_kind`).
+ * A live indicator reports when the current buffer fingerprints to a
+ * registered kind, and a drift note when a bound schema was edited away.
  */
 
 import { useState } from "react";
@@ -17,6 +24,7 @@ import {
   AlertTriangle,
   Lightbulb,
   CheckCircle2,
+  Shapes,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -28,6 +36,9 @@ import {
   validateOutputSchema,
   type OutputSchemaValidation,
 } from "./validateOutputSchema";
+import { KindBindPicker } from "./KindBindPicker";
+import { useKindCatalog } from "./useKindCatalog";
+import { buildKindFingerprintIndex, matchKindForSchema } from "./kindBinding";
 
 // Shown only when the editor is empty — carries the "what is this" context so
 // it doesn't take permanent vertical space, plus a starter shape.
@@ -77,6 +88,31 @@ export function OutputSchemaTab({
   );
   const [report, setReport] = useState<OutputSchemaValidation | null>(null);
 
+  // ---- Kind binding (Content IR / Shape system) --------------------------
+  const kindCatalog = useKindCatalog();
+  /** The kind chosen via the picker this session — drives the drift note. */
+  const [boundKind, setBoundKind] = useState<string | null>(null);
+
+  // React Compiler memoizes these — the index only rebuilds when the catalog
+  // snapshot changes, and the match only re-runs when the parse changes.
+  const fingerprintIndex =
+    kindCatalog.entries && kindCatalog.resolve
+      ? buildKindFingerprintIndex(kindCatalog.entries, kindCatalog.resolve)
+      : null;
+  const matchedKind = fingerprintIndex
+    ? matchKindForSchema(parsed, fingerprintIndex)
+    : null;
+
+  const handleBindKind = (kind: string, outputSchema: OutputSchema) => {
+    // Same write path as Apply — nothing new between the tab and Redux.
+    dispatch(setAgentOutputSchema({ id: agentId, outputSchema }));
+    setBoundKind(kind);
+    // The editor re-syncs from the selector-driven initialValue; mirror the
+    // parse state immediately so the indicator doesn't lag the debounce.
+    // MATRX-EXCEPTION: SettingsJsonEditor's contract is a generic JSON-dict editor.
+    setParsed(outputSchema as unknown as Record<string, unknown>);
+  };
+
   const handleApply = (obj: Record<string, unknown>) => {
     // An empty object means "no schema" → clear it (returns unstructured text).
     const isEmpty = !obj || Object.keys(obj).length === 0;
@@ -91,6 +127,35 @@ export function OutputSchemaTab({
 
   return (
     <div className="flex flex-col h-full gap-2">
+      {/* Kind binding row — one-click bind + live registry-match status. */}
+      <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+        <KindBindPicker
+          entries={kindCatalog.entries}
+          resolve={kindCatalog.resolve}
+          loading={kindCatalog.loading}
+          onBind={handleBindKind}
+        />
+        {matchedKind ? (
+          <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Matches kind{" "}
+            <span className="font-mono font-semibold">{matchedKind}</span>
+          </span>
+        ) : boundKind ? (
+          <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+            <Shapes className="h-3.5 w-3.5" />
+            Bound to{" "}
+            <span className="font-mono font-semibold">{boundKind}</span> — the
+            schema has been edited away from it
+          </span>
+        ) : (
+          <span className="text-[11px] text-muted-foreground">
+            Write a registered kind&apos;s canonical schema — structured output
+            the platform can render.
+          </span>
+        )}
+      </div>
+
       <SettingsJsonEditor
         initialValue={initialText}
         placeholder={PLACEHOLDER}

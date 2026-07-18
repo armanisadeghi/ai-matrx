@@ -70,6 +70,18 @@ export type BlockSchemaEntry = {
   label: string;
   slug: string;
   fields: Record<string, FieldSchema>;
+  /**
+   * Dual-gate render-trust verdict (`kind_definition.is_active`). Only the
+   * content_ir source fills this; the legacy flexible-data path leaves it
+   * undefined (no such flag existed there).
+   */
+  isActive?: boolean;
+  /**
+   * Generated-contract family from `kind_definition.metadata.family`
+   * (`agent_io` / `tool_io` / `action_io` / `workflow_io` / display families).
+   * Null/undefined = plain display kind. content_ir source only.
+   */
+  family?: string | null;
 };
 
 export type BlockSchemaRegistry = {

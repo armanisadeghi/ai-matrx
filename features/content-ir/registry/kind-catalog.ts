@@ -45,6 +45,17 @@ export type KindCatalogEntry = {
   tier: KindTier | null;
   /** content_ir.kind_definition row id when a DB row exists for this slug. */
   dbRowId: string | null;
+  /**
+   * Dual-gate render-trust verdict from the DB row; null when there is no DB
+   * row (compiled-only kind) or the source didn't carry the flag.
+   */
+  isActive: boolean | null;
+  /**
+   * `metadata.family` from the DB row — generated machine-contract families
+   * (`agent_io` / `tool_io` / `action_io` / `workflow_io`) and display groups
+   * (`render_block`, …). Null for plain display kinds / compiled-only entries.
+   */
+  family: string | null;
   facets: KindCatalogFacets;
   fields: Record<string, FieldSchema>;
   /** Kinds this kind references (object refs + array itemKinds, transitive through inline_objects — one level). */
@@ -99,6 +110,8 @@ export function buildKindCatalog(
       source: compiledSlugs.has(def.kind) ? "system" : "content_ir",
       tier: def.tier,
       dbRowId: null,
+      isActive: null,
+      family: null,
       facets: facetsOf(def),
       fields: def.schema?.fields ?? {},
       referencedKinds: [],
@@ -114,6 +127,8 @@ export function buildKindCatalog(
         : "content_ir";
       existing.label = entry.label;
       existing.dbRowId = entry.id;
+      existing.isActive = entry.isActive ?? null;
+      existing.family = entry.family ?? null;
       // DB rows are the schema source of truth (registry warm precedence).
       existing.fields = entry.fields;
     } else {
@@ -123,6 +138,8 @@ export function buildKindCatalog(
         source: "content_ir",
         tier: null,
         dbRowId: entry.id,
+        isActive: entry.isActive ?? null,
+        family: entry.family ?? null,
         facets: emptyFacets(),
         fields: entry.fields,
         referencedKinds: [],

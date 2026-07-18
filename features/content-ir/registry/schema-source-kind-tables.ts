@@ -44,6 +44,10 @@ export interface KindDefProjection {
   kind: string;
   label: string;
   data: Json;
+  /** Dual-gate render-trust flag; optional so schema-only callers stay valid. */
+  is_active?: boolean | null;
+  /** Raw `kind_definition.metadata` (family / data_only live here). */
+  metadata?: Json | null;
 }
 export interface KindEdgeProjection {
   parent_definition_id: string;
@@ -130,7 +134,16 @@ export function reconstructKindRegistry(
         edges: edgesByParent.get(d.id) ?? [],
       });
       schemas[d.kind] = schema;
-      entries.push({ id: d.id, label: d.label, slug: d.kind, fields: schema.fields });
+      entries.push({
+        id: d.id,
+        label: d.label,
+        slug: d.kind,
+        fields: schema.fields,
+        ...(d.is_active !== undefined && d.is_active !== null
+          ? { isActive: d.is_active }
+          : {}),
+        family: kindFamilyFromMetadata(d.metadata ?? null),
+      });
     } catch (err) {
       console.warn(
         `[content_ir] skipped malformed kind "${d.kind}": ${
@@ -142,7 +155,7 @@ export function reconstructKindRegistry(
   return { schemas, entries };
 }
 
-const DEF_COLUMNS = "id, kind, label, data" as const;
+const DEF_COLUMNS = "id, kind, label, data, is_active, metadata" as const;
 
 /**
  * Warm tier: every non-deleted kind's SCHEMA in one pair of reads.
@@ -267,12 +280,25 @@ export interface KindInputContract {
 }
 
 /** The generated machine-contract families (mirrors aidream ContractFamily). */
-const GENERATED_CONTRACT_FAMILY_VALUES = new Set([
+export const GENERATED_CONTRACT_FAMILY_VALUES: ReadonlySet<string> = new Set([
   "action_io",
   "tool_io",
   "workflow_io",
   "agent_io",
 ]);
+
+/**
+ * `kind_definition.metadata.family` when present (generated machine contracts
+ * stamp `agent_io` / `tool_io` / `action_io` / `workflow_io`; some display
+ * groups stamp e.g. `render_block`). Null for plain display kinds.
+ */
+export function kindFamilyFromMetadata(metadata: Json | null): string | null {
+  if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const family = (metadata as Record<string, Json | undefined>).family;
+  return typeof family === "string" && family.length > 0 ? family : null;
+}
 
 function isDataOnlyKindMetadata(metadata: Json | null): boolean {
   if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
