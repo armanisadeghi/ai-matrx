@@ -127,6 +127,7 @@ Every context slot declares whether the agent may CHANGE its value or only READ 
 - **Every save creates a new version.** There is no in-place overwrite. See `AGENT_VERSIONING.md`.
 - **Dirty tracking is per-field.** An unsaved edit blocks navigation away; the undo stack is maintained per-field.
 - **Agent Settings UI is part of Builder.** The `features/agent-settings/` directory contains scaffolding (not yet fully wired) for the advanced-settings surface. Extend it there, not in Builder components directly.
+- **Output Schema binds to registered kinds.** The Model Settings → Output Schema tab's "Bind to a kind" picker writes a kind's canonical strict `__kind`-injected schema (`{name, strict, schema}`) into `output_schema` through the normal apply path — the one-click form of the proven aidream channel (`output_schema` → `agent_output_contract` → `response_format_for_kind`). Logic + eligibility rules + fingerprint matching: `features/agents/components/settings-management/output-schema/kindBinding.ts` (golden-tested byte-equal to the kind's live `emitted_block_schema`). Never hand-build a kind schema for an agent — bind it.
 
 ---
 
@@ -141,6 +142,7 @@ Every context slot declares whether the agent may CHANGE its value or only READ 
 
 ## Change log
 
+- `2026-07-17` — claude: Output Schema tab gains "Bind to a kind" (Content IR registry picker), live "Matches kind X" indicator + drift note; same apply/save path.
 - `2026-06-23` — codex: Edit Variable modal Help Text now uses agent-aware `ProTextarea`; long default option text wraps; static options can convert to a linked picklist.
 - `2026-04-22` — claude: initial doc extracted from `agent-system-mental-model.md` §1 and related sources.
 

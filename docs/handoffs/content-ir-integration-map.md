@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-15
+updated: 2026-07-17
 repos: [matrx-frontend, aidream]
 vision: [/Users/armanisadeghi/code/common-docs/content-ir-system/FEATURE.md, /Users/armanisadeghi/code/common-docs/content-ir-system/OWNER_BRIEF.md]
 ---
@@ -21,7 +21,7 @@ Only **94 of 2,712 assistant messages (3.5%)** across **72 of 1,469 conversation
 
 - Skill injection: `aidream/packages/matrx-ai/matrx_ai/skills/resolver.py:89-105` (included → full body) vs `:61-65` (everyone else gets a one-line overview); merge at `aidream/aidream/services/tooling/skill_merge.py:333-420`. Preamble frozen per request (`skill_merge.py:13,18`) — attaching skills is additive/cache-safe.
 - The working emission channel: `aidream/aidream/services/ai_execution/ai_task.py:46,76-95,243-273` — `output_schema` → `agent_output_contract` → `response_format_for_kind`. Live and proven.
-- Builder output-schema UI (raw JSON only, no kind awareness): `features/agents/components/settings-management/output-schema/OutputSchemaTab.tsx`; kind catalog reader: `features/content-ir/registry/kind-catalog.ts`.
+- Builder output-schema UI (kind-aware since Lane B): `features/agents/components/settings-management/output-schema/OutputSchemaTab.tsx`; kind catalog reader: `features/content-ir/registry/kind-catalog.ts`.
 - Kind-aware renderer: `EnhancedChatMarkdown` → `components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx`. Education instead uses `BasicMarkdownContent` (no kind detection).
 - Per-run skill picker plumbing: `features/agents/components/inputs/smart-input/RunSkillPicker.tsx`, mounted in `QuicksetPanel`/`RunControlsTabPanel`.
 - Message actions: `features/agents/.../message-options/messageActionRegistry.ts`. Generative-only creation exemplar: `features/flashcards/components/create/CreateFromTopic.tsx`.
@@ -31,10 +31,13 @@ Only **94 of 2,712 assistant messages (3.5%)** across **72 of 1,469 conversation
 ## Remaining work (ranked; lanes A–D are independent, no file overlap)
 
 1. **Lane A — attach render_block skills so agents can actually emit.** Curate the high-value skills (flashcard_set, quiz_set, timeline, comparison_set, mermaid) onto default/general chat agents via `agent.definition.skill_config.included`, and/or auto-`list` render_block skills in `resolver.py` so every agent sees them by name and can `skill_get`. Backend + DB rows only. Trap: verify prompt-cache stability stays intact (additive only).
-2. **Lane B — kind picker in the builder.** `OutputSchemaTab.tsx`: pick a kind → writes that kind's canonical schema into `output_schema` (source: `kind-catalog.ts`). Makes the ONE working channel one-click for the other 577 agents. Frontend only.
-3. **Lane C — education renders kind-aware. DONE (2026-07-17).** Swept every `features/education/**` content-render site; the ONE kind-blind content-bearing markdown site was `onboard/SummaryDetail.tsx` (study-summary viewer) — swapped `BasicMarkdownContent` → `MarkdownStream` (the code-split `ssr:false` kind-aware engine; `EnhancedChatMarkdown`'s front door). All other surfaces were already kind-correct: the tutor rides `AgentConversationColumn` (the `/chat` kind-aware path); mind maps/memory aids/quizzes/assessments have dedicated kind-native viewers; `/learn` docs are authored `SectionRenderer` blocks, not agent markdown; notes reuse canonical `NotesView`; grade-work/practice `<pre>` are verbatim OCR (plain by design). Browser-verified a summary rendering an interactive `flashcard_set` + mermaid concept map with the P0 trust strip intact, and a plain summary with no regression; type-check + 693 education/content-ir jest tests green. Doc: `features/education/FEATURE.md` (new invariant + changelog).
-4. **Lane D — discovery chips + click-to-convert.** (a) Shape chips in `QuicksetPanel` ("Flashcards", "Quiz", …) that add the skill to the run's `included` via RunSkillPicker plumbing. (b) A "Convert to flashcards/quiz" message/block action feeding the selected table/list to the existing structured-output agents — the ratified convert pattern's first chat affordance. Smart-input + messageActionRegistry only.
-5. **Deferred — workflow demand** (31 defs, 69 runs/30d, envelopes consumed only by Studio): plumbing done; gap is usage, not integration.
+2. **Lane D — discovery chips + click-to-convert.** (a) Shape chips in `QuicksetPanel` ("Flashcards", "Quiz", …) that add the skill to the run's `included` via RunSkillPicker plumbing. (b) A "Convert to flashcards/quiz" message/block action feeding the selected table/list to the existing structured-output agents — the ratified convert pattern's first chat affordance. Smart-input + messageActionRegistry only.
+3. **Deferred — workflow demand** (31 defs, 69 runs/30d, envelopes consumed only by Studio): plumbing done; gap is usage, not integration.
+
+## Done
+
+- Lane B — "Bind to a kind" picker + matches/drift indicator in the builder's Output Schema tab — see `features/agents/components/settings-management/output-schema/` (kindBinding.ts golden-tested byte-equal to flashcard_set's live `emitted_block_schema`).
+- Lane C — education content rendering is kind-aware (`onboard/SummaryDetail.tsx` → `MarkdownStream`; all other surfaces already kind-correct) — see `features/education/FEATURE.md`.
 
 ## Decisions needed
 
