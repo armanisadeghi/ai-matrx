@@ -5,9 +5,12 @@
  */
 
 import {
+  MAX_PLANNED_KINDS_PER_PROPOSAL,
   buildShapePlan,
+  createShapeButtonLabel,
   createShapeFromPlan,
   deriveKindSlug,
+  discardShape,
   draftSampleFromJsonSchema,
   findTakenSlugs,
   isShapePlanFailure,
@@ -108,6 +111,66 @@ describe("buildShapePlan", () => {
       expect(plan.errors[0]).toContain("not a valid Shape slug");
     }
   });
+
+  it("surfaces dropped CONSTRAINT keywords as lossy-conversion warnings", () => {
+    const plan = buildShapePlan(
+      {
+        name: "Constrained",
+        schema: {
+          type: "object",
+          properties: {
+            code: { type: "string", pattern: "^[A-Z]{3}$", minLength: 3 },
+            note: { type: "string", description: "kept annotation" },
+          },
+          required: ["code"],
+        },
+      },
+      "constrained_thing",
+    );
+    expect(isShapePlanFailure(plan)).toBe(false);
+    if (!isShapePlanFailure(plan)) {
+      const joined = plan.warnings.join(" | ");
+      expect(joined).toContain("pattern");
+      expect(joined).toContain("DROPPED");
+      // Pure annotations never cry wolf.
+      expect(joined).not.toContain("description");
+    }
+  });
+
+  it("a clean schema produces zero warnings (no crying wolf)", () => {
+    const plan = planOrThrow();
+    expect(plan.warnings).toEqual([]);
+  });
+
+  it("refuses plans above the nested-kind cap with a simplify message", () => {
+    const properties: Record<string, unknown> = {};
+    for (let i = 0; i < MAX_PLANNED_KINDS_PER_PROPOSAL + 2; i++) {
+      properties[`section_${i}`] = {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { text: { type: "string" } },
+        },
+      };
+    }
+    const plan = buildShapePlan(
+      { name: "Huge", schema: { type: "object", properties } },
+      "huge_schema",
+    );
+    expect(isShapePlanFailure(plan)).toBe(true);
+    if (isShapePlanFailure(plan)) {
+      expect(plan.errors[0]).toContain("Simplify the schema");
+      expect(plan.errors[0]).toContain(String(MAX_PLANNED_KINDS_PER_PROPOSAL));
+    }
+  });
+});
+
+describe("createShapeButtonLabel (lossy acknowledgment)", () => {
+  it("is a plain create with no warnings and an explicit acknowledgment with them", () => {
+    expect(createShapeButtonLabel(0)).toBe("Create Shape");
+    expect(createShapeButtonLabel(1)).toBe("Create anyway (1 warning)");
+    expect(createShapeButtonLabel(3)).toBe("Create anyway (3 warnings)");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -153,6 +216,7 @@ function makeMockClient(options?: {
   exampleStatus?: string;
   takenSlugs?: string[];
   failExampleInsert?: boolean;
+  failEdgeInsert?: boolean;
 }) {
   const calls: TableCall[] = [];
   let defCounter = 0;
@@ -209,11 +273,18 @@ function makeMockClient(options?: {
               };
             }
             // kind_edge
-            return Promise.resolve({ data: null, error: null });
+            return Promise.resolve(
+              options?.failEdgeInsert
+                ? { data: null, error: { message: "edge boom" } }
+                : { data: null, error: null },
+            );
           },
           update: (payload: unknown) => {
             calls.push({ table, op: "update", payload });
             return {
+              // soft-delete compensation path (discardShape)
+              in: () => Promise.resolve({ data: null, error: null }),
+              // kind_example fix-and-retry path
               eq: () => ({
                 select: () => ({
                   single: () =>
@@ -316,8 +387,8 @@ describe("createShapeFromPlan", () => {
     expect(result.validationStatus).toBe("failed");
   });
 
-  it("throws loudly when the example write fails", async () => {
-    const { client } = makeMockClient({ failExampleInsert: true });
+  it("throws loudly AND compensates (soft-deletes the defs) when the example write fails", async () => {
+    const { client, calls } = makeMockClient({ failExampleInsert: true });
     await expect(
       createShapeFromPlan({
         client,
@@ -325,7 +396,68 @@ describe("createShapeFromPlan", () => {
         plan: planOrThrow(),
         sample: VALID_SAMPLE,
       }),
-    ).rejects.toThrow(/canonical example failed to write/);
+    ).rejects.toThrow(/canonical example failed to write.*rolled back/s);
+    // Compensation: soft-delete updates on kind_edge + kind_definition.
+    const updates = calls.filter((c) => c.op === "update");
+    expect(updates.map((c) => c.table).sort()).toEqual([
+      "kind_definition",
+      "kind_edge",
+    ]);
+    for (const u of updates) {
+      expect(
+        (u.payload as Record<string, unknown>).deleted_at,
+      ).toBeTruthy();
+    }
+  });
+
+  it("compensates when the edge insert fails — no orphaned definitions", async () => {
+    const { client, calls } = makeMockClient({ failEdgeInsert: true });
+    await expect(
+      createShapeFromPlan({
+        client,
+        organizationId: ORG_ID,
+        plan: planOrThrow(),
+        sample: VALID_SAMPLE,
+      }),
+    ).rejects.toThrow(/Failed to link nested Shape kinds.*rolled back/s);
+    const updates = calls.filter((c) => c.op === "update");
+    expect(updates.map((c) => c.table)).toContain("kind_definition");
+    // The example insert never ran.
+    expect(
+      calls.some((c) => c.table === "kind_example" && c.op === "insert"),
+    ).toBe(false);
+  });
+
+  it("honors rootLabel for the root row only", async () => {
+    const { client, calls } = makeMockClient();
+    await createShapeFromPlan({
+      client,
+      organizationId: ORG_ID,
+      plan: planOrThrow(),
+      sample: VALID_SAMPLE,
+      rootLabel: "My Custom Label",
+    });
+    const defRows = calls[0].payload as Array<Record<string, unknown>>;
+    expect(defRows[0].label).toBe("My Custom Label");
+    expect(defRows[1].label).not.toBe("My Custom Label");
+  });
+});
+
+describe("discardShape", () => {
+  it("soft-deletes edges and definitions and reports success", async () => {
+    const { client, calls } = makeMockClient();
+    const ok = await discardShape(client, ["def-1", "def-2"]);
+    expect(ok).toBe(true);
+    expect(calls.map((c) => `${c.table}:${c.op}`)).toEqual([
+      "kind_edge:update",
+      "kind_definition:update",
+    ]);
+  });
+
+  it("is a no-op success on an empty id list", async () => {
+    const { client, calls } = makeMockClient();
+    expect(await discardShape(client, [])).toBe(true);
+    expect(calls).toEqual([]);
   });
 });
 

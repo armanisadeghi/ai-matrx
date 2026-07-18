@@ -87,13 +87,27 @@ export function isValidKindSlug(slug: string): boolean {
 // inserts, via the canonical converter + planner.
 // ---------------------------------------------------------------------------
 
+/**
+ * Cap on kinds one proposal may register in a single click. Every nested
+ * object (and array-of-objects item) becomes its own `kind_definition` row —
+ * an unbounded schema would fan a single dialog confirm into dozens of DB
+ * rows. Plans above the cap are refused with a "simplify the schema" message;
+ * the planner itself is NOT changed (other callers keep their semantics).
+ */
+export const MAX_PLANNED_KINDS_PER_PROPOSAL = 12;
+
 export interface ShapePlan {
   rootSlug: string;
   /** Every kind the write creates (root + nested child kinds), root included. */
   planned: PlannedKind[];
   rootPlan: PlannedKind;
-  /** Converter warnings/infos worth showing (errors abort the plan). */
-  problems: ConversionProblem[];
+  /**
+   * Lossy-conversion warnings the dialog MUST render before create: converter
+   * warnings + dropped CONSTRAINT keywords (pattern, format, length/item
+   * bounds, …) whose loss makes the registered schema LOOSER than the
+   * proposal. Never silently discarded.
+   */
+  warnings: string[];
 }
 
 export interface ShapePlanFailure {
@@ -170,12 +184,69 @@ export function buildShapePlan(
     ...plan.kinds.filter((k) => k.kind !== slug),
   ];
 
+  if (planned.length > MAX_PLANNED_KINDS_PER_PROPOSAL) {
+    return {
+      errors: [
+        `This schema would register ${planned.length} kinds (root + nested objects) — the limit is ${MAX_PLANNED_KINDS_PER_PROPOSAL} per Shape. Simplify the schema (fewer distinct nested object shapes) and try again.`,
+      ],
+    };
+  }
+
   return {
     rootSlug: slug,
     planned,
     rootPlan,
-    problems: conversion.problems.filter((p) => p.severity !== "error"),
+    warnings: collectPlanWarnings(conversion),
   };
+}
+
+/**
+ * Dropped keywords that do NOT loosen validation (annotations, or root
+ * markers the emitter re-handles itself). Everything else that the converter
+ * reports dropped is a constraint loss and MUST surface as a warning.
+ */
+const BENIGN_DROPPED_KEYS: ReadonlySet<string> = new Set([
+  "description",
+  "title",
+  "examples",
+  "default",
+  "strict",
+  "additionalProperties",
+  "$schema",
+  "$id",
+]);
+
+function collectPlanWarnings(conversion: {
+  problems: ConversionProblem[];
+  droppedMetadata: Array<{ path: string; dropped: Record<string, unknown> }>;
+}): string[] {
+  const warnings: string[] = [];
+  for (const p of conversion.problems) {
+    // Only real warnings: "info" entries are advisory noise (e.g. "no
+    // existing schema with this slug" — expected, the kind is new).
+    if (p.severity !== "warning") continue;
+    // The converter's "root needs the kind discriminator at runtime" advisory
+    // fires for every plain proposal — registration IS the fix (the emitted
+    // block schema injects it), so it is noise here, not a loss.
+    if (p.message.includes(KIND_KEY)) continue;
+    warnings.push(p.path ? `${p.path}: ${p.message}` : p.message);
+  }
+  for (const entry of conversion.droppedMetadata) {
+    const lost = Object.keys(entry.dropped).filter(
+      (key) => !BENIGN_DROPPED_KEYS.has(key),
+    );
+    if (lost.length === 0) continue;
+    warnings.push(
+      `${entry.path || "(root)"}: constraint${lost.length > 1 ? "s" : ""} ${lost.join(", ")} cannot be represented and will be DROPPED — the registered schema is looser here than the proposal.`,
+    );
+  }
+  return warnings;
+}
+
+/** The create button's label — the explicit lossy-conversion acknowledgment. */
+export function createShapeButtonLabel(warningCount: number): string {
+  if (warningCount === 0) return "Create Shape";
+  return `Create anyway (${warningCount} warning${warningCount > 1 ? "s" : ""})`;
 }
 
 /**
@@ -302,6 +373,8 @@ export interface CreateShapeResult {
   rootDefinitionId: string;
   rootVersion: number;
   createdKinds: string[];
+  /** Every inserted kind_definition id — the discard/compensation handle. */
+  definitionIds: string[];
   exampleId: string;
   /** The DB trigger's derived verdict — 'passed' | 'failed' | 'pending'. */
   validationStatus: string;
@@ -313,7 +386,34 @@ export interface CreateShapeOptions {
   plan: ShapePlan;
   /** The canonical example instance (already ajv-pre-validated by the caller). */
   sample: unknown;
+  /** User-edited display label for the ROOT kind (children keep converter labels). */
+  rootLabel?: string;
   exampleLabel?: string;
+}
+
+/**
+ * Best-effort compensation / discard: soft-delete the given kind_definition
+ * rows and their edges (browser client, same RLS as the insert). Returns
+ * true when both writes succeeded — callers report a false loudly (an
+ * orphaned inactive private kind is recoverable but never silent).
+ */
+export async function discardShape(
+  client: ShapeWriteClient,
+  definitionIds: string[],
+): Promise<boolean> {
+  if (definitionIds.length === 0) return true;
+  const deletedAt = new Date().toISOString();
+  const { error: edgeError } = await client
+    .schema("content_ir")
+    .from("kind_edge")
+    .update({ deleted_at: deletedAt })
+    .in("parent_definition_id", definitionIds);
+  const { error: defError } = await client
+    .schema("content_ir")
+    .from("kind_definition")
+    .update({ deleted_at: deletedAt })
+    .in("id", definitionIds);
+  return !edgeError && !defError;
 }
 
 export async function createShapeFromPlan(
@@ -323,7 +423,10 @@ export async function createShapeFromPlan(
 
   const defRows: KindDefinitionInsert[] = plan.planned.map((k) => ({
     kind: k.kind,
-    label: k.label,
+    label:
+      k.kind === plan.rootSlug && options.rootLabel
+        ? options.rootLabel
+        : k.label,
     organization_id: organizationId,
     authoring_owner: "ts",
     // The transform's ordered element list IS the ts-owned source of truth.
@@ -351,9 +454,25 @@ export async function createShapeFromPlan(
   for (const row of insertedDefs ?? []) {
     idBySlug.set(row.kind, { id: row.id, version: row.version });
   }
+  const definitionIds = [...idBySlug.values()].map((v) => v.id);
+
+  // The def → edges → example sequence is NOT transactional (browser client).
+  // Any failure past this point compensates by soft-deleting the rows just
+  // inserted — an orphaned half-created Shape is never left behind silently.
+  const failLoudWithRollback = async (message: string): Promise<never> => {
+    const rolledBack = await discardShape(client, definitionIds).catch(
+      () => false,
+    );
+    throw new Error(
+      rolledBack
+        ? `${message} The partially created Shape was rolled back (soft-deleted).`
+        : `${message} Rollback ALSO failed — orphaned inactive kind rows remain (ids: ${definitionIds.join(", ")}); remove them via the Shapes admin.`,
+    );
+  };
+
   const root = idBySlug.get(plan.rootSlug);
   if (!root) {
-    throw new Error(
+    return failLoudWithRollback(
       `Shape insert returned no root row for "${plan.rootSlug}" — aborting before edges/example.`,
     );
   }
@@ -367,7 +486,7 @@ export async function createShapeFromPlan(
       if (!child) {
         // Every referenced child was planned + inserted in this batch; a miss
         // is a broken ref graph — scream, never write a dangling edge.
-        throw new Error(
+        return failLoudWithRollback(
           `Shape "${kind.kind}" references child kind "${edge.childKind}" that was not created — ref graph is broken.`,
         );
       }
@@ -386,7 +505,9 @@ export async function createShapeFromPlan(
       .from("kind_edge")
       .insert(edgeRows);
     if (edgeError) {
-      throw new Error(`Failed to link nested Shape kinds: ${edgeError.message}`);
+      return failLoudWithRollback(
+        `Failed to link nested Shape kinds: ${edgeError.message}.`,
+      );
     }
   }
 
@@ -406,8 +527,8 @@ export async function createShapeFromPlan(
     .select("id, validation_status")
     .single();
   if (exampleError) {
-    throw new Error(
-      `Shape created but its canonical example failed to write: ${exampleError.message}`,
+    return failLoudWithRollback(
+      `The Shape's canonical example failed to write: ${exampleError.message}.`,
     );
   }
 
@@ -415,6 +536,7 @@ export async function createShapeFromPlan(
     rootDefinitionId: root.id,
     rootVersion: root.version,
     createdKinds: plan.planned.map((k) => k.kind),
+    definitionIds,
     exampleId: example.id,
     validationStatus: example.validation_status,
   };

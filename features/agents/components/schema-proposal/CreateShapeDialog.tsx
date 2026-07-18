@@ -42,8 +42,10 @@ import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import type { OutputSchema } from "@/features/agents/types/json-schema";
 import {
   buildShapePlan,
+  createShapeButtonLabel,
   createShapeFromPlan,
   deriveKindSlug,
+  discardShape,
   draftSampleFromJsonSchema,
   findTakenSlugs,
   isShapePlanFailure,
@@ -78,6 +80,18 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
     () => JSON.stringify(draftSampleFromJsonSchema(schema.schema) ?? {}, null, 2),
     [schema.schema],
   );
+  const proposalInput = useMemo(
+    () => ({
+      name: schema.name,
+      // MATRX-EXCEPTION: OutputSchema.schema is the agents feature's
+      // structural JsonSchema; the converter takes the generic
+      // Record<string, unknown> node. Same JSON at runtime — re-typed at
+      // this boundary exactly once (mirrors kindBinding's documented cast).
+      schema: schema.schema as unknown as Record<string, unknown>,
+      strict: schema.strict,
+    }),
+    [schema],
+  );
 
   // The parent mounts this dialog fresh per open (conditional render), so
   // initial state IS the per-open reset — no reset effect needed.
@@ -95,15 +109,37 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
   /** Set once the definition exists but its example verdict is not 'passed'. */
   const [pendingFix, setPendingFix] = useState<CreateShapeResult | null>(null);
 
-  // Live per-slug availability (debounced): compiled registry + every
-  // visible kind_definition row (the registry is global by slug). Status is
-  // DERIVED (invalid / stale-check → checking) so the effect only ever sets
-  // state from the async completion, never synchronously.
+  // Plan preview, computed EAGERLY so lossy-conversion warnings and the
+  // nested-kind cap surface BEFORE the create action — never at write time.
+  const planPreview = useMemo(
+    () => (isValidKindSlug(slug) ? buildShapePlan(proposalInput, slug) : null),
+    [proposalInput, slug],
+  );
+  const planWarnings =
+    planPreview && !isShapePlanFailure(planPreview) ? planPreview.warnings : [];
+  const planErrors =
+    planPreview && isShapePlanFailure(planPreview) ? planPreview.errors : [];
+
+  // Live availability (debounced) over EVERY slug the plan would register
+  // (root + nested child kinds): compiled registry + every visible
+  // kind_definition row (the registry is global by slug). Status is DERIVED
+  // (invalid / stale-check → checking) so the effect only ever sets state
+  // from the async completion, never synchronously.
+  const plannedSlugs = useMemo(
+    () =>
+      planPreview && !isShapePlanFailure(planPreview)
+        ? planPreview.planned.map((k) => k.kind)
+        : isValidKindSlug(slug)
+          ? [slug]
+          : [],
+    [planPreview, slug],
+  );
+  const plannedSlugsKey = plannedSlugs.join(",");
   useEffect(() => {
-    if (!open || !isValidKindSlug(slug)) return undefined;
+    if (!open || plannedSlugs.length === 0) return undefined;
     let cancelled = false;
     const timer = setTimeout(() => {
-      void findTakenSlugs(supabase, [slug], (s) =>
+      void findTakenSlugs(supabase, plannedSlugs, (s) =>
         kindRegistry.getSchema(s) !== undefined,
       )
         .then((taken) => {
@@ -118,7 +154,8 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [open, slug]);
+    // plannedSlugsKey is the stable identity of plannedSlugs.
+  }, [open, slug, plannedSlugs, plannedSlugsKey]);
 
   const slugStatus: SlugStatus = !isValidKindSlug(slug)
     ? "invalid"
@@ -153,25 +190,11 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
       return;
     }
 
-    const plan = buildShapePlan(
-      {
-        name: schema.name,
-        // MATRX-EXCEPTION: OutputSchema.schema is the agents feature's
-        // structural JsonSchema; the converter takes the generic
-        // Record<string, unknown> node. Same JSON at runtime — re-typed at
-        // this boundary exactly once (mirrors kindBinding's documented cast).
-        schema: schema.schema as unknown as Record<string, unknown>,
-        strict: schema.strict,
-      },
-      slug,
-    );
-    if (isShapePlanFailure(plan)) {
-      setErrors(plan.errors);
+    const plan = planPreview ?? buildShapePlan(proposalInput, slug);
+    if (!plan || isShapePlanFailure(plan)) {
+      setErrors(plan ? plan.errors : ["Invalid slug."]);
       return;
     }
-    // The plan's kinds carry converter-derived labels; the root uses the
-    // user's label.
-    plan.rootPlan.label = trimmedLabel;
 
     const sample = parseSample();
     if (sample === undefined) return;
@@ -205,6 +228,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
         organizationId,
         plan,
         sample,
+        rootLabel: trimmedLabel,
         exampleLabel: `${trimmedLabel} canonical example`,
       });
       finishForVerdict(result, plan.rootSlug);
@@ -236,6 +260,26 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
     }
   };
 
+  /** Explicit discard of a created-but-failed Shape — never a silent orphan. */
+  const handleDiscardShape = async () => {
+    if (!pendingFix || creating) return;
+    setCreating(true);
+    try {
+      const ok = await discardShape(supabase, pendingFix.definitionIds);
+      if (ok) {
+        toast.success(`Shape "${slug}" discarded`);
+        setPendingFix(null);
+        onOpenChange(false);
+      } else {
+        setErrors([
+          "Discard failed — the kind rows are still present. Remove them from the Shapes admin, or retry.",
+        ]);
+      }
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const finishForVerdict = (result: CreateShapeResult, rootSlug: string) => {
     if (result.validationStatus === "passed") {
       // Warm the client registry so the new kind appears without a reload.
@@ -261,7 +305,9 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
         ? [
             "A 'pending' verdict means the validator could not evaluate the schema — this is a platform defect worth reporting, not a sample problem.",
           ]
-        : ["Edit the sample below and retry — the verdict recomputes on save."]),
+        : [
+            "Edit the sample below and Retry (the verdict recomputes on save), Discard the shape, or Keep it and fix later (it stays inactive and private).",
+          ]),
     ]);
   };
 
@@ -351,6 +397,35 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
             />
           </div>
 
+          {!pendingFix && planWarnings.length > 0 && (
+            <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="min-w-0 space-y-1 text-xs text-amber-700 dark:text-amber-300">
+                <p className="font-medium">
+                  Lossy conversion — review before creating:
+                </p>
+                {planWarnings.map((warning, i) => (
+                  <p key={i} className="break-words">
+                    {warning}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!pendingFix && planErrors.length > 0 && (
+            <div className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div className="min-w-0 space-y-1 text-xs text-destructive">
+                {planErrors.map((err, i) => (
+                  <p key={i} className="break-words">
+                    {err}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
           {errors.length > 0 && (
             <div className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
@@ -366,37 +441,57 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={creating}
-          >
-            {pendingFix ? "Close" : "Cancel"}
-          </Button>
           {pendingFix ? (
-            <Button onClick={handleRetrySample} disabled={creating}>
-              {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Retry sample
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={handleDiscardShape}
+                disabled={creating}
+                className="text-destructive"
+              >
+                Discard shape
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={creating}
+              >
+                Keep and fix later
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.open(shapeDetailHref(slug), "_blank")}
+              >
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                Open kind
+              </Button>
+              <Button onClick={handleRetrySample} disabled={creating}>
+                {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Retry sample
+              </Button>
+            </>
           ) : (
-            <Button
-              onClick={handleCreate}
-              disabled={
-                creating || slugStatus === "taken" || slugStatus === "invalid"
-              }
-            >
-              {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Shape
-            </Button>
-          )}
-          {pendingFix && (
-            <Button
-              variant="outline"
-              onClick={() => window.open(shapeDetailHref(slug), "_blank")}
-            >
-              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-              Open kind
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={creating}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  creating ||
+                  slugStatus === "taken" ||
+                  slugStatus === "invalid" ||
+                  planErrors.length > 0
+                }
+              >
+                {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {createShapeButtonLabel(planWarnings.length)}
+              </Button>
+            </>
           )}
         </DialogFooter>
       </DialogContent>
