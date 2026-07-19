@@ -11,9 +11,8 @@
  * Server vs client:
  *   - Server callers (page.tsx server components) cannot read the picker —
  *     they pass an explicit `baseUrl` (typically `BACKEND_URLS.production`).
- *   - Client callers should use `useWarmAgent` / `useWarmConversation`,
- *     which resolve the base URL from `selectResolvedBaseUrl` and fire on
- *     idle so they don't compete with the page's render path.
+ *   - Conversation warming is intentionally not exposed here: it requires an
+ *     authenticated owner and must happen only after client session hydration.
  *
  * Errors are intentionally swallowed — warm is best-effort. Telemetry can be
  * added by listening on the optional `onError` callback.
@@ -56,21 +55,6 @@ export function warmAgent(
     body,
     keepalive: true,
   }).catch((err) => {
-    onError?.(err);
-  });
-}
-
-/**
- * POST /ai/conversations/{conversationId}/warm — preloads the conversation
- * cache. No body. Public route, no auth.
- */
-export function warmConversation(
-  conversationId: string,
-  { baseUrl, onError }: WarmOptions,
-): void {
-  if (!baseUrl || !conversationId) return;
-  const url = `${baseUrl}${ENDPOINTS.ai.conversationWarm(conversationId)}`;
-  fetch(url, { method: "POST", keepalive: true }).catch((err) => {
     onError?.(err);
   });
 }

@@ -653,6 +653,19 @@ export function buildSafeRequestLog(
   return { headers: safeHeaders, body: bodyMetadata };
 }
 
+export function redactUrlForRequestLog(url: string): string {
+  try {
+    const parsed = new URL(url);
+    for (const key of parsed.searchParams.keys()) {
+      parsed.searchParams.set(key, "[REDACTED]");
+    }
+    return parsed.toString();
+  } catch {
+    const queryIndex = url.indexOf("?");
+    return queryIndex === -1 ? url : `${url.slice(0, queryIndex)}?[REDACTED]`;
+  }
+}
+
 /** Log redacted request metadata when test overrides request it. */
 function maybeLogRequest(
   url: string,
@@ -663,7 +676,9 @@ function maybeLogRequest(
 ): void {
   if (!testOverrides?.logRequest) return;
   const safe = buildSafeRequestLog(headers, body);
-  console.group(`[callApi] ${method.toUpperCase()} ${url}`);
+  console.group(
+    `[callApi] ${method.toUpperCase()} ${redactUrlForRequestLog(url)}`,
+  );
   console.log("Headers:", safe.headers);
   console.log("Body metadata:", safe.body);
   console.groupEnd();

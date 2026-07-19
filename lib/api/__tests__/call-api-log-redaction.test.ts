@@ -1,4 +1,4 @@
-import { buildSafeRequestLog } from "../call-api";
+import { buildSafeRequestLog, redactUrlForRequestLog } from "../call-api";
 
 describe("callApi request log redaction", () => {
   it("never returns bearer, cookie, API-key, or body values", () => {
@@ -19,5 +19,16 @@ describe("callApi request log redaction", () => {
     expect(safe.headers.Accept).toBe("application/json");
     expect(safe.body).toEqual({ type: "object", keys: ["prompt", "nested"] });
     expect(JSON.stringify(safe)).not.toContain(sentinel);
+  });
+
+  it("redacts every query parameter value", () => {
+    const sentinel = "SENTINEL_QUERY_SECRET_912a";
+    const safe = redactUrlForRequestLog(
+      `https://server.test/ai/chat?token=${sentinel}&prompt=${sentinel}`,
+    );
+
+    expect(safe).not.toContain(sentinel);
+    expect(safe).toContain("token=%5BREDACTED%5D");
+    expect(safe).toContain("prompt=%5BREDACTED%5D");
   });
 });
