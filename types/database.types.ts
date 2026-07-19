@@ -22939,6 +22939,7 @@ export type Database = {
       }
       app_instances: {
         Row: {
+          app_version: string | null
           architecture: string | null
           board_id: string | null
           cpu_cores: number | null
@@ -22976,6 +22977,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          app_version?: string | null
           architecture?: string | null
           board_id?: string | null
           cpu_cores?: number | null
@@ -23013,6 +23015,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          app_version?: string | null
           architecture?: string | null
           board_id?: string | null
           cpu_cores?: number | null
@@ -26624,6 +26627,28 @@ export type Database = {
           metadata: Json
           permissions: Json
           user_created_at: string
+          user_id: string
+        }[]
+      }
+      admin_list_app_instances: {
+        Args: never
+        Returns: {
+          app_version: string
+          architecture: string
+          cpu_cores: number
+          cpu_model: string
+          created_at: string
+          id: string
+          instance_id: string
+          instance_name: string
+          is_active: boolean
+          last_seen: string
+          metadata: Json
+          os_version: string
+          platform: string
+          ram_total_gb: number
+          tunnel_active: boolean
+          user_email: string
           user_id: string
         }[]
       }
