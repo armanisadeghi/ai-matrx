@@ -191,7 +191,9 @@
     ".next-preview-legalfix/types/**/*.ts",
     ".next-preview-legalfix/dev/types/**/*.ts",
     ".next-agent-7b9047ca6ff7/types/**/*.ts",
-    ".next-agent-7b9047ca6ff7/dev/types/**/*.ts"
+    ".next-agent-7b9047ca6ff7/dev/types/**/*.ts",
+    ".next-agent-c5f617fb15f7/types/**/*.ts",
+    ".next-agent-c5f617fb15f7/dev/types/**/*.ts"
   ],
   "exclude": [
     ".next*/**",
