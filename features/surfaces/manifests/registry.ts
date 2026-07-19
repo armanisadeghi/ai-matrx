@@ -8,7 +8,7 @@
  * Adding a new surface:
  *   1. Create `<surface-slug>.manifest.ts` in this directory (see README).
  *   2. Export a `SurfaceManifest` from it.
- *   3. Add it to `ALL_MANIFESTS` below.
+ *   3. Add it to `RAW_MANIFESTS` below (`ALL_MANIFESTS` is derived).
  *   4. Run the manifest sync from the Surfaces admin (or hit the API).
  *
  * Removing a manifest does NOT delete its DB rows automatically — the sync

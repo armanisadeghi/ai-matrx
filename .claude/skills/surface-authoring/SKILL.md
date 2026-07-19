@@ -1,6 +1,6 @@
 ---
 name: surface-authoring
-description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration, baseline-vs-specific values, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the CI drift check. Use whenever the task touches `features/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values".
+description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration, baseline-vs-specific values, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the manifest drift check. Use whenever the task touches `features/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values".
 ---
 
 # Surface authoring
@@ -52,8 +52,10 @@ These are short — read them when the task is non-trivial:
 
 - `features/surfaces/types.ts` — `SurfaceValue`, `SurfaceManifest`, `ValueMapping`, `SurfaceScopePayload`
 - `features/surfaces/manifests/_baseline.manifest.ts` — `BASELINE_VALUES`, `pickBaseline`, `mergeBaselineValues`
-- `features/surfaces/manifests/registry.ts` — central `ALL_MANIFESTS` list (where you wire your new manifest)
+- `features/surfaces/manifests/registry.ts` — register your manifest in **`RAW_MANIFESTS`**; `ALL_MANIFESTS` is derived from it (inheritance resolved + baselines injected) and is what everything consumes
 - `features/surfaces/manifests/notes-editor.manifest.ts` — canonical full example (mix of baseline + specific + scope helper)
+
+The full `SurfaceManifest` also carries `label`, `urlPattern`, `inheritsFrom`, `agentRoles`, `configNamespaces`, `evidenceSources` (code-only, never mirrored to DB), and `skipBaselineValues` — this skill covers the values half; for roles, config namespaces, and inheritance, **invoke the `surface-registration` skill**.
 
 ## The `SurfaceValue` shape — every field matters
 
@@ -62,7 +64,7 @@ interface SurfaceValue {
   name: string;              // snake_case, unique in surface, regex-checked
   label: string;             // short human label, used in binding UI dropdowns
   description: string;       // 1-2 sentences. WHEN it's populated AND what it represents
-  valueType: "string" | "number" | "boolean" | "object" | "array";
+  valueType: "string" | "number" | "boolean" | "object" | "array" | "document";
   alwaysAvailable: boolean;  // true ONLY if the surface guarantees it on every launch
   typicalCharCount: number;  // avg stringified size — drives context-window warnings
   sortOrder?: number;        // optional, defaults to 1000 in DB
@@ -187,9 +189,9 @@ export function create<LocalSlug>Scope(values: {
 
 Mirror `notes-editor.manifest.ts` if anything is unclear — it's the reference implementation.
 
-### Skipping the baseline
+### Baselines are auto-injected — opting out
 
-You can also pass `[]` as the first arg of `mergeBaselineValues` (or just set `values: surfaceSpecific` directly) when a surface doesn't conceptually have a selection / content (e.g. a metadata-only widget). Don't include baseline values "just in case" — every value is a row in the binding UI's dropdown.
+The registry **injects the full baseline set into every manifest** (`withInjectedBaselines` in `registry.ts`) so agent authors can bind generic values on any surface. A same-named value you declare wins over the injected one. Passing `[]` to `mergeBaselineValues` does NOT skip baselines — the registry re-adds them. A surface with genuinely no text/content concept (e.g. a metadata-only widget) opts out with **`skipBaselineValues: true`** on the manifest.
 
 ## Wiring it up
 
@@ -198,11 +200,12 @@ You can also pass `[]` as the first arg of `mergeBaselineValues` (or just set `v
    ```ts
    import { <localSlug>Manifest } from "./<local-slug>.manifest";
    // ...
-   export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
+   const RAW_MANIFESTS: readonly SurfaceManifest[] = [
      // ...existing
      <localSlug>Manifest,
    ];
    ```
+   `ALL_MANIFESTS` is derived from `RAW_MANIFESTS` (inheritance + baseline injection) — never edit it directly.
 3. **Run the drift check locally** before pushing:
    ```bash
    pnpm check:surface-drift
@@ -220,7 +223,7 @@ If you're adding a brand-new surface (not just adding values to an existing one)
 - Easiest path: open `/administration/surfaces` → "New Surface" → pick the client + enter the name.
 - Or via SQL (admin only, ON CASCADE on the FKs):
   ```sql
-  INSERT INTO public.ui_surface (name, client_name, description, sort_order, is_active)
+  INSERT INTO ui.ui_surface (name, client_name, description, sort_order, is_active)
   VALUES ('<client>/<local>', '<client>', '<1-sentence description>', 300, true);
   ```
 - If the surface is in the curated candidates list (`features/surfaces/data/surface-candidates.ts`), the admin "Add from candidates" dialog seeds it in one click.
@@ -230,7 +233,7 @@ If you're adding a brand-new surface (not just adding values to an existing one)
 Rare. Only when the user explicitly asks for a new client domain (e.g. a new mobile app). Confirm first; then:
 
 ```sql
-INSERT INTO public.ui_client (name, description, sort_order, is_active)
+INSERT INTO ui.ui_client (name, description, sort_order, is_active)
 VALUES ('<new-client>', '<description>', 200, true);
 ```
 
@@ -258,7 +261,7 @@ dispatch(
 );
 ```
 
-The thunk at `features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` reads `runtime.surfaceName`, looks up the agent's `agx_agent_surface` binding for the current caller scope, applies its `value_mappings` JSONB via the resolver, and falls back to legacy auto-name-matching for unmapped keys. If you skip `surfaceName`, you get the legacy auto-name-match path only — explicit mappings won't apply.
+The thunk at `features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` reads `runtime.surfaceName`, fetches the agent's binding layers via `fetchSurfaceBindingLayers` (bindings are `platform.associations` edges read through the `agent.menu_surface` view — written ONLY via `features/surfaces/services/bind-agent-to-surface.service.ts`), merges layers weakest→strongest, applies `value_mappings` via the resolver, and falls back to legacy auto-name-matching for unmapped keys. If you skip `surfaceName`, you get the legacy auto-name-match path only — explicit mappings won't apply.
 
 ## Updating an existing manifest
 
@@ -279,7 +282,7 @@ The thunk at `features/agents/redux/execution-system/thunks/launch-agent-executi
 - **Stuffing everything into `context`.** It's escape-valve only. Each named field is queryable in binding UIs; `context` is opaque to the LLM in mapping previews. If the surface emits 5 obvious things, declare 5 SurfaceValues.
 - **Lying about `alwaysAvailable`.** This breaks the `createXxxScope` type guarantee. If the surface code has any `if` branch that skips writing a key, that key is `false`.
 - **Generic descriptions.** "The user's note" tells the LLM nothing. "Markdown body of the note the user has open. Empty when no note is open." is correct.
-- **Mismatched `surfaceName`.** `ui_surface.name`, the manifest's `surfaceName`, the runtime `runtime.surfaceName`, and the `agx_agent_surface.surface_name` foreign key must be byte-identical. The DB enforces this via FK + ON UPDATE CASCADE.
+- **Mismatched `surfaceName`.** `ui_surface.name`, the manifest's `surfaceName`, and the runtime `runtime.surfaceName` must be byte-identical. Binding edges reference the surface by uuid (`platform.associations.target_id`), so a name mismatch doesn't break stored bindings — it silently resolves NO bindings at launch.
 - **Skipping the scope helper.** `dispatch(launchAgentExecution({ runtime: { applicationScope: { selecton: "..." } } }))` — typo, no TS error, silent miss at runtime. Always go through `createXxxScope`.
 - **Inventing a baseline-style key.** If you find yourself adding `selection` or `content` to `surfaceSpecific` instead of spreading from baseline, stop — you'll fork the description and confuse mappings. Spread from `BASELINE_VALUES` and override only when the surface's semantics genuinely differ.
 - **Forgetting to update the helper signature when `alwaysAvailable` changes.** The signature is hand-maintained; the drift script doesn't verify it.
@@ -290,7 +293,8 @@ The thunk at `features/agents/redux/execution-system/thunks/launch-agent-executi
 |---|---|
 | `SurfaceManifest` / `SurfaceValue` / `ValueMapping` types | `features/surfaces/types.ts` |
 | Baseline values + helpers | `features/surfaces/manifests/_baseline.manifest.ts` |
-| Central registry (`ALL_MANIFESTS`) | `features/surfaces/manifests/registry.ts` |
+| Central registry (`RAW_MANIFESTS` → derived `ALL_MANIFESTS`) | `features/surfaces/manifests/registry.ts` |
+| Binding service (associations edges) | `features/surfaces/services/bind-agent-to-surface.service.ts` |
 | Per-manifest README | `features/surfaces/manifests/README.md` |
 | Sync service (diff + upsert) | `features/surfaces/services/manifest-sync.service.ts` |
 | Sync API (admin-gated) | `app/api/admin/surfaces/sync-manifests/route.ts` |
@@ -299,7 +303,7 @@ The thunk at `features/agents/redux/execution-system/thunks/launch-agent-executi
 | Launch thunk integration | `features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` |
 | Admin UI | `app/(authenticated)/(admin-auth)/administration/surfaces/` |
 | Agent-side binding UI | `app/(a)/agents/[id]/surfaces/page.tsx` + `features/surfaces/components/AgentSurfacesPanel.tsx` |
-| CI drift check | `scripts/check-surface-drift.ts` (`pnpm check:surface-drift`) |
+| Drift check (manual — in `pnpm validate`, NOT commit/CI-run) | `scripts/check-surface-drift.ts` (`pnpm check:surface-drift`) |
 | Candidate catalog (for the admin "add" dialog) | `features/surfaces/data/surface-candidates.ts` |
 
 ## Pre-flight checklist
@@ -309,7 +313,7 @@ Before you say a surface is added:
 - [ ] `ui_client` row exists for the client
 - [ ] `ui_surface` row exists with the exact `<client>/<local>` name
 - [ ] `<local-slug>.manifest.ts` created in `features/surfaces/manifests/`
-- [ ] Manifest imported + included in `ALL_MANIFESTS` in `registry.ts`
+- [ ] Manifest imported + included in `RAW_MANIFESTS` in `registry.ts`
 - [ ] Every `SurfaceValue` has: a snake_case `name`, a 2-4 word `label`, a 1-2 sentence `description` covering the empty case, a correct `valueType`, an honest `alwaysAvailable`, and a sensible `typicalCharCount`
 - [ ] `createXxxScope` helper exists and its required (no `?`) keys match every `alwaysAvailable: true` value
 - [ ] `pnpm check:surface-drift` passes

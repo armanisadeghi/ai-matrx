@@ -1,6 +1,6 @@
 # Surface Manifests
 
-Code-first declarations of the named runtime values each UI surface can supply. Mirrored into `public.ui_surface_value` so binding UIs (agent mapping editors, tool mapping editors, audit views) always show what the surface actually emits.
+Code-first declarations of the named runtime values each UI surface can supply. Mirrored into `ui.ui_surface_value` so binding UIs (agent mapping editors, tool mapping editors, audit views) always show what the surface actually emits.
 
 This directory is the **single source of truth**. The DB is a synced reflection. Admin UI for surface values is read-only — to change what a surface offers, you change the manifest here.
 
@@ -48,7 +48,7 @@ This directory is the **single source of truth**. The DB is a synced reflection.
    }
    ```
 
-3. **Register it.** Edit `registry.ts`, import the manifest, and add it to `ALL_MANIFESTS`.
+3. **Register it.** Edit `registry.ts`, import the manifest, and add it to `RAW_MANIFESTS`. `ALL_MANIFESTS` is derived (inheritance resolved + generic baselines auto-injected; opt out with `skipBaselineValues`) — never edit it directly.
 
 4. **Sync the DB.** Run the manifest sync from the Surfaces admin page (Phase 2), or hit `POST /api/admin/surfaces/sync-manifests` directly. Drift report is at `GET /api/admin/surfaces/drift-report`.
 
