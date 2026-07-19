@@ -11,11 +11,9 @@
 import { configSnapshotJson } from "@/features/admin/applications/config/schema";
 import { entrySnapshotJson } from "@/features/admin/applications/catalogs/schemas";
 import { kindLabel } from "@/features/admin/applications/catalogs/schemas";
-import type {
-  AppConfigHistoryRow,
-  ApplicationsHistoryEntry,
-  CatalogEntryHistoryRow,
-} from "@/features/admin/applications/history/types";
+import type { ApplicationsHistoryEntry } from "@/features/admin/applications/history/types";
+import type { AppConfigHistoryRow } from "@/features/admin/applications/config/types";
+import type { CatalogEntryHistoryRow } from "@/features/admin/applications/catalogs/types";
 
 /** Intermediate shape before prior-snapshot pairing. */
 interface Staged {

@@ -64,23 +64,6 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
     void refreshRows();
   };
 
-  if (view.mode !== "list") {
-    const row =
-      view.mode === "edit"
-        ? (rows.find((r) => r.app === view.app) ?? null)
-        : null;
-    return (
-      <div className="h-full overflow-y-auto p-4">
-        <AppConfigEditor
-          key={view.mode === "edit" ? view.app : "new"}
-          row={row}
-          onBack={() => setView({ mode: "list" })}
-          onSaved={handleSaved}
-        />
-      </div>
-    );
-  }
-
   const columns = useMemo((): MatrxColumnDef<AppConfigRow>[] => {
     return [
       {
@@ -147,6 +130,23 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
       },
     ];
   }, [adminEmails]);
+
+  if (view.mode !== "list") {
+    const row =
+      view.mode === "edit"
+        ? (rows.find((r) => r.app === view.app) ?? null)
+        : null;
+    return (
+      <div className="h-full overflow-y-auto p-4">
+        <AppConfigEditor
+          key={view.mode === "edit" ? view.app : "new"}
+          row={row}
+          onBack={() => setView({ mode: "list" })}
+          onSaved={handleSaved}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">

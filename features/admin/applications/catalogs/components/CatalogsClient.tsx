@@ -120,66 +120,6 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
     new Set(appRows.map((r) => r.kind).filter((k) => !knownSlugs.has(k))),
   ).sort((a, b) => a.localeCompare(b));
 
-  if (view.mode === "edit" || view.mode === "new") {
-    const row =
-      view.mode === "edit"
-        ? (rows.find((r) => r.id === view.entryId) ?? null)
-        : null;
-    return (
-      <div className="h-full overflow-y-auto p-4">
-        <CatalogEntryEditor
-          key={view.mode === "edit" ? view.entryId : `new-${view.kind}`}
-          app={app}
-          row={row}
-          prefill={view.mode === "new" ? view.prefill : null}
-          initialKind={view.kind}
-          onBack={() => setView({ mode: "kind", kind: view.kind })}
-          onSaved={handleSaved}
-          onDeleted={() => {
-            setView({ mode: "kind", kind: view.kind });
-            void refreshRows();
-          }}
-        />
-        <AddFromLinkDialog
-          key={`link-${linkDialogKind ?? "auto"}`}
-          open={linkDialogOpen}
-          onOpenChange={setLinkDialogOpen}
-          defaultKind={linkDialogKind}
-          onPick={handleLinkPick}
-        />
-      </div>
-    );
-  }
-
-  if (view.mode === "kind") {
-    const kindEntries = appRows.filter((r) => r.kind === view.kind);
-    return (
-      <div className="flex h-full flex-col gap-3 p-4">
-        <CatalogKindTable
-          app={app}
-          kind={view.kind}
-          entries={kindEntries}
-          onBack={() => setView({ mode: "kinds" })}
-          onOpenEntry={(row) =>
-            setView({ mode: "edit", kind: row.kind, entryId: row.id })
-          }
-          onNewEntry={() =>
-            setView({ mode: "new", kind: view.kind, prefill: null })
-          }
-          onAddFromLink={() => openAddFromLink(view.kind)}
-          onChanged={() => void refreshRows()}
-        />
-        <AddFromLinkDialog
-          key={`link-${linkDialogKind ?? "auto"}`}
-          open={linkDialogOpen}
-          onOpenChange={setLinkDialogOpen}
-          defaultKind={linkDialogKind}
-          onPick={handleLinkPick}
-        />
-      </div>
-    );
-  }
-
   // One row per kind: the registry order, plus any unregistered kinds present
   // in the data (forward compat \u2014 never hide real rows).
   const kindRows = useMemo(
@@ -281,6 +221,66 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
       width: 90,
     },
   ];
+
+  if (view.mode === "edit" || view.mode === "new") {
+    const row =
+      view.mode === "edit"
+        ? (rows.find((r) => r.id === view.entryId) ?? null)
+        : null;
+    return (
+      <div className="h-full overflow-y-auto p-4">
+        <CatalogEntryEditor
+          key={view.mode === "edit" ? view.entryId : `new-${view.kind}`}
+          app={app}
+          row={row}
+          prefill={view.mode === "new" ? view.prefill : null}
+          initialKind={view.kind}
+          onBack={() => setView({ mode: "kind", kind: view.kind })}
+          onSaved={handleSaved}
+          onDeleted={() => {
+            setView({ mode: "kind", kind: view.kind });
+            void refreshRows();
+          }}
+        />
+        <AddFromLinkDialog
+          key={`link-${linkDialogKind ?? "auto"}`}
+          open={linkDialogOpen}
+          onOpenChange={setLinkDialogOpen}
+          defaultKind={linkDialogKind}
+          onPick={handleLinkPick}
+        />
+      </div>
+    );
+  }
+
+  if (view.mode === "kind") {
+    const kindEntries = appRows.filter((r) => r.kind === view.kind);
+    return (
+      <div className="flex h-full flex-col gap-3 p-4">
+        <CatalogKindTable
+          app={app}
+          kind={view.kind}
+          entries={kindEntries}
+          onBack={() => setView({ mode: "kinds" })}
+          onOpenEntry={(row) =>
+            setView({ mode: "edit", kind: row.kind, entryId: row.id })
+          }
+          onNewEntry={() =>
+            setView({ mode: "new", kind: view.kind, prefill: null })
+          }
+          onAddFromLink={() => openAddFromLink(view.kind)}
+          onChanged={() => void refreshRows()}
+        />
+        <AddFromLinkDialog
+          key={`link-${linkDialogKind ?? "auto"}`}
+          open={linkDialogOpen}
+          onOpenChange={setLinkDialogOpen}
+          defaultKind={linkDialogKind}
+          onPick={handleLinkPick}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">

@@ -5,9 +5,6 @@
 // admin-readable). Each source keeps its own canonical JSON normalization so
 // diffs stay apples-to-apples with the per-feature history panels.
 
-import type { AppConfigHistoryRow } from "@/features/admin/applications/config/types";
-import type { CatalogEntryHistoryRow } from "@/features/admin/applications/catalogs/types";
-
 export type HistorySource = "configuration" | "catalog";
 
 /** One normalized row in the merged timeline. */
@@ -31,5 +28,3 @@ export interface ApplicationsHistoryEntry {
    */
   previousJson: string;
 }
-
-export type { AppConfigHistoryRow, CatalogEntryHistoryRow };
