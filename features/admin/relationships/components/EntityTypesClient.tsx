@@ -59,6 +59,7 @@ const EMPTY_EDITOR: EntityTypeEditorState = {
   referencePickable: false,
   titleColumn: "",
   contentRole: "",
+  referenceCategory: "",
 };
 
 function rowToEditor(row: EntityTypeRow): EntityTypeEditorState {
@@ -86,6 +87,7 @@ function rowToEditor(row: EntityTypeRow): EntityTypeEditorState {
     referencePickable: row.reference_pickable,
     titleColumn: row.title_column ?? "",
     contentRole: row.content_role ?? "",
+    referenceCategory: row.reference_category ?? "",
   };
 }
 
@@ -235,7 +237,11 @@ export function EntityTypesClient({ entityTypes }: Props) {
           row.reference_pickable ? (
             <span className="font-mono text-[11px]">
               {row.title_column ?? "(candidate override)"}
-              {row.content_role ? (
+              {row.reference_category ? (
+                <span className="text-muted-foreground">
+                  {" "}· {row.reference_category}
+                </span>
+              ) : row.content_role ? (
                 <span className="text-muted-foreground"> · {row.content_role}</span>
               ) : null}
             </span>
@@ -298,6 +304,21 @@ export function EntityTypesClient({ entityTypes }: Props) {
     if (!editor || !editorValid) return;
     setSaving(true);
     try {
+      // A never-seen category slug is registered on the fly (idempotent),
+      // so typing a fresh bucket name in the form Just Works.
+      const refCat = editor.referenceCategory.trim();
+      if (refCat) {
+        const { error: catError } = await supabase.rpc(
+          "admin_upsert_reference_category",
+          {
+            p_slug: refCat,
+            p_label: refCat
+              .replace(/[-_]+/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase()),
+          },
+        );
+        if (catError) throw catError;
+      }
       const { error } = await supabase.rpc("admin_upsert_entity_type", {
         p_token: editor.token,
         p_schema_name: editor.schemaName,
@@ -321,6 +342,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
         p_reference_pickable: editor.referencePickable,
         p_title_column: editor.titleColumn || undefined,
         p_content_role: editor.contentRole || undefined,
+        p_reference_category: editor.referenceCategory.trim() || undefined,
       });
       if (error) throw error;
       toast.success(

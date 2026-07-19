@@ -13,6 +13,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { callReferenceSearchCandidates } from "@/features/scopes/service/associationCandidates";
 
 const CHUNK = 100;
 
@@ -62,6 +63,29 @@ export async function fetchEntityTitles(
     else missing.push(id);
   }
   if (missing.length === 0 || !info?.titleColumn) return out;
+
+  // CANONICAL PATH: the universal SECURITY DEFINER reader (see
+  // associationCandidates.ts). Direct table read below is the legacy fallback.
+  {
+    const { data, error } = await callReferenceSearchCandidates({
+      p_token: token,
+      p_ids: missing,
+      p_limit: missing.length,
+    });
+    if (!error) {
+      for (const r of data) {
+        const title = String(r.title ?? "").trim();
+        if (!title) continue;
+        titleCache.set(entityTitleCacheKey(token, String(r.id)), title);
+        out.set(String(r.id), title);
+      }
+      return out;
+    }
+    console.warn(
+      `[fetchEntityTitles] reference_search_candidates unavailable for "${token}" ` +
+        `(${error.message}) — falling back to direct table read.`,
+    );
+  }
 
   const titleCol = info.titleColumn;
   const db = (

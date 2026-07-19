@@ -9,7 +9,9 @@
  * server-side from schema + table (the RPC validates the table exists).
  */
 
+import { useId } from "react";
 import { TriangleAlert } from "lucide-react";
+import { REFERENCE_CATEGORY_DISPLAY } from "@/types/generated/entity-types.generated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -46,6 +48,8 @@ export interface EntityTypeEditorState {
   referencePickable: boolean;
   titleColumn: string;
   contentRole: string;
+  /** platform.reference_categories slug; "" = bucket by schema. */
+  referenceCategory: string;
 }
 
 const TOKEN_PATTERN = /^[a-z][a-z0-9_]*$/;
@@ -87,6 +91,7 @@ export function EntityTypeForm({
   onCancel,
   onSave,
 }: Props) {
+  const categoryListId = useId();
   const createMode = editor.mode === "create";
   const tokenInvalid =
     editor.token.length > 0 && !isValidEntityToken(editor.token);
@@ -316,6 +321,37 @@ export function EntityTypeForm({
             </Select>
             <p className="text-[10px] text-muted-foreground">
               Grouping bucket for two-tier pickers and resource surfaces.
+            </p>
+          </div>
+          <div className="col-span-2 flex flex-col gap-1.5">
+            <span className="text-xs font-medium">Reference category</span>
+            <Input
+              value={editor.referenceCategory}
+              onChange={(e) =>
+                onChange({
+                  ...editor,
+                  referenceCategory: e.target.value
+                    .toLowerCase()
+                    .replace(/\s+/g, "-"),
+                })
+              }
+              list={categoryListId}
+              placeholder="empty = bucket by schema"
+              className="h-8 font-mono"
+              style={{ fontSize: "16px" }}
+            />
+            <datalist id={categoryListId}>
+              {Object.entries(REFERENCE_CATEGORY_DISPLAY).map(([slug, c]) => (
+                <option key={slug} value={slug}>
+                  {c.label}
+                </option>
+              ))}
+            </datalist>
+            <p className="text-[10px] text-muted-foreground">
+              Chooser bucket in the reference &ldquo;Allowed types&rdquo; UI. A
+              new slug is registered automatically on save
+              (platform.reference_categories); empty falls back to the
+              schema&apos;s pretty name.
             </p>
           </div>
         </div>

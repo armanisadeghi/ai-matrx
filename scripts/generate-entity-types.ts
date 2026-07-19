@@ -54,6 +54,7 @@ export interface EntityTypeSourceRow {
   reference_pickable: boolean;
   title_column: string | null;
   content_role: string | null;
+  reference_category: string | null;
 }
 
 export function loadSupabase() {
@@ -89,6 +90,27 @@ export async function fetchEntityTypes(): Promise<EntityTypeSourceRow[]> {
   }
   // Deterministic order regardless of PG collation quirks.
   return [...rows].sort((a, b) => a.token.localeCompare(b.token, "en"));
+}
+
+/** One row of `platform.reference_categories` (admin-defined chooser buckets). */
+export interface ReferenceCategorySourceRow {
+  slug: string;
+  label: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+export async function fetchReferenceCategories(): Promise<ReferenceCategorySourceRow[]> {
+  const supabase = loadSupabase();
+  if (!supabase) throw new Error("Missing Supabase env (see fetchEntityTypes).");
+  const { data, error } = await supabase.rpc("reference_categories_list");
+  if (error) {
+    throw new Error(`Failed to read reference_categories_list(): ${error.message}`);
+  }
+  const rows = (data ?? []) as ReferenceCategorySourceRow[];
+  return [...rows].sort(
+    (a, b) => a.sort_order - b.sort_order || a.slug.localeCompare(b.slug, "en"),
+  );
 }
 
 /** One row of `platform.schemas` (pretty names for tier-1 schema buckets). */
@@ -132,6 +154,7 @@ function unionLiteral(tokens: string[]): string {
 export function renderGeneratedSource(
   rows: EntityTypeSourceRow[],
   schemas: SchemaSourceRow[] = [],
+  referenceCategories: ReferenceCategorySourceRow[] = [],
 ): string {
   const tokens = rows.map((r) => r.token);
   const component = rows.filter((r) => r.is_component).map((r) => r.token);
@@ -158,12 +181,20 @@ export function renderGeneratedSource(
         `referencePickable: ${r.reference_pickable}`,
         `titleColumn: ${r.title_column === null ? "null" : TS_STR(r.title_column)}`,
         `contentRole: ${r.content_role === null ? "null" : TS_STR(r.content_role)}`,
+        `referenceCategory: ${r.reference_category === null ? "null" : TS_STR(r.reference_category)}`,
       ].join(", ");
       return `  ${TS_STR(r.token)}: { ${fields} },`;
     })
     .join("\n");
 
   const tokenArray = tokens.map((t) => `  ${TS_STR(t)},`).join("\n");
+
+  const categoryEntries = referenceCategories
+    .map(
+      (c) =>
+        `  ${TS_STR(c.slug)}: { label: ${TS_STR(c.label)}, sortOrder: ${c.sort_order}, isActive: ${c.is_active} },`,
+    )
+    .join("\n");
 
   const schemaEntries = schemas
     .map(
@@ -210,6 +241,8 @@ export interface EntityTypeMeta {
   readonly titleColumn: string | null;
   /** Knowledge-model bucket: utility | source | destination | hybrid | container. */
   readonly contentRole: string | null;
+  /** Admin-assigned chooser bucket (platform.reference_categories.slug); null = bucket by schema. */
+  readonly referenceCategory: string | null;
 }
 
 /**
@@ -261,6 +294,19 @@ export const SCHEMA_DISPLAY: Record<
 ${schemaEntries}
 };
 
+/**
+ * Admin-defined reference chooser buckets, mirrored from
+ * \`platform.reference_categories\` (\`admin_upsert_reference_category\`).
+ * An entity type's \`referenceCategory\` points here; unassigned types
+ * bucket by schema via \`SCHEMA_DISPLAY\`.
+ */
+export const REFERENCE_CATEGORY_DISPLAY: Record<
+  string,
+  { readonly label: string; readonly sortOrder: number; readonly isActive: boolean }
+> = {
+${categoryEntries}
+};
+
 const ENTITY_TYPE_TOKEN_SET: ReadonlySet<string> = new Set(ENTITY_TYPE_TOKENS);
 
 /** Runtime guard: is \`value\` a registered entity token? Narrows to the union. */
@@ -274,7 +320,8 @@ async function main(): Promise<void> {
   const check = process.argv.includes("--check");
   const rows = await fetchEntityTypes();
   const schemas = await fetchSchemas();
-  const source = renderGeneratedSource(rows, schemas);
+  const referenceCategories = await fetchReferenceCategories();
+  const source = renderGeneratedSource(rows, schemas, referenceCategories);
 
   if (check) {
     const { readFileSync, existsSync } = await import("node:fs");

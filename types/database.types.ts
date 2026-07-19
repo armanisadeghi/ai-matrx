@@ -21743,6 +21743,7 @@ export type Database = {
           is_versioned: boolean
           label: string
           notes: string | null
+          reference_category: string | null
           reference_pickable: boolean
           rls_variant: string | null
           schema_name: string
@@ -21770,6 +21771,7 @@ export type Database = {
           is_versioned?: boolean
           label: string
           notes?: string | null
+          reference_category?: string | null
           reference_pickable?: boolean
           rls_variant?: string | null
           schema_name: string
@@ -21797,6 +21799,7 @@ export type Database = {
           is_versioned?: boolean
           label?: string
           notes?: string | null
+          reference_category?: string | null
           reference_pickable?: boolean
           rls_variant?: string | null
           schema_name?: string
@@ -21805,7 +21808,15 @@ export type Database = {
           title_column?: string | null
           token?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "entity_types_reference_category_fkey"
+            columns: ["reference_category"]
+            isOneToOne: false
+            referencedRelation: "reference_categories"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       org_module_config: {
         Row: {
@@ -21897,6 +21908,27 @@ export type Database = {
           item_type?: string
           max_level?: Database["public"]["Enums"]["permission_level"]
           refreshed_at?: string
+        }
+        Relationships: []
+      }
+      reference_categories: {
+        Row: {
+          is_active: boolean
+          label: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          is_active?: boolean
+          label: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          is_active?: boolean
+          label?: string
+          slug?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -26667,6 +26699,7 @@ export type Database = {
           is_versioned: boolean
           label: string
           notes: string
+          reference_category: string
           reference_pickable: boolean
           rls_variant: string
           schema_name: string
@@ -27067,12 +27100,22 @@ export type Database = {
           p_is_versioned?: boolean
           p_label: string
           p_notes?: string
+          p_reference_category?: string
           p_reference_pickable?: boolean
           p_rls_variant?: string
           p_schema_name: string
           p_table_name: string
           p_title_column?: string
           p_token: string
+        }
+        Returns: undefined
+      }
+      admin_upsert_reference_category: {
+        Args: {
+          p_is_active?: boolean
+          p_label: string
+          p_slug: string
+          p_sort_order?: number
         }
         Returns: undefined
       }
@@ -28987,6 +29030,7 @@ export type Database = {
           is_module: boolean
           is_versioned: boolean
           label: string
+          reference_category: string
           reference_pickable: boolean
           schema_name: string
           table_name: string
@@ -31586,6 +31630,15 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      reference_categories_list: {
+        Args: never
+        Returns: {
+          is_active: boolean
+          label: string
+          slug: string
+          sort_order: number
+        }[]
       }
       remove_sharing: {
         Args: { permission_id: string; user_id?: string }

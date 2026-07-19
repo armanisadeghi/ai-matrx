@@ -29,6 +29,37 @@ export interface CandidateRecord {
   title: string;
 }
 
+/**
+ * BRIDGE: `reference_search_candidates` is written to the DB via
+ * `migrations/reference_categories_and_candidate_search.sql` but may not be
+ * applied yet, so it is absent from the generated RPC types. This narrow
+ * wrapper types the call against its real signature; once the function is
+ * live and `pnpm db-types` has run, replace with a plain `supabase.rpc(...)`
+ * call and delete this.
+ */
+export async function callReferenceSearchCandidates(args: {
+  p_token: string;
+  p_search?: string;
+  p_limit?: number;
+  p_ids?: string[];
+}): Promise<
+  | { data: Array<{ id: string; title: string | null }>; error: null }
+  | { data: null; error: { message: string } }
+> {
+  const rpc = (supabase.rpc as unknown as (
+    fn: string,
+    params: Record<string, unknown>,
+  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>).bind(
+    supabase,
+  );
+  const { data, error } = await rpc("reference_search_candidates", args);
+  if (error) return { data: null, error };
+  return {
+    data: (data ?? []) as Array<{ id: string; title: string | null }>,
+    error: null,
+  };
+}
+
 export interface ListCandidatesArgs {
   token: EntityTypeToken;
   /** Scope to this owner's rows when the entity declares an owner column. */
@@ -66,12 +97,37 @@ export async function listAssociationCandidates(
 
   if (!info.canListCandidates || !info.titleColumn) {
     const msg =
-      `Entity "${token}" has no title column in the registry overlay — ` +
-      `add one in features/scopes/registry/entityRegistry.ts before listing candidates`;
+      `Entity "${token}" has no title column — set it at ` +
+      `/administration/relationships/entity-types before listing candidates`;
     console.error(`[listAssociationCandidates] ${msg}`);
     return { ok: false, error: msg };
   }
   const titleCol = info.titleColumn;
+
+  // CANONICAL PATH: the universal SECURITY DEFINER reader — works for every
+  // pickable token regardless of PostgREST schema exposure or per-table RLS
+  // shape. The direct table read below is the legacy fallback, kept only
+  // until `reference_search_candidates` is live everywhere.
+  {
+    const { data, error } = await callReferenceSearchCandidates({
+      p_token: token,
+      p_search: search?.trim() || undefined,
+      p_limit: limit,
+    });
+    if (!error) {
+      return {
+        ok: true,
+        data: data.map((r) => ({
+          id: String(r.id),
+          title: String(r.title ?? "").trim() || "Untitled",
+        })),
+      };
+    }
+    console.warn(
+      `[listAssociationCandidates] reference_search_candidates unavailable for ` +
+        `"${token}" (${error.message}) — falling back to direct table read.`,
+    );
+  }
 
   // Dynamic schema/table read — mirrors the established org-inventory pattern:
   // cast the schema to a known literal so supabase-js accepts a runtime value,

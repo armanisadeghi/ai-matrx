@@ -24,6 +24,7 @@ import {
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   ENTITY_TYPE_METADATA,
+  REFERENCE_CATEGORY_DISPLAY,
   SCHEMA_DISPLAY,
   isEntityTypeToken,
 } from "@/types/generated/entity-types.generated";
@@ -42,19 +43,33 @@ export interface ReferenceConfigOrgScopeType {
 const BASICS_BUCKET = "__basics__";
 const SYNTHETIC_TYPES = new Set(["url", "scope"]);
 
+// Buckets: an admin-assigned reference category wins (prefixed keys keep the
+// two namespaces from colliding); otherwise the type's schema.
 function bucketForType(t: string): string {
-  if (SYNTHETIC_TYPES.has(t)) return BASICS_BUCKET;
-  return isEntityTypeToken(t) ? ENTITY_TYPE_METADATA[t].schema : BASICS_BUCKET;
+  if (SYNTHETIC_TYPES.has(t) || !isEntityTypeToken(t)) return BASICS_BUCKET;
+  const meta = ENTITY_TYPE_METADATA[t];
+  const cat = meta.referenceCategory;
+  if (cat && REFERENCE_CATEGORY_DISPLAY[cat]?.isActive) return `cat:${cat}`;
+  return `schema:${meta.schema}`;
 }
 
 function bucketLabel(bucket: string): string {
   if (bucket === BASICS_BUCKET) return "Basics";
-  return SCHEMA_DISPLAY[bucket]?.label ?? bucket;
+  if (bucket.startsWith("cat:")) {
+    const slug = bucket.slice(4);
+    return REFERENCE_CATEGORY_DISPLAY[slug]?.label ?? slug;
+  }
+  const schema = bucket.slice("schema:".length);
+  return SCHEMA_DISPLAY[schema]?.label ?? schema;
 }
 
 function bucketSortOrder(bucket: string): number {
   if (bucket === BASICS_BUCKET) return -1;
-  return SCHEMA_DISPLAY[bucket]?.sortOrder ?? 999;
+  if (bucket.startsWith("cat:")) {
+    // Admin categories sort before schema buckets — they are deliberate.
+    return (REFERENCE_CATEGORY_DISPLAY[bucket.slice(4)]?.sortOrder ?? 50) - 1000;
+  }
+  return SCHEMA_DISPLAY[bucket.slice("schema:".length)]?.sortOrder ?? 999;
 }
 
 function TypeIcon({ type, className }: { type: string; className?: string }) {
