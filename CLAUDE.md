@@ -345,9 +345,18 @@ Hard rules: no JSX prop spread in `features/overlays/OverlayController.tsx`; no 
 
 **A client needing temporary privileged reach (provider realtime sessions, direct provider calls) mints a brokered credential from aidream `POST /api/broker/tokens` — NEVER holds a long-lived provider key.** The client primitive lives at `lib/api/broker/` (typed envelope, mint client, refresh-ahead cache, mode dispatch, hooks) — **invoke the `token-broker-client` skill** before wiring any provider connection from client code. Contract: [`lib/api/broker/FEATURE.md`](./lib/api/broker/FEATURE.md); cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/token-broker/FEATURE.md`. Test harness: `/demos/token-broker`.
 
-## Cross-Repo — App Config (remote runtime configuration for desktop clients)
+## Cross-Repo — Applications (our shipped clients: config, catalogs, fleet)
 
-Shipped desktop apps read non-secret runtime values (server URLs, flags, min versions) from one anon-readable Supabase `app_config` row per app. This repo's role: the admin UI at `/administration/app-config` (editor with diff-confirmed save, history/restore — writes ONLY via the `admin_update_app_config` RPC; code in `features/admin/app-config/`). **Live since 2026-07-14.** Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/app-config/FEATURE.md` — read it before touching this feature in ANY repo.
+**"Application" means a client WE ship (desktop, extension, mobile). "App"/"apps" is reserved for user-created agent apps — never label anything in this hub "Apps".**
+
+One admin hub at **`/administration/applications`** (`features/admin/applications/`) governs every shipped client, as five real routes (each a deep-linkable tab): **Overview** (per-application health; screams when installed instances run below `min_supported_app_version`), **Configuration**, **Catalogs**, **Installations**, **History**.
+
+- **Configuration** — non-secret runtime values (server URLs, flags, min versions, operator notices) in one anon-readable `public.app_config` row per application, read by every installed copy in the field. Writes ONLY via the `admin_update_app_config` RPC (diff-confirmed save, history/restore). Code: `features/admin/applications/config/`. **Live since 2026-07-14.** System-of-record: `/Users/armanisadeghi/code/common-docs/app-config/FEATURE.md`.
+- **Catalogs** — `public.catalog_entries` (local LLMs, LoRAs, image/video/TTS models, presets, prompts); kind-aware editors, dual-gate activation with artifact probes, HuggingFace/Civitai link resolver. Writes ONLY via `admin_upsert_catalog_entry`. Code: `features/admin/applications/catalogs/`. System-of-record: `/Users/armanisadeghi/code/common-docs/remote-catalogs/FEATURE.md`.
+- **Installations** — the installed fleet via the `admin_list_app_instances` RPC, each instance's reported version compared against the live minimum. Version standing is decided in ONE place (`features/admin/applications/version.ts`) so Overview and Installations can never disagree; an unreported version is `unknown`, never laundered into a compliance failure.
+- **History** — one merged audit timeline over `app_config_history` + `catalog_entries_history`, each row diffed against the prior snapshot of the same record. Restore stays on the two owning tabs, beside the write path.
+
+Read the system-of-record docs before touching config or catalogs in ANY repo.
 
 ## Cross-Repo — Access Architecture (permissions, sharing, memberships, associations)
 

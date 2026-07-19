@@ -639,19 +639,11 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "App Config",
+        title: "Applications",
         description:
-          "Remote runtime config for shipped desktop clients (public.app_config) — server URLs, flags, min versions, and operator notices with diff-confirmed saves and version history.",
+          "Shipped client applications — desktop, extension, mobile. Overview (per-application health with below-min-version alerts), Configuration (public.app_config server URLs, flags, min versions, operator notices), Catalogs (public.catalog_entries local LLMs, LoRAs, image/video/TTS models, presets, prompts with dual-gate activation and link resolver), Installations (the installed fleet with version standing), and History (unified audit timeline with diffs).",
         iconName: "MonitorCog",
-        link: "/administration/app-config",
-        isNew: true,
-      },
-      {
-        title: "Remote Catalogs",
-        description:
-          "DB-backed catalogs for shipped clients (public.catalog_entries) — local LLMs, LoRAs, image/video/TTS models, presets, prompts. Kind-aware editors, dual-gate activation with artifact probes, HuggingFace/Civitai link resolver, diff-confirmed saves, history/restore.",
-        iconName: "LibraryBig",
-        link: "/administration/catalogs",
+        link: "/administration/applications",
         isNew: true,
       },
       {
