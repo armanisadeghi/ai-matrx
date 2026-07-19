@@ -219,6 +219,7 @@ export function AgentVariablesInline({
                   sideOffset={6}
                 >
                   <VariableInputComponent
+                    conversationId={conversationId}
                     value={rawValue}
                     onChange={(v) => handleValueChange(variable.name, v)}
                     variableName={variable.name}

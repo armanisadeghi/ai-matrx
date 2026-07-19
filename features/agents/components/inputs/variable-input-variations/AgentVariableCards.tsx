@@ -113,6 +113,7 @@ function AgentVariableInputCard({
                   variableName={variable.name}
                   compact
                   resourceContext={comp?.resource_context}
+                  conversationId={conversationId}
                 />
               ) : type === "audio" ? (
                 <AudioVariableInput
@@ -121,6 +122,7 @@ function AgentVariableInputCard({
                   variableName={variable.name}
                   compact
                   resourceContext={comp?.resource_context}
+                  conversationId={conversationId}
                 />
               ) : type === "video" ? (
                 <VideoVariableInput
@@ -129,6 +131,7 @@ function AgentVariableInputCard({
                   variableName={variable.name}
                   compact
                   resourceContext={comp?.resource_context}
+                  conversationId={conversationId}
                 />
               ) : type === "document" ? (
                 <DocumentVariableInput
@@ -137,6 +140,7 @@ function AgentVariableInputCard({
                   variableName={variable.name}
                   compact
                   resourceContext={comp?.resource_context}
+                  conversationId={conversationId}
                 />
               ) : (
                 <YoutubeVariableInput

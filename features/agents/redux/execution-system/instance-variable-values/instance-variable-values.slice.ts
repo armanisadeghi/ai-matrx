@@ -17,7 +17,10 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type {
+  VariableDefinition,
+  VariableResourceContextConfig,
+} from "@/features/agents/types/agent-definition.types";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
 
@@ -39,6 +42,9 @@ export interface InstanceVariableValuesEntry {
 
   /** Values auto-populated from scope/context at creation time */
   scopeValues: Record<string, unknown>;
+
+  /** Per-conversation overrides for media-variable resource-family policy. */
+  resourcePolicies: Record<string, VariableResourceContextConfig>;
 }
 
 export interface InstanceVariableValuesState {
@@ -80,6 +86,7 @@ const instanceVariableValuesSlice = createSlice({
         definitions,
         userValues: {},
         scopeValues,
+        resourcePolicies: {},
       };
     },
 
@@ -150,6 +157,19 @@ const instanceVariableValuesSlice = createSlice({
       }
     },
 
+    setRuntimeVariableResourcePolicy(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        name: string;
+        policy: VariableResourceContextConfig;
+      }>,
+    ) {
+      const { conversationId, name, policy } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (entry) entry.resourcePolicies[name] = policy;
+    },
+
     /**
      * Merge scope-resolved values into the existing map (does NOT replace).
      * Used by the bound-variable runtime to fold in values resolved from the active
@@ -213,6 +233,7 @@ const instanceVariableValuesSlice = createSlice({
         definitions: variables?.definitions ?? [],
         userValues: {},
         scopeValues: variables?.scopeValues ?? {},
+        resourcePolicies: {},
       };
     });
 
@@ -228,6 +249,7 @@ export const {
   setUserVariableValues,
   clearUserVariableValue,
   setScopeVariableValues,
+  setRuntimeVariableResourcePolicy,
   mergeScopeVariableValues,
   resetUserVariableValues,
   updateInstanceDefinitions,

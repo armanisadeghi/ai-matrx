@@ -47,7 +47,10 @@ import {
   selectEditorResourceXml,
   selectResourcePayloads,
 } from "../instance-resources/instance-resources.selectors";
-import { selectVariablesForRequest } from "../instance-variable-values/instance-variable-values.selectors";
+import {
+  selectRuntimeVariableResourcePolicies,
+  selectVariablesForRequest,
+} from "../instance-variable-values/instance-variable-values.selectors";
 import { selectSettingsOverridesForApi } from "../instance-model-overrides/instance-model-overrides.selectors";
 import {
   selectContextPayload,
@@ -159,6 +162,8 @@ export function assembleRequest(
   // Variables for the request — three-tier merge, but untouched scope-bound vars are
   // omitted so the server resolves them from the active scope (see selector).
   const variables = selectVariablesForRequest(conversationId)(state);
+  const variableResourceContext =
+    selectRuntimeVariableResourcePolicies(conversationId)(state);
 
   // Build user_input
   let user_input: AssembledAgentStartRequest["user_input"];
@@ -232,6 +237,9 @@ export function assembleRequest(
 
   if (user_input !== undefined) request.user_input = user_input;
   if (Object.keys(variables).length > 0) request.variables = variables;
+  if (Object.keys(variableResourceContext).length > 0) {
+    request.variable_resource_context = variableResourceContext;
+  }
   if (config_overrides) request.config_overrides = config_overrides;
   if (context) request.context = context;
   if (organization_id) request.organization_id = organization_id;

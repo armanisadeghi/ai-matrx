@@ -51,6 +51,9 @@ import {
 import { cn } from "@/lib/utils";
 import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { setRuntimeVariableResourcePolicy } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectRuntimeVariableResourcePolicies } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
 // 36-char canonical UUID — what cld_files file_ids look like.
 const UUID_PATTERN =
@@ -149,6 +152,7 @@ export interface MediaVariableInputProps {
   mediaKind: MediaKind;
   compact?: boolean;
   resourceContext?: VariableResourceContextConfig;
+  conversationId?: string;
 }
 
 export function MediaVariableInput({
@@ -158,7 +162,13 @@ export function MediaVariableInput({
   mediaKind,
   compact = false,
   resourceContext,
+  conversationId,
 }: MediaVariableInputProps) {
+  const dispatch = useAppDispatch();
+  const runtimePolicies = useAppSelector(
+    selectRuntimeVariableResourcePolicies(conversationId ?? ""),
+  );
+  const effectiveResourceContext = runtimePolicies[variableName] ?? resourceContext;
   const meta = KIND_META[mediaKind];
   const Icon = meta.Icon;
   const stored = readValue(value);
@@ -275,7 +285,19 @@ export function MediaVariableInput({
           ) : null}
           <ResourceFamilyPolicyEditor
             fileId={stored}
-            value={resourceContext}
+            value={effectiveResourceContext}
+            onChange={
+              conversationId
+                ? (policy) =>
+                    dispatch(
+                      setRuntimeVariableResourcePolicy({
+                        conversationId,
+                        name: variableName,
+                        policy,
+                      }),
+                    )
+                : undefined
+            }
             compact={compact}
           />
         </div>

@@ -42,6 +42,7 @@ import type { components } from "@/types/python-generated/api-types";
 import type { BackendChannel } from "@/features/agents/redux/execution-system/thunks/resolve-base-url";
 import type { ResolvedSandboxRef } from "@/lib/sandbox/active-binding";
 import type { LiveCitationEntry } from "@/features/agents/redux/execution-system/messages/message-citations";
+import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 
 // =============================================================================
 // Client-Side Metrics
@@ -800,6 +801,8 @@ export type AssembledAgentStartRequest = Omit<
    * Omitted for Auto/default routing.
    */
   target_instance_id?: string;
+  /** Request-scoped overrides for media-variable file-family policy. */
+  variable_resource_context?: Record<string, VariableResourceContextConfig>;
 };
 
 /**

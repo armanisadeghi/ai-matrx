@@ -90,7 +90,10 @@ import {
 } from "../messages/messages.selectors";
 import { generateRequestId } from "../utils/ids";
 import { setInstanceStatus } from "../conversations/conversations.slice";
-import { selectVariablesForRequest } from "../instance-variable-values/instance-variable-values.selectors";
+import {
+  selectRuntimeVariableResourcePolicies,
+  selectVariablesForRequest,
+} from "../instance-variable-values/instance-variable-values.selectors";
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
@@ -336,6 +339,8 @@ export async function assembleManualRequest(
   );
 
   const variables = selectVariablesForRequest(conversationId)(state);
+  const variableResourceContext =
+    selectRuntimeVariableResourcePolicies(conversationId)(state);
   const context = selectContextPayload(conversationId)(state);
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
@@ -416,6 +421,10 @@ export async function assembleManualRequest(
 
   if (Object.keys(variables).length > 0) {
     request.variables = variables as Record<string, unknown>;
+  }
+  if (Object.keys(variableResourceContext).length > 0) {
+    (request as Record<string, unknown>).variable_resource_context =
+      variableResourceContext;
   }
   if (agent.variableDefinitions?.length) {
     (request as Record<string, unknown>).variable_definitions =

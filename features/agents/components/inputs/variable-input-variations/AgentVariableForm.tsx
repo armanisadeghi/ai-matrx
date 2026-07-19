@@ -103,6 +103,7 @@ export function AgentVariableForm({ conversationId }: AgentVariableFormProps) {
               <div key={def.name}>
                 {i > 0 && <div className="border-t border-border my-2" />}
                 <VariableField
+                  conversationId={conversationId}
                   def={def}
                   value={userValues[def.name] ?? def.defaultValue ?? ""}
                   onChange={(v) => setValue(def.name, v)}
@@ -172,12 +173,13 @@ const OPTION_LABEL = "text-xs text-foreground";
 // ---------------------------------------------------------------------------
 
 interface VariableFieldProps {
+  conversationId: string;
   def: VariableDefinition;
   value: unknown;
   onChange: (value: unknown) => void;
 }
 
-function VariableField({ def, value, onChange }: VariableFieldProps) {
+function VariableField({ conversationId, def, value, onChange }: VariableFieldProps) {
   const formattedName = formatText(def.name, { textCase: "title" });
   const cc = def.customComponent;
   const fieldId = `var-${def.name}`;
@@ -291,6 +293,7 @@ function VariableField({ def, value, onChange }: VariableFieldProps) {
       variableName: def.name,
       compact: false,
       resourceContext: cc.resource_context,
+      conversationId,
     };
     return (
       <div>

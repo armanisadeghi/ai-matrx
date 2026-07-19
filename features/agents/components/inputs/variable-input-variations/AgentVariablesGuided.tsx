@@ -474,11 +474,13 @@ function GuidedTextarea({
 // ============================================================================
 
 function GuidedVariableContent({
+  conversationId,
   variable,
   value,
   onChange,
   onAutoAdvance,
 }: {
+  conversationId: string;
   variable: VariableDefinition;
   value: unknown;
   onChange: (v: unknown) => void;
@@ -504,6 +506,7 @@ function GuidedVariableContent({
       variableName: variable.name,
       compact: false,
       resourceContext: cc.resource_context,
+      conversationId,
     };
     if (cc.type === "image") return <ImageVariableInput {...sharedProps} />;
     if (cc.type === "audio") return <AudioVariableInput {...sharedProps} />;
@@ -841,6 +844,7 @@ export function AgentVariablesGuided({
             className="h-full overflow-y-scroll overscroll-contain px-3 py-2"
           >
             <GuidedVariableContent
+              conversationId={conversationId}
               variable={variable}
               value={value}
               onChange={handleChange}

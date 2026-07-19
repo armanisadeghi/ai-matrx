@@ -12,11 +12,15 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type {
+  VariableDefinition,
+  VariableResourceContextConfig,
+} from "@/features/agents/types/agent-definition.types";
 
 // Stable references returned when the instance hasn't been initialized yet.
 const EMPTY_DEFINITIONS: VariableDefinition[] = [];
 const EMPTY_RECORD: Record<string, unknown> = {};
+const EMPTY_RESOURCE_POLICIES: Record<string, VariableResourceContextConfig> = {};
 const EMPTY_NAMES: string[] = [];
 const EMPTY_PROVENANCE: Record<string, "user" | "scope" | "default" | "none"> =
   {};
@@ -48,6 +52,12 @@ export const selectScopeVariableValues =
   (state: RootState): Record<string, unknown> =>
     state.instanceVariableValues.byConversationId[conversationId]
       ?.scopeValues ?? EMPTY_RECORD;
+
+export const selectRuntimeVariableResourcePolicies =
+  (conversationId: string) =>
+  (state: RootState): Record<string, VariableResourceContextConfig> =>
+    state.instanceVariableValues.byConversationId[conversationId]
+      ?.resourcePolicies ?? EMPTY_RESOURCE_POLICIES;
 
 /**
  * Fully resolved variables — the three-tier merge.

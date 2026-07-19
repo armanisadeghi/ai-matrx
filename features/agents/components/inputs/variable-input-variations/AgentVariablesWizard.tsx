@@ -145,6 +145,7 @@ export function AgentVariablesWizard({
       {/* Input area — scrollable, takes remaining height */}
       <div className="flex-1 overflow-y-scroll px-2 py-2 min-h-0">
         <VariableInputComponent
+          conversationId={conversationId}
           value={value}
           onChange={(v) => handleValueChange(variable.name, v)}
           variableName={variable.name}

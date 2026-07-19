@@ -76,6 +76,7 @@ export function AgentVariablesStacked({
               className={`px-3 bg-transparent ${isFirst ? "pt-2.5" : "pt-2"} ${!isLast ? "pb-2" : "pb-2.5"}`}
             >
               <VariableInputComponent
+                conversationId={conversationId}
                 value={value}
                 onChange={(newValue) =>
                   handleVariableValueChange(variable.name, newValue)

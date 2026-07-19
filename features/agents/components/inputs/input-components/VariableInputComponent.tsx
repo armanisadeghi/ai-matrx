@@ -49,6 +49,7 @@ interface VariableInputComponentProps {
    */
   onChange: (value: unknown) => void;
   variableName: string;
+  conversationId?: string;
   customComponent?: VariableCustomComponent;
   onRequestClose?: () => void;
   helpText?: string;
@@ -77,6 +78,7 @@ export function VariableInputComponent({
   value,
   onChange,
   variableName,
+  conversationId,
   customComponent,
   onRequestClose,
   helpText,
@@ -139,6 +141,7 @@ export function VariableInputComponent({
             variableName={formattedName}
             compact={compact}
             resourceContext={customComponent?.resource_context}
+            conversationId={conversationId}
           />
         );
         break;
@@ -150,6 +153,7 @@ export function VariableInputComponent({
             variableName={formattedName}
             compact={compact}
             resourceContext={customComponent?.resource_context}
+            conversationId={conversationId}
           />
         );
         break;
@@ -161,6 +165,7 @@ export function VariableInputComponent({
             variableName={formattedName}
             compact={compact}
             resourceContext={customComponent?.resource_context}
+            conversationId={conversationId}
           />
         );
         break;
@@ -172,6 +177,7 @@ export function VariableInputComponent({
             variableName={formattedName}
             compact={compact}
             resourceContext={customComponent?.resource_context}
+            conversationId={conversationId}
           />
         );
         break;
