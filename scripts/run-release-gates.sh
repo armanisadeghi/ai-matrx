@@ -37,6 +37,7 @@ done
 if $STRICT; then
     declare -a GATES=(
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
+        "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts --strict"
@@ -47,6 +48,7 @@ else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts"
+        "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"

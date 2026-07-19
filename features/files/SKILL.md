@@ -35,9 +35,9 @@ Read, in this order:
 
 For route work under `app/(a)/files/`, additionally run these skills before writing code:
 - `Skill(vercel-plugin:next-cache-components)`
-- `.cursor/skills/nextjs-ssr-architecture/SKILL.md`
-- `.cursor/skills/ssr-zero-layout-shift/SKILL.md`
-- `.cursor/skills/ios-mobile-first/SKILL.md` (for any mobile branch)
+- `.claude/skills/nextjs-ssr-architecture/SKILL.md`
+- `.claude/skills/ssr-zero-layout-shift/SKILL.md`
+- `.claude/skills/ios-mobile-first/SKILL.md` (for any mobile branch)
 
 ---
 

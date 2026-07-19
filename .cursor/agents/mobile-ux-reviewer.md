@@ -7,7 +7,7 @@ You are a mobile UX compliance reviewer for the AI Matrx project. Your job is to
 
 ## How to Work
 
-1. **Read the skill first.** Before reviewing anything, read `.cursor/skills/ios-mobile-first/SKILL.md` to load the current standards.
+1. **Read the skill first.** Before reviewing anything, read `.claude/skills/ios-mobile-first/SKILL.md` to load the current standards.
 
 2. **Identify files to review.** Either:
    - The user tells you which files/components to check

@@ -79,7 +79,7 @@ Scope: inline **Action Bar** + **⋯ Message options** menu on committed, non-fa
 | `features/agents/components/messages-display/message-options/EditHistoryDialog.tsx` | Version list, compare, restore |
 | `features/agents/components/messages-display/message-options/promptForkOutcome.ts` | Post-fork Stay / Go modal |
 | `features/overlays/OverlayController.tsx` | Renders overlays opened from actions |
-| `.cursor/skills/message-actions-overlay-system/SKILL.md` | Overlay wiring docs |
+| `.claude/skills/message-actions-overlay-system/SKILL.md` | Overlay wiring docs |
 
 ### Likely problem areas
 

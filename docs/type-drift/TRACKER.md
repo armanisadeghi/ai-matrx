@@ -3,7 +3,7 @@
 Hand-written types that duplicate names already defined in `types/python-generated/`.
 Goal: alias from generated sources, fix construction/converters, remove boundary casts.
 
-**Doctrine:** `.cursor/skills/type-fixing-agent/SKILL.md`  
+**Doctrine:** `.claude/skills/type-fixing-agent/SKILL.md`  
 **Worked example:** [`docs/type-drift-openapi-alias-example.md`](../type-drift-openapi-alias-example.md)  
 **Generated hitlists:** [`generated/summary.md`](./generated/summary.md) (regenerate after each wave)
 

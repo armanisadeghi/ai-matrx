@@ -149,7 +149,7 @@ When converting a directory from hard-coded `config.ts` to auto-discovery:
 
 No extra code needed — just pass the correct `basePath` and the system picks up the config from `navigation-links.tsx` or the system-route overrides (`/demo`, `/tests`, `/administration`).
 
-To understand how favicons are registered and what colors/letters are already in use, see `.cursor/skills/route-metadata-favicons/SKILL.md`.
+To understand how favicons are registered and what colors/letters are already in use, see `.claude/skills/route-metadata-favicons/SKILL.md`.
 
 ---
 

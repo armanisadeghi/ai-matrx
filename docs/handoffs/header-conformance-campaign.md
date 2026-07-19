@@ -24,7 +24,7 @@ vision: [.claude/skills/core-route-headers/SKILL.md, features/shell/components/h
 ## Remaining work (from the wave-2 browser-verify pass — each was seen live)
 
 1. **/messages/[conversationId] crashes on load** — reproducible runtime error adding `presence` callbacks (realtime). Messaging is mid-refactor (`features/messaging/components/shell/`); whoever owns that refactor fixes it — invoke the `supabase-realtime` skill.
-2. **Mobile-broken body layouts** (header rows are fine; bodies don't adapt at 375): `/lists/v1|v2|v3` fixed two-column editors; `/code` IDE workspace (no stacked/drawer fallback); `/agent-connections` two-pane shell; `/data/[id]` table toolbar overlap; `/agents/shortcuts/all` table overflow. Each is a mobile-first pass per `.cursor/skills/ios-mobile-first/SKILL.md`, not a header fix.
+2. **Mobile-broken body layouts** (header rows are fine; bodies don't adapt at 375): `/lists/v1|v2|v3` fixed two-column editors; `/code` IDE workspace (no stacked/drawer fallback); `/agent-connections` two-pane shell; `/data/[id]` table toolbar overlap; `/agents/shortcuts/all` table overflow. Each is a mobile-first pass per `.claude/skills/ios-mobile-first/SKILL.md`, not a header fix.
 3. **Page-width normalization** — the "1998 widths" sweep (e.g. `max-w-3xl` crammed forms on desktop). Needs Arman's target rules before fleeting.
 4. **/legal/ca-wc/pd-ratings-calculator mobile**: 5 header items, no bottom-sheet collapse — port to `EntityModeHeader` actions.
 5. **/images + /images/studio in-body hero blocks** (big title + description in a dashboard) — decide keep-as-landing vs strip; likely strip per doctrine.

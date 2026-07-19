@@ -3,7 +3,7 @@
  *
  * Picker host (file/folder picker) that adapts to the device.
  *   Desktop: Dialog.
- *   Mobile:  Drawer (bottom sheet) per .cursor/skills/ios-mobile-first/SKILL.md.
+ *   Mobile:  Drawer (bottom sheet) per .claude/skills/ios-mobile-first/SKILL.md.
  *
  * DialogShell and DrawerShell are the two exported surfaces that delegate to
  * this adaptive host. The body (a minimal folder browser + file list) is

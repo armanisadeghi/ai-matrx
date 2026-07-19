@@ -216,11 +216,13 @@ If yes — done. If no — the remainder is your next infrastructure ticket. Ext
 
 ## Enforcement
 
-Doctrine without enforcement is decoration. The following are in force today:
+Doctrine without enforcement is decoration. **Nothing in this repo runs automatically — there is no pre-commit hook and no CI.** Every item below only fires when you run it. Budget for that: a check you skip is a check that did not happen.
 
-- **ESLint rules** ([`eslint.config.mjs`](./eslint.config.mjs)) — barrel-file warning, file-handler ring-fence (4 tiers, hard error), window-panels registry import ban, legacy Supabase key hard ban, parallel-`createSlice` ban (outside designated dirs), `as any` and `as unknown as` warning, dialog ban (warn).
+- **ESLint rules** ([`eslint.config.mjs`](./eslint.config.mjs)) — barrel-file warning, file-handler ring-fence (4 tiers, hard error), window-panels registry import ban, legacy Supabase key hard ban, parallel-`createSlice` ban (outside designated dirs), `storage_uri` eradication (hard error, identifiers + strings + template literals), dialog ban (warn). Run with `pnpm lint`; a large pre-existing warning baseline means **read your own file's output**, not the exit code.
+- **`as any` / `as unknown as` are NOT an ESLint rule** — they are counted by the `pnpm check:hatches` ratchet. `@typescript-eslint/no-explicit-any` is a warning. Escalate what you cannot fix; see the `type-safety` skill.
 - **`pnpm check:doctrine`** ([`scripts/check-doctrine.ts`](./scripts/check-doctrine.ts)) — scans staged / branch-diff files and lists newly created types, components, slices, and hooks so you can confirm none duplicate existing primitives. Run before opening a PR.
-- **Pre-commit hook** ([`simple-git-hooks` + `lint-staged`](./package.json)) — runs `eslint --max-warnings 0` on staged `.ts`/`.tsx` files. New ESLint errors block the commit.
+- **`pnpm check:doc-claims`** ([`scripts/check-doc-claims.ts`](./scripts/check-doc-claims.ts)) — fails when `CLAUDE.md` asserts something the live config contradicts. Doctrine that has quietly gone false is worse than no doctrine: agents keep obeying it.
+- **`pnpm check:release-gates`** ([`scripts/run-release-gates.sh`](./scripts/run-release-gates.sh)) — the batch runner for the above. Advisory by design; only git blocks a release.
 - **Feature template** ([`features/_FEATURE_TEMPLATE.md`](./features/_FEATURE_TEMPLATE.md)) — every `FEATURE.md` includes a "Doctrine compliance" section listing the existing primitives reused and (if any) the new primitive introduced + why nothing existing could have been extended.
 - **Code review** — PRs that introduce a new type, component, slice, or hook without an extension-vs-creation justification in the description are sent back. The author or the reviewer can run `pnpm check:doctrine` to surface what was added.
 

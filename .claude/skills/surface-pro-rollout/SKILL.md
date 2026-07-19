@@ -7,7 +7,7 @@ description: Wire an existing UI surface into the agent context system end-to-en
 
 Turn a surface that already exists (has a `ui_surface` row + a manifest) into a **fully agent-wired surface**: every generic and custom value mapped and emitted, the canonical right-click menu on every region a user reads or edits, and Pro inputs everywhere. When this is done for a surface, that surface is **done**.
 
-> **Prereq:** read `.cursor/skills/surface-authoring/SKILL.md` (the manifest + `ui_surface_value` + naming contract). This skill is the consumer/runtime layer on top of it.
+> **Prereq:** read `.claude/skills/surface-authoring/SKILL.md` (the manifest + `ui_surface_value` + naming contract). This skill is the consumer/runtime layer on top of it.
 >
 > **Reference implementation (copy its shape):** Notes.
 > - Manifest: `features/surfaces/manifests/notes-editor.manifest.ts`

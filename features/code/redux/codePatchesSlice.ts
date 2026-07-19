@@ -232,7 +232,7 @@ export const selectAllPatchesForTab =
  *
  * Factory pattern: callers should `useMemo(() => selectPendingPatchesForTab(tabId), [tabId])`
  * so the same memoized instance is reused across renders (Rule 7 in
- * `.cursor/skills/redux-selector-rules`). Without that, every render
+ * `.claude/skills/redux-selector-rules`). Without that, every render
  * creates a fresh selector with an empty cache — still safe (each
  * instance is internally consistent within a single render) but it
  * forces the filter to recompute on every selector read.

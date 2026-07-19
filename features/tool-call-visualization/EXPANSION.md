@@ -1,7 +1,7 @@
 # Tool Call Visualization — Expansion Guide
 
 **Last updated:** 2026-06-19  
-**Skill for hardcoded renderers:** `.cursor/skills/create-tool-renderer/SKILL.md` (updated same date)
+**Skill for hardcoded renderers:** `.claude/skills/create-tool-renderer/SKILL.md` (updated same date)
 
 This doc is the operational snapshot for adding many new tool UIs. Architecture details live in `FEATURE.md`.
 
@@ -227,7 +227,7 @@ Overlay: same order via `getOverlayRenderer` / `getOverlayTabs`.
 
 ---
 
-## Skill status (`.cursor/skills/create-tool-renderer/SKILL.md`)
+## Skill status (`.claude/skills/create-tool-renderer/SKILL.md`)
 
 Was **stale** as of 2026-06-19 (accordion UI, status icons, missing `phaseLabels` / `OverlayTabs` / `onOpenWindowPanel`, wrong table name `tool_ui_components`, `seo-keywords` path). Updated in same PR pass as this doc.
 

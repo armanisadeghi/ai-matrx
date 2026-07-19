@@ -135,7 +135,7 @@ export function useApplyFsChangesToOpenTabs(
   // pulls the actual rows from `store.getState()` and walks them.
   // Returning a primitive (number) — not `{ length, lastSeq }` — keeps
   // React-Redux's `inputStabilityCheck` happy and skips a layer of
-  // shallowEqual bookkeeping. See `.cursor/skills/redux-selector-rules`
+  // shallowEqual bookkeeping. See `.claude/skills/redux-selector-rules`
   // → Rule 6.
   const lastSeq = useAppSelector((state) => {
     const bucket = selectFsChangesBucket(state, bucketKey);

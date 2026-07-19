@@ -92,11 +92,13 @@ const nextConfig = {
     devIndicators: false,  // disables the indicator entirely
 
     compiler: {
-        // TODO: Restore this when done debugging — removes console.log in production but keeps error/warn
-        // removeConsole: process.env.NODE_ENV === 'production' ? {
-        //     exclude: ['error', 'warn'],
-        // } : false,
-        removeConsole: false,
+        // Strips console.log from production bundles, keeping error/warn. Restored 2026-07-18
+        // (D63) after 4.5 months disabled "while debugging" — 743 console.log calls were
+        // shipping to users' browsers, including stream/auth/context payloads.
+        // Debugging in prod goes through the diagnostics capture, not raw console.log.
+        removeConsole: process.env.NODE_ENV === 'production' ? {
+            exclude: ['error', 'warn'],
+        } : false,
     },
     
     // Moved from experimental (Next.js 15+)

@@ -45,7 +45,7 @@ import type { SettingsTreeNode } from "@/components/official/settings/tree/types
 /**
  * Single source of truth for every settings tab.
  *
- * Adding a setting? See .cursor/skills/settings-system/SKILL.md once Phase 9 lands.
+ * Adding a setting? See .claude/skills/settings-system/SKILL.md once Phase 9 lands.
  *
  * NOTE: tabs are typed permissively because they're lazy-loaded and have no
  * props at the call site — `ComponentType<Record<string, never>>` means "no

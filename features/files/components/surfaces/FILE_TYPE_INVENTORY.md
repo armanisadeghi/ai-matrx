@@ -632,6 +632,6 @@ Ordered by user impact:
 | Side-panel viewer (compact) | `features/files/components/surfaces/PreviewPane.tsx` |
 | Dedicated full-page viewer | `features/files/components/surfaces/single-file/SingleFileShell.tsx` |
 | Inventory (this doc) + per-type wishlists | `features/files/components/surfaces/FILE_TYPE_INVENTORY.md` |
-| Workflow skill (how to enhance) | `.cursor/skills/enhance-file-type/SKILL.md` |
+| Workflow skill (how to enhance) | `.claude/skills/enhance-file-type/SKILL.md` |
 
 Adding support for a new file type or upgrading an existing one is **typically a 1–4 file change** (registry + previewer + maybe Edit dispatch + maybe a rail panel). Bigger changes (new tab, new cross-cutting capability) hit the slots in Groups 5–9.

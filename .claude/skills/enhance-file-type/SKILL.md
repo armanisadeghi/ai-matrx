@@ -201,5 +201,5 @@ Previewers are dynamically imported (`next/dynamic`). Heavy deps (PDF.js, SheetJ
 - **Inventory + framework + wishlists:** `features/files/components/surfaces/FILE_TYPE_INVENTORY.md`
 - **Files feature doc:** `features/files/FEATURE.md`
 - **File handler skill:** `features/files/handler/FEATURE.md` (for upload / asset URL questions — different concern)
-- **Print system skill:** `.cursor/skills/block-print-system/SKILL.md` (for slot #43 — print)
-- **Window panels skill:** `.cursor/skills/window-panels/SKILL.md` (if your enhancement opens an overlay)
+- **Print system skill:** `.claude/skills/block-print-system/SKILL.md` (for slot #43 — print)
+- **Window panels skill:** `.claude/skills/window-panels/SKILL.md` (if your enhancement opens an overlay)

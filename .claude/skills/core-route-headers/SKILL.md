@@ -94,6 +94,6 @@ Find a new faux-header class combo? **Add it to `FAUX_HEADER_MARKERS` in `script
 ## Do not break
 
 - `/administration/*` and `(transitional)`/`(legacy)` sit **below** the header — `h-page`/header-calc is *correct* there. Never "fix" them with this recipe.
-- The rules in `app/(core)/_read_first_route_rules/` and the scaffold in `.cursor/skills/new-route-scaffold/SKILL.md` (SSR, hydrators, skeleton `loading.tsx` — no spinners).
-- Mobile rules in `.cursor/skills/ios-mobile-first/SKILL.md` (`h-dvh` not `h-screen` for non-shell pages, `pb-safe`, drawer-not-dialog).
+- The rules in `app/(core)/_read_first_route_rules/` and the scaffold in `.claude/skills/new-route-scaffold/SKILL.md` (SSR, hydrators, skeleton `loading.tsx` — no spinners).
+- Mobile rules in `.claude/skills/ios-mobile-first/SKILL.md` (`h-dvh` not `h-screen` for non-shell pages, `pb-safe`, drawer-not-dialog).
 - Lucide only, no emojis, semantic color classes, component-library loading states.

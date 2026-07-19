@@ -10,9 +10,11 @@ Large-scale Next.js no-code AI app builder and admin dashboard. Desktop-first, m
 
 > **The artifact is disposable. The class of failure goes extinct. Friction is the spec for your next primitive.**
 
-Every task is a probe exposing what the platform is missing. Build (or extend) the generic, named, documented primitive, then complete the task by consuming it. Code that serves only this one artifact is **forbidden** — a second implementation of something we already own is a defect even if it works; delete yours and extend ours. The five anti-patterns this kills (local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap): **[PRINCIPLES.md](./PRINCIPLES.md)**. Enforced by ESLint ([`eslint.config.mjs`](./eslint.config.mjs)), `pnpm check:doctrine` ([script](./scripts/check-doctrine.ts)), and the pre-commit hook; every `FEATURE.md` has a Doctrine section ([template](./features/_FEATURE_TEMPLATE.md)).
+Every task is a probe exposing what the platform is missing. Build (or extend) the generic, named, documented primitive, then complete the task by consuming it. Code that serves only this one artifact is **forbidden** — a second implementation of something we already own is a defect even if it works; delete yours and extend ours. The five anti-patterns this kills (local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap): **[PRINCIPLES.md](./PRINCIPLES.md)**. Enforced by ESLint ([`eslint.config.mjs`](./eslint.config.mjs)) and `pnpm check:doctrine` ([script](./scripts/check-doctrine.ts)); every `FEATURE.md` has a Doctrine section ([template](./features/_FEATURE_TEMPLATE.md)). **Nothing runs at commit time** — there is no pre-commit hook and no CI. Every check in this file is advisory and only runs when a human or agent runs it, via `pnpm check:release-gates` ([script](./scripts/run-release-gates.sh)) or by name. **Treat "the guard will catch it" as false; run the check yourself.**
 
 **Before writing ANY new function, component, hook, slice, service, or table, read [docs/reuse-first.md](./docs/reuse-first.md)** — the ladder (**Reuse → Extend → Compose → Create**, exhaust each rung), the mandatory search gate (concept + synonyms + the Primitives Index; "found nothing" names the queries you ran), the importable-code rules (pure core, thin shell, no speculative abstraction), and the new-table bar (exceptional — same entity, new variant → column/flag/JSONB on the existing table). Its Primitives Index is guarded by `pnpm check:reuse-index` — fix or delete a row when a file moves. Your summary states what you searched, what you found, and what you reused or extended.
+
+**This file must never lie.** Every factual claim here — a flag's value, a path, a route group, a version, an enforcement — is one an agent acts on without opening the config. When you change a config setting that this file describes, **change both in the same commit.** `pnpm check:doc-claims` ([script](./scripts/check-doc-claims.ts)) machine-verifies the checkable ones and prints the exact contradiction; add a claim there when you add a load-bearing rule here. A `TEMP:` flip with a promise to revisit is how the React Compiler sat off for three months while this file swore it was on (D62).
 
 ---
 
@@ -25,7 +27,8 @@ Every task is a probe exposing what the platform is missing. Build (or extend) t
 
 ## Architecture
 
-**Stack:** Next.js 16.1 (App Router) · React 19.2 · TypeScript 5.9 (strict, no `any`) · Tailwind 4.1 (CSS-first, `@theme`) · Turbopack · pnpm 10.28 · Vercel hosting.
+**Stack:** Next.js 16.2+ (App Router) · React 19.2 · TypeScript 6 (`@typescript/typescript6`; strict, no `any`) · Tailwind 4.3+ (CSS-first, `@theme`) · Turbopack · pnpm 10.29+ · Vercel hosting.
+**State minimums here, never exact patches** — `next` / `react` / `typescript` are declared `latest` and drift on every install. `pnpm check:doc-claims` fails on a MAJOR mismatch.
 **Mobile:** Expo 54 / RN 0.81 / React 19.1 — iOS 26+ (Liquid Glass), Android 16+ (Material 3 Expressive). LiveKit for AV (requires `expo prebuild`).
 **Payments:** Stripe.
 
@@ -45,8 +48,8 @@ Always use the latest stable release of every package — no deprecated APIs.
 
 - Server Components by default; Client Components only when interactive.
 - **Heavy client code is code-split** with `next/dynamic({ ssr: false })` — never in a Server Component, never stacked down one render path, and only behind a condition (else it's pure cost). Use a `*Impl` + wrapper for anything reused; `next/dynamic` always, never `React.lazy`. **Unexplained build-time bloat is almost always a heavy client component statically imported into a route/server chunk — NOT "big packages"** (one such leak ballooned the build 15→24 min; weeks of creeping bloat trace to this class). Guard each heavy component with an eslint static-import ban (reference: `canonicalMenuStaticImportBan` in `eslint.config.mjs`). **Invoke the `code-splitting` skill** before adding a dynamic import, making a component lazy, hunting build-time bloat, or fixing bundle/hydration issues.
-- Dynamic rendering by default; opt into caching with `'use cache'` + `cacheTag()` / `revalidateTag()`.
-- React Compiler is on — no manual `useMemo` / `useCallback` / `React.memo`.
+- Dynamic rendering by default. **`'use cache'` is NOT available** — `cacheComponents` is off, so the directive is a build error. Enabling it is a deliberate change that updates this line and `next.config.js` together.
+- **React Compiler is on** (`reactCompiler: true`) — no manual `useMemo` / `useCallback` / `React.memo`. Costs ~13% build time (10.6→12.0 min, measured 2026-07-18); that trade is settled. Flipping it off means rewriting this rule in the same change.
 - `proxy.ts` (not `middleware.ts`) — auth, route guards, redirects only.
 - **State:** Redux RTK for all global state. Extend existing slices; never spin up parallel or local state.
 - **Types:** generated types are the source of truth — `types/database.types.ts` (Supabase) + `types/python-generated/api-types.ts` (OpenAPI). Strict, no `any`; never hand-mirror or widen a generated type. Standards: [`TYPESCRIPT_STANDARDS.md`](./TYPESCRIPT_STANDARDS.md). **Fixing a type error or writing Supabase query/RPC code? Invoke the `type-safety` skill first** — silencing an error (cast / suppression / shadow type) is the opposite of fixing it; a real fix changes the code and the data, and an error you can't fix properly gets escalated with a decision brief, never hidden.
@@ -66,13 +69,15 @@ Always use the latest stable release of every package — no deprecated APIs.
 
 App code has **no DDL path** (Supabase JS / PostgREST only); agents apply DDL via the **Supabase MCP** (`apply_migration` / `execute_sql`, project `txzxabzwovsujtloxrus`).
 - **Apply + record:** migrations MUST be **idempotent** (`IF NOT EXISTS`, `CREATE OR REPLACE`). After applying, upsert the shared cross-repo ledger `public._schema_migrations` (key `(source, filename)`; `source='matrx-frontend'`, `checksum` = SHA-256 of file bytes) — it spans aidream / matrx-frontend / matrx-extend (one shared DB). aidream's `python db/apply_migrations.py --source matrx-frontend` batch-applies and records the ledger itself; from here, the MCP one-off + ledger write is the path.
-- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` vs the ledger and screams about anything unapplied or **drifted** (file changed since recorded); runs on every commit (non-blocking), `:strict` for CI. Then confirm the column/function/trigger exists live via `execute_sql` before reporting done.
+- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` vs the ledger and screams about anything unapplied or **drifted** (file changed since recorded). Run it yourself — it is part of `pnpm check:release-gates`, not of any commit hook. Then confirm the column/function/trigger exists live via `execute_sql` before reporting done.
 - **Regenerate:** `pnpm db-types` → `types/database.types.ts` (or `pnpm sync-types` for DB + Python API types + type-check).
 - A migration that must never apply gets `-- migrate: skip: <reason>` in its first 25 lines.
 
-**Schema truth-check — code vs the LIVE DB.** `pnpm check:schema` pulls the live schema (via the `public.schema_truth_snapshot()` RPC → committed `scripts/schema-check/current-schema.json`) and diffs it against the generated types, every direct `.from()/.schema()`, raw `schema.table` strings, and the dead-relations registry — catching moved/retired-table 404s that have no build error. Loud + non-blocking (`:strict` for CI); `pnpm check:dead-relations` is its fast offline subset on every commit. **Drift in an autogenerated file (`database.types.ts`, `types/python-generated/*`, `dead-relations.json`) means edit the SOURCE and regenerate — the report says which command.** Read [`scripts/schema-check/FEATURE.md`](./scripts/schema-check/FEATURE.md) before adding a check or touching the guard.
+**Schema truth-check — code vs the LIVE DB.** `pnpm check:schema` pulls the live schema (via the `public.schema_truth_snapshot()` RPC → committed `scripts/schema-check/current-schema.json`) and diffs it against the generated types, every direct `.from()/.schema()`, raw `schema.table` strings, and the dead-relations registry — catching moved/retired-table 404s that have no build error. Loud + non-blocking; `pnpm check:dead-relations` is its fast offline subset. **Drift in an autogenerated file (`database.types.ts`, `types/python-generated/*`, `dead-relations.json`) means edit the SOURCE and regenerate — the report says which command.** Read [`scripts/schema-check/FEATURE.md`](./scripts/schema-check/FEATURE.md) before adding a check or touching the guard.
 
-**Typecheck with `pnpm type-check` — never a hand-rolled `tsc -p tsconfig.json`.** Next build output (`.next` + every `NEXT_DISTDIR` variant a parallel agent's dev server creates: `.next-preview`, …) stays excluded from tsc AND eslint via the `.next*` glob — `next dev` *appends* its distDir types to `tsconfig.json`'s `include` on boot, and one truncated machine-written validator (dev server killed mid-write) makes `tsc` report 3 syntax errors and **nothing else**, hiding every real type error while looking green. `pnpm check:tsconfig` guards the exclude (`:strict` for CI); `pnpm clean:next` removes stale alternate build dirs.
+**Typecheck with `pnpm type-check` — never a hand-rolled `tsc -p tsconfig.json`.** Next build output (`.next` + every `NEXT_DISTDIR` variant a parallel agent's dev server creates: `.next-preview`, …) stays excluded from tsc AND eslint via the `.next*` glob — `next dev` *appends* its distDir types to `tsconfig.json`'s `include` on boot, and one truncated machine-written validator (dev server killed mid-write) makes `tsc` report 3 syntax errors and **nothing else**, hiding every real type error while looking green. `pnpm check:tsconfig` guards the exclude; `pnpm clean:next` removes stale alternate build dirs.
+
+**`pnpm type-check` is the ONLY type gate — the build does not check types.** `next.config.js` sets `typescript.ignoreBuildErrors: true`, so a red type error still deploys. Run `pnpm type-check` before you report a task done; never assume a green build means green types. Excluding a path from `tsconfig.typecheck.json` to make it pass is banned — that is how 485 shipped files sat outside the gate for three weeks (D63).
 
 **Invoke the `finalize-and-ship` skill** at the end of any task — it runs migrations + type sync + the other pre-push checks before committing.
 
@@ -90,27 +95,25 @@ App code has **no DDL path** (Supabase JS / PostgREST only); agents apply DDL vi
 
 ### Route groups (2026-05-26 reorg)
 
-The `app/` tree splits into purpose-named route groups. **Working on core product? Default to ignoring `(transitional)`, `(legacy)`, `(dev)` unless the task names them.** When in doubt, work in `(core)` and ask before touching others.
+The `app/` tree splits into purpose-named route groups. **Working on core product? Default to ignoring `(transitional)` and `(dev)` unless the task names them.** When in doubt, work in `(core)` and ask before touching others.
 
 | Group | Purpose | URL | Build |
 |---|---|---|---|
 | `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | always |
 | `(admin)` | **Production admin.** Super-admin gated at layout level. | `/administration/*` | always |
 | `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | always |
-| `(legacy)` | **Entity-bound legacy.** Own `EntityProviders` store (full entity system). | `/legacy/*` | always |
 | `(dev)` | **Internal demos / tests / experiments.** Auth-required. | `/demos/*` | `full` only |
-| `(public-demos)` | **Public showcase demos.** No auth. | `/demos/public/*` | always |
 | `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
 | `(popup)` | OAuth popup chrome. | `/popup-window/*` | always |
 
-**"Transitional family"** = `(transitional)` + `(legacy)` — one logical bucket (routes in/out), two groups only because each boots a different Redux store.
+**`(legacy)` and `(public-demos)` are DELETED** (entity system removed; public demos relocated). Never create files there. `pnpm check:doc-claims` fails if this table and `app/` disagree.
 
-**Shell:** `(core)` and `(admin)` both render `AppShell` (`features/shell/components/AppShell.tsx`): sidebar + transparent header + `#shell-header-center`. **`(core)` routes:** route chrome via `<PageHeader>`, body `h-full overflow-hidden` — see [`features/shell/components/header/variants/USAGE.md`](./features/shell/components/header/variants/USAGE.md); **fixing or building any `(core)` route header/body → invoke the `core-route-headers` skill** (classification, exemplars, mobile bottom-sheet rules, browser verification). **Admin exception:** content sits below the header (not behind it) via scoped `styles/shell.css` rules — admin pages may use `h-[calc(100dvh-2.5rem)]`. `(transitional)`/`(legacy)` still use `ResponsiveLayout`.
+**Shell:** `(core)` and `(admin)` both render `AppShell` (`features/shell/components/AppShell.tsx`): sidebar + transparent header + `#shell-header-center`. **`(core)` routes:** route chrome via `<PageHeader>`, body `h-full overflow-hidden` — see [`features/shell/components/header/variants/USAGE.md`](./features/shell/components/header/variants/USAGE.md); **fixing or building any `(core)` route header/body → invoke the `core-route-headers` skill** (classification, exemplars, mobile bottom-sheet rules, browser verification). **Admin exception:** content sits below the header (not behind it) via scoped `styles/shell.css` rules — admin pages may use `h-[calc(100dvh-2.5rem)]`. `(transitional)` still uses `ResponsiveLayout`.
 
 **Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full` in dev**, **`core` in prod** (`aimatrx.com`; internal demos run on a separate Vercel project with `full`). In `core`, `(dev)` leaves and the `/demos/*` redirects (defined in `next.config.js`) are invisible (clean 404, not 307→404); in `full` both compile. Preview locally: `MATRX_PROFILE=core pnpm dev`.
 
-**Demos:** the `/demos` index (`app/(dev)/demos/page.dev.tsx`) auto-discovers demos under `(dev)/demos/` and links `(legacy)` demos. Add by location: auth shell → `(dev)/demos/<name>/page.dev.tsx`; public → `(public-demos)/demos/public/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`. `(dev)` route leaves are named `page.dev.tsx` / `layout.dev.tsx` / `loading.dev.tsx` / `route.dev.ts`; helpers (`components/`, `hooks/`, `utils/`) keep plain `.tsx`/`.ts` — helpers imported by prod code still compile into core ("fake demos" tech debt; relocate to `components/` over time).
+**Demos:** the `/demos` index (`app/(dev)/demos/page.dev.tsx`) auto-discovers demos under `(dev)/demos/`. Every new demo goes to `(dev)/demos/<name>/page.dev.tsx`. `(dev)` route leaves are named `page.dev.tsx` / `layout.dev.tsx` / `loading.dev.tsx` / `route.dev.ts`; helpers (`components/`, `hooks/`, `utils/`) keep plain `.tsx`/`.ts` — helpers imported by prod code still compile into core ("fake demos" tech debt; relocate to `components/` over time).
 
 ---
 
@@ -221,7 +224,7 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 
 Every Tier 1 feature ships an **admin-gated** (`requireAdmin`, any level) map at `/[feature]/admin` listing every URL, window panel, modal, component, API route, Redux slice, and demo route it owns — utilitarian, never pretty, never failing to connect a resource. Fill a `FeatureAdminMap` config (`features/admin/types/featureAdminMap.ts`) and render `<FeatureAdminPage map={...} />` (`features/admin/components/FeatureAdminPage.tsx`). It exists because features sprawl across `window-panels/windows/`, `components/official-candidate/`, `(dev)/demos/`, sibling folders — without one index, half the surface is invisible.
 
-Design rules (the primitive enforces them): no section descriptions / hero text; full viewport width; every link opens a new tab; rows single-line + compact (`notes?: string[]` for a rare 1-4 bullet expand); window-panel cards get a live "Open" button (`OverlayLaunchButton`); components tiered `official` / `candidate` / `internal` with distinct treatments; `.md` links route through `/admin/docs/<path>` (inline `BasicMarkdownContent`). Auto-surfaces drift — any matching route or panel not declared shows as a yellow warning. **When you add a route / panel / overlay / component, add it to the map config** (`pnpm check:doctrine:staged` + pre-commit flag misses).
+Design rules (the primitive enforces them): no section descriptions / hero text; full viewport width; every link opens a new tab; rows single-line + compact (`notes?: string[]` for a rare 1-4 bullet expand); window-panel cards get a live "Open" button (`OverlayLaunchButton`); components tiered `official` / `candidate` / `internal` with distinct treatments; `.md` links route through `/admin/docs/<path>` (inline `BasicMarkdownContent`). Auto-surfaces drift — any matching route or panel not declared shows as a yellow warning. **When you add a route / panel / overlay / component, add it to the map config** — run `pnpm check:doctrine` yourself to flag misses; nothing runs it for you.
 
 ### Tier 1 — core features
 
@@ -243,7 +246,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Code editor | `features/code-editor/FEATURE.md` |
 | Overlay system (controller, openers, catalogue) | `features/overlays/FEATURE.md` |
 | Window Panels (component + window manager) | `features/window-panels/FEATURE.md` |
-| Settings system | `features/settings/FEATURE.md` + `.cursor/skills/settings-system/SKILL.md` |
+| Settings system | `features/settings/FEATURE.md` + `.claude/skills/settings-system/SKILL.md` |
 | RAG | `features/rag/FEATURE.md` |
 | Universal file handler | `features/files/handler/FEATURE.md` |
 | Scheduling | `features/scheduling/FEATURE.md` |
@@ -315,7 +318,7 @@ Boy-scout rule: if you encounter a leftover `window.confirm` / `alert` / `prompt
 
 ## Mobile (Responsive Web)
 
-Single source of truth: `.cursor/skills/ios-mobile-first/SKILL.md`. Rules:
+Single source of truth: `.claude/skills/ios-mobile-first/SKILL.md`. Rules:
 
 - `h-dvh` / `min-h-dvh` — never `h-screen` or `vh`.
 - `pb-safe` on fixed bottom elements.
@@ -348,7 +351,7 @@ Shipped desktop apps read non-secret runtime values (server URLs, flags, min ver
 
 ## Cross-Repo — Access Architecture (permissions, sharing, memberships, associations)
 
-How a row becomes visible platform-wide — ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, `visibility`, admin level — spans this repo, aidream, and the shared DB. Cross-repo system-of-record: `/Volumes/Samsung2TB/code/common-docs/access-architecture/FEATURE.md` (symlinked here as `common-docs/`) — read it before touching any permission/sharing/scope-access code.
+How a row becomes visible platform-wide — ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, `visibility`, admin level — spans this repo, aidream, and the shared DB. Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/access-architecture/FEATURE.md` — read it before touching any permission/sharing/scope-access code.
 
 ---
 

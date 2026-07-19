@@ -12,7 +12,7 @@
  *   docs/type-drift/generated/wave-1-priority.md
  *   docs/type-drift/generated/by-feature/<feature>.md
  *
- * Fix doctrine: .cursor/skills/type-fixing-agent/SKILL.md
+ * Fix doctrine: .claude/skills/type-fixing-agent/SKILL.md
  * Worked example: docs/type-drift-openapi-alias-example.md
  */
 

@@ -168,7 +168,7 @@ Every Tier 1 / Tier 2 feature has a `FEATURE.md` inside its feature directory. T
 | Permissions & Sharing | `features/sharing/FEATURE.md` |
 | Code editor | `features/code-editor/FEATURE.md` |
 | Window Panels (all overlays) | `features/window-panels/FEATURE.md` |
-| Settings system (preferences shell, primitives, `useSetting`) | `features/settings/FEATURE.md` + `.cursor/skills/settings-system/SKILL.md` |
+| Settings system (preferences shell, primitives, `useSetting`) | `features/settings/FEATURE.md` + `.claude/skills/settings-system/SKILL.md` |
 | RAG (library, data stores, document viewer, search, repositories, ingest/search clients, hooks) | `features/rag/FEATURE.md` |
 
 ### Tier 2 — secondary features
@@ -268,7 +268,7 @@ const [busy, setBusy] = useState(false);
 - **NEVER tabs on mobile** — stack sections vertically
 - **NEVER nested scrolling** — single scroll area per view
 
-**Single source of truth:** `.cursor/skills/ios-mobile-first/SKILL.md` — all patterns, examples, and checklist
+**Single source of truth:** `.claude/skills/ios-mobile-first/SKILL.md` — all patterns, examples, and checklist
 
 ---
 

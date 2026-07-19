@@ -252,7 +252,7 @@ When `RouteIndexPage` is used for a section index page, it automatically:
 
 No extra code needed — pass `basePath="/my-feature"` and it works.
 
-See `.cursor/skills/route-discovery-system/SKILL.md` for full `RouteIndexPage` usage.
+See `.claude/skills/route-discovery-system/SKILL.md` for full `RouteIndexPage` usage.
 
 ---
 

@@ -166,8 +166,8 @@ Exit: The local admin override persists in Redux with the other admin overrides 
   - `hooks/user-preferences/usePreferenceValue.ts` (Phase 8 shim).
 - **Cross-links:**
   - `features/window-panels/FEATURE.md`
-  - `.cursor/skills/ios-mobile-first/SKILL.md`
-  - `.cursor/skills/settings-system/SKILL.md`
+  - `.claude/skills/ios-mobile-first/SKILL.md`
+  - `.claude/skills/settings-system/SKILL.md`
 
 ---
 

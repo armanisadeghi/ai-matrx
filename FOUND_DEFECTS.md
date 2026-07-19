@@ -13,6 +13,43 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D64 — nothing is enforced automatically: no pre-commit hook, no CI (2026-07-18)
+
+**Decides: Arman.** `.git/hooks` has no `pre-commit`, there is no `.husky/`, `simple-git-hooks` is not installed, `lint-staged` is a dependency with zero config, and **there is no `.github/` directory at all** — no CI. Every guard this repo owns (`check:doctrine`, `check:migrations`, `check:schema`, `check:doc-claims`, `pnpm lint`, `pnpm type-check`) runs only when a human or agent runs it, and `scripts/release.sh` invokes the gates as `--advisory || true` by deliberate ruling ("only git can block a release", `e4bbb4e13`). Docs claimed a pre-commit hook in three places; corrected 2026-07-18 to state the truth rather than paper over it.
+
+This is the ROOT CAUSE of the D62/D63 drift class: a `TEMP:` flag flip survived ~3 months, 485 files sat outside the type gate for 3 weeks, and `storage_uri` template-literal violations went unreported — none of which any automation would have caught. Decide one: (a) install a pre-commit hook running `check:doc-claims` + `check:tsconfig` on staged files (fast, offline, no network), (b) add a CI workflow running the `:strict` gates on PR, or (c) ratify "advisory-only, agents run checks by hand" and keep the docs saying exactly that. Until then, an agent's own discipline is the only enforcement.
+
+### D65 — production builds never type-check (`ignoreBuildErrors: true`) (2026-07-18)
+
+**Decides: Arman (one-line flip, but it can red a deploy).** `next.config.js:153` has set `typescript: { ignoreBuildErrors: true }` since **2024-12-06** (`cb9f854827`, "few fixed for build") with no comment and no doc mention — 19 months. Combined with D64 (no CI), a type error reaches production and the only gate is a manual `pnpm type-check`.
+
+**Measured 2026-07-18: the cost of flipping it is near zero.** Full-repo `tsc` (all excludes removed) = **8 errors**, of which 5 are transient collateral from other sessions' uncommitted work in this tree (`buildNotesEditorContextData.ts`, `agent-definition.types.ts` refactors) and 3 are real, all in `app/(dev)/demos/`. Do this on a clean tree: fix the 3 demo errors → remove `ignoreBuildErrors` → `pnpm build`. Not done here only because flipping it against a dirty working tree would have broken the next deploy for in-flight work. CLAUDE.md now states plainly that the build does not gate on types.
+
+### D66 — `app/(dev)/**` is the last shipped-code hole in the type gate (2026-07-18)
+
+`tsconfig.typecheck.json` still excludes `app/(dev)/**`, hiding 6 real errors (3 in `demos/scopes/context-lab/reimagine/page.dev.tsx` — a create handler returning `{id}` where `void | Promise<void>` is expected; 3 from the in-flight notes-context refactor). Defensible in that `(dev)` is stripped from the `core` production profile, but it is still code agents read and copy. The sibling excludes (`app/(transitional)/**`, `features/applet/**`, 485 files) were removed the same day at **zero** error cost — see Resolved D63. Fix the 6 and drop the last exclude; `pnpm check:doc-claims` already fails if any non-`(dev)` shipped path is re-excluded.
+
+### D67 — doctrine says "banned", ESLint says `warn`, with live violations (2026-07-18)
+
+Three bans CLAUDE.md/PRINCIPLES.md state absolutely are `warn` in `eslint.config.mjs`, and with no CI (D64) a warning stops nothing:
+- **Browser dialogs** (`no-alert`, `no-restricted-globals`, `:775-797`) — doc says "forbidden anywhere a human can see — including demos, admin, prototypes". Live: 2 `window.*` forms plus ~20 bare `confirm(`/`alert(`/`prompt(` in `app/(transitional)/apps/app-builder/**` (unsaved-changes guards) and `app/(dev)/demos/**`.
+- **Barrel files** (`no-barrel-files`, `:735`) — 488 warnings, 37 `index.ts` remain.
+- **Banned lucide brand icons** (`matrx/no-banned-lucide-icons`, `:736`) — held at `warn` since 2026-05-18 "while we clean up"; these are type-valid but **runtime-missing → 500s**, so a warning is the wrong severity for this one specifically.
+
+Each needs the same decision: finish the cleanup and promote to `error`, or soften the doc. Do not leave doc and rule disagreeing — that is the D62 class.
+
+### D68 — ESLint override in `OverlayController.tsx` silently drops ~10 unrelated bans (2026-07-18)
+
+`eslint.config.mjs:988-998` sets `'no-restricted-syntax': ['warn', {JSXSpreadAttribute}]` for `features/overlays/OverlayController.tsx`. Flat config **replaces** rather than merges, so that file loses every global ban (legacy Supabase keys, `storage_uri`, file-handler ring-fence, scopes chokepoint, appContext writes, tool_results, content-IR, heavy-Impl, React Flow) — every other override in the file carefully re-lists them; this one does not. Also `warn`, though CLAUDE.md calls it a "hard rule". Currently 0 spread violations, so it is latent. Fix: `'error'` + re-list the globals, matching `:895` / `:918` / the `lib/integrity/checks.ts` override added in D63.
+
+### D69 — `features/files/index.ts` violates the ring-fence it exists to serve (2026-07-18)
+
+The Tier 1-4 file-handler ring-fence bans importing `@/features/files/handler|hooks|components|redux|utils`. The `features/files/**` override (`eslint.config.mjs:890`) relaxes only `no-restricted-syntax`, **not** `no-restricted-imports` — unlike the analogous allowlists at `:1143` / `:1168` / `:1184`. So the canonical public barrel throws **77 `no-restricted-imports` errors against itself**. Fix: add `features/files/**` to a `'no-restricted-imports': 'off'` override. (Note: that file is currently modified in-tree by another session.)
+
+### D70 — `reactFlowStaticImportBan`'s own comment is false; 10 live violations (2026-07-18)
+
+`eslint.config.mjs:702-709` claims React Flow "lives in exactly ONE module — `SetBuilderCanvasImpl.tsx`". Live static `@xyflow/react` imports exist in `features/rag/components/visualization/` (6 files), `features/administration/schema-visualizer/` (3), and `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx`. The rule is `error` and simply never blocks anything (D64). This is the exact bundle-bloat class CLAUDE.md warns about (one such leak took the build 15→24 min). Fix: migrate them to `next/dynamic` or scope the ban with an explicit allowlist and correct the comment.
+
 ### D61 — /chat streams warn "state update on a component that hasn't mounted yet" (2026-07-18)
 
 Observed twice during a live `/chat` stream that rendered a `db_kind_component` (wine_tasting verification runs): React error "Can't perform a React state update on a component that hasn't mounted yet… side-effect in your render function". Source unattributed — plausible suspects are a render-time side-effect in the db-component compile path (`getOrCompileDbKindComponent` is called during render and its cache captures errors into a module store) or pre-existing chat-page code; no `[content-ir]` scream accompanied it and rendering was correct. Needs a React-owner pass to attribute (component stack via dev overlay) and move the offending side-effect into an effect. Not user-visible; filed so it doesn't vanish into a chat log.
@@ -82,6 +119,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 One line per fix — title, date, pointer. History lives in git.
 
 - **D62** — React Compiler re-enabled (`reactCompiler: true`) with A/B build proof: core-profile build 10.6min off / 12.0min on (+13%), 3,669 chunks carry compiled components, built app boots clean — CLAUDE.md doctrine is true again. (`next.config.js`, 2026-07-18)
+- **D63** — Doc-vs-config drift sweep after D62. Built `pnpm check:doc-claims` (10 machine-verified CLAUDE.md claims, negative-tested, wired into release gates); un-excluded 485 shipped files from `tsconfig.typecheck.json` at zero error cost; restored `removeConsole` (743 `console.log` were shipping to prod); closed the `storage_uri` template-literal lint hole; migrated 28 skills out of the Claude-Code-invisible `.cursor/skills/` (incl. `finalize-and-ship`, instructed on every task) and repointed 34 files; corrected route groups, stack versions, `'use cache'`, dead cross-repo path, and three false enforcement claims. Residue filed as D64-D70. (`scripts/check-doc-claims.ts`, 2026-07-18)
 
 - **D41-audio** — Batch STT/TTS now uses authenticated aidream catalog aliases with typed responses, retry/filter/metering and durable media; duplicate Next/provider routes and retired voice demos were removed or fail-closed, and real TTS/STT smokes pass. (`features/audio/FEATURE.md`, 2026-07-15)
 - **D36** — Dynamic-route soft 404s are fixed in production: the existence checks run before streamed content commits. Re-verified all four affected families on `www.aimatrx.com`: bogus identifiers return 404 and real identifiers return 200. (`3cb3a011f`, `d3214f473`, 2026-07-15 verification)

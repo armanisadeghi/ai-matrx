@@ -5,7 +5,7 @@
  * file detail. Uses CSS transforms for slide transitions. Swipe-back is
  * handled by the system back-gesture (we route it through `handlePop`).
  *
- * Follows .cursor/skills/ios-mobile-first/SKILL.md:
+ * Follows .claude/skills/ios-mobile-first/SKILL.md:
  *   - `dvh`, not `vh`.
  *   - `pb-safe` on action bars.
  *   - Inputs at 16px (not applicable here; no forms).

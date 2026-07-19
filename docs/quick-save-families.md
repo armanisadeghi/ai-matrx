@@ -63,9 +63,9 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 
 | Resource | Path | Note |
 |----------|------|------|
-| Message actions overlay skill | [`.cursor/skills/message-actions-overlay-system/SKILL.md`](../.cursor/skills/message-actions-overlay-system/SKILL.md) | Architecture diagram still useful; **`openSaveToNotes` and old controller paths are outdated** — use `openOverlay({ overlayId: "saveToNotes" })` or typed openers. |
-| Notes actions skill | [`.cursor/skills/notes-actions/SKILL.md`](../.cursor/skills/notes-actions/SKILL.md) | Notes-only; same stale `openSaveToNotes` reference. |
-| Window panel authoring skill | [`.cursor/skills/window-panel-authoring/SKILL.md`](../.cursor/skills/window-panel-authoring/SKILL.md) | **`WindowPanel` layout patterns OK**; registry-driven rendering steps are legacy — overlay wiring is in **overlay-system** skill. |
+| Message actions overlay skill | [`.claude/skills/message-actions-overlay-system/SKILL.md`](../.claude/skills/message-actions-overlay-system/SKILL.md) | Architecture diagram still useful; **`openSaveToNotes` and old controller paths are outdated** — use `openOverlay({ overlayId: "saveToNotes" })` or typed openers. |
+| Notes actions skill | [`.claude/skills/notes-actions/SKILL.md`](../.claude/skills/notes-actions/SKILL.md) | Notes-only; same stale `openSaveToNotes` reference. |
+| Window panel authoring skill | [`.claude/skills/window-panel-authoring/SKILL.md`](../.claude/skills/window-panel-authoring/SKILL.md) | **`WindowPanel` layout patterns OK**; registry-driven rendering steps are legacy — overlay wiring is in **overlay-system** skill. |
 | Overlay overhaul doc | [`docs/OVERLAY_WINDOW_OVERHAUL.md`](../docs/OVERLAY_WINDOW_OVERHAUL.md) | Historical *why* (silent-render bug class); not a how-to for new work. |
 
 ---

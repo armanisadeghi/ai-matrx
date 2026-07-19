@@ -118,6 +118,8 @@
     "build:profile": "NEXT_TELEMETRY_DEBUG=1 next build 2>&1 | tee build-profile.log",
     "check:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts",
     "check:tsconfig:strict": "tsx scripts/check-tsconfig-hygiene.ts --strict",
+    "check:doc-claims": "tsx scripts/check-doc-claims.ts",
+    "check:doc-claims:strict": "tsx scripts/check-doc-claims.ts --strict",
     "clean:next": "rm -rf .next-preview* .next-qa* && echo 'removed alternate NEXT_DISTDIR build dirs (.next left intact)'",
     "clean:next:all": "bash scripts/dev-cleanup.sh next",
     "dev:status": "bash scripts/dev-cleanup.sh status",

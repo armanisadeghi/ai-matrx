@@ -107,7 +107,7 @@ Append one entry per decision. Never edit past entries; supersede with a new ent
 ### 2026-04-21 — Mobile form UX: Drawer swap via `useIsMobile()`
 **Phase:** 1 (task 1.7)
 **Decision:** Every form/modal in `features/agent-shortcuts/components/` renders through `Dialog` on desktop and `Drawer` (vaul bottom-sheet) on mobile, gated by `useIsMobile()` from `@/hooks/use-mobile`. Form body and footer markup is shared — only the outer container swaps.
-**Rationale:** CLAUDE.md and `.cursor/skills/ios-mobile-first/SKILL.md` forbid Dialogs on mobile. Splitting each form into a shared body and conditionally rendering Dialog/Drawer is the lowest-duplication path.
+**Rationale:** CLAUDE.md and `.claude/skills/ios-mobile-first/SKILL.md` forbid Dialogs on mobile. Splitting each form into a shared body and conditionally rendering Dialog/Drawer is the lowest-duplication path.
 **Consequences:** All forms use `text-[16px]` on inputs to prevent iOS zoom, `pb-safe` on drawer footers, and `max-h-[92dvh]` on drawer content. Phases 3 (unified context menu), 7 (chat), 11–13 (route UIs) should follow the same pattern.
 
 ### 2026-04-21 — Phase 8: dual-path resolution on `/p/[slug]` — agents first

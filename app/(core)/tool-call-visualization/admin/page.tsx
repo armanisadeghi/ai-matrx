@@ -19,7 +19,7 @@ const TOOL_VIZ_ADMIN_MAP: FeatureAdminMap = {
     { label: "FEATURE.md", href: "/features/tool-call-visualization/FEATURE.md" },
     { label: "Renderer status (by stage)", href: "/features/tool-call-visualization/RENDERER_STATUS.md" },
     { label: "Overhaul status / roadmap", href: "/features/tool-call-visualization/OVERHAUL_STATUS.md" },
-    { label: "create-tool-renderer skill", href: "/.cursor/skills/create-tool-renderer/SKILL.md" },
+    { label: "create-tool-renderer skill", href: "/.claude/skills/create-tool-renderer/SKILL.md" },
   ],
 
   routes: [

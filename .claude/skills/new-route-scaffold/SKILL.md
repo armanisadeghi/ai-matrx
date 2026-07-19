@@ -528,10 +528,10 @@ Every `loading.tsx` must satisfy:
 
 These skills contain the rules this workflow is built on. When in doubt, they win:
 
-- **`nextjs-ssr-architecture`** — `.cursor/skills/nextjs-ssr-architecture/SKILL.md` — server/client component boundaries, Suspense rules, hydration pattern
-- **`ssr-zero-layout-shift`** — `.cursor/skills/ssr-zero-layout-shift/SKILL.md` — skeleton design, fixed-dimension containers, CLS prevention
+- **`nextjs-ssr-architecture`** — `.claude/skills/nextjs-ssr-architecture/SKILL.md` — server/client component boundaries, Suspense rules, hydration pattern
+- **`ssr-zero-layout-shift`** — `.claude/skills/ssr-zero-layout-shift/SKILL.md` — skeleton design, fixed-dimension containers, CLS prevention
 - **Shell header + page height** — `features/shell/components/header/variants/USAGE.md` — `<PageHeader>`, `h-full`, when `.h-page` applies
-- **`redux-selector-rules`** — `.cursor/skills/redux-selector-rules/SKILL.md` — selector patterns, curried selector caching, avoiding re-render loops
+- **`redux-selector-rules`** — `.claude/skills/redux-selector-rules/SKILL.md` — selector patterns, curried selector caching, avoiding re-render loops
 - **Route rules** — `app/(a)/_read_first_route_rules/RULES.md` — mandatory, read before every session on this route group
 
 ---

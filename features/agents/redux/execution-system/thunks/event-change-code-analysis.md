@@ -103,7 +103,7 @@ Here is a **gap analysis file list**: everything that ties into the current stre
 
 ### Repo docs / skills (not runtime code, but stale vs V2)
 - `features/agents/docs/STREAM_STATUS_LIFECYCLE.md`
-- `.cursor/skills/agent-execution-redux/SKILL.md`
+- `.claude/skills/agent-execution-redux/SKILL.md`
 
 **Reference spec (no code change required unless you keep it in sync):** `features/agents/redux/execution-system/thunks/record_reservation_frontend_guide.md`
 

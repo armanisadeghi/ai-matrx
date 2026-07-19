@@ -636,6 +636,16 @@ const storageUriEradicationBan = [
         message:
             'String contains storage_uri/file_uri — the server-only S3 location, ERADICATED from the FE (2026-07-06). Never select it (use FILES_TABLE_COLUMNS from features/files/filesDb.ts), never read/write it as a key. See features/files/FEATURE.md.',
     },
+    {
+        // Template literals are neither Identifier nor Literal, so the two selectors
+        // above missed every backtick SQL string — lib/integrity/checks.ts carried three
+        // live `storage_uri` references that reported ZERO violations (found 2026-07-18,
+        // D63). Same shape as toolResultsChokepointSyntaxRestrictions.
+        selector:
+            'TemplateElement[value.raw=/\\b(storage_uri|file_uri|canonical_file_uri)\\b/]',
+        message:
+            'Template literal contains storage_uri/file_uri — the server-only S3 location, ERADICATED from the FE (2026-07-06). Never select it (use FILES_TABLE_COLUMNS from features/files/filesDb.ts), never read/write it as a key. See features/files/FEATURE.md.',
+    },
 ];
 
 // Bundle-splitting fence for the canonical agent context menu. The menu
@@ -647,13 +657,13 @@ const storageUriEradicationBan = [
 // v2 rollout. Import it via `next/dynamic({ ssr: false })` (single-tier, never
 // nested) instead. The selector matches ONLY a static value ImportSpecifier —
 // `import type {...}` and dynamic `import()` are intentionally unaffected.
-// See .cursor/skills/surface-pro-rollout/SKILL.md.
+// See .claude/skills/surface-pro-rollout/SKILL.md.
 const canonicalMenuStaticImportBan = [
     {
         selector:
             "ImportDeclaration[importKind!='type'][source.value='@/features/context-menu-v2/UnifiedAgentContextMenu'] > ImportSpecifier[importKind!='type'][imported.name='UnifiedAgentContextMenu']",
         message:
-            "Do not statically import UnifiedAgentContextMenu — it balloons the route chunk (a static import ballooned the prod build 15→24min). Use next/dynamic({ ssr: false }): const UnifiedAgentContextMenu = dynamic(() => import('@/features/context-menu-v2/UnifiedAgentContextMenu').then((m) => ({ default: m.UnifiedAgentContextMenu })), { ssr: false }). `import type {...}` is fine. See .cursor/skills/surface-pro-rollout/SKILL.md.",
+            "Do not statically import UnifiedAgentContextMenu — it balloons the route chunk (a static import ballooned the prod build 15→24min). Use next/dynamic({ ssr: false }): const UnifiedAgentContextMenu = dynamic(() => import('@/features/context-menu-v2/UnifiedAgentContextMenu').then((m) => ({ default: m.UnifiedAgentContextMenu })), { ssr: false }). `import type {...}` is fine. See .claude/skills/surface-pro-rollout/SKILL.md.",
     },
 ];
 
@@ -1319,6 +1329,32 @@ export default [
         files: ['types/database.types.ts', 'types/python-generated/**/*'],
         rules: {
             'no-restricted-syntax': 'off',
+        },
+    },
+    {
+        // The data-integrity check registry FILTERS on storage_uri inside server-side
+        // SQL (`where storage_uri like 'unrecoverable://%'`) — it never SELECTs the
+        // column into a client payload. Those queries run through execute_admin_query
+        // (SECURITY DEFINER), so the authenticated-role revoke does not apply. The
+        // template-literal selector added 2026-07-18 (D63) newly sees these, so the
+        // exemption is made explicit here rather than by weakening the selector.
+        // Flat config replaces the rule wholesale — every other global ban is
+        // re-listed so this file keeps them.
+        files: ['lib/integrity/checks.ts'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...fileHandlerSyntaxRestrictions,
+                ...scopesChokepointSyntaxRestrictions,
+                ...appContextWriteSyntaxRestrictions,
+                ...toolResultsChokepointSyntaxRestrictions,
+                ...contentIrChokepointSyntaxRestrictions,
+                ...canonicalMenuStaticImportBan,
+                ...contextMenuV3StaticImportBan,
+                ...heavyImplStaticImportBan,
+                ...reactFlowStaticImportBan,
+            ],
         },
     },
 ];

@@ -13,7 +13,7 @@ This skill extends the **official Next.js best practices guide**. Read that firs
 2. What needs migration to best practices
 3. Project-specific conventions
 
-> **📱 For mobile-specific guidelines:** See `.cursor/skills/ios-mobile-first/SKILL.md`
+> **📱 For mobile-specific guidelines:** See `.claude/skills/ios-mobile-first/SKILL.md`
 > 
 > The ios-mobile-first skill covers viewport units, safe areas, touch targets, responsive patterns, and iOS-native UX. Use that skill for all mobile layout and interaction work.
 

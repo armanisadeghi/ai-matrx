@@ -15,8 +15,8 @@ This route: app/(a)
 The following skills are required before proceeding. Read them. Apply them.
 
 - /Users/armanisadeghi/.claude/plugins/cache/vercel-vercel-plugin/vercel-plugin/0.24.0/skills/next-cache-components/SKILL.md
-- /Users/armanisadeghi/code/matrx-admin/.cursor/skills/nextjs-ssr-architecture/SKILL.md
-- /Users/armanisadeghi/code/matrx-admin/.cursor/skills/ssr-zero-layout-shift/SKILL.md
+- /Users/armanisadeghi/code/matrx-admin/.claude/skills/nextjs-ssr-architecture/SKILL.md
+- /Users/armanisadeghi/code/matrx-admin/.claude/skills/ssr-zero-layout-shift/SKILL.md
 
 # Metadata and SEO:
 - Guidelimes: /Users/armanisadeghi/code/matrx-admin/app/(a)/_read_first_route_rules/metadata-and-seo.md

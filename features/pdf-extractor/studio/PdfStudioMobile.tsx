@@ -21,7 +21,7 @@
  *
  * No horizontal split panes on mobile — switching between PDF / raw /
  * cleaned is tab-based, which is the canonical mobile pattern in this
- * app per `.cursor/skills/ios-mobile-first/SKILL.md` (no nested scrolling,
+ * app per `.claude/skills/ios-mobile-first/SKILL.md` (no nested scrolling,
  * no Dialog, no tabs that try to fit side-by-side).
  */
 
