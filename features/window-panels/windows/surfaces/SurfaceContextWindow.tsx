@@ -12,8 +12,11 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
+import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { getManifest } from "@/features/surfaces/manifests/registry";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
 import { useLiveSurfaceScope } from "@/features/surfaces/runtime/useLiveSurfaceScope";
 import type { SurfaceValue } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
@@ -130,6 +133,9 @@ export default function SurfaceContextWindow({
     (value) => value.alwaysAvailable && !hasValue(live.scope[value.name]),
   ).length;
   const presentation = statusPresentation(live.status);
+  const friendlySurfaceName =
+    surfaceLabel?.trim() ||
+    (surfaceName ? getSurfaceDisplayLabel(surfaceName) : "This Page");
 
   const copyText = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);
@@ -145,20 +151,11 @@ export default function SurfaceContextWindow({
       overlayId="surfaceContextWindow"
       onClose={onClose}
       titleNode={
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
           <Braces className="h-4 w-4 shrink-0 text-primary" />
           <span className="truncate text-sm font-semibold">
-            Surface Context
+            {friendlySurfaceName} Context
           </span>
-          <Badge
-            variant="outline"
-            className={cn("shrink-0 text-[10px]", presentation.className)}
-          >
-            {live.status === "live" && (
-              <CircleDot className="mr-1 h-2.5 w-2.5 fill-current" />
-            )}
-            {presentation.label}
-          </Badge>
         </div>
       }
       width={900}
@@ -171,30 +168,58 @@ export default function SurfaceContextWindow({
       sidebarMinSize={190}
       defaultSidebarOpen
       actionsRight={
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={live.refresh}
-            className="flex h-7 items-center gap-1 rounded px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             title="Read the current page values now"
+            aria-label="Refresh live surface values"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
           </button>
+          <CopyForAiButton
+            compact
+            icon={CopyForAiIcon}
+            label={`${friendlySurfaceName} surface context`}
+            agent={() => ({
+              kind: "surface-context",
+              location: `${friendlySurfaceName} — Surface Context`,
+              description:
+                "The current live values and declared variable contract for this page surface.",
+              attributes: {
+                status: live.status,
+                declared: declared.length,
+                supplied,
+              },
+              context: {
+                surface: friendlySurfaceName,
+                surface_key: surfaceName || undefined,
+                editable: isEditable,
+              },
+              data: {
+                liveValues: live.scope,
+                declarations: declared,
+                runtimeOnlyKeys,
+                missingRequired,
+                runtimeError: live.error,
+              },
+            })}
+          />
           <button
             type="button"
             onClick={() =>
               void copyText(JSON.stringify(live.scope, null, 2), "all")
             }
-            className="flex h-7 items-center gap-1 rounded px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             title="Copy all current surface values"
+            aria-label="Copy surface values as JSON"
           >
             {copied === "all" ? (
               <Check className="h-3.5 w-3.5 text-emerald-500" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
-            JSON
           </button>
         </div>
       }
@@ -266,6 +291,14 @@ export default function SurfaceContextWindow({
       }
       footerLeft={
         <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-muted-foreground">
+          <span
+            className={cn("flex items-center gap-1", presentation.className)}
+          >
+            {live.status === "live" && (
+              <CircleDot className="h-2.5 w-2.5 fill-current" />
+            )}
+            {presentation.label}
+          </span>
           <span>
             <b className="text-foreground">{supplied}</b>/{declared.length}{" "}
             supplied
@@ -286,9 +319,9 @@ export default function SurfaceContextWindow({
         </div>
       }
       footerRight={
-        <code className="max-w-[300px] truncate text-[10px] text-muted-foreground">
-          {surfaceName}
-        </code>
+        <span className="max-w-[300px] truncate text-[10px] text-muted-foreground">
+          {friendlySurfaceName}
+        </span>
       }
     >
       {selected ? (
@@ -365,9 +398,7 @@ export default function SurfaceContextWindow({
         <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
           <Braces className="h-12 w-12 text-primary/15" />
           <div>
-            <h2 className="text-base font-semibold">
-              {surfaceLabel || manifest?.label || surfaceName}
-            </h2>
+            <h2 className="text-base font-semibold">{friendlySurfaceName}</h2>
             <p className="mt-1 max-w-lg text-xs leading-relaxed text-muted-foreground">
               This surface has no declared or emitted values to inspect yet.
               {isEditable

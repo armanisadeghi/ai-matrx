@@ -24,8 +24,14 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
+import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import {
+  getManifest,
+  getRawManifest,
+} from "@/features/surfaces/manifests/registry";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
 import { allBaseline } from "@/features/surfaces/manifests/_baseline.manifest";
 import { qualifyingDefaultSurfaces } from "@/features/surfaces/services/surface-bound-agents.service";
 import type { SurfaceValue } from "@/features/surfaces/types";
@@ -559,6 +565,9 @@ function SurfaceContextInspectorWindowInner({
   const model = useInspectorModel(surfaceName, scope, isEditable);
   const tabs = useInspectorTabs();
   const { copiedKey, copy } = useCopyText();
+  const friendlySurfaceName = surfaceName
+    ? getSurfaceDisplayLabel(surfaceName)
+    : "This Page";
 
   const copyAll = useCallback(() => {
     copy(JSON.stringify(scope, null, 2), "__all__");
@@ -590,40 +599,11 @@ function SurfaceContextInspectorWindowInner({
   }, [surface?.name, surfaceName, view]);
 
   const titleNode = (
-    <div className="flex max-w-[min(420px,50vw)] items-center justify-center gap-1.5 truncate">
+    <div className="flex max-w-[min(360px,45vw)] items-center justify-center gap-1.5 truncate">
+      <Braces className="h-4 w-4 shrink-0 text-violet-500" />
       <span className="truncate text-sm font-medium">
-        Surface Context Admin
+        {friendlySurfaceName} Admin Context
       </span>
-      <Badge
-        variant="outline"
-        className="max-w-[180px] truncate font-mono text-[10px]"
-      >
-        {surfaceName ?? "(no surface)"}
-      </Badge>
-      <Badge
-        variant="outline"
-        className={cn(
-          "shrink-0 text-[10px]",
-          scopeStatus === "live"
-            ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-            : scopeStatus === "error"
-              ? "border-destructive/40 text-destructive"
-              : "text-muted-foreground",
-        )}
-      >
-        {scopeStatus === "live"
-          ? "Live"
-          : scopeStatus === "snapshot"
-            ? "Snapshot"
-            : scopeStatus === "error"
-              ? "Runtime error"
-              : "No runtime"}
-      </Badge>
-      {isEditable && (
-        <Badge variant="secondary" className="shrink-0 text-[10px]">
-          editable
-        </Badge>
-      )}
     </div>
   );
 
@@ -643,49 +623,86 @@ function SurfaceContextInspectorWindowInner({
       sidebarMinSize={160}
       defaultSidebarOpen={view === "values"}
       actionsLeft={
-        <div className="flex rounded-md border border-border bg-muted/30 p-0.5">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={() => setView("values")}
+            title="Live values"
+            aria-label="Show live surface values"
             className={cn(
-              "flex h-6 items-center gap-1 rounded px-2 text-[11px]",
+              "grid h-6 w-6 place-items-center rounded transition-colors",
               view === "values"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground",
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >
-            <Activity className="h-3 w-3" /> Live values
+            <Activity className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={() => setView("settings")}
+            title="Manifest and settings"
+            aria-label="Show surface manifest and settings"
             className={cn(
-              "flex h-6 items-center gap-1 rounded px-2 text-[11px]",
+              "grid h-6 w-6 place-items-center rounded transition-colors",
               view === "settings"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground",
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >
-            <Settings2 className="h-3 w-3" /> Manifest &amp; settings
+            <Settings2 className="h-3.5 w-3.5" />
           </button>
         </div>
       }
       actionsRight={
-        view === "values" ? (
-          <button
-            type="button"
-            onClick={copyAll}
-            className="flex h-6 items-center gap-1 rounded px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            title="Copy full scope JSON"
-          >
-            {copiedKey === "__all__" ? (
-              <CopyCheck className="h-3 w-3 text-green-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-            <span>{copiedKey === "__all__" ? "Copied" : "Copy JSON"}</span>
-          </button>
-        ) : null
+        <div className="flex items-center gap-0.5">
+          <CopyForAiButton
+            compact
+            icon={CopyForAiIcon}
+            label={`${friendlySurfaceName} admin surface context`}
+            agent={() => ({
+              kind: "surface-context-admin",
+              location: `${friendlySurfaceName} — Surface Context Admin`,
+              description:
+                "The live page values, authored and resolved manifest contract, and visible database settings for this surface.",
+              attributes: {
+                status: scopeStatus,
+                declared: model.declared.length,
+                supplied: model.supplied,
+                violations: model.violations,
+              },
+              context: {
+                surface: friendlySurfaceName,
+                surface_key: surfaceName ?? undefined,
+                editable: isEditable,
+              },
+              data: {
+                liveValues: scope,
+                authoredManifest: surfaceName
+                  ? getRawManifest(surfaceName)
+                  : null,
+                resolvedManifest: surfaceName ? getManifest(surfaceName) : null,
+                databaseSurface: surface,
+                runtimeStatus: scopeStatus,
+              },
+            })}
+          />
+          {view === "values" && (
+            <button
+              type="button"
+              onClick={copyAll}
+              className="grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              title="Copy full scope JSON"
+              aria-label="Copy full surface scope as JSON"
+            >
+              {copiedKey === "__all__" ? (
+                <CopyCheck className="h-3 w-3 text-green-500" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </button>
+          )}
+        </div>
       }
       sidebar={
         view === "values" ? (
@@ -701,6 +718,24 @@ function SurfaceContextInspectorWindowInner({
       footerLeft={
         view === "values" ? (
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+            <span
+              className={cn(
+                scopeStatus === "live"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : scopeStatus === "error"
+                    ? "text-destructive"
+                    : "text-muted-foreground",
+              )}
+            >
+              {scopeStatus === "live"
+                ? "Live"
+                : scopeStatus === "snapshot"
+                  ? "Snapshot"
+                  : scopeStatus === "error"
+                    ? "Runtime error"
+                    : "No runtime"}
+            </span>
+            {isEditable && <span>Editable surface</span>}
             <span>
               <span className="font-semibold text-foreground">
                 {model.declared.length}
@@ -744,10 +779,10 @@ function SurfaceContextInspectorWindowInner({
           <span className="max-w-[280px] truncate text-[10px] text-muted-foreground">
             Defaults:{" "}
             {model.defaults.map((d, i) => (
-              <code key={d} className="text-foreground">
-                {d}
+              <span key={d} className="text-foreground">
+                {getSurfaceDisplayLabel(d)}
                 {i < model.defaults.length - 1 ? ", " : ""}
-              </code>
+              </span>
             ))}
           </span>
         ) : undefined
