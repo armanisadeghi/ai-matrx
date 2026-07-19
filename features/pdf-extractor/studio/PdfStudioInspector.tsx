@@ -64,7 +64,6 @@ const SECTIONS: {
 
 interface PdfStudioInspectorProps {
   doc: PdfDocument;
-  sourceMissing?: boolean;
   pages: PdfPageRow[];
   activePage: number | null;
   onRunShortcut: (shortcutId: string) => void | Promise<void>;
@@ -81,7 +80,6 @@ interface PdfStudioInspectorProps {
 
 export function PdfStudioInspector({
   doc,
-  sourceMissing = true,
   pages,
   activePage,
   onRunShortcut,
@@ -107,8 +105,13 @@ export function PdfStudioInspector({
 
   // Chunked Runs needs a cld_file source. If the doc doesn't have one,
   // the section is still mounted but renders a guidance message.
-  const chunkedFileId =
+  const sourceFileId =
     doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
+  const { file: sourceFile, status: sourceStatus } = useFile(
+    sourceFileId ? { kind: "file_id", fileId: sourceFileId } : null,
+  );
+  const sourceAvailable = sourceStatus === "ready" && sourceFile !== null;
+  const chunkedFileId = sourceAvailable ? sourceFileId : null;
 
   return (
     <aside className="flex flex-col h-full min-h-0 border-l border-border bg-card/30">
@@ -164,7 +167,7 @@ export function PdfStudioInspector({
             {section === "widgets" && (
               <AiActionsPanel
                 doc={doc}
-                sourceMissing={sourceMissing}
+                sourceAvailable={sourceAvailable}
                 pages={pages}
                 activePage={activePage}
                 onRunShortcut={onRunShortcut}
@@ -200,6 +203,7 @@ export function PdfStudioInspector({
 import { useToastManager } from "@/hooks/useToastManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useFile } from "@/features/files/handler/hooks/useFile";
 
 type AgentScope = "full" | "current" | "range" | "selection";
 
@@ -240,12 +244,12 @@ const SCOPE_OPTIONS: {
 
 function AiActionsPanel({
   doc,
-  sourceMissing,
+  sourceAvailable,
   pages,
   activePage,
 }: {
   doc: PdfDocument;
-  sourceMissing: boolean;
+  sourceAvailable: boolean;
   pages: PdfPageRow[];
   activePage: number | null;
   onRunShortcut?: (shortcutId: string) => void | Promise<void>;
@@ -367,7 +371,7 @@ function AiActionsPanel({
     })();
 
     const fileId =
-      !sourceMissing && doc.sourceKind === "cld_file" && doc.sourceId
+      sourceAvailable && doc.sourceKind === "cld_file" && doc.sourceId
         ? doc.sourceId
         : "";
 

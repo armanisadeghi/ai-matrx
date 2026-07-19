@@ -45,6 +45,7 @@ import { PdfStudioSidebar } from "./PdfStudioSidebar";
 import { PdfStudioHeaderControls } from "./PdfStudioHeaderControls";
 import { PdfStudioReader, type PdfPaneEditMode } from "./PdfStudioReader";
 import { PdfStudioInspector, type SectionKey } from "./PdfStudioInspector";
+import { useFile } from "@/features/files/handler/hooks/useFile";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
 import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugTrigger";
@@ -138,6 +139,17 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
   // Local state that doesn't (yet) need to be shared across features.
   const [activeDoc, setActiveDoc] = useState<PdfDocument | null>(null);
+  const activeSourceFileId =
+    activeDoc?.sourceKind === "cld_file" && activeDoc.sourceId
+      ? activeDoc.sourceId
+      : null;
+  const { file: activeSourceFile, status: activeSourceStatus } = useFile(
+    activeSourceFileId
+      ? { kind: "file_id", fileId: activeSourceFileId }
+      : null,
+  );
+  const activeSourceAvailable =
+    activeSourceStatus === "ready" && activeSourceFile !== null;
   const { renameDocById: renameDocByIdHook, handleRenameActiveDoc } =
     useStudioDocRename({
       docs: docsState.docs,
@@ -670,11 +682,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         ? pageRow.cleanedText || pageRow.rawText
         : pageRow.rawText
       : "";
-    const sourceMissing =
-      docsState.docs.find((summary) => summary.id === activeDoc.id)?.sourceMissing ??
-      true;
     const fileId =
-      !sourceMissing && activeDoc.sourceKind === "cld_file" && activeDoc.sourceId
+      activeSourceAvailable && activeDoc.sourceKind === "cld_file" && activeDoc.sourceId
         ? activeDoc.sourceId
         : "";
     const pageNumbers =
@@ -924,10 +933,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <PdfStudioInspector
                   doc={activeDoc}
-                  sourceMissing={
-                    docsState.docs.find((summary) => summary.id === activeDoc.id)
-                      ?.sourceMissing ?? true
-                  }
                   pages={pages}
                   activePage={activePage}
                   onRunShortcut={handleRunShortcut}

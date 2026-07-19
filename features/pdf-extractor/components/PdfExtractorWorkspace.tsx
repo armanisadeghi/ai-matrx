@@ -57,6 +57,7 @@ import { CopyPagesOverlay } from "./CopyPagesOverlay";
 import { createPdfExtractorScope } from "@/features/surfaces/manifests/pdf-extractor.manifest";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+import { useFile } from "@/features/files/handler/hooks/useFile";
 
 const PDF_EXTRACTOR_SURFACE = "matrx-user/pdf-extractor";
 
@@ -123,6 +124,15 @@ export function PdfExtractorFloatingWorkspace({
   }, [initialDocumentId]);
 
   const activeTab = extractor.activeTab;
+  const activeSourceId =
+    activeTab?.document?.sourceKind === "cld_file" && activeTab.document.sourceId
+      ? activeTab.document.sourceId
+      : null;
+  const { file: activeSourceFile, status: activeSourceStatus } = useFile(
+    activeSourceId ? { kind: "file_id", fileId: activeSourceId } : null,
+  );
+  const activeSourceAvailable =
+    activeSourceStatus === "ready" && activeSourceFile !== null;
 
   // Best text to feed an agent — prefer the AI-cleaned output if it exists.
   const docText = useMemo(() => {
@@ -201,7 +211,7 @@ export function PdfExtractorFloatingWorkspace({
               page_range_text: "",
               filename: doc?.name ?? "",
               file_id:
-                doc?.sourceKind === "cld_file" && doc.sourceId
+                activeSourceAvailable && doc?.sourceKind === "cld_file" && doc.sourceId
                   ? doc.sourceId
                   : "",
               processed_document_id: doc?.id ?? "",
@@ -219,7 +229,7 @@ export function PdfExtractorFloatingWorkspace({
         toast.error(msg);
       }
     },
-    [docText, activeTab, launchAgent, toast],
+    [docText, activeTab, activeSourceAvailable, launchAgent, toast],
   );
 
   const footer = useMemo(() => {
@@ -842,6 +852,12 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
   const usingClean = !!doc.cleanContent;
   const charCount = (doc.cleanContent ?? doc.content ?? "").length;
   const docText = doc.cleanContent ?? doc.content ?? "";
+  const sourceId =
+    doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
+  const { file: sourceFile, status: sourceStatus } = useFile(
+    sourceId ? { kind: "file_id", fileId: sourceId } : null,
+  );
+  const sourceAvailable = sourceStatus === "ready" && sourceFile !== null;
 
   const handleRunAgent = async (agentId: string) => {
     if (!docText) {
@@ -867,7 +883,9 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
             page_range_text: "",
             filename: doc.name,
             file_id:
-              doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : "",
+              sourceAvailable && doc.sourceKind === "cld_file" && doc.sourceId
+                ? doc.sourceId
+                : "",
             processed_document_id: doc.id,
             total_pages: doc.totalPages ?? 0,
             current_page: 0,

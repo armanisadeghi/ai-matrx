@@ -522,10 +522,6 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
               <div className="flex-1 min-h-0">
                 <PdfStudioInspector
                   doc={activeDoc}
-                  sourceMissing={
-                    docsState.docs.find((summary) => summary.id === activeDoc.id)
-                      ?.sourceMissing ?? true
-                  }
                   pages={pages}
                   activePage={activePage}
                   onRunShortcut={handleRunShortcut}
