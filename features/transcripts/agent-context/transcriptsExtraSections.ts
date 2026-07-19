@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v2/extraSections";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 
 export interface TranscriptsExtraSectionsArgs {
   /** Full transcript text the "Copy transcript" item writes to the clipboard. */

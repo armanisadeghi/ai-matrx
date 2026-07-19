@@ -31,7 +31,7 @@ import { tokenUsageFromJson } from "../../types";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
   buildResearchContextData,
   RESEARCH_CONTEXT_MENU_PROPS,

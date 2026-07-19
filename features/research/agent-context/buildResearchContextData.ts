@@ -1,4 +1,4 @@
-import type { PlacementMode } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import type { PlacementMode } from "@/features/context-menu-v3/types";
 import { createResearchScope } from "@/features/surfaces/manifests/research.manifest";
 import type {
   ResearchTopic,

@@ -101,7 +101,7 @@ import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks
 import { resolveRowScope } from "@/features/agents/redux/shared/scope";
 import type { Scope, ScopeRef } from "@/features/agents/redux/shared/scope";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
-import { useUnifiedAgentContextMenu } from "@/features/context-menu-v2/hooks/useUnifiedAgentContextMenu";
+import { useUnifiedAgentContextMenu } from "@/features/context-menu-v3/hooks/useUnifiedAgentContextMenu";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
 import type { SurfaceManifest } from "@/features/surfaces/types";
 import { supabase } from "@/utils/supabase/client";
@@ -121,7 +121,7 @@ import {
   formatLabContextJson,
   getLabSurfacePreset,
 } from "../_fixtures/lab-surface-presets";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 import { DemoProTextarea } from "../_components/DemoProTextarea";
 

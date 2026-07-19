@@ -44,7 +44,7 @@ import type {
 import {
   useUnifiedAgentContextMenu,
   type AgentMenuEntry,
-} from "./hooks/useUnifiedAgentContextMenu";
+} from "@/features/context-menu-v3/hooks/useUnifiedAgentContextMenu";
 import { useSurfaceBoundAgents } from "./hooks/useSurfaceBoundAgents";
 // MenuBody (the heavy menu body + its icon resolver / react-icons) is
 // dynamically imported below so it never enters the shell's chunk.
@@ -64,7 +64,7 @@ import {
   type CapturedSelection,
   type SelectionRange,
 } from "./utils/selection-tracking";
-import { buildApplicationScopeFromMenuContext } from "./utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 
 // Tiny placeholder shown for the (~0.5s) MenuBody chunk load on first open.

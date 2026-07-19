@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { Settings, Network } from "lucide-react";
-import type { PlacementMode } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v2/extraSections";
+import type { PlacementMode } from "@/features/context-menu-v3/types";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { createProjectsScope } from "@/features/surfaces/manifests/projects.manifest";
 import type { Project } from "@/features/projects/types";
 

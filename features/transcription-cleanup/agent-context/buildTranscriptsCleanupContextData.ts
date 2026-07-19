@@ -1,5 +1,5 @@
 import { Save, Eraser, SpellCheck } from "lucide-react";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v2/extraSections";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import {
   createTranscriptsCleanupScope,
   type CleanupContextItemValue,

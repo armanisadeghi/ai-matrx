@@ -45,7 +45,7 @@ import {
   extractEffectiveValues,
 } from "@/features/agents/utils/variable-customcomponent";
 import type { ContextItemBinding } from "@/features/agents/types/agent-definition.types";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
   AGENT_BUILDER_CONTEXT_MENU_PROPS,
   buildAgentBuilderContextData,

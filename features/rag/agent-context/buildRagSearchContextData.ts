@@ -1,4 +1,4 @@
-import type { PlacementMode } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import type { PlacementMode } from "@/features/context-menu-v3/types";
 import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
 import type { RagSearchHit, RagSearchResponse } from "@/features/rag/api/search";
 

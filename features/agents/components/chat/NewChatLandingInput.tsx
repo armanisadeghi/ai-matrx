@@ -24,7 +24,7 @@ import { setUserInputText } from "@/features/agents/redux/execution-system/insta
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedAction";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,

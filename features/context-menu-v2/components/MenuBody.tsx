@@ -53,12 +53,12 @@ import {
 import type {
   AgentMenuCategoryGroup,
   AgentMenuEntry,
-} from "../hooks/useUnifiedAgentContextMenu";
+} from "@/features/context-menu-v3/hooks/useUnifiedAgentContextMenu";
 import type {
   SurfaceBoundAgentEntry,
   SurfaceBoundAgentSection,
 } from "@/features/surfaces/services/surface-bound-agents.service";
-import { BoundAgentsMenuSection } from "./BoundAgentsMenuSection";
+import { BoundAgentsMenuSection } from "@/features/context-menu-v3/components/BoundAgentsMenuSection";
 import type {
   ContextMenuExtraSection,
   ContextMenuExtraItem,

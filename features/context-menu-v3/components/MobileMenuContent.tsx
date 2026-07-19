@@ -103,7 +103,7 @@ import {
   useUnifiedAgentContextMenu,
   type AgentMenuEntry,
   type AgentMenuCategoryGroup,
-} from "@/features/context-menu-v2/hooks/useUnifiedAgentContextMenu";
+} from "@/features/context-menu-v3/hooks/useUnifiedAgentContextMenu";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
 import {

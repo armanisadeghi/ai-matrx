@@ -11,7 +11,7 @@ import {
   AGENT_BUILDER_CONTEXT_MENU_PROPS,
   buildAgentBuilderContextData,
 } from "@/features/agents/agent-context/buildAgentBuilderContextData";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import type { EditableContextMenuProps } from "@/features/context-menu-v3/types";
 import {

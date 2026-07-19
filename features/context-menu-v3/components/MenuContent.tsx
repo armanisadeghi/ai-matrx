@@ -122,8 +122,8 @@ import {
   useUnifiedAgentContextMenu,
   type AgentMenuEntry,
   type AgentMenuCategoryGroup,
-} from "@/features/context-menu-v2/hooks/useUnifiedAgentContextMenu";
-import { BoundAgentsMenuSection } from "@/features/context-menu-v2/components/BoundAgentsMenuSection";
+} from "@/features/context-menu-v3/hooks/useUnifiedAgentContextMenu";
+import { BoundAgentsMenuSection } from "@/features/context-menu-v3/components/BoundAgentsMenuSection";
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
 import {

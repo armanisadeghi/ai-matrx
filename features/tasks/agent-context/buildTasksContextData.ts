@@ -2,7 +2,7 @@ import { toast } from "sonner";
 import { Save, Trash2, CheckCircle2, CircleDashed } from "lucide-react";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import { createTasksScope } from "@/features/surfaces/manifests/tasks.manifest";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v2/extraSections";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
 
 /** Placements for the task editor (target wiring with surfaceName). */

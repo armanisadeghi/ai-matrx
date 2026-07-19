@@ -1,5 +1,5 @@
 import { ExternalLink, RefreshCw, Download } from "lucide-react";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v2/extraSections";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 
 /**
  * Real handlers a research surface wires into its menu. Every item is omitted

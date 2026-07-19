@@ -41,7 +41,7 @@ import { AgentUserMessage } from "./user/AgentUserMessage";
 // per-block context from cheap DOM tags (`data-message-id`, `data-mtx-ctx`) on
 // right-click, so blocks stay free (just tags) instead of mounting a menu each.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { resolveMarkdownContext } from "@/features/context-menu-v2/markdown/resolveMarkdownContext";
+import { resolveMarkdownContext } from "@/features/context-menu-v3/utils/resolveMarkdownContext";
 import {
   applyDisplayGroupWindow,
   buildDisplayEntries,

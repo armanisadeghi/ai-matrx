@@ -60,7 +60,7 @@ import {
   createProjectsExtraSections,
   PROJECTS_CONTEXT_MENU_PROPS,
 } from "@/features/projects/agent-context/buildProjectsContextData";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ProjectContextPicker } from "@/features/projects/components/ProjectContextSection";
 import {

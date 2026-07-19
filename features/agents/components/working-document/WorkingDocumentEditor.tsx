@@ -3,7 +3,7 @@
 import { useCallback, useRef } from "react";
 import { NoteEditorCore } from "@/features/notes/components/NoteEditorCore";
 import type { ContentSource } from "@/features/rich-document/types";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import { useWorkingDocViewState } from "./workingDocumentViewStore";
 import { useWorkingDocumentSurfaceScope } from "./useWorkingDocumentSurfaceScope";

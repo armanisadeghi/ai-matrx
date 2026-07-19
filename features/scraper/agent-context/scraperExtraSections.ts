@@ -1,5 +1,5 @@
 import { ExternalLink, Copy, Image as ImageIcon } from "lucide-react";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v2/extraSections";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 
 export interface ScraperExtraSectionHandlers {
   /** Open the scraped page in a new browser tab. Omit to hide the item. */

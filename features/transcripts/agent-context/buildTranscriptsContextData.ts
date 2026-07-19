@@ -1,4 +1,4 @@
-import type { PlacementMode } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import type { PlacementMode } from "@/features/context-menu-v3/types";
 import { createTranscriptsScope } from "@/features/surfaces/manifests/transcripts.manifest";
 import type { Transcript, TranscriptSegment } from "@/features/transcripts/types";
 

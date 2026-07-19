@@ -34,7 +34,7 @@ import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,
 } from "./agent-context/buildChatContextData";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   selectUserInputEntryExists,

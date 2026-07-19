@@ -10,7 +10,7 @@ import { CMS_COMPONENT_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/c
 import { createCmsComponentExtraSections } from "@/features/cms/agent-context/cmsComponentExtraSections";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";

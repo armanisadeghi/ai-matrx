@@ -112,8 +112,8 @@ import {
   buildFilesContextData,
   FILES_CONTEXT_MENU_PROPS,
 } from "@/features/files/agent-context/buildFilesContextData";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
-import { captureDomSelection } from "@/features/context-menu-v2/utils/selection-tracking";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useFileShortcuts } from "./useFileShortcuts";
 import { RenameHost } from "@/features/files/components/core/RenameDialog/RenameHost";

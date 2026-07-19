@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { UniversalContextMenuV2 } from "../UnifiedAgentContextMenu";
-import { resolveMarkdownContext } from "./resolveMarkdownContext";
+import { resolveMarkdownContext } from "@/features/context-menu-v3/utils/resolveMarkdownContext";
 
 /**
  * MarkdownContextMenuProvider — ONE context menu for an entire markdown

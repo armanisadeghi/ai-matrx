@@ -107,7 +107,7 @@ import {
   buildRagSearchContextData,
   RAG_SEARCH_CONTEXT_MENU_PROPS,
 } from "@/features/rag/agent-context/buildRagSearchContextData";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { ProInput } from "@/components/official/ProInput";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
