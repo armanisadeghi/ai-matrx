@@ -13,6 +13,38 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D72 — CRITICAL: /files desktop table row click can create a real share link as a side effect (2026-07-19)
+
+**Data-exposure risk — highest priority in this batch.** Observed live: clicking a table row's hover-revealed inline action area on the desktop `/files` table can trigger `onShare` (creating a real, persisted share link) even though the click looked like a plain row activation, not a deliberate Share click. `Unverified — from live testing only; code analysis pending.`
+
+Suspect: `features/files/components/surfaces/desktop/FileTableRow.tsx`. The file's own header comment (line ~14) documents the intended contract — "button for keyboard) MUST `e.stopPropagation()` on click so they [don't bubble to row `onClick`]" — and every `RowActions` button (`onShare`, `onCopyLink`, the `MoreHorizontal` menu) does call `e.stopPropagation()` in its handler (~line 617-628, and the duplicate second row-renderer ~line 509-527). So the leak is not a missing `stopPropagation` — most likely a **hit-testing race**: the `RowActionsToolbar`/`RowActions` is conditionally rendered via `visible={hovered}` (mounts/unmounts or repositions on hover state change), so a fast click can land on where the Share button rendered a frame earlier while the row's own `onClick={onActivate}` (line 174 / 442) also fires from the same click, or the toolbar overlaps the row's clickable area without full click capture. Note also there are **two structurally near-identical row renderers** in this one file (~122-268 and ~388-527) — worth collapsing to one component while fixing this, per the reuse-first doctrine.
+
+Fix approach: make the row's own `onClick` ignore clicks whose target (or `e.target.closest`) is inside the actions toolbar, in addition to each button's own `stopPropagation` — belt-and-suspenders — and/or keep the toolbar always mounted (opacity-only, not conditional render) so its hit area is stable across the hover transition. Verify by rapid-clicking a row immediately after it becomes hovered, across several rows, confirming no share link is created unless the Share icon itself was hit.
+
+### D73 — /artifacts list card click can leave the card stuck in an infinite `isNavigating` spinner (2026-07-19)
+
+`Unverified — from live testing only; code analysis done, root cause identified.` `features/artifacts/components/CmsArtifactList.tsx`: `handleNavigate` (~line 344-348) does `setNavigatingId(id)` then `startTransition(() => router.push(...))`, but **nothing ever resets `navigatingId` back to `null`** — no effect keyed on `pathname`, no `isPending`-driven reset, no timeout fallback. If `router.push` doesn't actually cause a navigation/unmount (soft-nav no-op, route intercepted, prefetch failure, or the user is already on that route), the card's `isNavigating` flag (line 508: `navigatingId === artifact.id`) stays true forever, and — because `handleNavigate` early-returns `if (navigatingId) return;` (line 345) — **every other card on the list also becomes unclickable** (`isAnyNavigating` at line 133/509), since `onClick={handleCardClick}` on the whole card gates on `isDisabled`.
+
+Fix sketch: reset `navigatingId` in a `useEffect` on `pathname` change (the list unmounts anyway on real navigation, so this is mostly a safety net) or, better, wrap the reset in the transition's completion — since `startTransition`'s callback doesn't await `router.push`, add a `finally`/timeout (e.g. clear `navigatingId` after `router.push` settles, or a hard 5-8s fallback timeout) so a failed/no-op nav can't wedge the whole list. Also, `handleOpenEditor` (~line 358) calls `router.push` directly (not through `handleNavigate`/`startTransition`) for the `html_page` case — inconsistent with the rest of the component.
+
+### D74 — /voice/playground: "Failed to fetch voices" + Cartesia `ParseError: Expected list. Received object.` (2026-07-19)
+
+`Unverified — from live testing only; code analysis pending.` Route: `app/(core)/voice/playground/page.tsx` → `features/audio/voice/AiVoicePage.tsx` → `features/audio/voice/VoicesList.tsx`, which calls `listVoices()` in `lib/cartesia/cartesiaUtils.ts` (`cartesia.voices.list()` via the Cartesia SDK client `lib/cartesia/client.ts`). `VoicesList.tsx` (~line 48) surfaces the generic toast "Failed to fetch voices." on any thrown error; the underlying SDK error is a `ParseError: Expected list. Received object.` — strongly suggests the Cartesia API now returns a **paginated object** (`{data: [...], ...}` or similar) where the installed SDK version still expects a bare array, i.e. an SDK/API version mismatch. Also worth flagging: `cartesia.voices.list()` is called **client-side** (browser), which if it holds a Cartesia API key client-side would be a secret-exposure concern separate from this parse bug — check `lib/cartesia/client.ts` for how the key is supplied.
+
+Fix sketch: bump/pin the `@cartesia/cartesia-js` (or equivalent) SDK to a version matching Cartesia's current `/voices` response shape, or unwrap the paginated envelope manually in `listVoices()`. If the API key is client-exposed, that becomes its own P0/P1 defect (route the call through aidream instead, per the "client goes to aidream for provider secrets" architecture rule).
+
+### D75 — /transcripts/scribe: nested `<button>` inside `<button>` on the rename control (React DOM nesting warning) (2026-07-19)
+
+`Analyzed 2026-07-19 — verified in code.` `features/transcripts/components/TranscriptsSidebar.tsx`: the non-editing row render (~line 271-298) wraps the entire row body in `<button type="button" onClick={() => setActiveTranscript(transcript)} className="w-full p-3 text-left">`, and **inside** that button's JSX tree sits a second interactive `<Button ... onClick={(e) => startRename(transcript, e)}>` (the rename pencil icon, ~line 287-296, `opacity-0 group-hover:opacity-100`). A `<button>` (or the shadcn `Button` component, which renders a `<button>`) cannot legally be a descendant of another `<button>` in the DOM — this is the exact class of error React logs as "`<button>` cannot be a descendant of `<button>`", plus it's an accessibility/click-target bug (nested buttons have undefined/inconsistent click behavior across browsers).
+
+Fix: change the outer row wrapper from `<button>` to a `<div role="button" tabIndex={0} onClick=... onKeyDown={...Enter/Space...}>` (or move `onClick={setActiveTranscript}` onto a non-interactive wrapper and keep only the title text/icon area focusable), so the rename `Button` is a sibling, not a child, of the activating control. Same pattern likely exists on the folder-row buttons above it in the same file — check ~line 169-206 too, though those don't currently nest a second button.
+
+### D76 — app-wide: "Can't perform a React state update on a component that hasn't mounted yet" fires on `/scraper` and the home page (2026-07-19)
+
+`Unverified — from live testing only; code analysis pending.` Observed on two otherwise-unrelated routes: `/scraper` (`(transitional)`) and `/` (`app/page.tsx`, a Server Component with client children `LandingCTAs` / `AuthAwareButton`). Because the warning spans routes that share little except common providers/shell/hooks, the likely cause is a **shared client hook or provider doing async work (fetch, timer, subscription) that calls `setState` after the initiating component unmounted or before it mounted** — no cleanup/abort on the effect, or a state-setter called synchronously during a render-phase side effect (same bug class already tracked for `/chat` in D61, "side-effect in your render function").
+
+Not attributed to a specific file — needs a live repro with the React DevTools/error-overlay component stack (this session did not open a browser per its assignment) to name the exact hook/component. Candidates worth checking first: any shared auth/session hook, analytics/telemetry init, or a `useEffect` with an async fetch lacking an `isMounted`/`AbortController` guard that runs on most/all routes via a top-level provider in `app/layout.tsx` or `features/shell/`. Cross-reference D61 before fixing — if the root cause is the same shared pattern, fix once and close both.
+
 ### D64 — nothing is enforced automatically: no pre-commit hook, no CI (2026-07-18)
 
 **Decides: Arman.** `.git/hooks` has no `pre-commit`, there is no `.husky/`, `simple-git-hooks` is not installed, `lint-staged` is a dependency with zero config, and **there is no `.github/` directory at all** — no CI. Every guard this repo owns (`check:doctrine`, `check:migrations`, `check:schema`, `check:doc-claims`, `pnpm lint`, `pnpm type-check`) runs only when a human or agent runs it, and `scripts/release.sh` invokes the gates as `--advisory || true` by deliberate ruling ("only git can block a release", `e4bbb4e13`). Docs claimed a pre-commit hook in three places; corrected 2026-07-18 to state the truth rather than paper over it.
@@ -119,7 +151,11 @@ The 3-col index exists so a generic rule (`label IS NULL` = any label) and a lab
 
 ## Pending Arman review
 
-_(none — cleared 2026-07-12)_
+**Proposed promotion (2026-07-19, non-interactive triage — awaiting approval):**
+
+1. **Task: "Fix /files desktop table row-click creating unintended share links"** — replaces **D72**. Severity: **P0** (data exposure — a plain click can persist a real share link a user never intended to create). Why: this was directly observed live during mobile-fix verification; even though every button-level handler already calls `stopPropagation()`, the leak persists, which points to a hit-testing/timing race in the hover-conditional `RowActionsToolbar` in `features/files/components/surfaces/desktop/FileTableRow.tsx` — not a one-line fix, needs someone to reproduce and pin the exact race (rapid-click right after hover-in). Analysis stamp: unverified from live testing only — code review narrowed the suspect but did not reproduce the race; **task will need "code analysis pending" acknowledged** until someone reproduces it in-browser.
+
+Other four filed this pass (D73-D76) are lower severity (UX/console-noise/dead-spinner, no data exposure) — held in OPEN, not proposed for promotion yet; revisit next triage pass once someone has bandwidth, or promote alongside D72 if preferred.
 
 ---
 
