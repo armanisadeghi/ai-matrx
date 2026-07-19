@@ -1,13 +1,7 @@
 "use client";
 
-/**
- * Unified composer chip for durable document attachments — one pill per edge.
- * Left: truncated document name (opens the document canvas). Right: the active
- * attach mode (File / Clean / Raw) with a dropdown for mode switches + See Details.
- */
-
 import { createElement, useState } from "react";
-import { Check, ChevronDown, ExternalLink, FileText, X } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -20,61 +14,45 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { resolveResourceAttachmentTileTheme } from "@/features/agents/components/messages-display/user/resourceAttachmentTile.theme";
-import {
-  attachedDocumentModeLabel,
-  attachedDocumentModeOptions,
-  type AttachedDocumentMode,
-} from "@/features/agents/utils/processedDocumentContext";
+import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
+import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
 
 interface AttachedDocumentChipProps {
   title: string;
-  mode: AttachedDocumentMode;
-  hasProcessedDocument: boolean;
-  hasCleanContent: boolean;
-  hasOriginFile: boolean;
+  fileId: string | null;
+  resourcePolicy?: VariableResourceContextConfig;
   onOpen: () => void;
   onRemove: () => void;
-  onSelectMode: (mode: AttachedDocumentMode) => void;
+  onPolicyChange: (policy: VariableResourceContextConfig) => void;
+}
+
+function policyLabel(policy: VariableResourceContextConfig | undefined): string {
+  const promoted = policy?.promote?.length ?? 0;
+  const excluded = policy?.exclude?.length ?? 0;
+  if (!promoted && !excluded) return "All";
+  return `${promoted} inline${excluded ? ` · ${excluded} off` : ""}`;
 }
 
 export function AttachedDocumentChip({
   title,
-  mode,
-  hasProcessedDocument,
-  hasCleanContent,
-  hasOriginFile,
+  fileId,
+  resourcePolicy,
   onOpen,
   onRemove,
-  onSelectMode,
+  onPolicyChange,
 }: AttachedDocumentChipProps) {
   const [open, setOpen] = useState(false);
   const theme = resolveResourceAttachmentTileTheme("processed_document");
-  const modeOptions = attachedDocumentModeOptions({
-    hasProcessedDocument,
-    hasCleanContent,
-    hasOriginFile,
-  });
 
-  const stopMenuEvent = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-  const stopTriggerBubble = (e: React.SyntheticEvent) => {
-    e.stopPropagation();
-  };
-  const stopRemove = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const stopBubble = (event: React.SyntheticEvent) => event.stopPropagation();
+  const stopRemove = (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
     onRemove();
   };
-
-  const selectMode = (next: AttachedDocumentMode) => {
-    if (next === mode) return;
-    onSelectMode(next);
-    setOpen(false);
-  };
-
-  const openDetails = () => {
+  const openDetails = (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
     onOpen();
     setOpen(false);
   };
@@ -107,95 +85,56 @@ export function AttachedDocumentChip({
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-[16rem]">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Document
+                Complete resource family
               </div>
               <div className="font-medium text-popover-foreground">{title}</div>
               <div className="mt-0.5 text-[10px] text-muted-foreground/80">
-                Attached as {attachedDocumentModeLabel(mode)}
+                {policyLabel(resourcePolicy)} · click the right side to configure
               </div>
             </TooltipContent>
           </Tooltip>
 
-          {modeOptions.length > 0 ? (
-            <>
-              <span
-                className="w-px shrink-0 self-stretch bg-border"
-                aria-hidden
-              />
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  onClick={stopTriggerBubble}
-                  onPointerDown={stopTriggerBubble}
-                  aria-label={`Attach mode: ${attachedDocumentModeLabel(mode)}`}
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-0.5 px-1.5",
-                    "transition-colors hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  <span>{attachedDocumentModeLabel(mode)}</span>
-                  <ChevronDown className="h-2.5 w-2.5 shrink-0" />
-                </button>
-              </PopoverTrigger>
-            </>
-          ) : null}
-        </div>
-
-        {modeOptions.length > 0 ? (
-          <PopoverContent
-            side="top"
-            align="start"
-            sideOffset={6}
-            className="w-60 p-1"
-          >
-            <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Attach as
-            </div>
-            {modeOptions.map((opt) => (
-              <button
-                key={opt.mode}
-                type="button"
-                disabled={opt.disabled}
-                onClick={(e) => {
-                  stopMenuEvent(e);
-                  selectMode(opt.mode);
-                }}
-                className={cn(
-                  "flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm",
-                  "hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
-                )}
-              >
-                <Check
-                  className={cn(
-                    "mt-0.5 h-3.5 w-3.5 shrink-0",
-                    mode === opt.mode ? "opacity-100" : "opacity-0",
-                  )}
-                />
-                <span className="min-w-0">
-                  <span className="block text-foreground">
-                    {opt.label}
-                    {opt.disabled ? " (processing…)" : ""}
-                  </span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    {opt.hint}
-                  </span>
-                </span>
-              </button>
-            ))}
-            <div className="my-1 border-t border-border" />
+          <span className="w-px shrink-0 self-stretch bg-border" aria-hidden />
+          <PopoverTrigger asChild>
             <button
               type="button"
-              onClick={(e) => {
-                stopMenuEvent(e);
-                openDetails();
-              }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
+              onClick={stopBubble}
+              onPointerDown={stopBubble}
+              aria-label={`Resource family policy: ${policyLabel(resourcePolicy)}`}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-0.5 px-1.5",
+                "transition-colors hover:bg-muted/60 hover:text-foreground",
+              )}
             >
-              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span>See Details</span>
+              <span>{policyLabel(resourcePolicy)}</span>
+              <ChevronDown className="h-2.5 w-2.5 shrink-0" />
             </button>
-          </PopoverContent>
-        ) : null}
+          </PopoverTrigger>
+        </div>
+
+        <PopoverContent
+          side="top"
+          align="start"
+          sideOffset={6}
+          className="max-h-[min(32rem,70dvh)] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto p-3"
+          onClick={stopBubble}
+        >
+          <ResourceFamilyPolicyEditor
+            fileId={fileId}
+            value={resourcePolicy}
+            onChange={onPolicyChange}
+            compact
+          />
+          <div className="my-2 border-t border-border" />
+          <button
+            type="button"
+            onClick={openDetails}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
+          >
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span>See file details</span>
+          </button>
+        </PopoverContent>
       </Popover>
 
       <button

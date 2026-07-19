@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import { getFile } from "@/features/files/api/files";
-import {
-  getFileFromState,
-  selectFileName,
-} from "@/features/files/redux/selectors";
+import { useFile } from "@/features/files";
 
 /**
  * attached-documents — the shared vocabulary for a document attached to a chat.
@@ -29,7 +23,9 @@ import {
 
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
+import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import type { Json } from "@/types/database.types";
+import { normalizeResourceFamilyPolicy } from "@/features/agents/components/inputs/resources/resource-family-policy";
 
 /**
  * The two entity tokens a stored file can be attached under. `processed_document`
@@ -51,6 +47,8 @@ export interface AttachedDocumentMetadata {
   representation?: DocumentRepresentation;
   /** The origin binary file id — lets the chip offer "attach as raw file". */
   file_id?: string | null;
+  /** Per-reference promotion/suppression policy consumed by the backend. */
+  resource_policy?: VariableResourceContextConfig;
 }
 
 /** Narrow an edge's opaque `Json` metadata to the attachment shape. */
@@ -69,7 +67,19 @@ export function parseAttachedDocumentMetadata(
     typeof m.file_id === "string" || m.file_id === null
       ? (m.file_id as string | null)
       : undefined;
-  return { representation, file_id: fileId };
+  const resourcePolicy =
+    m.resource_policy &&
+    typeof m.resource_policy === "object" &&
+    !Array.isArray(m.resource_policy)
+      ? normalizeResourceFamilyPolicy(
+          m.resource_policy as VariableResourceContextConfig,
+        )
+      : undefined;
+  return {
+    representation,
+    file_id: fileId,
+    ...(resourcePolicy ? { resource_policy: resourcePolicy } : {}),
+  };
 }
 
 /** True when a string looks like a signed-URL tail (SigV2 or SigV4), not a filename. */
@@ -137,7 +147,7 @@ export function documentAttachLabelFromState(
   fileId: string,
   resourceFilenameFallback: string,
 ): string {
-  const fromStore = getFileFromState(state, fileId)?.fileName?.trim();
+  const fromStore = state.cloudFiles.filesById[fileId]?.fileName?.trim();
   if (fromStore) return fromStore;
   const fallback = cleanDocumentLabel(resourceFilenameFallback);
   return fallback === "Document" ? "Document" : fallback;
@@ -152,35 +162,10 @@ export function useAttachedDocumentDisplayName(
   fileId: string | null | undefined,
   edgeLabel: string | null | undefined,
 ): string {
-  const fileNameFromStore = useAppSelector((s) =>
-    fileId ? selectFileName(s, fileId) : null,
-  );
-  const [fetchedName, setFetchedName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!fileId || fileNameFromStore) {
-      setFetchedName(null);
-      return undefined;
-    }
-    let cancelled = false;
-    void getFile(fileId)
-      .then(({ data }) => {
-        if (!cancelled) {
-          setFetchedName(
-            typeof data.file_name === "string" ? data.file_name : null,
-          );
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setFetchedName(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [fileId, fileNameFromStore]);
+  const { file } = useFile(fileId ? { kind: "file_id", fileId } : null);
 
   return resolveAttachedDocumentDisplayName({
-    fileName: fileNameFromStore ?? fetchedName,
+    fileName: file?.meta.fileName,
     edgeLabel,
   });
 }

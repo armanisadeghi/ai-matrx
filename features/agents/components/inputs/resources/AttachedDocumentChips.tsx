@@ -11,8 +11,8 @@
  * same edges at call time and injects the context itself — the FE ships nothing
  * in `request.context` for these.
  *
- * Each chip is a single unified pill: truncated name (opens canvas) + File/Clean/Raw
- * mode dropdown + remove. Only the USER removes an attachment.
+ * Each chip is a single unified pill: truncated name (opens canvas) + the
+ * complete dynamic family policy + remove. Only the USER removes an attachment.
  */
 
 import { FileText } from "lucide-react";
@@ -34,15 +34,17 @@ import {
   useAttachedDocumentDisplayName,
   type AttachedDocumentMetadata,
 } from "@/features/agents/components/inputs/resources/attached-documents";
-import { lookupFileDocument } from "@/features/files/api/document-lookup";
-import { useFileDocument } from "@/features/files/hooks/useFileDocument";
-import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
-import type { AttachedDocumentMode } from "@/features/agents/utils/processedDocumentContext";
+import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import type { Json } from "@/types/database.types";
 
-function metaAsJson(fileId: string | null, rep?: DocumentRepresentation): Json {
-  const m: AttachedDocumentMetadata = { file_id: fileId };
-  if (rep) m.representation = rep;
+function metaAsJson(
+  fileId: string | null,
+  resourcePolicy?: VariableResourceContextConfig,
+): Json {
+  const m: AttachedDocumentMetadata = {
+    file_id: fileId,
+    ...(resourcePolicy ? { resource_policy: resourcePolicy } : {}),
+  };
   return m as Json;
 }
 
@@ -142,22 +144,12 @@ interface DocumentChipRowProps {
   visibleFiles: ContainerLink[];
   onOpenDrawer: (drawerItems: ContextDrawerItem[], id: string) => void;
   onDetach: () => void;
-  onChangeRepresentation: (
+  onPolicyChange: (
     link: ContainerLink,
+    edgeKind: "processed_document" | "file",
     fileId: string | null,
-    rep: DocumentRepresentation,
     displayTitle: string,
-  ) => void;
-  onSwitchToRawFile: (
-    link: ContainerLink,
-    fileId: string,
-    displayTitle: string,
-  ) => void;
-  onSwitchToProcessedDocument: (
-    link: ContainerLink,
-    fileId: string,
-    rep: DocumentRepresentation,
-    displayTitle: string,
+    policy: VariableResourceContextConfig,
   ) => void;
 }
 
@@ -169,9 +161,7 @@ function DocumentChipRow({
   visibleFiles,
   onOpenDrawer,
   onDetach,
-  onChangeRepresentation,
-  onSwitchToRawFile,
-  onSwitchToProcessedDocument,
+  onPolicyChange,
 }: DocumentChipRowProps) {
   const meta = parseAttachedDocumentMetadata(link.metadata);
   const fileId = edgeKind === "file" ? link.resourceId : (meta.file_id ?? null);
@@ -180,15 +170,6 @@ function DocumentChipRow({
     edgeKind === "processed_document"
       ? `processed_document:${link.resourceId}`
       : `file:${link.resourceId}`;
-
-  const { state } = useFileDocument(fileId);
-  const hasProcessedDocument =
-    edgeKind === "processed_document" || state.status === "found";
-  const hasCleanContent =
-    state.status === "found" ? state.doc.has_clean_content : false;
-
-  const mode: AttachedDocumentMode =
-    edgeKind === "file" ? "file" : (meta.representation ?? "clean");
 
   const openCanvas = () => {
     onOpenDrawer(
@@ -203,23 +184,6 @@ function DocumentChipRow({
     );
   };
 
-  const handleSelectMode = (next: AttachedDocumentMode) => {
-    if (next === mode) return;
-    if (next === "file") {
-      if (fileId && edgeKind === "processed_document") {
-        onSwitchToRawFile(link, fileId, title);
-      }
-      return;
-    }
-    if (edgeKind === "processed_document") {
-      onChangeRepresentation(link, fileId, next, title);
-      return;
-    }
-    if (fileId) {
-      onSwitchToProcessedDocument(link, fileId, next, title);
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.85 }}
@@ -229,13 +193,13 @@ function DocumentChipRow({
     >
       <AttachedDocumentChip
         title={title}
-        mode={mode}
-        hasProcessedDocument={hasProcessedDocument}
-        hasCleanContent={hasCleanContent}
-        hasOriginFile={Boolean(fileId)}
+        fileId={fileId}
+        resourcePolicy={meta.resource_policy}
         onOpen={openCanvas}
         onRemove={onDetach}
-        onSelectMode={handleSelectMode}
+        onPolicyChange={(policy) =>
+          onPolicyChange(link, edgeKind, fileId, title, policy)
+        }
       />
     </motion.div>
   );
@@ -292,113 +256,48 @@ export function AttachedDocumentChips({
     });
   };
 
-  const changeRepresentation = (
+  const changePolicy = async (
     link: ContainerLink,
+    edgeKind: "processed_document" | "file",
     fileId: string | null,
-    rep: DocumentRepresentation,
     displayTitle: string,
+    policy: VariableResourceContextConfig,
   ) => {
-    void links
-      .attach(
+    if (!fileId) {
+      toast.error("This legacy document attachment has no source file ID");
+      return;
+    }
+    const attachResult = await links.attach(
+      "file",
+      fileId,
+      displayTitle,
+      metaAsJson(fileId, policy),
+    );
+    if (!attachResult.ok) {
+      console.error("[attached-document] family policy change failed", {
+        conversationId,
+        resourceId: link.resourceId,
+        error: attachResult.error,
+      });
+      toast.error(`Couldn't update document context: ${attachResult.error}`);
+      return;
+    }
+    if (edgeKind === "processed_document") {
+      const detachResult = await links.detach(
         "processed_document",
         link.resourceId,
-        displayTitle,
-        metaAsJson(fileId, rep),
-      )
-      .then((res) => {
-        if (!res.ok) {
-          console.error("[attached-document] representation change failed", {
-            conversationId,
-            resourceId: link.resourceId,
-            error: res.error,
-          });
-          toast.error(`Couldn't change document format: ${res.error}`);
-        }
-      });
-  };
-
-  const switchToRawFile = (
-    link: ContainerLink,
-    fileId: string,
-    displayTitle: string,
-  ) => {
-    void links.detach("processed_document", link.resourceId).then((res) => {
-      if (!res.ok) {
-        console.error("[attached-document] switch-to-file detach failed", {
+      );
+      if (!detachResult.ok) {
+        console.error("[attached-document] legacy edge cleanup failed", {
           conversationId,
           resourceId: link.resourceId,
-          error: res.error,
+          error: detachResult.error,
         });
-        toast.error(`Couldn't switch to raw file: ${res.error}`);
-        return;
+        toast.error(
+          `Context updated, but the legacy attachment could not be removed: ${detachResult.error}`,
+        );
       }
-      void links
-        .attach("file", fileId, displayTitle, metaAsJson(fileId))
-        .then((attachRes) => {
-          if (!attachRes.ok) {
-            console.error("[attached-document] switch-to-file attach failed", {
-              conversationId,
-              fileId,
-              error: attachRes.error,
-            });
-            toast.error(`Couldn't switch to raw file: ${attachRes.error}`);
-          }
-        });
-    });
-  };
-
-  const switchToProcessedDocument = (
-    link: ContainerLink,
-    fileId: string,
-    rep: DocumentRepresentation,
-    displayTitle: string,
-  ) => {
-    void lookupFileDocument(fileId).then((state) => {
-      if (state.kind !== "found") {
-        toast.error("No processed document available for this file");
-        return;
-      }
-      if (rep === "clean" && !state.doc.has_clean_content) {
-        toast.error("Clean text is still processing");
-        return;
-      }
-      void links.detach("file", link.resourceId).then((res) => {
-        if (!res.ok) {
-          console.error(
-            "[attached-document] switch-to-processed detach failed",
-            {
-              conversationId,
-              resourceId: link.resourceId,
-              error: res.error,
-            },
-          );
-          toast.error(`Couldn't switch document format: ${res.error}`);
-          return;
-        }
-        void links
-          .attach(
-            "processed_document",
-            state.doc.processed_document_id,
-            displayTitle,
-            metaAsJson(fileId, rep),
-          )
-          .then((attachRes) => {
-            if (!attachRes.ok) {
-              console.error(
-                "[attached-document] switch-to-processed attach failed",
-                {
-                  conversationId,
-                  fileId,
-                  error: attachRes.error,
-                },
-              );
-              toast.error(
-                `Couldn't switch document format: ${attachRes.error}`,
-              );
-            }
-          });
-      });
-    });
+    }
   };
 
   return (
@@ -414,9 +313,7 @@ export function AttachedDocumentChips({
             visibleFiles={visibleFiles}
             onOpenDrawer={openDrawer}
             onDetach={() => detach("processed_document", link.resourceId)}
-            onChangeRepresentation={changeRepresentation}
-            onSwitchToRawFile={switchToRawFile}
-            onSwitchToProcessedDocument={switchToProcessedDocument}
+            onPolicyChange={changePolicy}
           />
         ))}
         {visibleFiles.map((link) => (
@@ -429,9 +326,7 @@ export function AttachedDocumentChips({
             visibleFiles={visibleFiles}
             onOpenDrawer={openDrawer}
             onDetach={() => detach("file", link.resourceId)}
-            onChangeRepresentation={changeRepresentation}
-            onSwitchToRawFile={switchToRawFile}
-            onSwitchToProcessedDocument={switchToProcessedDocument}
+            onPolicyChange={changePolicy}
           />
         ))}
       </AnimatePresence>

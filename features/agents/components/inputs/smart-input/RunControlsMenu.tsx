@@ -90,9 +90,8 @@ export function RunControlsMenu({
   const activeTab = rc.resolveTab(tab);
 
   const attachResource = useAttachResource(conversationId);
-  const handleResourceSelected = (resource: Resource) => {
-    attachResource(resource);
-    setOpen(false);
+  const handleResourceSelected = async (resource: Resource) => {
+    if (await attachResource(resource)) setOpen(false);
   };
 
   const handleOpenChange = (next: boolean) => {

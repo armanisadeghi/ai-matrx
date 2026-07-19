@@ -191,9 +191,8 @@ export function PlusAttachMenu({
 
   const openRunControlsWindow = useOpenRunControlsWindow();
   const attachResource = useAttachResource(conversationId);
-  const handleResourceSelected = (resource: Resource) => {
-    attachResource(resource);
-    setOpen(false);
+  const handleResourceSelected = async (resource: Resource) => {
+    if (await attachResource(resource)) setOpen(false);
   };
 
   return (

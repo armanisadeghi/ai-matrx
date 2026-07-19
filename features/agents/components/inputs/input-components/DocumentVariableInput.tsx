@@ -1,13 +1,11 @@
 "use client";
 
-import { MediaVariableInput } from "./MediaVariableInput";
+import {
+  MediaVariableInput,
+  type MediaVariableInputProps,
+} from "./MediaVariableInput";
 
-interface DocumentVariableInputProps {
-  value: unknown;
-  onChange: (v: string) => void;
-  variableName: string;
-  compact?: boolean;
-}
+type DocumentVariableInputProps = Omit<MediaVariableInputProps, "mediaKind">;
 
 export function DocumentVariableInput(props: DocumentVariableInputProps) {
   return <MediaVariableInput {...props} mediaKind="document" />;

@@ -503,6 +503,7 @@ function GuidedVariableContent({
       onChange,
       variableName: variable.name,
       compact: false,
+      resourceContext: cc.resource_context,
     };
     if (cc.type === "image") return <ImageVariableInput {...sharedProps} />;
     if (cc.type === "audio") return <AudioVariableInput {...sharedProps} />;

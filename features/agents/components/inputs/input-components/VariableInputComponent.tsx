@@ -138,6 +138,7 @@ export function VariableInputComponent({
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
+            resourceContext={customComponent?.resource_context}
           />
         );
         break;
@@ -148,6 +149,7 @@ export function VariableInputComponent({
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
+            resourceContext={customComponent?.resource_context}
           />
         );
         break;
@@ -158,6 +160,7 @@ export function VariableInputComponent({
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
+            resourceContext={customComponent?.resource_context}
           />
         );
         break;
@@ -168,6 +171,7 @@ export function VariableInputComponent({
             onChange={onChange}
             variableName={formattedName}
             compact={compact}
+            resourceContext={customComponent?.resource_context}
           />
         );
         break;

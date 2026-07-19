@@ -1,13 +1,11 @@
 "use client";
 
-import { MediaVariableInput } from "./MediaVariableInput";
+import {
+  MediaVariableInput,
+  type MediaVariableInputProps,
+} from "./MediaVariableInput";
 
-interface VideoVariableInputProps {
-  value: unknown;
-  onChange: (v: string) => void;
-  variableName: string;
-  compact?: boolean;
-}
+type VideoVariableInputProps = Omit<MediaVariableInputProps, "mediaKind">;
 
 export function VideoVariableInput(props: VideoVariableInputProps) {
   return <MediaVariableInput {...props} mediaKind="video" />;

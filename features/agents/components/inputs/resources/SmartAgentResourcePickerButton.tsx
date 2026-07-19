@@ -62,9 +62,8 @@ export function SmartAgentResourcePickerButton({
   );
 
   const attachResource = useAttachResource(conversationId);
-  const handleResourceSelected = (resource: Resource) => {
-    attachResource(resource);
-    setIsOpen(false);
+  const handleResourceSelected = async (resource: Resource) => {
+    if (await attachResource(resource)) setIsOpen(false);
   };
 
   const defaultTrigger = (

@@ -290,6 +290,7 @@ function VariableField({ def, value, onChange }: VariableFieldProps) {
       onChange,
       variableName: def.name,
       compact: false,
+      resourceContext: cc.resource_context,
     };
     return (
       <div>

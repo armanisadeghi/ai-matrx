@@ -1,13 +1,11 @@
 "use client";
 
-import { MediaVariableInput } from "./MediaVariableInput";
+import {
+  MediaVariableInput,
+  type MediaVariableInputProps,
+} from "./MediaVariableInput";
 
-interface AudioVariableInputProps {
-  value: unknown;
-  onChange: (v: string) => void;
-  variableName: string;
-  compact?: boolean;
-}
+type AudioVariableInputProps = Omit<MediaVariableInputProps, "mediaKind">;
 
 export function AudioVariableInput(props: AudioVariableInputProps) {
   return <MediaVariableInput {...props} mediaKind="audio" />;

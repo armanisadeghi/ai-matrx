@@ -7,8 +7,8 @@
  *
  * TWO attach shapes, by kind:
  *  - A stored FILE → a DURABLE `platform.associations` edge to the conversation
- *    (`processed_document → conversation` when the file has a processed document,
- *    else `file → conversation`). This PERSISTS across turns and reloads; the
+ *    (`file → conversation`). The file ID means its complete existing family,
+ *    including processed documents and RAG. This PERSISTS across turns and reloads; the
  *    backend reads the conversation's edges at call time and injects the context.
  *    The chip renders from the edge list (see `AttachedDocumentChips`), NOT the
  *    ephemeral `instanceResources` slice.
@@ -33,15 +33,8 @@ import {
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import {
   addAssociation,
-  removeAssociation,
   type AssociationWriteResult,
 } from "@/features/scopes/redux/thunks/associations";
-import { associationsService } from "@/features/scopes/service/associationsService";
-import {
-  lookupFileDocument,
-  peekFileDocument,
-  type FileDocumentState,
-} from "@/features/files";
 import {
   cleanDocumentLabel,
   documentAttachLabelFromState,
@@ -50,10 +43,7 @@ import {
   type AttachedDocumentToken,
 } from "@/features/agents/components/inputs/resources/attached-documents";
 import type { Resource } from "@/features/agents/resources/types";
-import type {
-  DocumentRepresentation,
-  ResourceBlockType,
-} from "@/features/agents/types/instance.types";
+import type { ResourceBlockType } from "@/features/agents/types/instance.types";
 import type { Json } from "@/types/database.types";
 
 /** Map prompt-system resource types to agent ResourceBlockType. */
@@ -170,12 +160,8 @@ function attachBinary(
 
 // ─── Document association edges (durable, persist across turns/reloads) ──────
 
-function edgeMetadata(
-  fileId: string | null,
-  representation?: DocumentRepresentation,
-): Json {
+function edgeMetadata(fileId: string | null): Json {
   const meta: AttachedDocumentMetadata = { file_id: fileId };
-  if (representation) meta.representation = representation;
   return meta as Json;
 }
 
@@ -188,7 +174,6 @@ async function attachDocumentEdge(
   sourceId: string,
   fileId: string | null,
   label: string,
-  representation?: DocumentRepresentation,
 ): Promise<AssociationWriteResult> {
   const orgId = resolveConversationOrgId(getState(), conversationId);
   if (!orgId) {
@@ -202,77 +187,7 @@ async function attachDocumentEdge(
       targetId: conversationId,
       orgId,
       label,
-      metadata: edgeMetadata(fileId, representation),
-    }),
-  );
-}
-
-/**
- * Cold-cache upgrade: a file edge was attached instantly (durable + present for
- * turn 1); once the file→document probe resolves, if it HAS a processed document
- * AND the file edge is still attached (the user didn't detach it), swap to the
- * `processed_document → conversation` edge. Never resurrects a detached
- * attachment.
- */
-async function upgradeFileEdgeToProcessedDocument(
-  dispatch: AppDispatch,
-  getState: () => RootState,
-  conversationId: string,
-  fileId: string,
-  label: string,
-): Promise<void> {
-  let state: FileDocumentState;
-  try {
-    state = await lookupFileDocument(fileId);
-  } catch {
-    return; // transient probe failure — leave the file edge as-is
-  }
-  if (state.kind !== "found") return;
-  // The user may have detached the file edge while the probe was in flight —
-  // never resurrect it onto the conversation. The Redux association cache LAGS
-  // the detach RPC (a warm-cache read can still show the just-removed edge), so
-  // re-verify against the DB (authoritative) immediately before the upgrade
-  // write. This closes the cold-cache TOCTOU where a raced detach could be
-  // undone by the upgrade creating a fresh processed_document edge.
-  const live = await associationsService.listForEntity(
-    "conversation",
-    conversationId,
-  );
-  if (!live.ok) return; // can't confirm it's still attached — don't risk resurrection
-  const stillAttached = live.data.edges.some(
-    (e) =>
-      e.direction === "incoming" &&
-      e.otherType === "file" &&
-      e.otherId === fileId,
-  );
-  if (!stillAttached) return;
-  const representation: DocumentRepresentation = state.doc.has_clean_content
-    ? "clean"
-    : "raw";
-  const res = await attachDocumentEdge(
-    dispatch,
-    getState,
-    conversationId,
-    "processed_document",
-    state.doc.processed_document_id,
-    fileId,
-    label,
-    representation,
-  );
-  if (!res.ok) {
-    console.error(
-      "[attached-document] upgrade to processed_document failed — leaving the raw file edge attached",
-      { conversationId, fileId, error: res.error },
-    );
-    return;
-  }
-  // Drop the now-redundant raw file edge (idempotent; no-op if already gone).
-  await dispatch(
-    removeAssociation({
-      sourceType: "file",
-      sourceId: fileId,
-      targetType: "conversation",
-      targetId: conversationId,
+      metadata: edgeMetadata(fileId),
     }),
   );
 }
@@ -281,35 +196,29 @@ async function upgradeFileEdgeToProcessedDocument(
  * Returns a handler that attaches a picked Resource to the conversation.
  *
  * A stored file (or file_url) that refines to a `document` becomes a DURABLE
- * association edge to the conversation:
- *  - cache hit "found"   → `processed_document → conversation` immediately;
- *  - cache hit "absent"  → `file → conversation` immediately;
- *  - cache cold          → `file → conversation` immediately (instant + durable,
- *    safe on fast submit — the edge is there for turn 1), then upgrade to
- *    `processed_document → conversation` when the probe resolves, IF still
- *    attached.
+ * association edge to the conversation. A canonical `file → conversation`
+ * edge is always used. The backend resolves
+ * the complete readable family on every run, so no client-side document probe
+ * or edge replacement is needed when processing finishes later.
  * A file with no file identity, and every media / note / task / … resource, take
  * the per-turn binary/instanceResources path unchanged. Closing the hosting
  * popover is the CALLER's job.
  */
 export function useAttachResource(
   conversationId: string,
-): (resource: Resource) => void {
+): (resource: Resource) => Promise<boolean> {
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
-  return (resource: Resource) => {
+  return async (resource: Resource) => {
     const getState = () => store.getState() as RootState;
     const baseBlockType = resourceTypeToBlockType(resource.type);
     const blockType = refineBlockType(baseBlockType, resource.data);
     const resourcePreviewLabel = cleanDocumentLabel(resourceLabel(resource));
 
     // A real (non-media) file → a durable association edge to the conversation.
-    // NOTE (fast-submit window): attach is fire-and-forget with no optimistic
-    // edge, so a submit fired inside the RPC round-trip can miss the edge for
-    // that one turn. Accepted for now — the edge is durable and present for the
-    // NEXT turn, and the window is a single round-trip. If this bites, reflect a
-    // pending edge optimistically in the associations cache before the RPC.
+    // The picker awaits this edge before it closes, so the user cannot submit a
+    // turn from the composer while the durable association is still in flight.
     if (blockType === "document") {
       const fileId = extractFileId(resource.data);
       if (fileId) {
@@ -318,36 +227,7 @@ export function useAttachResource(
           fileId,
           resourcePreviewLabel,
         );
-        const cached = peekFileDocument(fileId);
-        if (cached?.kind === "found") {
-          const representation: DocumentRepresentation = cached.doc
-            .has_clean_content
-            ? "clean"
-            : "raw";
-          void attachDocumentEdge(
-            dispatch,
-            getState,
-            conversationId,
-            "processed_document",
-            cached.doc.processed_document_id,
-            fileId,
-            label,
-            representation,
-          ).then((res) => {
-            if (!res.ok) {
-              console.error("[attached-document] attach failed", {
-                conversationId,
-                fileId,
-                error: res.error,
-              });
-              toast.error(`Couldn't attach document: ${res.error}`);
-            }
-          });
-          return;
-        }
-        // absent / unavailable / cold — attach the raw file edge now. On a cold
-        // cache, upgrade to processed_document once the probe resolves.
-        void attachDocumentEdge(
+        const result = await attachDocumentEdge(
           dispatch,
           getState,
           conversationId,
@@ -355,27 +235,17 @@ export function useAttachResource(
           fileId,
           fileId,
           label,
-        ).then((res) => {
-          if (!res.ok) {
-            console.error("[attached-document] attach failed", {
-              conversationId,
-              fileId,
-              error: res.error,
-            });
-            toast.error(`Couldn't attach document: ${res.error}`);
-            return;
-          }
-          if (cached === undefined) {
-            void upgradeFileEdgeToProcessedDocument(
-              dispatch,
-              getState,
-              conversationId,
-              fileId,
-              label,
-            );
-          }
-        });
-        return;
+        );
+        if (!result.ok) {
+          console.error("[attached-document] attach failed", {
+            conversationId,
+            fileId,
+            error: result.error,
+          });
+          toast.error(`Couldn't attach document: ${result.error}`);
+          return false;
+        }
+        return true;
       }
     }
 
@@ -388,5 +258,6 @@ export function useAttachResource(
         : resource.data,
       resourcePreviewLabel,
     );
+    return true;
   };
 }

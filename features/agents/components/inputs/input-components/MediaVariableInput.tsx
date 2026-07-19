@@ -37,18 +37,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
-  useFileDocument,
-  useFileUpload,
-  useFileSrc,
   FileRagBadge,
   FileResourceChip,
   InlineMediaRef,
+  useFileDocument,
+  useFileSrc,
+  useFileUpload,
 } from "@/features/files";
 import {
   FilesResourcePicker,
   type FilesResourcePickerFilter,
 } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import { cn } from "@/lib/utils";
+import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
+import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
 
 // 36-char canonical UUID — what cld_files file_ids look like.
 const UUID_PATTERN =
@@ -140,12 +142,13 @@ function describeValue(value: string): string {
   }
 }
 
-interface MediaVariableInputProps {
+export interface MediaVariableInputProps {
   value: unknown;
   onChange: (v: string) => void;
   variableName: string;
   mediaKind: MediaKind;
   compact?: boolean;
+  resourceContext?: VariableResourceContextConfig;
 }
 
 export function MediaVariableInput({
@@ -154,6 +157,7 @@ export function MediaVariableInput({
   variableName,
   mediaKind,
   compact = false,
+  resourceContext,
 }: MediaVariableInputProps) {
   const meta = KIND_META[mediaKind];
   const Icon = meta.Icon;
@@ -269,6 +273,11 @@ export function MediaVariableInput({
                       : "File selected by file_id."}
             </p>
           ) : null}
+          <ResourceFamilyPolicyEditor
+            fileId={stored}
+            value={resourceContext}
+            compact={compact}
+          />
         </div>
       )}
 
