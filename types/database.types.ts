@@ -21854,6 +21854,27 @@ export type Database = {
         }
         Relationships: []
       }
+      schemas: {
+        Row: {
+          display_name: string
+          is_active: boolean
+          schema_name: string
+          sort_order: number
+        }
+        Insert: {
+          display_name: string
+          is_active?: boolean
+          schema_name: string
+          sort_order?: number
+        }
+        Update: {
+          display_name?: string
+          is_active?: boolean
+          schema_name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       share_links: {
         Row: {
           created_at: string
@@ -27021,6 +27042,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_upsert_schema: {
+        Args: {
+          p_display_name: string
+          p_is_active?: boolean
+          p_schema_name: string
+          p_sort_order?: number
+        }
+        Returns: undefined
+      }
       admin_upsert_shareable_resource: {
         Args: {
           p_content_role?: string
@@ -28866,6 +28896,15 @@ export type Database = {
       ensure_updated_at_on_table: {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
+      }
+      entity_schemas_list: {
+        Args: never
+        Returns: {
+          display_name: string
+          is_active: boolean
+          schema_name: string
+          sort_order: number
+        }[]
       }
       entity_soft_delete: {
         Args: { p_id: string; p_token: string }
@@ -40617,6 +40656,7 @@ export type Database = {
           execution_mode: string
           executor_name: string | null
           id: string
+          intro: string | null
           is_active: boolean
           name: string
           parent_surface_name: string | null
@@ -40632,6 +40672,7 @@ export type Database = {
           execution_mode?: string
           executor_name?: string | null
           id?: string
+          intro?: string | null
           is_active?: boolean
           name: string
           parent_surface_name?: string | null
@@ -40647,6 +40688,7 @@ export type Database = {
           execution_mode?: string
           executor_name?: string | null
           id?: string
+          intro?: string | null
           is_active?: boolean
           name?: string
           parent_surface_name?: string | null
@@ -40855,6 +40897,7 @@ export type Database = {
       ui_surface_value: {
         Row: {
           always_available: boolean
+          auto_context: boolean
           created_at: string
           description: string
           label: string
@@ -40867,6 +40910,7 @@ export type Database = {
         }
         Insert: {
           always_available?: boolean
+          auto_context?: boolean
           created_at?: string
           description?: string
           label?: string
@@ -40879,6 +40923,7 @@ export type Database = {
         }
         Update: {
           always_available?: boolean
+          auto_context?: boolean
           created_at?: string
           description?: string
           label?: string

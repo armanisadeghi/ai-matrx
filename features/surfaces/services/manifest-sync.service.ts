@@ -82,6 +82,7 @@ function manifestRowFor(
     value_type: v.valueType,
     always_available: v.alwaysAvailable,
     typical_char_count: v.typicalCharCount,
+    auto_context: v.autoContext ?? true,
     sort_order: v.sortOrder ?? 1000,
   };
 }
@@ -96,6 +97,7 @@ function dbRowToSurfaceValue(row: UiSurfaceValueRow): SurfaceValue {
       : "string") as SurfaceValue["valueType"],
     alwaysAvailable: row.always_available,
     typicalCharCount: row.typical_char_count,
+    autoContext: row.auto_context,
     sortOrder: row.sort_order,
   };
 }
@@ -113,6 +115,7 @@ function diffSurfaceValue(
     "typicalCharCount",
     "sortOrder",
   ];
+  keys.push("autoContext");
   for (const k of keys) {
     const m = manifest[k];
     const d = db[k];
@@ -121,6 +124,13 @@ function diffSurfaceValue(
       const mn = (m ?? 1000) as number;
       const dn = (d ?? 1000) as number;
       if (mn !== dn) diff[k] = { manifest: mn, db: dn };
+      continue;
+    }
+    // autoContext defaults to true on both sides
+    if (k === "autoContext") {
+      const mb = (m ?? true) as boolean;
+      const db_ = (d ?? true) as boolean;
+      if (mb !== db_) diff[k] = { manifest: mb, db: db_ };
       continue;
     }
     if (m !== d) diff[k] = { manifest: m, db: d };
@@ -662,6 +672,7 @@ export async function applyManifestSync(
           client_name: clientName ?? "matrx-user",
           description: "",
           ...(urlPattern ? { url_pattern: urlPattern } : {}),
+          ...(m.intro?.trim() ? { intro: m.intro.trim() } : {}),
         };
       });
     if (missing.length > 0) {
@@ -710,19 +721,26 @@ export async function applyManifestSync(
     }
   }
 
-  // 3c. Mirror url_pattern onto ui_surface for registered manifests.
+  // 3c. Mirror url_pattern (and manifest-declared intro) onto ui_surface for
+  //     registered manifests. A manifest WITHOUT `intro` does NOT clear a
+  //     DB-authored intro (code-first ownership applies only to what the
+  //     manifest actually declares — same rule as parent_surface_name).
   const urlPatternsUpdated: ApplyManifestSyncResult["urlPatternsUpdated"] = [];
   for (const manifest of targetManifests) {
     const urlPattern = resolveSurfaceUrlPattern(manifest);
-    if (!urlPattern) continue;
+    const intro = manifest.intro?.trim() || null;
+    if (!urlPattern && !intro) continue;
     const upd = await sb
       .schema("ui")
       .from("ui_surface")
-      .update({ url_pattern: urlPattern })
+      .update({
+        ...(urlPattern ? { url_pattern: urlPattern } : {}),
+        ...(intro ? { intro } : {}),
+      })
       .eq("name", manifest.surfaceName)
       .select("name");
     if (upd.error) throw upd.error;
-    if ((upd.data ?? []).length > 0) {
+    if (urlPattern && (upd.data ?? []).length > 0) {
       urlPatternsUpdated.push({
         surfaceName: manifest.surfaceName,
         urlPattern,

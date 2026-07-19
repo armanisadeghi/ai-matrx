@@ -56,6 +56,17 @@ export interface SurfaceValue {
    */
   typicalCharCount: number;
 
+  /**
+   * Whether this value is AUTOMATICALLY added to the agent's context when the
+   * surface emits it at launch (true, the default), or only available for
+   * explicit variable/context-slot mapping (false). The point of `false` is
+   * signal-to-noise: a surface can declare 25 values so binding UIs offer
+   * them, while auto-context stays limited to what an agent on this surface
+   * genuinely needs (an id, the content, the cursor) — everything else is
+   * "look it up if you need it". Mirrored to `ui_surface_value.auto_context`.
+   */
+  autoContext?: boolean;
+
   /** Optional sort order within the surface; defaults to 1000 in DB. */
   sortOrder?: number;
 }
@@ -156,6 +167,14 @@ export interface SurfaceManifest {
    * Mirrored to `ui_surface.parent_surface_name` by manifest sync.
    */
   inheritsFrom?: string;
+  /**
+   * The surface's self-introduction to the agent — a single XML-ish context
+   * block (`<surface_intro>…`) explaining what this surface IS, what the user
+   * does here, and how to interpret the values it emits. Written by the
+   * manifest author who understands the surface's purpose; becomes the first
+   * surface-context item the agent sees. Mirrored to `ui_surface.intro`.
+   */
+  intro?: string;
   /** Flat list of SurfaceValues this surface declares. */
   values: readonly SurfaceValue[];
   /** Agent positions this surface uses. Mirrored to ui_surface_agent_role. */
