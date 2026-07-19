@@ -616,6 +616,17 @@
     "is_active": true
   },
   {
+    "resource_type": "web_site",
+    "table_name": "site",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Site",
+    "url_path_template": "/marketing/sites/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "wf_definition",
     "table_name": "wf_definition",
     "id_column": "id",

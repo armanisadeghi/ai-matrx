@@ -669,6 +669,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/settings/analysis",
     rlsUsesHasPermission: false,
   },
+  web_site: {
+    resourceType: "web_site",
+    tableName: "site",
+    schemaName: "web",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Site",
+    urlPathTemplate: "/marketing/sites/{id}",
+    rlsUsesHasPermission: true,
+  },
   war_room: {
     resourceType: "war_room",
     tableName: "war_rooms",
