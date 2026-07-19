@@ -149,7 +149,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       : null,
   );
   const activeSourceAvailable =
-    activeSourceStatus === "ready" && activeSourceFile !== null;
+    activeSourceStatus === "ready" &&
+    activeSourceFile?.fileId === activeSourceFileId;
   const { renameDocById: renameDocByIdHook, handleRenameActiveDoc } =
     useStudioDocRename({
       docs: docsState.docs,

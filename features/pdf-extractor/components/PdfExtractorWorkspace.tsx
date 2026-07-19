@@ -132,7 +132,8 @@ export function PdfExtractorFloatingWorkspace({
     activeSourceId ? { kind: "file_id", fileId: activeSourceId } : null,
   );
   const activeSourceAvailable =
-    activeSourceStatus === "ready" && activeSourceFile !== null;
+    activeSourceStatus === "ready" &&
+    activeSourceFile?.fileId === activeSourceId;
 
   // Best text to feed an agent — prefer the AI-cleaned output if it exists.
   const docText = useMemo(() => {
@@ -857,7 +858,8 @@ function AiActionsView({ doc }: { doc: PdfDocument }) {
   const { file: sourceFile, status: sourceStatus } = useFile(
     sourceId ? { kind: "file_id", fileId: sourceId } : null,
   );
-  const sourceAvailable = sourceStatus === "ready" && sourceFile !== null;
+  const sourceAvailable =
+    sourceStatus === "ready" && sourceFile?.fileId === sourceId;
 
   const handleRunAgent = async (agentId: string) => {
     if (!docText) {

@@ -110,7 +110,8 @@ export function PdfStudioInspector({
   const { file: sourceFile, status: sourceStatus } = useFile(
     sourceFileId ? { kind: "file_id", fileId: sourceFileId } : null,
   );
-  const sourceAvailable = sourceStatus === "ready" && sourceFile !== null;
+  const sourceAvailable =
+    sourceStatus === "ready" && sourceFile?.fileId === sourceFileId;
   const chunkedFileId = sourceAvailable ? sourceFileId : null;
 
   return (
