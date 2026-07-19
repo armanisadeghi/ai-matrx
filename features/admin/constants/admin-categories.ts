@@ -526,6 +526,54 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "Applications",
+    landingPath: "/administration/applications",
+    iconName: "MonitorCog",
+    iconColor: "text-indigo-600",
+    features: [
+      {
+        title: "Applications Overview",
+        description:
+          "Operational overview for shipped clients, including configuration, catalogs, installed fleet, and audit activity.",
+        iconName: "LayoutDashboard",
+        link: "/administration/applications",
+        isNew: true,
+      },
+      {
+        title: "Application Configuration",
+        description:
+          "Manage remote runtime configuration, minimum supported versions, feature flags, and operator notices for shipped clients.",
+        iconName: "MonitorCog",
+        link: "/administration/applications/configuration",
+        isNew: true,
+      },
+      {
+        title: "Application Catalogs",
+        description:
+          "Manage DB-backed model, preset, prompt, voice, and artifact catalogs consumed by shipped clients.",
+        iconName: "LibraryBig",
+        link: "/administration/applications/catalogs",
+        isNew: true,
+      },
+      {
+        title: "Installations",
+        description:
+          "Inspect the installed client fleet, reported versions, hardware, activity, and minimum-version compliance.",
+        iconName: "HardDrive",
+        link: "/administration/applications/installations",
+        isNew: true,
+      },
+      {
+        title: "Application History",
+        description:
+          "Review the unified configuration and catalog audit timeline for shipped applications.",
+        iconName: "History",
+        link: "/administration/applications/history",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Content & Configuration",
     iconName: "Pencil",
     iconColor: "text-purple-600",

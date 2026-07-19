@@ -434,7 +434,6 @@ export function useProjectInvitations(projectId: string | undefined) {
 export function useProjectInvitationOperations(projectId: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { refresh: refreshInvitations } = useProjectInvitations(projectId);
 
   const invite = useCallback(
     async (options: Omit<InviteProjectMemberOptions, "projectId">) => {
@@ -444,7 +443,6 @@ export function useProjectInvitationOperations(projectId: string) {
         const result = await inviteToProject({ ...options, projectId });
         if (!result.success)
           setError(result.error ?? "Failed to send invitation");
-        else await refreshInvitations();
         return result;
       } catch (err: unknown) {
         const msg =
@@ -455,30 +453,26 @@ export function useProjectInvitationOperations(projectId: string) {
         setLoading(false);
       }
     },
-    [projectId, refreshInvitations],
+    [projectId],
   );
 
-  const cancel = useCallback(
-    async (invitationId: string) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await cancelProjectInvitation(invitationId);
-        if (!result.success)
-          setError(result.error ?? "Failed to cancel invitation");
-        else await refreshInvitations();
-        return result;
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Failed to cancel invitation";
-        setError(msg);
-        return { success: false, error: msg };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [refreshInvitations],
-  );
+  const cancel = useCallback(async (invitationId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await cancelProjectInvitation(invitationId);
+      if (!result.success)
+        setError(result.error ?? "Failed to cancel invitation");
+      return result;
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to cancel invitation";
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const resend = useCallback(
     async (invitationId: string, email?: string) => {
@@ -491,7 +485,6 @@ export function useProjectInvitationOperations(projectId: string) {
         );
         if (!result.success)
           setError(result.error ?? "Failed to resend invitation");
-        else await refreshInvitations();
         return result;
       } catch (err: unknown) {
         const msg =
@@ -502,7 +495,7 @@ export function useProjectInvitationOperations(projectId: string) {
         setLoading(false);
       }
     },
-    [projectId, refreshInvitations],
+    [projectId],
   );
 
   return { invite, cancel, resend, loading, error };

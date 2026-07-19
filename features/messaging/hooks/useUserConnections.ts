@@ -18,6 +18,7 @@ import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useConversations } from "@/hooks/useSupabaseMessaging";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { invitationsService } from "@/features/organizations/service/invitationsService";
+import { canManageInvitations } from "@/features/organizations/types";
 import type { UserBasicInfo } from "../types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 
@@ -62,17 +63,18 @@ interface UseUserConnectionsReturn {
 
 interface UseUserConnectionsOptions {
   /**
-   * Pending invitations are visible only to organization invitation managers.
-   * Callers that only need existing users should leave this disabled so an
-   * ordinary organization member never makes a forbidden `inv_list` request.
+   * Include existing users found through pending invitations for this exact
+   * organization. Omit this for ordinary contact pickers. The hook also checks
+   * the caller's organization role and excludes personal organizations before
+   * making the manager-only `inv_list` request.
    */
-  includeInvitations?: boolean;
+  invitationOrganizationId?: string;
 }
 
 export function useUserConnections(
   options: UseUserConnectionsOptions = {},
 ): UseUserConnectionsReturn {
-  const { includeInvitations = true } = options;
+  const { invitationOrganizationId } = options;
   const [connections, setConnections] = useState<ConnectionUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,7 +164,12 @@ export function useUserConnections(
           }
         });
 
-        if (!includeInvitations) continue;
+        if (
+          org.id !== invitationOrganizationId ||
+          !canManageInvitations(org.role, org.isPersonal)
+        ) {
+          continue;
+        }
 
         // Pending org invitations — via inv_list RPC (no direct grant on iam.invitations).
         const invResult = await invitationsService.listForTarget(
@@ -217,7 +224,7 @@ export function useUserConnections(
     }
 
     return Array.from(usersMap.values());
-  }, [currentUserId, includeInvitations, organizations, supabase]);
+  }, [currentUserId, invitationOrganizationId, organizations, supabase]);
 
   // Main aggregation effect
   useEffect(() => {

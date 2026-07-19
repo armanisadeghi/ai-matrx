@@ -9,8 +9,8 @@
 // any HuggingFace/Civitai URL via aidream into a prefilled entry.
 // Cross-repo system-of-record: common-docs/remote-catalogs/FEATURE.md
 
-import { useState } from "react";
-import { ChevronRight, LibraryBig, Link2, MonitorCog, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { LibraryBig, Link2, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { createClient } from "@/utils/supabase/client";
-import Link from "next/link";
+import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { AddFromLinkDialog } from "@/features/admin/applications/catalogs/components/AddFromLinkDialog";
 import { CatalogEntryEditor } from "@/features/admin/applications/catalogs/components/CatalogEntryEditor";
 import { CatalogKindTable } from "@/features/admin/applications/catalogs/components/CatalogKindTable";
@@ -124,7 +126,7 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
         ? (rows.find((r) => r.id === view.entryId) ?? null)
         : null;
     return (
-      <div className="mx-auto w-full max-w-5xl p-4">
+      <div className="h-full overflow-y-auto p-4">
         <CatalogEntryEditor
           key={view.mode === "edit" ? view.entryId : `new-${view.kind}`}
           app={app}
@@ -152,7 +154,7 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
   if (view.mode === "kind") {
     const kindEntries = appRows.filter((r) => r.kind === view.kind);
     return (
-      <div className="mx-auto w-full max-w-6xl space-y-4 p-4">
+      <div className="flex h-full flex-col gap-3 p-4">
         <CatalogKindTable
           app={app}
           kind={view.kind}
@@ -178,103 +180,201 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
     );
   }
 
+  // One row per kind: the registry order, plus any unregistered kinds present
+  // in the data (forward compat \u2014 never hide real rows).
+  const kindRows = useMemo(
+    () =>
+      [...CATALOG_KINDS.map((k) => k.slug), ...extraKinds].map((slug) => {
+        const entries = appRows.filter((r) => r.kind === slug);
+        const active = entries.filter((r) => r.is_active).length;
+        const def = CATALOG_KINDS.find((k) => k.slug === slug);
+        return {
+          slug,
+          label: kindLabel(slug),
+          description: def?.description ?? "",
+          registered: Boolean(def),
+          total: entries.length,
+          active,
+          inactive: entries.length - active,
+        };
+      }),
+    [appRows, extraKinds],
+  );
+
+  type KindRow = (typeof kindRows)[number];
+
+  const kindColumns: MatrxColumnDef<KindRow>[] = [
+    {
+      id: "label",
+      accessorKey: "label",
+      header: "Kind",
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{row.label}</span>
+          {!row.registered ? (
+            <Badge variant="outline" className="text-[10px]">
+              unregistered
+            </Badge>
+          ) : null}
+        </div>
+      ),
+      width: 220,
+    },
+    {
+      id: "slug",
+      accessorKey: "slug",
+      header: "Slug",
+      cell: (row) => <code className="text-xs">{row.slug}</code>,
+      width: 180,
+    },
+    {
+      id: "description",
+      accessorKey: "description",
+      header: "Description",
+      cell: (row) => (
+        <span
+          className="block max-w-2xl truncate text-xs text-muted-foreground"
+          title={row.description}
+        >
+          {row.description || "\u2014"}
+        </span>
+      ),
+    },
+    {
+      id: "total",
+      accessorKey: "total",
+      header: "Entries",
+      align: "right",
+      cell: (row) => <span className="font-mono text-xs">{row.total}</span>,
+      width: 90,
+    },
+    {
+      id: "active",
+      accessorKey: "active",
+      header: "Active",
+      align: "right",
+      cell: (row) =>
+        row.active > 0 ? (
+          <Badge
+            variant="outline"
+            className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+          >
+            {row.active}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-muted-foreground">
+            0
+          </Badge>
+        ),
+      width: 90,
+    },
+    {
+      id: "inactive",
+      accessorKey: "inactive",
+      header: "Inactive",
+      align: "right",
+      cell: (row) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.inactive}
+        </span>
+      ),
+      width: 90,
+    },
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <LibraryBig className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-base font-semibold">Remote Catalogs</h1>
-            <p className="text-xs text-muted-foreground">
-              DB-backed catalogs for shipped clients — models, LoRAs, presets,
-              prompts, voices. Active entries are read by every installed copy
-              in the field.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button asChild type="button" variant="ghost" size="sm">
-            <Link href="/administration/app-config">
-              <MonitorCog className="mr-1.5 h-4 w-4" /> App Config
-            </Link>
-          </Button>
-          <Select value={app} onValueChange={setApp}>
-            <SelectTrigger className="w-44 font-mono text-sm" aria-label="App">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {apps.map((slug) => (
-                <SelectItem key={slug} value={slug} className="font-mono">
-                  {slug}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button type="button" size="sm" onClick={() => openAddFromLink(null)}>
-            <Link2 className="mr-1.5 h-4 w-4" /> Add from link
-          </Button>
+    <div className="flex h-full flex-col gap-3 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <LibraryBig className="h-5 w-5 text-muted-foreground" />
+        <div>
+          <h1 className="text-base font-semibold">Catalogs</h1>
+          <p className="text-xs text-muted-foreground">
+            DB-backed catalogs for shipped clients \u2014 models, LoRAs, presets,
+            prompts, voices. Active entries are read by every installed copy in
+            the field. New entries start inactive.
+          </p>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-md border border-border">
-        {[...CATALOG_KINDS.map((k) => k.slug), ...extraKinds].map((slug) => {
-          const kindRows = appRows.filter((r) => r.kind === slug);
-          const active = kindRows.filter((r) => r.is_active).length;
-          const inactive = kindRows.length - active;
-          const def = CATALOG_KINDS.find((k) => k.slug === slug);
-          return (
-            <button
-              key={slug}
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={kindRows}
+          columns={kindColumns}
+          getRowId={(row) => row.slug}
+          pageSize={25}
+          emptyState={{
+            icon: <LibraryBig className="h-5 w-5" />,
+            title: "No catalog kinds",
+            description: "No kinds match your filters.",
+          }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search kind, slug\u2026",
+            leading: (
+              <Select value={app} onValueChange={setApp}>
+                <SelectTrigger
+                  className="w-44 font-mono text-sm"
+                  aria-label="Application"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {apps.map((slug) => (
+                    <SelectItem key={slug} value={slug} className="font-mono">
+                      {slug}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ),
+            actions: (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => openAddFromLink(null)}
+              >
+                <Link2 className="mr-1.5 h-4 w-4" /> Add from link
+              </Button>
+            ),
+          }}
+          onRowOpen={(row) => setView({ mode: "kind", kind: row.slug })}
+          detail={{ enabled: false }}
+          copy={{
+            label: "Catalog kind",
+            listLabel: "Catalog kinds (this view)",
+            location: `${APPLICATIONS_ADMIN_LOCATION}/catalogs`,
+            rowKind: "catalog_kind",
+            listKind: "catalog_kinds",
+            rowDescription: "One catalog kind with its entry counts.",
+            listDescription: "Catalog kinds currently visible.",
+            humanRow: (row) =>
+              `${row.label} (${row.slug}) \u2014 ${row.total} entries, ${row.active} active, ${row.inactive} inactive`,
+            rowAttributes: (row) => ({
+              slug: row.slug,
+              total: row.total,
+              active: row.active,
+            }),
+            listAttributes: (visible, all) => ({
+              app,
+              kinds_visible: visible.length,
+              kinds_total: all.length,
+              entries_total: appRows.length,
+            }),
+          }}
+          rowActions={(row) => (
+            <Button
               type="button"
-              onClick={() => setView({ mode: "kind", kind: slug })}
-              className="flex w-full items-center gap-3 border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-accent/50"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setView({ mode: "kind", kind: row.slug });
+              }}
             >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{kindLabel(slug)}</span>
-                  <code className="text-xs text-muted-foreground">{slug}</code>
-                  {!def ? (
-                    <Badge variant="outline" className="text-[10px]">
-                      unregistered kind
-                    </Badge>
-                  ) : null}
-                </div>
-                {def ? (
-                  <p className="truncate text-xs text-muted-foreground">
-                    {def.description}
-                  </p>
-                ) : null}
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {active > 0 ? (
-                  <Badge
-                    variant="outline"
-                    className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                  >
-                    {active} active
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-muted-foreground">
-                    0 active
-                  </Badge>
-                )}
-                {inactive > 0 ? (
-                  <Badge variant="outline" className="text-muted-foreground">
-                    {inactive} inactive
-                  </Badge>
-                ) : null}
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </button>
-          );
-        })}
+              <Plus className="mr-1.5 h-3.5 w-3.5" /> Entries
+            </Button>
+          )}
+        />
       </div>
-
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Plus className="h-3.5 w-3.5" /> New entries start inactive — activate
-        from the kind table once the payload validates and the artifact probes
-        reachable.
-      </p>
 
       <AddFromLinkDialog
         key={`link-${linkDialogKind ?? "auto"}`}

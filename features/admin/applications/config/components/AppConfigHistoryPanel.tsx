@@ -3,21 +3,26 @@
 // features/admin/applications/config/components/AppConfigHistoryPanel.tsx
 //
 // Version history for one app_config row. Reads public.app_config_history
-// (admin-read RLS) directly via supabase-js, renders each snapshot with an
-// expandable diff against the CURRENT row, and offers "Restore this version"
-// — which goes through the same admin_update_app_config RPC (creating a new
-// history entry), never a direct table write.
+// (admin-read RLS) directly via supabase-js into the canonical MatrxDataTable:
+// each snapshot is a sortable/filterable row, opening a row diffs it against
+// the CURRENT live row in the side panel, and "Restore" goes through the same
+// admin_update_app_config RPC (creating a new history entry), never a direct
+// table write.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
-import { ChevronDown, ChevronRight, History, Loader2, Undo2 } from "lucide-react";
+import { History, Undo2 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DiffViewer } from "@/components/diff/DiffViewer";
 import { useToast } from "@/components/ui/use-toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { createClient } from "@/utils/supabase/client";
 import { configSnapshotJson } from "@/features/admin/applications/config/schema";
+import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import type {
   AppConfigHistoryRow,
@@ -49,7 +54,6 @@ export function AppConfigHistoryPanel({
     key: string;
     entries: AppConfigHistoryRow[];
   } | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [restoreTarget, setRestoreTarget] =
     useState<AppConfigHistoryRow | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -81,107 +85,163 @@ export function AppConfigHistoryPanel({
   }, [app, loadKey, toast]);
 
   const entries = loaded && loaded.key === loadKey ? loaded.entries : null;
-
   const currentJson = configSnapshotJson(currentRow);
 
-  if (entries === null) {
-    return (
-      <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading version history…
-      </div>
-    );
-  }
+  const whoLabel = useCallback(
+    (changedBy: string | null): string => {
+      if (!changedBy) return "—";
+      return adminEmails[changedBy] ?? changedBy.slice(0, 8);
+    },
+    [adminEmails],
+  );
 
-  if (entries.length === 0) {
-    return (
-      <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-        <History className="h-4 w-4" /> No history yet — snapshots are written
-        on every save.
-      </div>
-    );
-  }
+  const columns = useMemo((): MatrxColumnDef<AppConfigHistoryRow>[] => {
+    return [
+      {
+        id: "changed_at",
+        accessorKey: "changed_at",
+        header: "When",
+        cell: (row) => (
+          <span
+            className="whitespace-nowrap text-sm font-medium"
+            title={format(new Date(row.changed_at), "yyyy-MM-dd HH:mm:ss")}
+          >
+            {formatDistanceToNow(new Date(row.changed_at), {
+              addSuffix: true,
+            })}
+          </span>
+        ),
+        width: 160,
+      },
+      {
+        id: "timestamp",
+        header: "Timestamp",
+        accessorFn: (row) => row.changed_at,
+        filter: false,
+        cell: (row) => (
+          <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+            {format(new Date(row.changed_at), "yyyy-MM-dd HH:mm:ss")}
+          </span>
+        ),
+        width: 170,
+      },
+      {
+        id: "schema_version",
+        accessorKey: "schema_version",
+        header: "Schema",
+        filter: "select",
+        cell: (row) => <Badge variant="outline">v{row.schema_version}</Badge>,
+        width: 100,
+      },
+      {
+        id: "min_supported_app_version",
+        accessorKey: "min_supported_app_version",
+        header: "Min version",
+        filter: "select",
+        cell: (row) => (
+          <code className="font-mono text-xs">
+            {row.min_supported_app_version}
+          </code>
+        ),
+        width: 120,
+      },
+      {
+        id: "changed_by",
+        header: "Changed by",
+        accessorFn: (row) => whoLabel(row.changed_by),
+        filter: "select",
+        cell: (row) => (
+          <span
+            className="text-xs text-muted-foreground"
+            title={row.changed_by ?? undefined}
+          >
+            {whoLabel(row.changed_by)}
+          </span>
+        ),
+        width: 220,
+      },
+    ];
+  }, [whoLabel]);
 
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
-        {entries.length} snapshot{entries.length === 1 ? "" : "s"} — each diff
-        compares the snapshot against the CURRENT live row.
+        {entries === null
+          ? "Loading version history…"
+          : `${entries.length} snapshot${entries.length === 1 ? "" : "s"} — open a row to diff it against the CURRENT live row.`}
       </p>
 
-      {entries.map((entry) => {
-        const expanded = expandedId === entry.id;
-        const changedAt = new Date(entry.changed_at);
-        return (
-          <div
-            key={entry.id}
-            className="rounded-md border border-border bg-card"
-          >
-            <div className="flex items-center justify-between gap-2 px-3 py-2">
-              <button
-                type="button"
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                onClick={() => setExpandedId(expanded ? null : entry.id)}
-              >
-                {expanded ? (
-                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                )}
-                <span className="text-sm font-medium">
-                  {formatDistanceToNow(changedAt, { addSuffix: true })}
-                </span>
-                <span className="hidden text-xs text-muted-foreground sm:inline">
-                  {format(changedAt, "yyyy-MM-dd HH:mm:ss")}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  schema v{entry.schema_version} · min{" "}
-                  {entry.min_supported_app_version}
-                </span>
-                {entry.changed_by ? (
-                  adminEmails[entry.changed_by] ? (
-                    <span
-                      className="hidden truncate text-xs text-muted-foreground lg:inline"
-                      title={entry.changed_by}
-                    >
-                      by {adminEmails[entry.changed_by]}
-                    </span>
-                  ) : (
-                    <code
-                      className="hidden truncate text-xs text-muted-foreground lg:inline"
-                      title={entry.changed_by}
-                    >
-                      by {entry.changed_by.slice(0, 8)}
-                    </code>
-                  )
-                ) : null}
-              </button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                onClick={() => setRestoreTarget(entry)}
-              >
-                <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Restore
-              </Button>
+      <MatrxDataTable
+        data={entries ?? []}
+        columns={columns}
+        getRowId={(row) => String(row.id)}
+        isLoading={entries === null}
+        pageSize={25}
+        emptyState={{
+          icon: <History className="h-5 w-5" />,
+          title: "No history yet",
+          description: "Snapshots are written on every save.",
+        }}
+        toolbar={{
+          search: true,
+          searchPlaceholder: "Search version, who…",
+        }}
+        detail={{
+          title: (row) =>
+            format(new Date(row.changed_at), "yyyy-MM-dd HH:mm:ss"),
+          description: (row) =>
+            `schema v${row.schema_version} · min ${row.min_supported_app_version} · ${whoLabel(row.changed_by)}`,
+          defaultWidth: 720,
+          render: (row) => (
+            <div className="p-2">
+              <DiffViewer
+                original={configSnapshotJson(row)}
+                modified={currentJson}
+                engine="light"
+                language="json"
+                view="split"
+                originalLabel="This snapshot"
+                modifiedLabel="Current"
+              />
             </div>
-
-            {expanded ? (
-              <div className="border-t border-border p-2">
-                <DiffViewer
-                  original={configSnapshotJson(entry)}
-                  modified={currentJson}
-                  engine="light"
-                  language="json"
-                  view="split"
-                  originalLabel="This snapshot"
-                  modifiedLabel="Current"
-                />
-              </div>
-            ) : null}
-          </div>
-        );
-      })}
+          ),
+        }}
+        copy={{
+          label: "Configuration snapshot",
+          listLabel: "Configuration history (this view)",
+          location: `${APPLICATIONS_ADMIN_LOCATION}/configuration`,
+          rowKind: "app_config_snapshot",
+          listKind: "app_config_history",
+          rowDescription: "One historical configuration snapshot.",
+          listDescription: "Configuration snapshots currently visible.",
+          humanRow: (row) =>
+            [
+              `${app} @ ${row.changed_at} by ${whoLabel(row.changed_by)}`,
+              configSnapshotJson(row),
+            ].join("\n"),
+          rowAttributes: (row) => ({
+            app,
+            changed_at: row.changed_at,
+            schema_version: row.schema_version,
+          }),
+          listAttributes: (visible, all) => ({
+            app,
+            visible: visible.length,
+            total: all.length,
+          }),
+        }}
+        rowActions={(row) => (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setRestoreTarget(row)}
+          >
+            <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Restore
+          </Button>
+        )}
+      />
 
       <ConfirmDialog
         open={restoreTarget !== null}

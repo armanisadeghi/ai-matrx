@@ -36,7 +36,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@/features/files";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import type { Organization, OrgRole } from "../types";
+import {
+  canManageInvitations,
+  type Organization,
+  type OrgRole,
+} from "../types";
 import { GeneralSettings } from "./GeneralSettings";
 import { OrgIndustriesSection } from "@/features/industries/components/OrgIndustriesSection";
 import { MemberManagement } from "./MemberManagement";
@@ -75,6 +79,10 @@ export function OrgManage({
 
   const canManageSettings = isOwner || isAdmin;
   const canManageMembers = isOwner || isAdmin;
+  const mayManageInvitations = canManageInvitations(
+    userRole,
+    displayOrganization.isPersonal,
+  );
   const canDelete = isOwner && !displayOrganization.isPersonal;
 
   const slug = displayOrganization.slug ?? displayOrganization.id;
@@ -88,7 +96,7 @@ export function OrgManage({
       id: "invitations",
       label: "Invitations",
       icon: Mail,
-      show: canManageSettings,
+      show: mayManageInvitations,
     },
     {
       id: "scopes",
@@ -259,7 +267,7 @@ export function OrgManage({
           )}
 
           {/* Invitations */}
-          {canManageSettings && (
+          {mayManageInvitations && (
             <SectionCard
               id="invitations"
               icon={Mail}

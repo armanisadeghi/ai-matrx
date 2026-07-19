@@ -41,7 +41,7 @@ export function SiteAccessWorkspace() {
   const organizations = useActiveOrganizationPicker();
   // Site sharing only targets existing users. Invitation discovery is an
   // organization-admin concern and must not run for ordinary site editors.
-  const users = useUserConnections({ includeInvitations: false });
+  const users = useUserConnections();
   const queryClient = useQueryClient();
   const queryKey = ["marketing", "site", site.id, "permissions"] as const;
   const [granteeId, setGranteeId] = useState("");

@@ -9,7 +9,7 @@
 // go through admin_upsert_catalog_entry with p_expected_updated_at; a 40001
 // conflict toasts and refreshes.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   AlertTriangle,
@@ -24,9 +24,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type {
+  CellEditsMap,
+  MatrxColumnDef,
+} from "@/components/official/matrx-data-table/types";
+import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
@@ -93,8 +98,6 @@ export function CatalogKindTable({
     url: string;
     result: ActivationProbe;
   } | null>(null);
-  const [sortDrafts, setSortDrafts] = useState<Record<string, string>>({});
-  const [savingSortId, setSavingSortId] = useState<string | null>(null);
 
   // Dual-gate probe: activating an entry with an artifact URL live-probes it
   // while the confirm dialog is open (resolver-first via probeArtifactUrl,
@@ -187,53 +190,172 @@ export function CatalogKindTable({
     onChanged();
   };
 
-  const commitSortOrder = async (row: CatalogEntryRow, raw: string) => {
-    const trimmed = raw.trim();
-    const parsed = Number(trimmed);
-    if (trimmed.length === 0 || !Number.isInteger(parsed)) {
-      toast({
-        title: "Invalid sort order",
-        description: "Sort order must be an integer.",
-        variant: "destructive",
-      });
-      setSortDrafts((d) => {
-        const next = { ...d };
-        delete next[row.id];
-        return next;
-      });
-      return;
-    }
-    if (parsed === row.sort_order) {
-      setSortDrafts((d) => {
-        const next = { ...d };
-        delete next[row.id];
-        return next;
-      });
-      return;
-    }
-    setSavingSortId(row.id);
-    const { error } = await upsertCatalogEntry(
-      upsertArgsFromRow(row, { sort_order: parsed }),
-    );
-    setSavingSortId(null);
-    setSortDrafts((d) => {
-      const next = { ...d };
-      delete next[row.id];
-      return next;
-    });
-    if (error) {
-      await handleWriteError(error);
-      return;
-    }
-    onChanged();
-  };
+  // Inline edits land in MatrxDataTable's draft; Save on the dirty pill commits
+  // them here, one upsert per changed row (each carrying its own
+  // p_expected_updated_at so a concurrent write still conflicts loudly).
+  const saveEdits = useCallback(
+    async (edits: CellEditsMap, editedRows: CatalogEntryRow[]) => {
+      const failures: string[] = [];
+      for (const row of editedRows) {
+        const patch = edits[row.id];
+        if (!patch) continue;
+        const raw = patch.sort_order;
+        const parsed = Number(raw);
+        if (!Number.isInteger(parsed)) {
+          failures.push(`${row.key}: sort order must be an integer`);
+          continue;
+        }
+        if (parsed === row.sort_order) continue;
+        const { error } = await upsertCatalogEntry(
+          upsertArgsFromRow(row, { sort_order: parsed }),
+        );
+        if (error) {
+          if (isConflictError(error)) {
+            failures.push(`${row.key}: changed since load \u2014 re-apply`);
+          } else {
+            failures.push(`${row.key}: ${rpcErrorMessage(error)}`);
+          }
+        }
+      }
+      onChanged();
+      if (failures.length > 0) {
+        toast({
+          title: "Some edits did not save",
+          description: failures.join("; "),
+          variant: "destructive",
+        });
+        throw new Error(failures.join("; "));
+      }
+    },
+    [onChanged, toast],
+  );
+
+  const columns = useMemo((): MatrxColumnDef<CatalogEntryRow>[] => {
+    return [
+      {
+        id: "key",
+        accessorKey: "key",
+        header: "Key",
+        cell: (row) => (
+          <code
+            className="block max-w-64 truncate text-sm font-medium"
+            title={row.key}
+          >
+            {row.key}
+          </code>
+        ),
+        width: 260,
+      },
+      {
+        id: "name",
+        header: "Name",
+        accessorFn: (row) => payloadDisplayName(row.payload) ?? "",
+        cell: (row) => {
+          const name = payloadDisplayName(row.payload);
+          return name ? (
+            <span className="block max-w-56 truncate" title={name}>
+              {name}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">\u2014</span>
+          );
+        },
+        width: 220,
+      },
+      {
+        id: "artifact_size_bytes",
+        accessorKey: "artifact_size_bytes",
+        header: "Artifact size",
+        align: "right",
+        cell: (row) => (
+          <span className="font-mono text-xs">
+            {formatBytes(row.artifact_size_bytes)}
+          </span>
+        ),
+        width: 120,
+      },
+      {
+        id: "min_app_version",
+        accessorKey: "min_app_version",
+        header: "Min version",
+        filter: "select",
+        cell: (row) => (
+          <span className="font-mono text-xs">
+            {row.min_app_version ?? "\u2014"}
+          </span>
+        ),
+        width: 110,
+      },
+      {
+        id: "is_active",
+        accessorKey: "is_active",
+        header: "Active",
+        filter: "boolean",
+        align: "center",
+        cell: (row) => (
+          <Switch
+            checked={row.is_active}
+            onCheckedChange={(next) => setPendingToggle({ row, next })}
+            aria-label={`Toggle ${row.key} active`}
+          />
+        ),
+        width: 90,
+      },
+      {
+        id: "sort_order",
+        accessorKey: "sort_order",
+        header: "Sort",
+        editable: "number",
+        align: "right",
+        cell: (row) => (
+          <span className="font-mono text-xs">{row.sort_order}</span>
+        ),
+        width: 90,
+      },
+      {
+        id: "updated_at",
+        accessorKey: "updated_at",
+        header: "Updated",
+        cell: (row) => (
+          <span
+            className="whitespace-nowrap text-xs"
+            title={format(new Date(row.updated_at), "yyyy-MM-dd HH:mm:ss")}
+          >
+            {formatDistanceToNow(new Date(row.updated_at), {
+              addSuffix: true,
+            })}
+          </span>
+        ),
+        width: 140,
+      },
+      {
+        id: "updated_by",
+        header: "By",
+        accessorFn: (row) =>
+          row.updated_by ? (adminEmails[row.updated_by] ?? row.updated_by) : "",
+        filter: "select",
+        cell: (row) =>
+          row.updated_by ? (
+            <span
+              className="text-xs text-muted-foreground"
+              title={row.updated_by}
+            >
+              {adminEmails[row.updated_by] ?? row.updated_by.slice(0, 8)}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">\u2014</span>
+          ),
+        width: 200,
+      },
+    ];
+  }, [adminEmails]);
 
   const activationPayloadCheck = pendingToggle?.next
     ? validatePayload(pendingToggle.row.kind, pendingToggle.row.payload)
     : null;
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <Button type="button" variant="ghost" size="sm" onClick={onBack}>
@@ -253,146 +375,70 @@ export function CatalogKindTable({
             ) : null}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button type="button" size="sm" onClick={onAddFromLink}>
-            <Link2 className="mr-1.5 h-4 w-4" /> Add from link
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={onNewEntry}>
-            <Plus className="mr-1.5 h-4 w-4" /> New entry
-          </Button>
-        </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
-              <th className="px-3 py-2 font-medium">Key</th>
-              <th className="px-3 py-2 font-medium">Name</th>
-              <th className="px-3 py-2 font-medium">Artifact size</th>
-              <th className="px-3 py-2 font-medium">Min version</th>
-              <th className="px-3 py-2 font-medium">Active</th>
-              <th className="px-3 py-2 font-medium">Sort</th>
-              <th className="px-3 py-2 font-medium">Updated</th>
-              <th className="px-3 py-2 font-medium">By</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="px-3 py-8 text-center text-muted-foreground"
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={entries}
+          columns={columns}
+          getRowId={(row) => row.id}
+          pageSize={50}
+          emptyState={{
+            title: `No ${kindLabel(kind)} entries yet`,
+            description:
+              "Use Add from link to resolve one from a URL, or New entry to author it by hand.",
+          }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search key, name\u2026",
+            actions: (
+              <div className="flex items-center gap-2">
+                <Button type="button" size="sm" onClick={onAddFromLink}>
+                  <Link2 className="mr-1.5 h-4 w-4" /> Add from link
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onNewEntry}
                 >
-                  No {kindLabel(kind)} entries yet — use Add from link or New
-                  entry.
-                </td>
-              </tr>
-            ) : (
-              entries.map((row) => (
-                <tr
-                  key={row.id}
-                  className="cursor-pointer border-b border-border last:border-b-0 hover:bg-accent/50"
-                  onClick={() => onOpenEntry(row)}
-                >
-                  <td className="max-w-64 px-3 py-2">
-                    <code className="block truncate font-medium" title={row.key}>
-                      {row.key}
-                    </code>
-                  </td>
-                  <td className="max-w-56 px-3 py-2">
-                    <span className="block truncate">
-                      {payloadDisplayName(row.payload) ?? (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">
-                    {formatBytes(row.artifact_size_bytes)}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">
-                    {row.min_app_version ?? "—"}
-                  </td>
-                  <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                    <Switch
-                      checked={row.is_active}
-                      onCheckedChange={(next) =>
-                        setPendingToggle({ row, next })
-                      }
-                      aria-label={`Toggle ${row.key} active`}
-                    />
-                  </td>
-                  <td
-                    className="px-3 py-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center gap-1">
-                      <Input
-                        value={sortDrafts[row.id] ?? String(row.sort_order)}
-                        onChange={(e) =>
-                          setSortDrafts((d) => ({
-                            ...d,
-                            [row.id]: e.target.value,
-                          }))
-                        }
-                        onBlur={(e) => {
-                          if (row.id in sortDrafts) {
-                            void commitSortOrder(row, e.target.value);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.currentTarget.blur();
-                          }
-                        }}
-                        inputMode="numeric"
-                        className="h-7 w-16 px-2 font-mono text-xs"
-                        disabled={savingSortId === row.id}
-                        aria-label={`Sort order for ${row.key}`}
-                      />
-                      {savingSortId === row.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <span
-                      title={format(
-                        new Date(row.updated_at),
-                        "yyyy-MM-dd HH:mm:ss",
-                      )}
-                    >
-                      {formatDistanceToNow(new Date(row.updated_at), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    {row.updated_by ? (
-                      adminEmails[row.updated_by] ? (
-                        <span
-                          className="text-xs text-muted-foreground"
-                          title={row.updated_by}
-                        >
-                          {adminEmails[row.updated_by]}
-                        </span>
-                      ) : (
-                        <code
-                          className="text-xs text-muted-foreground"
-                          title={row.updated_by}
-                        >
-                          {row.updated_by.slice(0, 8)}
-                        </code>
-                      )
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  <Plus className="mr-1.5 h-4 w-4" /> New entry
+                </Button>
+              </div>
+            ),
+          }}
+          onRowOpen={(row) => onOpenEntry(row)}
+          detail={{ enabled: false }}
+          edit={{ enabled: true, onSave: saveEdits }}
+          copy={{
+            label: "Catalog entry",
+            listLabel: `${kindLabel(kind)} entries (this view)`,
+            location: `${APPLICATIONS_ADMIN_LOCATION}/catalogs`,
+            rowKind: "catalog_entry",
+            listKind: "catalog_entries",
+            rowDescription: "One catalog entry shipped to installed clients.",
+            listDescription: "Catalog entries currently visible.",
+            humanRow: (row) =>
+              [
+                `${row.app}/${row.kind}/${row.key}`,
+                `name=${payloadDisplayName(row.payload) ?? "?"}`,
+                `active=${row.is_active} sort=${row.sort_order} min_app_version=${row.min_app_version ?? "none"}`,
+                `artifact=${row.artifact_url ?? "none"}`,
+              ].join("\n"),
+            rowAttributes: (row) => ({
+              id: row.id,
+              key: row.key,
+              kind: row.kind,
+              is_active: row.is_active,
+            }),
+            listAttributes: (visible, all) => ({
+              app,
+              kind,
+              visible: visible.length,
+              total: all.length,
+            }),
+          }}
+        />
       </div>
 
       <ConfirmDialog

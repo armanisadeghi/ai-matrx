@@ -8,16 +8,18 @@
 // Landing = list of all rows; row click / "New app" opens the editor.
 // Cross-repo system-of-record: common-docs/app-config/FEATURE.md
 
-import { useState } from "react";
-import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
-import { LibraryBig, MonitorCog, Plus } from "lucide-react";
+import { MonitorCog, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { createClient } from "@/utils/supabase/client";
 import { AppConfigEditor } from "@/features/admin/applications/config/components/AppConfigEditor";
+import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import type { AppConfigRow } from "@/features/admin/applications/config/types";
 
@@ -68,7 +70,7 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
         ? (rows.find((r) => r.app === view.app) ?? null)
         : null;
     return (
-      <div className="mx-auto w-full max-w-5xl p-4">
+      <div className="h-full overflow-y-auto p-4">
         <AppConfigEditor
           key={view.mode === "edit" ? view.app : "new"}
           row={row}
@@ -79,106 +81,141 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
     );
   }
 
+  const columns = useMemo((): MatrxColumnDef<AppConfigRow>[] => {
+    return [
+      {
+        id: "app",
+        accessorKey: "app",
+        header: "Application",
+        cell: (row) => <code className="text-sm font-medium">{row.app}</code>,
+        width: 180,
+      },
+      {
+        id: "schema_version",
+        accessorKey: "schema_version",
+        header: "Schema",
+        filter: "select",
+        cell: (row) => <Badge variant="outline">v{row.schema_version}</Badge>,
+        width: 100,
+      },
+      {
+        id: "min_supported_app_version",
+        accessorKey: "min_supported_app_version",
+        header: "Min app version",
+        filter: "select",
+        cell: (row) => (
+          <code className="font-mono text-xs">
+            {row.min_supported_app_version}
+          </code>
+        ),
+        width: 140,
+      },
+      {
+        id: "updated_at",
+        accessorKey: "updated_at",
+        header: "Updated",
+        cell: (row) => (
+          <span
+            className="whitespace-nowrap text-xs"
+            title={format(new Date(row.updated_at), "yyyy-MM-dd HH:mm:ss")}
+          >
+            {formatDistanceToNow(new Date(row.updated_at), {
+              addSuffix: true,
+            })}
+          </span>
+        ),
+        width: 150,
+      },
+      {
+        id: "updated_by",
+        header: "Updated by",
+        accessorFn: (row) =>
+          row.updated_by ? (adminEmails[row.updated_by] ?? row.updated_by) : "",
+        filter: "select",
+        cell: (row) =>
+          row.updated_by ? (
+            <span
+              className="text-xs text-muted-foreground"
+              title={row.updated_by}
+            >
+              {adminEmails[row.updated_by] ?? row.updated_by.slice(0, 8)}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">\u2014</span>
+          ),
+        width: 220,
+      },
+    ];
+  }, [adminEmails]);
+
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <MonitorCog className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-base font-semibold">App Config</h1>
-            <p className="text-xs text-muted-foreground">
-              Remote runtime configuration for shipped clients — one row per
-              app, read by every installed copy in the field.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button asChild type="button" variant="ghost" size="sm">
-            {/* Sibling system: catalog-shaped data (models, LoRAs, presets)
-                lives in Remote Catalogs — app_config stays config-shaped. */}
-            <Link href="/administration/catalogs">
-              <LibraryBig className="mr-1.5 h-4 w-4" /> Remote Catalogs
-            </Link>
-          </Button>
-          <Button type="button" size="sm" onClick={() => setView({ mode: "new" })}>
-            <Plus className="mr-1.5 h-4 w-4" /> New app
-          </Button>
+    <div className="flex h-full flex-col gap-3 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <MonitorCog className="h-5 w-5 text-muted-foreground" />
+        <div>
+          <h1 className="text-base font-semibold">Configuration</h1>
+          <p className="text-xs text-muted-foreground">
+            Remote runtime configuration for shipped clients \u2014 one row per
+            application, read by every installed copy in the field.
+          </p>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-md border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
-              <th className="px-3 py-2 font-medium">App</th>
-              <th className="px-3 py-2 font-medium">Schema</th>
-              <th className="px-3 py-2 font-medium">Min app version</th>
-              <th className="px-3 py-2 font-medium">Updated</th>
-              <th className="px-3 py-2 font-medium">Updated by</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-3 py-8 text-center text-muted-foreground"
-                >
-                  No app config rows yet — create one with New app.
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <tr
-                  key={row.app}
-                  className="cursor-pointer border-b border-border last:border-b-0 hover:bg-accent/50"
-                  onClick={() => setView({ mode: "edit", app: row.app })}
-                >
-                  <td className="px-3 py-2">
-                    <code className="font-medium">{row.app}</code>
-                  </td>
-                  <td className="px-3 py-2">
-                    <Badge variant="outline">v{row.schema_version}</Badge>
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">
-                    {row.min_supported_app_version}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="text-foreground">
-                      {formatDistanceToNow(new Date(row.updated_at), {
-                        addSuffix: true,
-                      })}
-                    </span>{" "}
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(row.updated_at), "yyyy-MM-dd HH:mm")}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    {row.updated_by ? (
-                      adminEmails[row.updated_by] ? (
-                        <span
-                          className="text-xs text-muted-foreground"
-                          title={row.updated_by}
-                        >
-                          {adminEmails[row.updated_by]}
-                        </span>
-                      ) : (
-                        <code
-                          className="text-xs text-muted-foreground"
-                          title={row.updated_by}
-                        >
-                          {row.updated_by.slice(0, 8)}
-                        </code>
-                      )
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="min-h-0 flex-1">
+        <MatrxDataTable
+          data={rows}
+          columns={columns}
+          getRowId={(row) => row.app}
+          pageSize={25}
+          emptyState={{
+            icon: <MonitorCog className="h-5 w-5" />,
+            title: "No configuration rows",
+            description:
+              "Create one with New application \u2014 clients fall back to built-in defaults until then.",
+          }}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search application, version\u2026",
+            actions: (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setView({ mode: "new" })}
+              >
+                <Plus className="mr-1.5 h-4 w-4" /> New application
+              </Button>
+            ),
+          }}
+          onRowOpen={(row) => setView({ mode: "edit", app: row.app })}
+          detail={{ enabled: false }}
+          copy={{
+            label: "Application configuration",
+            listLabel: "Application configurations (this view)",
+            location: `${APPLICATIONS_ADMIN_LOCATION}/configuration`,
+            rowKind: "app_config",
+            listKind: "app_configs",
+            rowDescription:
+              "One remote runtime configuration row for a shipped client.",
+            listDescription:
+              "Filtered/sorted application configuration rows currently visible.",
+            humanRow: (row) =>
+              [
+                `${row.app} (schema v${row.schema_version})`,
+                `min_supported_app_version=${row.min_supported_app_version}`,
+                `updated=${row.updated_at} by=${row.updated_by ?? "?"}`,
+                JSON.stringify(row.config, null, 2),
+              ].join("\n"),
+            rowAttributes: (row) => ({
+              app: row.app,
+              schema_version: row.schema_version,
+              min_supported_app_version: row.min_supported_app_version,
+            }),
+            listAttributes: (visible, all) => ({
+              visible: visible.length,
+              total: all.length,
+            }),
+          }}
+        />
       </div>
     </div>
   );

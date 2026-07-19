@@ -43,8 +43,8 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `useOrganizationMembers(orgId)` — members with user profile
 - `useMemberOperations(orgId)` — `updateRole`, `remove`, `leave`
 - `useUserRole(orgId)` — returns `{ role, isOwner, isAdmin, canManageMembers, canManageSettings, canDelete }`
-- `useOrganizationInvitations(orgId)` — pending invitations for an org
-- `useInvitationOperations(orgId)` — `invite`, `cancel`, `resend`
+- `useOrganizationInvitations(orgId)` — pending invitations for a non-personal org; mount only for owner/admin callers
+- `useInvitationOperations(orgId)` — `invite`, `cancel`, `resend`; mutation-only (the visible list owner performs the single post-success refresh)
 - `useUserInvitations()` — invitations addressed to the current user, with `accept(token)`
 - `useSlugAvailability(slug, debounceMs)` — debounced uniqueness check
 
@@ -238,6 +238,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-07-19` — **Invitation reads now match the manager-only DB boundary.** `useUserConnections` no longer scans invitations by default: pending-invite contact discovery requires one exact organization id and checks owner/admin + non-personal eligibility before calling `inv_list`. The three general contact consumers (messaging, task assignee, sharing) now load members/conversations only; only `InvitationManager` opts into its current org. Personal orgs no longer render the forbidden Invitations section. Removed the hidden list hook inside both org/project invitation mutation hooks, eliminating the second mount-time query and the duplicate/triple post-mutation refreshes. Added a permission-matrix regression test.
 - `2026-07-19` — **Resource surfaces unified on ONE colored, role-grouped visual language; org page keeps a single grid.** The canonical `AssociationCardGrid` (`features/scopes/components/associations/`) now groups its cards by **content role** (Utilities / Sources / Outputs / Sources & Outputs / Workspaces) with the same `CONTENT_ROLES` accents the org `OrgResourceRoleSection` tiles use — role dot + title + tagline per section, and every `AssociationCard` gets the role accent bar + tinted icon chip (card size unchanged). The grid was **removed from `OrgWorkspace`** — the org home showed both it and the Resources tile grid, two competing answers to the same question; the association grid now lives only where attaching is the job (scope type + scope). See `features/scopes/FEATURE.md` (§Association cards).
 - `2026-07-19` — Added Organization Vault to Manage: default all-member use access without reveal, optional per-member restrictions, admin rotation/deletion/sandbox controls, and member contribution with drift detection/manual sync. See [`features/secrets/FEATURE.md`](../secrets/FEATURE.md).
 

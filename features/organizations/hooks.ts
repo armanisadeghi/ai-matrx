@@ -448,7 +448,6 @@ export function useOrganizationInvitations(orgId: string | undefined) {
 export function useInvitationOperations(orgId: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { refresh: refreshInvitations } = useOrganizationInvitations(orgId);
 
   const invite = useCallback(
     async (options: Omit<InviteMemberOptions, "organizationId">) => {
@@ -463,8 +462,6 @@ export function useInvitationOperations(orgId: string) {
 
         if (!result.success) {
           setError(result.error || "Failed to send invitation");
-        } else {
-          await refreshInvitations();
         }
 
         return result;
@@ -477,35 +474,30 @@ export function useInvitationOperations(orgId: string) {
         setLoading(false);
       }
     },
-    [orgId, refreshInvitations],
+    [orgId],
   );
 
-  const cancel = useCallback(
-    async (invitationId: string) => {
-      setLoading(true);
-      setError(null);
+  const cancel = useCallback(async (invitationId: string) => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const result = await cancelInvitation(invitationId);
+    try {
+      const result = await cancelInvitation(invitationId);
 
-        if (!result.success) {
-          setError(result.error || "Failed to cancel invitation");
-        } else {
-          await refreshInvitations();
-        }
-
-        return result;
-      } catch (err: unknown) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to cancel invitation";
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
-      } finally {
-        setLoading(false);
+      if (!result.success) {
+        setError(result.error || "Failed to cancel invitation");
       }
-    },
-    [refreshInvitations],
-  );
+
+      return result;
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to cancel invitation";
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const resend = useCallback(
     async (invitationId: string, context?: { email: string }) => {
@@ -520,8 +512,6 @@ export function useInvitationOperations(orgId: string) {
 
         if (!result.success) {
           setError(result.error || "Failed to resend invitation");
-        } else {
-          await refreshInvitations();
         }
 
         return result;
@@ -534,7 +524,7 @@ export function useInvitationOperations(orgId: string) {
         setLoading(false);
       }
     },
-    [orgId, refreshInvitations],
+    [orgId],
   );
 
   return {

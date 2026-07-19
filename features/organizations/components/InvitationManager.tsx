@@ -48,7 +48,9 @@ export function InvitationManager({
     resend,
     loading: operationLoading,
   } = useInvitationOperations(organizationId);
-  const { connections, isLoading: connectionsLoading } = useUserConnections();
+  const { connections, isLoading: connectionsLoading } = useUserConnections({
+    invitationOrganizationId: organizationId,
+  });
 
   const roleOptions: MembershipRoleOption[] = [
     { value: "member", label: "Member" },

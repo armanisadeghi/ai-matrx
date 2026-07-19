@@ -14,9 +14,9 @@ import type { JsonObject } from "@/types/json";
 /**
  * Organization role hierarchy: owner > admin > member
  */
-export type OrgRole = 'owner' | 'admin' | 'member';
+export type OrgRole = "owner" | "admin" | "member";
 
-const ORG_ROLES: readonly OrgRole[] = ['owner', 'admin', 'member'];
+const ORG_ROLES: readonly OrgRole[] = ["owner", "admin", "member"];
 
 /** Narrow a DB `role: string` (iam.organization_members.role) into OrgRole. */
 export function isOrgRole(value: string): value is OrgRole {
@@ -25,7 +25,7 @@ export function isOrgRole(value: string): value is OrgRole {
 
 /** Narrow a DB role string, falling back to 'member' for any unrecognized value. */
 export function toOrgRole(value: string): OrgRole {
-  return isOrgRole(value) ? value : 'member';
+  return isOrgRole(value) ? value : "member";
 }
 
 /**
@@ -173,21 +173,33 @@ export interface InvitationResult extends OperationResult {
  * Check if a role can perform an action
  */
 export function canManageMembers(role: OrgRole): boolean {
-  return role === 'owner' || role === 'admin';
+  return role === "owner" || role === "admin";
 }
 
 /**
  * Check if a role can manage settings
  */
 export function canManageSettings(role: OrgRole): boolean {
-  return role === 'owner' || role === 'admin';
+  return role === "owner" || role === "admin";
+}
+
+/**
+ * Pending invitations contain email addresses and acceptance tokens. They are
+ * available only to managers of non-personal organizations; the database
+ * intentionally rejects invitation management for personal organizations.
+ */
+export function canManageInvitations(
+  role: OrgRole,
+  isPersonal: boolean,
+): boolean {
+  return !isPersonal && canManageMembers(role);
 }
 
 /**
  * Check if a role can delete organization
  */
 export function canDeleteOrg(role: OrgRole): boolean {
-  return role === 'owner';
+  return role === "owner";
 }
 
 /**
@@ -199,7 +211,7 @@ export function isHigherRole(roleA: OrgRole, roleB: OrgRole): boolean {
     admin: 2,
     owner: 3,
   };
-  
+
   return hierarchy[roleA] > hierarchy[roleB];
 }
 
@@ -210,58 +222,76 @@ export function isHigherRole(roleA: OrgRole, roleB: OrgRole): boolean {
 /**
  * Validate organization name
  */
-export function validateOrgName(name: string): { valid: boolean; error?: string } {
+export function validateOrgName(name: string): {
+  valid: boolean;
+  error?: string;
+} {
   if (!name || name.trim().length === 0) {
-    return { valid: false, error: 'Organization name is required' };
+    return { valid: false, error: "Organization name is required" };
   }
-  
+
   if (name.length < 3) {
-    return { valid: false, error: 'Organization name must be at least 3 characters' };
+    return {
+      valid: false,
+      error: "Organization name must be at least 3 characters",
+    };
   }
-  
+
   if (name.length > 50) {
-    return { valid: false, error: 'Organization name must be less than 50 characters' };
+    return {
+      valid: false,
+      error: "Organization name must be less than 50 characters",
+    };
   }
-  
+
   return { valid: true };
 }
 
 /**
  * Validate organization slug
  */
-export function validateOrgSlug(slug: string): { valid: boolean; error?: string } {
+export function validateOrgSlug(slug: string): {
+  valid: boolean;
+  error?: string;
+} {
   if (!slug || slug.trim().length === 0) {
-    return { valid: false, error: 'Organization slug is required' };
+    return { valid: false, error: "Organization slug is required" };
   }
-  
+
   if (!/^[a-z0-9-]+$/.test(slug)) {
-    return { valid: false, error: 'Slug can only contain lowercase letters, numbers, and hyphens' };
+    return {
+      valid: false,
+      error: "Slug can only contain lowercase letters, numbers, and hyphens",
+    };
   }
-  
+
   if (slug.length < 3) {
-    return { valid: false, error: 'Slug must be at least 3 characters' };
+    return { valid: false, error: "Slug must be at least 3 characters" };
   }
-  
+
   if (slug.length > 50) {
-    return { valid: false, error: 'Slug must be less than 50 characters' };
+    return { valid: false, error: "Slug must be less than 50 characters" };
   }
-  
+
   return { valid: true };
 }
 
 /**
  * Validate email format
  */
-export function validateEmail(email: string): { valid: boolean; error?: string } {
+export function validateEmail(email: string): {
+  valid: boolean;
+  error?: string;
+} {
   if (!email || email.trim().length === 0) {
-    return { valid: false, error: 'Email is required' };
+    return { valid: false, error: "Email is required" };
   }
-  
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return { valid: false, error: 'Invalid email format' };
+    return { valid: false, error: "Invalid email format" };
   }
-  
+
   return { valid: true };
 }
 
@@ -272,8 +302,8 @@ export function generateSlug(name: string): string {
   return name
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 // ============================================================================
@@ -285,9 +315,9 @@ export function generateSlug(name: string): string {
  */
 export function getRoleLabel(role: OrgRole): string {
   const labels: Record<OrgRole, string> = {
-    owner: 'Owner',
-    admin: 'Admin',
-    member: 'Member',
+    owner: "Owner",
+    admin: "Admin",
+    member: "Member",
   };
   return labels[role];
 }
@@ -297,9 +327,9 @@ export function getRoleLabel(role: OrgRole): string {
  */
 export function getRoleBadgeColor(role: OrgRole): string {
   const colors: Record<OrgRole, string> = {
-    owner: 'yellow',
-    admin: 'blue',
-    member: 'gray',
+    owner: "yellow",
+    admin: "blue",
+    member: "gray",
   };
   return colors[role];
 }
@@ -311,20 +341,19 @@ export function getExpiryDisplay(expiresAt: string): string {
   const now = new Date();
   const expiry = new Date(expiresAt);
   const diff = expiry.getTime() - now.getTime();
-  
+
   if (diff < 0) {
-    return 'Expired';
+    return "Expired";
   }
-  
+
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  
+
   if (days > 0) {
-    return `Expires in ${days} day${days > 1 ? 's' : ''}`;
+    return `Expires in ${days} day${days > 1 ? "s" : ""}`;
   } else if (hours > 0) {
-    return `Expires in ${hours} hour${hours > 1 ? 's' : ''}`;
+    return `Expires in ${hours} hour${hours > 1 ? "s" : ""}`;
   } else {
-    return 'Expires soon';
+    return "Expires soon";
   }
 }
-
