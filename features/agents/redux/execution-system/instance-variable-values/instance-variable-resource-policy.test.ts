@@ -1,6 +1,6 @@
 import reducer, {
   initInstanceVariables,
-  resetUserVariableValues,
+  clearSubmittedVariableResourcePolicies,
   setRuntimeVariableResourcePolicy,
 } from "./instance-variable-values.slice";
 
@@ -43,7 +43,15 @@ describe("runtime variable resource policy", () => {
         ?.resource_context,
     ).toEqual({ exclude: ["raw"] });
 
-    state = reducer(state, resetUserVariableValues("conversation-1"));
+    state = reducer(
+      state,
+      clearSubmittedVariableResourcePolicies({
+        conversationId: "conversation-1",
+        submitted: {
+          pdf_file: { promote: [{ representation: "clean", max_chars: 1200 }] },
+        },
+      }),
+    );
     expect(
       state.byConversationId["conversation-1"].resourcePolicies,
     ).toEqual({});
@@ -51,5 +59,39 @@ describe("runtime variable resource policy", () => {
       state.byConversationId["conversation-1"].definitions[0].customComponent
         ?.resource_context,
     ).toEqual({ exclude: ["raw"] });
+  });
+
+  it("does not clear a next-turn policy edited while the prior request streams", () => {
+    let state = reducer(
+      undefined,
+      initInstanceVariables({ conversationId: "conversation-1", definitions: [] }),
+    );
+    const submitted = { exclude: ["raw"] };
+    state = reducer(
+      state,
+      setRuntimeVariableResourcePolicy({
+        conversationId: "conversation-1",
+        name: "pdf_file",
+        policy: submitted,
+      }),
+    );
+    state = reducer(
+      state,
+      setRuntimeVariableResourcePolicy({
+        conversationId: "conversation-1",
+        name: "pdf_file",
+        policy: { exclude: ["rag"] },
+      }),
+    );
+    state = reducer(
+      state,
+      clearSubmittedVariableResourcePolicies({
+        conversationId: "conversation-1",
+        submitted: { pdf_file: submitted },
+      }),
+    );
+    expect(state.byConversationId["conversation-1"].resourcePolicies.pdf_file).toEqual({
+      exclude: ["rag"],
+    });
   });
 });

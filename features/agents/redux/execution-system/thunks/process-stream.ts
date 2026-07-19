@@ -179,7 +179,11 @@ import { isInputDraftProtected } from "../instance-user-input/input-draft-protec
 import { clearComposerIfUnsubmitted } from "../instance-user-input/clear-composer.thunk";
 import { clearSubmittedResources } from "../instance-resources/instance-resources.slice";
 import { selectHasUnsentResources } from "../instance-resources/instance-resources.selectors";
-import { resetUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import {
+  clearSubmittedVariableResourcePolicies,
+  resetUserVariableValues,
+} from "../instance-variable-values/instance-variable-values.slice";
+import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { patchAgentConversationMetadata } from "@/features/agents/redux/conversation-list/conversation-list.slice";
@@ -220,6 +224,7 @@ interface ProcessStreamArgs {
   conversationIdAt: number | null;
   dispatch: (action: unknown) => unknown;
   getState: () => RootState;
+  submittedVariableResourcePolicies?: Record<string, VariableResourceContextConfig>;
   jsonExtraction?: JsonExtractionConfig;
   /**
    * Called once per incoming event, before domain processing. Used by the
@@ -286,6 +291,7 @@ export async function processStream({
   conversationIdAt,
   dispatch,
   getState,
+  submittedVariableResourcePolicies = {},
   jsonExtraction,
   onEvent,
   abortController,
@@ -2747,6 +2753,12 @@ export async function processStream({
     // convos; this covers ephemeral runs that have no reservation).
     dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
     dispatch(clearSubmittedResources(conversationId));
+    dispatch(
+      clearSubmittedVariableResourcePolicies({
+        conversationId,
+        submitted: submittedVariableResourcePolicies,
+      }),
+    );
     const hasUnsentResources =
       selectHasUnsentResources(conversationId)(getState());
     if (!textProtected && !hasUnsentResources) {

@@ -196,10 +196,23 @@ const instanceVariableValuesSlice = createSlice({
       const entry = state.byConversationId[action.payload];
       if (entry) {
         entry.userValues = {};
-        // Runtime family policy is a one-request override, just like the
-        // variable value it qualifies. Saved agent defaults remain in the
-        // immutable definitions snapshot.
-        entry.resourcePolicies = {};
+      }
+    },
+
+    clearSubmittedVariableResourcePolicies(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        submitted: Record<string, VariableResourceContextConfig>;
+      }>,
+    ) {
+      const entry = state.byConversationId[action.payload.conversationId];
+      if (!entry) return;
+      for (const [name, submitted] of Object.entries(action.payload.submitted)) {
+        const current = entry.resourcePolicies[name];
+        if (current && JSON.stringify(current) === JSON.stringify(submitted)) {
+          delete entry.resourcePolicies[name];
+        }
       }
     },
 
@@ -256,6 +269,7 @@ export const {
   setRuntimeVariableResourcePolicy,
   mergeScopeVariableValues,
   resetUserVariableValues,
+  clearSubmittedVariableResourcePolicies,
   updateInstanceDefinitions,
   removeInstanceVariables,
 } = instanceVariableValuesSlice.actions;

@@ -32,6 +32,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
+import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import { toast } from "sonner";
 
 /**
@@ -445,6 +446,10 @@ export async function runAiStream(
       conversationIdAt,
       dispatch,
       getState,
+      submittedVariableResourcePolicies:
+        (body.variable_resource_context as
+          | Record<string, VariableResourceContextConfig>
+          | undefined) ?? {},
       jsonExtraction,
       userMessageClientTempId,
       // Heartbeat-based liveness. The server emits {type:"heartbeat"} every

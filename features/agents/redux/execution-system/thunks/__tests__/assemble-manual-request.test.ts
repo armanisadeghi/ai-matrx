@@ -30,6 +30,7 @@ jest.mock(
 );
 
 import { assembleManualRequest } from "../execute-manual-instance.thunk";
+import { assembleRequest } from "../execute-instance.thunk";
 import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
 import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
@@ -61,6 +62,7 @@ function makeState(
     isVersion?: boolean;
     history?: Array<{ id: string; role: string; content: unknown }>;
     userInput?: string;
+    resourcePolicies?: Record<string, { promote?: Array<{ representation: string; max_chars?: number }>; exclude?: string[] }>;
   } = {},
 ): RootState {
   const orderedIds = (partial.history ?? []).map((m) => m.id);
@@ -151,7 +153,19 @@ function makeState(
     },
     instanceResources: { byConversationId: {} },
     instanceContext: { byConversationId: {} },
-    instanceVariableValues: { byConversationId: {} },
+    instanceVariableValues: {
+      byConversationId: partial.resourcePolicies
+        ? {
+            [CONVERSATION_ID]: {
+              conversationId: CONVERSATION_ID,
+              definitions: [],
+              userValues: {},
+              scopeValues: {},
+              resourcePolicies: partial.resourcePolicies,
+            },
+          }
+        : {},
+    },
     instanceClientTools: { byConversationId: {} },
     // `buildToolInjection` reads `selectCreatorSettings` (the
     // `disableToolInjection` emergency brake). Derived from the slice's own
@@ -228,6 +242,33 @@ describe("assembleManualRequest — live read contract", () => {
     expect(
       (payload as Record<string, unknown>).variable_definitions,
     ).toEqual(variableDefinitions);
+  });
+
+  test("manual payload uses raw variable names for request-scoped family policy", async () => {
+    const policy = { exclude: ["raw"] };
+    const state = makeState({ resourcePolicies: { pdf_file: policy } });
+    const payload = await assembleManualRequest(state, CONVERSATION_ID);
+    expect(
+      (payload as Record<string, unknown>).variable_resource_context,
+    ).toEqual({ pdf_file: policy });
+    expect(
+      ((payload as Record<string, unknown>).variable_resource_context as Record<string, unknown>)[
+        "Pdf File"
+      ],
+    ).toBeUndefined();
+  });
+
+  test("stored-agent payload uses raw variable names for family policy", () => {
+    const policy = { exclude: ["raw"] };
+    const state = makeState({ resourcePolicies: { pdf_file: policy } }) as RootState & {
+      instanceModelOverrides: { byConversationId: Record<string, unknown> };
+    };
+    state.instanceModelOverrides = { byConversationId: {} };
+    (state as RootState & { userPreferences: unknown }).userPreferences = {
+      assistant: { directiveApplyPolicy: "default" },
+    };
+    const payload = assembleRequest(state, CONVERSATION_ID);
+    expect(payload?.variable_resource_context).toEqual({ pdf_file: policy });
   });
 
   test("messages[] appends prior committed history from the messages slice", async () => {
