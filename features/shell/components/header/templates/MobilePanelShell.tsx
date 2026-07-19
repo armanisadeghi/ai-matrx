@@ -31,6 +31,7 @@
 // must keep live state (e.g. a running terminal).
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { MoreHorizontal, type LucideIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
@@ -72,6 +73,20 @@ export function MobilePanelShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [openPanelId, setOpenPanelId] = useState<string | null>(null);
   const [everOpened, setEverOpened] = useState<Set<string>>(() => new Set());
+
+  // A panel typically hosts real navigation (e.g. a settings/section tree of
+  // <Link>s). Once a route change lands, auto-dismiss so the user sees the
+  // page they just navigated to instead of the drawer still covering it.
+  // (Adjusting state during render on prop change — see
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  // — rather than a `useEffect`, which would cause an extra commit.)
+  const pathname = usePathname();
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setOpenPanelId(null);
+    setMenuOpen(false);
+  }
 
   if (!isMobile) return <>{desktop}</>;
 
