@@ -118,7 +118,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     onSuccess: (next) => {
       queryClient.setQueryData(marketingKeys.site(site.id), next);
       void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
-      toast.success("Integration references saved.");
+      toast.success("Integrations saved.");
     },
     onError: (error) => toast.error(error.message),
   });
@@ -264,13 +264,12 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
           <div>
             <h1 className="text-base font-semibold">Site integrations</h1>
             <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
-              Map {site.domain} to provider properties and opaque credential
-              references. Provider data will be read from Supabase after workers
-              persist it.
+              Connect data sources for {site.domain}, then choose the property
+              that belongs to this website.
             </p>
           </div>
           <Badge variant="outline" className="gap-1 text-[10px] font-medium">
-            <KeyRound className="h-3 w-3" /> References only
+            <KeyRound className="h-3 w-3" /> Credentials protected
           </Badge>
         </div>
 
@@ -395,9 +394,7 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
 
         <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border/80 bg-background/95 py-2 backdrop-blur">
           <p className="text-[11px] text-muted-foreground">
-            {dirty
-              ? "Unsaved reference changes"
-              : "All reference changes saved"}
+            {dirty ? "Unsaved changes" : "All integration changes saved"}
           </p>
           <Button
             size="sm"
