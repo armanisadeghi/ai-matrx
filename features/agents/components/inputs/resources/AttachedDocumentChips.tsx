@@ -283,6 +283,7 @@ export function AttachedDocumentChips({
       return false;
     }
     if (edgeKind === "processed_document") {
+      const priorFileEdge = files.find((item) => item.resourceId === fileId);
       const detachResult = await links.detach(
         "processed_document",
         link.resourceId,
@@ -296,6 +297,19 @@ export function AttachedDocumentChips({
         toast.error(
           `Context updated, but the legacy attachment could not be removed: ${detachResult.error}`,
         );
+        // Restore the pre-edit graph so the hidden canonical edge cannot
+        // disagree with the still-visible legacy chip.
+        if (priorFileEdge) {
+          await links.attach(
+            "file",
+            fileId,
+            priorFileEdge.label ?? displayTitle,
+            priorFileEdge.metadata,
+          );
+        } else {
+          await links.detach("file", fileId);
+        }
+        return false;
       }
     }
     return true;

@@ -232,11 +232,11 @@ export function useAttachResource(
       const fileId = extractFileId(resource.data);
       if (fileId) {
         const cacheKey = `conversation:${conversationId}`;
-        if (getState().scopesTree.associationsByKey[cacheKey]?.status !== "ready") {
-          await dispatch(
-            loadAssociations({ type: "conversation", id: conversationId }),
-          );
-        }
+        // Always refresh before a duplicate attach. A "ready" cache may be
+        // stale after another tab or server-side variable attachment.
+        await dispatch(
+          loadAssociations({ type: "conversation", id: conversationId, force: true }),
+        );
         if (getState().scopesTree.associationsByKey[cacheKey]?.status !== "ready") {
           toast.error("Couldn't verify existing document attachment metadata");
           return false;
@@ -246,14 +246,18 @@ export function useAttachResource(
           fileId,
           resourcePreviewLabel,
         );
-        const existingMetadata = getState().scopesTree.associationsByKey[
+        const existingEdge = getState().scopesTree.associationsByKey[
           cacheKey
         ]?.edges.find(
           (edge) =>
             edge.direction === "incoming" &&
             edge.otherType === "file" &&
             edge.otherId === fileId,
-        )?.metadata;
+        );
+        // Association already exists: reselect is an idempotent no-op. This
+        // avoids a read/replace race that could erase a policy written by
+        // another tab between refresh and mutation.
+        if (existingEdge) return true;
         const result = await attachDocumentEdge(
           dispatch,
           getState,
@@ -262,7 +266,7 @@ export function useAttachResource(
           fileId,
           fileId,
           label,
-          existingMetadata,
+          undefined,
         );
         if (!result.ok) {
           console.error("[attached-document] attach failed", {
