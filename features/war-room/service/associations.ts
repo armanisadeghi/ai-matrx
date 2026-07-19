@@ -298,7 +298,10 @@ export async function createAssignment(
     targetType,
     targetId: ref.id,
     orgId,
-    label: input.label ?? undefined,
+    // Preserve the existing edge label when the caller passes none — an
+    // idempotent re-attach (e.g. the panel re-stamping metadata on bind) must
+    // NOT wipe the real title stamped at attach time.
+    label: input.label ?? already?.label ?? undefined,
     metadata,
   });
   if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
@@ -311,7 +314,7 @@ export async function createAssignment(
     entity_id: entityId,
     position,
     is_active: isActive,
-    label: input.label ?? null,
+    label: input.label ?? already?.label ?? null,
     metadata,
     created_by: userId,
     created_at: new Date().toISOString(),

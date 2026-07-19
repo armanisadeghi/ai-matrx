@@ -270,9 +270,15 @@ export default function ThreadAgentPanel({
     // `conversation → thread` edge (metadata role:"agent") so siblings, the
     // room agent, and the master SEE it in the resources roster and can read
     // it. Idempotent — createAssignment no-ops when the edge already matches.
+    //
+    // NO `label` here: this fires on every bind, so a hardcoded label would
+    // clobber the real chat title stamped at attach time (the "Add existing
+    // chat" flow) and mask every conversation as a generic placeholder in the
+    // Resources surface + the agent roster. createAssignment preserves the
+    // existing edge label when none is passed; the title resolver fills the
+    // display name from the live chat title.
     void dispatch(
       attachEntityToThread(threadId, "conversation", conversationId, {
-        label: "Thread agent conversation",
         metadata: {
           role: "agent",
           agentId: activeAgentId ?? WAR_ROOM_THREAD_AGENT_ID,

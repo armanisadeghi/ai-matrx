@@ -61,6 +61,10 @@ import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
 const DELETABLE_TOKENS = new Set<string>(["file", "udt_document", "note"]);
 
+/** Legacy generic label the thread agent panel stamped on every conversation
+ *  edge (now removed) — treated as non-authoritative so real titles show. */
+const CONV_PLACEHOLDER_LABEL = "Thread agent conversation";
+
 export interface WarRoomResourcesListProps {
   adapter: ContainerResourcesAdapter;
   tokens?: EntityTypeToken[];
@@ -127,11 +131,18 @@ export function WarRoomResourcesList({
     resourceId: string;
     label?: string | null;
   }): string | null => {
-    if (r.label && r.label.trim()) return r.label;
     if (r.token === "conversation") {
-      const t = conversationTitles[r.resourceId]?.title;
-      if (t && t.trim()) return t;
+      // Live chat title wins (freshest). Legacy edges carry the generic
+      // "Thread agent conversation" placeholder — treat it as non-authoritative
+      // so the resolver reads the real chat.conversation.title instead of
+      // masking it; a real attach-time label still wins.
+      const live = conversationTitles[r.resourceId]?.title;
+      if (live && live.trim()) return live;
+      const edge = r.label?.trim();
+      if (edge && edge !== CONV_PLACEHOLDER_LABEL) return edge;
+      return null;
     }
+    if (r.label && r.label.trim()) return r.label;
     return r.label ?? null;
   };
 
