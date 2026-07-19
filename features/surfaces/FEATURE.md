@@ -2,7 +2,7 @@
 
 **Status**: shipped
 **Owner**: tool-registry
-**Routes**: `/admin/surfaces`
+**Routes**: `/administration/surfaces` (admin) · `/surfaces` (user hub) · `/agents/[id]/surfaces` (per-agent bindings)
 
 ## What this is
 
@@ -28,6 +28,13 @@ The original `UiSurfaceCrud` (under `/admin/lookups`) is a flat table. With
 - No inline edit → changing a description means opening a modal per row.
 
 The v2 page solves all four.
+
+## One name, two systems — "surface manifest" is overloaded
+
+- **Value manifest (this feature, code-first).** The runtime VALUES a surface promises to supply — plus agent roles, config namespaces, evidence sources. Declared in `manifests/*.manifest.ts`; **code is truth, `ui.ui_surface_value` is the synced mirror.**
+- **Tool manifest (aidream, DB-first).** Which TOOLS a surface enables and their executor bindings — `tool.surface_defaults` + `tool.definition`/`tool.binding`/`tool.executor`; **the DB is truth, clients validate their code against it.** Rules: `aidream/docs/cx_chat/TOOL_ROUTING_RULES.md` + `docs/official/tool_system_rules.md`.
+
+Both hang off the same `ui.ui_surface` spine and resolve server-side in aidream `tool_merge.py` from the request's `client.surface`. When a doc says "surface manifest", identify which system before acting.
 
 ## Agent↔surface bindings — canonical model (associations-only, 2026-07-12)
 
@@ -91,10 +98,11 @@ Sampling is intentionally view-only and ephemeral: it reads the provider callbac
 ## Architecture
 
 - **Service**: [features/surfaces/services/surfaces.service.ts](./services/surfaces.service.ts)
-  - `listSurfacesWithStats()` — single round-trip that fans out 3 reads
-    (`ui_surface` + `tl_def_surface` + `agx_agent_surface`) and joins counts
-    in JS. Cheaper than three separate sequential queries; cheaper than a
-    server-side RPC for a table that admins read at most a few times per session.
+  - `listSurfacesWithStats()` — single round-trip that fans out parallel reads
+    (`ui.ui_surface` + `tool.surface_defaults` + `tool.bundle` +
+    `agent.menu_surface` + `ui.ui_surface_value`) and joins counts in JS.
+    Cheaper than sequential queries; cheaper than a server-side RPC for a
+    table that admins read at most a few times per session.
   - `bulkSetSurfacesActive(names, active)` — one `UPDATE ... WHERE name IN (...)`.
   - `tierFor(sortOrder)` + `SURFACE_TIERS` — convention-driven grouping (see
     "Sort_order tiers" below).
@@ -177,6 +185,7 @@ After the user-requested "go all in" pass, the page picks up:
 
 ## Change Log
 
+- **2026-07-19 — Knowledge-consolidation pass (docs corrected against live code + DB).** Added the "One name, two systems" values-vs-tools manifest disambiguation; fixed the stale routes header (`/admin/surfaces` → `/administration/surfaces`) and the Architecture stats read (retired `tl_def_surface`/`agx_agent_surface` → `tool.surface_defaults`/`agent.menu_surface`). Same pass corrected `surface-authoring` SKILL.md (associations-only bindings, `RAW_MANIFESTS`, baseline auto-injection, `ui.` schema, `document` valueType) and `manifests/README.md`. Live-DB finding recorded: 30 of 38 agent→surface association edges point at agents no longer in `agent.card` (deleted test agents; polymorphic edges have no FK) — invisible through `menu_surface`, cleanup pending a decision on binding architecture.
 - **2026-07-19 — Live Surface Context windows in universal Agents chrome.** Added the user-facing `surfaceContextWindow` for searchable, exact live values and upgraded the Redux-admin-gated `surfaceContextInspector` with live runtime sampling plus embedded manifest/settings administration. Admins can now see authored vs resolved manifest provenance/evidence and edit handler-validated global namespace config without leaving the surface. Follow-up polish keeps both headers thin with icon-only actions, canonical Copy for AI, friendly display labels, and no raw slash-delimited surface key in user chrome.
 - **2026-07-17 — Document Evidence System surface contract.**
   `SurfaceManifest.evidenceSources` now declares when a surface already knows a
