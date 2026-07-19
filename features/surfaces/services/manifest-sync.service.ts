@@ -588,20 +588,22 @@ export async function remediateBrokenMapping(
 ): Promise<RemediateMappingResult> {
   const { bindingId, mappingKey, remediation } = args;
 
-  // Bindings live on `platform.associations` edges (value_mappings inside
-  // metadata). This runs server-side with the admin client (super-admin
-  // gated route) — the browser has no direct grant on platform.associations.
+  // Bindings live on `platform.associations` edges — value_mappings is the
+  // TYPED payload (`payload_kind='surface_binding'`, Edge Payload System;
+  // the DB trigger re-validates this write). Runs server-side with the admin
+  // client (super-admin gated route) — the browser has no direct grant on
+  // platform.associations.
   const { data: row, error: readErr } = await sb
     .schema("platform")
     .from("associations")
-    .select("id, metadata")
+    .select("id, payload")
     .eq("id", bindingId)
     .eq("source_type", "agent")
     .eq("target_type", "surface")
     .single();
   if (readErr) throw readErr;
-  const metadata = (row?.metadata ?? {}) as Record<string, unknown>;
-  const current = (metadata.value_mappings ?? {}) as Record<string, unknown>;
+  const payload = (row?.payload ?? {}) as Record<string, unknown>;
+  const current = (payload.value_mappings ?? {}) as Record<string, unknown>;
   const next = { ...current };
 
   if (remediation.action === "notify_only") {
@@ -619,7 +621,8 @@ export async function remediateBrokenMapping(
     .schema("platform")
     .from("associations")
     .update({
-      metadata: { ...metadata, value_mappings: next } as unknown as Json,
+      payload_kind: "surface_binding",
+      payload: { ...payload, value_mappings: next } as unknown as Json,
     })
     .eq("id", bindingId);
   if (writeErr) throw writeErr;

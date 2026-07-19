@@ -301,6 +301,15 @@ export const associationsService = {
     metadata?: Json;
     role?: string;
     position?: number;
+    /**
+     * Typed edge payload (Edge Payload System). `payloadKind` must be a
+     * registered `platform.edge_payload_kind`; the DB trigger validates
+     * `payload` against its JSON Schema and hard-fails on any mismatch.
+     * Real logic an edge carries goes HERE — `metadata` is for loose
+     * annotations only.
+     */
+    payloadKind?: string;
+    payload?: Json;
   }): Promise<ScopesRpcResult<{ id: string }>> {
     try {
       requireUserId();
@@ -325,6 +334,8 @@ export const associationsService = {
         p_metadata: args.metadata ?? {},
         p_role: args.role,
         p_position: args.position,
+        p_payload_kind: args.payloadKind,
+        p_payload: args.payload ?? undefined,
       });
       if (error) return err(...mapPgErrorPair(error));
       if (!data || typeof data !== "string") {

@@ -6,8 +6,10 @@
  * encoded in the edge `role` so multiple tiers per (agent, surface) coexist:
  *   binding:global | binding:u:<userId> | binding:o:<orgId>
  *   | binding:p:<projectId> | binding:t:<taskId>
- * The binding payload (`value_mappings`) plus the tier ids live in edge
- * `metadata`. Reads go through the pre-joined `agent.menu_surface` view.
+ * The binding's logic (`value_mappings`) is a TYPED edge payload
+ * (`payload_kind = 'surface_binding'`, schema-validated by the DB trigger —
+ * Edge Payload System, see features/surfaces/FEATURE.md); tier ids live in
+ * edge `metadata`. Reads go through the pre-joined `agent.menu_surface` view.
  *
  * This replaced the condemned bespoke agent↔surface junction (P1–P4 — see
  * features/surfaces/FEATURE.md); that table now lives in `graveyard`.
@@ -222,6 +224,9 @@ export async function bindAgentToSurface(
     throw new Error(`Unknown surface: ${surfaceName}`);
   }
 
+  // Loose annotations only — the binding's real logic (value_mappings) is a
+  // typed payload (Edge Payload System, kind `surface_binding`), validated by
+  // the DB trigger against platform.edge_payload_kind on every write.
   const metadata: Json = {
     tier: tierFromScope(scope),
     user_id: scope.userId ?? null,
@@ -229,7 +234,6 @@ export async function bindAgentToSurface(
     task_id: scope.taskId ?? null,
     visibility: "internal",
     version: 1,
-    value_mappings: valueMappings as unknown as Json,
   };
 
   const result = await associationsService.add({
@@ -242,6 +246,8 @@ export async function bindAgentToSurface(
     orgId: scope.organizationId ?? accessOrgId,
     role: bindingRoleForScope(scope),
     metadata,
+    payloadKind: "surface_binding",
+    payload: { value_mappings: valueMappings as unknown as Json },
   });
 
   if (!result.ok) {

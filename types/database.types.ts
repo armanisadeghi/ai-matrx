@@ -21434,6 +21434,8 @@ export type Database = {
           label: string | null
           metadata: Json
           organization_id: string | null
+          payload: Json | null
+          payload_kind: string | null
           position: number | null
           role: string | null
           source_id: string
@@ -21448,6 +21450,8 @@ export type Database = {
           label?: string | null
           metadata?: Json
           organization_id?: string | null
+          payload?: Json | null
+          payload_kind?: string | null
           position?: number | null
           role?: string | null
           source_id: string
@@ -21462,6 +21466,8 @@ export type Database = {
           label?: string | null
           metadata?: Json
           organization_id?: string | null
+          payload?: Json | null
+          payload_kind?: string | null
           position?: number | null
           role?: string | null
           source_id?: string
@@ -21470,6 +21476,13 @@ export type Database = {
           target_type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "associations_payload_kind_fkey"
+            columns: ["payload_kind"]
+            isOneToOne: false
+            referencedRelation: "edge_payload_kind"
+            referencedColumns: ["kind"]
+          },
           {
             foreignKeyName: "associations_source_type_fkey"
             columns: ["source_type"]
@@ -21637,6 +21650,39 @@ export type Database = {
           new_ref?: string
           old_ref?: string
           reason?: string | null
+        }
+        Relationships: []
+      }
+      edge_payload_kind: {
+        Row: {
+          created_at: string
+          description: string
+          json_schema: Json
+          kind: string
+          source_type: string | null
+          target_type: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          json_schema: Json
+          kind: string
+          source_type?: string | null
+          target_type?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          json_schema?: Json
+          kind?: string
+          source_type?: string | null
+          target_type?: string | null
+          updated_at?: string
+          version?: number
         }
         Relationships: []
       }
@@ -27708,20 +27754,37 @@ export type Database = {
         Args: never
         Returns: undefined
       }
-      assoc_add: {
-        Args: {
-          p_label?: string
-          p_metadata?: Json
-          p_org_id?: string
-          p_position?: number
-          p_role?: string
-          p_source_id: string
-          p_source_type: string
-          p_target_id: string
-          p_target_type: string
-        }
-        Returns: string
-      }
+      assoc_add:
+        | {
+            Args: {
+              p_label?: string
+              p_metadata?: Json
+              p_org_id?: string
+              p_position?: number
+              p_role?: string
+              p_source_id: string
+              p_source_type: string
+              p_target_id: string
+              p_target_type: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_label?: string
+              p_metadata?: Json
+              p_org_id?: string
+              p_payload?: Json
+              p_payload_kind?: string
+              p_position?: number
+              p_role?: string
+              p_source_id: string
+              p_source_type: string
+              p_target_id: string
+              p_target_type: string
+            }
+            Returns: string
+          }
       assoc_for_entity: {
         Args: { p_id: string; p_type: string }
         Returns: {
