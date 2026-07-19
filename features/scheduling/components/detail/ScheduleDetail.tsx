@@ -141,12 +141,14 @@ export function ScheduleDetail({ taskId }: Props) {
           },
         ]}
       />
-      <div className="space-y-4 max-w-5xl mx-auto">
+      <div className="space-y-4">
         {task.description && (
           <p className="text-sm text-muted-foreground">{task.description}</p>
         )}
-        <SpecCard task={task} />
-        <TriggerCard task={task} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <SpecCard task={task} />
+          <TriggerCard task={task} />
+        </div>
         <RunHistoryCard taskId={task.id} />
       </div>
     </>

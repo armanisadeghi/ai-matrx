@@ -90,7 +90,7 @@ export default function SiteSettingsPage() {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <div className="px-4 sm:px-6 py-6 space-y-6">
         <div className="flex items-center justify-end">
           <div className="flex items-center gap-2">
             {saved && (
@@ -117,7 +117,7 @@ export default function SiteSettingsPage() {
         {/* General */}
         <div className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h3 className="text-sm font-semibold text-foreground">General</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium block mb-1.5">
                 Site Name
@@ -137,7 +137,7 @@ export default function SiteSettingsPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium block mb-1.5">Domain</label>
               <Input
@@ -183,66 +183,75 @@ export default function SiteSettingsPage() {
           </div>
         </div>
 
-        {/* Global CSS */}
-        <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Global CSS</h3>
-          <p className="text-xs text-muted-foreground">
-            CSS applied to all pages. Use this for base styles, typography, and
-            layout.
-          </p>
-          <Textarea
-            value={globalCss}
-            onChange={(e) => setGlobalCss(e.target.value)}
-            placeholder="/* Global styles for all pages */\n\nbody {\n  font-family: system-ui, sans-serif;\n}"
-            className="font-mono text-sm min-h-[200px]"
-          />
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Global CSS */}
+          <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">
+              Global CSS
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              CSS applied to all pages. Use this for base styles, typography,
+              and layout.
+            </p>
+            <Textarea
+              value={globalCss}
+              onChange={(e) => setGlobalCss(e.target.value)}
+              placeholder="/* Global styles for all pages */\n\nbody {\n  font-family: system-ui, sans-serif;\n}"
+              className="font-mono text-sm min-h-[200px]"
+            />
+          </div>
 
-        {/* Advanced */}
-        <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Advanced</h3>
-          <p className="text-xs text-muted-foreground">
-            Theme configuration, navigation structure, and footer will be
-            editable here in a future update.
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-md border border-border/50 bg-muted/20 p-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Theme Config
+          <div className="space-y-6">
+            {/* Advanced */}
+            <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">
+                Advanced
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Theme configuration, navigation structure, and footer will be
+                editable here in a future update.
               </p>
-              <pre className="text-[10px] text-muted-foreground mt-1 overflow-hidden">
-                {JSON.stringify(site.theme_config, null, 2).slice(0, 100)}
-              </pre>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-md border border-border/50 bg-muted/20 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Theme Config
+                  </p>
+                  <pre className="text-[10px] text-muted-foreground mt-1 overflow-hidden">
+                    {JSON.stringify(site.theme_config, null, 2).slice(0, 100)}
+                  </pre>
+                </div>
+                <div className="rounded-md border border-border/50 bg-muted/20 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Contact Info
+                  </p>
+                  <pre className="text-[10px] text-muted-foreground mt-1 overflow-hidden">
+                    {JSON.stringify(site.contact_info, null, 2).slice(0, 100)}
+                  </pre>
+                </div>
+              </div>
             </div>
-            <div className="rounded-md border border-border/50 bg-muted/20 p-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Contact Info
+
+            {/* Danger zone */}
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-destructive">
+                Danger Zone
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Permanently deletes this site and everything under it — pages,
+                components, versions, and activity history. This cannot be
+                undone.
               </p>
-              <pre className="text-[10px] text-muted-foreground mt-1 overflow-hidden">
-                {JSON.stringify(site.contact_info, null, 2).slice(0, 100)}
-              </pre>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete Site
+              </Button>
             </div>
           </div>
-        </div>
-
-        {/* Danger zone */}
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-destructive">
-            Danger Zone
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Permanently deletes this site and everything under it — pages,
-            components, versions, and activity history. This cannot be undone.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDeleteDialogOpen(true)}
-            className="gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete Site
-          </Button>
         </div>
       </div>
 

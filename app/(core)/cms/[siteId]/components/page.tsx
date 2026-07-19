@@ -173,7 +173,7 @@ export default function ComponentsPage() {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="max-w-3xl mx-auto p-6 space-y-4">
+      <div className="px-4 sm:px-6 py-6 space-y-4">
         <div className="flex items-center justify-end">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
