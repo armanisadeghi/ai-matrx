@@ -17,7 +17,10 @@
 import { useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
-import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  getContentRoleMeta,
+  getEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 import {
   usePrimaryEntity,
   type PrimaryEntity,
@@ -44,6 +47,7 @@ export function AssociationCard({
   const [open, setOpen] = useState(false);
 
   const info = getEntityInfo(token);
+  const role = getContentRoleMeta(info.contentRole);
 
   const { status, countFor, attachedIdsFor, attach, detach } =
     useContainerLinks({
@@ -68,11 +72,25 @@ export function AssociationCard({
     <>
       <div
         className={cn(
-          "group relative flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3 py-2.5 transition-colors hover:bg-accent/30",
+          "group relative flex items-center gap-3 overflow-hidden rounded-xl border border-border bg-card px-3 py-2.5 transition-all hover:border-primary/30 hover:bg-accent/40",
           className,
         )}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        {/* role accent bar — same categorical language as the resource tiles */}
+        <span
+          className={cn(
+            "absolute inset-x-0 top-0 h-0.5 opacity-60",
+            role.accentBar,
+          )}
+        />
+
+        <span
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+            role.accentBg,
+            role.accentText,
+          )}
+        >
           <info.Icon className="h-4 w-4" />
         </span>
 

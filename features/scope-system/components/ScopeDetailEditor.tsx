@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Link2, Loader2, Pencil, X as XIcon } from "lucide-react";
+import { Boxes, Check, Loader2, Pencil, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -368,29 +368,6 @@ export function ScopeDetailEditor({
         title={`${scope.name} · knowledge graph`}
       />
 
-      {/* Canonical platform.associations surface for this scope. */}
-      <PrimaryEntityProvider
-        value={{
-          type: "scope",
-          id: scope.id,
-          orgId,
-          label: scope.name,
-        }}
-      >
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <div className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Associations</h2>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              Attached to this {scopeType.label_singular.toLowerCase()}
-            </span>
-          </div>
-          <AssociationCardGrid />
-        </div>
-      </PrimaryEntityProvider>
-
       <Card className="p-6 space-y-5">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold text-foreground">
@@ -460,6 +437,33 @@ export function ScopeDetailEditor({
           </div>
         )}
       </Card>
+
+      {/* ─── Resources = canonical platform.associations edges ──────────
+          Everything attached to this scope, grouped by content role with the
+          same categorical colors the org resource grid uses. Sits BELOW the
+          core scope content — it is supporting material, not the main job. */}
+      <PrimaryEntityProvider
+        value={{
+          type: "scope",
+          id: scope.id,
+          orgId,
+          label: scope.name,
+        }}
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <div className="flex items-center gap-2">
+              <Boxes className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Resources</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Attached to this {scopeType.label_singular.toLowerCase()}, grouped
+              by what they do
+            </span>
+          </div>
+          <AssociationCardGrid />
+        </div>
+      </PrimaryEntityProvider>
 
       <ScopeAdvancedSection scope={scope} />
     </div>

@@ -12,7 +12,7 @@ import {
   ChevronUp,
   Home,
   Layers,
-  Link2,
+  Boxes,
   ListChecks,
   Loader2,
   PanelsTopLeft,
@@ -359,29 +359,6 @@ export function ScopesList({
         onDeleted={() => router.push(orgScopesHref(orgSlugOrId))}
       />
 
-      {/* Canonical platform.associations surface for this scope type. */}
-      <PrimaryEntityProvider
-        value={{
-          type: "scope_type",
-          id: scopeType.id,
-          orgId,
-          label: scopeType.label_plural,
-        }}
-      >
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <div className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Associations</h2>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              Attached to this scope type
-            </span>
-          </div>
-          <AssociationCardGrid />
-        </div>
-      </PrimaryEntityProvider>
-
       {/* ── Individual scopes (tabular) ──────────────────────────── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -633,6 +610,32 @@ export function ScopesList({
           </Card>
         )}
       </div>
+
+      {/* ─── Resources = canonical platform.associations edges ──────────
+          Everything attached to this scope type, grouped by content role with
+          the same categorical colors the org resource grid uses. Sits BELOW
+          the core content (scopes + context items). */}
+      <PrimaryEntityProvider
+        value={{
+          type: "scope_type",
+          id: scopeType.id,
+          orgId,
+          label: scopeType.label_plural,
+        }}
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <div className="flex items-center gap-2">
+              <Boxes className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Resources</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Attached to this scope type, grouped by what they do
+            </span>
+          </div>
+          <AssociationCardGrid />
+        </div>
+      </PrimaryEntityProvider>
 
       <ReorderDialog
         open={reorderScopesOpen}

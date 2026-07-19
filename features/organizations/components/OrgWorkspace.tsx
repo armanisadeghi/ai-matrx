@@ -33,7 +33,6 @@ import {
   Layers3,
   Boxes,
   ChevronRight,
-  Link2,
   Info,
 } from "lucide-react";
 import Link from "next/link";
@@ -72,8 +71,6 @@ import { useOrgResourceInventory } from "@/features/organizations/hooks/useOrgRe
 import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
 import { ContributeResourceSheet } from "@/features/organizations/components/ContributeResourceSheet";
 import { OrgShareReviewCard } from "@/features/organizations/components/OrgShareReviewCard";
-import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
-import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
@@ -479,29 +476,10 @@ export function OrgWorkspace() {
           ))}
         </div>
 
-        {/* ─── Resources = canonical platform.associations edges ─────────
-            Every kind of thing attached to this org, one card per entity
-            token, fully driven by the entity registry. Adding a card = one
-            overlay line in entityRegistry.ts — nothing to wire here. */}
-        <PrimaryEntityProvider
-          value={{
-            type: "organization",
-            id: organization.id,
-            orgId: organization.id,
-            label: organization.name,
-          }}
-        >
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Link2 className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Associations</h2>
-              <span className="text-xs text-muted-foreground">
-                Attached to this organization (canonical)
-              </span>
-            </div>
-            <AssociationCardGrid />
-          </div>
-        </PrimaryEntityProvider>
+        {/* NOTE: the canonical association grid (AssociationCardGrid) lives on
+            the scope-type and scope pages, where attaching things to a
+            container is the actual job. The org overview shows the Resources
+            grid above instead — one resource surface per page, not two. */}
 
         {/* ─── Member contributions (moderation) ────────────────────── */}
         <OrgShareReviewCard
