@@ -299,16 +299,25 @@ export function AttachedDocumentChips({
         );
         // Restore the pre-edit graph so the hidden canonical edge cannot
         // disagree with the still-visible legacy chip.
-        if (priorFileEdge) {
-          await links.attach(
+        const rollbackResult = priorFileEdge
+          ? await links.attach(
             "file",
             fileId,
             priorFileEdge.label ?? displayTitle,
             priorFileEdge.metadata,
+          )
+          : await links.detach("file", fileId);
+        if (!rollbackResult.ok) {
+          console.error("[attached-document] legacy conversion rollback failed", {
+            conversationId,
+            fileId,
+            error: rollbackResult.error,
+          });
+          toast.error(
+            `Document context may be inconsistent; refresh before sending: ${rollbackResult.error}`,
           );
-        } else {
-          await links.detach("file", fileId);
         }
+        await links.reload();
         return false;
       }
     }
