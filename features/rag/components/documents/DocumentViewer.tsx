@@ -25,7 +25,14 @@
  */
 
 import { useCallback, useState } from "react";
-import { Database, ExternalLink, GitCompareArrows } from "lucide-react";
+import {
+  AlignLeft,
+  BookOpenText,
+  Database,
+  ExternalLink,
+  GitCompareArrows,
+  Layers,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
@@ -40,6 +47,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { ChunksPane } from "@/features/rag/components/documents/panes/ChunksPane";
@@ -118,21 +126,56 @@ export function DocumentViewer({
     });
   }, [openDiff, page.data, activePageIndex]);
 
+  const desktopLayout = (
+    <ResizablePanelGroup orientation="horizontal">
+      <ResizablePanel defaultSize={32} minSize={20}>
+        <PdfPane
+          document={doc.data}
+          activePageIndex={activePageIndex}
+          onActivePageChange={setActivePageIndex}
+        />
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={20} minSize={12}>
+        <RawTextPane page={page.data} loading={page.loading} error={page.error} />
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={24} minSize={14}>
+        <CleanedMarkdownPane
+          page={page.data}
+          loading={page.loading}
+          error={page.error}
+        />
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={24} minSize={14}>
+        <ChunksPane
+          chunks={chunks.data ?? []}
+          loading={chunks.loading}
+          error={chunks.error}
+          activePageNumber={activePageIndex + 1}
+          selectedChunkId={selectedChunkId}
+          onSelect={handleChunkSelect}
+        />
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
+
   return (
     <div className="flex flex-col h-full bg-background">
-      <header className="flex items-center justify-between px-4 py-2 border-b border-border">
-        <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-sm font-semibold truncate">
+      <header className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-border sm:px-4">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <h1 className="truncate text-sm font-semibold">
             {doc.data?.name ?? "Loading…"}
           </h1>
           {doc.data && (
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
+            <span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:inline">
               {doc.data.derivation_kind} · {totalPages || 0} pages ·{" "}
               {doc.data.chunk_count} {RAG_VOCAB.segmentsShort.toLowerCase()}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="hidden items-center gap-3 sm:flex">
           <LineageBreadcrumbs
             document={doc.data}
             lineage={lineage.data}
@@ -153,51 +196,66 @@ export function DocumentViewer({
               Compare
             </Button>
           )}
-          <PageNav
-            current={activePageIndex}
-            total={totalPages}
-            onChange={setActivePageIndex}
-          />
         </div>
+        <PageNav
+          current={activePageIndex}
+          total={totalPages}
+          onChange={setActivePageIndex}
+        />
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup orientation="horizontal">
-          <ResizablePanel defaultSize={32} minSize={20}>
+        <MobilePanelShell
+          desktop={desktopLayout}
+          main={
             <PdfPane
               document={doc.data}
               activePageIndex={activePageIndex}
               onActivePageChange={setActivePageIndex}
             />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={20} minSize={12}>
-            <RawTextPane
-              page={page.data}
-              loading={page.loading}
-              error={page.error}
-            />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={24} minSize={14}>
-            <CleanedMarkdownPane
-              page={page.data}
-              loading={page.loading}
-              error={page.error}
-            />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={24} minSize={14}>
-            <ChunksPane
-              chunks={chunks.data ?? []}
-              loading={chunks.loading}
-              error={chunks.error}
-              activePageNumber={activePageIndex + 1}
-              selectedChunkId={selectedChunkId}
-              onSelect={handleChunkSelect}
-            />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          }
+          panels={[
+            {
+              id: "raw",
+              label: "Raw text",
+              icon: AlignLeft,
+              content: (
+                <RawTextPane
+                  page={page.data}
+                  loading={page.loading}
+                  error={page.error}
+                />
+              ),
+            },
+            {
+              id: "cleaned",
+              label: "Cleaned markdown",
+              icon: BookOpenText,
+              content: (
+                <CleanedMarkdownPane
+                  page={page.data}
+                  loading={page.loading}
+                  error={page.error}
+                />
+              ),
+            },
+            {
+              id: "chunks",
+              label: `${RAG_VOCAB.segmentsShort}`,
+              icon: Layers,
+              content: (
+                <ChunksPane
+                  chunks={chunks.data ?? []}
+                  loading={chunks.loading}
+                  error={chunks.error}
+                  activePageNumber={activePageIndex + 1}
+                  selectedChunkId={selectedChunkId}
+                  onSelect={handleChunkSelect}
+                />
+              ),
+            },
+          ]}
+        />
       </div>
     </div>
   );

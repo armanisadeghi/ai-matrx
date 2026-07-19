@@ -176,8 +176,9 @@ export function SourceInspectorPane({
   // ── Tabs (everything anchored to this page) ──────────────────────────────
   const tabs = (
     <div className="flex h-full min-h-0 flex-col">
-      {/* tab bar */}
-      <div className="flex shrink-0 items-center gap-0.5 border-b border-border bg-muted/30 px-1.5 py-1">
+      {/* tab bar — horizontally scrolls its own box on narrow viewports instead
+          of wrapping labels to two lines (the page itself never scrolls). */}
+      <div className="flex shrink-0 items-center gap-0.5 overflow-x-auto scrollbar-hide border-b border-border bg-muted/30 px-1.5 py-1">
         <TabButton
           active={tab === "match"}
           onClick={() => setTab("match")}
@@ -395,13 +396,13 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium transition-colors",
         active
           ? "bg-background text-foreground shadow-sm"
           : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
       )}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="h-3.5 w-3.5 shrink-0" />
       {label}
     </button>
   );
