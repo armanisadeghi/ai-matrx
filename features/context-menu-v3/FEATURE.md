@@ -1,6 +1,6 @@
 # Context Menu v3 — the universal right-click / floating menu
 
-**Status:** built, rolling out (v2 frozen). One menu for every surface: a near-zero shell on mount, full power on first open, all modals through the OverlayController.
+**Status:** live everywhere — the ONLY context menu (`features/context-menu-v2/` deleted 2026-07-19). One menu for every surface: a near-zero shell on mount, full power on first open, all modals through the OverlayController.
 
 `EditableContextMenu` / `NonEditableContextMenu` wrap children; the menu does everything automatically from `surfaceName` + a few value props. **The single most important contract is value mapping** (below) — the AI shortcuts and bound agents depend on it.
 
@@ -147,17 +147,11 @@ The hard-won pieces are carried over (and improved): the floating selection icon
 
 ---
 
-## v2 is frozen — migration
+## v2 is deleted — v3 owns everything
 
-`features/context-menu-v2/` gets no new work; it's deleted once all consumers move. The pure utils v3 lifted from it (`selection-tracking`, `FloatingSelectionIcon`) and the logic it still imports (`useUnifiedAgentContextMenu`, `BoundAgentsMenuSection`) become v3-owned at that point.
+`features/context-menu-v2/` was deleted 2026-07-19; every consumer (production surfaces + demos) renders v3. The shared modules v3 had been importing from v2 are now v3-owned: `hooks/useUnifiedAgentContextMenu.ts`, `components/BoundAgentsMenuSection.tsx`, `utils/build-application-scope.ts`, `utils/resolveMarkdownContext.ts` (plus the earlier-lifted `utils/selection-tracking.ts`). `PlacementMode` / `ContextMenuExtraSection` live in `types.ts`. The reader-less `contextMenuCache` / `agentContextMenuCache` Redux slices went with it.
 
-**Migration recipe** (per consumer): replace the `dynamic(() => import(".../context-menu-v2/UnifiedAgentContextMenu"))` block + `<UnifiedAgentContextMenu isEditable …>` with a static `import { EditableContextMenu }` (or `NonEditableContextMenu`) and `<EditableContextMenu …>` — drop `isEditable` (the wrapper presets it) and `enabledPlacements` (use `placementMode`). Props are otherwise 1:1. Add `contentSource` + `entity` to unlock Copy-as/Export/Convert/Attach/Share. Verify with `pnpm type-check`; test the surface.
-
-For a rollout, **invoke the `context-menu-v3` skill** — the per-surface recipe.
-
-**Migration status: COMPLETE for production.** Every production consumer renders v3 (notes ×2, code ×3, agents working-document / message-builders / chat-input / conversation-display, transcripts, research init+synthesis+document, rag, tasks, cleanup, projects, scraper, files preview). The v2 menu COMPONENT has **no production render-consumers** — verified by grep, not the (incomplete) original audit.
-
-**Remaining before deleting `context-menu-v2/`:** (1) `MarkdownContextMenuProvider` still renders the v2 menu and is used by `SafeBlockRenderer` (markdown-engine internal) — migrate it to render v3 directly (template: `AgentConversationDisplay`). (2) Dev demos `(dev)/demos/context-menu/{lab,scenarios}` still use v2; `canonical-v2` is the intentional v2 reference. (3) Relocate the pure utils (`build-application-scope`, `selection-tracking`, `resolveMarkdownContext`), the `useUnifiedAgentContextMenu` hook + `BoundAgentsMenuSection`, and the `PlacementMode` type (still imported by `build*ContextData.ts`) into v3, then delete v2.
+For wiring a surface, **invoke the `context-menu-v3` skill** — the per-surface recipe.
 
 ---
 
@@ -171,6 +165,7 @@ For a rollout, **invoke the `context-menu-v3` skill** — the per-surface recipe
 
 ## Change Log
 
+- `2026-07-19` — **context-menu-v2 annihilated.** Deleted `features/context-menu-v2/` (component, MenuBody, MarkdownContextMenuProvider, v2-only hooks/utils), the v2 static-import eslint ban (`canonicalMenuStaticImportBan` — v3's `contextMenuV3StaticImportBan` remains), and the reader-less `contextMenuCache`/`agentContextMenuCache` slices. Moved the shared modules into v3 (`hooks/useUnifiedAgentContextMenu`, `components/BoundAgentsMenuSection`, `utils/build-application-scope`, `utils/resolveMarkdownContext`); all type imports now come from `types.ts`. Demo lab + scenarios migrated to v3 wrappers; `canonical-v2` deleted. Skills/docs rewritten against v3 (surface-pro-rollout, surface-registration, context-menu-v3, agent-execution-redux, per-feature FEATURE.mds).
 - `2026-07-18` — **Managed Agents now default to WindowPanel.** The shared desktop and mobile v3 launchers consume one `MANAGED_CONTEXT_MENU_AGENT_CONFIG` with `displayMode: "flexible-panel"`, so Notes and every other managed context menu open surface-bound/default agents in `AgentFlexiblePanel` instead of `AgentFullModal`. Shortcut-owned display-mode definitions remain authoritative; managed launches still omit `autoRun`.
 - `2026-07-15` — **Selection tracking scoped to the wrapped subtree (browser-freeze fix).** The shell's `selectionchange` handler ran unguarded in EVERY mounted instance: each serialized the full selected text (`selection.toString()` — O(document) on a triple-click of a large paste), stored it in its own state, and rendered its own `FloatingSelectionIcon` at identical coordinates. On /notes (editor + every sidebar row + folder headers) that meant dozens of stacked translucent FABs compounding into a black-shadowed blob AND N× O(document) main-thread work per selection event — a tab freezer. Now each instance holds a `selectionOwnerRef` (the asChild trigger child on desktop, the display:contents wrapper on mobile) and the handler gates ALL work on ownership: the selection's anchor node — or, for textarea/input selections (whose DOM Range stays parked on the host), the focused element — must be inside the wrapped subtree; non-owners clear cheaply with no serialization (unchanged-state bailout ⇒ zero re-renders). **Invariant: never remove the ownership gate; a document-global listener in a many-instance component must scope its work.** (v2 twin still has the unscoped listener — v2 is frozen; migrate consumers instead of patching it.)
 - `2026-07-15` — **Notes folder-create parity.** Both Notes v3 surfaces now keep creation beside assignment: the editor menu exposes **New folder…**, and the sidebar note right-click Move submenu lists existing destinations plus **New folder…**. Both delegate to the shared Notes create-and-move flow; no bespoke context-menu folder UI was added.

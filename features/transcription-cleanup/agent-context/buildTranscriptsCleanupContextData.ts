@@ -13,7 +13,7 @@ import type { CleanupCustomSlot } from "@/features/transcript-studio/types";
  * Mirrors `features/notes/agent-context/`: a PURE builder maps the live pad
  * state → the manifest's `createTranscriptsCleanupScope` helper (so the value
  * names can never drift from the declared surface values), plus the canonical
- * menu props the panes spread onto `UnifiedAgentContextMenu`. `CleanupPad`
+ * menu props the panes spread onto the v3 `EditableContextMenu`. `CleanupPad`
  * reads its refs at trigger time and passes them in — keeping this file pure
  * means a demo and the live page would emit one identical shape.
  */
@@ -96,7 +96,7 @@ function slotLabel(
 /**
  * Canonical `contextData` for `matrx-user/transcripts-cleanup` — emits every
  * value declared in the manifest EXCEPT the selection family (`selection` /
- * `text_before` / `text_after`), which `UnifiedAgentContextMenu` captures from
+ * `text_before` / `text_after`), which the context menu captures from
  * the live DOM at trigger time. `content` defaults to the raw transcript;
  * `menuContextData` overlays it with the active pane's text per launch.
  */

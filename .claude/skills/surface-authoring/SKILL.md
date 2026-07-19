@@ -80,7 +80,7 @@ Each field has rules. Don't half-fill the manifest — binding UIs and the LLM b
 
 - Lower snake_case. The regex is `^[a-z][a-z0-9_]*$`.
 - Becomes the key the surface emits in `ApplicationScope`. **Match what the surface actually puts in the bag.**
-- Prefer reuse from `BASELINE_VALUES` (`selection`, `content`, `context`, `text_before`, `text_after`) — that's how legacy `UnifiedAgentContextMenu` and existing agent shortcuts keep working without remapping.
+- Prefer reuse from `BASELINE_VALUES` (`selection`, `content`, `context`, `text_before`, `text_after`) — that's how the v3 context menu and existing agent shortcuts keep working without remapping.
 
 ### `label`
 

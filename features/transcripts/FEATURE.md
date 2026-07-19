@@ -60,7 +60,7 @@ Every route under `app/(core)/transcripts/` stores through exactly **two record 
 **Agent context (`matrx-user/transcripts` surface)**
 - `agent-context/buildTranscriptsContextData.ts` — pure live-state → `createTranscriptsScope(...)` mapper (baselines + every sourceable custom value) plus `TRANSCRIPTS_CONTEXT_MENU_PROPS`. Demo + runtime share this one shape.
 - `agent-context/transcriptsExtraSections.ts` — surface-specific right-click items (Copy transcript), wired to real behavior.
-- `TranscriptViewer.tsx` mounts `UnifiedAgentContextMenu` on both the presentational rendered transcript (`isEditable={false}`) and the inline body editor (`isEditable`, `surfaceName` + `getApplicationScope` on its `ProTextarea`). Manifest: `features/surfaces/manifests/transcripts.manifest.ts`.
+- `TranscriptViewer.tsx` mounts the v3 menu on both the presentational rendered transcript (`NonEditableContextMenu`) and the inline body editor (`EditableContextMenu`, `surfaceName` + `getApplicationScope` on its `ProTextarea`). Manifest: `features/surfaces/manifests/transcripts.manifest.ts`.
 
 **Components** — `components/`: `TranscriptsListPage` (list island), `TranscriptsLayout` / `TranscriptsHeader` / `TranscriptsSidebar` (processor shell), `TranscriptViewer`, `CreateTranscriptModal` (upload / upload+transcribe), `ImportTranscriptModal`, `RecordingInterface` / `RecordingPreview` / `DraftIndicator`, `DeleteTranscriptDialog`.
 

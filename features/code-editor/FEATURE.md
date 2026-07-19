@@ -10,7 +10,7 @@
 >
 > | Surface | Editor code | Chat / agent integration |
 > |---|---|---|
-> | This feature (`features/code-editor/`) | embedded multi-file core in builder / notes / app pages | legacy `cx-conversation` chat where embedded; Shortcuts via `UnifiedAgentContextMenu` (Phase 5) |
+> | This feature (`features/code-editor/`) | embedded multi-file core in builder / notes / app pages | legacy `cx-conversation` chat where embedded; Shortcuts via the v3 context menu (Phase 5) |
 > | New workspace (`features/code/`) at `/code` | standalone Monaco + tabs + diagnostics + patches slices | new agents system via `AgentRunnerPage`; instance-context bridge (`editor.tab.*`, `editor.selection.*`); right-click currently uses Monaco-native actions only |
 
 ---

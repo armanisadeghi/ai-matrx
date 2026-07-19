@@ -62,7 +62,7 @@ this means agents see stale flags (e.g. `has_draft="false"` right after a draft 
 
 Follow `surface-pro-rollout` + `context-menu-v3` skills for the mechanics. CMS-specific notes:
 
-- Use **v3** (`EditableContextMenu`/`NonEditableContextMenu` from `features/context-menu-v3/`) — never the frozen v2 `UnifiedAgentContextMenu`.
+- Use **v3** (`EditableContextMenu`/`NonEditableContextMenu` from `features/context-menu-v3/`) — the only context menu (v2 was deleted 2026-07-19).
 - `getApplicationScope` is a plain function (no `useCallback`) that calls `buildApplicationScopeFromMenuContext` with a live `createXxxScope(...)` built from current component state + `useSiteContext()`.
 - `extraSections` handlers must be the route's **real** save/publish/discard/preview/rollback callbacks — never toast stubs.
 - Monaco-based editors (`HtmlPageEditor`'s HTML tab) have no `HTMLTextAreaElement` ref — pass `contextData.htmlContent` and skip `getTextarea`; Copy/AI actions still work through the content-based fallback.
@@ -92,7 +92,7 @@ do not hand-edit the DB row directly.
 
 - New Surface Values manifest outside `features/surfaces/manifests/` or a `createXxxScope` bypass (hand-built scope object).
 - Re-fetching the full page/component list inside a child route instead of reading `useSiteContext()`.
-- Frozen v2 context menu (`UnifiedAgentContextMenu`) on any CMS surface.
+- Any bespoke or non-v3 context menu on a CMS surface.
 - Stuffing "big picture" data (site name, sibling pages, policy) into a new narrow value when `site_structure`/`html_pages_structure` already carries it.
 - Skipping `refreshPages()`/`refreshComponents()` after a mutation — causes stale `site_structure`.
 - Auto-attaching `cms-authoring` to agents outside CMS system agents.

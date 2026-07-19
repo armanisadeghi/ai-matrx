@@ -17,7 +17,7 @@ description: >
   createManualInstance, createInstanceFromShortcut, launchAgentExecution,
   useShortcutTrigger, useShortcut, triggerShortcut, launchShortcut, useAgentLauncher,
   getSystemShortcut, SYSTEM_SHORTCUTS, ensureShortcutLoaded, applicationScope,
-  scopeMappings, UnifiedAgentContextMenu, AgentGenerator, displayMode, "trigger
+  scopeMappings, EditableContextMenu, NonEditableContextMenu, AgentGenerator, displayMode, "trigger
   shortcut", "fire shortcut", "engage shortcut", "run a shortcut", "use a shortcut".
 ---
 
@@ -214,7 +214,7 @@ Every new shortcut caller you build looks like one of two existing files. Open t
 
 | Your situation | Read this file |
 |---|---|
-| Right-click context menu, replaces text inline, output is text | `features/context-menu-v2/UnifiedAgentContextMenu.tsx` |
+| Right-click context menu, replaces text inline, output is text | `features/context-menu-v3/` (`EditableContextMenu` / `NonEditableContextMenu`) |
 | Mounted component, output is structured JSON / artifact / non-text | `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx` |
 
 This is not optional. Every recurring bug in this section — `jsonExtraction` not flowing, `autoRun: false` misused, `onConversationCreated` skipped, instance leaks on unmount, raw UUIDs at the call site — is a bug that disappears the moment you read the working example first. If you can't articulate why your call site needs to look different from the example, you're probably wrong.
@@ -253,7 +253,7 @@ All four dispatch `launchAgentExecution` under the hood and return `Promise<{ co
 | `useShortcutTrigger()` | React, generic | `const trigger = useShortcutTrigger(); await trigger(id, { scope, runtime?, sourceFeature?, jsonExtraction?, onConversationCreated? })` |
 | `useShortcut(id)` | React, bound to a single shortcut | `const run = useShortcut(id); await run({ scope })` |
 | `triggerShortcut(dispatch, args)` | Redux thunk / utility module / outside React | `await triggerShortcut(dispatch, { shortcutId, scope })` |
-| `useAgentLauncher().launchShortcut(id, scope, opts)` | Used today by `UnifiedAgentContextMenu` and the code-editor flows | `const { launchShortcut } = useAgentLauncher(); await launchShortcut(id, applicationScope, opts)` |
+| `useAgentLauncher().launchShortcut(id, scope, opts)` | Used today by the v3 context menu and the code-editor flows | `const { launchShortcut } = useAgentLauncher(); await launchShortcut(id, applicationScope, opts)` |
 
 > **TODO (Arman steer):** the codebase has both the dedicated trigger trio (`useShortcutTrigger` / `useShortcut` / `triggerShortcut`) and the broader `useAgentLauncher().launchShortcut`. All four hit `launchAgentExecution`. Consolidation hasn't shipped — for now both work. Insert the final steer here on which to prefer for new code.
 
@@ -370,17 +370,16 @@ This is migration debt. The config belongs on the shortcut row (a future `shortc
 
 ### Example A — non-direct (the easy case)
 
-Wrap a surface in `UnifiedAgentContextMenu`. The system handles selection capture, scope assembly, overlay rendering, streaming, and completion. The caller declares which surface this is and what scope data it has — that's it.
+Wrap a surface in `EditableContextMenu` (or `NonEditableContextMenu` for read-only regions). The system handles selection capture, scope assembly, overlay rendering, streaming, and completion. The caller declares which surface this is and what scope data it has — that's it.
 
 ```tsx
-<UnifiedAgentContextMenu
+<EditableContextMenu
   sourceFeature="notes"
   contextData={{ content: noteBody, context: noteTitle }}
   onTextReplace={(t) => setNoteBody(t)}
-  isEditable
 >
   <textarea value={noteBody} onChange={(e) => setNoteBody(e.target.value)} />
-</UnifiedAgentContextMenu>
+</EditableContextMenu>
 ```
 
 Every shortcut whose `enabledFeatures` includes the `notes` (or `general`) context appears in the right-click menu. Click → shortcut fires → result lands in whatever overlay the shortcut's `displayMode` says. The caller never subscribes to anything.
@@ -482,7 +481,7 @@ Three things make the direct-mode pattern work:
 - `features/agents/TRIGGER-SHORTCUTS.md` — quick reference, mostly aligned with this section
 - `features/agent-shortcuts/FEATURE.md` — data model, scope-mapping contract, display modes, configuration axes
 - `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx` — direct-mode reference implementation (read this before building a new direct caller)
-- `features/context-menu-v2/UnifiedAgentContextMenu.tsx` — non-direct context-menu mount pattern
+- `features/context-menu-v3/` (`EditableContextMenu` / `NonEditableContextMenu`) — non-direct context-menu mount pattern
 - `features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` — the orchestrator all four trigger APIs dispatch through
 
 ---

@@ -2,8 +2,8 @@
  * Surface manifest — Assistant/user message thread (`matrx-user/assistant-message`).
  *
  * The READ side of chat: the rendered, read-only conversation thread the user
- * right-clicks on (`AgentConversationDisplay` on `/chat`, and any surface using
- * `MarkdownContextMenuProvider`). Distinct from `matrx-user/chat` — that is the
+ * right-clicks on (`AgentConversationDisplay` on `/chat`, wrapping the thread
+ * in the v3 `NonEditableContextMenu`). Distinct from `matrx-user/chat` — that is the
  * composer/runtime surface (input draft, streaming state, all_messages); this is
  * the rendered output, where the meaningful act is right-clicking a specific
  * message or content block.

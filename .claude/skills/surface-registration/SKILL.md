@@ -45,7 +45,7 @@ The manifest is code; the DB mirror is what binding UIs and launch resolution re
 
 ## Layer 5 — Runtime emitter (`buildScope`)
 
-- The page assembles its scope with the manifest's `createXScope(...)` at **trigger time** (read live refs, not stale state) and launches with `runtime.surfaceName` set — via `UnifiedAgentContextMenu` `surfaceName=` + `getApplicationScope`, `useAgentLauncher().launchAgent`, or `useAiPostProcess`. Cleanup's emitter: `CleanupPad.tsx` `buildScope()`.
+- The page assembles its scope with the manifest's `createXScope(...)` at **trigger time** (read live refs, not stale state) and launches with `runtime.surfaceName` set — via the v3 context menu (`EditableContextMenu` / `NonEditableContextMenu`) `surfaceName=` + `getApplicationScope`, `useAgentLauncher().launchAgent`, or `useAiPostProcess`. Cleanup's emitter: `CleanupPad.tsx` `buildScope()`.
 - Mount `<SurfaceRuntimeProvider>` (`runtime/SurfaceRuntimeContext.tsx`) so the header Agents chrome gets live Run scope.
 - Baseline `selection`/`text_before`/`text_after` are captured by the menu itself — don't duplicate.
 

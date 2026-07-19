@@ -10,21 +10,20 @@ runtime scope data.
 
 ## Where the context menu is live today
 
-Mount points for `UnifiedAgentContextMenu`:
+The universal v3 menu (`EditableContextMenu` / `NonEditableContextMenu` from
+`features/context-menu-v3/`) is on every production content surface — notes,
+code, agent builder, chat, transcripts, research, rag, tasks, projects,
+scraper, files, cleanup. Test/debug pages:
 
-| Surface | File |
+| Page | Route |
 |---|---|
-| Notes editor | `features/notes/components/NoteEditor.tsx` (4 menus — title, body, block, side rail) |
-| Monaco code editor | `features/code-editor/components/CodeEditorContextMenu.tsx` |
-| Agent builder — system instructions | `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx` |
-| Agent builder — message item | `features/agents/components/builder/message-builders/MessageItem.tsx` |
-| **Demo / hub** | `app/(dev)/demos/context-menu/page.tsx` → route `/ssr/context-menu` |
-| **Demo / diagnostic lab** | `app/(dev)/demos/context-menu/lab/page.tsx` → route `/ssr/context-menu/lab` |
-| **Demo / scenario matrix** | `app/(dev)/demos/context-menu/scenarios/page.tsx` → route `/ssr/context-menu/scenarios` |
+| **Demo / canonical proving ground** | `/demos/context-menu/canonical` |
+| **Demo / diagnostic lab** | `/demos/context-menu/lab` |
+| **Demo / scenario matrix** | `/demos/context-menu/scenarios` |
 | **Demo / page registry (edit to add new test pages)** | `app/(dev)/demos/context-menu/_registry.ts` |
 
-Right-click anywhere inside the bordered panels on the demo page and the menu
-should render. The debug page prints the live shortcut / category / content-block
+Right-click anywhere inside the bordered panels on the demo pages and the menu
+should render. The lab prints the live shortcut / category / content-block
 state straight out of Redux — useful when a shortcut is missing from the menu.
 
 ## From a React component — `useShortcutTrigger()`

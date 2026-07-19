@@ -34,7 +34,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 **State** — feature-local **Zustand** store (`state/topicStore.ts` via `context/ResearchContext.tsx`), server-hydrated; not the global Redux store. Pipeline run state is the `usePipelineProgress` reducer, not persisted.
 
-**Surface agent context** (`matrx-user/research`, manifest `features/surfaces/manifests/research.manifest.ts`) — `agent-context/buildResearchContextData.ts` is the ONE pure state→scope mapper (`createResearchScope`); `RESEARCH_CONTEXT_MENU_PROPS` + optional `createResearchExtraSections(handlers)` live there too. Editable mount: the AI-mode Subject query (`ResearchInitForm`, `ProTextarea` + `UnifiedAgentContextMenu`). Read-only mounts: the assembled document (`DocumentViewer` `<article>`) and each synthesis body (`SynthesisList` `SynthesisCard`).
+**Surface agent context** (`matrx-user/research`, manifest `features/surfaces/manifests/research.manifest.ts`) — `agent-context/buildResearchContextData.ts` is the ONE pure state→scope mapper (`createResearchScope`); `RESEARCH_CONTEXT_MENU_PROPS` + optional `createResearchExtraSections(handlers)` live there too. Editable mount: the AI-mode Subject query (`ResearchInitForm`, `ProTextarea` + `EditableContextMenu`). Read-only mounts (`NonEditableContextMenu`): the assembled document (`DocumentViewer` `<article>`) and each synthesis body (`SynthesisList` `SynthesisCard`).
 
 ---
 
@@ -89,7 +89,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Doctrine compliance
 
-**Primitives reused** — `MarkdownStream` (rich-document engine); `ContentActionBar`; `components/ui` (Badge, Skeleton, DropdownMenu, Progress); `hierarchy-filter`; `sonner` toast; `useServiceQuery` pattern; the Surface Values system (`UnifiedAgentContextMenu` + `buildApplicationScopeFromMenuContext` + `createResearchScope`), `ProTextarea`/`ProInput`.
+**Primitives reused** — `MarkdownStream` (rich-document engine); `ContentActionBar`; `components/ui` (Badge, Skeleton, DropdownMenu, Progress); `hierarchy-filter`; `sonner` toast; `useServiceQuery` pattern; the Surface Values system (the v3 context menu + `buildApplicationScopeFromMenuContext` + `createResearchScope`), `ProTextarea`/`ProInput`.
 
 **Primitives introduced**
 - `LivePipelineActivity` + `StageStatSquare` + `stageMeta` (`components/overview/live-pipeline/`) — compact finished-stage stat tile + shared per-stage display data. No existing primitive renders a stage outcome as a docking rail square; `stageMeta` canonicalizes icon/label/route/duration/square-data (replaced `CompletedStageStrip`'s private copies).

@@ -35,7 +35,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 - `components/` (incl. `TaskEditor.tsx`, `TasksDesktopShell.tsx`, `TaskAssociatedResources.tsx` (new)), `hooks/`, `services/taskService.ts`, `utils/`, `types/`
 - `redux/` — `taskUiSlice`, `selectors`, `thunks`, `taskAssociationsSlice` (M2M engine: `associateWithTask`/`dissociateFromTask` — UI panel pending)
 - `widgets/` — task widgets
-- `agent-context/buildTasksContextData.ts` — surface wiring for `matrx-user/tasks` (manifest `features/surfaces/manifests/tasks.manifest.ts`). Pure `buildTasksContextData(...)` maps the active task → `createTasksScope(...)`; `TASKS_CONTEXT_MENU_PROPS`; `createTasksExtraSections(...)`. Consumed by `TaskEditor.tsx` (`UnifiedAgentContextMenu` on the description editor + the read-only comment thread; `ProTextarea` description carries `surfaceName` + `getApplicationScope`).
+- `agent-context/buildTasksContextData.ts` — surface wiring for `matrx-user/tasks` (manifest `features/surfaces/manifests/tasks.manifest.ts`). Pure `buildTasksContextData(...)` maps the active task → `createTasksScope(...)`; `TASKS_CONTEXT_MENU_PROPS`; `createTasksExtraSections(...)`. Consumed by `TaskEditor.tsx` (v3 `EditableContextMenu` on the description editor, `NonEditableContextMenu` on the read-only comment thread; `ProTextarea` description carries `surfaceName` + `getApplicationScope`).
 
 **The container primitive (shared, in `features/organizations/`)**
 
