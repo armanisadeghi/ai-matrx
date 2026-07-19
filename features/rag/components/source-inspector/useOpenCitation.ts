@@ -2,7 +2,7 @@
 
 /**
  * useOpenCitation — the ONE way to open a retrieved/cited source in its best
- * in-app surface. Every RAG/citation surface (the rag_search tool cards, the
+ * in-app surface. Every RAG/citation surface (the knowledge_search tool cards, the
  * /rag/search page, the KG inspectors, chat citations) routes through here so
  * they all behave identically: a click opens a non-blocking WINDOW, never a
  * forced full-page navigation.

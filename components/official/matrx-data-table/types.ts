@@ -79,6 +79,36 @@ export interface SortState {
 }
 
 /**
+ * Complete view state for a remotely queried table page. The table owns none
+ * of this state in controlled mode: callers may mirror it to URL search params
+ * and use it as part of a direct database-query cache key.
+ */
+export interface MatrxDataTableQueryState {
+  /** One-based page number, matching the table's pagination UI. */
+  page: number;
+  pageSize: number;
+  search: string;
+  anyOf: string;
+  columnFilters: ColumnFiltersState;
+  sort: SortState | null;
+}
+
+/**
+ * Optional data-processing contract. Omit it (or use `local`) to preserve the
+ * original in-memory filter/sort/pagination behavior. In controlled mode,
+ * `data` is already the current page and the caller performs all querying.
+ */
+export type MatrxDataTableQueryControl =
+  | { mode: "local" }
+  | {
+      mode: "controlled";
+      state: MatrxDataTableQueryState;
+      /** Total rows matching the controlled query, not just `data.length`. */
+      totalItems: number;
+      onStateChange: (next: MatrxDataTableQueryState) => void;
+    };
+
+/**
  * Toolbar facets — first-class, Mars-extensible filter controls above the grid.
  * Start with button-group; add radio / switch / complex later without forking.
  */
@@ -227,6 +257,16 @@ export interface MatrxDataTableProps<T> {
   columns: MatrxColumnDef<T>[];
   getRowId: (row: T) => string;
   isLoading?: boolean;
+  /**
+   * Background refresh state. Unlike `isLoading`, this preserves rendered rows
+   * and shows only the table's non-blocking refresh indicator.
+   */
+  isFetching?: boolean;
+  /**
+   * Controlled query state for direct remote data sources. The component never
+   * fetches data itself; it only emits state changes to the caller.
+   */
+  query?: MatrxDataTableQueryControl;
 
   toolbar?: MatrxDataTableToolbar;
   /** Row click opens the side panel (MatrxDynamicPanelHost via SidePanelSurface). */

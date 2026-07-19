@@ -1,87 +1,74 @@
 # Secrets
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Created:** 2026-05-28
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-07-19
 
-User-facing vault for env-vars, API keys, GitHub PATs, OAuth tokens, and anything else the user wants the system to remember once and reuse forever. Set in three ways, stored in one place, available everywhere.
+User and organization vaults for env vars, API keys, OAuth material, service-account JSON, and other reusable secret strings. Values are write-only in browser APIs: members see masked metadata and can use permitted values in server-side executions and sandboxes, but cannot reveal plaintext.
 
-## Why this is its own feature (not a sub-folder)
+## Stores and trust boundaries
 
-Cross-cutting concern: writes come from three independent surfaces (UI form, .env upload, agent chat tool); reads come from at least two independent paths (sandbox env auto-injection, future MCP credential resolution); persistence is its own table with its own encryption boundary. A "secrets" sub-folder of `settings/` would only satisfy the writer side and would force two other systems to import settings UI code, which they shouldn't. Top-level feature folder is the doctrine-compliant home for a multi-consumer, multi-writer module.
+| Scope | Metadata/value storage | Who can manage | Default use access |
+|---|---|---|---|
+| User | `users.user_secrets`; Fernet-encrypted `value_encrypted`; own-user RLS | The owner | The owner |
+| Organization | `private_vault.organization_secrets`; value in Supabase Vault, metadata/lineage in the private schema | Org owner/admin | Every active org member |
 
-## Architecture
+The browser has no privileges on `private_vault` and never calls its functions directly. Authenticated FastAPI routes call service-role-only, security-definer functions. Organization listings return only masked hints, versions, permissions, lineage state, and audit metadata.
 
-```
-                                        ┌──────────────────────────────────┐
-                                        │     public.user_secrets          │
-                                        │  Fernet-encrypted BYTEA at rest  │
-                                        │  RLS per user_id                 │
-                                        │  unique(user_id, key) where      │
-                                        │   deleted_at IS NULL             │
-                                        └─────────▲────────────────────────┘
-                                                  │
-                       ┌──────────────────────────┼──────────────────────────┐
-                       │                          │                          │
-        POST /api/user-secrets/   POST /api/user-secrets/bulk-env   user_secret_set tool
-        (UI: paste key/val)       (UI: .env upload)                  (agent chat path)
-                       ▲                          ▲                          ▲
-                       │                          │                          │
-                       └──── this feature ────────┘                          │
-                            (features/secrets/)                              │
-                                                                             │
-                                                            matrx-ai @tool registry
-                                                            handler defers aidream import
+Organization access modes are:
 
-        Auto-injection on sandbox create:
-        Browser → /api/sandbox (Next.js route)
-               → server-side fetch /api/user-secrets/sandbox-env (JWT-auth)
-               → merge into config.env
-               → POST orchestrator /sandboxes
-               → orchestrator merges into Docker environment=…
-               → docker run -e KEY=value
-               → bash inherits → user's agent sees env vars from boot
-```
+- `all_members` — the default. Active members can use the value through a server-side resolver; admins can manage it.
+- `restricted` — only explicitly granted active members can use it. Org admins retain emergency use/manage access.
 
-## Files
+## Organization copy and sync model
+
+A member can contribute one active item from their user vault. Contribution creates a new encrypted organization value; it is not a live reference. The org row records the source user-secret id and source `value_version` only for drift detection.
+
+- Editing the personal value increments its version and makes the org copy `out_of_sync`.
+- Sync is explicit and replaces the org copy with the source's current value.
+- Direct admin rotation intentionally severs lineage and returns the item to `not_linked`.
+- Deleting or deactivating the source reports `source_deleted`; it does not delete the org copy.
+
+## Resolution order
+
+`aidream.services.organization_secrets.resolve_effective_secrets()` resolves usable organization values first, then overlays active personal values by key. An explicit request `AppContext.api_keys` value overlays both. Sandbox resolution also honors each row's `inject_into_sandbox` flag.
+
+This resolver hydrates normal AI execution contexts and sandbox environments. Organization sandbox values travel only through the orchestrator's service-token call with the active `organization_id`; the user-JWT sandbox endpoint stays personal-only and cannot be used as a reveal API. Google Search Console has a dedicated adapter with precedence: site/user integration credential → effective vault → process environment. Vault keys can use the existing GSC env conventions (`FIREBASE_SERVICE_ACCOUNT` or `GOOGLE_SERVICE_ACCOUNT` JSON, or the GSC/Google OAuth client keys plus `GSC_REFRESH_TOKEN`).
+
+## Files and entry points
 
 | File | Role |
 |---|---|
-| [`types.ts`](./types.ts) | Wire shapes mirroring aidream's Pydantic models. `VALID_KEY_RE` mirrors the DB CHECK constraint. |
-| [`service.ts`](./service.ts) | Thin client over aidream `/api/user-secrets/*`. Browser → Python direct (no Next.js hop). |
-| [`hooks.ts`](./hooks.ts) | `useSecrets`, `useCreateSecret`, `useUpdateSecret`, `useDeleteSecret`, `useBulkImportEnv`. Toast-on-success/failure. |
-| [`../../app/(transitional)/settings/secrets/page.tsx`](../../app/(transitional)/settings/secrets/page.tsx) | The settings page itself. Three cards: add one / bulk import .env / list with rotate-delete. |
+| [`types.ts`](./types.ts) | User types plus organization aliases from generated aidream OpenAPI contracts. |
+| [`service.ts`](./service.ts), [`hooks.ts`](./hooks.ts) | Personal-vault browser service/hooks. |
+| [`organization-service.ts`](./organization-service.ts), [`organization-hooks.ts`](./organization-hooks.ts) | Organization API client and state mutations. |
+| [`components/OrganizationVaultSection.tsx`](./components/OrganizationVaultSection.tsx) | Org Manage UI: add, contribute, rotate, sync, restrict, sandbox toggle, and delete. |
+| [`../../app/(transitional)/settings/secrets/page.tsx`](../../app/(transitional)/settings/secrets/page.tsx) | Personal vault settings. |
+| [`../organizations/components/OrgManage.tsx`](../organizations/components/OrgManage.tsx) | Organization vault host. |
 
-## Entry points
+Public REST entry points:
 
-- **UI route:** `/settings/secrets` (nav entry in `app/(transitional)/settings/SettingsLayoutClient.tsx`, KeyRound icon)
-- **Aidream REST:** `/api/user-secrets/{list, create, patch, delete, bulk-env, sandbox-env}` — see `aidream/api/routers/user_secrets.py`
-- **Sandbox-create hook:** `app/api/sandbox/route.ts` fetches `/sandbox-env` server-side before forwarding to the orchestrator
-- **Agent tool:** `user_secret_set` registered in `tool_def` + `tool_binding` (executor=aidream)
+- `/api/user-secrets/*` — personal CRUD, bulk `.env`, and sandbox resolution.
+- `/api/organization-secrets/{organization_id}/*` — safe metadata listing plus admin/member mutations. There is deliberately no plaintext/reveal endpoint.
+
+Database migrations:
+
+- `20260719022445_organization_secret_vault.sql`
+- `20260719023850_organization_secret_vault_explicit_deny.sql`
+- `20260719023929_organization_secret_vault_fk_indexes.sql`
+- `20260719025249_organization_secret_vault_policy_roles.sql`
+- `20260719025339_organization_secret_vault_service_role_policies.sql`
+- `20260719025959_organization_secret_delete_grant_cleanup.sql`
 
 ## Invariants
 
-1. **Plaintext values never reach the browser.** The listing endpoint returns `value_hint` (first4…last4 masked) and never the raw value. The only path that sees plaintext on the wire is the server-to-server `/sandbox-env` call from the Next.js sandbox route to aidream (authenticated with the user's Supabase JWT).
-2. **One canonical store, one encryption primitive.** All secrets live in `public.user_secrets`. All encryption goes through `aidream/services/scraper/credentials._get_fernet()` (the existing key). Adding a second store or second crypto is forbidden.
-3. **Vault wins on config.env merge.** When a sandbox-create caller supplies `config.env` AND the user has vault entries, the vault values overwrite the caller's. This makes "set once, never lose it" structural.
-4. **Soft-delete preserves the row but releases the key.** A deleted secret can be re-created with the same `key` (partial unique index excludes `deleted_at IS NOT NULL` rows). Useful for "rotate and re-create" without losing audit.
-5. **Decrypt failures are skipped, not raised, during sandbox env build.** If `CREDENTIALS_ENCRYPTION_KEY` rotates without re-encrypting rows, those rows are logged and excluded from sandbox env. The user's sandbox creation never blocks on a broken row.
-
-## Adding a new input path
-
-If you build a new way for a secret to land in `user_secrets` (e.g. a CSV importer, a CLI tool, a Chrome extension), call aidream's `create_user_secret(user_id, key, value, ...)` service function — don't INSERT directly. The service is the choke point for key-shape validation, Fernet encryption, hint masking, and audit timestamps.
-
-## Adding a new consumer
-
-If you need the user's secrets in a new context (e.g. an MCP tool that needs the user's GitHub PAT, a background scheduler that runs on the user's behalf), call `aidream.services.user_secrets.get_user_secret(user_id, key, touch_last_used=True)` — that bumps `last_used_at` for the audit trail. Don't add a parallel "give me the env" endpoint; extend `build_user_sandbox_env` if you need a different filter.
-
-## Doctrine compliance
-
-- ✅ Reuses existing Fernet primitive — no second encryption stack
-- ✅ Single Redux/state path — no parallel slice
-- ✅ Browser → Python direct for CRUD (no Next.js middle tier added; the one exception in `app/api/sandbox/route.ts` is a pre-existing route doing pre-existing brokerage, see comment block in that file)
-- ✅ Lucide icons only (KeyRound, Plus, Upload, Eye, EyeOff, Pencil, Trash2, Loader2, AlertCircle)
-- ✅ Component library used throughout (Card / Input / Switch / Select / Badge / Button / Textarea)
-- ✅ Toast (sonner) used for feedback, not window.alert
+1. Plaintext never appears in list responses, logs, audit rows, grant rows, or client state.
+2. Browser roles have no `private_vault` schema/table/function privileges or RLS policies; the only table policies target `service_role`.
+3. Organization values are resolved only after current membership and access-mode checks.
+4. `all_members` is the creation default so rollout does not silently break team workflows.
+5. A personal value with the same key overrides the organization value for that user; an explicit request value overrides both.
+6. Contributions are independent copies. Only an explicit sync changes the org copy from its source.
+7. New consumers call the effective server-side resolver; they do not add reveal APIs or query Vault directly.
 
 ## Change Log
 
-- **2026-05-28** — Initial implementation. DB table + Fernet service + 6 REST endpoints + auto-inject hook + agent tool + UI page. Three blockers caught by parallel verification sub-agents (EXCLUDE→UNIQUE migration, warm-pool config.env drop, response_model on /sandbox-env) and fixed before deploy.
+- **2026-07-19** — Added the organization vault, all-member/restricted use permissions, private Supabase Vault storage, member contributions with version-based drift/manual sync, Org Manage UI, AI/sandbox resolution, generated API/DB contracts, audit metadata, GSC vault fallback, and grant cleanup on soft delete.
+- **2026-05-28** — Initial personal vault implementation: user DB table, Fernet service, REST endpoints, sandbox injection, agent tool, and settings UI.

@@ -11,6 +11,8 @@ import type {
   SandboxActionRequest,
   SandboxAccessResponse,
 } from "@/types/sandbox";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 /**
  * Shared error extractor for sandbox API responses. Surfaces the underlying
@@ -44,6 +46,7 @@ async function extractSandboxError(
 }
 
 export function useSandboxInstances(projectId?: string) {
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const [instances, setInstances] = useState<SandboxInstance[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -125,6 +128,7 @@ export function useSandboxInstances(projectId?: string) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            organization_id: req.organization_id || organizationId,
             project_id: req.project_id || projectId,
             config: req.config,
             ttl_seconds: req.ttl_seconds,
@@ -177,7 +181,7 @@ export function useSandboxInstances(projectId?: string) {
         return { instance: null, error: msg };
       }
     },
-    [projectId],
+    [organizationId, projectId],
   );
 
   const stopInstance = useCallback(async (id: string) => {

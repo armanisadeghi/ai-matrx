@@ -128,7 +128,7 @@ Small family, not one tool (and a one-line capability preamble so it "stands out
 
 - `knowledge_search(query, filters?)` — semantic + lexical + structural within the searchable universe; returns §5a hits **and** the §5b map.
 - `knowledge_get(artifact_id)` / `knowledge_fetch_region(artifact_id, page|region)` — full content / open original.
-- `knowledge_navigate(entity|topic|scope)` — entity → linked artifacts, topic-cluster → artifacts (the §5b map, expanded).
+- `knowledge_browse(action="entity")` — entity → linked artifacts, topic-cluster → artifacts (the §5b map, expanded). **Shipped**; absorbed the standalone `knowledge_navigate` in the 2026-07-18 knowledge-family consolidation.
 
 Self-filtering is mostly just search params (`filters`); a persistent "narrow my working set for this task" is optional, not required.
 

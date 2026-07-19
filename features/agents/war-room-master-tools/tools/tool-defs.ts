@@ -83,7 +83,7 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
       "manifest (use it when the roster shows a <more/> row or you need " +
       "another thread's resources). Prefer the dedicated server tools from " +
       "the <access> legend when one is named (data / data_action / document / " +
-      "file_read / rag_search); use this for everything else. Read-only — runs " +
+      "file_read / knowledge_search); use this for everything else. Read-only — runs " +
       "immediately, changes nothing.",
     input_schema: {
       type: "object",

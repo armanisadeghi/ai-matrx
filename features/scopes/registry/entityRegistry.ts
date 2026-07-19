@@ -257,7 +257,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     contentRole: "hybrid",
     hrefFor: (id) => `/workbooks/${id}`,
   },
-  // RAG knowledge store — the scope-gate for rag_search retrieval. `rag.*` is
+  // RAG knowledge store — the scope-gate for knowledge_search retrieval. `rag.*` is
   // NOT PostgREST-exposed, so deliberately NO titleColumn (a generic candidate
   // read would fail); stores list through the Python API via the registered
   // candidate source. Edges MUST stamp `label` = store name at attach time —

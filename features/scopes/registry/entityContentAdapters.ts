@@ -8,7 +8,7 @@
 // Two parts per token:
 //   • `accessHint` — the one-line instruction rendered into the agent's
 //     context legend. SERVER tools are preferred (no client suspend):
-//     `data` / `data_action` / `document` / `workbook` / `rag_search`.
+//     `data` / `data_action` / `document` / `workbook` / `knowledge_search`.
 //   • `read?` — a client-delegated reader for tokens the server registry
 //     does NOT cover (conversation history, working documents, datasets…).
 //     RLS-scoped supabase reads; used by the generic `war_room_read_resource`
@@ -131,12 +131,12 @@ export async function readEntityRowGeneric(
 register({
   token: "data_store",
   accessHint:
-    "SEARCH it with rag_search(query, data_store_id=<id>) — the store scopes retrieval",
+    "SEARCH it with knowledge_search(query, data_store_id=<id>) — the store scopes retrieval",
 });
 register({
   token: "file",
   accessHint:
-    'file_read(file_id=<id>) to read its extracted text (mode/page_start/page_end/max_chars to scope it); rag_search(source_ids=[<id>]) to search (rag="indexed" only)',
+    'file_read(file_id=<id>) to read its extracted text (mode/page_start/page_end/max_chars to scope it); knowledge_search(source_ids=[<id>]) to search (rag="indexed" only)',
 });
 register({
   token: "note",

@@ -67,7 +67,7 @@ Keep it honest — do not let the page imply capabilities that do not exist.
 | Trigger **NER manually** | Live | "Run NER now" in the note toolbar (`features/notes/components/NoteToolbar.tsx` → `ProcessForRagButton sourceKind="note"`); the note's "In knowledge base" indicator reads `processed_documents` directly (`features/notes/hooks/useNoteIngestStatus.ts`). The standing backend batch (`features/kg-suggestions/`, `features/kg-graph/`) still runs too |
 | Knowledge graph visualization | Live | `features/kg-graph/` → `/knowledge-graph`, `/scopes/[scopeId]/graph`; admin `features/administration/kg-inspector/` |
 | Manual RAG search | Live | `features/rag/components/search/RagSearchExperience.tsx` → `/rag/search` |
-| Agent uses RAG → cited answer | Live | Search Lab agent chat + `rag_search` tool renderer (`features/tool-call-visualization/renderers/rag-search/`), `citationHrefFor()` |
+| Agent uses RAG → cited answer | Live | Search Lab agent chat + `knowledge_search` tool renderer (`features/tool-call-visualization/renderers/knowledge-search/`), `citationHrefFor()` |
 
 **Real gaps to build:** (a) CSV/tabular as a knowledge/RAG ingest source; (b) a
 user-facing automation/trigger *builder* UI (the standing auto-RAG-on-upload

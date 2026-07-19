@@ -1,16 +1,15 @@
 "use client";
 
 /**
- * RAG-family tool renderer gallery — the three renderers added 2026-07-17
- * (`rag_list_sources`, `rag_get_chunk`, `document_content`) rendered with
- * REAL payload shapes sampled from `chat.tool_call`, in every representation.
+ * Knowledge-family tool renderer gallery — `knowledge_browse` (actions
+ * `sources` / `chunk`) and `document_content` rendered with REAL payload shapes
+ * sampled from `chat.tool_call`, in every action.
  *
  * Route: /demos/tool-viz/rag-tools   (dev profile only)
  */
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { RagListSourcesInline } from "@/features/tool-call-visualization/renderers/rag-list-sources/RagListSourcesInline";
-import { RagChunkInline } from "@/features/tool-call-visualization/renderers/rag-get-chunk/RagChunkInline";
+import { KnowledgeBrowseInline } from "@/features/tool-call-visualization/renderers/knowledge-browse/KnowledgeBrowseInline";
 import { DocumentContentInline } from "@/features/tool-call-visualization/renderers/document-content/DocumentContentInline";
 
 function entry(
@@ -38,8 +37,8 @@ function entry(
 }
 
 const listSourcesEntry = entry(
-  "rag_list_sources",
-  { limit: 15 },
+  "knowledge_browse",
+  { action: "sources", limit: 15 },
   {
     sources: [
       {
@@ -102,8 +101,12 @@ const listSourcesEntry = entry(
 );
 
 const getChunkEntry = entry(
-  "rag_get_chunk",
-  { chunk_id: "0a1b2c3d-1111-2222-3333-444455556666", include_parent: true },
+  "knowledge_browse",
+  {
+    action: "chunk",
+    chunk_id: "0a1b2c3d-1111-2222-3333-444455556666",
+    include_parent: true,
+  },
   {
     chunk_id: "0a1b2c3d-1111-2222-3333-444455556666",
     parent_chunk_id: "9f8e7d6c-aaaa-bbbb-cccc-ddddeeeeffff",
@@ -133,7 +136,7 @@ const getChunkEntry = entry(
 
 const docPagesEntry = entry(
   "document_content",
-  { document_id: "f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2", representation: "pages" },
+  { document_id: "f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2", action: "page_index" },
   {
     document_id: "f3cf55a1-19b1-4d2e-a95c-fb7c449f9eb2",
     name: "AMAGuides5thv2.pdf",
@@ -177,7 +180,7 @@ const docPagesEntry = entry(
         clean_chars: 4402,
       },
     ],
-    other_representations: ["clean", "raw", "knowledge_assets", "pdf"],
+    other_actions: ["read (format='clean')", "read (format='raw')", "assets", "images"],
   },
 );
 
@@ -186,7 +189,8 @@ const docCleanEntry = entry(
   {
     page: 26,
     document_id: "b2b8d995-784f-4d92-b014-dd4a5b9c1c3c",
-    representation: "clean",
+    action: "read",
+    format: "clean",
   },
   {
     document_id: "b2b8d995-784f-4d92-b014-dd4a5b9c1c3c",
@@ -198,7 +202,7 @@ const docCleanEntry = entry(
     total_chars: 1448,
     has_more: false,
     next_offset: null,
-    other_representations: ["raw", "pages", "knowledge_assets", "pdf"],
+    other_actions: ["read (format='raw')", "page_index", "assets", "images"],
   },
 );
 
@@ -207,7 +211,7 @@ const docPdfEntry = entry(
   {
     page_range: "26-28",
     document_id: "b2b8d995-784f-4d92-b014-dd4a5b9c1c3c",
-    representation: "pdf",
+    action: "images",
   },
   {
     kind: "document_ref",
@@ -225,12 +229,12 @@ const docPdfEntry = entry(
       { output_page: 3, source_page: 28 },
     ],
     pages_capped: false,
-    other_representations: ["clean", "raw", "pages", "knowledge_assets"],
+    other_actions: ["read (format='clean')", "read (format='raw')", "page_index", "assets"],
   },
 );
 
 const errorEntry: ToolLifecycleEntry = {
-  ...entry("rag_get_chunk", { chunk_id: "missing" }, null),
+  ...entry("knowledge_browse", { action: "chunk", chunk_id: "missing" }, null),
   status: "error",
   errorType: "NotFound",
   errorMessage: "chunk missing not found",
@@ -261,36 +265,36 @@ export default function RagToolsDemoPage() {
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8">
       <div>
         <h1 className="text-lg font-semibold text-foreground">
-          RAG-family tool renderers
+          Knowledge-family tool renderers
         </h1>
         <p className="text-sm text-muted-foreground">
-          rag_list_sources · rag_get_chunk · document_content — real payload
+          knowledge_browse (sources · chunk) · document_content — real payload
           shapes, persisted-completed state.
         </p>
       </div>
 
-      <Section title="rag_list_sources">
-        <RagListSourcesInline entry={listSourcesEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
+      <Section title='knowledge_browse action="sources"'>
+        <KnowledgeBrowseInline entry={listSourcesEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
-      <Section title="rag_get_chunk (with parent context)">
-        <RagChunkInline entry={getChunkEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
+      <Section title='knowledge_browse action="chunk" (with parent context)'>
+        <KnowledgeBrowseInline entry={getChunkEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
-      <Section title="document_content — pages index">
+      <Section title='document_content action="page_index"'>
         <DocumentContentInline entry={docPagesEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
-      <Section title="document_content — clean text">
+      <Section title='document_content action="read" format="clean"'>
         <DocumentContentInline entry={docCleanEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
-      <Section title="document_content — pdf extract">
+      <Section title='document_content action="images"'>
         <DocumentContentInline entry={docPdfEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
 
       <Section title="error state">
-        <RagChunkInline entry={errorEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
+        <KnowledgeBrowseInline entry={errorEntry} onOpenOverlay={openOverlay} onOpenWindowPanel={openWindowPanel} isPersisted />
       </Section>
     </div>
   );

@@ -137,7 +137,7 @@ export function DataStoreBindPanel({
       ) : stores.length === 0 ? (
         <div className="px-3 py-3 border border-dashed border-border rounded-md bg-muted/20 text-[11px] text-muted-foreground leading-snug">
           No data stores yet. Create one to bind this document — agent retrieval
-          (<code>rag_search</code>) requires an explicit store id.
+          (<code>knowledge_search</code>) requires an explicit store id.
         </div>
       ) : (
         <div className="space-y-1">

@@ -184,12 +184,12 @@ export async function* ragDiagnoseStream(
 }
 
 // ---------------------------------------------------------------------------
-// /tool/search — run the agent's ACTUAL rag_search tool (literal output)
+// /tool/search — run the agent's ACTUAL knowledge_search tool (literal output)
 //
-// Reproduces, byte for byte, what the registered `rag_search` tool hands the
+// Reproduces, byte for byte, what the registered `knowledge_search` tool hands the
 // model: same search() call, same output mappers (imported server-side from
 // the package tool so they can't drift). Accepts the full agent arg surface
-// and N queries. The UI then "plays out" rag_get_chunk on any hit.
+// and N queries. The UI then "plays out" knowledge_browse(action="chunk") on any hit.
 // ---------------------------------------------------------------------------
 
 // Request body DERIVED from the generated OpenAPI contract, never hand-mirrored
@@ -224,7 +224,7 @@ export async function ragAgentToolSearch(
 }
 
 // ---------------------------------------------------------------------------
-// /tool/get-chunk — "play out" the agent's next move (rag_get_chunk)
+// /tool/get-chunk — "play out" the agent's next move (knowledge_browse action="chunk")
 // ---------------------------------------------------------------------------
 
 // Request body DERIVED from the generated OpenAPI contract, never hand-mirrored.

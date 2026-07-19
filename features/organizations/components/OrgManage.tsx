@@ -29,6 +29,7 @@ import {
   SlidersHorizontal,
   BookA,
   User as UserIcon,
+  KeyRound,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ import { OrgPrivacyTab } from "./OrgPrivacyTab";
 import { OrgScopeTree } from "./OrgScopeTree";
 import { OrgModuleSettings } from "./OrgModuleSettings";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
+import { OrganizationVaultSection } from "@/features/secrets/components/OrganizationVaultSection";
 
 interface OrgManageProps {
   organization: Organization;
@@ -70,10 +72,6 @@ export function OrgManage({
 }: OrgManageProps) {
   const [displayOrganization, setDisplayOrganization] =
     React.useState<Organization>(organization);
-
-  React.useEffect(() => {
-    setDisplayOrganization(organization);
-  }, [organization]);
 
   const canManageSettings = isOwner || isAdmin;
   const canManageMembers = isOwner || isAdmin;
@@ -109,6 +107,12 @@ export function OrgManage({
       label: "Dictionary",
       icon: BookA,
       show: canManageSettings,
+    },
+    {
+      id: "vault",
+      label: "Secrets",
+      icon: KeyRound,
+      show: true,
     },
     {
       id: "privacy",
@@ -337,6 +341,19 @@ export function OrgManage({
               />
             </section>
           )}
+
+          {/* Organization vault — all members can use/contribute; admins manage. */}
+          <SectionCard
+            id="vault"
+            icon={KeyRound}
+            title="Organization vault"
+            description="Shared API keys and credentials. Members can use values without revealing them."
+          >
+            <OrganizationVaultSection
+              organizationId={displayOrganization.id}
+              canManage={canManageSettings}
+            />
+          </SectionCard>
 
           {/* Privacy — OrgPrivacyTab self-cards */}
           {canManageSettings && (

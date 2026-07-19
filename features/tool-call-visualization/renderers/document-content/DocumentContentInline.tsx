@@ -13,16 +13,19 @@ import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
+import { resolveDocumentContentView } from "./documentContentView";
 import { useFileSrc } from "@/features/files";
 
 /**
  * Inline renderer for `document_content` — random access into a processed
- * document. Dispatches on the `representation` the agent asked for:
+ * document. Dispatches on the view resolved by `resolveDocumentContentView`
+ * (the tool's `action` + `format` args; see that file for the wire contract):
  *
- *   - clean / raw        → the page text as one readable sheet
- *   - pages              → the document's page index (number · section · size)
+ *   - clean / raw        → the page text as one readable sheet   (action="read")
+ *   - pages              → the document's page index             (action="page_index")
  *   - pdf                → a compact extract card (page map + Open PDF)
- *   - knowledge_assets   → asset summary rows
+ *                                                                (action="images")
+ *   - knowledge_assets   → asset summary rows                    (action="assets")
  *
  * Never a raw JSON dump.
  */
@@ -52,7 +55,7 @@ function humanize(s: string): string {
   return s.replaceAll("_", " ");
 }
 
-// ─── representation: clean / raw ─────────────────────────────────────────────
+// ─── action="read" (format clean / raw) ─────────────────────────────────────────────
 
 function TextBody({ result }: { result: Record<string, unknown> }) {
   const text = typeof result.text === "string" ? result.text : "";
@@ -71,7 +74,7 @@ function TextBody({ result }: { result: Record<string, unknown> }) {
   );
 }
 
-// ─── representation: pages ───────────────────────────────────────────────────
+// ─── action="page_index" ───────────────────────────────────────────────────
 
 function PagesBody({ result }: { result: Record<string, unknown> }) {
   const pages = Array.isArray(result.pages)
@@ -115,7 +118,7 @@ function PagesBody({ result }: { result: Record<string, unknown> }) {
   );
 }
 
-// ─── representation: pdf ─────────────────────────────────────────────────────
+// ─── action="images" ─────────────────────────────────────────────────────
 
 function PdfBody({ result }: { result: Record<string, unknown> }) {
   const mediaRef =
@@ -165,7 +168,7 @@ function PdfBody({ result }: { result: Record<string, unknown> }) {
   );
 }
 
-// ─── representation: knowledge_assets ────────────────────────────────────────
+// ─── action="assets" ────────────────────────────────────────
 
 function AssetsBody({ result }: { result: Record<string, unknown> }) {
   const assets = Array.isArray(result.knowledge_assets)
@@ -181,7 +184,10 @@ function AssetsBody({ result }: { result: Record<string, unknown> }) {
   return (
     <div className="max-h-[440px] overflow-y-auto p-1.5">
       {assets.map((a, i) => {
+        // `derivation_kind` is what the tool actually emits (aidream
+        // `_rep_knowledge_assets`); the other two are defensive.
         const kind =
+          (typeof a.derivation_kind === "string" && a.derivation_kind) ||
           (typeof a.asset_kind === "string" && a.asset_kind) ||
           (typeof a.kind === "string" && a.kind) ||
           "asset";
@@ -237,10 +243,7 @@ export function DocumentContentInline({
     );
   }
 
-  const rep =
-    (typeof result.representation === "string" && result.representation) ||
-    getArg<string>(entry, "representation") ||
-    "clean";
+  const rep = resolveDocumentContentView(entry);
 
   const subtitleParts: string[] = [];
   if (rep === "pages") {

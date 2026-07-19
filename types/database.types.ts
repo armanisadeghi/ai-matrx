@@ -41871,6 +41871,7 @@ export type Database = {
           user_id: string
           value_encrypted: string
           value_hint: string | null
+          value_version: number
         }
         Insert: {
           category?: string | null
@@ -41886,6 +41887,7 @@ export type Database = {
           user_id: string
           value_encrypted: string
           value_hint?: string | null
+          value_version?: number
         }
         Update: {
           category?: string | null
@@ -41901,6 +41903,7 @@ export type Database = {
           user_id?: string
           value_encrypted?: string
           value_hint?: string | null
+          value_version?: number
         }
         Relationships: []
       }

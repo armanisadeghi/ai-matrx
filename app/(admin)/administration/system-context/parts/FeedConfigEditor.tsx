@@ -255,7 +255,7 @@ function DatasetFeedConfig({
       )}
       <p className="text-[11px] text-muted-foreground">
         Agents query this resource with the RAG tools (
-        <code className="text-[10px]">rag_search(data_store_id=…)</code>). Pointing
+        <code className="text-[10px]">knowledge_search(data_store_id=…)</code>). Pointing
         at sub-resources (only the tables, only the KG…) comes next.
       </p>
     </div>

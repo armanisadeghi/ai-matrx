@@ -1,7 +1,7 @@
 /**
  * RagHitView — the ONE normalized shape the canonical RAG hit card renders.
  *
- * Every RAG surface speaks a slightly different hit type (the `rag_search`
+ * Every RAG surface speaks a slightly different hit type (the `knowledge_search`
  * tool's `NormalizedHit`, the search API's `RagSearchHit`, the diagnose lab's
  * `DiagnoseHit`). Rather than fork a card per shape, each is adapted to this
  * one view (see `adapters.ts`) and rendered by the single `RagHitCard`.

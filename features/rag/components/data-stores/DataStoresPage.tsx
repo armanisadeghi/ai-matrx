@@ -139,7 +139,7 @@ export function DataStoresPage() {
               A named, curated bucket of documents. Agents can search inside one
               with{" "}
               <code className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">
-                rag_search_data_store(data_store_id, query)
+                knowledge_search(query, data_store_id)
               </code>
               . Bind any indexed PDF, note, code file, or library doc; the agent
               then sees only that bucket when it retrieves.

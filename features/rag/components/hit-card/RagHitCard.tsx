@@ -2,7 +2,7 @@
 
 /**
  * RagHitCard — the ONE canonical card for a retrieved RAG hit, used by every
- * surface (the `rag_search` tool card, `/rag/search`, the files omnibox, chat
+ * surface (the `knowledge_search` tool card, `/rag/search`, the files omnibox, chat
  * citations). Two variants share one beautiful core:
  *
  *   - "compact"  — a mini entity-card ROW (glossy glyph · 2-line title · color

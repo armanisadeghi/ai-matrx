@@ -1506,10 +1506,9 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "core_web_search_and_read",
   "web_read",
   "core_web_read_web_pages",
-  "rag_search",
-  "document_search", // same retrieval family as rag_search — sources ARE the deliverable
-  "rag_list_sources", // the indexed-source inventory IS the answer
-  "rag_get_chunk", // the passage text IS the answer
+  "knowledge_search",
+  "document_search", // same retrieval family as knowledge_search — sources ARE the deliverable
+  "knowledge_browse", // the inventory / passage / store / entity map IS the answer
   "document_content", // the fetched pages/text ARE the answer
   "get_user_lists",
   "seo_check_meta_tags_batch",
@@ -1579,11 +1578,12 @@ const TOOL_GLYPHS: Record<string, ToolGlyphSpec> = {
   fetch_url_as_markdown: { icon: Globe, accent: "blue" },
   research_web: { icon: Telescope, accent: "violet" },
   news_get_headlines: { icon: Newspaper, accent: "rose" },
-  rag_search: { icon: Search, accent: "cyan" },
+  knowledge_search: { icon: Search, accent: "cyan" },
+  knowledge_browse: { icon: LibraryBig, accent: "cyan" },
+  knowledge_compare: { icon: Layers, accent: "cyan" },
   document_search: { icon: FileSearch, accent: "cyan" },
-  rag_list_sources: { icon: LibraryBig, accent: "cyan" },
-  rag_get_chunk: { icon: FileText, accent: "cyan" },
   document_content: { icon: BookOpenText, accent: "cyan" },
+  verify: { icon: CheckCircle, accent: "cyan" },
   // data / sql / ctx / memory
   sql: { icon: Database, accent: "green" },
   db_query: { icon: Database, accent: "green" },

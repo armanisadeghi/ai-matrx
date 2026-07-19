@@ -12,6 +12,7 @@ import {
   ChevronUp,
   Home,
   Layers,
+  Link2,
   ListChecks,
   Loader2,
   PanelsTopLeft,
@@ -85,6 +86,8 @@ import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextIt
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
+import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
+import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import type {
   KgAcceptResult,
   KgDecisionResponse,
@@ -355,6 +358,29 @@ export function ScopesList({
         typeId={scopeType.id}
         onDeleted={() => router.push(orgScopesHref(orgSlugOrId))}
       />
+
+      {/* Canonical platform.associations surface for this scope type. */}
+      <PrimaryEntityProvider
+        value={{
+          type: "scope_type",
+          id: scopeType.id,
+          orgId,
+          label: scopeType.label_plural,
+        }}
+      >
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <div className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Associations</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Attached to this scope type
+            </span>
+          </div>
+          <AssociationCardGrid />
+        </div>
+      </PrimaryEntityProvider>
 
       {/* ── Individual scopes (tabular) ──────────────────────────── */}
       <div className="space-y-3">

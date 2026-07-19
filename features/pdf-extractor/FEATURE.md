@@ -14,7 +14,7 @@ Upload/select a PDF → render + extract text **page by page** → view/clean/sa
 The "extract pages individually" flow builds job variables from
 `docproc.processed_document_pages` (`integrations/surface-variables.ts`) and feeds
 `features/page-extraction`; per-page image/vision is the agent-side
-`document_content representation="pdf"` path.
+`document_content action="images"` path.
 
 ## Packaged with the attached-documents system (verified 2026-07-15)
 
@@ -31,7 +31,7 @@ built this session — **not** a separate silo:
   `FileContextMenu` → `attach-resource.ts` (`processed_document` token) → a
   `platform.associations` edge → `ProcessedDocumentResolver`
   (`aidream/services/documents/context_source_resolver.py`). The agent then sees
-  it via `context` + `document_content` / `document_search` / `doc_verify`.
+  it via `context` + `document_content` / `document_search` / `verify`.
 - **Guaranteed for surface agent runs.** The parent surface manifest declares
   `evidenceSources: [{kind: "processed_document", idValue:
 "processed_document_id"}]`. The universal launcher converts the active

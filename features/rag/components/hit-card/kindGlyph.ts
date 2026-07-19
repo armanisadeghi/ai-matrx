@@ -4,7 +4,7 @@ import type { ToolAccent } from "@/features/tool-call-visualization/types";
 
 /**
  * Canonical source-kind → glossy glyph mapping for RAG hits. One place so every
- * surface (the rag_search tool card, /rag/search, the omnibox) draws the same
+ * surface (the knowledge_search tool card, /rag/search, the omnibox) draws the same
  * icon + accent + label for a kind. The tool-viz `parseRag` re-exports this.
  */
 

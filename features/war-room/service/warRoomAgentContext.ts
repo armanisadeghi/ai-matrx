@@ -343,10 +343,10 @@ export function buildThreadAgentContextEntries(
       "<resources> — any type: files, documents, datasets, data stores, " +
       "flashcards, … The <access> legend maps each type to the exact tool " +
       "that reads or searches it (server tools like data / data_action / " +
-      "document / file_read / rag_search are preferred; war_room_read_resource(" +
+      "document / file_read / knowledge_search are preferred; war_room_read_resource(" +
       "entity_type, entity_id) reads ANY listed resource, and " +
       "entity_type='thread' returns a thread's full attachment manifest). " +
-      'A data_store row means: rag_search(query, data_store_id=<its id>) — ' +
+      'A data_store row means: knowledge_search(query, data_store_id=<its id>) — ' +
       "the user attached that knowledge store for you to USE. Rows with " +
       'pin="1" are the user\'s must-use resources. For this thread\'s ' +
       "transcripts, the ACTIVE recording session is in your studio context " +

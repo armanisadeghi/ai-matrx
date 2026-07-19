@@ -5,7 +5,7 @@ import type { RagHitView } from "./types";
 /**
  * Adapt the search API's `RagSearchHit` and the diagnose lab's `DiagnoseHit`
  * (they share a shape; page/name live on `metadata` for the former, directly on
- * the latter) into the canonical `RagHitView`. The `rag_search` tool's
+ * the latter) into the canonical `RagHitView`. The `knowledge_search` tool's
  * `NormalizedHit` is adapted at its own callsite where that type lives.
  */
 

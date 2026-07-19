@@ -171,7 +171,7 @@ After the user-requested "go all in" pass, the page picks up:
   `processed_document_id`. `launchAgentExecution` resolves those declarations
   into the canonical source-only `request.context` shape before any
   agent↔surface mappings, so document context and the automatic
-  `document_content` / `document_search` / `rag_search` / `doc_verify` toolset
+  `document_content` / `document_search` / `knowledge_search` / `verify` toolset
   no longer depend on an agent author wiring an ID. PDF Extractor declares the
   source once; extractor-chunker / analysis-studio / scanner inherit it.
 

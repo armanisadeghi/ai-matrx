@@ -93,7 +93,7 @@ export interface WarRoomFileModel {
   /** True when OUR text extraction exists (readable server-side via the
    *  `file_read` tool / data_action read_file_extraction operation). */
   hasExtraction?: boolean;
-  /** True when the file is indexed for RAG (searchable via rag_search). */
+  /** True when the file is indexed for RAG (searchable via knowledge_search). */
   ragIndexed?: boolean;
 }
 

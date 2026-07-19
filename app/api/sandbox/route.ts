@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
+      organization_id,
       project_id,
       config,
       ttl_seconds,
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
       resources,
       labels,
     } = body as {
+      organization_id?: string;
       project_id?: string;
       config?: SandboxConfig;
       ttl_seconds?: number;
@@ -131,6 +133,8 @@ export async function POST(request: NextRequest) {
       resources?: { cpu?: number; memory_mb?: number; disk_mb?: number };
       labels?: Record<string, string>;
     };
+
+    const organizationId = await ensureOrgIdServer(supabase, organization_id);
 
     if (project_id) {
       const { data: project, error: projectError } = await workspaceDb(supabase)
@@ -225,6 +229,7 @@ export async function POST(request: NextRequest) {
     // Forward to the matching orchestrator.
     const orchestratorBody: Record<string, unknown> = {
       user_id: user.id,
+      organization_id: organizationId,
       config: config || {},
       tier,
     };
@@ -308,7 +313,7 @@ export async function POST(request: NextRequest) {
     // renamed/required column, this assignment fails at compile time. That's
     // the contract that catches the next `proxy_url`-style silent drop.
     const sandboxRecord: SandboxInstanceInsert = {
-      organization_id: await ensureOrgIdServer(supabase, undefined),
+      organization_id: organizationId,
       user_id: user.id,
       project_id: project_id || null,
       sandbox_id: orchestratorData.sandbox_id,

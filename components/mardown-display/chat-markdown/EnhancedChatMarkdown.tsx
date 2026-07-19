@@ -135,7 +135,7 @@ type GroupedSlot =
 
 function groupConsecutiveToolSlots(
   slots: UnifiedSlot[],
-  // Result-is-purpose / stay-open tools (rag_search, document_search, …) are
+  // Result-is-purpose / stay-open tools (knowledge_search, document_search, …) are
   // the DELIVERABLE — they render their full card directly and are never
   // hidden behind a "N tool calls" line. Only "auto" tools batch.
   isBatchable: (callId: string) => boolean,
@@ -405,7 +405,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
 
   // Fold runs of consecutive tool calls into one expandable batch line so a
   // back-to-back burst (e.g. ten `tool_def` updates) isn't a wall of rows.
-  // Deliverable-card tools ("stay-open" display mode — rag_search,
+  // Deliverable-card tools ("stay-open" display mode — knowledge_search,
   // document_search, …) are excluded: their card IS the content and renders
   // directly. Only the rendering is regrouped; the `hasUnifiedSpecial` /
   // `hasDbInterleavedSpecial` branch checks still read the raw arrays.
@@ -433,7 +433,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // "Worked for Ns" group. NEVER during a stream — live turns render every
   // item in real time; the fold is a post-hoc reorganization when content is
   // settled (stream ended, or loaded from the DB). ALL tool calls fold —
-  // including the pretty deliverable cards (rag_search, document_search, …):
+  // including the pretty deliverable cards (knowledge_search, document_search, …):
   // one click on the group reveals everything, with those full cards rendered
   // directly inside the linear expansion. Only real content (text, media,
   // errors) stays outside the group.

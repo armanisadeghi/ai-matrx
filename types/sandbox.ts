@@ -125,6 +125,8 @@ export interface SandboxExecResponse {
 }
 
 export interface SandboxCreateRequest {
+  /** Active organization whose permitted shared secrets should be injected. */
+  organization_id?: string;
   project_id?: string;
   config?: SandboxConfig;
   ttl_seconds?: number;

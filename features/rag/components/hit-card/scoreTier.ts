@@ -6,7 +6,7 @@
  * ~0.8 you'd expect from a normalized probability.
  *
  * One source of truth for the score → color language so every RAG surface
- * (rag_search tool card, /rag/search, the omnibox) speaks it identically.
+ * (knowledge_search tool card, /rag/search, the omnibox) speaks it identically.
  * Returns Tailwind class fragments that are light/dark safe.
  */
 

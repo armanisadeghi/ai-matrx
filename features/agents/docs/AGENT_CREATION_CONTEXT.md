@@ -27,7 +27,7 @@ Store these `tool_def.id` UUIDs (not names). The tool descriptions are already i
 |---|---|
 | `web` | `55bc14b4-a166-4a33-a0bc-a2b0dcf66de0` |
 | `research_web` | `075194f7-3766-4ae7-a887-2234331b49c1` |
-| `rag_search` | `3921fc69-0763-4538-9e36-5a29a088a5bd` |
+| `knowledge_search` | `3921fc69-0763-4538-9e36-5a29a088a5bd` |
 | `note` | `116f5956-0744-41cf-abd8-38f82bf5d835` |
 | `task` | `76db9c44-8cf7-4abc-ac6e-624e2307fcab` |
 | `memory` | `3c121dff-1df9-47e7-9894-a5693e89a7d5` |

@@ -307,9 +307,9 @@ export interface paths {
          * Warm Conversation
          * @description Pre-load a conversation into the in-memory cache.
          *
-         *     Fire-and-forget from the client's perspective — any error is logged
-         *     but never returned as a failure. The sole purpose is to shave latency
-         *     off the next real request.
+         *     Authentication and ownership are checked before touching the process-wide
+         *     cache. Once authorized, warming remains best-effort from the client's
+         *     perspective — resolver errors are logged and represented as not cached.
          */
         post: operations["warm_conversation_ai_conversation__conversation_id__warm_post"];
         delete?: never;
@@ -331,9 +331,9 @@ export interface paths {
          * Warm Conversation
          * @description Pre-load a conversation into the in-memory cache.
          *
-         *     Fire-and-forget from the client's perspective — any error is logged
-         *     but never returned as a failure. The sole purpose is to shave latency
-         *     off the next real request.
+         *     Authentication and ownership are checked before touching the process-wide
+         *     cache. Once authorized, warming remains best-effort from the client's
+         *     perspective — resolver errors are logged and represented as not cached.
          */
         post: operations["warm_conversation_ai_conversations__conversation_id__warm_post"];
         delete?: never;
@@ -2976,6 +2976,93 @@ export interface paths {
          */
         get: operations["get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organization-secrets/{organization_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Secrets */
+        get: operations["list_secrets_organization_secrets__organization_id__get"];
+        put?: never;
+        /** Create Secret */
+        post: operations["create_secret_organization_secrets__organization_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organization-secrets/{organization_id}/contribute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Contribute Secret */
+        post: operations["contribute_secret_organization_secrets__organization_id__contribute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organization-secrets/{organization_id}/{secret_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Secret */
+        delete: operations["delete_secret_organization_secrets__organization_id___secret_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Secret */
+        patch: operations["update_secret_organization_secrets__organization_id___secret_id__patch"];
+        trace?: never;
+    };
+    "/organization-secrets/{organization_id}/{secret_id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync Secret */
+        post: operations["sync_secret_organization_secrets__organization_id___secret_id__sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organization-secrets/{organization_id}/{secret_id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace Permissions */
+        put: operations["replace_permissions_organization_secrets__organization_id___secret_id__permissions_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -11563,15 +11650,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/share/{token}/download": {
+    "/share/{token}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Download Shared File */
-        get: operations["download_shared_file_share__token__download_get"];
+        /**
+         * Download Shared File
+         * @description Serve shared bytes from both the clean and legacy URL forms.
+         *
+         *     ``/share/{token}`` is the canonical embeddable URL. Keeping the existing
+         *     ``/download`` route on the same implementation means previously copied
+         *     links continue to work unchanged.
+         */
+        get: operations["download_shared_file_share__token__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15604,7 +15698,7 @@ export interface components {
             scope: components["schemas"]["ScopeContext"];
             /**
              * Tool Name
-             * @default rag_search
+             * @default knowledge_search
              */
             tool_name?: string;
             /** Args */
@@ -26772,6 +26866,138 @@ export interface components {
             /** Last Charge At */
             last_charge_at: string | null;
         };
+        /** OrganizationSecretContributeRequest */
+        OrganizationSecretContributeRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** User Secret Id */
+            user_secret_id: string;
+            /** Key */
+            key?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            /** Inject Into Sandbox */
+            inject_into_sandbox?: boolean | null;
+        };
+        /** OrganizationSecretCreateRequest */
+        OrganizationSecretCreateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Key */
+            key: string;
+            /** Value */
+            value: string;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            /**
+             * Inject Into Sandbox
+             * @default true
+             */
+            inject_into_sandbox?: boolean;
+        };
+        /** OrganizationSecretListResponse */
+        OrganizationSecretListResponse: {
+            /** Secrets */
+            secrets: components["schemas"]["OrganizationSecretSummary"][];
+        };
+        /** OrganizationSecretPermissionsRequest */
+        OrganizationSecretPermissionsRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Access Mode
+             * @enum {string}
+             */
+            access_mode: "all_members" | "restricted";
+            /** User Ids */
+            user_ids: string[];
+        };
+        /** OrganizationSecretSummary */
+        OrganizationSecretSummary: {
+            /** Id */
+            id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Key */
+            key: string;
+            /** Value Hint */
+            value_hint: string;
+            /** Description */
+            description: string | null;
+            /** Category */
+            category: string | null;
+            /**
+             * Access Mode
+             * @enum {string}
+             */
+            access_mode: "all_members" | "restricted";
+            /** Inject Into Sandbox */
+            inject_into_sandbox: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Value Version */
+            value_version: number;
+            /** Source User Secret Id */
+            source_user_secret_id: string | null;
+            /** Source User Secret Version */
+            source_user_secret_version: number | null;
+            /** Source Current Version */
+            source_current_version: number | null;
+            /**
+             * Sync Status
+             * @enum {string}
+             */
+            sync_status: "not_linked" | "current" | "out_of_sync" | "source_deleted";
+            /** Can Manage */
+            can_manage: boolean;
+            /** Grant User Ids */
+            grant_user_ids: string[];
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Created By */
+            created_by: string;
+            /** Updated By */
+            updated_by: string;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** OrganizationSecretUpdateRequest */
+        OrganizationSecretUpdateRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Value */
+            value?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            /** Inject Into Sandbox */
+            inject_into_sandbox?: boolean | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /**
          * OutputSchemaEnvelope
          * @description OpenAI ``json_schema`` inner envelope — matches ``agx_agent.output_schema``.
@@ -32331,6 +32557,8 @@ export interface components {
         ToolResultsRequest: {
             /** Results */
             results: components["schemas"]["ClientToolResult"][];
+            /** Instance Id */
+            instance_id?: string | null;
         };
         /** ToolResultsResponse */
         ToolResultsResponse: {
@@ -33479,6 +33707,11 @@ export interface components {
              * @default true
              */
             inject_into_sandbox?: boolean;
+            /**
+             * Value Version
+             * @default 1
+             */
+            value_version?: number;
             /** Last Used At */
             last_used_at?: string | null;
             /** Created At */
@@ -39692,7 +39925,9 @@ export interface operations {
     };
     get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get: {
         parameters: {
-            query?: never;
+            query?: {
+                organization_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -39706,6 +39941,250 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SandboxEnvResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_secrets_organization_secrets__organization_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSecretListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_secret_organization_secrets__organization_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationSecretCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSecretSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contribute_secret_organization_secrets__organization_id__contribute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationSecretContributeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSecretSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_secret_organization_secrets__organization_id___secret_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+                secret_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_secret_organization_secrets__organization_id___secret_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+                secret_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationSecretUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSecretSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_secret_organization_secrets__organization_id___secret_id__sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+                secret_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSecretSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_permissions_organization_secrets__organization_id___secret_id__permissions_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+                secret_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationSecretPermissionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSecretSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -55197,7 +55676,7 @@ export interface operations {
             };
         };
     };
-    download_shared_file_share__token__download_get: {
+    download_shared_file_share__token__get: {
         parameters: {
             query?: {
                 /** @description When True (default), image/video/audio/pdf are served as Content-Disposition: inline so they render in <img>/<video>/<audio>/preview tags. When False, force Content-Disposition: attachment to trigger a browser download. Executable types (HTML, SVG, JS) are always forced to attachment regardless. */

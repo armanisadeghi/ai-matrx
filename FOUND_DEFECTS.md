@@ -50,6 +50,21 @@ The Tier 1-4 file-handler ring-fence bans importing `@/features/files/handler|ho
 
 `eslint.config.mjs:702-709` claims React Flow "lives in exactly ONE module — `SetBuilderCanvasImpl.tsx`". Live static `@xyflow/react` imports exist in `features/rag/components/visualization/` (6 files), `features/administration/schema-visualizer/` (3), and `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx`. The rule is `error` and simply never blocks anything (D64). This is the exact bundle-bloat class CLAUDE.md warns about (one such leak took the build 15→24 min). Fix: migrate them to `next/dynamic` or scope the ban with an explicit allowlist and correct the comment.
 
+### D71 — live SQL functions still hand agents the retired `rag_search` tool name (2026-07-18)
+
+**Decides: Arman (needs a forward migration applied to live Supabase, not a file).** The 2026-07-18 knowledge-family consolidation renamed `rag_search` → `knowledge_search` and soft-deleted the old `tool.definition` row. All frontend/TS call sites were updated, but **four `ctx_resolve_full_context*` SQL function bodies in `migrations/` emit an agent-facing hint naming the dead tool**:
+
+`'hint', 'Knowledge resource — query it with the RAG tools, e.g. rag_search(data_store_id=<data_store_id>).'`
+
+- `migrations/ctx_extended_value_types.sql:448`
+- `migrations/ctx_resolve_full_context_dataset_pointers.sql:143`
+- `migrations/ctx_resolve_full_context_restore_cells_after_schema_move.sql:159`
+- `migrations/ctx_scope_tables_versioning_soft_delete.sql:567`
+
+Plus the `platform.entity_types` description seeded by `migrations/register_data_store_entity_type.sql:25` ("the scope-gate for rag_search retrieval").
+
+**These are live function bodies — editing the historical migration files changes nothing.** Every agent resolving a `data_store` context pointer is currently being taught to call a tool that no longer exists. Fix: ONE forward migration that `CREATE OR REPLACE`s the current `ctx_resolve_full_context*` definition with `knowledge_search(data_store_id=…)` and updates the `entity_types` description, applied to live Supabase (`txzxabzwovsujtloxrus`) + ledger-recorded in the same session. Not written here because an unapplied migration file is worse than none. Related: aidream `aidream/tools/KNOWLEDGE_TOOLS_FEATURE.md` rule 5 ("a rename is not done until every prompt fragment agrees").
+
 ### D61 — /chat streams warn "state update on a component that hasn't mounted yet" (2026-07-18)
 
 Observed twice during a live `/chat` stream that rendered a `db_kind_component` (wine_tasting verification runs): React error "Can't perform a React state update on a component that hasn't mounted yet… side-effect in your render function". Source unattributed — plausible suspects are a render-time side-effect in the db-component compile path (`getOrCompileDbKindComponent` is called during render and its cache captures errors into a module store) or pre-existing chat-page code; no `[content-ir]` scream accompanied it and rendering was correct. Needs a React-owner pass to attribute (component stack via dev overlay) and move the offending side-effect into an effect. Not user-visible; filed so it doesn't vanish into a chat log.

@@ -130,25 +130,29 @@ const RAG_SEARCH_SOURCE_FEATURE: SourceFeature = "rag-search";
 const RAG_AGENT_ID = DEFAULT_NEW_CHAT_AGENT_ID;
 
 /**
- * RAG tool family (registry tool UUIDs from `public.tool_def`). Armed
+ * Knowledge tool family (registry tool UUIDs from `tool.definition`). Armed
  * additively on the conversation via `addedTools` so the agent can actually
  * search the user's indexed content, list/inspect data stores, fetch chunks,
  * and verify answers — even when the base chat agent doesn't ship these tools
  * by default. The server tool-merge funnel adds `document_content` whenever
- * one of the RAG search tools is present, so every agent surface receives the
- * physical-page validation companion consistently. The conversation also
+ * one of the knowledge search tools is present, so every agent surface receives
+ * the physical-page validation companion consistently. The conversation also
  * receives the page's retrieval scope via `runtime.applicationScope` (see
  * `createRagSearchScope`).
+ *
+ * Twelve tools were consolidated into six on 2026-07-18. Tool ids are STABLE
+ * across a rename, so the four survivors below kept their ids — but the four
+ * absorbed tools this list used to arm (`rag_search_data_store`,
+ * `rag_list_data_stores`, `rag_get_data_store`, `rag_get_chunk`) are now
+ * soft-deleted `tool.definition` rows and have been removed. Their capability
+ * lives on as `knowledge_search(data_store_id=…)` and the `knowledge_browse`
+ * actions (`stores` / `store` / `chunk`), which the ids below already arm.
  */
 const RAG_AGENT_TOOL_IDS = [
-  "3921fc69-0763-4538-9e36-5a29a088a5bd", // rag_search
-  "49ebe1b2-62ba-4028-9038-838c12e144ef", // rag_search_data_store
-  "16964a48-af53-423d-a3c4-0ff3a0a061eb", // rag_search_cross_doc
-  "dc3300ad-fbfe-4d32-8970-4666715402f4", // rag_list_data_stores
-  "487322dc-db17-4b13-9186-223c29f29baf", // rag_get_data_store
-  "df009bb5-1b9a-49a4-8db1-90b654f970a2", // rag_list_sources
-  "52f31aa4-2570-477f-ad29-91b00bdcec87", // rag_get_chunk
-  "cb86a0ca-439e-4e63-be45-44c2dcd159f5", // rag_verify_answer
+  "3921fc69-0763-4538-9e36-5a29a088a5bd", // knowledge_search (was rag_search)
+  "df009bb5-1b9a-49a4-8db1-90b654f970a2", // knowledge_browse (was rag_list_sources)
+  "16964a48-af53-423d-a3c4-0ff3a0a061eb", // knowledge_compare (was rag_search_cross_doc)
+  "cb86a0ca-439e-4e63-be45-44c2dcd159f5", // verify (was rag_verify_answer)
 ];
 
 // ===========================================================================
@@ -1178,14 +1182,14 @@ function SearchTab({
 }
 
 // ===========================================================================
-// Agent tool view — the agent's ACTUAL rag_search, with play-out
+// Agent tool view — the agent's ACTUAL knowledge_search, with play-out
 // ===========================================================================
 //
 // Calls /rag/search-lab/tool/search, which reproduces byte-for-byte what the
-// registered rag_search tool hands the model (same search() call, same output
+// registered knowledge_search tool hands the model (same search() call, same output
 // mappers). Supports N queries (a real agent fires several) and the full arg
 // surface, threads the working-context org/scope (the missing piece that made
-// the simulation return 0), and lets you "play out" rag_get_chunk on any hit.
+// the simulation return 0), and lets you "play out" knowledge_browse(action="chunk") on any hit.
 
 interface ChunkPlayout {
   loading: boolean;
@@ -1359,13 +1363,13 @@ function AgentToolResultBlock({
                   )}
                   {out.data && out.data.status !== "ok" && (
                     <span className="text-amber-600 dark:text-amber-400">
-                      {out.data.note ?? `rag_get_chunk → ${out.data.status}`}
+                      {out.data.note ?? `knowledge_browse(chunk) → ${out.data.status}`}
                     </span>
                   )}
                   {out.data && out.data.status === "ok" && chunk && (
                     <div className="space-y-2">
                       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        rag_get_chunk → full chunk content
+                        knowledge_browse(chunk) → full chunk content
                       </div>
                       <p className="whitespace-pre-wrap">
                         {chunk.content_text}
@@ -1440,7 +1444,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         rerank: scope.rerank,
         use_mmr: true,
         // No expand_entity_clusters here: this endpoint simulates the agent's
-        // registered rag_search tool byte-for-byte, and that tool has no
+        // registered knowledge_search tool byte-for-byte, and that tool has no
         // cluster-expansion option. The sidebar toggle applies to /rag/search
         // (Search + Pipeline tabs) only.
         scope_ids: scopeIds,
@@ -1461,7 +1465,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
       <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
         <Brain className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="font-semibold">
-          Agent&apos;s actual tool · rag_search
+          Agent&apos;s actual tool · knowledge_search
         </span>
         <Badge variant="outline" className="text-[10px] ml-auto">
           {orgOverride ? "org override" : "your org"}
@@ -1758,8 +1762,8 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
           </Button>
         </form>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          The panel below runs the agent&apos;s ACTUAL rag_search tool (with
-          play-out into rag_get_chunk). Underneath, the full retrieval pipeline
+          The panel below runs the agent&apos;s ACTUAL knowledge_search tool (with
+          play-out into knowledge_browse). Underneath, the full retrieval pipeline
           is exposed layer by layer: query rewrites, HyDE passage, embedding
           vector preview, per-stage counts, and the exact prompt block.
         </p>
@@ -2080,7 +2084,7 @@ function Stat({ label, value }: { label: string; value: number | string }) {
  * This is intentionally NOT a bespoke chat. It launches a managed conversation
  * (same stack as `/chat` and the Projects "Use AI" tab) via `useAgentLauncher`
  * and renders `AgentConversationColumn`. That column already streams text,
- * renders tool calls (including a dedicated `rag_search` renderer), exposes the
+ * renders tool calls (including a dedicated `knowledge_search` renderer), exposes the
  * Smart Input with the full tool/variable affordances, and participates in the
  * overlay / creator-panel / pending-asks machinery — so users get every
  * platform capability here for free.

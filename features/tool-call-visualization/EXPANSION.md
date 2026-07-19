@@ -159,7 +159,7 @@ GenericRenderer is intentional — ship fast, refine later.
 
 **Triggered when** `toolName` exists in `registry/registry.tsx` → `toolRendererRegistry[toolName].InlineComponent`.
 
-13 tools registered today: `web_search`, `news_get_headlines`, `seo_check_meta_tags_batch`, `seo_check_meta_titles`, `seo_check_meta_descriptions`, `web_search_v1`, `core_web_search`, `research_web`, `core_web_search_and_read`, `get_user_lists`, `core_web_read_web_pages`, `rag_search`, `random_wheel`.
+13 tools registered today: `web_search`, `news_get_headlines`, `seo_check_meta_tags_batch`, `seo_check_meta_titles`, `seo_check_meta_descriptions`, `web_search_v1`, `core_web_search`, `research_web`, `core_web_search_and_read`, `get_user_lists`, `core_web_read_web_pages`, `knowledge_search`, `knowledge_browse`, `random_wheel`.
 
 **Add one:**
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Loader2, Pencil, X as XIcon } from "lucide-react";
+import { Check, Link2, Loader2, Pencil, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,8 @@ import {
   scopeItemHref,
   scopeContextItemsHref,
 } from "@/features/scope-system/utils/scopeRoutes";
+import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
+import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 
 interface ScopeDetailEditorProps {
   orgId: string;
@@ -365,6 +367,29 @@ export function ScopeDetailEditor({
         orgSlugOrId={orgSlugOrId}
         title={`${scope.name} · knowledge graph`}
       />
+
+      {/* Canonical platform.associations surface for this scope. */}
+      <PrimaryEntityProvider
+        value={{
+          type: "scope",
+          id: scope.id,
+          orgId,
+          label: scope.name,
+        }}
+      >
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <div className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Associations</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Attached to this {scopeType.label_singular.toLowerCase()}
+            </span>
+          </div>
+          <AssociationCardGrid />
+        </div>
+      </PrimaryEntityProvider>
 
       <Card className="p-6 space-y-5">
         <div className="flex items-center justify-between gap-2">

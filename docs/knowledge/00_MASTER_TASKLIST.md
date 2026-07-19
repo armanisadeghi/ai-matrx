@@ -200,7 +200,7 @@ Building before these are answered will encode the wrong thing. Owner: **you** (
 | ☐ | P2 | **Deprecate `rag.data_stores`** — migrate manual buckets → scope assignments / saved selection; AMA-Guides-style libraries become scopes; retire `data_store_members`. | spec §4a |
 | ☐ | P1 | **`knowledge_search` tool** — returns §5a minimal hits **+** §5b condensed entity/topic map; bounded by the resolved universe. | spec §5,6 · #1,#2,#48 |
 | ☐ | P1 | **`knowledge_get` / `knowledge_fetch_region`** — full content + open original page/region (lineage drill to source-of-truth). | spec §5c |
-| ☐ | P1 | **`knowledge_navigate`** — entity → linked artifacts, topic-cluster → artifacts (NER-as-map). Requires E1 (KG read in retrieval). | spec §5b · #1,#10,#40 |
+| ☑ | P1 | **`knowledge_browse(action="entity")`** — entity → linked artifacts, topic-cluster → artifacts (NER-as-map). Shipped as a `knowledge_browse` action (absorbed the standalone `knowledge_navigate` on 2026-07-18); FE renderer `renderers/knowledge-browse/KnowledgeEntityInline.tsx`. | spec §5b · #1,#10,#40 |
 | ☐ | P2 | **Grant-as-preamble** — render the searchable universe as a one-line capability preamble so the tool family stands out. | spec §8 |
 | ☐ | P2 | **Hint injection (memory)** — generalize `rag_awareness_mode`/`compute_awareness_fragment` to pre-orchestrated, scoped, flagged hints. | spec §7 · #43 |
 | ☐ | P2 | Fold **`rag.scope_bindings` (#41)** into the resolved-universe binding (don't build separately). | spec §9 · #41 |

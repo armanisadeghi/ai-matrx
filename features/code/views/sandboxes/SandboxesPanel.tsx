@@ -65,6 +65,7 @@ import {
   setActiveView,
 } from "../../redux/codeWorkspaceSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { clearFsChangesBucket } from "../../redux/fsChangesSlice";
 import {
   setActiveTab as setBottomActiveTab,
@@ -92,6 +93,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const activeId = useAppSelector(selectActiveSandboxId);
   const activeProxyUrl = useAppSelector(selectActiveSandboxProxyUrl);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const { setFilesystem, setProcess } = useCodeWorkspace();
 
   const [instances, setInstances] = useState<SandboxInstance[] | null>(null);
@@ -145,18 +147,30 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   // optimistically, then re-list once reconcile finishes. The per-click probe
   // is the second line of defense.
   useEffect(() => {
-    void refresh();
-    if (didMountReconcileRef.current) return;
-    didMountReconcileRef.current = true;
-    setReconciling(true);
-    void fetch("/api/sandbox/reconcile", { method: "POST" })
-      .catch((err) => {
+    let active = true;
+
+    void Promise.resolve().then(async () => {
+      if (!active) return;
+      await refresh();
+      if (!active || didMountReconcileRef.current) return;
+
+      didMountReconcileRef.current = true;
+      setReconciling(true);
+      try {
+        await fetch("/api/sandbox/reconcile", { method: "POST" });
+      } catch (err) {
         console.warn("[SandboxesPanel] reconcile failed:", err);
-      })
-      .finally(() => {
-        setReconciling(false);
-        void refresh();
-      });
+      } finally {
+        if (active) {
+          setReconciling(false);
+          await refresh();
+        }
+      }
+    });
+
+    return () => {
+      active = false;
+    };
   }, [refresh]);
 
   // Poll while any instance is creating/starting.
@@ -313,7 +327,10 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         const resp = await fetch("/api/sandbox", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
+          body: JSON.stringify({
+            ...request,
+            organization_id: request.organization_id || organizationId,
+          }),
         });
         const data = (await resp.json()) as
           | SandboxDetailResponse
@@ -338,7 +355,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         setCreating(false);
       }
     },
-    [refresh],
+    [organizationId, refresh],
   );
 
   // Called by the diagnostics modal once aidream reports overall_ok=true.

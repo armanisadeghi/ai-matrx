@@ -58,8 +58,8 @@ function inferActionFromResult(entry: ToolLifecycleEntry): BrowseAction | null {
   if (Array.isArray(result.members)) return "store";
   if (Array.isArray(result.artifacts) || Array.isArray(result.linked_entities))
     return "entity";
-  if (typeof result.chunk_id === "string" || typeof result.text === "string")
-    return "chunk";
+  // `KnowledgeChunkInline` requires `chunk_id` — the same key it parses on.
+  if (typeof result.chunk_id === "string") return "chunk";
   return null;
 }
 

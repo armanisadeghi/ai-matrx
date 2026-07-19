@@ -78,7 +78,7 @@ A dataset resource decomposes into addressable sub-resources (chunks / `chunk_ki
 
 ### 6. Auto-arm the RAG tool from a dataset pointer
 
-Today the resolver emits a dataset *descriptor* (name + `data_store_id` + "use rag_search" hint) — the agent must call `rag_search(data_store_id=…)` itself. Next: auto-arm the RAG tool with the pointer's `data_store_id` during agent prep (`context_engine` / tool arming) so the agent queries it with zero friction.
+Today the resolver emits a dataset *descriptor* (name + `data_store_id` + "use knowledge_search" hint) — the agent must call `knowledge_search(data_store_id=…)` itself. Next: auto-arm the RAG tool with the pointer's `data_store_id` during agent prep (`context_engine` / tool arming) so the agent queries it with zero friction.
 
 ### 7. Computed feed — user-defined code
 

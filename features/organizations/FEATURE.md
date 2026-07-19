@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-07-15`
+**Last updated:** `2026-07-19`
 
 > Combined doc for `features/organizations/` and `features/invitations/`. Orgs are the multi-tenant primitive; invitations are the flow that admits users to orgs (and, in mirrored form, to projects). Architecture mirrors `features/projects/`.
 
@@ -24,7 +24,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `app/(core)/organizations/[orgId]/resources/[kind]/page.tsx` — **catalogue-driven per-resource org page.** One page for every scopeable kind (`kind` = catalogue key), reached from the workspace tiles. Two halves: "Shared with {org}" (team view — org-owned + member-contributed) and "Yours to share" (your own items, one click from sharing). Renders `OrgResourceDetail`; links to the dedicated legacy route as "Full view" when one exists.
 - `app/(authenticated)/organizations/[orgId]/{projects,tasks,notes,files,tables,workflows,shortcuts,templates,prompt-apps,prompts,agent-apps}/` — org-scoped resource views sharing `OrgResourceLayout.tsx`
 - `app/(authenticated)/organizations/[orgId]/projects/[projectId]/` — project-scoped view within an org; `[projectId]` also accepts UUID or slug
-- `app/(authenticated)/organizations/[orgId]/settings/page.tsx` — the **Manage** experience. Renders `OrgManage` — a single scrollable, sectioned page (identity header + sticky jump-nav, **no tabs**) that reuses the existing settings sub-components (General, Members, Invitations, Scopes link, Privacy, Email, Danger). Replaced the old tabbed `OrgSettings` (deleted).
+- `app/(authenticated)/organizations/[orgId]/settings/page.tsx` — the **Manage** experience. Renders `OrgManage` — a single scrollable, sectioned page (identity header + sticky jump-nav, **no tabs**) that reuses the existing settings sub-components (General, Members, Invitations, Scopes link, Privacy, Email, Organization Vault, Danger). All members may inspect masked vault metadata and contribute independent copies from their personal vault; owner/admin roles manage values and restrictions.
 - `app/(authenticated)/organizations/[orgId]/settings/scopes/` — scope config (see [`features/scopes/FEATURE.md`](../scopes/FEATURE.md))
 - `app/(authenticated)/invitations/organization/accept/[token]/page.tsx` — accept org invitation
 - `app/(authenticated)/invitations/project/accept/[token]/page.tsx` — accept project invitation
@@ -63,7 +63,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `features/organizations/components/OrgShareReviewCard.tsx` — admin moderation queue for member contributions (approve/reject/restore), reads `listOrgShareGrants`, writes `reviewOrgShare`. Title hydration resolves each grant's `permissions.resource_type` through the schema-qualified `getShareableResource()` (e.g. `agent` → `agent.definition`), not a bare `.from("agent")` that 404s on `public.agent`. This is the **access-control** surface — distinct from the `platform.associations` resource cards above.
 - `features/organizations/components/OrgWorkspace.tsx` — the workspace body, rendered by the primary `/organizations/[orgId]` page (and the `/org-2` alias). **Its "Resources" section is now the canonical `AssociationCardGrid`** (`features/scopes/components/associations/`) over `platform.associations` — one card per cardable entity token, wrapped in a `PrimaryEntityProvider` for the org. This replaced the old catalogue/permissions count grid (`useOrgResourceInventory` + `OrgResourceRoleSection`), which is retired here. The "resources" hero stat is now the org's total incoming-edge count (`useContainerLinks().totalCount`).
 - `features/organizations/components/OrgResourceDetail.tsx` — the per-resource page body (team view + your-own).
-- `features/organizations/components/OrgManage.tsx` — the single-page Manage shell (replaced tabbed `OrgSettings`); identity header + sticky jump-nav + sections. Owns its single scroll container (the settings layout is now a passthrough provider — see `OrgSettingsLayoutClient`).
+- `features/organizations/components/OrgManage.tsx` — the single-page Manage shell (replaced tabbed `OrgSettings`); identity header + sticky jump-nav + sections, including the shared-secret `OrganizationVaultSection`. Owns its single scroll container (the settings layout is now a passthrough provider — see `OrgSettingsLayoutClient`).
 - `features/organizations/components/OrgScopeTree.tsx` — read-only scope-type→scope tree (no items) for the Manage Scopes section, with edit links.
 - `features/organizations/components/OrgModuleSettings.tsx` — **live** per-module org-rule matrix (members-can-add, needs-approval, scopeable, auto-ingest, default access). Loads/saves via `features/organizations/orgModuleSettings.ts` → `org_module_settings` (admin-gated `set_org_module_setting` RPC). Members-can-add + needs-approval are enforced server-side in `share_resource_with_org`; the rest are saved for upcoming enforcement.
 - `features/industries/components/OrgIndustriesSection.tsx` (rendered in `OrgManage.tsx`) — manage the org's **industry** memberships (`public.org_industries`). Industry is a platform taxonomy that gates [Shared Knowledge Resources](../rag/FEATURE.md#shared-knowledge-resources) and (later) seeds scope templates; **org owner/admin** (or Matrx super-admin) edits via `industry_assign_org` / `industry_unassign_org`; members see read-only. See [`features/industries/FEATURE.md`](../industries/FEATURE.md).
@@ -237,6 +237,8 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 ---
 
 ## Change log
+
+- `2026-07-19` — Added Organization Vault to Manage: default all-member use access without reveal, optional per-member restrictions, admin rotation/deletion/sandbox controls, and member contribution with drift detection/manual sync. See [`features/secrets/FEATURE.md`](../secrets/FEATURE.md).
 
 - `2026-07-15` — claude: **Cross-links pointer added to `common-docs/access-architecture/FEATURE.md`** — the cross-repo system-of-record for the full access model (ownership, permissions, memberships, associations, admin level), verified live 2026-07-15.
 - `2026-07-15` — **Keyboard focus and tab-order pass.** Removed duplicate and mouse-only organization-card navigation, made settings jump navigation move focus into its destination section, added labelled/Enter-submittable organization forms with intentional dialog focus, restored focus after inline editors, opted organization resource drawers into opener/return focus management, and exposed hover-only resource actions on keyboard focus.

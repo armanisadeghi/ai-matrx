@@ -4,7 +4,7 @@
  * Tabs:
  *   ?tab=search        (default) clean user search
  *   ?tab=agent-sim     full pipeline trace / score breakdown / prompt preview
- *   ?tab=agent-chat    Claude agent with rag_search as a tool, fully transparent
+ *   ?tab=agent-chat    Claude agent with knowledge_search as a tool, fully transparent
  *   ?tab=diagnostics   per-user content inventory & ACL routes
  *
  * Deep-link params:

@@ -21,10 +21,9 @@ Registered in `registry/registry.tsx`; code in `renderers/<name>/`. ~20 tools.
 | `core_web_search` | Multi-Query Search | ✅ | ✅ | ✅ | stay-open |
 | `web_search` | Web Search | ✅ | ⚠️ adapter→generic | ✅ | overlay degrades to generic on a persisted snapshot (no live events) |
 | `news_get_headlines` | News | ✅ | ✅ | ✅ | stay-open; **window-panel empty bug FIXED 2026-06-21** |
-| `rag_search` | RAG Search | ✅ | ✅ (=inline) | ✅ | stay-open |
-| `rag_list_sources` | Indexed Sources | ✅ | ✅ (=inline) | ✅ | stay-open; added 2026-07-17 |
-| `rag_get_chunk` | Passage | ✅ | ✅ (=inline) | ✅ | stay-open; added 2026-07-17 |
-| `document_content` | Document Content | ✅ | ✅ (=inline) | ✅ | stay-open; dispatches on `representation`; added 2026-07-17 |
+| `knowledge_search` | Knowledge Search | ✅ | ✅ (=inline) | ✅ | stay-open; renamed from `rag_search` 2026-07-18 |
+| `knowledge_browse` | Browse Knowledge | ✅ | ✅ (=inline) | ✅ | stay-open; dispatches on `action` (`sources`/`stores`/`store`/`chunk`/`entity`) — absorbed `rag_list_sources`, `rag_list_data_stores`, `rag_get_data_store`, `rag_get_chunk`, `knowledge_navigate` 2026-07-18 |
+| `document_content` | Document Content | ✅ | ✅ (=inline) | ✅ | stay-open; dispatches on `action` + `format` via `resolveDocumentContentView`; added 2026-07-17 |
 | `get_user_lists` | User Lists | ✅ | ✅ | ✅ | stay-open |
 | `seo_check_meta_tags_batch` | SEO Meta Tags | ✅ | ✅ | ✅ | stay-open |
 | `seo_check_meta_titles` | SEO Titles | ✅ | ⚠️ generic | ✅ | **gap: no OverlayComponent** → overlay/window "Results" tab falls back to generic |

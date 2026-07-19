@@ -3,11 +3,11 @@
  *
  * The retrieval workspace at `/rag/search`. The user searches their indexed
  * content (PDFs, notes, code) with a configurable hybrid-retrieval pipeline,
- * and the "Agent Chat" tab embeds a managed agent that calls the RAG tool
- * family (`rag_search`, `rag_search_data_store`, …) against the same scope.
+ * and the "Agent Chat" tab embeds a managed agent that calls the knowledge tool
+ * family (`knowledge_search`, `knowledge_browse`, …) against the same scope.
  *
  * The values below describe the user's current retrieval scope so an agent
- * bound here can constrain its searches (e.g. bind `rag_search.data_store_id`
+ * bound here can constrain its searches (e.g. bind `knowledge_search.data_store_id`
  * to the surface's `data_store_id`) and explain what it is searching over.
  */
 
