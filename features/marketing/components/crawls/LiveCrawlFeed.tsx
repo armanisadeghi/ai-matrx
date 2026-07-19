@@ -2,6 +2,7 @@
 
 import { Activity, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { presentLiveCrawlEvent } from "@/features/marketing/components/crawls/live-crawl-event-presenter";
 import type { CrawlLiveEvent } from "@/features/marketing/crawler/direct-client";
 
 type LiveStatus =
@@ -16,28 +17,6 @@ type LiveStatus =
 function numeric(event: CrawlLiveEvent | undefined, key: string): number {
   const value = event?.[key];
   return typeof value === "number" ? value : 0;
-}
-
-function eventDetail(event: CrawlLiveEvent): string {
-  const page = event.page;
-  if (typeof page === "object" && page !== null && "url" in page) {
-    const url = (page as { url?: unknown }).url;
-    if (typeof url === "string") return url;
-  }
-  for (const key of [
-    "url",
-    "base_url",
-    "page_url",
-    "message",
-    "error_message",
-  ]) {
-    const value = event[key];
-    if (typeof value === "string" && value) return value;
-  }
-  if (event.event_type === "crawl_progress") {
-    return `${numeric(event, "pages_fetched")} fetched · ${numeric(event, "queue_depth")} queued`;
-  }
-  return event.event_type.replaceAll("_", " ");
 }
 
 export function LiveCrawlFeed({
@@ -111,22 +90,25 @@ export function LiveCrawlFeed({
           events
             .slice()
             .reverse()
-            .map((event, index) => (
-              <div
-                key={`${event.sequence ?? "stream"}-${event.event_type}-${index}`}
-                className="grid grid-cols-[3.5rem_8.5rem_minmax(0,1fr)] gap-2 border-b border-border/60 px-3 py-1.5 odd:bg-muted/20"
-              >
-                <span className="text-muted-foreground">
-                  #{event.sequence ?? "—"}
-                </span>
-                <span className="truncate text-foreground">
-                  {event.event_type}
-                </span>
-                <span className="truncate text-muted-foreground">
-                  {eventDetail(event)}
-                </span>
-              </div>
-            ))
+            .map((event, index) => {
+              const presented = presentLiveCrawlEvent(event);
+              return (
+                <div
+                  key={`${event.sequence ?? "stream"}-${event.event_type}-${index}`}
+                  className="grid grid-cols-[3.5rem_8.5rem_minmax(0,1fr)] gap-2 border-b border-border/60 px-3 py-1.5 odd:bg-muted/20"
+                >
+                  <span className="text-muted-foreground">
+                    #{event.sequence ?? "—"}
+                  </span>
+                  <span className="truncate text-foreground">
+                    {presented.label}
+                  </span>
+                  <span className="truncate text-muted-foreground">
+                    {presented.message}
+                  </span>
+                </div>
+              );
+            })
         )}
       </div>
     </section>

@@ -103,3 +103,4 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 - 2026-07-18 — Codex: added link and screenshot inspection, site access and settings, batch operations, and site/workspace cost rollups.
 - 2026-07-18 — Codex: added secret-free site integration references for GSC, GA4, PageSpeed, and extensible providers; verified connection authority remains intentionally separate.
 - 2026-07-19 — Codex: wired the main Marketing Hub to the production workspace and added user/org vault onboarding plus site binding entry points without using the legacy browser-token Google page.
+- 2026-07-19 — Codex: added a user-facing live crawl event presenter that keeps exception, ORM query/argument, stack, and ANSI details out of the primary feed.
