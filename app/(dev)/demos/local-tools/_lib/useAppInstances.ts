@@ -60,6 +60,16 @@ export function isInstanceRemoteOnline(
     return t > 0 && Date.now() - t <= INSTANCE_ONLINE_WINDOW_MS;
 }
 
+/** Engine WS endpoints require the Supabase JWT as a query param (browsers
+ *  can't set WS headers). Without it the engine rejects the handshake — an
+ *  unauthenticated probe reads as "offline" even when the tunnel is fine. */
+async function withWsAuthToken(wsUrl: string): Promise<string> {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return wsUrl;
+    return `${wsUrl}${wsUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+}
+
 /** RLS-scoped direct read of the user's registered Matrx Local instances. */
 export async function fetchAppInstances(): Promise<AppInstance[]> {
     const { data, error } = await supabase
@@ -158,10 +168,11 @@ export function useAppInstances() {
             )
         );
 
+        const authedWsUrl = await withWsAuthToken(wsUrl);
         const start = Date.now();
         await new Promise<void>(resolve => {
             try {
-                const ws = new WebSocket(wsUrl);
+                const ws = new WebSocket(authedWsUrl);
                 const timer = setTimeout(() => {
                     ws.close();
                     setInstances(prev =>
@@ -251,7 +262,9 @@ export function useAppInstances() {
         }
 
         // WS test
-        const wsUrl = url.replace(/^https?/, (m) => m === 'https' ? 'wss' : 'ws') + '/ws';
+        const wsUrl = await withWsAuthToken(
+            url.replace(/^https?/, (m) => m === 'https' ? 'wss' : 'ws') + '/ws',
+        );
         const wsStart = Date.now();
         await new Promise<void>(resolve => {
             try {
