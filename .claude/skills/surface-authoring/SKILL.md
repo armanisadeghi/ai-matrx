@@ -55,7 +55,9 @@ These are short — read them when the task is non-trivial:
 - `features/surfaces/manifests/registry.ts` — register your manifest in **`RAW_MANIFESTS`**; `ALL_MANIFESTS` is derived from it (inheritance resolved + baselines injected) and is what everything consumes
 - `features/surfaces/manifests/notes-editor.manifest.ts` — canonical full example (mix of baseline + specific + scope helper)
 
-The full `SurfaceManifest` also carries `label`, `urlPattern`, `inheritsFrom`, `agentRoles`, `configNamespaces`, `evidenceSources` (code-only, never mirrored to DB), and `skipBaselineValues` — this skill covers the values half; for roles, config namespaces, and inheritance, **invoke the `surface-registration` skill**.
+The full `SurfaceManifest` also carries `label`, `urlPattern`, `inheritsFrom`, `intro`, `agentRoles`, `configNamespaces`, `evidenceSources` (code-only, never mirrored to DB), and `skipBaselineValues` — this skill covers the values half; for roles, config namespaces, and inheritance, **invoke the `surface-registration` skill**.
+
+**`intro` — the surface's self-introduction.** A single XML-ish block (`<surface_intro>…`) telling the agent what this surface IS, what the user does here, and how to read its values. Written from a close understanding of the surface's PURPOSE — this is the first surface-context item the agent sees. Mirrored to `ui_surface.intro`. Every Tier-1 surface should have one.
 
 ## The `SurfaceValue` shape — every field matters
 
@@ -67,6 +69,7 @@ interface SurfaceValue {
   valueType: "string" | "number" | "boolean" | "object" | "array" | "document";
   alwaysAvailable: boolean;  // true ONLY if the surface guarantees it on every launch
   typicalCharCount: number;  // avg stringified size — drives context-window warnings
+  autoContext?: boolean;     // default true — auto-added to agent context; false = bindable-only
   sortOrder?: number;        // optional, defaults to 1000 in DB
 }
 ```
@@ -111,6 +114,14 @@ This is the most-abused field. Only set `true` when the surface code **literally
 | `content` (full file body) | `false` (only `true` if you guarantee non-null) |
 
 The `createXxxScope` TS helper uses this to mark keys as required (no `?`) vs optional (`?`). Lying here defeats the "a UI cannot lie" enforcement.
+
+### `autoContext` — signal vs noise
+
+Declaring many values is GOOD (binding UIs offer them all); auto-shipping them all to the agent is NOT. Ask: *what does an agent on this surface truly need?* (a note surface: id, content, cursor, open tabs — not everything you could enumerate). Those keep `autoContext: true` (default); everything an agent could **look up from an id** is "inconvenient but resolvable" → `autoContext: false` (bindable-only). Mirrored to `ui_surface_value.auto_context`.
+
+### `alwaysAvailable` is earned by ROUTING
+
+A value can only be *guaranteed* when the surface's identity lives in the URL. `notes/[id]` can promise `id`, `content`, `cursor_position`, `selection` on every launch (even when empty) — a surface whose active record is component state cannot. **Tab test:** tab-as-route → surface values are guaranteed and precise; tab-as-state → they're useless. The ideal shape is list page → `[id]` page → per-tab routes → URL params. When authoring a manifest for a surface without solid dynamic routing, flag the routing gap to the user — moving the surface toward routed identity is often worth more than more values.
 
 ### `typicalCharCount`
 
