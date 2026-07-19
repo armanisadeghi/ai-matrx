@@ -6,12 +6,16 @@ import {
   ArrowRight,
   BarChart3,
   Building2,
+  CheckCircle2,
   Gauge,
-  KeyRound,
+  Loader2,
   LockKeyhole,
+  RefreshCw,
   SearchCheck,
+  Unplug,
   UserRound,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,15 +30,48 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
+import {
+  useConnectGoogle,
+  useDisconnectGoogle,
+  useGoogleConnectionInventory,
+} from "@/features/marketing/google/hooks";
+import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 
 export function MarketingConnectionsWorkspace() {
   const sites = useSiteOptions();
   const organizations = useActiveOrganizationPicker();
+  const inventory = useGoogleConnectionInventory();
+  const connect = useConnectGoogle();
+  const disconnect = useDisconnectGoogle();
   const [siteId, setSiteId] = useState("");
   const selectedSite = sites.data?.find((site) => site.id === siteId);
-  const organizationHref = organizations.activeOrgId
-    ? `/organizations/${organizations.activeOrgId}/settings#vault`
-    : "/organizations";
+  const resourcesByConnection = new Map<string, number>();
+  for (const resource of inventory.data?.resources ?? []) {
+    resourcesByConnection.set(
+      resource.connection_id,
+      (resourcesByConnection.get(resource.connection_id) ?? 0) + 1,
+    );
+  }
+
+  const startConnection = async (owner: "user" | "organization") => {
+    try {
+      await connect.mutateAsync({
+        owner:
+          owner === "organization" && organizations.activeOrgId
+            ? {
+                type: "organization",
+                organizationId: organizations.activeOrgId,
+              }
+            : { type: "user" },
+        returnPath: "/marketing/connections",
+      });
+      toast.success("Google account connected and properties discovered.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to connect Google.",
+      );
+    }
+  };
 
   return (
     <>
@@ -67,13 +104,13 @@ export function MarketingConnectionsWorkspace() {
             <ProviderCard
               icon={SearchCheck}
               title="Google Search Console"
-              status="Vault credentials supported"
+              status="OAuth + offline access"
               description="Seed canonical URLs, search queries, indexing evidence, clicks, and impressions."
             />
             <ProviderCard
               icon={BarChart3}
               title="Google Analytics 4"
-              status="Connection authority pending"
+              status="OAuth + property discovery"
               description="Add traffic, landing-page, engagement, channel, and conversion context."
             />
             <ProviderCard
@@ -90,17 +127,18 @@ export function MarketingConnectionsWorkspace() {
                 1. Choose where credentials belong
               </h2>
               <p className="mt-0.5 text-[10px] text-muted-foreground">
-                Personal credentials follow you. Organization credentials are
-                reusable by authorized team members.
+                Personal connections follow you. Organization connections are
+                reusable by authorized team members without exposing tokens.
               </p>
             </div>
             <div className="grid gap-2 p-3 md:grid-cols-2">
               <ConnectionScope
                 icon={UserRound}
                 title="Personal connection"
-                description="Store your Google service-account JSON or OAuth client/refresh credentials in your personal encrypted vault."
-                href="/settings/secrets"
-                action="Open personal vault"
+                description="Authorize Google once for Search Console and Analytics. Offline access supports scheduled synchronization."
+                action="Connect personal Google"
+                busy={connect.isPending}
+                onAction={() => startConnection("user")}
               />
               <ConnectionScope
                 icon={Building2}
@@ -109,21 +147,89 @@ export function MarketingConnectionsWorkspace() {
                     ? `${organizations.activeOrgName} connection`
                     : "Organization connection"
                 }
-                description="Store shared credentials in the active organization's vault so the team can use them without revealing their values."
-                href={organizationHref}
+                description="Create a shared Google connection for authorized organization members and managed sites."
                 action={
                   organizations.activeOrgId
-                    ? "Open organization vault"
+                    ? "Connect organization Google"
                     : "Choose an organization"
                 }
+                busy={connect.isPending}
+                disabled={!organizations.activeOrgId}
+                onAction={() => startConnection("organization")}
               />
             </div>
             <div className="border-t border-border bg-muted/20 px-3 py-2 text-[10px] text-muted-foreground">
-              Search Console accepts <code>FIREBASE_SERVICE_ACCOUNT</code> or{" "}
-              <code>GOOGLE_SERVICE_ACCOUNT</code> JSON, or Google OAuth client
-              credentials plus <code>GSC_REFRESH_TOKEN</code>. Do not paste
-              credentials into site settings.
+              OAuth tokens are exchanged server-side, encrypted before storage,
+              and never returned to the browser. This page reads only safe
+              connection metadata and discovered properties directly from
+              Supabase.
             </div>
+          </section>
+
+          <section className="rounded-lg border border-border bg-card">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+              <div>
+                <h2 className="text-sm font-semibold">
+                  Connected Google accounts
+                </h2>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  Reconnect to refresh consent or property inventory.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5 text-xs"
+                disabled={inventory.isFetching}
+                onClick={() => inventory.refetch()}
+              >
+                {inventory.isFetching ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Refresh
+              </Button>
+            </div>
+            {inventory.isLoading ? (
+              <div className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading
+                connections…
+              </div>
+            ) : inventory.isError ? (
+              <p className="p-3 text-xs text-destructive">
+                {inventory.error.message}
+              </p>
+            ) : inventory.data?.connections.length ? (
+              <div className="divide-y divide-border">
+                {inventory.data.connections.map((connection) => (
+                  <ConnectionRow
+                    key={connection.id}
+                    connection={connection}
+                    resourceCount={
+                      resourcesByConnection.get(connection.id) ?? 0
+                    }
+                    busy={disconnect.isPending}
+                    onDisconnect={async () => {
+                      try {
+                        await disconnect.mutateAsync(connection.id);
+                        toast.success("Google account disconnected.");
+                      } catch (error) {
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : "Unable to disconnect Google.",
+                        );
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="p-3 text-xs text-muted-foreground">
+                No Google accounts are connected yet.
+              </p>
+            )}
           </section>
 
           <section className="rounded-lg border border-border bg-card">
@@ -172,16 +278,15 @@ export function MarketingConnectionsWorkspace() {
             </div>
           </section>
 
-          <Alert className="border-amber-500/40 bg-amber-500/5 py-2.5">
-            <KeyRound className="h-4 w-4 text-amber-600" />
+          <Alert className="border-emerald-500/40 bg-emerald-500/5 py-2.5">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             <AlertTitle className="text-xs">
-              One-click Google OAuth is not available yet
+              Production OAuth authority enabled
             </AlertTitle>
             <AlertDescription className="text-[11px] leading-4 text-muted-foreground">
-              The shared OAuth authority still needs to return durable, opaque
-              user/org connection IDs. Until it exists, this workspace uses the
-              encrypted vault path above and will not send you to the legacy
-              page that stores a Google access token in browser storage.
+              Search Console and Analytics properties are discovered during
+              connection. PageSpeed uses an application-owned quota key and does
+              not require access to a user account.
             </AlertDescription>
           </Alert>
         </div>
@@ -223,14 +328,18 @@ function ConnectionScope({
   icon: Icon,
   title,
   description,
-  href,
   action,
+  busy,
+  disabled,
+  onAction,
 }: {
   icon: typeof UserRound;
   title: string;
   description: string;
-  href: string;
   action: string;
+  busy: boolean;
+  disabled?: boolean;
+  onAction: () => void;
 }) {
   return (
     <div className="flex items-start gap-3 rounded-md border border-border p-3">
@@ -241,16 +350,77 @@ function ConnectionScope({
           {description}
         </p>
         <Button
-          asChild
           size="sm"
           variant="outline"
           className="mt-2 h-7 gap-1 text-xs"
+          disabled={busy || disabled}
+          onClick={onAction}
         >
-          <Link href={href}>
-            {action} <ArrowRight className="h-3 w-3" />
-          </Link>
+          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+          {action} <ArrowRight className="h-3 w-3" />
         </Button>
       </div>
+    </div>
+  );
+}
+
+function ConnectionRow({
+  connection,
+  resourceCount,
+  busy,
+  onDisconnect,
+}: {
+  connection: GoogleConnectionSummary;
+  resourceCount: number;
+  busy: boolean;
+  onDisconnect: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="truncate text-xs font-semibold">
+            {connection.account_name ||
+              connection.account_email ||
+              "Google account"}
+          </span>
+          <Badge
+            variant={connection.status === "connected" ? "success" : "warning"}
+          >
+            {connection.status === "connected"
+              ? "Connected"
+              : "Needs attention"}
+          </Badge>
+          <Badge variant="outline">
+            {connection.owner_type === "organization"
+              ? "Organization"
+              : "Personal"}
+          </Badge>
+        </div>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">
+          {connection.account_email || "Email unavailable"} · {resourceCount}{" "}
+          discovered propert{resourceCount === 1 ? "y" : "ies"}
+        </p>
+        {connection.last_error ? (
+          <p className="mt-1 max-w-3xl text-[10px] text-amber-700 dark:text-amber-400">
+            {connection.last_error}
+          </p>
+        ) : null}
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 gap-1.5 text-xs text-destructive"
+        disabled={busy}
+        onClick={onDisconnect}
+      >
+        {busy ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Unplug className="h-3.5 w-3.5" />
+        )}
+        Disconnect
+      </Button>
     </div>
   );
 }

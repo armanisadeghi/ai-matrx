@@ -40897,6 +40897,122 @@ export type Database = {
   }
   users: {
     Tables: {
+      integration_connection_resources: {
+        Row: {
+          connection_id: string
+          created_at: string
+          deleted_at: string | null
+          discovered_at: string
+          display_name: string
+          id: string
+          metadata: Json
+          permission_level: string | null
+          resource_ref: string
+          resource_type: string
+          updated_at: string
+        }
+        Insert: {
+          connection_id: string
+          created_at?: string
+          deleted_at?: string | null
+          discovered_at?: string
+          display_name: string
+          id?: string
+          metadata?: Json
+          permission_level?: string | null
+          resource_ref: string
+          resource_type: string
+          updated_at?: string
+        }
+        Update: {
+          connection_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          discovered_at?: string
+          display_name?: string
+          id?: string
+          metadata?: Json
+          permission_level?: string | null
+          resource_ref?: string
+          resource_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_connection_resources_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_connections: {
+        Row: {
+          account_email: string | null
+          account_name: string | null
+          created_at: string
+          credential_ciphertext: string
+          credential_iv: string
+          credential_tag: string
+          deleted_at: string | null
+          id: string
+          last_error: string | null
+          last_verified_at: string | null
+          metadata: Json
+          organization_id: string | null
+          owner_type: string
+          owner_user_id: string | null
+          provider: string
+          provider_subject: string
+          scopes: string[]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_email?: string | null
+          account_name?: string | null
+          created_at?: string
+          credential_ciphertext: string
+          credential_iv: string
+          credential_tag: string
+          deleted_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          owner_type: string
+          owner_user_id?: string | null
+          provider: string
+          provider_subject: string
+          scopes?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_email?: string | null
+          account_name?: string | null
+          created_at?: string
+          credential_ciphertext?: string
+          credential_iv?: string
+          credential_tag?: string
+          deleted_at?: string | null
+          id?: string
+          last_error?: string | null
+          last_verified_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          owner_type?: string
+          owner_user_id?: string | null
+          provider?: string
+          provider_subject?: string
+          scopes?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invitation_codes: {
         Row: {
           code: string

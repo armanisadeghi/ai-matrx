@@ -78,6 +78,15 @@ describe("marketing site integration JSON", () => {
     ).toBe("reference_configured");
   });
 
+  it("allows PageSpeed with the application-owned quota key", () => {
+    const draft = parseSiteIntegrations({});
+    draft.pageSpeedInsights.enabled = true;
+    expect(validateSiteIntegrations(draft)).toEqual([]);
+    expect(providerReferenceStatus(draft.pageSpeedInsights, false, false)).toBe(
+      "reference_configured",
+    );
+  });
+
   it("blocks rewrites of integration JSON that already contains secret fields", () => {
     const draft = parseSiteIntegrations({});
     expect(() =>

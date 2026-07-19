@@ -44,6 +44,11 @@ import {
 } from "@/features/marketing/data/integrations-schema";
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
 import { marketingKeys } from "@/features/marketing/data/hooks";
+import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import type {
+  GoogleConnectionResource,
+  GoogleConnectionSummary,
+} from "@/features/marketing/google/types";
 import type { MarketingSite } from "@/features/marketing/types";
 
 const authorityLabels: Record<CredentialAuthority, string> = {
@@ -96,6 +101,7 @@ export function SiteIntegrationsWorkspace() {
 
 function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const queryClient = useQueryClient();
+  const googleInventory = useGoogleConnectionInventory();
   const initial = useMemo(
     () => parseSiteIntegrations(site.integrations),
     [site],
@@ -190,10 +196,10 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             Start with a secure connection
           </AlertTitle>
           <AlertDescription className="text-[11px] leading-4 text-muted-foreground">
-            Credentials belong in your personal or organization vault. This
-            screen saves only the credential reference and provider property; it
-            never accepts OAuth tokens, API keys, or client secrets. One-click
-            Google OAuth awaits the shared opaque connection authority.
+            Connect Google once, then select the account and discovered property
+            below. This screen saves only the opaque connection UUID and
+            property reference; it never receives OAuth tokens, API keys, or
+            client secrets.
             <span className="mt-2 flex flex-wrap gap-2">
               <Button
                 asChild
@@ -231,8 +237,11 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
           {builtIns.map(({ key, ...provider }) => (
             <BuiltInProviderCard
               key={key}
+              providerKey={key}
               {...provider}
               value={draft[key]}
+              connections={googleInventory.data?.connections ?? []}
+              resources={googleInventory.data?.resources ?? []}
               onChange={(next) => setBuiltIn(key, next)}
             />
           ))}
@@ -330,23 +339,33 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
 }
 
 function BuiltInProviderCard({
+  providerKey,
   label,
   description,
   resourceLabel,
   resourcePlaceholder,
   icon: Icon,
   value,
+  connections,
+  resources,
   onChange,
 }: {
+  providerKey: BuiltInProviderKey;
   label: string;
   description: string;
   resourceLabel?: string;
   resourcePlaceholder?: string;
   icon: typeof SearchCheck;
   value: ProviderIntegrationDraft;
+  connections: GoogleConnectionSummary[];
+  resources: GoogleConnectionResource[];
   onChange: (next: ProviderIntegrationDraft) => void;
 }) {
-  const status = providerReferenceStatus(value, Boolean(resourceLabel));
+  const status = providerReferenceStatus(
+    value,
+    Boolean(resourceLabel),
+    providerKey !== "pageSpeedInsights",
+  );
   return (
     <section className="rounded-lg border border-border bg-card">
       <div className="flex min-h-14 items-start justify-between gap-3 border-b border-border p-3">
@@ -370,8 +389,10 @@ function BuiltInProviderCard({
       <div className="space-y-3 p-3">
         <StatusBadge status={status} />
         <ProviderReferenceFields
-          idPrefix={label.toLowerCase().replaceAll(" ", "-")}
+          providerKey={providerKey}
           value={value}
+          connections={connections}
+          resources={resources}
           resourceLabel={resourceLabel}
           resourcePlaceholder={resourcePlaceholder}
           onChange={onChange}
@@ -382,75 +403,109 @@ function BuiltInProviderCard({
 }
 
 function ProviderReferenceFields({
-  idPrefix,
+  providerKey,
   value,
+  connections,
+  resources,
   resourceLabel,
   resourcePlaceholder,
   onChange,
 }: {
-  idPrefix: string;
+  providerKey: BuiltInProviderKey;
   value: ProviderIntegrationDraft;
+  connections: GoogleConnectionSummary[];
+  resources: GoogleConnectionResource[];
   resourceLabel?: string;
   resourcePlaceholder?: string;
   onChange: (next: ProviderIntegrationDraft) => void;
 }) {
+  if (providerKey === "pageSpeedInsights") {
+    return (
+      <p className="rounded-md border border-border bg-muted/20 p-2 text-[10px] leading-4 text-muted-foreground">
+        PageSpeed uses the application quota key. No Google account or
+        credential reference is required.
+      </p>
+    );
+  }
+
+  const resourceType =
+    providerKey === "googleSearchConsole"
+      ? "search_console_property"
+      : "analytics_property";
+  const availableResources = resources.filter(
+    (resource) =>
+      resource.connection_id === value.credentialRef &&
+      resource.resource_type === resourceType,
+  );
+
   return (
     <>
       <div className="space-y-1.5">
-        <Label className="text-[11px]">Credential authority</Label>
+        <Label className="text-[11px]">Google connection</Label>
         <Select
-          value={value.credentialAuthority || undefined}
-          onValueChange={(credentialAuthority) =>
+          value={value.credentialRef || undefined}
+          onValueChange={(credentialRef) =>
             onChange({
               ...value,
-              credentialAuthority: credentialAuthority as CredentialAuthority,
+              credentialAuthority: "external_connection",
+              credentialRef,
+              resourceRef: "",
             })
           }
         >
           <SelectTrigger size="sm">
-            <SelectValue placeholder="Select reference type" />
+            <SelectValue placeholder="Select a connected account" />
           </SelectTrigger>
           <SelectContent>
-            {credentialAuthorities.map((authority) => (
-              <SelectItem key={authority} value={authority}>
-                {authorityLabels[authority]}
+            {connections.map((connection) => (
+              <SelectItem key={connection.id} value={connection.id}>
+                {connection.account_name ||
+                  connection.account_email ||
+                  "Google account"}
+                {connection.owner_type === "organization"
+                  ? " · Organization"
+                  : " · Personal"}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-credential-ref`} className="text-[11px]">
-          Credential reference UUID
-        </Label>
-        <Input
-          id={`${idPrefix}-credential-ref`}
-          className="h-8 font-mono text-[11px]"
-          value={value.credentialRef}
-          placeholder="00000000-0000-4000-8000-000000000000"
-          autoComplete="off"
-          spellCheck={false}
-          onChange={(event) =>
-            onChange({ ...value, credentialRef: event.target.value })
-          }
-        />
+        {!connections.length ? (
+          <p className="text-[10px] text-muted-foreground">
+            <Link
+              className="text-primary underline"
+              href="/marketing/connections"
+            >
+              Connect Google
+            </Link>{" "}
+            before binding a property.
+          </p>
+        ) : null}
       </div>
       {resourceLabel ? (
         <div className="space-y-1.5">
-          <Label htmlFor={`${idPrefix}-resource-ref`} className="text-[11px]">
-            {resourceLabel}
-          </Label>
-          <Input
-            id={`${idPrefix}-resource-ref`}
-            className="h-8 font-mono text-[11px]"
-            value={value.resourceRef}
-            placeholder={resourcePlaceholder}
-            autoComplete="off"
-            spellCheck={false}
-            onChange={(event) =>
-              onChange({ ...value, resourceRef: event.target.value })
-            }
-          />
+          <Label className="text-[11px]">{resourceLabel}</Label>
+          <Select
+            value={value.resourceRef || undefined}
+            disabled={!value.credentialRef || !availableResources.length}
+            onValueChange={(resourceRef) => onChange({ ...value, resourceRef })}
+          >
+            <SelectTrigger size="sm">
+              <SelectValue
+                placeholder={
+                  value.credentialRef && !availableResources.length
+                    ? "No properties discovered"
+                    : resourcePlaceholder
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {availableResources.map((resource) => (
+                <SelectItem key={resource.id} value={resource.resource_ref}>
+                  {resource.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       ) : null}
     </>

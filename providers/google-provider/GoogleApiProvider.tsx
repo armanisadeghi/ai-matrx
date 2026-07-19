@@ -108,16 +108,33 @@ export default function GoogleAPIProvider({
   children,
   scopes,
 }: GoogleAPIProviderProps) {
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [grantedScopes, setGrantedScopes] = useState<string[]>([]);
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(token));
+  const [isInitializing, setIsInitializing] = useState(Boolean(clientId));
+  const [error, setError] = useState<string | null>(
+    clientId ? null : "Missing Google API Client ID.",
+  );
+  const [grantedScopes, setGrantedScopes] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const savedScopes = localStorage.getItem(SCOPES_STORAGE_KEY);
+      const parsed: unknown = savedScopes ? JSON.parse(savedScopes) : [];
+      return Array.isArray(parsed) &&
+        parsed.every((scope) => typeof scope === "string")
+        ? parsed
+        : [];
+    } catch {
+      return [];
+    }
+  });
   const [authInProgress, setAuthInProgress] = useState(false);
 
   const tokenClientRef = useRef<TokenClient | null>(null);
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   const resetError = useCallback(() => setError(null), []);
 
@@ -137,9 +154,7 @@ export default function GoogleAPIProvider({
 
   const handleCredentialResponse = useCallback(
     (response: TokenResponse) => {
-      console.log("Full response:", response);
       if (response.access_token) {
-        console.log("Token:", response.access_token);
         setToken(response.access_token);
         setIsAuthenticated(true);
         const newScopes = response.scope ? response.scope.split(" ") : [];
@@ -162,24 +177,6 @@ export default function GoogleAPIProvider({
     [saveAuthToStorage],
   );
 
-  // Restore auth from localStorage
-  useEffect(() => {
-    try {
-      const savedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
-      const savedScopes = localStorage.getItem(SCOPES_STORAGE_KEY);
-      if (savedToken) {
-        setToken(savedToken);
-        setIsAuthenticated(true);
-        if (savedScopes) {
-          const parsedScopes = JSON.parse(savedScopes);
-          if (Array.isArray(parsedScopes)) setGrantedScopes(parsedScopes);
-        }
-      }
-    } catch (e) {
-      console.error("Error accessing localStorage:", e);
-    }
-  }, []);
-
   const clearAuthFromStorage = useCallback(() => {
     try {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -197,8 +194,6 @@ export default function GoogleAPIProvider({
     );
 
     if (!clientId) {
-      setError("Missing Google API Client ID.");
-      setIsInitializing(false);
       return;
     }
 
@@ -243,7 +238,6 @@ export default function GoogleAPIProvider({
         client_id: clientId,
         scope: scopesToRequest.join(" "),
         callback: (response: TokenResponse) => {
-          console.log("Token client callback fired:", response);
           handleCredentialResponse(response);
           setAuthInProgress(false);
         },
@@ -327,9 +321,11 @@ export default function GoogleAPIProvider({
         clearAuthFromStorage();
         resetError();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Sign-out error:", err);
-      setError(`Sign-out failed: ${err.message}`);
+      setError(
+        `Sign-out failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
     }
   };
 
@@ -364,7 +360,6 @@ export default function GoogleAPIProvider({
           client_id: clientId,
           scope: scopes.join(" "),
           callback: (response: TokenResponse) => {
-            console.log("Scope request callback fired:", response);
             const success = handleCredentialResponse(response);
             resolve(success);
             setAuthInProgress(false);

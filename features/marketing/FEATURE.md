@@ -19,7 +19,7 @@ Agency-scale website operations built around stable site and page identity. The 
 - `.../analysis` — open, non-suppressed priority queue from `web.v_priority_queue`.
 - `.../findings` and `.../findings/[findingId]` — durable finding register, lifecycle detail, and immutable result evidence.
 - `.../links` and `.../screenshots` — accepted link evidence and stored visual captures.
-- `.../integrations` — reference-only GSC, GA4, PageSpeed, and custom provider bindings.
+- `.../integrations` — verified Google Search Console/GA4 property bindings, app-managed PageSpeed, and custom provider bindings.
 - `.../crawls/[crawlId]/snapshots` and `.../links` — run-scoped capture and link evidence.
 - `.../access` and `.../settings` — site-root sharing and crawl/site configuration.
 - `.../cost` — site cost by page, run, and execution item.
@@ -31,7 +31,7 @@ Agency-scale website operations built around stable site and page identity. The 
 - `features/marketing/data/analysis-service.ts` and `analysis-hooks.ts` — isolated direct-Supabase priority, finding, and result reads.
 - `features/marketing/data/inspection-*` and `operations-*` — isolated direct-Supabase media, link, batch, and cost reads.
 - `features/marketing/crawler/direct-client.ts` — direct authenticated scraper commands and transient NDJSON only.
-- There are no Marketing Next.js API routes, Python history routes, or AI Dream intermediaries.
+- Persisted Marketing reads never use Next.js, Python history routes, or AI Dream intermediaries. The Google OAuth start/callback/disconnect routes are command-only control-plane boundaries because client secrets and refresh tokens cannot run in the browser.
 
 ## Data model
 
@@ -61,7 +61,7 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 7. Inspect evidence: site/crawl link workspaces and the screenshot gallery read records directly from Supabase; screenshot media resolves through the canonical Files renderer using direct Supabase Storage URLs.
 8. Share and configure: `/access` calls canonical IAM grant/list/revoke RPCs for the `web_site` root; `/settings` uses version-checked direct Supabase updates.
 9. Monitor execution: batch and cost workspaces page through `web.batch_*` and the canonical cost views; runtime cost is attributed only through `link_kind='web_batch_item'` and the batch item id.
-10. Configure integrations: `/marketing/connections` guides users to the existing personal or organization encrypted vault, then into the selected site's `/integrations` workspace. Site JSON stores only an authority type, opaque credential UUID, and provider property reference. It never accepts or labels a token as connected; one-click Google OAuth awaits the shared opaque connection authority.
+10. Configure integrations: `/marketing/connections` connects a reusable personal or organization Google account through the authorization-code flow and discovers its Search Console and GA4 resources. The browser reads connection metadata and resource choices directly from Supabase. A site's `/integrations` workspace binds only the selected connection/resource references; PageSpeed uses the application's API key and does not require user OAuth.
 
 ## Invariants & gotchas
 
@@ -76,7 +76,8 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 - `crawl_event.sequence` defaults ascending; every sort adds `id` as a deterministic tie-breaker.
 - Snapshot body and screenshot fields are durable references. Screenshot media is fetched directly from Supabase Storage; it is never fetched through the scraper or AI Dream.
 - No legacy crawler data is migrated or read.
-- An integration reference is not a verified connection. Google OAuth tokens and client secrets must live in a shared server-side credential authority, never `web.site.integrations` or browser storage.
+- Google OAuth credentials are encrypted at rest in `users.integration_connections`; authenticated browser roles cannot select the credential columns. Site JSON contains only connection/resource references, never tokens or client secrets.
+- OAuth API routes exchange/revoke credentials only. Connection lists, discovered resources, site bindings, and all crawler/analysis history are read directly from Supabase under RLS.
 
 ## Related features
 
@@ -93,7 +94,7 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 
 ## Current work
 
-The site/page/crawl foundation, direct live-crawl controls, analysis/finding workspaces, link/screenshot inspection, safe vault onboarding and reference-only integration configuration, site access/settings, batch monitor, and site/workspace cost rollups are live in code. One-click Google OAuth, verified connection IDs and sync metrics, cross-site analysis, catalog seeding/configuration, schedule UI, and CMS change sets remain later verticals under the approved platform plan.
+The site/page/crawl foundation, direct live-crawl controls, analysis/finding workspaces, link/screenshot inspection, reusable personal/org Google OAuth, discovered GSC/GA4 property binding, app-managed PageSpeed, site access/settings, batch monitor, and site/workspace cost rollups are live in code. Remaining verticals include actual GSC/GA4/PageSpeed synchronization and metric history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
 
@@ -104,3 +105,4 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 - 2026-07-18 — Codex: added secret-free site integration references for GSC, GA4, PageSpeed, and extensible providers; verified connection authority remains intentionally separate.
 - 2026-07-19 — Codex: wired the main Marketing Hub to the production workspace and added user/org vault onboarding plus site binding entry points without using the legacy browser-token Google page.
 - 2026-07-19 — Codex: added a user-facing live crawl event presenter that keeps exception, ORM query/argument, stack, and ANSI details out of the primary feed.
+- 2026-07-19 — Codex: added production Google OAuth with encrypted reusable personal/org connections, automatic Search Console and GA4 discovery, direct-Supabase connection/resource reads, site property selectors, and app-managed PageSpeed configuration.

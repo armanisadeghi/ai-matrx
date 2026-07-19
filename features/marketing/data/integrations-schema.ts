@@ -255,7 +255,9 @@ function validateBuiltIn(
   resourceKind: "gsc" | "ga4" | "optional",
   issues: IntegrationValidationIssue[],
 ) {
-  validateCredential(provider, field, label, issues);
+  if (field !== "pageSpeedInsights") {
+    validateCredential(provider, field, label, issues);
+  }
   const resource = provider.resourceRef.trim();
   if (provider.enabled && resourceKind !== "optional" && !resource) {
     issues.push({
@@ -359,11 +361,13 @@ export type ProviderReferenceStatus =
 export function providerReferenceStatus(
   provider: ProviderIntegrationDraft,
   requiresResource = true,
+  requiresCredential = true,
 ): ProviderReferenceStatus {
   if (!provider.enabled) return "disabled";
   if (
-    !provider.credentialAuthority ||
-    !UUID_PATTERN.test(provider.credentialRef.trim()) ||
+    (requiresCredential &&
+      (!provider.credentialAuthority ||
+        !UUID_PATTERN.test(provider.credentialRef.trim()))) ||
     (requiresResource && !provider.resourceRef.trim())
   ) {
     return "needs_reference";

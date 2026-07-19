@@ -6,6 +6,7 @@
 export const REGISTERED_GOOGLE_SCOPE_URLS = [
   "https://www.googleapis.com/auth/webmasters",
   "https://www.googleapis.com/auth/webmasters.readonly",
+  "https://www.googleapis.com/auth/analytics.readonly",
   "https://www.googleapis.com/auth/calendar.app.created",
   "https://www.googleapis.com/auth/drive.file",
 ] as const;
@@ -27,6 +28,13 @@ export const googleServices = {
     description: "Read-only access to Search Console data.",
     color: "#34A853",
     icon: "webmasters",
+  },
+  analytics_readonly: {
+    name: "Google Analytics (read-only)",
+    scope: "https://www.googleapis.com/auth/analytics.readonly",
+    description: "Read Analytics accounts, properties, and reporting data.",
+    color: "#E37400",
+    icon: "analytics",
   },
   calendar_app_created: {
     name: "App-created Calendars",
