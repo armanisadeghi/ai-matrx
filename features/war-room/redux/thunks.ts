@@ -1333,6 +1333,47 @@ export const startThreadConversation =
   };
 
 /**
+ * Attach an EXISTING conversation (one the user already owns, picked from the
+ * conversation picker) to a thread and bind it as the thread's active chat.
+ *
+ * Unlike `startThreadConversation` — which MINTS a brand-new conversation —
+ * this links a conversation that already exists. The current title is stamped
+ * as the edge `label` so the Resources surface and the Chat switcher show the
+ * real name immediately (no re-read of `chat.conversation`, per the label-at-
+ * attach-time contract). Idempotent: re-picking an already-attached chat just
+ * re-focuses it. Binding the panel needs the tile's session, so `sessionId` is
+ * required.
+ */
+export const attachExistingConversationToThread =
+  (
+    threadId: string,
+    sessionId: string,
+    conversationId: string,
+    label?: string | null,
+  ) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    const already = selectAssignmentsForContainer(
+      "thread",
+      threadId,
+    )(getState()).some(
+      (a) => a.entity_type === "conversation" && a.entity_id === conversationId,
+    );
+    if (!already) {
+      const ok = await dispatch(
+        attachEntityToThread(threadId, "conversation", conversationId, {
+          label: label?.trim() || null,
+          metadata: { role: "agent" },
+        }),
+      );
+      if (!ok) return false;
+    }
+    await dispatch(
+      setThreadActiveConversation(threadId, sessionId, conversationId),
+    );
+    return true;
+  };
+
+/**
  * One-time thread provisioning — the ONLY place a thread's note, audio
  * session, and chat conversation are created automatically. Runs right after
  * the thread row is created (createThread / ensureRoomForProject); nothing

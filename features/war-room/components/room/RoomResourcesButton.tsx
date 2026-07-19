@@ -84,7 +84,12 @@ function RoomResourcesSheet({
   const adapter = useRoomResourcesAdapter(sessionId);
   const body = (
     <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-1 py-1">
-      <WarRoomResourcesList adapter={adapter} variant="full" containerKind="room" />
+      <WarRoomResourcesList
+        adapter={adapter}
+        variant="full"
+        containerKind="room"
+        scopeKey={sessionId}
+      />
     </div>
   );
   const subtitle =

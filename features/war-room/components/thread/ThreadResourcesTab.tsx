@@ -342,6 +342,7 @@ export function ThreadResourcesTab({
           adapter={adapter}
           variant={compact ? "compact" : "full"}
           containerKind="thread"
+          scopeKey={threadId}
           renderRow={(row, ctx) =>
             row.token === "file" ? (
               <FileResourceRow ctx={ctx} row={row} compact={compact} />

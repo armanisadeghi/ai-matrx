@@ -33,12 +33,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { deleteDocument } from "@/features/data-tables/document-service";
 import { deleteFile } from "@/features/files/redux/thunks";
 import { deleteNote } from "@/features/notes/redux/thunks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { AssociationPickerSheet } from "@/features/scopes/components/associations/AssociationPickerSheet";
+import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import {
   UniversalAssociationPicker,
   attachedKey,
@@ -66,6 +67,12 @@ export interface WarRoomResourcesListProps {
   variant?: "full" | "compact";
   /** Wording for detach — thread vs room container. */
   containerKind?: "thread" | "room";
+  /**
+   * Stable id of the container (threadId / roomId) — scopes the conversation
+   * picker's fetch + window state so two open surfaces don't collide. Falls
+   * back to `containerKind` when omitted.
+   */
+  scopeKey?: string;
   renderSectionActions?: (token: EntityTypeToken) => ReactNode;
   renderRow?: (
     row: ContainerResourceRow,
@@ -90,6 +97,7 @@ export function WarRoomResourcesList({
   tokens: tokenFilter,
   variant = "full",
   containerKind = "thread",
+  scopeKey,
   renderSectionActions,
   renderRow,
   className,
@@ -105,6 +113,28 @@ export function WarRoomResourcesList({
   >(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
 
+  // Live conversation titles from the chat-list store. Conversation edges are
+  // attached without a label (the chat has no title when it's minted), so
+  // without this a row would fall through to the cold DB read and render as
+  // "Untitled Conversation" + a bare id. Feeding the live title in as the edge
+  // `label` makes the real name win immediately (and it stays fresh when the
+  // server auto-labels the chat). See FEATURE.md § label-at-attach-time.
+  const conversationTitles = useAppSelector(
+    (s) => s.conversationList.byConversationId,
+  );
+  const labelFor = (r: {
+    token: string;
+    resourceId: string;
+    label?: string | null;
+  }): string | null => {
+    if (r.label && r.label.trim()) return r.label;
+    if (r.token === "conversation") {
+      const t = conversationTitles[r.resourceId]?.title;
+      if (t && t.trim()) return t;
+    }
+    return r.label ?? null;
+  };
+
   const rows = tokenFilter
     ? adapter.rows.filter((r) => (tokenFilter as string[]).includes(r.token))
     : adapter.rows;
@@ -114,7 +144,7 @@ export function WarRoomResourcesList({
     visibleRows.map((r) => ({
       token: r.token,
       id: r.resourceId,
-      label: r.label,
+      label: labelFor(r),
     })),
   );
 
@@ -349,7 +379,7 @@ export function WarRoomResourcesList({
                           const title = titleFor({
                             token: row.token,
                             id: row.resourceId,
-                            label: row.label,
+                            label: labelFor(row),
                           });
                           const idPrefix = (
                             <ResourceIdCopy id={row.resourceId} />
@@ -428,7 +458,29 @@ export function WarRoomResourcesList({
         </div>
       )}
 
-      {pickerToken && (
+      {/* Conversations get the proper /chat-style picker window (NOT the
+          token-generic right-side drawer) — browsing/searching chats to attach
+          feels identical to the Chat sidebar. Every other token keeps the
+          shared AssociationPickerSheet. */}
+      {pickerToken === "conversation" ? (
+        <ConversationPickerWindow
+          open
+          onClose={() => setPickerToken(null)}
+          scopeId={`war-room-resources-chat:${scopeKey ?? containerKind}`}
+          title={
+            containerKind === "room"
+              ? "Add a chat to this room"
+              : "Add a chat to this thread"
+          }
+          onSelect={(conv) =>
+            void adapter.attach(
+              "conversation",
+              conv.conversationId,
+              conv.title ?? undefined,
+            )
+          }
+        />
+      ) : pickerToken ? (
         <AssociationPickerSheet
           open
           onOpenChange={(open) => {
@@ -445,7 +497,7 @@ export function WarRoomResourcesList({
           onAttach={(id, title) => adapter.attach(pickerToken, id, title)}
           onDetach={(id) => adapter.detach(pickerToken, id)}
         />
-      )}
+      ) : null}
 
       <ConfirmDialog
         open={!!confirm}
@@ -466,7 +518,7 @@ export function WarRoomResourcesList({
                   ? titleFor({
                       token: confirm.row.token,
                       id: confirm.row.resourceId,
-                      label: confirm.row.label,
+                      label: labelFor(confirm.row),
                     })
                   : ""}
               </b>{" "}

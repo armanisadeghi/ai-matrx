@@ -15,12 +15,13 @@
 // whole agent execution + TTS + working-document graph, so loading it lazily
 // keeps it out of the War Room bundle and the gallery hydrates fast.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Loader2, MessageCircle, Plus } from "lucide-react";
+import { Loader2, MessageCircle, MessagesSquare, Plus, Sparkles } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import { selectAssistantConversationId } from "@/features/transcript-studio/redux/selectors";
 import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
 import {
@@ -31,6 +32,7 @@ import {
 } from "@/features/war-room/redux/selectors";
 import {
   addAudioSessionToThread,
+  attachExistingConversationToThread,
   hydrateThreadAssignments,
   pruneThreadPhantomConversations,
   setThreadActiveConversation,
@@ -79,36 +81,76 @@ function ThreadChatChrome({
 }) {
   const dispatch = useAppDispatch();
   const adapter = useThreadConversationSelectAdapter(threadId, sessionId);
+  const activeConversationId = useAppSelector(
+    selectActiveConversationId(threadId),
+  );
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
-    <AssociationEntitySelect
-      token="conversation"
-      adapter={adapter}
-      align="start"
-      emptyLabel="Chat"
-      iconClassName="text-primary"
-      className="min-w-0 flex-1"
-      createSlot={(close) => (
-        <AgentListDropdown
-          onSelect={(agentId) => {
-            if (!sessionId) return;
-            void dispatch(
-              startThreadConversation(threadId, sessionId, agentId),
-            );
-            close();
-          }}
-          triggerSlot={
+    <>
+      <AssociationEntitySelect
+        token="conversation"
+        adapter={adapter}
+        align="start"
+        emptyLabel="Chat"
+        iconClassName="text-primary"
+        className="min-w-0 flex-1"
+        createSlot={(close) => (
+          <div className="flex flex-col">
+            {/* Attach an EXISTING chat — the /chat-style picker (replaces the
+                old token-generic drawer). */}
             <button
               type="button"
+              onClick={() => {
+                setPickerOpen(true);
+                close();
+              }}
               className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <Plus className="size-3.5" />
-              New Chat
+              <MessagesSquare className="size-3.5" />
+              Add existing chat
             </button>
-          }
-        />
-      )}
-    />
+            {/* Start a NEW chat by picking an agent. */}
+            <AgentListDropdown
+              onSelect={(agentId) => {
+                if (!sessionId) return;
+                void dispatch(
+                  startThreadConversation(threadId, sessionId, agentId),
+                );
+                close();
+              }}
+              triggerSlot={
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <Sparkles className="size-3.5" />
+                  New chat with agent
+                </button>
+              }
+            />
+          </div>
+        )}
+      />
+      <ConversationPickerWindow
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        scopeId={`war-room-thread-chat:${threadId}`}
+        title="Add a chat to this thread"
+        activeConversationId={activeConversationId}
+        onSelect={(conv) => {
+          if (!sessionId) return;
+          void dispatch(
+            attachExistingConversationToThread(
+              threadId,
+              sessionId,
+              conv.conversationId,
+              conv.title,
+            ),
+          );
+        }}
+      />
+    </>
   );
 }
 

@@ -105,6 +105,7 @@ function EntityTokenTab({
         adapter={adapter}
         variant={compact ? "compact" : "full"}
         containerKind="thread"
+        scopeKey={threadId}
         tokens={[info.token]}
       />
     </div>
