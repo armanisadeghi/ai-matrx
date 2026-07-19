@@ -196,6 +196,10 @@ const instanceVariableValuesSlice = createSlice({
       const entry = state.byConversationId[action.payload];
       if (entry) {
         entry.userValues = {};
+        // Runtime family policy is a one-request override, just like the
+        // variable value it qualifies. Saved agent defaults remain in the
+        // immutable definitions snapshot.
+        entry.resourcePolicies = {};
       }
     },
 

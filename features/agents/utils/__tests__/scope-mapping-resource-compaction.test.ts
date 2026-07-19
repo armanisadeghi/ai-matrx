@@ -45,4 +45,40 @@ describe("resource-family scope compaction", () => {
       ]),
     );
   });
+
+  it("keeps fallbacks for a malformed file id", () => {
+    const result = mapScopeToInstanceWithSurface(
+      { file_id: "not-a-file", full_document_text: "fallback" },
+      null,
+      null,
+      [],
+      [],
+    );
+    expect(result.contextEntries.map((entry) => entry.key)).toEqual([
+      "file_id",
+      "full_document_text",
+    ]);
+  });
+
+  it("does not duplicate a file mapped into a media variable", () => {
+    const result = mapScopeToInstanceWithSurface(
+      { file_id: "11111111-1111-4111-8111-111111111111" },
+      null,
+      {
+        pdf_file: { mapType: "surface_value", target: "file_id" },
+      },
+      [
+        {
+          name: "pdf_file",
+          defaultValue: "",
+          customComponent: { type: "document" },
+        },
+      ],
+      [],
+    );
+    expect(result.variableValues.pdf_file).toBe(
+      "11111111-1111-4111-8111-111111111111",
+    );
+    expect(result.contextEntries).toEqual([]);
+  });
 });

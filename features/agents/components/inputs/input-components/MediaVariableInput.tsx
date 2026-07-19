@@ -148,6 +148,9 @@ function describeValue(value: string): string {
 export interface MediaVariableInputProps {
   value: unknown;
   onChange: (v: string) => void;
+  /** Stable agent-definition key used on the request wire. */
+  variableKey?: string;
+  /** Human-readable label used only for UI copy. */
   variableName: string;
   mediaKind: MediaKind;
   compact?: boolean;
@@ -158,6 +161,7 @@ export interface MediaVariableInputProps {
 export function MediaVariableInput({
   value,
   onChange,
+  variableKey,
   variableName,
   mediaKind,
   compact = false,
@@ -168,7 +172,8 @@ export function MediaVariableInput({
   const runtimePolicies = useAppSelector(
     selectRuntimeVariableResourcePolicies(conversationId ?? ""),
   );
-  const effectiveResourceContext = runtimePolicies[variableName] ?? resourceContext;
+  const policyKey = variableKey ?? variableName;
+  const effectiveResourceContext = runtimePolicies[policyKey] ?? resourceContext;
   const meta = KIND_META[mediaKind];
   const Icon = meta.Icon;
   const stored = readValue(value);
@@ -292,7 +297,7 @@ export function MediaVariableInput({
                     dispatch(
                       setRuntimeVariableResourcePolicy({
                         conversationId,
-                        name: variableName,
+                        name: policyKey,
                         policy,
                       }),
                     )

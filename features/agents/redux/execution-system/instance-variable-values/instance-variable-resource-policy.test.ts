@@ -1,5 +1,6 @@
 import reducer, {
   initInstanceVariables,
+  resetUserVariableValues,
   setRuntimeVariableResourcePolicy,
 } from "./instance-variable-values.slice";
 
@@ -37,6 +38,15 @@ describe("runtime variable resource policy", () => {
     ).toEqual({
       promote: [{ representation: "clean", max_chars: 1200 }],
     });
+    expect(
+      state.byConversationId["conversation-1"].definitions[0].customComponent
+        ?.resource_context,
+    ).toEqual({ exclude: ["raw"] });
+
+    state = reducer(state, resetUserVariableValues("conversation-1"));
+    expect(
+      state.byConversationId["conversation-1"].resourcePolicies,
+    ).toEqual({});
     expect(
       state.byConversationId["conversation-1"].definitions[0].customComponent
         ?.resource_context,

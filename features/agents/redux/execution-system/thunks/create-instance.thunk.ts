@@ -71,10 +71,7 @@ import {
   type SourceFeature,
   type VariablesPanelStyle,
 } from "@/features/agents/types/instance.types";
-import {
-  mapScopeToInstance,
-  mapScopeToInstanceWithSurface,
-} from "@/features/agents/utils/scope-mapping";
+import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ValueMappingMap } from "@/features/surfaces/types";
 
 // =============================================================================
@@ -514,13 +511,14 @@ export const createInstanceFromShortcut = createAsyncThunk<
   //   B. LEGACY PATH — no mappings exist anywhere for this launch; run
   //      `mapScopeToInstance` (pure auto-name-match — the legacy columns
   //      are empty too, or they'd have formed a layer in path A).
-  if (surfaceValueMappings && Object.keys(surfaceValueMappings).length > 0) {
+  {
     const result = mapScopeToInstanceWithSurface(
       uiScopes,
-      null,
-      surfaceValueMappings,
+      shortcut.scopeMappings,
+      surfaceValueMappings ?? {},
       shortcutVariableDefinitions,
       shortcutContextSlots,
+      shortcut.contextMappings,
     );
     if (result.errors.length > 0) {
       // Backstop only — required-missing is pre-checked by the launch
@@ -558,27 +556,6 @@ export const createInstanceFromShortcut = createAsyncThunk<
         "[createInstanceFromShortcut] pendingPrompts survived the pre-launch drain — investigate:",
         result.pendingPrompts.map((p) => p.targetName),
       );
-    }
-  } else {
-    const { variableValues, contextEntries } = mapScopeToInstance(
-      uiScopes,
-      shortcut.scopeMappings,
-      shortcutVariableDefinitions,
-      shortcutContextSlots,
-      shortcut.contextMappings,
-    );
-
-    // Always apply scope-mapped variables — they override shortcut defaults.
-    // (apply_variables conditional removed in Phase 3.5: defaults always
-    // apply, visibility is controlled by show_variable_panel.)
-    if (Object.keys(variableValues).length > 0) {
-      dispatch(
-        setUserVariableValues({ conversationId, values: variableValues }),
-      );
-    }
-
-    if (contextEntries.length > 0) {
-      dispatch(setContextEntries({ conversationId, entries: contextEntries }));
     }
   }
 

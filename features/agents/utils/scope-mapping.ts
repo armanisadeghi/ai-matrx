@@ -227,7 +227,9 @@ export function mapScopeToInstanceWithSurface(
   // slice for non-full scopes; remove only redundant ad-hoc fallthrough.
   const hasFileReference =
     typeof applicationScope.file_id === "string" &&
-    applicationScope.file_id.trim().length > 0;
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      applicationScope.file_id.trim(),
+    );
   if (hasFileReference) {
     const explicitlyMappedSources = new Set([
       ...Object.keys(scopeMappings ?? {}),
@@ -251,6 +253,29 @@ export function mapScopeToInstanceWithSurface(
           !declaredSlots.has(entry.key)
         ),
     );
+
+    const mediaVariables = new Set(
+      (variableDefinitions ?? [])
+        .filter((definition) =>
+          ["document", "image", "audio", "video"].includes(
+            definition.customComponent?.type ?? "",
+          ),
+        )
+        .map((definition) => definition.name),
+    );
+    const fileMappedToMedia =
+      Object.entries(scopeMappings ?? {}).some(
+        ([source, target]) => source === "file_id" && mediaVariables.has(target),
+      ) ||
+      Object.entries(surfaceValueMappings ?? {}).some(
+        ([target, mapping]) =>
+          mediaVariables.has(target) &&
+          mapping.mapType === "surface_value" &&
+          mapping.target === "file_id",
+      );
+    if (fileMappedToMedia) {
+      contextEntries = contextEntries.filter((entry) => entry.key !== "file_id");
+    }
   }
 
   return {

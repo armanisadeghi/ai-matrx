@@ -24,10 +24,7 @@ import type {
   ManagedAgentOptions,
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
-import {
-  mapScopeToInstance,
-  mapScopeToInstanceWithSurface,
-} from "@/features/agents/utils/scope-mapping";
+import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import { toast } from "sonner";
 import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
 import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/bind-agent-to-surface.service";
@@ -676,14 +673,11 @@ export const launchAgentExecution = createAsyncThunk<
           }
         }
 
-        if (
-          surfaceValueMappings &&
-          Object.keys(surfaceValueMappings).length > 0
-        ) {
+        {
           const result = mapScopeToInstanceWithSurface(
             applicationScope,
             null,
-            surfaceValueMappings,
+            surfaceValueMappings ?? {},
             agent.variableDefinitions ?? [],
             agent.contextSlots ?? [],
           );
@@ -725,23 +719,6 @@ export const launchAgentExecution = createAsyncThunk<
             console.warn(
               "[launchAgentExecution] pendingPrompts survived the pre-launch drain — investigate:",
               result.pendingPrompts.map((p) => p.targetName),
-            );
-          }
-        } else {
-          const { variableValues, contextEntries } = mapScopeToInstance(
-            applicationScope,
-            null,
-            agent.variableDefinitions ?? [],
-            agent.contextSlots ?? [],
-          );
-          if (Object.keys(variableValues).length > 0) {
-            dispatch(
-              setUserVariableValues({ conversationId, values: variableValues }),
-            );
-          }
-          if (contextEntries.length > 0) {
-            dispatch(
-              setContextEntries({ conversationId, entries: contextEntries }),
             );
           }
         }

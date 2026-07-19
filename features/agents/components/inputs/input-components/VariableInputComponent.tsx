@@ -138,6 +138,7 @@ export function VariableInputComponent({
           <ImageVariableInput
             value={effectiveValue}
             onChange={onChange}
+            variableKey={variableName}
             variableName={formattedName}
             compact={compact}
             resourceContext={customComponent?.resource_context}
@@ -150,6 +151,7 @@ export function VariableInputComponent({
           <AudioVariableInput
             value={effectiveValue}
             onChange={onChange}
+            variableKey={variableName}
             variableName={formattedName}
             compact={compact}
             resourceContext={customComponent?.resource_context}
@@ -162,6 +164,7 @@ export function VariableInputComponent({
           <VideoVariableInput
             value={effectiveValue}
             onChange={onChange}
+            variableKey={variableName}
             variableName={formattedName}
             compact={compact}
             resourceContext={customComponent?.resource_context}
@@ -174,6 +177,7 @@ export function VariableInputComponent({
           <DocumentVariableInput
             value={effectiveValue}
             onChange={onChange}
+            variableKey={variableName}
             variableName={formattedName}
             compact={compact}
             resourceContext={customComponent?.resource_context}
