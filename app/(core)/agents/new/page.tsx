@@ -80,7 +80,7 @@ export default function NewAgentPage() {
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto space-y-2.5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
           {CREATION_OPTIONS.map((option) => {
             const Icon = option.icon;
             return (

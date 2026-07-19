@@ -57,7 +57,7 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
         className="h-full overflow-y-auto"
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
-        <div className="max-w-3xl mx-auto px-4 pb-6 pt-4 space-y-4">
+        <div className="px-4 sm:px-6 pb-6 pt-4 space-y-4">
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2">
               <Link href={`/agent-apps/${app.id}/versions`}>
@@ -95,78 +95,80 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
 
           <Separator />
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Snapshot</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <KV label="Name" value={snapshot.name ?? "—"} />
-              <KV label="Tagline" value={snapshot.tagline ?? "—"} />
-              <KV
-                label="Description"
-                value={snapshot.description ?? "—"}
-              />
-              <KV label="Category" value={snapshot.category ?? "—"} />
-              <KV
-                label="Tags"
-                value={
-                  Array.isArray(snapshot.tags) && snapshot.tags.length > 0
-                    ? snapshot.tags.join(", ")
-                    : "—"
-                }
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2 flex-row items-center gap-2">
-              <Webhook className="w-4 h-4 text-muted-foreground" />
-              <CardTitle className="text-sm">Agent binding (snapshot)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <KV label="Agent ID" value={snapshot.agent_id ?? "—"} mono />
-              <KV
-                label="Agent version"
-                value={snapshot.agent_version_id ?? "—"}
-                mono
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2 flex-row items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CodeIcon className="w-4 h-4 text-muted-foreground" />
-                <CardTitle className="text-sm">Code</CardTitle>
-              </div>
-              {!isCurrent && (
-                <VersionCodeCompare
-                  snapshotCode={snapshot.component_code ?? ""}
-                  currentCode={app.component_code ?? ""}
-                  language={snapshot.component_language ?? "typescript"}
-                  snapshotVersion={snapshot.version_number}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Snapshot</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <KV label="Name" value={snapshot.name ?? "—"} />
+                <KV label="Tagline" value={snapshot.tagline ?? "—"} />
+                <KV
+                  label="Description"
+                  value={snapshot.description ?? "—"}
                 />
-              )}
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-1">
-              <KV label="Language" value={snapshot.component_language ?? "—"} />
-              <KV
-                label="Lines"
-                value={codeLines > 0 ? String(codeLines) : "—"}
-              />
-              {isCurrent ? (
-                <p className="text-xs pt-2">
-                  This is the current version — its code is what the app renders
-                  now.
-                </p>
-              ) : (
-                <p className="text-xs pt-2">
-                  Use “Compare with current” to see exactly how this version’s
-                  code differs from the live app.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                <KV label="Category" value={snapshot.category ?? "—"} />
+                <KV
+                  label="Tags"
+                  value={
+                    Array.isArray(snapshot.tags) && snapshot.tags.length > 0
+                      ? snapshot.tags.join(", ")
+                      : "—"
+                  }
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2 flex-row items-center gap-2">
+                <Webhook className="w-4 h-4 text-muted-foreground" />
+                <CardTitle className="text-sm">Agent binding (snapshot)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <KV label="Agent ID" value={snapshot.agent_id ?? "—"} mono />
+                <KV
+                  label="Agent version"
+                  value={snapshot.agent_version_id ?? "—"}
+                  mono
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader className="pb-2 flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CodeIcon className="w-4 h-4 text-muted-foreground" />
+                  <CardTitle className="text-sm">Code</CardTitle>
+                </div>
+                {!isCurrent && (
+                  <VersionCodeCompare
+                    snapshotCode={snapshot.component_code ?? ""}
+                    currentCode={app.component_code ?? ""}
+                    language={snapshot.component_language ?? "typescript"}
+                    snapshotVersion={snapshot.version_number}
+                  />
+                )}
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground space-y-1">
+                <KV label="Language" value={snapshot.component_language ?? "—"} />
+                <KV
+                  label="Lines"
+                  value={codeLines > 0 ? String(codeLines) : "—"}
+                />
+                {isCurrent ? (
+                  <p className="text-xs pt-2">
+                    This is the current version — its code is what the app renders
+                    now.
+                  </p>
+                ) : (
+                  <p className="text-xs pt-2">
+                    Use “Compare with current” to see exactly how this version’s
+                    code differs from the live app.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </>
