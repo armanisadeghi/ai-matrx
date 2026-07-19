@@ -22,8 +22,7 @@ Every surface — Chat, Runner, Shortcut, App, Builder — constructs a `Convers
 
 | Mode | Ephemeral | Turn | Endpoint | Body |
 |---|---|---|---|---|
-| `manual` (Builder) | false | 1 | `POST /prompts` | Full agent definition + invocation inputs |
-| `manual` (Builder) | false | 2+ | `POST /ai/conversations/{conversationId}` | Invocation inputs only (server owns state) |
+| `manual` (Builder) | false | any | `POST /ai/manual` | Flattened live definition + full client-held history + invocation inputs; no wire `conversation_id` |
 | `agent` (Runner/Chat/Shortcut/App) | false | 1 | `POST /ai/agents/{id}` | Invocation inputs only |
 | `agent` | false | 2+ | `POST /ai/conversations/{conversationId}` | Invocation inputs only |
 | `agent` | true | 1 | `POST /ai/agents/{id}` with `is_new: false, store: false`, no `conversationId` | Invocation inputs |
@@ -56,12 +55,14 @@ This routing table is the single contract the entire invocation pipeline enforce
 
 ## The conceptual shift
 
-Once the first turn completes, **there is no longer an "agent" in play — there is an *agent conversation*.** The conversation is a live instance of the agent that evolves through messages and tool calls. You do not re-send instructions. You do not re-send history. You append to a running entity the server fully owns.
+Once the first saved-agent turn completes, **there is no longer an "agent" in play — there is an *agent conversation*.** The conversation is a live instance of the agent that evolves through messages and tool calls. You do not re-send instructions. You do not re-send history. You append to a running entity the server fully owns.
 
 - First request: "here is an agent, start a conversation with it."
 - Every subsequent request: "here is more input, advance the conversation."
 
 This is why the endpoint shape shifts after turn 1: from agent-identified (`/ai/agents/{id}`) to conversation-identified (`/ai/conversations/{conversationId}`).
+
+**Builder manual mode is the deliberate exception.** Every turn stays on `/ai/manual`, re-sends the live definition and client-held history, omits a wire `conversation_id`, and receives a fresh server conversation for that request. The Builder keeps a separate stable local Redux key so the panel still behaves as one multi-turn test session.
 
 ---
 
@@ -84,12 +85,13 @@ Both surfaces dispatch `launchConversation`. Both eventually fire a fetch. The d
 
 **Builder** (`routing.apiEndpointMode: "manual"`):
 ```
-POST /prompts
+POST /ai/manual
 {
-  // invocation.builder carries the full agent definition snapshot
-  definition: { system_prompt, model, settings, tools, variables, ... },
-  // plus standard inputs
-  variables, context, user_input, scope, config_overrides
+  // live definition flattened for the manual executor
+  ai_model_id, messages, tools_replace, variable_definitions, ...modelSettings,
+  // plus standard inputs and Builder controls
+  variables, context, organization_id, project_id, task_id,
+  debug, store, max_iterations, max_retries_per_iteration
 }
 ```
 Server runs exactly these bytes. No cache lookup, no current-pointer resolution.
@@ -120,10 +122,11 @@ Server hydrates the definition from the agent ID (current pointer or pinned vers
 
 ### Flow 2 — Builder test turn
 
-1. Engineer in Builder clicks run. Dispatch `launchConversation` with `apiEndpointMode: "manual"`, full definition snapshot on `invocation.builder.*`.
-2. Body includes inline definition.
-3. `POST /prompts`.
-4. Stream processed identically to agent mode.
+1. Engineer in Builder clicks run. Dispatch `launchConversation` with `apiEndpointMode: "manual"`.
+2. `assembleManualRequest` reads the live definition and all committed panel turns from Redux; it omits `conversation_id`.
+3. `POST /ai/manual`.
+4. The server mints a wire conversation for this stored request; `processStream` maps its events onto the stable local panel key.
+5. Persisted-message follow-up work (including artifact materialization) uses the reserved message's database conversation, never the local key.
 
 ### Flow 3 — Ephemeral public chat
 
@@ -138,6 +141,7 @@ Server hydrates the definition from the agent ID (current pointer or pinned vers
 
 - **Never bypass `launchConversation`.** Every surface goes through it. Custom launch paths fragment the routing contract and break observability.
 - **The full definition is sent from the client ONLY in Builder (`manual`) mode.** Any other path sending the full definition is a bug.
+- **Manual wire identity and Builder UI identity are different by design.** Never use the stable local panel key as a database FK; resolve through the server-reserved message/conversation.
 - **`is_new: false, store: false` is the ephemeral signature on turn 1.** Don't confuse with normal agent mode.
 - **Ephemeral turn 2+ MUST hit `/ai/chat`, not `/conversations/{id}`.** There is no conversation row to find.
 - **`assembleRequest` does not read `agentDefinition`.** If it starts to, we've broken the layer-3 isolation contract.
@@ -157,6 +161,7 @@ Server hydrates the definition from the agent ID (current pointer or pinned vers
 
 ## Change log
 
+- `2026-07-18` — codex: Replaced the retired `/prompts`/manual-continuation model with the live `/ai/manual` contract: every Builder turn carries the flattened live definition and client history, receives a fresh server wire conversation, and maps back to one stable local Redux test-panel key. Documented the message-derived persistence identity required by artifacts.
 - `2026-07-18` — codex: Documented the automatic-assignment marker and Builder-only live `variable_definitions` companion payload.
 - `2026-04-22` — claude: initial doc. Canonical endpoint matrix extracted from `agent-system-mental-model.md` §4 and `conversation-invocation.types.ts`.
 

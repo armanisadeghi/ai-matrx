@@ -26,10 +26,10 @@ The system runs in three stages with three consumer surfaces:
 
 | Surface                            | Endpoint on first turn | Payload includes                                                             | Why                                                                                             |
 | ---------------------------------- | ---------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **Builder**                        | `POST /prompts`        | **Full agent definition** (system prompt, model, settings, tools, variables) | Cache-independent raw test — builder must see exactly what the server will run, no hidden state |
+| **Builder**                        | `POST /ai/manual`      | **Live agent definition** flattened into the manual request (priming messages, model, settings, tools, variables) | Cache-independent raw test — builder must see exactly what the server will run, no hidden state |
 | **Runner / Chat / Shortcut / App** | `POST /ai/agents/{id}` | **Agent ID + form values** (variables, context, user input)                  | Server owns the agent definition; client sends only what changes per call                       |
 
-After the first turn, everything collapses to `POST /ai/conversations/{conversationId}` (or `POST /ai/chat` for ephemeral). See **AGENT_INVOCATION_LIFECYCLE.md**.
+After the first turn, saved-agent surfaces collapse to `POST /ai/conversations/{conversationId}` (or `POST /ai/chat` for ephemeral). Builder tests remain on `POST /ai/manual`: the client carries their accumulated history and the server mints a fresh durable wire conversation for each stored request while Redux keeps one stable local test-panel key. See **AGENT_INVOCATION_LIFECYCLE.md**.
 
 Admin/dev desktop targeting is an additive request overlay, not part of agent authoring. When `adminPreferences.desktopTargetInstanceId` is set by the admin Server environment tab, first-turn, continuation, resume, manual, and legacy `callApi` agent turn paths stamp `client.state["desktop-native"].target_instance_id` with the selected `public.app_instances.instance_id` (`/desktop-instances.id`); compatibility paths also include a root `target_instance_id`. Auto stores `null` and omits the target so aidream keeps default routing.
 
@@ -107,7 +107,7 @@ Find every place an agent is used and detect when a usage no longer matches the 
 - `POST /ai/agent-assignments/sessions/{id}/cancel` — cancel unfinished batch items
 - `POST /ai/conversations/{conversationId}` — subsequent turns
 - `POST /ai/chat` — ephemeral turns (no DB persistence)
-- `POST /prompts` — Builder-mode raw request
+- `POST /ai/manual` — Builder-mode raw request; live definition + client-held history on every turn
 - `POST /ai/conversations/{id}/tool_results` — durable + widget tool result submission
 
 **Key thunks** (`features/agents/redux/execution-system/thunks/`)
@@ -386,6 +386,7 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 
 ## Change log
 
+- `2026-07-18` — **Builder artifact persistence uses the reserved message's server conversation.** Manual runs intentionally keep a stable local Redux conversation while `/ai/manual` mints a fresh durable wire conversation per request. Chat canvas upserts now omit the client conversation argument so `cx_canvas_upsert` resolves `chat.message.conversation_id`; materialization carries the returned server id into adapters and the discovery index. This removes the `canvas_items_conversation_id_fkey` 409 cascade without changing stream dispatch keys. Focused service/materialization regressions cover both boundaries. The Builder endpoint docs were corrected from the retired `/prompts` model to the live `/ai/manual` contract.
 - `2026-07-18` — **System Agents admin hub/catalog parity.** The Administration dashboard's `Agents: System` category card now opens the canonical `/administration/system-agents` parent page. That hub now exposes every route advertised by the admin catalog: the flat All Shortcuts view plus guided agent creation, manual agent creation, and system-app creation join the existing agent/lineage/shortcut/category/content-block/app management tiles. The general Administration route directory is catalog-grouped, so all system-agent list, creation, and dynamic detail routes appear together instead of being split by raw filesystem segments.
 
 - `2026-07-18` — **Managed context-menu agents now open in `AgentFlexiblePanel`.** Context Menu v3's desktop and mobile bound-agent launch paths share one framework-owned `displayMode: "flexible-panel"` config, replacing `modal-full` while preserving each shortcut's explicit persisted display mode and the safe open-and-wait default.

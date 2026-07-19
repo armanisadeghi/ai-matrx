@@ -83,7 +83,6 @@ export interface ArtifactUpsertInput {
   structured?: Record<string, unknown> | null;
   /** Type-specific metadata persisted as content.metadata (e.g. mermaid diagramType/theme). */
   metadata?: Record<string, unknown>;
-  conversationId?: string | null;
   sourceType?: "model_direct" | "model_converted" | "user_created" | "forked";
 }
 
@@ -116,6 +115,7 @@ export interface CanvasArtifactRow {
   type: string;
   title: string | null;
   content: any;
+  conversation_id: string | null;
   source_message_id: string | null;
   artifact_index: number | null;
   version: number;
@@ -154,7 +154,12 @@ export const canvasArtifactService = {
           type: input.type,
           metadata: input.metadata ?? {},
         },
-        p_conversation_id: input.conversationId ?? undefined,
+        // A persisted message is the authoritative conversation binding.
+        // This matters for Builder manual runs: Redux deliberately keeps one
+        // local conversation id while /ai/manual mints a new durable
+        // conversation per request. Omitting the optional argument makes the
+        // RPC resolve chat.message.conversation_id instead of trusting UI
+        // state that may intentionally refer to a different conversation.
         p_source_type: input.sourceType ?? "model_direct",
       });
 
@@ -188,7 +193,6 @@ export const canvasArtifactService = {
         content: input.content,
         structured: input.structured,
         metadata: input.metadata,
-        conversationId: input.conversationId,
         sourceType: input.sourceType,
       });
     }

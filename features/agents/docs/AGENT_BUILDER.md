@@ -27,7 +27,7 @@ This payload difference is the Builder's reason to exist: it lets engineers test
 - `app/(authenticated)/agents/[id]/build/page.tsx`
 
 **API endpoint**
-- `POST /prompts` — `apiEndpointMode: "manual"`
+- `POST /ai/manual` — `apiEndpointMode: "manual"`
 
 **Key thunks & selectors**
 - Builder routes through the same unified `launchConversation` thunk — the Builder invocation sets `routing.apiEndpointMode = "manual"` and carries a full agent definition snapshot in `builder.*`
@@ -61,13 +61,13 @@ POST /ai/agents/{id}
 The Builder hands the server the **entire agent** inline:
 
 ```
-POST /prompts
+POST /ai/manual
 {
-  // full agent definition snapshot — system prompt, model, settings, tools, variables,
-  // context slots, permissions, advanced settings — nothing comes from server cache
-  definition: {...},
-  // plus the usual invocation inputs
-  variables, scope, overrides, userInput
+  // flattened live definition — nothing comes from server cache
+  ai_model_id, messages, tools_replace, variable_definitions, ...modelSettings,
+  // plus the usual invocation inputs and Builder controls
+  variables, context, organization_id, project_id, task_id,
+  debug, store, max_iterations, max_retries_per_iteration
 }
 ```
 
@@ -89,11 +89,13 @@ This is also why **Builder-specific settings** (`maxIterations`, `maxRetriesPerI
 ### Flow 2 — Manual test call
 
 1. Engineer types a prompt in the Builder chat, optionally supplies variable values and scope.
-2. `launchConversation` is dispatched with `routing.apiEndpointMode: "manual"` and `builder.*` settings attached.
-3. Payload body is assembled with the **full definition** inline — not just the ID.
-4. Fetch hits `POST /prompts`. Server validates the bundled definition and runs it.
+2. `launchConversation` is dispatched with `routing.apiEndpointMode: "manual"` and Builder settings attached.
+3. `assembleManualRequest` reads the live definition plus the panel's committed turns from Redux, then flattens them into the manual payload.
+4. Fetch hits `POST /ai/manual`. Server validates the bundled definition and runs it without an agent-cache lookup.
 5. Response streams back through the standard NDJSON pipeline (see [`STREAMING_SYSTEM.md`](./STREAMING_SYSTEM.md)).
 6. Nothing is persisted unless `builder.store = true`.
+
+When persistence is enabled, each manual request gets a fresh server wire conversation even though the test panel keeps one stable local Redux key for multi-turn continuity. Persisted-message consumers must therefore derive database conversation identity from the reserved `chat.message` row; they must never treat the local panel key as a database foreign key.
 
 ### Flow 3 — Variable / context slot declaration
 
@@ -143,6 +145,7 @@ Every context slot declares whether the agent may CHANGE its value or only READ 
 
 ## Change log
 
+- `2026-07-18` — codex: Corrected the live manual endpoint/payload contract (`POST /ai/manual`, flattened live definition + client-held history on every turn) and documented the local test-panel key versus per-request server conversation split. Canvas artifact persistence now resolves the server conversation through the reserved message row.
 - `2026-07-18` — codex: Choice-backed variables can opt into server-side random assignment; Builder defaults and runtime inputs share the exact typed marker, and manual payloads carry live variable definitions for authoritative resolution.
 - `2026-07-17` — claude: Output Schema tab gains "Bind to a kind" (Content IR registry picker), live "Matches kind X" indicator + drift note; same apply/save path.
 - `2026-06-23` — codex: Edit Variable modal Help Text now uses agent-aware `ProTextarea`; long default option text wraps; static options can convert to a linked picklist.
@@ -150,4 +153,4 @@ Every context slot declares whether the agent may CHANGE its value or only READ 
 
 ---
 
-> **Keep-docs-live:** any change to the Builder payload shape, advanced settings enum, or `/prompts` contract must update this doc AND `AGENT_INVOCATION_LIFECYCLE.md`.
+> **Keep-docs-live:** any change to the Builder payload shape, advanced settings enum, or `/ai/manual` contract must update this doc AND `AGENT_INVOCATION_LIFECYCLE.md`.

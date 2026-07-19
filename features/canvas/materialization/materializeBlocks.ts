@@ -136,6 +136,15 @@ export async function materializeBlocks(
       sourceType: "model_direct",
     });
     if (saved) {
+      // Chat identity comes from the persisted message row, never from the
+      // local execution key. Builder manual runs intentionally use a stable
+      // local Redux id while each request gets a fresh server conversation.
+      // cx_canvas_upsert resolves that relationship and returns it on the row;
+      // downstream adapters/discovery must use the same authoritative id.
+      const persistedConversationId = isChat
+        ? saved.conversation_id
+        : (source.conversationId ?? null);
+
       idByIndex.set(artifact.artifactIndex, {
         id: saved.id,
         version: saved.version,
@@ -159,7 +168,7 @@ export async function materializeBlocks(
             structured: artifact.structured ?? null,
             source: { system: source.system, id: source.id },
             sourceMessageId: isChat ? source.id : undefined,
-            conversationId: source.conversationId ?? null,
+            conversationId: persistedConversationId,
           });
           if (link && (link.externalSystem || link.externalId)) {
             await canvasArtifactService.setExternalLink(saved.id, link);
@@ -181,7 +190,7 @@ export async function materializeBlocks(
           title: artifact.title ?? null,
           source: { system: source.system, id: source.id },
           artifactIndex: artifact.artifactIndex,
-          conversationId: source.conversationId ?? null,
+          conversationId: persistedConversationId,
         });
       } catch (err) {
         errors.push(

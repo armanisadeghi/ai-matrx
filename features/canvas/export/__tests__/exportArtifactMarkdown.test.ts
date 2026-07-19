@@ -26,6 +26,7 @@ function row(
     type,
     title: "Test artifact",
     content: { data, type, metadata: { title: "Test artifact" } },
+    conversation_id: null,
     source_message_id: null,
     artifact_index: 1,
     version: 1,

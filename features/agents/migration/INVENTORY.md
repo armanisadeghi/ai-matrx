@@ -181,6 +181,7 @@ Prompt-adjacent surfaces discovered during later phases that are **out of the cu
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-18 | codex | Fixed agent-native Builder `/ai/manual` artifact persistence by deriving the database conversation through each reserved message; corrected the live manual endpoint docs. No legacy prompt surface or migration boundary was added. |
 | 2026-07-18 | codex | Added the agent-native coordinated assignment API and `/demos/agent-assignments` UI. It uses ordinary agent execution and adds no legacy prompt surface or migration boundary. |
 | 2026-07-17 | codex | Added the agent-native Smart Input Context Values attachment flow through the canonical Resource Picker and Matrx reference-fence pipeline. No legacy prompt surface or migration boundary was added. |
 | 2026-07-15 | codex | Retired the isolated legacy development voice-assistant/debate provider actions and redirected their demo routes to `/voice/playground`; no agent migration boundary or active recipe conversion was introduced. |

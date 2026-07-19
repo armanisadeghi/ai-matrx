@@ -37,6 +37,7 @@ function makeRow(partial: Partial<CanvasArtifactRow>): CanvasArtifactRow {
     type: "code",
     title: "Test",
     content: { data: "", type: "code", metadata: {} },
+    conversation_id: null,
     source_message_id: null,
     artifact_index: 1,
     version: 1,
