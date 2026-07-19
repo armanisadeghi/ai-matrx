@@ -3,14 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Building2,
-  Camera,
-  CheckCircle2,
-  Globe2,
-  Loader2,
-  Plus,
-} from "lucide-react";
+import { Building2, Globe2, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +19,6 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { useCreateSite } from "@/features/marketing/data/hooks";
 import { normalizeWebsiteUrl } from "@/features/marketing/lib/website-url";
-import { bootstrapSite } from "@/features/marketing/crawler/direct-client";
 import { extractErrorMessage } from "@/utils/errors";
 
 export function NewSiteForm() {
@@ -37,9 +29,6 @@ export function NewSiteForm() {
   const [urlTouched, setUrlTouched] = useState(false);
   const [name, setName] = useState("");
   const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [captureStatus, setCaptureStatus] = useState<
-    "idle" | "connecting" | "running" | "complete" | "failed"
-  >("idle");
   const selectedOrgId = organizationId ?? orgs.activeOrgId ?? undefined;
   let urlIsValid = false;
   try {
@@ -48,8 +37,7 @@ export function NewSiteForm() {
   } catch {
     urlIsValid = false;
   }
-  const busy =
-    create.isPending || ["connecting", "running"].includes(captureStatus);
+  const busy = create.isPending;
   const canSubmit = Boolean(
     selectedOrgId && urlIsValid && !busy && !orgs.loading,
   );
@@ -94,25 +82,8 @@ export function NewSiteForm() {
       return;
     }
 
-    toast.success("Site added", {
-      description: "Capturing the homepage directly with the scraper.",
-    });
-    setCaptureStatus("connecting");
-    try {
-      await bootstrapSite(site.id, {
-        onConnected: () => {
-          setCaptureStatus("running");
-        },
-      });
-      setCaptureStatus("complete");
-      toast.success("Homepage captured");
-    } catch (error) {
-      setCaptureStatus("failed");
-      toast.warning("Site added, but homepage capture needs a retry", {
-        description: extractErrorMessage(error),
-      });
-    }
-    router.push(`/marketing/sites/${site.id}`);
+    toast.success("Site added");
+    router.push(`/marketing/sites/${site.id}?capture=homepage`);
   };
 
   return (
@@ -239,39 +210,6 @@ export function NewSiteForm() {
               ) : null}
             </div>
           </div>
-          {captureStatus !== "idle" ? (
-            <div className="border-t border-border bg-muted/20 px-4 py-3">
-              <div className="flex items-center gap-2">
-                {captureStatus === "complete" ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                ) : ["connecting", "running"].includes(captureStatus) ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                ) : (
-                  <Camera className="h-4 w-4 text-destructive" />
-                )}
-                <div className="min-w-0">
-                  <p className="text-xs font-medium">
-                    {captureStatus === "connecting"
-                      ? "Starting homepage capture…"
-                      : captureStatus === "running"
-                        ? "Capturing homepage…"
-                        : captureStatus === "complete"
-                          ? "Homepage capture complete"
-                          : "Homepage capture did not complete"}
-                  </p>
-                  <p className="truncate text-[10px] text-muted-foreground">
-                    {captureStatus === "running"
-                      ? "We’re opening the homepage and saving its preview."
-                      : captureStatus === "failed"
-                        ? "The site was saved. You can retry the capture from its overview."
-                        : captureStatus === "complete"
-                          ? "The homepage preview is ready."
-                          : "This usually takes a few seconds."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : null}
           <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <Building2 className="h-3.5 w-3.5" />
@@ -281,9 +219,7 @@ export function NewSiteForm() {
               {busy ? (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
               ) : null}
-              {captureStatus === "connecting" || captureStatus === "running"
-                ? "Capturing homepage"
-                : "Create site"}
+              {create.isPending ? "Creating site…" : "Create site"}
             </Button>
           </div>
         </form>

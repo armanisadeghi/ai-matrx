@@ -44,7 +44,10 @@ import {
 } from "@/features/marketing/data/integrations-schema";
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
 import { marketingKeys } from "@/features/marketing/data/hooks";
-import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import {
+  useConnectGoogle,
+  useGoogleConnectionInventory,
+} from "@/features/marketing/google/hooks";
 import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
@@ -102,6 +105,7 @@ export function SiteIntegrationsWorkspace() {
 function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const queryClient = useQueryClient();
   const googleInventory = useGoogleConnectionInventory();
+  const connectGoogle = useConnectGoogle();
   const initial = useMemo(
     () => parseSiteIntegrations(site.integrations),
     [site],
@@ -158,6 +162,86 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
       ),
     }));
 
+  const startGoogleConnection = async (
+    owner: "organization" | "user" = "organization",
+  ) => {
+    try {
+      const result = await connectGoogle.mutateAsync({
+        owner:
+          owner === "organization"
+            ? { type: "organization", organizationId: site.organization_id }
+            : { type: "user" },
+        returnPath: `/marketing/sites/${site.id}/integrations`,
+      });
+      const refreshed = await googleInventory.refetch();
+      const connectionId = result.connectionId;
+      if (!connectionId)
+        throw new Error("Google connected without returning a connection ID.");
+      const resources = refreshed.data?.resources ?? [];
+      const searchResources = resources.filter(
+        (resource) =>
+          resource.connection_id === connectionId &&
+          resource.resource_type === "search_console_property",
+      );
+      const analyticsResources = resources.filter(
+        (resource) =>
+          resource.connection_id === connectionId &&
+          resource.resource_type === "analytics_property",
+      );
+      const matchingSearch =
+        searchResources.find((resource) => {
+          const ref = resource.resource_ref.toLowerCase();
+          if (ref === `sc-domain:${site.domain.toLowerCase()}`) return true;
+          try {
+            return (
+              new URL(ref).hostname.toLowerCase() === site.domain.toLowerCase()
+            );
+          } catch {
+            return false;
+          }
+        }) ?? (searchResources.length === 1 ? searchResources[0] : null);
+      const matchingAnalytics =
+        analyticsResources.length === 1 ? analyticsResources[0] : null;
+
+      setDraft((current) => ({
+        ...current,
+        googleSearchConsole: {
+          ...current.googleSearchConsole,
+          enabled:
+            Boolean(matchingSearch) || current.googleSearchConsole.enabled,
+          credentialAuthority: "external_connection",
+          credentialRef: connectionId,
+          resourceRef:
+            matchingSearch?.resource_ref ??
+            current.googleSearchConsole.resourceRef,
+        },
+        googleAnalytics4: {
+          ...current.googleAnalytics4,
+          enabled:
+            Boolean(matchingAnalytics) || current.googleAnalytics4.enabled,
+          credentialAuthority: "external_connection",
+          credentialRef: connectionId,
+          resourceRef:
+            matchingAnalytics?.resource_ref ??
+            current.googleAnalytics4.resourceRef,
+        },
+      }));
+      toast.success("Google connected", {
+        description:
+          matchingSearch || matchingAnalytics
+            ? "Matching properties were selected. Review and save the site bindings."
+            : "Choose the Search Console and Analytics properties below.",
+      });
+    } catch (error) {
+      toast.error("Could not connect Google", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "Google authorization failed.",
+      });
+    }
+  };
+
   const save = () => {
     if (issues.length) return;
     try {
@@ -190,48 +274,44 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
           </Badge>
         </div>
 
-        <Alert className="border-primary/30 bg-primary/5 py-2.5">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-xs">
-            Start with a secure connection
-          </AlertTitle>
-          <AlertDescription className="text-[11px] leading-4 text-muted-foreground">
-            Connect Google once, then select the account and discovered property
-            below. This screen saves only the opaque connection UUID and
-            property reference; it never receives OAuth tokens, API keys, or
-            client secrets.
-            <span className="mt-2 flex flex-wrap gap-2">
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-              >
-                <Link href="/marketing/connections">Connection guide</Link>
-              </Button>
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-              >
-                <Link href="/settings/secrets">Personal vault</Link>
-              </Button>
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-              >
-                <Link
-                  href={`/organizations/${site.organization_id}/settings#vault`}
-                >
-                  Organization vault
-                </Link>
-              </Button>
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <KeyRound className="h-4 w-4" />
             </span>
-          </AlertDescription>
-        </Alert>
+            <div>
+              <h2 className="text-xs font-semibold">Connect Google directly</h2>
+              <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                Authorize once, discover Search Console and GA4 properties, then
+                bind the matching properties to {site.domain} below.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button
+              size="sm"
+              className="h-8 gap-1.5"
+              disabled={connectGoogle.isPending}
+              onClick={() => void startGoogleConnection("organization")}
+            >
+              {connectGoogle.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <KeyRound className="h-3.5 w-3.5" />
+              )}
+              Connect Google
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8"
+              disabled={connectGoogle.isPending}
+              onClick={() => void startGoogleConnection("user")}
+            >
+              Connect personally
+            </Button>
+          </div>
+        </section>
 
         <div className="grid gap-3 xl:grid-cols-3">
           {builtIns.map(({ key, ...provider }) => (

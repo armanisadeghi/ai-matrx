@@ -17,6 +17,23 @@ const SNAPSHOT_SELECT =
 const SCREENSHOT_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, snapshot_id, kind, storage_bucket, storage_path, width, height, captured_at, page:page(url)";
 
+/** Read the durable homepage screenshot selected by the site record. */
+export async function getHomepageScreenshot(
+  siteId: string,
+  screenshotId: string,
+  signal?: AbortSignal,
+): Promise<InspectionScreenshotRow> {
+  const response = await webDb(supabase)
+    .from("screenshot")
+    .select(SCREENSHOT_SELECT)
+    .eq("id", screenshotId)
+    .eq("site_id", siteId)
+    .is("deleted_at", null)
+    .abortSignal(signal ?? new AbortController().signal)
+    .single();
+  return assertData(response.data, response.error);
+}
+
 function rangeFor(state: MatrxDataTableQueryState) {
   const from = (state.page - 1) * state.pageSize;
   return { from, to: from + state.pageSize - 1 };
@@ -113,10 +130,8 @@ async function listLinks(
     query = query.gte("http_status", httpStatus.min);
   if (httpStatus?.max !== undefined)
     query = query.lte("http_status", httpStatus.max);
-  if (position?.min !== undefined)
-    query = query.gte("position", position.min);
-  if (position?.max !== undefined)
-    query = query.lte("position", position.max);
+  if (position?.min !== undefined) query = query.gte("position", position.min);
+  if (position?.max !== undefined) query = query.lte("position", position.max);
   query = query.order(sortColumn, { ascending, nullsFirst: false });
   query = query.order("id", { ascending });
   const response = await query
@@ -252,7 +267,10 @@ export async function listSiteScreenshots(
 export function screenshotPublicUrl(
   screenshot: Pick<InspectionScreenshotRow, "storage_bucket" | "storage_path">,
 ): string | null {
-  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(
+    /\/+$/,
+    "",
+  );
   if (!baseUrl) return null;
   const bucket = encodeURIComponent(screenshot.storage_bucket);
   const path = screenshot.storage_path

@@ -52,7 +52,7 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 
 ## Key flows
 
-1. Add site: `NewSiteForm` selects an organization and calls `web.create_site`; canonical triggers stamp base fields; the browser then calls the standalone scraper bootstrap directly and renders its live events. A capture failure never rolls back the valid site and can be retried from its overview.
+1. Add site: `NewSiteForm` selects an organization and calls `web.create_site`; canonical triggers stamp base fields, then the UI navigates immediately to the site overview. Its visual-baseline workspace starts the standalone scraper bootstrap directly, shows live capture progress, and renders the durable Supabase screenshot as soon as it is ready. A capture failure never rolls back the valid site and can be retried in place.
 2. Browse data: the URL owns table search/filter/sort/page state; `MatrxDataTable` emits changes; a feature hook issues a bounded `select(..., { count: "exact" }).range(...)` directly to Supabase with deterministic `id` ordering.
 3. Manage a page: `PageWorkspace` reads identity from `web.page`, current content from `latest_snapshot_id`, and saves only `target_keyword` plus desired metadata to the page.
 4. Inspect a crawl: summary reads `crawl_session`; URL and log children independently page through `crawl_url` and `crawl_event` by `session_id`.
@@ -106,3 +106,4 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 - 2026-07-19 — Codex: wired the main Marketing Hub to the production workspace and added user/org vault onboarding plus site binding entry points without using the legacy browser-token Google page.
 - 2026-07-19 — Codex: added a user-facing live crawl event presenter that keeps exception, ORM query/argument, stack, and ANSI details out of the primary feed.
 - 2026-07-19 — Codex: added production Google OAuth with encrypted reusable personal/org connections, automatic Search Console and GA4 discovery, direct-Supabase connection/resource reads, site property selectors, and app-managed PageSpeed configuration.
+- 2026-07-19 — Codex: made site creation navigate immediately into a visual homepage-capture workspace, rendered the selected durable screenshot on the overview, and added direct Google authorization from each site's Integrations page with matching-property preselection.

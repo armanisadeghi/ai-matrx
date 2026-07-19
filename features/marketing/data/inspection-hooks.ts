@@ -3,6 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import {
+  getHomepageScreenshot,
   listCrawlLinks,
   listCrawlSnapshots,
   listSiteLinks,
@@ -11,6 +12,12 @@ import {
 import { marketingKeys } from "@/features/marketing/data/hooks";
 
 const inspectionKeys = {
+  homepageScreenshot: (siteId: string, screenshotId: string) =>
+    [
+      ...marketingKeys.site(siteId),
+      "homepage-screenshot",
+      screenshotId,
+    ] as const,
   siteLinks: (siteId: string, state: MatrxDataTableQueryState) =>
     [...marketingKeys.site(siteId), "inspection-links", state] as const,
   siteScreenshots: (siteId: string, state: MatrxDataTableQueryState) =>
@@ -30,8 +37,28 @@ const inspectionKeys = {
     crawlId: string,
     state: MatrxDataTableQueryState,
   ) =>
-    [...marketingKeys.crawl(siteId, crawlId), "inspection-links", state] as const,
+    [
+      ...marketingKeys.crawl(siteId, crawlId),
+      "inspection-links",
+      state,
+    ] as const,
 };
+
+/** Direct browser-to-Supabase query for the site's selected homepage preview. */
+export function useHomepageScreenshot(
+  siteId: string,
+  screenshotId: string | null,
+) {
+  return useQuery({
+    queryKey: inspectionKeys.homepageScreenshot(
+      siteId,
+      screenshotId ?? "pending",
+    ),
+    queryFn: ({ signal }) =>
+      getHomepageScreenshot(siteId, screenshotId as string, signal),
+    enabled: Boolean(siteId && screenshotId),
+  });
+}
 
 /** Direct browser-to-Supabase query for a site's link graph. */
 export function useSiteLinks(
@@ -68,8 +95,7 @@ export function useCrawlSnapshots(
 ) {
   return useQuery({
     queryKey: inspectionKeys.crawlSnapshots(siteId, crawlId, state),
-    queryFn: ({ signal }) =>
-      listCrawlSnapshots(siteId, crawlId, state, signal),
+    queryFn: ({ signal }) => listCrawlSnapshots(siteId, crawlId, state, signal),
     enabled: Boolean(siteId && crawlId),
     placeholderData: keepPreviousData,
   });
