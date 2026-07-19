@@ -1,38 +1,43 @@
 ---
 status: active
-updated: 2026-07-14
+updated: 2026-07-19
 repos: [matrx-frontend]
-vision: [.claude/skills/core-route-headers/SKILL.md, features/shell/components/header/variants/USAGE.md]
+vision: [.claude/skills/core-route-headers/SKILL.md, .claude/skills/ios-mobile-first/SKILL.md, features/shell/components/header/variants/USAGE.md]
 ---
 
-# Header conformance — (core) routes onto the shell header system
+# Shell conformance — headers (DONE) → mobile bodies + widths (in progress)
 
 ## Vision — Arman's words
 
 > "ABSOLUTELY NO BORDERS or color differences on the header. Must be transparent with glass buttons."
 > "NOTICE THERE IS NO STUPID TITLE and DESCRIPTION! …you don't put that inside of a dashboard."
-> "On mobile we should always prefer as few things in the header as possible and just putting everything into a bottom drawer."
-> "Notice how absolutely random the page widths are… on desktop we need to use the space." (widths = separate sweep, item 3)
+> "The best mobile experience is when you don't try to cram things… on mobile we should always prefer as few things in the header as possible and just putting everything into a bottom drawer."
+> "Notice how absolutely random the page widths are… on desktop we need to use the space to do things."
+> Chosen rules (2026-07-18): tables on a phone = **horizontal scroll with a frozen first column**; multi-pane routes on a phone = **stack + side panels become bottom drawers**; desktop width = **full width with padding, multi-column where content allows**.
+> "Quick and dirty way that works and then focused sessions one by one later." Fleets run **≤5 agents at a time** (more browsers crash the machine); each agent commits its own work.
 
 ## Resources
 
-- Recipe: `.claude/skills/core-route-headers/SKILL.md`. Spec: `features/shell/components/header/variants/USAGE.md`.
-- Templates: `features/shell/components/header/templates/EntityModeHeader.tsx` (+ `CrumbTrailHeader.tsx`); reference consumer `features/scheduling/components/detail/ScheduleDetail.tsx`.
-- Detection: `pnpm check:page-headers`; `grep -rln "calc(100dvh\|calc(100vh\|h-screen\|h-page" "app/(core)" --include="*.tsx"`. Both are at ZERO real hits in (core) as of 2026-07-14 (only education files + one comment match) — keep them at zero.
-- Verify: session dev server + `/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/<route>`; both 1280 and 375.
+- Recipes: `.claude/skills/core-route-headers/SKILL.md`, `.claude/skills/ios-mobile-first/SKILL.md`. Spec: `features/shell/components/header/variants/USAGE.md`.
+- **Primitives — consume, never hand-roll:** `features/shell/components/header/templates/` → `EntityModeHeader` ([id] routes), `CrumbTrailHeader` (drill-downs), `MobilePanelShell` (any multi-pane route: pass the existing desktop layout verbatim + `main` + `panels`). `components/official/matrx-data-table/MatrxDataTable.tsx` handles mobile table scroll for every consumer.
+- **CSS trap, do not rediscover:** `app/globals.css` has an UNLAYERED mobile block (`@media max-width:768px`) with `* { max-width:100% }` and `table { display:block; overflow-x:auto; max-width:100% }`. Unlayered CSS beats Tailwind's layered utilities (so `max-w-none` as a class cannot win) and the TABLE element is the scroller, not its container. Also a base `w-full` outranks `max-sm:w-max` — write width rules mobile-first.
+- Audits (keep at zero): `pnpm check:page-headers`; `grep -rln "calc(100dvh\|calc(100vh\|h-screen\|h-page" "app/(core)" --include="*.tsx"`.
+- Verify: dev server + `/api/dev-login?token=<DEV_LOGIN_TOKEN>&next=/<route>`, at 375 AND 1280.
 
-## Remaining work (from the wave-2 browser-verify pass — each was seen live)
+## Remaining work
 
-1. **/messages/[conversationId] crashes on load** — reproducible runtime error adding `presence` callbacks (realtime). Messaging is mid-refactor (`features/messaging/components/shell/`); whoever owns that refactor fixes it — invoke the `supabase-realtime` skill.
-2. **Mobile-broken body layouts** (header rows are fine; bodies don't adapt at 375): `/lists/v1|v2|v3` fixed two-column editors; `/code` IDE workspace (no stacked/drawer fallback); `/agent-connections` two-pane shell; `/data/[id]` table toolbar overlap; `/agents/shortcuts/all` table overflow. Each is a mobile-first pass per `.claude/skills/ios-mobile-first/SKILL.md`, not a header fix.
-3. **Page-width normalization** — the "1998 widths" sweep (e.g. `max-w-3xl` crammed forms on desktop). Needs Arman's target rules before fleeting.
-4. **/legal/ca-wc/pd-ratings-calculator mobile**: 5 header items, no bottom-sheet collapse — port to `EntityModeHeader` actions.
-5. **/images + /images/studio in-body hero blocks** (big title + description in a dashboard) — decide keep-as-landing vs strip; likely strip per doctrine.
-6. Small verified-live defects logged by agents, unrelated to headers, worth triage into the task system (`/task-hygiene`): /artifacts card stuck in isNavigating spinner; /files table row click side-effect creates a real share link; /voice/playground Cartesia voice-list ParseError; /transcripts/scribe nested-button console errors; app-wide "state update before mount" console error (seen on /scraper + home).
-7. **Education route files** (`app/(core)/education/**` heights) — owned by the active education session; do not touch from this campaign.
+1. **Raw-table sweep — 68 files left.** Wave-3 did 4 surfaces under a deliberate cap. Apply the same frozen-first-column treatment (or migrate the table to `MatrxDataTable` and get it free). Full list: `grep -rl "<table" app/\(core\) features`.
+2. **`MobilePanelShell` gap: drawers don't close on in-panel ACTIONS.** It auto-closes on route change, but a panel action that isn't navigation (transcripts studio: pick a session / Clean Up / create session) leaves the drawer covering the result. Add an opt-in close callback to the primitive and adopt it in `StudioSidebar` / `CleanupPad`.
+3. **Mobile bodies still broken** (verified live, out of the capped scope): `/rag/data-stores` split-pane bleeds off a 375 viewport (`RichMemberTable`); `RagHitCard`'s action-icon strip scrolls horizontally inside its own card; `/agent-connections` Resources filter-tab row wraps mid-word; `/tasks/new` success toast overlaps the shell header.
+4. **Width sweep second pass** — each agent was capped at ~8 files. Re-run the `max-w-2xl|3xl` grep over `app/(core)` and finish the tail.
+5. **`/messages/[conversationId]` crashes on load** — realtime presence-callback error. Owned by the messaging refactor; invoke the `supabase-realtime` skill.
+6. **Defects D72–D76** are filed in `FOUND_DEFECTS.md` — **D72 is P0 data exposure** (a plain row click on the /files desktop table can create a real share link). Needs a live repro of the hover/click race in `features/files/components/surfaces/desktop/FileTableRow.tsx`.
+7. `app/(core)/education/**` — owned by the education session; leave alone.
 
 ## Done
 
-- Skill + spec + templates + `TapTargetButtonDestructive`; `RouteModeNav` measurement fix; shell.css inject display bug (`5523ac373`).
-- Wave 1: 35 families fixed (`baa9dd59d`). Wave 2: residuals + CMS template dedup + ALL families browser-verified at both viewports, fixes applied inline (`b510ea043`, `0edc52815`). Faux headers and banned heights in (core): **zero**.
-- False alarm cleared: EntityModeHeader mobile drawer reported broken by one verify agent — re-tested directly, works.
+- Headers: skill + `EntityModeHeader`/`CrumbTrailHeader` + `TapTargetButtonDestructive`; every `(core)` family fixed and browser-verified. **Faux headers and banned heights in `(core)`: zero.**
+- Mobile primitives: `MobilePanelShell`; `MatrxDataTable` mobile scroll + frozen first column (`610b752e5`).
+- Multi-pane routes onto `MobilePanelShell`: /code, /agent-connections, /user-settings, /transcripts studio+cleanup, RAG DocumentViewer. (/notes and /tasks already had native mobile views — verified, left alone; /notes deep-link-to-editor bug fixed en route.)
+- Width sweep applied across agents/agent-apps, podcast/transcripts/images, organizations/projects/scopes, schedules/cms/rag — `/schedules/[id]` is now full-width two-column.
+- /data table toolbar → bottom drawer; /legal calculator header → back+title+More; /images + /images/studio marketing heroes stripped.
