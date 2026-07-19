@@ -45,7 +45,7 @@ The right test is **"is this an M2M between two table-backed rows (both uuid FKs
 | `tool.bundle_member` | **M2M** `bundle_id`↔`tool_id` (both uuid FK; tokens `tool_bundle`,`tool` ✅) + `local_alias`,`sort_order` | **MIGRATE (coordinated FE+DB)** | See §2 — 4 RPCs incl. runtime path. |
 | `research.rs_source_tag` | **M2M** `source_id`↔`tag_id` (both uuid FK) + `is_primary_source`,`confidence`,`assigned_by` | **MIGRATE (FE-only)** | `research_source` ✅; `tag` is a real row, just unregistered → register a `research_tag` entity, then migrate. No DB functions reference it. Carry the 3 attrs as edge metadata. |
 | `research.rs_keyword_source` | **M2M** `keyword_id`↔`source_id` (both uuid FK) + `rank_for_keyword` | **MIGRATE (FE-only)** | Register a `research_keyword` entity, then migrate. No DB functions. Carry `rank_for_keyword` as metadata. |
-| `agent.agent_surface` | `agent_id` (uuid entity) ↔ **`surface_name` TEXT** + `value_mappings` jsonb, `version`, `visibility`, scope cols | **KEEP** | Not entity↔entity. An agent bound to a *named* surface with a versioned config payload = a configuration object, not a content edge. Flips to MIGRATE only if surfaces become first-class uuid entities (product decision). |
+| `agent.agent_surface` | ~~KEEP~~ → **MIGRATED 2026-07-12** — table retired to `graveyard`; bindings are now `platform.associations` edges (agent → surface by uuid, tier-encoded `role`, `value_mappings` in edge metadata) read via `agent.menu_surface` | **DONE** | See `features/surfaces/FEATURE.md` §"Agent↔surface bindings". Open architectural concern: the binding payload is real typed logic (mapType/target/required/defaultValue) living in untyped edge metadata — see Open decisions §3. |
 | `ui.ui_surface_agent_role` | text-keyed (`surface_name`,`name`) **definition** row + single optional `default_agent_id` FK | **KEEP** | A surface-slot *definition* table, not a junction. |
 | `ui.ui_surface_agent_pref` | `agent_id` (uuid) ↔ **(`surface_name`,`role_name`) TEXT slot** + `position`,`settings` jsonb, scope cols | **KEEP** | Per-context agent→slot preference/config; the slot is a text config identifier, not an entity row. |
 | `scheduler.sch_agent_task` | **entity table** (`prompt`,`variables`,`auth_mode`,…) + single `agent_id` FK = **1:many** | **KEEP** | First-class entity (registered as its own token), not a junction. The lone `agent_id` is a plain FK. |
@@ -57,7 +57,7 @@ The right test is **"is this an M2M between two table-backed rows (both uuid FKs
 
 1. **research M2Ms** — register `research_tag` / `research_keyword` entities and migrate both (FE-only), or leave them as internal research-pipeline taxonomy?
 2. **`bundle_member`** — do the full coordinated FE+DB migration (incl. Python consumer coordination on the `tool_resolve_*` contract), produce a detailed plan only, or hold until the backend owner is looped in?
-3. **surfaces** (`agent_surface` / `ui_surface_*`) — keep as config bindings (current verdict), or promote surfaces to first-class entities (bigger change)?
+3. **surface-binding payload shape** — `agent_surface` DID migrate to associations (2026-07-12; surfaces are uuid targets via `ui_surface.id`). The remaining question: `value_mappings` is a typed sub-schema (mapType/target/required/defaultValue/prompt) stored in untyped edge `metadata` — enhance `platform.associations` (typed payload column / registered edge-payload schemas / validation trigger), or accept metadata as-is? `ui_surface_agent_role` / `ui_surface_agent_pref` stay KEEP (definition/config tables, unchanged). |
 
 ---
 
