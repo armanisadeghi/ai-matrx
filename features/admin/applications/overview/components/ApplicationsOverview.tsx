@@ -188,7 +188,9 @@ export function ApplicationsOverview({
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      {/* Auto-fit so cards always fill the admin viewport width — a single
+          application stretches rather than stranding half the screen. */}
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(520px,1fr))]">
         {summaries.map((s) => (
           <section
             key={s.app}
