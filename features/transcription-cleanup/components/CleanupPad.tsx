@@ -50,7 +50,6 @@ import {
   Layers,
   Loader2,
   Mic,
-  PanelLeftOpen,
   Pin,
   Play,
   Plus,
@@ -62,7 +61,6 @@ import {
 import { toast } from "sonner";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectVoicePadEntries,
@@ -78,6 +76,10 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import {
+  MobilePanelShell,
+  type MobileShellPanel,
+} from "@/features/shell/components/header/templates/MobilePanelShell";
 import { Switch } from "@/components/ui/switch";
 import {
   MicrophoneIconButton,
@@ -553,7 +555,6 @@ export default function CleanupPad({
   externalRecording,
 }: CleanupPadProps) {
   const dispatch = useAppDispatch();
-  const isMobile = useIsMobile();
   const session = useCleanupSession({ sessionId, urlSync });
   const isEmbedded = variant === "embedded";
   const propSidebar = sections?.sidebar ?? true;
@@ -604,7 +605,6 @@ export default function CleanupPad({
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isMicTranscribing, setIsMicTranscribing] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   /**
    * The session whose content is currently reflected in the panes. Set by the
    * load-reset effect once the DB snapshot has been applied to local state.
@@ -672,10 +672,6 @@ export default function CleanupPad({
   const slotAi1 = useAiPostProcess();
   const slotAi2 = useAiPostProcess();
   const slotAis = [slotAi0, slotAi1, slotAi2];
-
-  useEffect(() => {
-    if (!isMobile) setDrawerOpen(false);
-  }, [isMobile]);
 
   // ── Latest-value refs (async flows must never read stale closures) ────────
   const cleanAgentIdRef = useRef(cleanAgentId);
@@ -1620,7 +1616,6 @@ export default function CleanupPad({
     runClean(transcript);
     // Autorun (source = raw): Clean and these slots run simultaneously.
     autoRunRawSlots(transcript);
-    setDrawerOpen(false);
   }, [runClean, autoRunRawSlots]);
 
   const handleCopyJoined = useCallback(async () => {
@@ -1646,7 +1641,6 @@ export default function CleanupPad({
     (id: string) => {
       if (id === session.activeSessionId) return;
       session.selectSession(id);
-      setDrawerOpen(false);
     },
     [session],
   );
@@ -1668,7 +1662,6 @@ export default function CleanupPad({
       setActiveSlotIdx(0);
       const newId = await session.createNew();
       if (newId) setAppliedSessionId(newId);
-      setDrawerOpen(false);
     } finally {
       setIsCreatingSession(false);
     }
@@ -1990,20 +1983,8 @@ export default function CleanupPad({
 
   const recordBand = <div className={RECORD_BAND}>{recordArea}</div>;
 
-  const mobileDrawerToggle = isMobile ? (
-    <button
-      type="button"
-      onClick={() => setDrawerOpen(true)}
-      aria-label="Open options"
-      className="absolute left-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-    >
-      <PanelLeftOpen className="h-4 w-4" />
-    </button>
-  ) : null;
-
   const recordControl = (
     <div className="relative flex shrink-0 items-center justify-center border-b border-border px-4 py-4">
-      {mobileDrawerToggle}
       {recordArea}
     </div>
   );
@@ -2749,116 +2730,102 @@ export default function CleanupPad({
     );
   }
 
-  // ── Mobile: single scroll column + drawer ──────────────────────────────────
-  if (isMobile) {
-    return (
-      <>
-        {shellHeader}
-        <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-background pt-[var(--shell-header-h)]">
-          {recordControl}
-          <div className="flex h-[34dvh] shrink-0 flex-col border-b border-border">
-            {transcriptPane}
+  // ── Mobile: single scroll column, sidebar reachable via one bottom-drawer
+  //    panel; Desktop: 3 resizable panels, rendered verbatim ─────────────────
+  const mobileMain = (
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-background pt-[var(--shell-header-h)]">
+      {recordControl}
+      <div className="flex h-[34dvh] shrink-0 flex-col border-b border-border">
+        {transcriptPane}
+      </div>
+      <div className="flex h-[34dvh] shrink-0 flex-col border-b border-border">
+        {cleanPane}
+      </div>
+      <div className="flex h-[48dvh] shrink-0 flex-col pb-4">
+        {customPane}
+      </div>
+    </div>
+  );
+
+  const mobilePanels: MobileShellPanel[] = [
+    {
+      id: "sidebar",
+      label: "Controls",
+      icon: SlidersHorizontal,
+      content: sidebarBody,
+    },
+  ];
+
+  const desktopLayout = (
+    <div className="h-full overflow-hidden">
+      <ResizablePanelGroup
+        id="cleanup-h3"
+        orientation="horizontal"
+        defaultLayout={defaultHLayout}
+        onLayoutChanged={(layout) => writeLayoutCookie(H_COOKIE, layout)}
+        className="h-full w-full"
+      >
+        <ResizablePanel
+          id="sidebar"
+          defaultSize="24%"
+          minSize="16%"
+          maxSize="38%"
+        >
+          <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
+            {sidebarBody}
           </div>
-          <div className="flex h-[34dvh] shrink-0 flex-col border-b border-border">
-            {cleanPane}
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        <ResizablePanel id="main" minSize="30%">
+          <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
+            {recordBand}
+            <ResizablePanelGroup
+              id="cleanup-v"
+              orientation="vertical"
+              defaultLayout={defaultVLayout}
+              onLayoutChanged={(layout) =>
+                writeLayoutCookie(V_COOKIE, layout)
+              }
+              className="min-h-0 flex-1"
+            >
+              <ResizablePanel id="transcript" defaultSize="50%" minSize="20%">
+                {transcriptPane}
+              </ResizablePanel>
+              <ResizableHandle style={{ cursor: "row-resize" }} />
+              <ResizablePanel id="response" defaultSize="50%" minSize="20%">
+                {cleanPane}
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
-          <div className="flex h-[48dvh] shrink-0 flex-col pb-4">
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        <ResizablePanel
+          id="custom"
+          defaultSize="28%"
+          minSize="18%"
+          maxSize="45%"
+        >
+          <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
             {customPane}
           </div>
-        </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
+  );
 
-        {drawerOpen && (
-          <div className="fixed inset-0 z-50">
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setDrawerOpen(false)}
-            />
-            <aside className="absolute inset-y-0 left-0 flex w-[86%] max-w-sm flex-col border-r border-border bg-background shadow-xl pb-[calc(var(--shell-dock-h)+var(--shell-dock-bottom)+var(--shell-safe-area-bottom)+0.5rem)]">
-              <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Options
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setDrawerOpen(false)}
-                  aria-label="Close options"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="min-h-0 flex-1">{sidebarBody}</div>
-            </aside>
-          </div>
-        )}
-        {transcriptInsertDialog}
-      </>
-    );
-  }
-
-  // ── Desktop: 3 resizable panels ────────────────────────────────────────────
   return (
     <>
       {shellHeader}
       {transcriptInsertDialog}
-      <div className="h-full overflow-hidden">
-        <ResizablePanelGroup
-          id="cleanup-h3"
-          orientation="horizontal"
-          defaultLayout={defaultHLayout}
-          onLayoutChanged={(layout) => writeLayoutCookie(H_COOKIE, layout)}
-          className="h-full w-full"
-        >
-          <ResizablePanel
-            id="sidebar"
-            defaultSize="24%"
-            minSize="16%"
-            maxSize="38%"
-          >
-            <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
-              {sidebarBody}
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          <ResizablePanel id="main" minSize="30%">
-            <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
-              {recordBand}
-              <ResizablePanelGroup
-                id="cleanup-v"
-                orientation="vertical"
-                defaultLayout={defaultVLayout}
-                onLayoutChanged={(layout) =>
-                  writeLayoutCookie(V_COOKIE, layout)
-                }
-                className="min-h-0 flex-1"
-              >
-                <ResizablePanel id="transcript" defaultSize="50%" minSize="20%">
-                  {transcriptPane}
-                </ResizablePanel>
-                <ResizableHandle style={{ cursor: "row-resize" }} />
-                <ResizablePanel id="response" defaultSize="50%" minSize="20%">
-                  {cleanPane}
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          <ResizablePanel
-            id="custom"
-            defaultSize="28%"
-            minSize="18%"
-            maxSize="45%"
-          >
-            <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
-              {customPane}
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
+      <MobilePanelShell
+        desktop={desktopLayout}
+        main={mobileMain}
+        panels={mobilePanels}
+      />
     </>
   );
 }
