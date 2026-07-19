@@ -84,6 +84,8 @@ The universal Agents header dropdown exposes two ephemeral WindowPanels for the 
 - **Surface Context** (`surfaceContextWindow`) is available to every user. It samples the matching `SurfaceRuntimeProvider.getScope()` while open, labels live/snapshot/unavailable state, and presents declared values beside their exact current values plus any undeclared runtime keys.
 - **Surface Context Admin** (`surfaceContextInspector`) is gated by Redux `selectIsAdmin` both in the dropdown and inside the window. Its Live Values view uses the same runtime sampling; Manifest & Settings embeds the canonical admin editor and exposes code-owned provenance plus every DB-owned editable surface setting.
 
+Both panels keep the standard thin WindowPanel chrome: friendly manifest-derived surface labels, icon-only header actions, and the canonical compact Copy for AI control. Runtime/manifest status and technical identifiers belong in panel content, footers, or the copied AI payload rather than the user-facing title bar.
+
 Sampling is intentionally view-only and ephemeral: it reads the provider callback every 400 ms while a panel is open and never copies surface data into Redux or changes the agent execution scope.
 
 ## Architecture
@@ -175,7 +177,7 @@ After the user-requested "go all in" pass, the page picks up:
 
 ## Change Log
 
-- **2026-07-19 — Live Surface Context windows in universal Agents chrome.** Added the user-facing `surfaceContextWindow` for searchable, exact live values and upgraded the Redux-admin-gated `surfaceContextInspector` with live runtime sampling plus embedded manifest/settings administration. Admins can now see authored vs resolved manifest provenance/evidence and edit handler-validated global namespace config without leaving the surface.
+- **2026-07-19 — Live Surface Context windows in universal Agents chrome.** Added the user-facing `surfaceContextWindow` for searchable, exact live values and upgraded the Redux-admin-gated `surfaceContextInspector` with live runtime sampling plus embedded manifest/settings administration. Admins can now see authored vs resolved manifest provenance/evidence and edit handler-validated global namespace config without leaving the surface. Follow-up polish keeps both headers thin with icon-only actions, canonical Copy for AI, friendly display labels, and no raw slash-delimited surface key in user chrome.
 - **2026-07-17 — Document Evidence System surface contract.**
   `SurfaceManifest.evidenceSources` now declares when a surface already knows a
   `processed_document_id`. `launchAgentExecution` resolves those declarations

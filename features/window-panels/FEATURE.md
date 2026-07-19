@@ -42,7 +42,7 @@ lib/redux/slices/
 
 ## Change Log
 
-- 2026-07-19 — Added `surfaceContextWindow` to the universal Agents header for real-time surface variable inspection, and expanded the admin-gated `surfaceContextInspector` into a two-view WindowPanel (live values + embedded manifest/settings editor). Both use mobile drawer presentation and the canonical overlay controller.
+- 2026-07-19 — Added `surfaceContextWindow` to the universal Agents header for real-time surface variable inspection, and expanded the admin-gated `surfaceContextInspector` into a two-view WindowPanel (live values + embedded manifest/settings editor). Both use mobile drawer presentation and the canonical overlay controller. Their title bars follow the thin chrome contract: friendly surface labels, 24px icon-only actions, canonical compact Copy for AI, and status metadata in the footer instead of oversized header controls.
 - 2026-07-18 — Context Menu v3 now uses `AgentFlexiblePanel` (`flexible-panel`) as the shared framework-owned presentation for surface-bound/default Agents across Notes and every other managed context-menu surface; shortcut-specific presentations remain untouched.
 - 2026-07-17 — Promoted the canonical Miller Columns context selector into `contextSwitcherWindow`: a 940×650 full Surface-A WindowPanel backed by `appContextSlice`, sharing its core with the new condensed popover face.
 - 2026-07-16 — Refined the chat `runControlsWindow` to open as a compact 480px panel inset 72px from the left edge. It now defaults to the shared-state Quickset tab while retaining the conversation workspace and the standard WindowPanel behavior.

@@ -161,16 +161,9 @@ export default function SurfaceAgentsPanelImpl({
         <p className="truncate text-sm font-semibold text-foreground">
           {primaryLabel}
         </p>
-        {primaryName ? (
-          <Badge
-            variant="outline"
-            className="max-w-[160px] truncate font-mono text-[9px]"
-          >
-            {primaryName}
-          </Badge>
-        ) : (
+        {!primaryName && (
           <Badge variant="outline" className="shrink-0 text-[9px]">
-            unregistered
+            Unregistered
           </Badge>
         )}
       </div>
