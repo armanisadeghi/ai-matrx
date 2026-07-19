@@ -20,7 +20,7 @@ export default function PresetsPage() {
 
     return (
         <main className="h-full overflow-y-auto overscroll-contain bg-background">
-            <div className="container mx-auto px-3 sm:px-6 md:px-10 py-4 md:py-8 max-w-[1400px]">
+            <div className="w-full px-3 sm:px-6 md:px-10 py-4 md:py-8">
                 <div className="flex items-center gap-1.5 mb-3 md:mb-4">
                     <Link
                         href="/images/studio"

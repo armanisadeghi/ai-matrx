@@ -69,7 +69,7 @@ export default async function NewTranscriptPage() {
         <TranscriptsListHeader />
       </PageHeader>
       <div className="h-full w-full overflow-y-auto bg-background pt-[var(--shell-header-h)]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <div className="w-full px-4 sm:px-6 py-6">
           <div className="mb-5">
             <h1 className="text-lg font-semibold tracking-tight">
               New transcript
@@ -79,7 +79,7 @@ export default async function NewTranscriptPage() {
             </span>
           </div>
 
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {OPTIONS.map((opt) => {
               const Icon = opt.icon;
               const disabled = opt.status === "Coming soon";

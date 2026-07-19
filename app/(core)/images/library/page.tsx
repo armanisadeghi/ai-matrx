@@ -30,7 +30,7 @@ export default function LibraryPage() {
 
   return (
     <main className="h-full overflow-y-auto overscroll-contain bg-background">
-      <div className="container mx-auto px-3 sm:px-6 md:px-10 py-4 md:py-10 max-w-[1100px] space-y-4 md:space-y-8">
+      <div className="w-full px-3 sm:px-6 md:px-10 py-4 md:py-10 space-y-4 md:space-y-8">
         <div className="flex items-center gap-1.5">
           <Link
             href="/images/studio"

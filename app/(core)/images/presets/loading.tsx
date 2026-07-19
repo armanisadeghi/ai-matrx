@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function PresetsLoading() {
     return (
         <div className="h-full overflow-y-auto bg-background">
-            <div className="container mx-auto px-4 sm:px-6 md:px-10 py-8 max-w-[1400px] space-y-10">
+            <div className="w-full px-4 sm:px-6 md:px-10 py-8 space-y-10">
                 <div className="space-y-2">
                     <Skeleton className="h-9 w-80" />
                     <Skeleton className="h-5 w-full max-w-2xl" />

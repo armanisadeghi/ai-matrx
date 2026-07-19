@@ -25,7 +25,7 @@ export default async function PodcastsIndexPage() {
             {/* Header */}
             <div className="relative overflow-hidden bg-zinc-900 px-4 pt-10 pb-12">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-transparent pointer-events-none" />
-                <div className="relative z-10 max-w-2xl mx-auto text-center">
+                <div className="relative z-10 max-w-3xl mx-auto text-center">
                     <h1 className="text-white font-bold text-4xl">Podcasts</h1>
                     <p className="text-white/50 text-sm mt-2">
                         {published.length} {published.length === 1 ? 'show' : 'shows'} available
@@ -34,7 +34,7 @@ export default async function PodcastsIndexPage() {
             </div>
 
             {/* Show grid — client component because it uses onError on img */}
-            <div className="max-w-2xl mx-auto px-4 py-6">
+            <div className="w-full px-4 sm:px-6 py-6">
                 <PodcastGrid shows={published} />
             </div>
         </div>
