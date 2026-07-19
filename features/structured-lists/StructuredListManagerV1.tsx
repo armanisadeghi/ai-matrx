@@ -134,6 +134,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@/utils/search-scoring";
+import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 
 // ---------- Types ----------
 
@@ -749,83 +750,76 @@ export function StructuredListManagerV1({
     );
   }
 
-  return (
-    <div
-      className={cn(
-        "grid h-[calc(100dvh-8rem)] min-h-[560px] overflow-hidden rounded-lg border bg-background",
-        forcedListId ? "grid-cols-1" : "grid-cols-[260px_1fr]",
-      )}
-    >
-      {/* Sidebar — hidden in single-list mode */}
-      {!forcedListId && (
-        <aside className="flex min-h-0 flex-col border-r bg-muted/30">
-          <div className="flex items-center justify-between px-3 pb-2 pt-3">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Picklists
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={createList}
-              title="New picklist"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
+  const sidebarContent = (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center justify-between px-3 pb-2 pt-3">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Picklists
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={createList}
+          title="New picklist"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <div className="px-2 pb-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search lists…"
+            className="h-8 pl-7 text-sm"
+            style={{ fontSize: 16 }}
+          />
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto px-1 pb-2">
+        {filteredLists.length === 0 ? (
+          <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+            {search ? "No matches" : "No picklists yet"}
           </div>
-          <div className="px-2 pb-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search lists…"
-                className="h-8 pl-7 text-sm"
-              />
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto px-1 pb-2">
-            {filteredLists.length === 0 ? (
-              <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-                {search ? "No matches" : "No picklists yet"}
-              </div>
-            ) : (
-              filteredLists.map((l) => {
-                const isActive = l.id === activeId;
-                const itemCount = activeId === l.id ? items.length : null;
-                return (
-                  <button
-                    key={l.id}
-                    onClick={() => setActiveId(l.id)}
-                    className={cn(
-                      "group/list mb-px flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors",
-                      isActive
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent/50",
-                    )}
-                  >
-                    <span className="line-clamp-1 w-full text-sm leading-tight">
-                      {l.list_name || (
-                        <span className="text-muted-foreground italic">
-                          Untitled list
-                        </span>
-                      )}
+        ) : (
+          filteredLists.map((l) => {
+            const isActive = l.id === activeId;
+            const itemCount = activeId === l.id ? items.length : null;
+            return (
+              <button
+                key={l.id}
+                onClick={() => setActiveId(l.id)}
+                className={cn(
+                  "group/list mb-px flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors",
+                  isActive
+                    ? "bg-accent text-accent-foreground"
+                    : "hover:bg-accent/50",
+                )}
+              >
+                <span className="line-clamp-1 w-full text-sm leading-tight">
+                  {l.list_name || (
+                    <span className="text-muted-foreground italic">
+                      Untitled list
                     </span>
-                    {itemCount !== null && (
-                      <span className="text-[11px] text-muted-foreground">
-                        {itemCount} item{itemCount === 1 ? "" : "s"}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </aside>
-      )}
+                  )}
+                </span>
+                {itemCount !== null && (
+                  <span className="text-[11px] text-muted-foreground">
+                    {itemCount} item{itemCount === 1 ? "" : "s"}
+                  </span>
+                )}
+              </button>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 
-      {/* Main */}
-      <section className="flex min-h-0 min-w-0 flex-col">
+  const mainContent = (
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col">
         {!activeList ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
             <p>No picklist selected.</p>
@@ -907,6 +901,12 @@ export function StructuredListManagerV1({
               />
             </div>
 
+            {/* Horizontal scroller — keeps the spreadsheet columns readable on narrow screens.
+                Inline minWidth (not a min-w-[] class) is required: app/globals.css has an
+                unlayered `[class*="flex"] > * { min-width: 0 }` mobile rule that beats any
+                layered Tailwind min-width utility on a flex child. */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-x-auto">
+            <div className="flex min-h-0 flex-1 flex-col" style={{ minWidth: 720 }}>
             {/* Table head */}
             <div className="grid grid-cols-[26px_28px_minmax(0,1.3fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_140px_28px] gap-1.5 border-b bg-muted/30 px-5 py-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               <span />
@@ -1000,6 +1000,8 @@ export function StructuredListManagerV1({
                 </Button>
               </div>
             </div>
+            </div>
+            </div>
 
             {/* Footer */}
             <div className="flex items-center justify-between border-t bg-muted/30 px-5 py-1.5 text-[11px] text-muted-foreground">
@@ -1012,6 +1014,45 @@ export function StructuredListManagerV1({
           </>
         )}
       </section>
+  );
+
+  return (
+    <>
+      <MobilePanelShell
+        desktop={
+          <div
+            className={cn(
+              "grid h-[calc(100dvh-8rem)] min-h-[560px] overflow-hidden rounded-lg border bg-background",
+              forcedListId ? "grid-cols-1" : "grid-cols-[260px_1fr]",
+            )}
+          >
+            {/* Sidebar — hidden in single-list mode */}
+            {!forcedListId && (
+              <aside className="flex min-h-0 flex-col border-r bg-muted/30">
+                {sidebarContent}
+              </aside>
+            )}
+            {mainContent}
+          </div>
+        }
+        main={
+          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border bg-background">
+            {mainContent}
+          </div>
+        }
+        panels={
+          forcedListId
+            ? undefined
+            : [
+                {
+                  id: "lists",
+                  label: "Picklists",
+                  icon: Folder,
+                  content: sidebarContent,
+                },
+              ]
+        }
+      />
 
       {/* Delete-list confirm dialog */}
       <Dialog open={deleteListOpen} onOpenChange={setDeleteListOpen}>
@@ -1041,7 +1082,7 @@ export function StructuredListManagerV1({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 
