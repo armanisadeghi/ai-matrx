@@ -688,7 +688,11 @@ export function NotesView({
   return (
     <NotesInstanceProvider value={instanceId}>
       {isMobile ? (
-        <MobileNotesView singleNoteId={singleNote} />
+        // Deep link to /notes/[id] (e.g. a shared link opened on a phone)
+        // must land straight in the editor, matching desktop — the mobile
+        // view manages its own list/editor state independent of the tab
+        // redux the desktop split uses, so it needs the route id explicitly.
+        <MobileNotesView singleNoteId={singleNote ?? routeNoteId} />
       ) : (
         <div
           className={
