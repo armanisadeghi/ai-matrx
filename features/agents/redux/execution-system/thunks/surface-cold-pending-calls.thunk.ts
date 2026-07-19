@@ -52,6 +52,7 @@ export const surfaceColdPendingCalls = (
           userRequestId: call.user_request_id ?? undefined,
           callId: call.call_id,
           toolName: call.tool_name,
+          source: "cold-resume",
           // Reconstruct the live `tool_delegated` data shape ({ arguments })
           // from the persisted cx_tool_call.arguments so the dispatched/stored
           // shape is byte-identical to the live path.

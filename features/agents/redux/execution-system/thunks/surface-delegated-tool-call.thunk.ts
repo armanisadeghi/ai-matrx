@@ -21,8 +21,9 @@
  *     matrx-local engine polls `GET /ai/user/pending_calls`, executes, POSTs
  *     the result, and resumes the loop itself (its FEATURE.md invariant:
  *     "foreign calls are left for their owner"; the same rule applies to us
- *     in reverse). Posting an error here would steal the call from the
- *     desktop and kill the turn.
+ *     in reverse). A cold-resumed desktop call also remains durable when no
+ *     desktop is currently online: reconnecting the executor is recoverable,
+ *     while POSTing an error would permanently steal the call from it.
  *   - anything else   → flip the instance to `paused` and POST an
  *     `unsupported_client_tool` error so the hard-suspended loop never wedges.
  *
@@ -89,6 +90,8 @@ export interface SurfaceDelegatedToolCallArgs {
    * omits it (the entry's event log simply starts empty).
    */
   event?: ToolEventPayload;
+  /** Distinguishes a persisted cold-load replay from a live stream event. */
+  source?: "live" | "cold-resume";
 }
 
 export const surfaceDelegatedToolCall = (
@@ -103,6 +106,7 @@ export const surfaceDelegatedToolCall = (
       toolName,
       data,
       event,
+      source = "live",
     } = args;
 
     dispatch(
@@ -255,20 +259,30 @@ export const surfaceDelegatedToolCall = (
     // falls through to the loud unsupported error instead of wedging forever.
     if (isDesktopDelegatedToolName(toolName)) {
       dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+      const startReconciliation = () => {
+        dispatch(
+          watchDesktopDelegation({
+            conversationId,
+            lifecycleRequestId: requestId,
+            userRequestId,
+            callId,
+          }),
+        );
+      };
       void getLiveDesktopInstance()
         .then((desktop) => {
           if (desktop) {
             console.info(
               `[desktop-native] '${toolName}' (call ${callId}) left pending for desktop "${desktop.instanceName}" — the matrx-local engine executes and resumes it.`,
             );
-            dispatch(
-              watchDesktopDelegation({
-                conversationId,
-                lifecycleRequestId: requestId,
-                userRequestId,
-                callId,
-              }),
+            startReconciliation();
+            return;
+          }
+          if (source === "cold-resume") {
+            console.info(
+              `[desktop-native] cold-resumed '${toolName}' (call ${callId}) remains pending until a Matrx Local desktop reconnects.`,
             );
+            startReconciliation();
             return;
           }
           console.error(
@@ -285,14 +299,7 @@ export const surfaceDelegatedToolCall = (
             description:
               "The tool call is still waiting safely and will be reconciled when the desktop responds.",
           });
-          dispatch(
-            watchDesktopDelegation({
-              conversationId,
-              lifecycleRequestId: requestId,
-              userRequestId,
-              callId,
-            }),
-          );
+          startReconciliation();
         });
       return;
     }

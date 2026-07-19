@@ -79,6 +79,7 @@ This is a live implementation checklist for the Chat Options (`runControlsWindow
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-18 | codex | Preserved executor ownership for cold-resumed `local_*` calls: offline and presence-error loads remain paused/durable and start desktop reconciliation instead of posting `unsupported_client_tool`; focused tests cover online, offline, query-error, and unknown-tool routing. |
 | 2026-07-17 | codex | Matched the User Feedback image-attachment UX in the shared live-chat composer strip: image resources now render as durable 56×56 previews with open/remove controls, while all non-image chips and attachment state remain unchanged. |
 | 2026-07-17 | codex | Fixed the shared Creator Panel Payload tab crash by adding `userPreferences` to the memoized assembled-request preview's dependency state; regression coverage pins default and explicit directive-policy payloads. |
 | 2026-07-16 | codex | Replaced the SmartAgentInput passive desktop-presence indicator with a live compute-target picker: it lists only ready local PCs and sandboxes, visibly distinguishes a verified binding, and supports connect/disconnect through the existing binding path. |

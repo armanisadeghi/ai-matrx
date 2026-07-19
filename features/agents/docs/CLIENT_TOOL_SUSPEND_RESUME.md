@@ -326,9 +326,13 @@ ledger row alone — the desktop engine polls
 `GET /ai/user/pending_calls?instance_id=<caller>`, atomically claims matching
 rows, executes, POSTs the result, and opens the resume itself (headless; see
 matrx-local `app/services/delegation/FEATURE.md`). Posting a result from the
-web would steal the call from its owner. Only when NO desktop is online does
-the web post the loud `unsupported_client_tool` error so the turn doesn't
-wedge. The `desktop-native` capability is declared (turn start + resume, via
+web would steal the call from its owner. On a LIVE delegation, when no desktop
+is online, the web posts the loud `unsupported_client_tool` error so the turn
+doesn't wedge. On a COLD-RESUMED `local_*` call, no current desktop is a
+recoverable offline state: the web keeps the row durable, renders the paused
+waiting state, and starts `watchDesktopDelegation` instead of consuming the row
+with an error. A presence lookup failure follows the same durable path. The
+`desktop-native` capability is declared (turn start + resume, via
 `buildToolInjection`'s provider registry) while presence is live; when the
 admin override chooses a target desktop, send
 `client.state["desktop-native"].target_instance_id`.
@@ -646,6 +650,12 @@ Flow (frontend):
 3. The user answers → `submitToolResult` → `continuation_needed` →
    `resumeInstance`. Identical to a same-session resume from here on.
 
+Persisted `local_*` calls are executor-owned even when no desktop is currently
+online. Cold surfacing marks their origin explicitly; online, offline, and
+presence-query-error outcomes all leave the call pending and start
+`watchDesktopDelegation`. Only an unknown non-desktop client tool is rejected
+as `unsupported_client_tool`.
+
 Key files: `surface-delegated-tool-call.thunk.ts` (the one shared surface path,
 used by both the live stream and cold-resume — zero drift),
 `surface-cold-pending-calls.thunk.ts`, `api/fetch-pending-calls.ts`. Extension
@@ -658,6 +668,7 @@ Problem 15.
 
 | Date | Change |
 |---|---|
+| 2026-07-18 | Cold-resumed `local_*` calls now remain durable and start desktop reconciliation when the desktop is offline or presence is unavailable; they are never consumed as `unsupported_client_tool`. |
 | 2026-07-14 | Targetable desktop delegation: request field `client.state["desktop-native"].target_instance_id` stamps `chat.tool_call.target_instance_id`; matrx-local calls `GET /ai/user/pending_calls?instance_id=<caller>` to atomically claim rows via `claimed_by_instance_id` / `claimed_at` / `claim_expires_at`; frontend reads `/desktop-instances` for `{id,name,live,dev,last_seen}`. |
 | 2026-07-14 | Desktop ownership routing: `surfaceDelegatedToolCall` leaves `local_*` delegated calls in the ledger for the matrx-local engine while a desktop is online (presence via `app_instances`); the `desktop-native` capability rides turn start + resume through the `buildToolInjection` provider registry. Anti-pattern 11 added. |
 | 2026-05-25 | Initial — captures the suspend → submit → resume protocol; supersedes `DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md` and clarifies the boundary against `PYTHON_RESUME_SPEC.md` and the extension's cursor-replay scaffold. Both clients ship the wiring; ESLint chokepoint protects the frontend funnel. |
