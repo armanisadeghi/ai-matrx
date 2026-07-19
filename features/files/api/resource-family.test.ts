@@ -1,4 +1,5 @@
 import {
+  FILE_RESOURCE_FAMILY_SCHEMA_VERSION,
   normalizeFileResourceId,
   parseFileResourceFamilyInventory,
 } from "./resource-family";
@@ -15,7 +16,7 @@ describe("file resource family contract", () => {
 
   it("parses the dynamic representation inventory", () => {
     const inventory = parseFileResourceFamilyInventory({
-      schema_version: 1,
+      schema_version: FILE_RESOURCE_FAMILY_SCHEMA_VERSION,
       resource_type: "file",
       requested_file_id: FILE_ID,
       root_file_id: FILE_ID,
@@ -28,16 +29,42 @@ describe("file resource family contract", () => {
           category: "text",
           count: 3,
           promotable: true,
-          fetch_tool: "document_context",
+          fetch_tool: "document_content",
+        },
+        {
+          key: "rag",
+          label: "RAG chunks",
+          category: "search",
+          count: 42,
+          promotable: false,
+          fetch_tool: "knowledge_search",
         },
       ],
-      capabilities: ["document_search"],
-      counts: { files: 1 },
+      capabilities: ["document_search", "knowledge_search"],
+      counts: { files: 1, rag_chunk_count: 42 },
     });
 
-    expect(inventory.representations).toEqual([
-      expect.objectContaining({ key: "clean", count: 3, promotable: true }),
+    expect(inventory.representations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "clean", count: 3, promotable: true }),
+      ]),
+    );
+    expect(inventory.representations[1]).toEqual(
+      expect.objectContaining({ key: "rag", fetch_tool: "knowledge_search" }),
+    );
+    expect(inventory.capabilities).toEqual([
+      "document_search",
+      "knowledge_search",
     ]);
-    expect(inventory.capabilities).toEqual(["document_search"]);
+    expect(inventory.capabilities).not.toContain("verify");
+  });
+
+  it("fails loudly when the RPC contract is newer than this client", () => {
+    expect(() =>
+      parseFileResourceFamilyInventory({
+        schema_version: FILE_RESOURCE_FAMILY_SCHEMA_VERSION + 1,
+        resource_type: "file",
+      }),
+    ).toThrow("Unsupported file-family schema version");
   });
 });

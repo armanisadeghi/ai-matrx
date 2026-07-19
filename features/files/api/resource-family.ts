@@ -1,6 +1,8 @@
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 
+export const FILE_RESOURCE_FAMILY_SCHEMA_VERSION = 2;
+
 export interface FileFamilyRepresentation {
   key: string;
   label: string;
@@ -59,8 +61,15 @@ export function parseFileResourceFamilyInventory(
         ),
       )
     : {};
+  const schemaVersion =
+    typeof value.schema_version === "number" ? value.schema_version : 1;
+  if (schemaVersion < 1 || schemaVersion > FILE_RESOURCE_FAMILY_SCHEMA_VERSION) {
+    throw new Error(
+      `Unsupported file-family schema version ${schemaVersion}; this client supports versions 1-${FILE_RESOURCE_FAMILY_SCHEMA_VERSION}.`,
+    );
+  }
   return {
-    schema_version: typeof value.schema_version === "number" ? value.schema_version : 1,
+    schema_version: schemaVersion,
     resource_type: "file",
     requested_file_id:
       typeof value.requested_file_id === "string" ? value.requested_file_id : "",
