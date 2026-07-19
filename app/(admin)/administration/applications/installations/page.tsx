@@ -39,11 +39,15 @@ export default async function ApplicationsInstallationsPage() {
       new Date(a.last_seen ?? 0).getTime(),
   );
 
+  // Render-stable clock for the client's 7-day activity window.
+  const nowMs = Date.now();
+
   return (
     <InstallationsClient
       initialRows={rows}
       minSupportedVersion={configResult.data?.min_supported_app_version ?? null}
       app={DEFAULT_APPLICATION}
+      nowMs={nowMs}
     />
   );
 }

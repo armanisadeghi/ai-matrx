@@ -43,6 +43,9 @@ interface InstallationsClientProps {
   minSupportedVersion: string | null;
   /** The application these instances belong to (for labelling). */
   app: string;
+  /** Render-stable "now" from the server page — keeps the 7-day activity
+   *  window deterministic and free of a hydration mismatch. */
+  nowMs: number;
 }
 
 const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -110,6 +113,7 @@ export function InstallationsClient({
   initialRows,
   minSupportedVersion,
   app,
+  nowMs,
 }: InstallationsClientProps) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AppInstanceRow[]>(initialRows);
@@ -138,7 +142,7 @@ export function InstallationsClient({
   );
 
   const summary = useMemo(() => {
-    const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+    const cutoff = nowMs - ACTIVE_WINDOW_MS;
     let recent = 0;
     let below = 0;
     let unknown = 0;
@@ -151,7 +155,7 @@ export function InstallationsClient({
       if (standing === "unknown") unknown += 1;
     }
     return { total: rows.length, recent, below, unknown };
-  }, [rows, standingOf]);
+  }, [rows, standingOf, nowMs]);
 
   const columns = useMemo((): MatrxColumnDef<AppInstanceRow>[] => {
     return [

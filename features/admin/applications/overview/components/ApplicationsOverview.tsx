@@ -35,6 +35,9 @@ interface ApplicationsOverviewProps {
   instanceRows: AppInstanceRow[];
   /** Application the installed fleet belongs to (app_instances is single-app). */
   instancesApp: string;
+  /** Render-stable "now" from the server page — keeps the 7-day activity
+   *  window deterministic and free of a hydration mismatch. */
+  nowMs: number;
 }
 
 const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -86,6 +89,7 @@ export function ApplicationsOverview({
   catalogRows,
   instanceRows,
   instancesApp,
+  nowMs,
 }: ApplicationsOverviewProps) {
   // Every application we know about: one that has config, catalogs, or a fleet.
   const apps = useMemo(() => {
@@ -98,7 +102,7 @@ export function ApplicationsOverview({
   }, [configRows, catalogRows, instanceRows, instancesApp]);
 
   const summaries = useMemo(() => {
-    const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+    const cutoff = nowMs - ACTIVE_WINDOW_MS;
     return apps.map((app) => {
       const config = configRows.find((r) => r.app === app) ?? null;
       const configObj = readConfigObject(config?.config);
@@ -163,7 +167,7 @@ export function ApplicationsOverview({
         ),
       };
     });
-  }, [apps, configRows, catalogRows, instanceRows, instancesApp]);
+  }, [apps, configRows, catalogRows, instanceRows, instancesApp, nowMs]);
 
   return (
     <div className="h-full overflow-y-auto p-4">
