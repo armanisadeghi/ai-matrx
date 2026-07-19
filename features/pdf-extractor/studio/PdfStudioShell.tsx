@@ -670,8 +670,11 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         ? pageRow.cleanedText || pageRow.rawText
         : pageRow.rawText
       : "";
+    const sourceMissing =
+      docsState.docs.find((summary) => summary.id === activeDoc.id)?.sourceMissing ??
+      false;
     const fileId =
-      activeDoc.sourceKind === "cld_file" && activeDoc.sourceId
+      !sourceMissing && activeDoc.sourceKind === "cld_file" && activeDoc.sourceId
         ? activeDoc.sourceId
         : "";
     const pageNumbers =
@@ -687,7 +690,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       active_scope_text: fullText,
       filename: activeDoc.name,
       file_id: fileId,
-      source_missing: activeDoc.sourceMissing === true,
       processed_document_id: activeDoc.id,
       total_pages: pages.length || activeDoc.totalPages || 0,
       current_page: activePage ?? 0,
@@ -922,6 +924,10 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <PdfStudioInspector
                   doc={activeDoc}
+                  sourceMissing={
+                    docsState.docs.find((summary) => summary.id === activeDoc.id)
+                      ?.sourceMissing ?? false
+                  }
                   pages={pages}
                   activePage={activePage}
                   onRunShortcut={handleRunShortcut}

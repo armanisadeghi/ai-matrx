@@ -226,7 +226,6 @@ export function mapScopeToInstanceWithSurface(
   // Keep explicitly mapped values and declared agent slots, plus the active
   // slice for non-full scopes; remove only redundant ad-hoc fallthrough.
   const hasFileReference =
-    applicationScope.source_missing !== true &&
     typeof applicationScope.file_id === "string" &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
       applicationScope.file_id.trim(),

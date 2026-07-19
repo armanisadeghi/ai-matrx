@@ -64,6 +64,7 @@ const SECTIONS: {
 
 interface PdfStudioInspectorProps {
   doc: PdfDocument;
+  sourceMissing?: boolean;
   pages: PdfPageRow[];
   activePage: number | null;
   onRunShortcut: (shortcutId: string) => void | Promise<void>;
@@ -80,6 +81,7 @@ interface PdfStudioInspectorProps {
 
 export function PdfStudioInspector({
   doc,
+  sourceMissing = false,
   pages,
   activePage,
   onRunShortcut,
@@ -162,6 +164,7 @@ export function PdfStudioInspector({
             {section === "widgets" && (
               <AiActionsPanel
                 doc={doc}
+                sourceMissing={sourceMissing}
                 pages={pages}
                 activePage={activePage}
                 onRunShortcut={onRunShortcut}
@@ -237,10 +240,12 @@ const SCOPE_OPTIONS: {
 
 function AiActionsPanel({
   doc,
+  sourceMissing,
   pages,
   activePage,
 }: {
   doc: PdfDocument;
+  sourceMissing: boolean;
   pages: PdfPageRow[];
   activePage: number | null;
   onRunShortcut?: (shortcutId: string) => void | Promise<void>;
@@ -362,7 +367,9 @@ function AiActionsPanel({
     })();
 
     const fileId =
-      doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : "";
+      !sourceMissing && doc.sourceKind === "cld_file" && doc.sourceId
+        ? doc.sourceId
+        : "";
 
     return createPdfExtractorScope({
       full_document_text: fullText,
@@ -372,7 +379,6 @@ function AiActionsPanel({
       active_scope_text: activeScopeText,
       filename: doc.name,
       file_id: fileId,
-      source_missing: doc.sourceMissing === true,
       processed_document_id: doc.id,
       total_pages: pages.length || doc.totalPages || 0,
       current_page: activePage ?? 0,
