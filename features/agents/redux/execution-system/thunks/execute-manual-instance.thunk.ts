@@ -854,7 +854,8 @@ export const executeManualInstance = createAsyncThunk<
         conversationIdAt,
         dispatch,
         getState: getState as () => RootState,
-        submittedVariableResourcePolicies: variableResourceContext,
+        submittedVariableResourcePolicies:
+          payload.variable_resource_context ?? {},
         jsonExtraction: currentUiState?.jsonExtraction ?? undefined,
         userMessageClientTempId,
         // Wire convId minted per call is intentionally different from the

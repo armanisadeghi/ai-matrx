@@ -12,6 +12,9 @@ describe("file resource family contract", () => {
     expect(normalizeFileResourceId({ file_id: FILE_ID })).toBe(FILE_ID);
     expect(normalizeFileResourceId({ resource_id: FILE_ID })).toBe(FILE_ID);
     expect(normalizeFileResourceId("https://example.test/file.pdf")).toBeNull();
+    expect(
+      normalizeFileResourceId("019f7916-d58e-72d1-a607-9661664692e1"),
+    ).toBe("019f7916-d58e-72d1-a607-9661664692e1");
   });
 
   it("parses the dynamic representation inventory", () => {

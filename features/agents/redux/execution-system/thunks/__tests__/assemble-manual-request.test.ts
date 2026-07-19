@@ -33,6 +33,7 @@ import { assembleManualRequest } from "../execute-manual-instance.thunk";
 import { assembleRequest } from "../execute-instance.thunk";
 import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
 import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
+import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice";
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import type { RootState } from "@/lib/redux/store";
@@ -264,9 +265,7 @@ describe("assembleManualRequest — live read contract", () => {
       instanceModelOverrides: { byConversationId: Record<string, unknown> };
     };
     state.instanceModelOverrides = { byConversationId: {} };
-    (state as RootState & { userPreferences: unknown }).userPreferences = {
-      assistant: { directiveApplyPolicy: "default" },
-    };
+    state.userPreferences = userPreferencesReducer(undefined, { type: "@@INIT" });
     const payload = assembleRequest(state, CONVERSATION_ID);
     expect(payload?.variable_resource_context).toEqual({ pdf_file: policy });
   });
