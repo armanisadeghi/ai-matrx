@@ -734,19 +734,6 @@ export const executeManualInstance = createAsyncThunk<
         }
       }
 
-      // TEMP DEBUG (org-id verification) — remove once org-id enforcement
-      // ships. Shows exactly what the Builder's manual path is POSTing,
-      // including whether organization_id rode along.
-      console.log("[Matrx ➜ POST] manual/chat", {
-        url,
-        organization_id: payload.organization_id ?? "(none — not set)",
-        project_id: payload.project_id ?? null,
-        task_id: payload.task_id ?? null,
-        ai_model_id: payload.ai_model_id,
-        agent_id: payload.agent_id,
-        payload,
-      });
-
       // Final resolved target for the Builder's /ai/manual call — base URL was
       // resolved by resolveBackendForConversation (incl. sandbox/EC2 override)
       // and cannot change past this point.

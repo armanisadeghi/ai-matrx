@@ -796,23 +796,6 @@ export const executeInstance = createAsyncThunk<
       // Record the true submit moment — this is t=0 for all client timing.
       const submitAt = performance.now();
 
-      // TEMP DEBUG (org-id verification) — remove once org-id enforcement
-      // ships. Shows exactly what the agent / conversation path is POSTing,
-      // including whether organization_id rode along.
-      console.log(
-        `[Matrx ➜ POST] ${isContinuation ? "conversation" : "agent"}`,
-        {
-          url,
-          organization_id:
-            (routedPayload.organization_id as string | undefined) ??
-            "(none — not set)",
-          project_id: (routedPayload.project_id as string | undefined) ?? null,
-          task_id: (routedPayload.task_id as string | undefined) ?? null,
-          conversationId,
-          payload: routedPayload,
-        },
-      );
-
       // Fire the API call + drive the stream through the shared runner. All
       // routing telemetry, heartbeat/abort wiring, status transitions,
       // failPendingToolLifecycle, and the cancel/heartbeat/total/client error

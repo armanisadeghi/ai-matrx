@@ -353,8 +353,6 @@ export const createInstanceFromShortcut = createAsyncThunk<
   // ──────────────────────────────────────────────────────────────────────
   const {
     agentId,
-    resolvedId,
-    isVersion,
     variableDefinitions: shortcutVariableDefinitions,
     contextSlots: shortcutContextSlots,
   } = shortcut;
@@ -363,65 +361,6 @@ export const createInstanceFromShortcut = createAsyncThunk<
     throw new Error(
       `Shortcut ${shortcutId} has no agentId — cannot create an agent instance from it`,
     );
-  }
-
-  // ── Trace: what the shortcut tells us to do ─────────────────────────────
-  if (typeof window !== "undefined") {
-    console.groupCollapsed(
-      `%c[Shortcut] createInstanceFromShortcut — "${shortcut.label ?? shortcut.id}"`,
-      "color:#0ea5e9;font-weight:bold",
-    );
-    console.log("shortcutId:", shortcut.id);
-    console.log(
-      "execution target: resolvedId=",
-      resolvedId,
-      "| isVersion=",
-      isVersion,
-      "| (agentId=",
-      agentId,
-      ", agentVersionId=",
-      shortcut.agentVersionId,
-      ", useLatest=",
-      shortcut.useLatest,
-      ")",
-    );
-    console.log(
-      "displayMode:",
-      shortcut.displayMode,
-      "| autoRun:",
-      shortcut.autoRun,
-      "| allowChat:",
-      shortcut.allowChat,
-    );
-    console.log(
-      "scopeMappings (UI key → agent variable):",
-      shortcut.scopeMappings ?? "(none)",
-    );
-    console.log(
-      "contextMappings (UI key → context slot):",
-      shortcut.contextMappings ?? "(none)",
-    );
-    console.log("defaultVariables:", shortcut.defaultVariables ?? "(none)");
-    console.log("contextOverrides:", shortcut.contextOverrides ?? "(none)");
-    console.log("llmOverrides:", shortcut.llmOverrides ?? "(none)");
-    console.log("defaultUserInput:", shortcut.defaultUserInput ?? "(none)");
-    console.log(
-      "agent contract (carried by the shortcut):",
-      shortcutVariableDefinitions.length > 0 || shortcutContextSlots.length > 0
-        ? `${shortcutVariableDefinitions.length} variables, ${shortcutContextSlots.length} context slots`
-        : "⚠ EMPTY — shortcut was loaded without variable defs (probably via REST, not the menu RPC)",
-    );
-    console.log(
-      "agent variables:",
-      shortcutVariableDefinitions.map((v) => v.name),
-    );
-    console.log(
-      "agent context slots:",
-      shortcutContextSlots.map((s) => s.key),
-    );
-    console.log("uiScopes (applicationScope) keys:", Object.keys(uiScopes));
-    console.log("caller sourceFeature:", sourceFeature ?? "(unset)");
-    console.groupEnd();
   }
 
   dispatch(
@@ -646,37 +585,6 @@ export const createInstanceFromShortcut = createAsyncThunk<
   dispatch(
     initInstanceMessages({ conversationId, apiEndpointMode: apiEndpointMode }),
   );
-
-  // ── Trace: final summary of what got seeded on the instance ────────────
-  if (typeof window !== "undefined") {
-    const finalState = getState() as RootState;
-    const variableEntry =
-      finalState.instanceVariableValues?.byConversationId?.[conversationId];
-    const userValues = variableEntry?.userValues ?? {};
-    const scopeValues = variableEntry?.scopeValues ?? {};
-    const contextDict =
-      finalState.instanceContext?.byConversationId?.[conversationId] ?? {};
-    const finalUserInput =
-      finalState.instanceUserInput?.byConversationId?.[conversationId]?.text ??
-      "";
-    const overrideEntry =
-      finalState.instanceModelOverrides?.byConversationId?.[conversationId];
-    console.groupCollapsed(
-      `%c[Shortcut] instance seeded — conversationId=${conversationId}`,
-      "color:#22c55e;font-weight:bold",
-    );
-    console.log("variables (scope-mapped):", scopeValues);
-    console.log("variables (user-edit layer):", userValues);
-    console.log("context entries:", contextDict);
-    console.log(
-      "userInput:",
-      finalUserInput
-        ? `"${finalUserInput.slice(0, 80)}"${finalUserInput.length > 80 ? "…" : ""}`
-        : "(empty)",
-    );
-    console.log("llm overrides:", overrideEntry ?? "(none)");
-    console.groupEnd();
-  }
 
   return conversationId;
 });
