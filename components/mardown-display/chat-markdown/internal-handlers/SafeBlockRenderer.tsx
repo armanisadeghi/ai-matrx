@@ -38,7 +38,8 @@ interface SafeBlockRendererProps {
 
 /**
  * Cheap DOM tags consumed by the single-instance markdown context menu
- * (`MarkdownContextMenuProvider`). These are plain attributes on a
+ * (v3 `resolveContextOnOpen` via `resolveMarkdownContext` — see
+ * `AgentConversationDisplay`). These are plain attributes on a
  * `display:contents` wrapper — zero layout cost, zero listeners, zero hooks —
  * so they're safe to emit on EVERY block everywhere MarkdownStream renders.
  * A delegated right-click handler reads them via `target.closest`.

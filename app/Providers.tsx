@@ -28,7 +28,6 @@ import type { BaseReduxState } from "@/types/reduxTypes";
 import { RefProvider } from "@/lib/refs";
 import { ToastProvider } from "@/providers/toast-context";
 import { ModuleHeaderProvider } from "@/providers/ModuleHeaderProvider";
-import { ContextMenuProvider } from "@/providers/ContextMenuProvider";
 import { PersistentComponentProvider } from "@/providers/persistance/PersistentComponentProvider";
 import { SelectedImagesProvider } from "@/components/image/context/SelectedImagesProvider";
 import { UniformHeightProvider } from "@/features/applet/runner/layouts/core/UniformHeightWrapper";
@@ -112,77 +111,76 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
       <StoreProvider initialState={initialReduxState}>
         <WindowPersistenceManager>
           <PersistentComponentProvider>
-            <ContextMenuProvider>
-              <ToastProvider>
-                <RefProvider>
-                  <TooltipProvider delayDuration={200}>
-                    <ModuleHeaderProvider>
-                      <UniformHeightProvider>
-                        <SelectedImagesProvider>
-                          <TranscriptsProvider>
-                            <AudioRecoveryProvider>
-                              <RequestRecoveryProvider>
-                                {/* App-root audio DEVICE manager (mic/speaker
+            <ToastProvider>
+              <RefProvider>
+                <TooltipProvider delayDuration={200}>
+                  <ModuleHeaderProvider>
+                    <UniformHeightProvider>
+                      <SelectedImagesProvider>
+                        <TranscriptsProvider>
+                          <AudioRecoveryProvider>
+                            <RequestRecoveryProvider>
+                              {/* App-root audio DEVICE manager (mic/speaker
                                 selection + permission). Mounted above the
                                 recording provider so the persisted mic device is
                                 applied to the singleton before the first
                                 recording. Renders nothing; effects only. */}
-                                <AudioDeviceProvider />
-                                <GlobalRecordingProvider>
-                                  {children}
-                                  <RecordingPill />
-                                  <RecoveryWindow />
-                                  <RecoveryNudge />
-                                  <DeferredSingletons />
-                                  <ServerToggleQueryReset />
-                                  <ExtensionBridgeSubscriber />
-                                  <GlobalTaskShortcut />
-                                  <CreateTaskFromSourceDialog />
-                                  {/* Cloud-files realtime — mounted globally so
+                              <AudioDeviceProvider />
+                              <GlobalRecordingProvider>
+                                {children}
+                                <RecordingPill />
+                                <RecoveryWindow />
+                                <RecoveryNudge />
+                                <DeferredSingletons />
+                                <ServerToggleQueryReset />
+                                <ExtensionBridgeSubscriber />
+                                <GlobalTaskShortcut />
+                                <CreateTaskFromSourceDialog />
+                                {/* Cloud-files realtime — mounted globally so
                                   every authed page receives file/folder/share
                                   link updates. Reads userId from Redux and
                                   tears down on sign-out. Replaces five
                                   previous per-route mounts (Phase 0 of the
                                   file-handling consolidation). See
                                   docs/FILE_HANDLING_CONSOLIDATION_PLAN.md. */}
-                                  <CloudFilesRealtimeProvider />
-                                  {/* Cloud-files imperative pickers:
+                                <CloudFilesRealtimeProvider />
+                                {/* Cloud-files imperative pickers:
                                   openFilePicker() / openFolderPicker() / openSaveAs()
                                   are callable from anywhere in the app once this host
                                   mounts. See features/files/components/pickers/. */}
-                                  <CloudFilesPickerHost />
-                                  {/* Upload guard — exposes the imperative
+                                <CloudFilesPickerHost />
+                                {/* Upload guard — exposes the imperative
                                   `requestUpload()` API. Hashes incoming
                                   files, scans Redux for duplicates,
                                   shows the resolution dialog when
                                   needed, then dispatches the upload.
                                   See features/files/upload/. */}
-                                  <UploadGuardHost />
-                                  {/* Imperative confirm dialog host. Exposes
+                                <UploadGuardHost />
+                                {/* Imperative confirm dialog host. Exposes
                                   `confirm({title, variant, ...})` — the
                                   global replacement for `window.confirm`.
                                   See components/dialogs/confirm/. */}
-                                  <ConfirmDialogHost />
-                                  {/* Imperative sandbox pre-send gate host.
+                                <ConfirmDialogHost />
+                                {/* Imperative sandbox pre-send gate host.
                                   Exposes `openSandboxGate({conversationId})` —
                                   a bound-but-unreachable sandbox blocks the send
                                   and lets the user attach / detach / cancel.
                                   See components/dialogs/sandbox-gate/. */}
-                                  <SandboxGateHost />
-                                  <ValuePromptsDialogHost />
-                                  {/* Imperative chat↔scope mismatch dialog host.
+                                <SandboxGateHost />
+                                <ValuePromptsDialogHost />
+                                {/* Imperative chat↔scope mismatch dialog host.
                                   Exposes `promptScopeMismatch({current, chat})` —
                                   the 3-way pre-send ask (switch / combine / keep)
                                   when the sidebar's active scopes differ from the
                                   chat's durable tags. Dismiss cancels the send.
                                   See components/dialogs/scope-mismatch/. */}
-                                  <ScopeMismatchDialogHost />
-                                  {/* Imperative audio modal host. Exposes the global
+                                <ScopeMismatchDialogHost />
+                                {/* Imperative audio modal host. Exposes the global
                                   `showAudioModal({ text, title, ... })` helper
                                   (see utils/audio/audioModal.ts). The modal is
                                   next/dynamic — no TTS code loads until first use. */}
-                                  <AudioModalHost />
-                                  {/* App-root audio OUTPUT singleton — owns the
+                                <AudioModalHost />
+                                {/* App-root audio OUTPUT singleton — owns the
                                   read-aloud / TTS streaming speaker so playback
                                   survives War Room tab switches and route
                                   changes (it used to die when the Agent+ tab
@@ -192,8 +190,8 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   (requestVoicePlayback / stopVoicePlayback). The
                                   Cartesia SDK is next/dynamic — nothing TTS
                                   loads on the server. See providers/AudioOutputHost. */}
-                                  <AudioOutputHost />
-                                  {/* App-root mirror of the single audio
+                                <AudioOutputHost />
+                                {/* App-root mirror of the single audio
                                   playback QUEUE (features/audio/playback). Keeps
                                   Redux in sync with the framework-free queue
                                   singleton so Speaker buttons + the playback
@@ -201,8 +199,8 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   only the queue's subscribe API — provider SDKs
                                   (Cartesia/Groq) load lazily on first speak, not
                                   in the app shell. */}
-                                  <AudioPlaybackHost />
-                                  {/* App-root mirror of the unified audio SESSION
+                                <AudioPlaybackHost />
+                                {/* App-root mirror of the unified audio SESSION
                                   registry (features/audio/session). The single
                                   source of truth for EVERY audio activity — in +
                                   out, live + history — that the avatar-menu Audio
@@ -210,25 +208,24 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   and projects the playback queue into it. SDK-free
                                   (subscribe APIs only); producers register
                                   themselves. */}
-                                  <AudioSessionHost />
-                                  {/* File preview is delivered via a registered
+                                <AudioSessionHost />
+                                {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the UnifiedOverlayController — no host needed
                                   here. Anywhere in the app:
                                     import { openFilePreview } from
                                       "@/features/files/components/preview/openFilePreview";
                                     openFilePreview(fileId); */}
-                                </GlobalRecordingProvider>
-                              </RequestRecoveryProvider>
-                            </AudioRecoveryProvider>
-                          </TranscriptsProvider>
-                        </SelectedImagesProvider>
-                      </UniformHeightProvider>
-                    </ModuleHeaderProvider>
-                  </TooltipProvider>
-                </RefProvider>
-              </ToastProvider>
-            </ContextMenuProvider>
+                              </GlobalRecordingProvider>
+                            </RequestRecoveryProvider>
+                          </AudioRecoveryProvider>
+                        </TranscriptsProvider>
+                      </SelectedImagesProvider>
+                    </UniformHeightProvider>
+                  </ModuleHeaderProvider>
+                </TooltipProvider>
+              </RefProvider>
+            </ToastProvider>
           </PersistentComponentProvider>
         </WindowPersistenceManager>
       </StoreProvider>
