@@ -1,5 +1,7 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+
 /**
  * Light read-only grid for a workbook sheet's raw cell values. Used by the
  * workbook tool inline (tiny) + overlay (larger). The full editable spreadsheet
@@ -35,7 +37,12 @@ export function WorkbookGrid({
 
   return (
     <div className="overflow-auto">
-      <table className="w-full border-collapse text-xs">
+      {/* Mobile-first: below `sm` the table sizes to its CONTENT (w-max) so
+          this container scrolls it horizontally instead of every column
+          being crushed under a 100%-width table, and column A freezes
+          (spreadsheet convention) so a row stays identifiable while
+          scrolling. `sm:` restores the exact desktop rendering. */}
+      <table className="w-max min-w-full max-w-none border-collapse text-xs sm:w-full sm:min-w-0 sm:max-w-full">
         <tbody>
           {rows.map((row, ri) => (
             <tr key={ri}>
@@ -44,7 +51,11 @@ export function WorkbookGrid({
                 return (
                   <td
                     key={ci}
-                    className="max-w-[220px] truncate whitespace-nowrap border border-border px-2 py-1 text-foreground"
+                    className={cn(
+                      "max-w-[220px] truncate whitespace-nowrap border border-border px-2 py-1 text-foreground",
+                      ci === 0 &&
+                        "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-card",
+                    )}
                   >
                     {cell == null ? "" : String(cell)}
                   </td>

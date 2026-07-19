@@ -230,7 +230,12 @@ export function ExtractionCatalogClient() {
           )}
         </div>
 
-        {/* Body */}
+        {/* Body — vertical scroll only; the <table> itself is the horizontal
+            scroller below `sm` (global mobile CSS gives `table` its own
+            `overflow-x: auto`). A second overflow-x-auto ancestor here would
+            let a real scroll gesture target the WRONG container and drag the
+            sticky-frozen first column out of view along with everything
+            else — see MatrxDataTable.tsx for the same one-scroller rule. */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex h-40 items-center justify-center text-muted-foreground">
@@ -244,37 +249,54 @@ export function ExtractionCatalogClient() {
           ) : visible.length === 0 ? (
             <EmptyState hasAny={entries.length > 0} />
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-max min-w-full max-w-none text-sm sm:w-full sm:min-w-0 sm:max-w-full">
               <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
                   <Th
                     onClick={() => toggleSort("name")}
                     active={sortKey === "name"}
+                    // No `whitespace-nowrap` here (unlike every other
+                    // header): with `white-space: nowrap` the whole dataset
+                    // name is one unbreakable run, so table-layout:auto's
+                    // min-content for this column IS the longest name in the
+                    // list — hundreds of px, swallowing the viewport. Letting
+                    // this cell wrap drops the min-content to its longest
+                    // WORD, so `min-w` (not `max-w` — unlayered
+                    // `* { max-width: 100% }` in globals.css nullifies any
+                    // `max-w-*` utility) can hold it to a sane column width
+                    // and long names wrap to 2 lines instead.
+                    className="max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:min-w-[140px] max-sm:bg-muted"
                   >
                     Dataset
                   </Th>
                   <Th
                     onClick={() => toggleSort("source")}
                     active={sortKey === "source"}
+                    className="max-sm:whitespace-nowrap"
                   >
                     Source
                   </Th>
                   <Th
                     onClick={() => toggleSort("rows")}
                     active={sortKey === "rows"}
-                    className="text-right"
+                    className="text-right max-sm:whitespace-nowrap"
                   >
                     Rows
                   </Th>
-                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2 font-medium max-sm:whitespace-nowrap">
+                    Status
+                  </th>
                   <Th
                     onClick={() => toggleSort("updated")}
                     active={sortKey === "updated"}
+                    className="max-sm:whitespace-nowrap"
                   >
                     Updated
                   </Th>
-                  <th className="px-3 py-2 font-medium text-center">Context</th>
-                  <th className="px-2 py-2 font-medium text-right w-10">
+                  <th className="px-3 py-2 font-medium text-center max-sm:whitespace-nowrap">
+                    Context
+                  </th>
+                  <th className="px-2 py-2 font-medium text-right w-10 max-sm:whitespace-nowrap">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
@@ -287,16 +309,18 @@ export function ExtractionCatalogClient() {
                     <tr
                       key={e.jobId}
                       onClick={() => open(e.jobId)}
-                      className="group cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/50"
+                      className="group cursor-pointer border-b border-border/60 bg-card transition-colors max-sm:whitespace-nowrap sm:bg-transparent sm:hover:bg-accent/50"
                     >
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
+                      <td className="max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:min-w-[140px] max-sm:bg-inherit max-sm:whitespace-normal px-3 py-2 max-sm:align-top">
+                        <div className="flex items-center gap-2 max-sm:items-start">
                           {isNav ? (
                             <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
                           ) : (
                             <Table2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                           )}
-                          <span className="font-medium">{e.name}</span>
+                          <span className="min-w-0 font-medium max-sm:break-words">
+                            {e.name}
+                          </span>
                           {e.kind === "validation" && (
                             <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-medium text-secondary">
                               validation

@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -613,12 +612,21 @@ export function ShortcutDirectory({
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
+          {/* A plain overflow-auto div, NOT Radix ScrollArea: ScrollArea's
+              Viewport wraps children in a `display:table` measuring div that
+              lets w-full/max-width:100% resolve against the auto-expanded
+              content width instead of the visible viewport, so the visible
+              clipping+scrolling happens on Radix's own internal container
+              instead of the <table> — which breaks `position: sticky` on the
+              frozen first column (its nearest scrolling ancestor per CSS is
+              the <table> itself, which then never actually scrolls). A native
+              overflow-auto div avoids that indirection, matching the
+              MatrxDataTable reference pattern. */}
+          <div className="h-full overflow-auto">
             {/* Mobile-first: below `sm` the table sizes to its CONTENT (w-max)
-                so the ScrollArea's horizontal scrollbar (enabled below via
-                <ScrollBar orientation="horizontal" />) can scroll it, and the
-                first column freezes so a row stays identifiable while
-                scrolling. `sm:` restores the exact desktop rendering. */}
+                so this container scrolls it horizontally, and the first
+                column freezes so a row stays identifiable while scrolling.
+                `sm:` restores the exact desktop rendering. */}
             <Table className="w-max min-w-full max-w-none sm:w-full sm:min-w-0 sm:max-w-full">
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
@@ -710,7 +718,6 @@ export function ShortcutDirectory({
                 ))}
               </TableBody>
             </Table>
-            <ScrollBar orientation="horizontal" className="sm:hidden" />
 
             {!isLoading && filtered.length === 0 && (
               <div className="text-center py-12">
@@ -723,7 +730,7 @@ export function ShortcutDirectory({
                 Loading shortcuts...
               </div>
             )}
-          </ScrollArea>
+          </div>
         </div>
       </div>
     </TooltipProvider>

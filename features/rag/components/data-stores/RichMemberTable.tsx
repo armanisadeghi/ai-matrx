@@ -125,28 +125,35 @@ export function RichMemberTable({
   return (
     <>
       <div className="overflow-hidden rounded-md border">
-        <table className="w-full text-sm">
+        {/* Mobile-first: below `sm` the table sizes to its CONTENT (w-max)
+            so the table's own horizontal scroll (global mobile CSS gives
+            `table` its own `overflow-x: auto`) can scroll it, and the File
+            column freezes so a row stays identifiable while scrolling.
+            `sm:` restores the exact desktop rendering. `min-w` (not `max-w`)
+            on the frozen cell: the unlayered `* { max-width: 100% }` mobile
+            rule in globals.css always beats a layered `max-w-*` utility. */}
+        <table className="w-max min-w-full max-w-none text-sm sm:w-full sm:min-w-0 sm:max-w-full">
           <thead>
             <tr className="border-b bg-muted/40">
-              <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:min-w-[160px] max-sm:bg-muted px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 File
               </th>
-              <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="max-sm:whitespace-nowrap px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Status
               </th>
-              <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="max-sm:whitespace-nowrap px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Pages
               </th>
-              <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="max-sm:whitespace-nowrap px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {RAG_VOCAB.segmentsShort}
               </th>
-              <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="max-sm:whitespace-nowrap px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Size
               </th>
-              <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="max-sm:whitespace-nowrap px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Added
               </th>
-              <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="max-sm:whitespace-nowrap px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Actions
               </th>
             </tr>
@@ -155,9 +162,9 @@ export function RichMemberTable({
             {members.map((m) => (
               <tr
                 key={`${m.sourceKind}/${m.sourceId}`}
-                className="hover:bg-muted/20"
+                className="bg-card transition-colors max-sm:whitespace-nowrap sm:bg-transparent sm:hover:bg-muted/20"
               >
-                <td className="px-3 py-2 max-w-md">
+                <td className="max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:min-w-[160px] max-sm:bg-inherit px-3 py-2 max-w-md">
                   <div className="font-medium truncate">{m.name}</div>
                   <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <Badge variant="outline" className="px-1 py-0 text-[9px]">
