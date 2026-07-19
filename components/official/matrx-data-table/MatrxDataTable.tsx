@@ -24,11 +24,6 @@ import { EditableTableCell } from "./EditableTableCell";
 import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
 import { ToolbarFacets, resetToolbarFacets } from "./ToolbarFacets";
 import {
-  collectSelectOptions,
-  resolveFilterKind,
-  type ResolvedFilterKind,
-} from "./infer-filter";
-import {
   applyRowEdits,
   columnId,
   countActiveColumnFilters,
@@ -41,7 +36,12 @@ import {
   buildViewAgentInput,
   buildViewHuman,
 } from "./tableCopy";
-import { nextQueryState, safeQueryPage } from "./query-control";
+import {
+  nextQueryState,
+  resolveQueryFilterMeta,
+  safeQueryPage,
+  type QueryFilterMeta,
+} from "./query-control";
 import type {
   CellEditsMap,
   ColumnFilterValue,
@@ -202,29 +202,10 @@ export function MatrxDataTable<T>({
   );
 
   const filterMeta = useMemo(() => {
-    const meta = new Map<
-      string,
-      {
-        kind: ResolvedFilterKind | null;
-        options: Array<{ value: string; label: string }>;
-      }
-    >();
+    const meta = new Map<string, QueryFilterMeta>();
     for (const col of visibleColumns) {
       const id = columnId(col);
-      // Controlled pages cannot infer a stable filter contract or complete
-      // select vocabulary from one result page. `auto` therefore resolves
-      // deterministically to text (empty sample); select options must be
-      // supplied explicitly through `column.filterOptions`.
-      const kind = resolveFilterKind(col, controlledQuery ? [] : data);
-      meta.set(id, {
-        kind,
-        options:
-          kind === "select"
-            ? controlledQuery
-              ? (col.filterOptions ?? [])
-              : collectSelectOptions(col, data)
-            : [],
-      });
+      meta.set(id, resolveQueryFilterMeta(col, data, Boolean(controlledQuery)));
     }
     return meta;
   }, [visibleColumns, data, controlledQuery]);
@@ -249,8 +230,7 @@ export function MatrxDataTable<T>({
       columnFilters,
       sort,
       searchValue,
-      toolbar?.search,
-      toolbar?.anyOf,
+      toolbar,
       anyOfValue,
       controlledQuery,
     ],
@@ -258,8 +238,16 @@ export function MatrxDataTable<T>({
 
   useEffect(() => {
     if (controlledQuery) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Preserve the original local-mode contract: every query-shape change returns to page one, including externally controlled toolbar values.
     setInternalPage(1);
-  }, [searchValue, anyOfValue, columnFilters, sort, pageSize]);
+  }, [
+    searchValue,
+    anyOfValue,
+    columnFilters,
+    sort,
+    pageSize,
+    controlledQuery,
+  ]);
 
   const totalItems = controlledQuery
     ? Math.max(0, controlledQuery.totalItems)
@@ -355,9 +343,18 @@ export function MatrxDataTable<T>({
   };
 
   const clearAllFilters = () => {
-    setColumnFilters({});
-    setSearchValue("");
-    setAnyOfValue("");
+    if (controlledQuery) {
+      emitControlledQueryChange(
+        { search: "", anyOf: "", columnFilters: {} },
+        { resetPage: true },
+      );
+      toolbar?.onSearchChange?.("");
+      toolbar?.anyOf?.onChange?.("");
+    } else {
+      setInternalColumnFilters({});
+      setSearchValue("");
+      setAnyOfValue("");
+    }
     resetToolbarFacets(toolbar?.facets);
   };
 
@@ -390,6 +387,19 @@ export function MatrxDataTable<T>({
   };
 
   const showActionsCol = windowEnabled || Boolean(rowActions) || showRowCopy;
+  const renderedFacets = controlledQuery
+    ? toolbar?.facets?.map((facet) =>
+        facet.type === "button-group"
+          ? {
+              ...facet,
+              onChange: (value: string) => {
+                facet.onChange(value);
+                emitControlledQueryChange({ page: 1 });
+              },
+            }
+          : facet,
+      )
+    : toolbar?.facets;
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col gap-2", className)}>
@@ -446,7 +456,7 @@ export function MatrxDataTable<T>({
             </div>
           ) : null}
 
-          {toolbar?.facets ? <ToolbarFacets facets={toolbar.facets} /> : null}
+          {renderedFacets ? <ToolbarFacets facets={renderedFacets} /> : null}
           {toolbar?.leading}
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -485,15 +495,36 @@ export function MatrxDataTable<T>({
 
       {/* Table */}
       <div
+        aria-busy={isLoading || isFetching}
         className={cn(
-          "min-h-0 flex-1 overflow-auto rounded-md border border-border bg-card",
+          "relative min-h-0 flex-1 overflow-auto rounded-md border border-border bg-card",
           tableClassName,
         )}
       >
-        <table className="w-full caption-bottom text-sm">
+        {isFetching && !isLoading ? (
+          <div
+            role="status"
+            className="sticky left-0 top-0 z-20 h-0.5 w-full overflow-hidden bg-primary/15"
+          >
+            <div className="h-full w-full animate-pulse bg-primary" />
+            <span className="sr-only">Refreshing table data</span>
+          </div>
+        ) : null}
+        {/* Below `sm` the table sizes to its CONTENT (w-max) and the container
+            scrolls horizontally, instead of crushing every column into an
+            unreadable wrap. Cells go nowrap + capped width (see below) and the
+            first column freezes, so a row stays identifiable while scrolling.
+            Desktop (>= sm) is byte-identical to before. */}
+        {/* Mobile-first on purpose: below `sm` the table sizes to its CONTENT
+            (w-max + max-w-none — a global `table { max-width: 100% }` otherwise
+            clamps it and silently kills the scroll) so the container scrolls
+            horizontally instead of crushing every column. `sm:` restores the
+            exact desktop rendering. Written mobile-first rather than with
+            `max-sm:` because a base `w-full` outranks `max-sm:w-max`. */}
+        <table className="w-max min-w-full max-w-none caption-bottom text-sm sm:w-full sm:min-w-0 sm:max-w-full">
           <thead className="sticky top-0 z-10 border-b border-border bg-card shadow-[0_1px_0_0_var(--border)]">
             <tr>
-              {visibleColumns.map((col) => {
+              {visibleColumns.map((col, colIdx) => {
                 const id = columnId(col);
                 const meta = filterMeta.get(id);
                 const isSorted = sort?.id === id;
@@ -501,7 +532,9 @@ export function MatrxDataTable<T>({
                   <th
                     key={id}
                     className={cn(
-                      "h-9 px-2 text-left align-middle",
+                      "h-9 px-2 text-left align-middle max-sm:whitespace-nowrap",
+                      colIdx === 0 &&
+                        "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-card",
                       col.headerClassName,
                       col.align === "center" && "text-center",
                       col.align === "right" && "text-right",
@@ -538,12 +571,7 @@ export function MatrxDataTable<T>({
                       }}
                       filterKind={meta?.kind ?? null}
                       filterValue={columnFilters[id]}
-                      onFilterChange={(next) =>
-                        setColumnFilters((prev) => ({
-                          ...prev,
-                          [id]: next,
-                        }))
-                      }
+                      onFilterChange={(next) => setColumnFilter(id, next)}
                       selectOptions={meta?.options}
                       align={col.align}
                     />
@@ -605,13 +633,21 @@ export function MatrxDataTable<T>({
                     data-state={isSelected ? "selected" : undefined}
                     onClick={() => openDetail(row)}
                     className={cn(
-                      "border-b border-border/60 transition-colors",
-                      detailEnabled && "cursor-pointer hover:bg-muted/50",
+                      // bg-card is a visual no-op (the container is bg-card) but
+                      // gives the frozen first cell an OPAQUE background to
+                      // inherit, so horizontally-scrolled content never shows
+                      // through it. The translucent tints (zebra/hover) would
+                      // let it bleed, so they are desktop-only.
+                      "border-b border-border/60 bg-card transition-colors",
+                      detailEnabled && "cursor-pointer sm:hover:bg-muted/50",
                       isSelected && "bg-muted",
-                      zebra && index % 2 === 1 && !isSelected && "bg-muted/20",
+                      zebra &&
+                        index % 2 === 1 &&
+                        !isSelected &&
+                        "sm:bg-muted/20",
                     )}
                   >
-                    {visibleColumns.map((col) => {
+                    {visibleColumns.map((col, colIdx) => {
                       const field = col.accessorKey
                         ? String(col.accessorKey)
                         : columnId(col);
@@ -623,6 +659,11 @@ export function MatrxDataTable<T>({
                           key={columnId(col)}
                           className={cn(
                             "px-2 py-1.5 align-middle",
+                            // nowrap (NOT truncate — truncate clips the cell and
+                            // defeats w-max, killing the horizontal scroll).
+                            "max-sm:whitespace-nowrap",
+                            colIdx === 0 &&
+                              "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
                             col.className,
                             col.align === "center" && "text-center",
                             col.align === "right" && "text-right",
@@ -685,7 +726,7 @@ export function MatrxDataTable<T>({
         </table>
       </div>
 
-      {defaultPageSize !== 0 && totalItems > 0 ? (
+      {(controlledQuery || defaultPageSize !== 0) && totalItems > 0 ? (
         <div className="shrink-0">
           <GenericTablePagination
             totalItems={totalItems}
@@ -694,7 +735,7 @@ export function MatrxDataTable<T>({
             onPageChange={setPage}
             onItemsPerPageChange={(n) => {
               setPageSize(n);
-              setPage(1);
+              if (!controlledQuery) setPage(1);
             }}
             pageSizeOptions={pageSizeOptions}
             compact
