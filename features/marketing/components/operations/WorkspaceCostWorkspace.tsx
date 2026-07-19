@@ -7,7 +7,11 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { CostModeButtons } from "@/features/marketing/components/operations/CostModeButtons";
-import { QueryError, StatusBadge } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  QueryError,
+  StatusBadge,
+} from "@/features/marketing/components/shared/MarketingUi";
+import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { formatRuntimeCost } from "@/features/marketing/data/operations-format";
 import { useWorkspaceCosts } from "@/features/marketing/data/operations-hooks";
 import {
@@ -107,11 +111,7 @@ export function WorkspaceCostWorkspace() {
             Marketing Cost
           </h1>
         }
-        center={
-          <span className="hidden text-xs text-muted-foreground sm:inline">
-            {(costs.data?.total ?? 0).toLocaleString()} {displayMode} rollups
-          </span>
-        }
+        center={<MarketingWorkspaceNav />}
         right={
           <RefreshCwTapButton
             ariaLabel="Refresh cost rollups"
@@ -143,11 +143,16 @@ export function WorkspaceCostWorkspace() {
             toolbar={{
               search: false,
               leading: (
-                <CostModeButtons
-                  value={displayMode}
-                  options={WORKSPACE_COST_MODES}
-                  onChange={changeMode}
-                />
+                <div className="flex items-center gap-2">
+                  <CostModeButtons
+                    value={displayMode}
+                    options={WORKSPACE_COST_MODES}
+                    onChange={changeMode}
+                  />
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    {(costs.data?.total ?? 0).toLocaleString()} rollups
+                  </span>
+                </div>
               ),
             }}
             detail={{

@@ -39,7 +39,9 @@ const UUID_PATTERN =
 export function SiteAccessWorkspace() {
   const { site } = useMarketingSite();
   const organizations = useActiveOrganizationPicker();
-  const users = useUserConnections();
+  // Site sharing only targets existing users. Invitation discovery is an
+  // organization-admin concern and must not run for ordinary site editors.
+  const users = useUserConnections({ includeInvitations: false });
   const queryClient = useQueryClient();
   const queryKey = ["marketing", "site", site.id, "permissions"] as const;
   const [granteeId, setGranteeId] = useState("");

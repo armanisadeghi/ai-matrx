@@ -119,6 +119,34 @@ async function bearerToken(): Promise<string> {
   return token;
 }
 
+export function crawlerErrorMessage(
+  status: number,
+  detail: string | undefined,
+): string {
+  const normalized = detail?.toLowerCase() ?? "";
+  if (status === 401 || normalized.includes("sign in")) {
+    return "Your session has expired. Sign in again, then retry.";
+  }
+  if (
+    status === 403 ||
+    normalized.includes("editor access") ||
+    normalized.includes("permission")
+  ) {
+    return "You don’t have permission to manage this site. Ask a site admin for editor access.";
+  }
+  if (
+    status === 502 ||
+    status === 503 ||
+    status === 504 ||
+    normalized.includes("database") ||
+    normalized.includes("storage") ||
+    normalized.includes("unavailable")
+  ) {
+    return "The crawler is temporarily unavailable. Please retry in a moment.";
+  }
+  return detail || "The crawler couldn’t complete this request. Please retry.";
+}
+
 async function responseError(response: Response): Promise<Error> {
   try {
     const payload = (await response.json()) as {
@@ -127,13 +155,13 @@ async function responseError(response: Response): Promise<Error> {
       message?: string;
     };
     return new Error(
-      payload.user_message ||
-        payload.detail ||
-        payload.message ||
-        `Scraper request failed (${response.status}).`,
+      crawlerErrorMessage(
+        response.status,
+        payload.user_message || payload.detail || payload.message,
+      ),
     );
   } catch {
-    return new Error(`Scraper request failed (${response.status}).`);
+    return new Error(crawlerErrorMessage(response.status, undefined));
   }
 }
 

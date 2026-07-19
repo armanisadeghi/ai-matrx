@@ -35,6 +35,14 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/connections",
+      label: "Data connections",
+      description:
+        "User and organization vault onboarding plus managed-site provider binding.",
+      filePath: "app/(core)/marketing/connections/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/sites/new",
       label: "Add site",
       description:
@@ -114,6 +122,108 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
         "Durable ordered event history, separate from the transient live stream.",
       filePath:
         "app/(core)/marketing/sites/[siteId]/crawls/[crawlId]/logs/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/crawls/[crawlId]/snapshots",
+      label: "Crawl snapshots",
+      description: "Immutable captures produced by one crawl session.",
+      filePath:
+        "app/(core)/marketing/sites/[siteId]/crawls/[crawlId]/snapshots/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/crawls/[crawlId]/links",
+      label: "Crawl link edges",
+      description: "Run-specific link graph evidence scoped to one session.",
+      filePath:
+        "app/(core)/marketing/sites/[siteId]/crawls/[crawlId]/links/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/analysis",
+      label: "Site analysis",
+      description: "Ranked open-finding priority queue for one site.",
+      filePath: "app/(core)/marketing/sites/[siteId]/analysis/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/findings",
+      label: "Site findings",
+      description: "Durable finding lifecycle register with direct filters.",
+      filePath: "app/(core)/marketing/sites/[siteId]/findings/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/findings/[findingId]",
+      label: "Finding detail",
+      description: "Finding state, catalog context, and immutable evidence.",
+      filePath:
+        "app/(core)/marketing/sites/[siteId]/findings/[findingId]/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/links",
+      label: "Site links",
+      description: "Current accepted link graph inspection workspace.",
+      filePath: "app/(core)/marketing/sites/[siteId]/links/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/screenshots",
+      label: "Screenshot gallery",
+      description: "Site and page visual evidence from Supabase Storage.",
+      filePath: "app/(core)/marketing/sites/[siteId]/screenshots/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/integrations",
+      label: "Site integrations",
+      description:
+        "Reference-only GSC, GA4, PageSpeed, and custom provider bindings.",
+      filePath: "app/(core)/marketing/sites/[siteId]/integrations/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/cost",
+      label: "Site cost",
+      description: "Runtime cost by page, run, and batch execution item.",
+      filePath: "app/(core)/marketing/sites/[siteId]/cost/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/access",
+      label: "Site access",
+      description: "Organization and user grants at the site access root.",
+      filePath: "app/(core)/marketing/sites/[siteId]/access/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/sites/[siteId]/settings",
+      label: "Site settings",
+      description: "Identity, visibility, lifecycle, and crawl defaults.",
+      filePath: "app/(core)/marketing/sites/[siteId]/settings/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/batches",
+      label: "Batch operations",
+      description: "Cross-site queued, processing, completed, and failed jobs.",
+      filePath: "app/(core)/marketing/batches/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/batches/[batchId]",
+      label: "Batch detail",
+      description: "Execution units, results, failures, and attributed cost.",
+      filePath: "app/(core)/marketing/batches/[batchId]/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/marketing/cost",
+      label: "Workspace cost",
+      description: "Cross-site and client-organization cost rollups.",
+      filePath: "app/(core)/marketing/cost/page.tsx",
       status: "Live",
     },
     {

@@ -1,4 +1,5 @@
 import {
+  crawlerErrorMessage,
   crawlerCommandUrl,
   crawlEventFromStream,
   defaultCrawlOptions,
@@ -27,6 +28,18 @@ describe("direct marketing crawler transport", () => {
     expect(defaultCrawlOptions.respect_robots).toBe(false);
     expect(Object.hasOwn(defaultCrawlOptions, "respect_robots")).toBe(true);
     expect(defaultCrawlOptions.capture_screenshots).toBe(true);
+  });
+
+  it("turns internal access failures into an actionable message", () => {
+    expect(
+      crawlerErrorMessage(500, "site editor access could not be verified"),
+    ).toMatch(/ask a site admin/i);
+  });
+
+  it("turns readiness failures into a retryable message", () => {
+    expect(crawlerErrorMessage(503, "web database unavailable")).toMatch(
+      /temporarily unavailable/i,
+    );
   });
 
   it("extracts only canonical crawl data events", () => {

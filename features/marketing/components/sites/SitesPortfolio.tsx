@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Globe2, Plus, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  ExternalLink,
+  Globe2,
+  Plus,
+  RefreshCw,
+  SearchCheck,
+} from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
@@ -20,6 +27,7 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
@@ -130,17 +138,7 @@ export function SitesPortfolio() {
             Marketing Sites
           </h1>
         }
-        center={
-          siteCount.data !== undefined ? (
-            <span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:inline">
-              {siteCount.data.toLocaleString()} managed site
-              {siteCount.data === 1 ? "" : "s"}
-              {hasFilters && sites.data
-                ? ` · ${sites.data.total.toLocaleString()} matching`
-                : ""}
-            </span>
-          ) : undefined
-        }
+        center={<MarketingWorkspaceNav />}
         right={
           <>
             <RefreshCwTapButton
@@ -153,82 +151,119 @@ export function SitesPortfolio() {
           </>
         }
       />
-      <main className="h-full overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
+      <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
+        <section className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-md border border-primary/25 bg-card px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <SearchCheck className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold">
+                Seed sites from connected data
+              </p>
+              <p className="truncate text-[10px] text-muted-foreground">
+                Set up Google Search Console or organization credentials, then
+                bind a property to a managed site.
+              </p>
+            </div>
+          </div>
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5 text-xs"
+          >
+            <Link href="/marketing/connections">
+              Connections <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </section>
         {sites.isError ? (
           <QueryError
             error={sites.error}
             onRetry={() => void sites.refetch()}
           />
         ) : (
-          <MatrxDataTable<SiteListRow>
-            data={sites.data?.rows ?? []}
-            columns={columns}
-            getRowId={(row) => row.id}
-            isLoading={sites.isLoading}
-            isFetching={sites.isFetching}
-            query={{
-              mode: "controlled",
-              state: table.state,
-              totalItems: sites.data?.total ?? 0,
-              onStateChange: table.onStateChange,
-            }}
-            toolbar={{
-              searchPlaceholder: "Search name, domain, or URL…",
-              actions: (
-                <Button
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  onClick={() => router.push("/marketing/sites/new")}
+          <div className="min-h-0 flex-1">
+            <MatrxDataTable<SiteListRow>
+              data={sites.data?.rows ?? []}
+              columns={columns}
+              getRowId={(row) => row.id}
+              isLoading={sites.isLoading}
+              isFetching={sites.isFetching}
+              query={{
+                mode: "controlled",
+                state: table.state,
+                totalItems: sites.data?.total ?? 0,
+                onStateChange: table.onStateChange,
+              }}
+              toolbar={{
+                searchPlaceholder: "Search name, domain, or URL…",
+                leading:
+                  siteCount.data !== undefined ? (
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
+                      {siteCount.data.toLocaleString()} managed
+                      {hasFilters && sites.data
+                        ? ` · ${sites.data.total.toLocaleString()} matching`
+                        : ""}
+                    </span>
+                  ) : undefined,
+                actions: (
+                  <Button
+                    size="sm"
+                    className="h-8 gap-1.5"
+                    onClick={() => router.push("/marketing/sites/new")}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add site
+                  </Button>
+                ),
+              }}
+              detail={{ enabled: false }}
+              onRowOpen={(row) => router.push(`/marketing/sites/${row.id}`)}
+              rowActions={(row) => (
+                <a
+                  href={row.root_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  title="Open live site"
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add site
-                </Button>
-              ),
-            }}
-            detail={{ enabled: false }}
-            onRowOpen={(row) => router.push(`/marketing/sites/${row.id}`)}
-            rowActions={(row) => (
-              <a
-                href={row.root_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                title="Open live site"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            )}
-            emptyState={{
-              icon: <Globe2 className="h-8 w-8 text-muted-foreground" />,
-              title: hasFilters
-                ? "No sites match your filters"
-                : "No managed sites",
-              description: hasFilters
-                ? "Clear the current search and filters to return to the complete site portfolio."
-                : "Add a site to begin building its canonical page registry.",
-              action: (
-                <Button
-                  size="sm"
-                  variant={hasFilters ? "outline" : "default"}
-                  onClick={() => {
-                    if (hasFilters) {
-                      table.onStateChange({
-                        ...table.state,
-                        page: 1,
-                        search: "",
-                        anyOf: "",
-                        columnFilters: {},
-                      });
-                    } else {
-                      router.push("/marketing/sites/new");
-                    }
-                  }}
-                >
-                  {hasFilters ? "Clear filters" : "Add your first site"}
-                </Button>
-              ),
-            }}
-          />
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+              emptyState={{
+                icon: <Globe2 className="h-8 w-8 text-muted-foreground" />,
+                title: hasFilters
+                  ? "No sites match your filters"
+                  : "No managed sites",
+                description: hasFilters
+                  ? "Clear the current search and filters to return to the complete site portfolio."
+                  : "Add a site to begin building its canonical page registry.",
+                action: (
+                  <Button
+                    size="sm"
+                    variant={hasFilters ? "outline" : "default"}
+                    onClick={() => {
+                      if (hasFilters) {
+                        table.onStateChange({
+                          ...table.state,
+                          page: 1,
+                          search: "",
+                          anyOf: "",
+                          columnFilters: {},
+                        });
+                      } else {
+                        router.push("/marketing/sites/new");
+                      }
+                    }}
+                  >
+                    {hasFilters ? "Clear filters" : "Add your first site"}
+                  </Button>
+                ),
+              }}
+            />
+          </div>
         )}
       </main>
     </>
@@ -244,6 +279,7 @@ export function SitesPortfolioLoading() {
             Marketing Sites
           </h1>
         }
+        center={<MarketingWorkspaceNav />}
       />
       <main className="h-full overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
         <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border bg-card">

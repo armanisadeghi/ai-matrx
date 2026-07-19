@@ -166,7 +166,12 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 ## Invariants & gotchas
 
 - **All long-running ingestion jobs conform to the NDJSON streaming contract.** If you add a new pipeline, implement `phase` / `info` / `data` / `error` / `end`. Do not invent a new event shape. Cross-reference `features/agents/docs/STREAMING_SYSTEM.md`.
-- **Python microservices sit behind Next.js routes.** No component calls a Python host directly. Use `useBackendApi` / `useApiAuth` so the active backend (localhost/dev/prod) is selected from `apiConfigSlice`, and the Supabase JWT is attached as `Authorization: Bearer <token>`.
+- **The legacy ingestion surfaces in this document sit behind their existing
+  Next.js routes.** The Marketing site crawler is an explicit separate product
+  boundary: `features/marketing/crawler/direct-client.ts` sends authenticated
+  commands and consumes only the original live NDJSON stream directly from the
+  standalone scraper. Marketing history/list/detail data is never read from
+  Python or AI Dream; the browser reads it directly from Supabase.
 - **Each pipeline persists its results.** Downstream readers (agents, UIs) read from Supabase by id — they do not re-run the pipeline. The only exception is the raw `useScraperApi` surface, which is in-memory by design; persist explicitly when you need the result later.
 - **Scraper `success: false` rows in a 200 stream.** `useScraperApi` checks `isRawScrapeRowFailed` on each result row — a failed URL in a batch surfaces via `errorDiagnostics`, not via the HTTP status. Do not assume 200 means "all URLs succeeded".
 - **PDF `source` can be `null` immediately after extraction** while the Storage upload completes in the background. Re-fetch the document a moment later.
@@ -189,6 +194,9 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Change log
 
+- `2026-07-18` — Documented the standalone Marketing crawler exception: direct
+  browser command/live-stream transport, canonical scraper persistence, and
+  direct browser→Supabase durable reads with no history proxy.
 - `2026-06-28` — **Prompt/recipe execution removed from scraper analysis tabs.** Fact Checker + Keyword Analysis now run through `useRunAgent` (`hooks/useScraperAgentAnalysis.ts`, `parts/agent-analysis/`, `constants/analysis-agents.ts`). Deleted `parts/recipes/*`, `ScraperResultsComponent`, and dead `features/workflows` import. `/scraper/[id]` redirects to `/scraper`. Playbook: `features/agents/migration/MIGRATE-recipe-to-agent-execution.md`.
 - `2026-06-27` — Scraper UI theme pass: replaced hardcoded slate/gray/white chrome (`PageHeader`, `ContentTabs`, `SimplifiedView`, quick-scrape page, search panel headers) with semantic tokens (`bg-card`, `bg-muted`, `text-foreground`, `text-primary`) so light/dark modes stay readable. **Scraper wired as agent surface `matrx-user/scraper`.** Added `features/scraper/agent-context/` (`buildScraperContextData.ts` pure mapper + `SCRAPER_CONTEXT_MENU_PROPS` + `scraperExtraSections.ts`). `parts/ScraperFloatingWorkspace.tsx` now mounts `UnifiedAgentContextMenu` on both the editable config region (URL/keyword inputs → `ProInput`) and the read-only results region (`isEditable={false}`); keyword inputs in `parts/ScraperKeywordSearchPanel.tsx` swapped to `ProInput`. No manifest change — emits the 16 declared custom values it can source plus baselines (`scraped_content_html` / `scrape_http_status` not sourceable from the FE `ScraperResult`). `sourceFeature: "research"` (no `scraper` literal in `SourceFeature`).
 - `2026-05-28` — claude: **"Process for RAG" added to the scraper floating workspace toolbar** (`parts/ScraperFloatingWorkspace.tsx`). The `<ProcessForRagButton sourceKind="scraped" sourceId={selectedScraped.url} …>` sits next to Copy and Reset in the rightActions cluster; on success the toast offers a "View in library" action. `source_kind: "scraped"` was added to the FE `IngestRequestBody` union in `features/rag/api/ingest.ts` to keep the new affordance compiling in lock-step with aidream's `IngestRequest` widening.

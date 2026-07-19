@@ -10,6 +10,7 @@ import {
   Globe2,
   Loader2,
   Play,
+  Plug,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -26,9 +27,13 @@ import {
   SectionCard,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { isJsonRecord } from "@/features/marketing/types";
 import { bootstrapSite } from "@/features/marketing/crawler/direct-client";
 import { marketingKeys } from "@/features/marketing/data/hooks";
+import {
+  parseSiteIntegrations,
+  providerReferenceStatus,
+  type ProviderIntegrationDraft,
+} from "@/features/marketing/data/integrations-schema";
 import { extractErrorMessage } from "@/utils/errors";
 
 export function SiteOverview() {
@@ -69,9 +74,43 @@ export function SiteOverview() {
   }
 
   const metrics = overview.data;
-  const integrations = isJsonRecord(site.integrations)
-    ? Object.entries(site.integrations)
-    : [];
+  const integrationDraft = parseSiteIntegrations(site.integrations);
+  const integrationProviders: Array<{
+    label: string;
+    provider: ProviderIntegrationDraft;
+    requiresResource: boolean;
+  }> = [
+    {
+      label: "Google Search Console",
+      provider: integrationDraft.googleSearchConsole,
+      requiresResource: true,
+    },
+    {
+      label: "Google Analytics 4",
+      provider: integrationDraft.googleAnalytics4,
+      requiresResource: true,
+    },
+    {
+      label: "PageSpeed Insights",
+      provider: integrationDraft.pageSpeedInsights,
+      requiresResource: false,
+    },
+    ...integrationDraft.customProviders.map((provider) => ({
+      label: provider.label || provider.key,
+      provider,
+      requiresResource: true,
+    })),
+  ];
+  const integrations = integrationProviders
+    .map(({ label, provider, requiresResource }) => ({
+      label,
+      status: providerReferenceStatus(provider, requiresResource),
+      visible:
+        provider.enabled ||
+        Boolean(provider.credentialRef.trim()) ||
+        Boolean(provider.resourceRef.trim()),
+    }))
+    .filter((provider) => provider.visible);
   const scoreTone =
     metrics.siteScore === null
       ? "default"
@@ -205,6 +244,16 @@ export function SiteOverview() {
                   Start a crawl
                 </Link>
               </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="h-9 justify-start gap-2"
+              >
+                <Link href={`/marketing/sites/${site.id}/integrations`}>
+                  <Plug className="h-4 w-4" />
+                  Connect site data
+                </Link>
+              </Button>
             </div>
           </SectionCard>
         </div>
@@ -212,25 +261,42 @@ export function SiteOverview() {
         <div className="grid gap-3 lg:grid-cols-2">
           <SectionCard title="Integration bindings">
             {integrations.length === 0 ? (
-              <div className="flex min-h-28 items-center gap-3 p-4 text-muted-foreground">
+              <div className="flex min-h-28 flex-wrap items-center gap-3 p-4 text-muted-foreground">
                 <CircleDashed className="h-5 w-5" />
-                <p className="text-xs">
+                <p className="min-w-52 flex-1 text-xs">
                   No GSC, Analytics, or provider binding is configured for this
                   site yet.
                 </p>
+                <Button asChild size="sm" variant="outline" className="h-7">
+                  <Link href={`/marketing/sites/${site.id}/integrations`}>
+                    Configure integrations
+                  </Link>
+                </Button>
               </div>
             ) : (
               <ul className="divide-y divide-border">
-                {integrations.map(([key, value]) => (
+                {integrations.map((integration) => (
                   <li
-                    key={key}
+                    key={integration.label}
                     className="flex items-center justify-between gap-3 px-3 py-2"
                   >
-                    <span className="text-xs font-medium capitalize">
-                      {key.replaceAll("_", " ")}
+                    <span className="text-xs font-medium">
+                      {integration.label}
                     </span>
-                    <Badge variant={value ? "success" : "outline"}>
-                      {value ? "Configured" : "Not configured"}
+                    <Badge
+                      variant={
+                        integration.status === "reference_configured"
+                          ? "success"
+                          : integration.status === "needs_reference"
+                            ? "warning"
+                            : "outline"
+                      }
+                    >
+                      {integration.status === "reference_configured"
+                        ? "Configured"
+                        : integration.status === "needs_reference"
+                          ? "Needs attention"
+                          : "Not enabled"}
                     </Badge>
                   </li>
                 ))}

@@ -13,6 +13,7 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { useBatches } from "@/features/marketing/data/operations-hooks";
 import type { OperationsBatchRow } from "@/features/marketing/data/operations-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
@@ -171,12 +172,7 @@ export function BatchesTable() {
             Batch Operations
           </h1>
         }
-        center={
-          <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-            {isNavigating ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-            {(batches.data?.total ?? 0).toLocaleString()} accessible jobs
-          </span>
-        }
+        center={<MarketingWorkspaceNav />}
         right={
           <RefreshCwTapButton
             ariaLabel="Refresh batch jobs"
@@ -207,6 +203,14 @@ export function BatchesTable() {
             }}
             toolbar={{
               searchPlaceholder: "Search external reference or error…",
+              leading: (
+                <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
+                  {isNavigating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : null}
+                  {(batches.data?.total ?? 0).toLocaleString()} accessible jobs
+                </span>
+              ),
             }}
             detail={{ enabled: false }}
             onRowOpen={openBatch}

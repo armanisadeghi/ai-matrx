@@ -60,7 +60,19 @@ interface UseUserConnectionsReturn {
   refresh: () => Promise<void>;
 }
 
-export function useUserConnections(): UseUserConnectionsReturn {
+interface UseUserConnectionsOptions {
+  /**
+   * Pending invitations are visible only to organization invitation managers.
+   * Callers that only need existing users should leave this disabled so an
+   * ordinary organization member never makes a forbidden `inv_list` request.
+   */
+  includeInvitations?: boolean;
+}
+
+export function useUserConnections(
+  options: UseUserConnectionsOptions = {},
+): UseUserConnectionsReturn {
+  const { includeInvitations = true } = options;
   const [connections, setConnections] = useState<ConnectionUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +162,8 @@ export function useUserConnections(): UseUserConnectionsReturn {
           }
         });
 
+        if (!includeInvitations) continue;
+
         // Pending org invitations — via inv_list RPC (no direct grant on iam.invitations).
         const invResult = await invitationsService.listForTarget(
           "organization",
@@ -203,7 +217,7 @@ export function useUserConnections(): UseUserConnectionsReturn {
     }
 
     return Array.from(usersMap.values());
-  }, [currentUserId, organizations, supabase]);
+  }, [currentUserId, includeInvitations, organizations, supabase]);
 
   // Main aggregation effect
   useEffect(() => {

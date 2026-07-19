@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -24,32 +25,9 @@ import {
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { useCreateSite } from "@/features/marketing/data/hooks";
-import {
-  bootstrapSite,
-  type CrawlLiveEvent,
-} from "@/features/marketing/crawler/direct-client";
+import { normalizeWebsiteUrl } from "@/features/marketing/lib/website-url";
+import { bootstrapSite } from "@/features/marketing/crawler/direct-client";
 import { extractErrorMessage } from "@/utils/errors";
-
-function normalizeWebsiteUrl(value: string): URL {
-  const trimmed = value.trim();
-  if (!/^https?:\/\//i.test(trimmed)) {
-    throw new Error("Include the full http:// or https:// website URL.");
-  }
-  const parsed = new URL(trimmed);
-  const isHostname =
-    parsed.hostname.includes(".") ||
-    /^\d{1,3}(?:\.\d{1,3}){3}$/.test(parsed.hostname) ||
-    parsed.hostname.includes(":");
-  if (
-    !parsed.hostname ||
-    !isHostname ||
-    !["http:", "https:"].includes(parsed.protocol)
-  ) {
-    throw new Error("Enter a valid HTTP or HTTPS website URL.");
-  }
-  parsed.hash = "";
-  return parsed;
-}
 
 export function NewSiteForm() {
   const router = useRouter();
@@ -62,8 +40,6 @@ export function NewSiteForm() {
   const [captureStatus, setCaptureStatus] = useState<
     "idle" | "connecting" | "running" | "complete" | "failed"
   >("idle");
-  const [captureEvent, setCaptureEvent] = useState<CrawlLiveEvent | null>(null);
-  const [captureSessionId, setCaptureSessionId] = useState<string | null>(null);
   const selectedOrgId = organizationId ?? orgs.activeOrgId ?? undefined;
   let urlIsValid = false;
   try {
@@ -77,6 +53,15 @@ export function NewSiteForm() {
   const canSubmit = Boolean(
     selectedOrgId && urlIsValid && !busy && !orgs.loading,
   );
+
+  const normalizeVisibleUrl = () => {
+    setUrlTouched(true);
+    try {
+      setRootUrl(normalizeWebsiteUrl(rootUrl).toString());
+    } catch {
+      // Keep the user's text in place so they can correct it.
+    }
+  };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -114,16 +99,11 @@ export function NewSiteForm() {
     });
     setCaptureStatus("connecting");
     try {
-      const result = await bootstrapSite(site.id, {
-        onConnected: ({ sessionId }) => {
-          setCaptureSessionId(sessionId);
+      await bootstrapSite(site.id, {
+        onConnected: () => {
           setCaptureStatus("running");
         },
-        onEvent: (_streamEvent, crawlEvent) => {
-          if (crawlEvent) setCaptureEvent(crawlEvent);
-        },
       });
-      setCaptureSessionId(result.sessionId);
       setCaptureStatus("complete");
       toast.success("Homepage captured");
     } catch (error) {
@@ -167,9 +147,8 @@ export function NewSiteForm() {
               </h1>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              This creates the stable site identity first. Crawls will add
-              observations and reconcile discovered URLs into its independent
-              page registry.
+              Add a website you manage. We’ll capture its homepage and then you
+              can crawl it, connect search data, and track improvements.
             </p>
           </div>
           <div className="grid gap-4 p-4 sm:grid-cols-2">
@@ -179,11 +158,11 @@ export function NewSiteForm() {
               </Label>
               <Input
                 id="site-url"
-                type="url"
+                type="text"
                 value={rootUrl}
                 onChange={(event) => setRootUrl(event.target.value)}
-                onBlur={() => setUrlTouched(true)}
-                placeholder="https://example.com"
+                onBlur={normalizeVisibleUrl}
+                placeholder="example.com"
                 inputMode="url"
                 autoComplete="url"
                 aria-invalid={urlTouched && !urlIsValid}
@@ -194,13 +173,11 @@ export function NewSiteForm() {
                 id="site-url-help"
                 className="text-[11px] text-muted-foreground"
               >
-                Use the canonical homepage URL, including any required
-                subdomain.
+                You can enter just the domain — we’ll add https:// for you.
               </p>
               {urlTouched && !urlIsValid ? (
                 <p id="site-url-error" className="text-[11px] text-destructive">
-                  Enter a complete public website URL beginning with http:// or
-                  https://.
+                  Enter a valid website, such as example.com.
                 </p>
               ) : null}
             </div>
@@ -240,6 +217,26 @@ export function NewSiteForm() {
                   ))}
                 </SelectContent>
               </Select>
+              {orgs.loadFailed ? (
+                <p className="text-[11px] text-destructive">
+                  We couldn’t load your organizations. Refresh this page or{" "}
+                  <Link href="/organizations" className="underline">
+                    manage organizations
+                  </Link>
+                  .
+                </p>
+              ) : !orgs.loading && orgs.organizations.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground">
+                  You need an organization before adding a site.{" "}
+                  <Link
+                    href="/organizations"
+                    className="text-primary underline"
+                  >
+                    Create or join one
+                  </Link>
+                  .
+                </p>
+              ) : null}
             </div>
           </div>
           {captureStatus !== "idle" ? (
@@ -255,17 +252,21 @@ export function NewSiteForm() {
                 <div className="min-w-0">
                   <p className="text-xs font-medium">
                     {captureStatus === "connecting"
-                      ? "Connecting directly to scraper…"
+                      ? "Starting homepage capture…"
                       : captureStatus === "running"
                         ? "Capturing homepage…"
                         : captureStatus === "complete"
                           ? "Homepage capture complete"
                           : "Homepage capture did not complete"}
                   </p>
-                  <p className="truncate font-mono text-[10px] text-muted-foreground">
-                    {captureEvent?.event_type ??
-                      captureSessionId ??
-                      "Preparing session"}
+                  <p className="truncate text-[10px] text-muted-foreground">
+                    {captureStatus === "running"
+                      ? "We’re opening the homepage and saving its preview."
+                      : captureStatus === "failed"
+                        ? "The site was saved. You can retry the capture from its overview."
+                        : captureStatus === "complete"
+                          ? "The homepage preview is ready."
+                          : "This usually takes a few seconds."}
                   </p>
                 </div>
               </div>
@@ -274,8 +275,7 @@ export function NewSiteForm() {
           <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <Building2 className="h-3.5 w-3.5" />
-              Access to every page, crawl, snapshot, and finding derives from
-              this site.
+              You can share this site with teammates after it’s added.
             </div>
             <Button type="submit" size="sm" disabled={!canSubmit}>
               {busy ? (

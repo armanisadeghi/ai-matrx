@@ -5,11 +5,13 @@ import { useParams, usePathname } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
+  CircleDollarSign,
   ExternalLink,
   FileText,
   Gauge,
   Images,
   Link2,
+  Plug,
   ScanSearch,
   Settings,
   ShieldCheck,
@@ -50,6 +52,8 @@ function sectionSuffix(pathname: string, siteId: string): string {
     "findings",
     "links",
     "screenshots",
+    "integrations",
+    "cost",
     "access",
     "settings",
   ]) {
@@ -142,6 +146,16 @@ export function MarketingSiteLayoutClient({
             name: "Screenshots",
             href: `/marketing/sites/${siteId}/screenshots`,
             icon: Images,
+          },
+          {
+            name: "Integrations",
+            href: `/marketing/sites/${siteId}/integrations`,
+            icon: Plug,
+          },
+          {
+            name: "Cost",
+            href: `/marketing/sites/${siteId}/cost`,
+            icon: CircleDollarSign,
           },
           {
             name: "Access",
