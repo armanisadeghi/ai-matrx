@@ -1965,7 +1965,7 @@ const UserTableViewer = ({
 
       {/* Pagination */}
       {!loading && displayRows.length > 0 && (
-        <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-wrap justify-between items-center gap-y-2 gap-x-3 mt-4">
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
             <Select value={String(limit)} onValueChange={handleLimitChange}>
               <SelectTrigger className="h-8 w-[70px]">

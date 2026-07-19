@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import AddColumnModal from "./AddColumnModal";
 import AddRowModal from "./AddRowModal";
 import EditRowModal from "./EditRowModal";
@@ -11,6 +12,11 @@ import RowOrderingModal from "./RowOrderingModal";
 import PasteRowsDialog from "./PasteRowsDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  BottomSheet,
+  BottomSheetHeader,
+  BottomSheetBody,
+} from "@/components/official/bottom-sheet/BottomSheet";
 import {
   Search,
   X,
@@ -25,8 +31,41 @@ import {
   GripVertical,
   Eye,
   Clipboard,
+  MoreHorizontal,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+
+/** A single full-width, 44px-tall row inside the mobile actions drawer. */
+function MobileActionRow({
+  icon: Icon,
+  label,
+  onClick,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  tone?: "default" | "purple" | "green" | "destructive";
+}) {
+  const toneClass =
+    tone === "purple"
+      ? "text-purple-600 dark:text-purple-400"
+      : tone === "green"
+        ? "text-green-600 dark:text-green-400"
+        : tone === "destructive"
+          ? "text-red-600 dark:text-red-400"
+          : "text-foreground";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-lg px-2 min-h-[44px] text-sm active:bg-muted/50 transition-colors"
+    >
+      <Icon className={`h-4 w-4 flex-shrink-0 ${toneClass}`} />
+      <span className={toneClass}>{label}</span>
+    </button>
+  );
+}
 
 interface TableToolbarProps {
   tableId: string;
@@ -156,11 +195,28 @@ export default function TableToolbar({
       variant: "default",
     });
   };
+
+  const [showMobileActions, setShowMobileActions] = useState(false);
+
+  const handleReorderClick = () => {
+    if (!rowOrderingEnabled && enableRowOrdering) {
+      // Auto-enable ordering and open modal
+      enableRowOrdering().then(() => {
+        setShowRowOrderingModal(true);
+      });
+    } else {
+      // Just open modal if already enabled
+      setShowRowOrderingModal(true);
+    }
+  };
+
   return (
     <>
-      {/* Toolbar UI — dense, single-row on desktop */}
+      {/* Toolbar UI — dense, single-row on desktop. Below md, the Column/Row/
+          Paste + reorder/clean/reference/export/settings clusters collapse
+          into one drawer trigger so the row never overflows the viewport. */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
-        <div className="flex items-center w-full md:w-auto gap-1">
+        <div className="hidden md:flex items-center w-full md:w-auto gap-1">
           {isReadOnly ? (
             // Read-only mode: show disabled-style buttons with view icon
             <div className="flex items-center gap-1.5 px-1 text-xs font-medium text-purple-600 dark:text-purple-400">
@@ -200,8 +256,8 @@ export default function TableToolbar({
           )}
         </div>
 
-        <div className="flex-1 w-full md:max-w-sm">
-          <form onSubmit={handleSearch} className="flex gap-1">
+        <div className="flex items-center gap-2 w-full md:flex-1 md:max-w-sm">
+          <form onSubmit={handleSearch} className="flex flex-1 gap-1">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -209,7 +265,8 @@ export default function TableToolbar({
                 placeholder="Search table..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-7 pl-7 pr-7 text-sm"
+                className="w-full h-9 md:h-7 pl-7 pr-7 text-base md:text-sm"
+                style={{ fontSize: "16px" }}
               />
               {searchTerm && (
                 <button
@@ -224,31 +281,33 @@ export default function TableToolbar({
             <Button
               size="sm"
               type="submit"
-              className="h-7 w-7 p-0"
+              className="h-9 w-9 md:h-7 md:w-7 p-0 flex-shrink-0"
               title="Search"
             >
               <Search className="h-3.5 w-3.5" />
             </Button>
           </form>
+
+          {/* Mobile-only: one tap target opens the full action drawer,
+              replacing the Column/Row/Paste + icon clusters below md. */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="md:hidden h-9 w-9 flex-shrink-0"
+            onClick={() => setShowMobileActions(true)}
+            aria-label="Table actions"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
         </div>
 
-        <div className="flex items-center w-full md:w-auto justify-end gap-1">
+        <div className="hidden md:flex items-center w-full md:w-auto justify-end gap-1">
           {/* Row Ordering Controls - only show if not read-only */}
           {!isReadOnly && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (!rowOrderingEnabled && enableRowOrdering) {
-                  // Auto-enable ordering and open modal
-                  enableRowOrdering().then(() => {
-                    setShowRowOrderingModal(true);
-                  });
-                } else {
-                  // Just open modal if already enabled
-                  setShowRowOrderingModal(true);
-                }
-              }}
+              onClick={handleReorderClick}
               className="whitespace-nowrap text-green-600 dark:text-green-400 border-green-300 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
               title={
                 !rowOrderingEnabled
@@ -313,6 +372,106 @@ export default function TableToolbar({
           {toolbarTrailing}
         </div>
       </div>
+
+      {/* Mobile actions drawer — every control from the desktop clusters
+          above, as full-width 44px rows in one bottom sheet. */}
+      <BottomSheet
+        open={showMobileActions}
+        onOpenChange={setShowMobileActions}
+        title="Table Actions"
+        contentClassName="bg-card"
+      >
+        <BottomSheetHeader title="Table Actions" />
+        <BottomSheetBody className="px-3 pb-4 space-y-0.5">
+          {isReadOnly && (
+            <div className="flex items-center gap-2 px-2 py-2 text-sm font-medium text-purple-600 dark:text-purple-400">
+              <Eye className="h-4 w-4" />
+              View Only
+            </div>
+          )}
+          {!isReadOnly && (
+            <>
+              <MobileActionRow
+                icon={Plus}
+                label="Add Column"
+                onClick={() => {
+                  setShowMobileActions(false);
+                  setShowAddColumnModal(true);
+                }}
+              />
+              <MobileActionRow
+                icon={Plus}
+                label="Add Row"
+                onClick={() => {
+                  setShowMobileActions(false);
+                  setShowAddRowModal(true);
+                }}
+              />
+              <MobileActionRow
+                icon={Clipboard}
+                label="Paste Rows"
+                onClick={() => {
+                  setShowMobileActions(false);
+                  setShowPasteRowsDialog(true);
+                }}
+              />
+              <MobileActionRow
+                icon={GripVertical}
+                label={
+                  rowOrderingEnabled ? "Reorder Rows" : "Enable & Reorder Rows"
+                }
+                tone="green"
+                onClick={() => {
+                  setShowMobileActions(false);
+                  handleReorderClick();
+                }}
+              />
+              {hasCleanableHtmlInTable && handleBulkHtmlCleanup && (
+                <MobileActionRow
+                  icon={Zap}
+                  label="Clean HTML"
+                  tone="purple"
+                  onClick={() => {
+                    setShowMobileActions(false);
+                    handleBulkHtmlCleanup();
+                  }}
+                />
+              )}
+            </>
+          )}
+          <MobileActionRow
+            icon={Link}
+            label="Create Table Reference"
+            onClick={() => {
+              setShowMobileActions(false);
+              setShowReferenceOverlay(true);
+            }}
+          />
+          <MobileActionRow
+            icon={Download}
+            label="Export Table"
+            onClick={() => {
+              setShowMobileActions(false);
+              setShowExportModal(true);
+            }}
+          />
+          {!isReadOnly && (
+            <MobileActionRow
+              icon={Settings}
+              label="Table Settings"
+              onClick={() => {
+                setShowMobileActions(false);
+                setShowTableSettingsModal(true);
+              }}
+            />
+          )}
+          {toolbarTrailing && (
+            <div className="pt-2 border-t border-border mt-1">
+              {toolbarTrailing}
+            </div>
+          )}
+        </BottomSheetBody>
+      </BottomSheet>
 
       {/* Modals - Edit modals only rendered when not read-only */}
       {!isReadOnly && (

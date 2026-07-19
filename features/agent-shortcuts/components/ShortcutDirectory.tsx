@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -318,10 +318,13 @@ export function ShortcutDirectory({
   const renderRow = (row: ShortcutDirectoryRow) => (
     <TableRow
       key={row.id}
-      className="cursor-pointer hover:bg-muted/50"
+      className="cursor-pointer bg-card sm:bg-transparent sm:hover:bg-muted/50"
       onClick={() => navigateToShortcut(row)}
     >
-      <TableCell onClick={(e) => e.stopPropagation()}>
+      <TableCell
+        className="max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit max-sm:whitespace-nowrap"
+        onClick={(e) => e.stopPropagation()}
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -611,12 +614,17 @@ export function ShortcutDirectory({
 
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
-            <Table>
+            {/* Mobile-first: below `sm` the table sizes to its CONTENT (w-max)
+                so the ScrollArea's horizontal scrollbar (enabled below via
+                <ScrollBar orientation="horizontal" />) can scroll it, and the
+                first column freezes so a row stays identifiable while
+                scrolling. `sm:` restores the exact desktop rendering. */}
+            <Table className="w-max min-w-full max-w-none sm:w-full sm:min-w-0 sm:max-w-full">
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
-                  <TableHead className="w-[260px]">ID</TableHead>
+                  <TableHead className="w-[260px] max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-background max-sm:whitespace-nowrap">ID</TableHead>
                   <TableHead
-                    className="min-w-[200px]"
+                    className="min-w-[200px] max-sm:whitespace-nowrap"
                     onClick={() => handleSort("label")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -626,7 +634,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[140px]"
+                    className="min-w-[140px] max-sm:whitespace-nowrap"
                     onClick={() => handleSort("agent")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -635,7 +643,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[140px]"
+                    className="min-w-[140px] max-sm:whitespace-nowrap"
                     onClick={() => handleSort("scope")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -644,7 +652,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[120px]"
+                    className="min-w-[120px] max-sm:whitespace-nowrap"
                     onClick={() => handleSort("placement")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -653,7 +661,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[120px]"
+                    className="min-w-[120px] max-sm:whitespace-nowrap"
                     onClick={() => handleSort("category")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -662,7 +670,7 @@ export function ShortcutDirectory({
                     </div>
                   </TableHead>
                   <TableHead
-                    className="min-w-[120px]"
+                    className="min-w-[120px] max-sm:whitespace-nowrap"
                     onClick={() => handleSort("surface")}
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
@@ -702,6 +710,7 @@ export function ShortcutDirectory({
                 ))}
               </TableBody>
             </Table>
+            <ScrollBar orientation="horizontal" className="sm:hidden" />
 
             {!isLoading && filtered.length === 0 && (
               <div className="text-center py-12">
