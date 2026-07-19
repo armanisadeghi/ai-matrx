@@ -69,7 +69,7 @@ export function SurfaceAgentsHeaderButton() {
             {/* Condition is the whole point — chunk + fetches only when open */}
             {open && (
               <div className="overflow-y-auto px-1 pb-4">
-                <SurfaceAgentsPanelImpl />
+                <SurfaceAgentsPanelImpl onRequestClose={() => setOpen(false)} />
               </div>
             )}
           </DrawerContent>
@@ -86,7 +86,9 @@ export function SurfaceAgentsHeaderButton() {
         side="bottom"
         className="w-[340px] max-w-[92vw] p-0 bg-textured"
       >
-        {open && <SurfaceAgentsPanelImpl />}
+        {open && (
+          <SurfaceAgentsPanelImpl onRequestClose={() => setOpen(false)} />
+        )}
       </PopoverContent>
     </Popover>
   );

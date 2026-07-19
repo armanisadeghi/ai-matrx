@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 export type LiveSurfaceScopeStatus =
-  | "live"
-  | "snapshot"
-  | "unavailable"
-  | "error";
+  "live" | "snapshot" | "unavailable" | "error";
 
 export interface LiveSurfaceScopeResult {
   scope: Record<string, unknown>;
@@ -47,10 +44,9 @@ export function useLiveSurfaceScope({
   preferRuntime?: boolean;
 }): LiveSurfaceScopeResult {
   const runtime = useSurfaceRuntime();
-  const [scope, setScope] = useState<Record<string, unknown>>(fallbackScope);
-  const [status, setStatus] = useState<LiveSurfaceScopeStatus>(
-    Object.keys(fallbackScope).length > 0 ? "snapshot" : "unavailable",
-  );
+  const [sampledScope, setSampledScope] = useState<Record<string, unknown>>({});
+  const [sampledStatus, setSampledStatus] =
+    useState<LiveSurfaceScopeStatus>("unavailable");
   const [error, setError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
@@ -65,17 +61,12 @@ export function useLiveSurfaceScope({
     if (!enabled) return;
 
     if (!runtimeMatches || !runtime) {
-      setScope(fallbackScope);
-      setStatus(
-        Object.keys(fallbackScope).length > 0 ? "snapshot" : "unavailable",
-      );
-      setError(null);
-      setLastUpdatedAt(null);
       return;
     }
 
     let cancelled = false;
     let inFlight = false;
+    let hasSampled = false;
     let previousFingerprint = fingerprint(fallbackScope);
 
     const sample = async () => {
@@ -85,16 +76,17 @@ export function useLiveSurfaceScope({
         const next = (await runtime.getScope()) as Record<string, unknown>;
         if (cancelled) return;
         const nextFingerprint = fingerprint(next);
-        if (nextFingerprint !== previousFingerprint) {
+        if (!hasSampled || nextFingerprint !== previousFingerprint) {
+          hasSampled = true;
           previousFingerprint = nextFingerprint;
-          setScope(next);
+          setSampledScope(next);
+          setLastUpdatedAt(Date.now());
         }
-        setStatus("live");
+        setSampledStatus("live");
         setError(null);
-        setLastUpdatedAt(Date.now());
       } catch (reason) {
         if (cancelled) return;
-        setStatus("error");
+        setSampledStatus("error");
         setError(
           reason instanceof Error
             ? reason.message
@@ -122,10 +114,14 @@ export function useLiveSurfaceScope({
   ]);
 
   return {
-    scope,
-    status,
-    error,
-    lastUpdatedAt,
+    scope: runtimeMatches ? sampledScope : fallbackScope,
+    status: runtimeMatches
+      ? sampledStatus
+      : Object.keys(fallbackScope).length > 0
+        ? "snapshot"
+        : "unavailable",
+    error: runtimeMatches ? error : null,
+    lastUpdatedAt: runtimeMatches ? lastUpdatedAt : null,
     refresh: () => setRefreshToken((current) => current + 1),
   };
 }

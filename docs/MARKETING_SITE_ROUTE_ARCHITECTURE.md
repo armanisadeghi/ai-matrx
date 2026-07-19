@@ -2,7 +2,9 @@
 
 **Status:** Approved route contract
 
-**Implementation status:** First vertical implemented; approved expansion remains.
+**Implementation status:** Core site, crawl, inspection, analysis, sharing, and
+operations verticals implemented; verified connection/catalog/CMS expansion
+remains.
 
 **Companion:** `docs/MARKETING_SITE_PLATFORM_PLAN.md`
 
@@ -29,7 +31,7 @@ resources underneath a website-specific root.
 
 ## 2. Canonical route tree and implementation status
 
-### Implemented first vertical
+### Implemented routes
 
 ```text
 /marketing
@@ -82,57 +84,61 @@ resources underneath a website-specific root.
 
   /crawls/[crawlId]/logs
     Durable crawl events and errors for the session.
-```
 
-### Remaining approved route contract
-
-The following routes are approved but are not part of the implemented first
-vertical:
-
-```text
-/marketing/sites/[siteId]
   /crawls/[crawlId]/snapshots
     Captures produced by this run.
-
-  /crawls/[crawlId]/findings
-    Findings detected in this run.
 
   /crawls/[crawlId]/links
     Link edges observed specifically during this run.
 
   /analysis
-    Site prioritization workspace: weight × severity × confidence queue,
-    category → subcategory → item rollups, and page ranking.
+    Site priority queue ranked by weight × severity × confidence.
 
   /findings
-    Durable site finding register: open, acknowledged, resolved, reopened,
-    suppressed, and false-positive states.
+    Durable site finding register.
 
   /findings/[findingId]
-    Finding evidence, payload/artifact pointers, lifecycle history, and actions.
+    Finding lifecycle, catalog context, and immutable result evidence.
 
   /links
-    Current accepted link-graph projection: broken links, orphan pages,
-    internal-link structure, anchors, and observed HTTP status.
+    Current site link inspection workspace.
 
   /screenshots
-    Site-wide screenshot gallery and vision-analysis entry points.
+    Site-wide screenshot gallery backed directly by Supabase records/storage.
 
   /integrations
-    Bind this site to exact GSC, GA4, performance, CMS, and future provider
-    properties; show binding and synchronization health.
+    Reference-only bindings to GSC, GA4, PageSpeed, and extensible providers.
+    References remain explicitly unverified until the shared credential/OAuth
+    authority is built.
 
   /cost
-    Site cost rollup by crawl, analysis batch, analysis item, and page.
-
-  /settings
-    Site identity, scope, URL policy, crawl defaults, screenshot policy,
-    retention, and lifecycle configuration.
+    Site cost by page, run, and batch item.
 
   /access
-    Site sharing and organization/user grants. This is proposed as a dedicated
-    route because cross-organization access is a core workflow rather than a
-    minor settings field.
+    Site-root permission grants to organizations and users.
+
+  /settings
+    Site identity, lifecycle, visibility, and default crawl policy.
+
+/marketing/batches
+  Cross-site batch monitor.
+
+/marketing/batches/[batchId]
+  Batch context, execution units, results, failures, and attributed cost.
+
+/marketing/cost
+  Cross-site and client cost rollups.
+```
+
+### Remaining approved route contract
+
+The following routes are approved but are not yet implemented:
+
+```text
+/marketing/sites/[siteId]
+  /crawls/[crawlId]/findings
+    Findings detected in this run.
+
 
 /marketing/analysis
   Recommended cross-site prioritization board for an agency or organization.
@@ -159,16 +165,6 @@ vertical:
   bound to several sites; the site `/integrations` route manages the binding,
   not the reusable credential itself.
 
-/marketing/batches
-  Cross-site batch monitor: queued → submitted → processing → completed/failed.
-
-/marketing/batches/[batchId]
-  Batch manifest, selected inputs, items, results, per-item failures, costs,
-  and retry/re-run controls.
-
-/marketing/cost
-  Cost rollup across all sites, organizations/clients, crawls, providers,
-  analysis items, and batches.
 ```
 
 ## 3. Crawl route family
@@ -205,8 +201,8 @@ data in addressable child routes:
 
 This expansion preserves the core distinction between a site's permanent page
 registry and the set of URLs encountered by one crawl. `/crawls/new`, crawl
-detail, `urls`, and `logs` are implemented; `snapshots`, `findings`, and `links`
-remain approved expansion routes.
+detail, `urls`, `logs`, `snapshots`, and `links` are implemented; crawl-scoped
+`findings` remains an approved projection.
 
 ## 4. Route semantics
 
@@ -269,8 +265,7 @@ cost ledger. They are not separate sources of truth.
 
 - `/marketing/sites` is the permanent site portfolio root.
 - Cross-organization sharing has the dedicated site `/access` route.
-- Cross-site analysis, findings, connections, batches, and cost workspaces remain
-  approved for the first release; they are not part of the implemented first
-  vertical.
+- Cross-site batches and cost are implemented. Cross-site analysis, findings,
+  reusable connections, and the analysis catalog remain approved expansions.
 - `/marketing/batches` is the universal Marketing batch monitor.
 - `snapshot` is the canonical database, route, and user-facing term.

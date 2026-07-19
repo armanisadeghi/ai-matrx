@@ -528,7 +528,8 @@ const ImageArrivalPeekHost = lazyOverlay(
   { ssr: false },
 );
 const CharacterCounterWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/text-counter/CharacterCounterWindow"),
+  () =>
+    import("@/features/window-panels/windows/text-counter/CharacterCounterWindow"),
   { ssr: false },
 );
 const ImageUploaderWindow = lazyOverlay(
@@ -556,11 +557,13 @@ const ListManagerWindow = lazyOverlay(
   { ssr: false },
 );
 const StructuredListManagerV1Window = lazyOverlay(
-  () => import("@/features/window-panels/windows/StructuredListManagerV1Window"),
+  () =>
+    import("@/features/window-panels/windows/StructuredListManagerV1Window"),
   { ssr: false },
 );
 const StructuredListManagerV2Window = lazyOverlay(
-  () => import("@/features/window-panels/windows/StructuredListManagerV2Window"),
+  () =>
+    import("@/features/window-panels/windows/StructuredListManagerV2Window"),
   { ssr: false },
 );
 const FullscreenMarkdownEditor = lazyOverlay(
@@ -3723,13 +3726,20 @@ export default function OverlayController() {
       {/* characterCounterWindow */}
       {(() => {
         const isOpen = isOpenById.characterCounterWindow;
-        const data = dataById.characterCounterWindow as Record<string, unknown> | null | undefined;
+        const data = dataById.characterCounterWindow as
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <CharacterCounterWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "characterCounterWindow" }))}
-            initialText={typeof data?.initialText === "string" ? data.initialText : undefined}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "characterCounterWindow" }))
+            }
+            initialText={
+              typeof data?.initialText === "string"
+                ? data.initialText
+                : undefined
+            }
           />
         );
       })()}
@@ -4453,9 +4463,7 @@ export default function OverlayController() {
         const isOpen = isOpenById.contextPreviewPanel;
         if (!isOpen) return null;
         const data = dataById.contextPreviewPanel as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         const conversationId =
           typeof data?.conversationId === "string"
             ? data.conversationId
@@ -4877,9 +4885,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.surfaceContextWindow;
         const data = dataById.surfaceContextWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <SurfaceContextWindow

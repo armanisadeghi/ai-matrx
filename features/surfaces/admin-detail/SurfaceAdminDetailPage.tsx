@@ -73,9 +73,13 @@ import {
   fetchSurfaceConfigBundle,
   setRoleSelection,
   deleteRolePref,
+  setNamespaceConfig,
   type SurfaceConfigBundle,
 } from "@/features/surfaces/services/surface-config.service";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+import {
+  getManifest,
+  getRawManifest,
+} from "@/features/surfaces/manifests/registry";
 import { SurfaceValuesTable } from "@/features/surfaces/components/SurfaceValuesTable";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import {
@@ -92,7 +96,7 @@ import {
   type BundleRow,
 } from "@/features/tool-registry/bundles/services/bundles.service";
 import { EXECUTION_MODES } from "@/features/agents/runtime/pickRuntime";
-import type { SurfaceValue } from "@/features/surfaces/types";
+import type { SurfaceManifest, SurfaceValue } from "@/features/surfaces/types";
 import {
   buildChildrenByParent,
   getAncestorChain,
@@ -108,6 +112,8 @@ const ACTIVE_FIELD =
 interface Props {
   /** Server-fetched `ui_surface` row; the page reloads it after mutations. */
   initialSurface: UiSurfaceRow;
+  /** WindowPanel host: consume the available height instead of route chrome. */
+  embedded?: boolean;
 }
 
 /**
@@ -115,7 +121,10 @@ interface Props {
  * Every DB-owned `ui_surface` + `tool_surface_defaults` field is editable;
  * value definitions stay code-first (view + drift chips only).
  */
-export function SurfaceAdminDetailPage({ initialSurface }: Props) {
+export function SurfaceAdminDetailPage({
+  initialSurface,
+  embedded = false,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -146,6 +155,7 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
   const [creatingChild, setCreatingChild] = useState(false);
 
   const manifest = getManifest(surface.name);
+  const rawManifest = getRawManifest(surface.name);
   const tier = tierFor(surface.sort_order);
 
   const navigateTo = (path: string) => {
@@ -332,25 +342,34 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
   };
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-background">
+    <div
+      className={cn(
+        "flex flex-col overflow-hidden bg-background",
+        embedded ? "h-full" : "h-[calc(100dvh-var(--header-height))]",
+      )}
+    >
       {/* Sticky compact header */}
       <div className="shrink-0 px-4 py-2 border-b border-border bg-card">
         <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigateTo("/administration/surfaces")}
-            disabled={isPending}
-            className="gap-1.5 h-7 text-xs"
-          >
-            {isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <ArrowLeft className="h-3.5 w-3.5" />
-            )}
-            Surfaces
-          </Button>
-          <span className="text-xs text-muted-foreground">/</span>
+          {!embedded && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateTo("/administration/surfaces")}
+                disabled={isPending}
+                className="gap-1.5 h-7 text-xs"
+              >
+                {isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                )}
+                Surfaces
+              </Button>
+              <span className="text-xs text-muted-foreground">/</span>
+            </>
+          )}
           <code className="font-mono text-sm font-semibold">
             {surface.name}
           </code>
@@ -528,6 +547,11 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
             onPatch={patchDefaults}
           />
 
+          <ManifestInternalsSection
+            rawManifest={rawManifest}
+            resolvedManifest={manifest}
+          />
+
           <section className="space-y-2">
             <SectionHeading
               title="Surface values"
@@ -553,6 +577,7 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
           <ConfigNamespacesSection
             surfaceName={surface.name}
             configBundle={configBundle}
+            onChanged={() => void load(surface.name)}
           />
 
           <UsageSection
@@ -597,6 +622,88 @@ function SectionHeading({ title, hint }: { title: string; hint?: string }) {
         <p className="text-[11px] text-muted-foreground/80 mt-0.5">{hint}</p>
       )}
     </div>
+  );
+}
+
+function ManifestInternalsSection({
+  rawManifest,
+  resolvedManifest,
+}: {
+  rawManifest: SurfaceManifest | undefined;
+  resolvedManifest: SurfaceManifest | undefined;
+}) {
+  if (!resolvedManifest) {
+    return (
+      <section className="space-y-2">
+        <SectionHeading
+          title="Manifest internals"
+          hint="Code-owned declarations and their resolved inheritance/baseline result."
+        />
+        <EmptyHint>No code manifest is registered for this surface.</EmptyHint>
+      </section>
+    );
+  }
+
+  const authoredCount = rawManifest?.values.length ?? 0;
+  const inheritedOrInjected = Math.max(
+    0,
+    resolvedManifest.values.length - authoredCount,
+  );
+
+  return (
+    <section className="space-y-2">
+      <SectionHeading
+        title="Manifest internals"
+        hint="Admin-only, code-owned contract metadata. Edit DB-owned fields elsewhere in this panel; change these declarations in code and sync manifests."
+      />
+      <div className="grid gap-3 rounded-md border border-border bg-card p-3 md:grid-cols-2">
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Authored values</span>
+            <Badge variant="outline">{authoredCount}</Badge>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Inherited / baseline</span>
+            <Badge variant="outline">{inheritedOrInjected}</Badge>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Parent manifest</span>
+            <code className="text-[11px]">
+              {rawManifest?.inheritsFrom ?? "—"}
+            </code>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Baseline injection</span>
+            <Badge
+              variant={
+                rawManifest?.skipBaselineValues ? "secondary" : "default"
+              }
+            >
+              {rawManifest?.skipBaselineValues ? "skipped" : "enabled"}
+            </Badge>
+          </div>
+        </div>
+        <div className="space-y-2 text-xs">
+          <div>
+            <span className="text-muted-foreground">Evidence sources</span>
+            <pre className="mt-1 max-h-28 overflow-auto rounded bg-muted p-2 font-mono text-[10px]">
+              {JSON.stringify(resolvedManifest.evidenceSources ?? [], null, 2)}
+            </pre>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <Badge variant="outline">
+              {resolvedManifest.agentRoles?.length ?? 0} roles
+            </Badge>
+            <Badge variant="outline">
+              {resolvedManifest.configNamespaces?.length ?? 0} config namespaces
+            </Badge>
+            <Badge variant="outline">
+              {resolvedManifest.values.length} resolved values
+            </Badge>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -815,7 +922,9 @@ function ClassificationSection({
             }
             disabled={busy}
           >
-            <SelectTrigger className={cn("h-8 text-xs font-mono", ACTIVE_FIELD)}>
+            <SelectTrigger
+              className={cn("h-8 text-xs font-mono", ACTIVE_FIELD)}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -909,7 +1018,9 @@ function ClassificationSection({
             }
             disabled={busy}
           >
-            <SelectTrigger className={cn("h-8 text-xs font-mono", ACTIVE_FIELD)}>
+            <SelectTrigger
+              className={cn("h-8 text-xs font-mono", ACTIVE_FIELD)}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1445,7 +1556,9 @@ function BundleChipList({
           onValueChange={(v) => onAdd(v)}
           disabled={busy || available.length === 0}
         >
-          <SelectTrigger className={cn("h-6 w-[200px] text-[11px]", ACTIVE_FIELD)}>
+          <SelectTrigger
+            className={cn("h-6 w-[200px] text-[11px]", ACTIVE_FIELD)}
+          >
             <SelectValue placeholder="Add bundle…" />
           </SelectTrigger>
           <SelectContent>
@@ -1844,15 +1957,17 @@ function RoleOverridePicker({
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// Config namespaces (read-only)
+// Config namespaces (global/admin tier is editable)
 // ───────────────────────────────────────────────────────────────────────────
 
 function ConfigNamespacesSection({
   surfaceName,
   configBundle,
+  onChanged,
 }: {
   surfaceName: string;
   configBundle: SurfaceConfigBundle | null;
+  onChanged: () => void;
 }) {
   const manifest = getManifest(surfaceName);
   const declared = manifest?.configNamespaces ?? [];
@@ -1880,7 +1995,7 @@ function ConfigNamespacesSection({
     <section className="space-y-2">
       <SectionHeading
         title="Config namespaces"
-        hint="Code-declared in the manifest; rows live in ui_surface_config. Read-only here — handlers own validation and merge."
+        hint="Code declares the namespace and validation contract. Admins can edit the platform-global row here; org, scope, and user overrides remain visible as counts."
       />
       {allNamespaces.length === 0 ? (
         <EmptyHint>
@@ -1892,40 +2007,143 @@ function ConfigNamespacesSection({
             const decl = declared.find((d) => d.namespace === ns) ?? null;
             const tierCounts = counts.get(ns) ?? {};
             return (
-              <div
-                key={ns}
-                className="px-3 py-1.5 flex items-center gap-2 flex-wrap"
-              >
-                <code className="font-mono text-xs text-foreground">{ns}</code>
-                {decl ? (
-                  <span className="text-[11px] text-muted-foreground flex-1 min-w-0 truncate">
-                    {decl.label} — {decl.description}
-                  </span>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
-                  >
-                    rows only — not declared in manifest
-                  </Badge>
-                )}
-                <span className="ml-auto flex items-center gap-1">
-                  {(["global", "org", "scope", "user"] as const).map((tier) => (
-                    <Badge
-                      key={tier}
-                      variant={tierCounts[tier] ? "default" : "outline"}
-                      className="text-[10px] tabular-nums"
-                    >
-                      {tier}: {tierCounts[tier] ?? 0}
-                    </Badge>
-                  ))}
-                </span>
-              </div>
+              <NamespaceConfigEditorRow
+                key={`${ns}:${JSON.stringify(
+                  rows.find(
+                    (row) =>
+                      row.namespace === ns &&
+                      !row.userId &&
+                      !row.organizationId &&
+                      !row.scopeId,
+                  )?.config ?? {},
+                )}`}
+                surfaceName={surfaceName}
+                namespace={ns}
+                label={decl?.label ?? null}
+                description={decl?.description ?? null}
+                tierCounts={tierCounts}
+                globalConfig={
+                  rows.find(
+                    (row) =>
+                      row.namespace === ns &&
+                      !row.userId &&
+                      !row.organizationId &&
+                      !row.scopeId,
+                  )?.config
+                }
+                canEdit={decl != null}
+                onChanged={onChanged}
+              />
             );
           })}
         </div>
       )}
     </section>
+  );
+}
+
+function NamespaceConfigEditorRow({
+  surfaceName,
+  namespace,
+  label,
+  description,
+  tierCounts,
+  globalConfig,
+  canEdit,
+  onChanged,
+}: {
+  surfaceName: string;
+  namespace: string;
+  label: string | null;
+  description: string | null;
+  tierCounts: Record<string, number>;
+  globalConfig: unknown;
+  canEdit: boolean;
+  onChanged: () => void;
+}) {
+  const serialized = JSON.stringify(globalConfig ?? {}, null, 2);
+  const [draft, setDraft] = useState(serialized);
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(draft);
+    } catch {
+      toast.error(`${namespace} is not valid JSON`);
+      return;
+    }
+    setSaving(true);
+    try {
+      await setNamespaceConfig({
+        surfaceName,
+        namespace,
+        config: parsed,
+        scope: {},
+      });
+      toast.success(`${namespace} global config saved`);
+      onChanged();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Config update failed",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <code className="font-mono text-xs text-foreground">{namespace}</code>
+        {label ? (
+          <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+            {label} — {description}
+          </span>
+        ) : (
+          <Badge
+            variant="outline"
+            className="border-amber-500/30 text-[10px] text-amber-600 dark:text-amber-400"
+          >
+            rows only — not declared
+          </Badge>
+        )}
+        <span className="ml-auto flex items-center gap-1">
+          {(["global", "org", "scope", "user"] as const).map((tier) => (
+            <Badge
+              key={tier}
+              variant={tierCounts[tier] ? "default" : "outline"}
+              className="text-[10px] tabular-nums"
+            >
+              {tier}: {tierCounts[tier] ?? 0}
+            </Badge>
+          ))}
+        </span>
+      </div>
+      {canEdit && (
+        <div className="flex items-end gap-2">
+          <Textarea
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            className={cn("min-h-20 flex-1 font-mono text-xs", ACTIVE_FIELD)}
+            style={{ fontSize: "16px" }}
+            aria-label={`${namespace} global configuration JSON`}
+          />
+          <Button
+            size="sm"
+            onClick={() => void save()}
+            disabled={saving || draft === serialized}
+            className="h-8 shrink-0"
+          >
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Save global"
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
 

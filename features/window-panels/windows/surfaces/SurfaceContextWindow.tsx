@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Braces,
   Check,
@@ -53,15 +53,26 @@ type ContextItem =
   | { key: string; kind: "declared"; declaration: SurfaceValue }
   | { key: string; kind: "runtime"; declaration: null };
 
-function statusPresentation(status: ReturnType<typeof useLiveSurfaceScope>["status"]) {
+function statusPresentation(
+  status: ReturnType<typeof useLiveSurfaceScope>["status"],
+) {
   if (status === "live") {
-    return { label: "Live", className: "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" };
+    return {
+      label: "Live",
+      className: "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+    };
   }
   if (status === "snapshot") {
-    return { label: "Snapshot", className: "border-amber-500/40 text-amber-600 dark:text-amber-400" };
+    return {
+      label: "Snapshot",
+      className: "border-amber-500/40 text-amber-600 dark:text-amber-400",
+    };
   }
   if (status === "error") {
-    return { label: "Runtime error", className: "border-destructive/40 text-destructive" };
+    return {
+      label: "Runtime error",
+      className: "border-destructive/40 text-destructive",
+    };
   }
   return { label: "No runtime", className: "text-muted-foreground" };
 }
@@ -96,24 +107,25 @@ export default function SurfaceContextWindow({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (selectedKey && items.some((item) => item.key === selectedKey)) return;
-    setSelectedKey(items[0]?.key ?? null);
-  }, [items, selectedKey]);
-
   const normalizedQuery = query.trim().toLowerCase();
   const filteredItems = normalizedQuery
     ? items.filter((item) => {
         const declaration = item.declaration;
         return [item.key, declaration?.label, declaration?.description]
           .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+          .some((value) =>
+            String(value).toLowerCase().includes(normalizedQuery),
+          );
       })
     : items;
-  const selected = items.find((item) => item.key === selectedKey) ?? null;
+  const selected =
+    items.find((item) => item.key === selectedKey) ?? items[0] ?? null;
+  const effectiveSelectedKey = selected?.key ?? null;
   const selectedRaw = selected ? live.scope[selected.key] : undefined;
   const selectedDisplay = displayValue(selectedRaw);
-  const supplied = declared.filter((value) => hasValue(live.scope[value.name])).length;
+  const supplied = declared.filter((value) =>
+    hasValue(live.scope[value.name]),
+  ).length;
   const missingRequired = declared.filter(
     (value) => value.alwaysAvailable && !hasValue(live.scope[value.name]),
   ).length;
@@ -135,9 +147,16 @@ export default function SurfaceContextWindow({
       titleNode={
         <div className="flex min-w-0 items-center gap-2">
           <Braces className="h-4 w-4 shrink-0 text-primary" />
-          <span className="truncate text-sm font-semibold">Surface Context</span>
-          <Badge variant="outline" className={cn("shrink-0 text-[10px]", presentation.className)}>
-            {live.status === "live" && <CircleDot className="mr-1 h-2.5 w-2.5 fill-current" />}
+          <span className="truncate text-sm font-semibold">
+            Surface Context
+          </span>
+          <Badge
+            variant="outline"
+            className={cn("shrink-0 text-[10px]", presentation.className)}
+          >
+            {live.status === "live" && (
+              <CircleDot className="mr-1 h-2.5 w-2.5 fill-current" />
+            )}
             {presentation.label}
           </Badge>
         </div>
@@ -164,11 +183,17 @@ export default function SurfaceContextWindow({
           </button>
           <button
             type="button"
-            onClick={() => void copyText(JSON.stringify(live.scope, null, 2), "all")}
+            onClick={() =>
+              void copyText(JSON.stringify(live.scope, null, 2), "all")
+            }
             className="flex h-7 items-center gap-1 rounded px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
             title="Copy all current surface values"
           >
-            {copied === "all" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied === "all" ? (
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
             JSON
           </button>
         </div>
@@ -197,43 +222,73 @@ export default function SurfaceContextWindow({
                   onClick={() => setSelectedKey(item.key)}
                   className={cn(
                     "flex w-full min-w-0 items-start gap-2 border-l-2 px-2.5 py-2 text-left transition-colors",
-                    selectedKey === item.key
+                    effectiveSelectedKey === item.key
                       ? "border-primary bg-primary/8"
                       : "border-transparent hover:bg-muted/50",
                   )}
                 >
-                  <span className={cn("mt-1 h-2 w-2 shrink-0 rounded-full", present ? "bg-emerald-500" : required ? "bg-destructive" : "bg-muted-foreground/30")} />
+                  <span
+                    className={cn(
+                      "mt-1 h-2 w-2 shrink-0 rounded-full",
+                      present
+                        ? "bg-emerald-500"
+                        : required
+                          ? "bg-destructive"
+                          : "bg-muted-foreground/30",
+                    )}
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs font-medium">
                       {item.declaration?.label ?? item.key}
                     </span>
-                    <code className="block truncate text-[10px] text-muted-foreground">{item.key}</code>
+                    <code className="block truncate text-[10px] text-muted-foreground">
+                      {item.key}
+                    </code>
                   </span>
                   {item.kind === "runtime" && (
-                    <Badge variant="outline" className="shrink-0 text-[8px] text-amber-600 dark:text-amber-400">runtime</Badge>
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 text-[8px] text-amber-600 dark:text-amber-400"
+                    >
+                      runtime
+                    </Badge>
                   )}
                 </button>
               );
             })}
             {filteredItems.length === 0 && (
-              <p className="px-3 py-6 text-center text-xs text-muted-foreground">No matching values.</p>
+              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                No matching values.
+              </p>
             )}
           </div>
         </div>
       }
       footerLeft={
         <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-muted-foreground">
-          <span><b className="text-foreground">{supplied}</b>/{declared.length} supplied</span>
+          <span>
+            <b className="text-foreground">{supplied}</b>/{declared.length}{" "}
+            supplied
+          </span>
           {missingRequired > 0 ? (
-            <span className="flex items-center gap-1 text-destructive"><TriangleAlert className="h-3 w-3" />{missingRequired} required missing</span>
+            <span className="flex items-center gap-1 text-destructive">
+              <TriangleAlert className="h-3 w-3" />
+              {missingRequired} required missing
+            </span>
           ) : declared.length > 0 ? (
-            <span className="text-emerald-600 dark:text-emerald-400">contract honored</span>
+            <span className="text-emerald-600 dark:text-emerald-400">
+              contract honored
+            </span>
           ) : null}
-          {runtimeOnlyKeys.length > 0 && <span>{runtimeOnlyKeys.length} runtime-only</span>}
+          {runtimeOnlyKeys.length > 0 && (
+            <span>{runtimeOnlyKeys.length} runtime-only</span>
+          )}
         </div>
       }
       footerRight={
-        <code className="max-w-[300px] truncate text-[10px] text-muted-foreground">{surfaceName}</code>
+        <code className="max-w-[300px] truncate text-[10px] text-muted-foreground">
+          {surfaceName}
+        </code>
       }
     >
       {selected ? (
@@ -241,15 +296,29 @@ export default function SurfaceContextWindow({
           <div className="shrink-0 border-b border-border p-4">
             <div className="flex flex-wrap items-start gap-2">
               <div className="min-w-0 flex-1">
-                <h2 className="truncate text-base font-semibold">{selected.declaration?.label ?? selected.key}</h2>
-                <code className="text-xs text-muted-foreground">{selected.key}</code>
+                <h2 className="truncate text-base font-semibold">
+                  {selected.declaration?.label ?? selected.key}
+                </h2>
+                <code className="text-xs text-muted-foreground">
+                  {selected.key}
+                </code>
               </div>
               {selected.declaration && (
                 <>
-                  <Badge variant={selected.declaration.alwaysAvailable ? "default" : "secondary"}>
-                    {selected.declaration.alwaysAvailable ? "Always available" : "Sometimes available"}
+                  <Badge
+                    variant={
+                      selected.declaration.alwaysAvailable
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
+                    {selected.declaration.alwaysAvailable
+                      ? "Always available"
+                      : "Sometimes available"}
                   </Badge>
-                  <Badge variant="outline">{selected.declaration.valueType}</Badge>
+                  <Badge variant="outline">
+                    {selected.declaration.valueType}
+                  </Badge>
                 </>
               )}
               <button
@@ -258,24 +327,34 @@ export default function SurfaceContextWindow({
                 onClick={() => void copyText(selectedDisplay, selected.key)}
                 className="flex h-7 items-center gap-1 rounded px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
               >
-                {copied === selected.key ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied === selected.key ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
                 Copy
               </button>
             </div>
             {selected.declaration?.description && (
-              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">{selected.declaration.description}</p>
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+                {selected.declaration.description}
+              </p>
             )}
           </div>
           <div className="min-h-0 flex-1 overflow-auto bg-muted/15 p-4">
             {hasValue(selectedRaw) ? (
-              <pre className="min-h-full whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-4 font-mono text-xs leading-relaxed shadow-sm">{selectedDisplay}</pre>
+              <pre className="min-h-full whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-4 font-mono text-xs leading-relaxed shadow-sm">
+                {selectedDisplay}
+              </pre>
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                 <Braces className="h-10 w-10 text-muted-foreground/20" />
                 <div>
                   <p className="text-sm font-medium">No current value</p>
                   <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                    {live.status === "live" ? "The page is connected, but this variable is empty right now." : "This page has not exposed a matching live surface runtime."}
+                    {live.status === "live"
+                      ? "The page is connected, but this variable is empty right now."
+                      : "This page has not exposed a matching live surface runtime."}
                   </p>
                 </div>
               </div>
@@ -286,10 +365,14 @@ export default function SurfaceContextWindow({
         <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
           <Braces className="h-12 w-12 text-primary/15" />
           <div>
-            <h2 className="text-base font-semibold">{surfaceLabel || manifest?.label || surfaceName}</h2>
+            <h2 className="text-base font-semibold">
+              {surfaceLabel || manifest?.label || surfaceName}
+            </h2>
             <p className="mt-1 max-w-lg text-xs leading-relaxed text-muted-foreground">
               This surface has no declared or emitted values to inspect yet.
-              {isEditable ? " The page reports that its content is editable." : ""}
+              {isEditable
+                ? " The page reports that its content is editable."
+                : ""}
             </p>
           </div>
         </div>

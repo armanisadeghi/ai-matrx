@@ -11,8 +11,18 @@
  * Loud-by-design: Always-declared keys with no supplied value render red.
  */
 
-import { useCallback, useMemo, useState } from "react";
-import { Copy, CopyCheck, TriangleAlert, Braces, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  Braces,
+  Copy,
+  CopyCheck,
+  Loader2,
+  Settings2,
+  ShieldAlert,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { getManifest } from "@/features/surfaces/manifests/registry";
@@ -20,6 +30,15 @@ import { allBaseline } from "@/features/surfaces/manifests/_baseline.manifest";
 import { qualifyingDefaultSurfaces } from "@/features/surfaces/services/surface-bound-agents.service";
 import type { SurfaceValue } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { useLiveSurfaceScope } from "@/features/surfaces/runtime/useLiveSurfaceScope";
+import type { LiveSurfaceScopeStatus } from "@/features/surfaces/runtime/useLiveSurfaceScope";
+import {
+  getSurfaceByName,
+  type UiSurfaceRow,
+} from "@/features/surfaces/services/surfaces.service";
+import { SurfaceAdminDetailPage } from "@/features/surfaces/admin-detail/SurfaceAdminDetailPage";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +49,7 @@ export interface SurfaceContextInspectorWindowProps {
   /** The live resolved ApplicationScope the menu acts on. */
   scope: Record<string, unknown>;
   isEditable: boolean;
+  preferRuntime?: boolean;
 }
 
 /** Menu-control keys that ride on the scope but are not surface values. */
@@ -525,12 +545,17 @@ function SurfaceContextInspectorWindowInner({
   surfaceName,
   scope,
   isEditable,
+  scopeStatus,
 }: {
   onClose: () => void;
   surfaceName: string | null;
   scope: Record<string, unknown>;
   isEditable: boolean;
+  scopeStatus: LiveSurfaceScopeStatus;
 }) {
+  const [view, setView] = useState<"values" | "settings">("values");
+  const [surface, setSurface] = useState<UiSurfaceRow | null>(null);
+  const [surfaceError, setSurfaceError] = useState<string | null>(null);
   const model = useInspectorModel(surfaceName, scope, isEditable);
   const tabs = useInspectorTabs();
   const { copiedKey, copy } = useCopyText();
@@ -539,14 +564,60 @@ function SurfaceContextInspectorWindowInner({
     copy(JSON.stringify(scope, null, 2), "__all__");
   }, [copy, scope]);
 
+  useEffect(() => {
+    if (view !== "settings" || !surfaceName || surface?.name === surfaceName)
+      return;
+    let cancelled = false;
+    void getSurfaceByName(surfaceName)
+      .then((row) => {
+        if (cancelled) return;
+        setSurfaceError(null);
+        setSurface(row);
+        if (!row)
+          setSurfaceError("This surface has no ui_surface row to edit.");
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setSurfaceError(
+          error instanceof Error
+            ? error.message
+            : "Could not load surface settings.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [surface?.name, surfaceName, view]);
+
   const titleNode = (
     <div className="flex max-w-[min(420px,50vw)] items-center justify-center gap-1.5 truncate">
-      <span className="truncate text-sm font-medium">Context Values</span>
+      <span className="truncate text-sm font-medium">
+        Surface Context Admin
+      </span>
       <Badge
         variant="outline"
         className="max-w-[180px] truncate font-mono text-[10px]"
       >
         {surfaceName ?? "(no surface)"}
+      </Badge>
+      <Badge
+        variant="outline"
+        className={cn(
+          "shrink-0 text-[10px]",
+          scopeStatus === "live"
+            ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+            : scopeStatus === "error"
+              ? "border-destructive/40 text-destructive"
+              : "text-muted-foreground",
+        )}
+      >
+        {scopeStatus === "live"
+          ? "Live"
+          : scopeStatus === "snapshot"
+            ? "Snapshot"
+            : scopeStatus === "error"
+              ? "Runtime error"
+              : "No runtime"}
       </Badge>
       {isEditable && (
         <Badge variant="secondary" className="shrink-0 text-[10px]">
@@ -570,87 +641,143 @@ function SurfaceContextInspectorWindowInner({
       bodyClassName="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0"
       sidebarDefaultSize={220}
       sidebarMinSize={160}
-      defaultSidebarOpen
-      actionsRight={
-        <button
-          type="button"
-          onClick={copyAll}
-          className="flex h-6 items-center gap-1 rounded px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Copy full scope JSON"
-        >
-          {copiedKey === "__all__" ? (
-            <CopyCheck className="h-3 w-3 text-green-500" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
-          <span>{copiedKey === "__all__" ? "Copied" : "Copy JSON"}</span>
-        </button>
-      }
-      sidebar={
-        <InspectorSidebar
-          items={model.items}
-          scope={scope}
-          openTabIds={tabs.openTabIds}
-          activeTabId={tabs.activeTabId}
-          onSelect={tabs.openTab}
-        />
-      }
-      footerLeft={
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-          <span>
-            <span className="font-semibold text-foreground">
-              {model.declared.length}
-            </span>{" "}
-            declared
-          </span>
-          <span>
-            <span className="font-semibold text-foreground">
-              {model.supplied}
-            </span>{" "}
-            supplied
-          </span>
-          {model.violations > 0 ? (
-            <span className="flex items-center gap-1 font-semibold text-destructive">
-              <TriangleAlert className="h-3 w-3" />
-              {model.violations} missing
-            </span>
-          ) : (
-            <span className="text-emerald-600 dark:text-emerald-400">
-              contract honored
-            </span>
-          )}
-          {model.undeclared.length > 0 && (
-            <span>
-              <span className="font-semibold text-foreground">
-                {model.undeclared.length}
-              </span>{" "}
-              undeclared
-            </span>
-          )}
+      defaultSidebarOpen={view === "values"}
+      actionsLeft={
+        <div className="flex rounded-md border border-border bg-muted/30 p-0.5">
+          <button
+            type="button"
+            onClick={() => setView("values")}
+            className={cn(
+              "flex h-6 items-center gap-1 rounded px-2 text-[11px]",
+              view === "values"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground",
+            )}
+          >
+            <Activity className="h-3 w-3" /> Live values
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("settings")}
+            className={cn(
+              "flex h-6 items-center gap-1 rounded px-2 text-[11px]",
+              view === "settings"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground",
+            )}
+          >
+            <Settings2 className="h-3 w-3" /> Manifest &amp; settings
+          </button>
         </div>
       }
+      actionsRight={
+        view === "values" ? (
+          <button
+            type="button"
+            onClick={copyAll}
+            className="flex h-6 items-center gap-1 rounded px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            title="Copy full scope JSON"
+          >
+            {copiedKey === "__all__" ? (
+              <CopyCheck className="h-3 w-3 text-green-500" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+            <span>{copiedKey === "__all__" ? "Copied" : "Copy JSON"}</span>
+          </button>
+        ) : null
+      }
+      sidebar={
+        view === "values" ? (
+          <InspectorSidebar
+            items={model.items}
+            scope={scope}
+            openTabIds={tabs.openTabIds}
+            activeTabId={tabs.activeTabId}
+            onSelect={tabs.openTab}
+          />
+        ) : undefined
+      }
+      footerLeft={
+        view === "values" ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+            <span>
+              <span className="font-semibold text-foreground">
+                {model.declared.length}
+              </span>{" "}
+              declared
+            </span>
+            <span>
+              <span className="font-semibold text-foreground">
+                {model.supplied}
+              </span>{" "}
+              supplied
+            </span>
+            {model.violations > 0 ? (
+              <span className="flex items-center gap-1 font-semibold text-destructive">
+                <TriangleAlert className="h-3 w-3" />
+                {model.violations} missing
+              </span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400">
+                contract honored
+              </span>
+            )}
+            {model.undeclared.length > 0 && (
+              <span>
+                <span className="font-semibold text-foreground">
+                  {model.undeclared.length}
+                </span>{" "}
+                undeclared
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-[11px] text-muted-foreground">
+            DB-owned fields are editable; manifest declarations remain
+            code-owned.
+          </span>
+        )
+      }
       footerRight={
-        <span className="max-w-[280px] truncate text-[10px] text-muted-foreground">
-          Defaults:{" "}
-          {model.defaults.map((d, i) => (
-            <code key={d} className="text-foreground">
-              {d}
-              {i < model.defaults.length - 1 ? ", " : ""}
-            </code>
-          ))}
-        </span>
+        view === "values" ? (
+          <span className="max-w-[280px] truncate text-[10px] text-muted-foreground">
+            Defaults:{" "}
+            {model.defaults.map((d, i) => (
+              <code key={d} className="text-foreground">
+                {d}
+                {i < model.defaults.length - 1 ? ", " : ""}
+              </code>
+            ))}
+          </span>
+        ) : undefined
       }
     >
-      <InspectorBody
-        openTabIds={tabs.openTabIds}
-        activeTabId={tabs.activeTabId}
-        itemById={model.itemById}
-        scope={scope}
-        copiedKey={copiedKey}
-        onActivate={tabs.setActiveTabId}
-        onClose={tabs.closeTab}
-        onCopy={copy}
-      />
+      {view === "values" ? (
+        <InspectorBody
+          openTabIds={tabs.openTabIds}
+          activeTabId={tabs.activeTabId}
+          itemById={model.itemById}
+          scope={scope}
+          copiedKey={copiedKey}
+          onActivate={tabs.setActiveTabId}
+          onClose={tabs.closeTab}
+          onCopy={copy}
+        />
+      ) : surface?.name === surfaceName ? (
+        <SurfaceAdminDetailPage initialSurface={surface} embedded />
+      ) : surfaceError ? (
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-destructive">
+          <ShieldAlert className="h-8 w-8" />
+          <p className="text-sm font-medium">Surface settings unavailable</p>
+          <p className="max-w-md text-xs">{surfaceError}</p>
+        </div>
+      ) : (
+        <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading manifest and
+          editable settings…
+        </div>
+      )}
     </WindowPanel>
   );
 }
@@ -663,14 +790,47 @@ export default function SurfaceContextInspectorWindow({
   surfaceName,
   scope,
   isEditable,
+  preferRuntime = false,
 }: SurfaceContextInspectorWindowProps) {
+  const isAdmin = useAppSelector(selectIsAdmin);
+  const live = useLiveSurfaceScope({
+    enabled: isOpen,
+    surfaceName,
+    fallbackScope: scope,
+    preferRuntime,
+  });
   if (!isOpen) return null;
+  if (!isAdmin) {
+    return (
+      <WindowPanel
+        id="surface-context-admin-denied"
+        overlayId="surfaceContextInspector"
+        onClose={onClose}
+        title="Surface Context Admin"
+        width={440}
+        height={260}
+        position="center"
+      >
+        <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+          <ShieldAlert className="h-9 w-9 text-destructive" />
+          <div>
+            <p className="text-sm font-semibold">Admin access required</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              This panel includes internal declarations and platform-global
+              configuration.
+            </p>
+          </div>
+        </div>
+      </WindowPanel>
+    );
+  }
   return (
     <SurfaceContextInspectorWindowInner
       onClose={onClose}
       surfaceName={surfaceName}
-      scope={scope}
+      scope={live.scope}
       isEditable={isEditable}
+      scopeStatus={live.status}
     />
   );
 }

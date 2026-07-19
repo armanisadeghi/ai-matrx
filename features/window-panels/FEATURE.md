@@ -1,6 +1,7 @@
 # Window Panels — FEATURE.md
 
 > **⚠️ Read this first** — the May 2026 overhaul split this feature into two independent systems. This doc still describes the older conflated structure and is kept for historical reference + as a guide while the cutover finishes. For most tasks:
+>
 > - **Rendering an overlay** (dialog, sheet, modal, window, toast) → [`features/overlays/FEATURE.md`](../overlays/FEATURE.md)
 > - **The WindowPanel component itself** (drag, resize, minimize, tray) → this file's "Architecture" and below
 > - **Migration history + cutover plan** → [`docs/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/OVERLAY_WINDOW_OVERHAUL.md)
@@ -41,6 +42,7 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-07-19 — Added `surfaceContextWindow` to the universal Agents header for real-time surface variable inspection, and expanded the admin-gated `surfaceContextInspector` into a two-view WindowPanel (live values + embedded manifest/settings editor). Both use mobile drawer presentation and the canonical overlay controller.
 - 2026-07-18 — Context Menu v3 now uses `AgentFlexiblePanel` (`flexible-panel`) as the shared framework-owned presentation for surface-bound/default Agents across Notes and every other managed context-menu surface; shortcut-specific presentations remain untouched.
 - 2026-07-17 — Promoted the canonical Miller Columns context selector into `contextSwitcherWindow`: a 940×650 full Surface-A WindowPanel backed by `appContextSlice`, sharing its core with the new condensed popover face.
 - 2026-07-16 — Refined the chat `runControlsWindow` to open as a compact 480px panel inset 72px from the left edge. It now defaults to the shared-state Quickset tab while retaining the conversation workspace and the standard WindowPanel behavior.
@@ -124,30 +126,30 @@ File: [`registry/windowRegistry.ts`](./registry/windowRegistry.ts)
 ```ts
 interface WindowRegistryEntry {
   // Identity
-  slug: string;              // kebab-case, stored in window_sessions.window_type
-  overlayId: string;         // camelCase, key in overlaySlice
-  kind: OverlayKind;         // "window" | "widget" | "sheet" | "modal"
+  slug: string; // kebab-case, stored in window_sessions.window_type
+  overlayId: string; // camelCase, key in overlaySlice
+  kind: OverlayKind; // "window" | "widget" | "sheet" | "modal"
 
   // Rendering
   componentImport: () => Promise<{ default: ComponentType<any> }>;
-  label: string;             // shown in tray + window manager
-  defaultData: Record<string, unknown>;  // doc + restore fallback
-  ephemeral?: boolean;       // skip DB persistence
+  label: string; // shown in tray + window manager
+  defaultData: Record<string, unknown>; // doc + restore fallback
+  ephemeral?: boolean; // skip DB persistence
 
   // Mobile
   mobilePresentation?: "fullscreen" | "drawer" | "card" | "hidden";
-  mobileSidebarAs?: "drawer" | "inline";  // default "drawer"
+  mobileSidebarAs?: "drawer" | "inline"; // default "drawer"
 
   // Instancing
-  instanceMode?: "singleton" | "multi";   // default "singleton"
+  instanceMode?: "singleton" | "multi"; // default "singleton"
 
   // Integrations
-  urlSync?: { key: string };              // ?panels= deep link
-  icon?: LucideIconName;                  // (reserved — grid uses toolsGridTiles)
-  category?: ToolsCategory;               // (reserved — see above)
-  heavySnapshot?: boolean;                // Phase 7 opt-in
-  autosave?: boolean;                     // Phase 7 opt-in
-  seedData?: (ctx) => Record<string, unknown>;  // rarely used on registry
+  urlSync?: { key: string }; // ?panels= deep link
+  icon?: LucideIconName; // (reserved — grid uses toolsGridTiles)
+  category?: ToolsCategory; // (reserved — see above)
+  heavySnapshot?: boolean; // Phase 7 opt-in
+  autosave?: boolean; // Phase 7 opt-in
+  seedData?: (ctx) => Record<string, unknown>; // rarely used on registry
 }
 ```
 
@@ -194,14 +196,16 @@ interface Props {
   search?: string;
 }
 
-export default function MyFeatureWindow({ isOpen, onClose, selectedId, search }: Props) {
+export default function MyFeatureWindow({
+  isOpen,
+  onClose,
+  selectedId,
+  search,
+}: Props) {
   if (!isOpen) return null;
   const [sel, setSel] = useState<string | null>(selectedId ?? null);
 
-  const collect = useCallback(
-    () => ({ selectedId: sel, search: "" }),
-    [sel],
-  );
+  const collect = useCallback(() => ({ selectedId: sel, search: "" }), [sel]);
 
   return (
     <WindowPanel
@@ -229,12 +233,12 @@ export default function MyFeatureWindow({ isOpen, onClose, selectedId, search }:
 
 **Canonical body recipe** — `bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"`.
 
-| Slot | Props | Contract |
-|---|---|---|
-| **Header** | `title` (string) / `titleNode` (rich JSX, wins over `title`), `actionsLeft`, `actionsRight` | The title is **absolute-centered** across the full header width. Keep header actions **compact** — wide action clusters can reach the centered title and overlap it (known rough edge, see Known gaps). `actions` is deprecated → maps to `actionsRight`. |
-| **Footer** | `footer` (single flex row) **OR** `footerLeft` / `footerCenter` / `footerRight` (zoned, mutually exclusive with `footer`); `footerVariant` (`"bar"` default / `"rich"`) | Renders only when content is provided. `footer` wins if both are passed. **`footerVariant="bar"`** (default) applies compact metadata-bar chrome (`text-xs`, tiny buttons/icons via descendant selectors, `bg-muted/40`) for status rows like `NoteMetadataBar` — it **crushes rich content**. Pass **`"rich"`** for a composer / input bar (full-size buttons, multi-row textarea, e.g. `SmartAgentInput`): it drops the compact descendant selectors + `bg-muted/40`, leaving just `shrink-0 border-t` so the slot owns its layout. Reference: `windows/multi-file-smart-code-editor/MultiFileSmartCodeEditorWindow.tsx`. |
-| **Sidebar (left)** | `sidebar`, `sidebarDefaultSize` (200px), `sidebarMinSize` (100px), `defaultSidebarOpen` (true), `sidebarClassName` | Resizable + collapsible; a toggle appears next to the traffic lights. **`sidebarExpandsWindow` is a footgun** — it mutates the window rect on every toggle (a second sizing path that fights drag/snap). Avoid; leave it `false`. |
-| **Secondary panel (right)** | `secondaryPanel`, `secondaryPanelOpen` (default true when `secondaryPanel` is set), `secondaryPanelDefaultSize` (360px), `secondaryPanelMinSize` (240px), `secondaryPanelClassName` | The canonical home for a **history / inspector / details pane** that belongs to the window, not the body. Resizable, mirrors the sidebar. **Desktop only** — no built-in mobile presentation; the consumer handles mobile (e.g. a Drawer). Reference: `features/notes` `NoteHistoryPane`. |
+| Slot                        | Props                                                                                                                                                                               | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Header**                  | `title` (string) / `titleNode` (rich JSX, wins over `title`), `actionsLeft`, `actionsRight`                                                                                         | The title is **absolute-centered** across the full header width. Keep header actions **compact** — wide action clusters can reach the centered title and overlap it (known rough edge, see Known gaps). `actions` is deprecated → maps to `actionsRight`.                                                                                                                                                                                                                                                                                                                                                                   |
+| **Footer**                  | `footer` (single flex row) **OR** `footerLeft` / `footerCenter` / `footerRight` (zoned, mutually exclusive with `footer`); `footerVariant` (`"bar"` default / `"rich"`)             | Renders only when content is provided. `footer` wins if both are passed. **`footerVariant="bar"`** (default) applies compact metadata-bar chrome (`text-xs`, tiny buttons/icons via descendant selectors, `bg-muted/40`) for status rows like `NoteMetadataBar` — it **crushes rich content**. Pass **`"rich"`** for a composer / input bar (full-size buttons, multi-row textarea, e.g. `SmartAgentInput`): it drops the compact descendant selectors + `bg-muted/40`, leaving just `shrink-0 border-t` so the slot owns its layout. Reference: `windows/multi-file-smart-code-editor/MultiFileSmartCodeEditorWindow.tsx`. |
+| **Sidebar (left)**          | `sidebar`, `sidebarDefaultSize` (200px), `sidebarMinSize` (100px), `defaultSidebarOpen` (true), `sidebarClassName`                                                                  | Resizable + collapsible; a toggle appears next to the traffic lights. **`sidebarExpandsWindow` is a footgun** — it mutates the window rect on every toggle (a second sizing path that fights drag/snap). Avoid; leave it `false`.                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Secondary panel (right)** | `secondaryPanel`, `secondaryPanelOpen` (default true when `secondaryPanel` is set), `secondaryPanelDefaultSize` (360px), `secondaryPanelMinSize` (240px), `secondaryPanelClassName` | The canonical home for a **history / inspector / details pane** that belongs to the window, not the body. Resizable, mirrors the sidebar. **Desktop only** — no built-in mobile presentation; the consumer handles mobile (e.g. a Drawer). Reference: `features/notes` `NoteHistoryPane`.                                                                                                                                                                                                                                                                                                                                   |
 
 ---
 
@@ -242,13 +246,14 @@ export default function MyFeatureWindow({ isOpen, onClose, selectedId, search }:
 
 All three live under `lib/redux/slices/`:
 
-| Slice | Responsibility |
-|---|---|
-| `overlaySlice` | Open/closed state + data payload + `lastUsedAt` per overlay/instance. `initialState.overlays` is `{}` — entries grow lazily on first `openOverlay`. |
-| `windowManagerSlice` | Window geometry, z-index, tray slots, `arrangeActiveWindows` computations. |
-| `urlSyncSlice` | `?panels=` entries the URL manager serializes. |
+| Slice                | Responsibility                                                                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `overlaySlice`       | Open/closed state + data payload + `lastUsedAt` per overlay/instance. `initialState.overlays` is `{}` — entries grow lazily on first `openOverlay`. |
+| `windowManagerSlice` | Window geometry, z-index, tray slots, `arrangeActiveWindows` computations.                                                                          |
+| `urlSyncSlice`       | `?panels=` entries the URL manager serializes.                                                                                                      |
 
 `overlaySlice` actions:
+
 - `openOverlay({ overlayId, instanceId?, data? })` — stamps `lastUsedAt`.
 - `closeOverlay({ overlayId, instanceId? })` — flips isOpen on singleton slots; deletes the entry entirely for multi-instance overlays.
 - `closeAllOverlays()`, `toggleOverlay()`.
@@ -268,6 +273,7 @@ id (uuid) | user_id | window_type (slug) | label | panel_state (jsonb) | data (j
 ```
 
 **Save triggers — only two:**
+
 1. **Explicit** — user clicks "Save window state" in the green traffic-light dropdown.
 2. **Piggyback** — child component calls `onCollectData` as part of its own save flow.
 
@@ -276,6 +282,7 @@ Moving, resizing, toggling the sidebar, or switching tabs does **not** trigger a
 **On close**: `WindowPanel` calls `persistence.closeWindow(overlayId)` which deletes the row.
 
 **On page load**: `WindowPersistenceManager`:
+
 1. Runs a one-time `matrx_window_manager_state` localStorage migration (clamp each rect, dispatch `restoreWindowState`, remove the key).
 2. Fetches all `window_sessions` rows for the user.
 3. For each row: dispatches `openOverlay({ overlayId, data })` and builds a clamped `WindowEntry` for `windowManagerSlice` via `clampRectToCurrentViewport`.
@@ -305,18 +312,20 @@ A triggered panel must **never** silently fail to appear. Two layers enforce it 
 
 Every `kind: "window"` declares `mobilePresentation`:
 
-| Value | Rendered as | When to use |
-|---|---|---|
-| `"fullscreen"` | Full-viewport takeover (legacy mobile branch of WindowPanel) | Content-dominant windows (Notes, AgentRun, CanvasViewer, News). Default. |
-| `"drawer"` | Bottom-sheet ([`mobile/MobileDrawerSurface.tsx`](./mobile/MobileDrawerSurface.tsx), vaul, 85 dvh) | Forms, settings, sidebar-heavy windows. Sidebars collapse into a nested right-side drawer. |
-| `"card"` | Small floating card ([`mobile/MobileCardSurface.tsx`](./mobile/MobileCardSurface.tsx), bottom-right, 60 dvh max) | Utility/debug windows (Stream Debug, State Analyzer, JSON Truncator). Non-modal. |
-| `"hidden"` | Nothing; dev warning if opened | Windows that shouldn't exist on mobile. |
+| Value          | Rendered as                                                                                                      | When to use                                                                                |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `"fullscreen"` | Full-viewport takeover (legacy mobile branch of WindowPanel)                                                     | Content-dominant windows (Notes, AgentRun, CanvasViewer, News). Default.                   |
+| `"drawer"`     | Bottom-sheet ([`mobile/MobileDrawerSurface.tsx`](./mobile/MobileDrawerSurface.tsx), vaul, 85 dvh)                | Forms, settings, sidebar-heavy windows. Sidebars collapse into a nested right-side drawer. |
+| `"card"`       | Small floating card ([`mobile/MobileCardSurface.tsx`](./mobile/MobileCardSurface.tsx), bottom-right, 60 dvh max) | Utility/debug windows (Stream Debug, State Analyzer, JSON Truncator). Non-modal.           |
+| `"hidden"`     | Nothing; dev warning if opened                                                                                   | Windows that shouldn't exist on mobile.                                                    |
 
 `mobileSidebarAs` — for windows with a sidebar:
+
 - `"drawer"` (default) — sidebar opens in a nested drawer on mobile. Keeps the body full-width.
 - `"inline"` — sidebar pushes the body on mobile. Useful for 50/50 split layouts.
 
 Decision tree:
+
 1. Has a sidebar? → `"drawer"`.
 2. Is a content-dominant experience (chat, editor, feed)? → `"fullscreen"`.
 3. Is a small utility / debug surface? → `"card"`.
@@ -346,12 +355,12 @@ interface ToolsGridTile {
   id: string;
   label: string;
   icon: LucideIcon;
-  category: ToolsCategory;    // voice | notes | content | agents | files-web | general | admin
+  category: ToolsCategory; // voice | notes | content | agents | files-web | general | admin
   gate?: "admin";
-  overlayId?: string;         // registered overlay
+  overlayId?: string; // registered overlay
   instanceStrategy?: "singleton-default" | "fresh-per-click";
   seedData?: (ctx: TileContext) => Record<string, unknown>;
-  onActivate?: (ctx: TileContext) => void;   // escape hatch (e.g. Image Studio → router.push)
+  onActivate?: (ctx: TileContext) => void; // escape hatch (e.g. Image Studio → router.push)
 }
 ```
 
@@ -370,6 +379,7 @@ Bundle: the entire Tools grid + all 53 Lucide icons ship only after the user fir
 **Route-shared units must not import `WindowPanel`.** A component used both inside a window and on a plain page (e.g. the notes `NoteViewControls` / `NotePresenceBanner` / `NoteHistoryPane`) is content that drops INTO a slot — it takes no `WindowPanel` import, so a route rendering it never drags the window stack into its bundle. (These reference `WindowPanel` in comments only; verified zero import.)
 
 Enforced by:
+
 1. Every registry entry's `componentImport` is a lazy `() => import(...)` — Next.js chunks it on demand.
 2. **Runtime guard** — `assertLazyLoaded("…/WindowPanel.tsx")` runs at `WindowPanel.tsx` module top (`utils/lazy-bundle-guard.ts`). If the file is parsed during boot it screams a red `[WINDOW-PANELS BUNDLE LEAK]` console banner with the eager-import chain (the leaking file is the top frame). Relies on the side-effect import `import "@/features/window-panels/utils/lazy-bundle-guard"` in `app/DeferredSingletons.tsx` running at boot so the guard's macrotask is scheduled. Deduped per session via `window.__WP_LEAK_REPORTED__`.
 3. The overlay controller and `useOverlay` have zero static imports of any window component.
@@ -382,40 +392,40 @@ Enforced by:
 
 ### Core (top-level)
 
-| File | Role |
-|---|---|
-| `WindowPanel.tsx` | Shell (drag, resize, maximize, minimize, mobile routing, persistence, URL sync). Decomposition into modules is Phase 6. |
-| `OverlaySurface.tsx` | Generic renderer for one registry entry — singleton + multi-instance. |
-| `UnifiedOverlayController.tsx` | Iterates `ALL_WINDOW_REGISTRY_ENTRIES`; one source of truth for mounted overlays. |
-| `WindowPersistenceManager.tsx` | Hydrates `window_sessions`; LS migration; idle GC sweep. |
-| `WindowTray.tsx` / `WindowTraySync.tsx` | Standalone minimized-dock chips + debounced viewport sync. **The `WindowTray` dock is NOT mounted in prod** — minimized windows render as the shrunken `WindowPanel` shell (positioned by `traySlotRect`); `WindowTraySync` keeps those shells docked. |
-| `WindowTray/MinimizedWindowContent.tsx` | Body of a minimized shell: renders `TrayChipPreview` (registry custom / snapshot / default) + click-to-restore. Lookup key is `overlayId ?? id`. |
-| `WindowTray/TrayChipPreview.tsx` / `TrayStatusChip.tsx` | Canonical minimized-body preview (3 modes) + the reusable status primitive (tinted icon + count + per-tone breakdown; presentational, colour language from `errorTiers.ts`). Custom previews register in `registry/trayPreviewRegistry.ts`. |
+| File                                                    | Role                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `WindowPanel.tsx`                                       | Shell (drag, resize, maximize, minimize, mobile routing, persistence, URL sync). Decomposition into modules is Phase 6.                                                                                                                                |
+| `OverlaySurface.tsx`                                    | Generic renderer for one registry entry — singleton + multi-instance.                                                                                                                                                                                  |
+| `UnifiedOverlayController.tsx`                          | Iterates `ALL_WINDOW_REGISTRY_ENTRIES`; one source of truth for mounted overlays.                                                                                                                                                                      |
+| `WindowPersistenceManager.tsx`                          | Hydrates `window_sessions`; LS migration; idle GC sweep.                                                                                                                                                                                               |
+| `WindowTray.tsx` / `WindowTraySync.tsx`                 | Standalone minimized-dock chips + debounced viewport sync. **The `WindowTray` dock is NOT mounted in prod** — minimized windows render as the shrunken `WindowPanel` shell (positioned by `traySlotRect`); `WindowTraySync` keeps those shells docked. |
+| `WindowTray/MinimizedWindowContent.tsx`                 | Body of a minimized shell: renders `TrayChipPreview` (registry custom / snapshot / default) + click-to-restore. Lookup key is `overlayId ?? id`.                                                                                                       |
+| `WindowTray/TrayChipPreview.tsx` / `TrayStatusChip.tsx` | Canonical minimized-body preview (3 modes) + the reusable status primitive (tinted icon + count + per-tone breakdown; presentational, colour language from `errorTiers.ts`). Custom previews register in `registry/trayPreviewRegistry.ts`.            |
 
 ### Subdirs
 
-| Path | Role |
-|---|---|
-| `registry/windowRegistry.ts` | Single source of truth for all overlays + types. |
-| `service/windowPersistenceService.ts` | Supabase CRUD for `window_sessions`. |
-| `hooks/useOverlay.ts` | Factory hooks (`useOverlayOpen`, `useOverlayData`, `useOverlayInstances`, `useOverlayActions`, `useCloseOverlay`). |
-| `hooks/useWindowPanel.ts` | Pointer-driven move/resize; Redux window registration. |
-| `mobile/MobileDrawerSurface.tsx` | Vaul-based bottom sheet for `mobilePresentation: "drawer"`. |
-| `mobile/MobileCardSurface.tsx` | Floating card for `mobilePresentation: "card"`. |
-| `tools-grid/toolsGridTiles.ts` | Declarative config for every Tools-grid tile. |
-| `tools-grid/ToolsGrid.tsx` | Data-driven Tools-grid renderer. |
-| `tools-grid/menuPrimitives.tsx` | `MenuSection` / `MenuDivider` / `MenuItem` / `MenuGridItem`. |
-| `url-sync/initUrlHydration.ts` | `registerPanelHydrator` calls + dev-time integrity check. |
-| `url-sync/UrlPanelRegistry.ts` | Hydrator map. |
-| `url-sync/UrlPanelManager.tsx` | Reads/writes `?panels=`. |
-| `url-sync/useUrlSync.ts` | Registers/unregisters open panel in `urlSyncSlice`. |
-| `constants/tray.ts` | Tray dimensions + responsive helpers. |
-| `utils/rectClamp.ts` | Viewport-safe geometry clamping. |
-| `utils/windowArrangements.ts` | `arrangeActiveWindows` tile math. |
-| `utils/embed-site-url.ts` | URL normalization for iframe windows. |
-| `components/SidebarWindowToggle.tsx` | Shell sidebar toggle (600 LOC post-Phase 3). |
-| `components/LayoutIcon.tsx` | Layout arrangement icon buttons. |
-| `windows/**` | 60+ window components — every one referenced by a registry `componentImport`. |
+| Path                                  | Role                                                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `registry/windowRegistry.ts`          | Single source of truth for all overlays + types.                                                                   |
+| `service/windowPersistenceService.ts` | Supabase CRUD for `window_sessions`.                                                                               |
+| `hooks/useOverlay.ts`                 | Factory hooks (`useOverlayOpen`, `useOverlayData`, `useOverlayInstances`, `useOverlayActions`, `useCloseOverlay`). |
+| `hooks/useWindowPanel.ts`             | Pointer-driven move/resize; Redux window registration.                                                             |
+| `mobile/MobileDrawerSurface.tsx`      | Vaul-based bottom sheet for `mobilePresentation: "drawer"`.                                                        |
+| `mobile/MobileCardSurface.tsx`        | Floating card for `mobilePresentation: "card"`.                                                                    |
+| `tools-grid/toolsGridTiles.ts`        | Declarative config for every Tools-grid tile.                                                                      |
+| `tools-grid/ToolsGrid.tsx`            | Data-driven Tools-grid renderer.                                                                                   |
+| `tools-grid/menuPrimitives.tsx`       | `MenuSection` / `MenuDivider` / `MenuItem` / `MenuGridItem`.                                                       |
+| `url-sync/initUrlHydration.ts`        | `registerPanelHydrator` calls + dev-time integrity check.                                                          |
+| `url-sync/UrlPanelRegistry.ts`        | Hydrator map.                                                                                                      |
+| `url-sync/UrlPanelManager.tsx`        | Reads/writes `?panels=`.                                                                                           |
+| `url-sync/useUrlSync.ts`              | Registers/unregisters open panel in `urlSyncSlice`.                                                                |
+| `constants/tray.ts`                   | Tray dimensions + responsive helpers.                                                                              |
+| `utils/rectClamp.ts`                  | Viewport-safe geometry clamping.                                                                                   |
+| `utils/windowArrangements.ts`         | `arrangeActiveWindows` tile math.                                                                                  |
+| `utils/embed-site-url.ts`             | URL normalization for iframe windows.                                                                              |
+| `components/SidebarWindowToggle.tsx`  | Shell sidebar toggle (600 LOC post-Phase 3).                                                                       |
+| `components/LayoutIcon.tsx`           | Layout arrangement icon buttons.                                                                                   |
+| `windows/**`                          | 60+ window components — every one referenced by a registry `componentImport`.                                      |
 
 ### Deleted (Phase 9)
 
@@ -429,22 +439,22 @@ Enforced by:
 
 ## Rollout state
 
-| Phase | Status |
-|---|---|
-| 0 — Baselines + bundle-size gate | ✅ shipped |
-| 1 — Registry schema expansion (59 entries) | ✅ shipped |
+| Phase                                                                        | Status                                                                                           |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 0 — Baselines + bundle-size gate                                             | ✅ shipped                                                                                       |
+| 1 — Registry schema expansion (59 entries)                                   | ✅ shipped                                                                                       |
 | 2 — UnifiedOverlayController + absorbed non-window overlays (33 new entries) | ✅ shipped (legacy `components/overlays/OverlayController.tsx` deleted 2026-05-06; flag retired) |
-| 3 — Auto-derived Tools grid + lazy SidebarWindowToggle | ✅ shipped |
-| 4 — State cleanup: drift-free initial state, instance GC, LS sidecar retired | ✅ shipped |
-| 5 — Mobile presentation layer (drawer/card surfaces, rect clamp) | ✅ shipped |
-| 6 — WindowPanel decomposition | ⏸ deferred |
-| 7 — Persistence hardening (typed defaultData, autosave, heavy snapshot) | ⏸ deferred |
-| 8 — URL-sync completion + build-time pair check | ✅ shipped |
-| 9 — Dead code removal | ✅ shipped |
-| 10 — Tests (registry integrity, pointer math, persistence, mobile routing) | ⏸ deferred |
-| 11 — Docs refresh (this file) | ✅ in progress |
-| 12 — `SKILL.md` + guardrails (ESLint) | 🔜 next |
-| 13 — Polish (undo/redo, theme tokens) | ⏸ deferred |
+| 3 — Auto-derived Tools grid + lazy SidebarWindowToggle                       | ✅ shipped                                                                                       |
+| 4 — State cleanup: drift-free initial state, instance GC, LS sidecar retired | ✅ shipped                                                                                       |
+| 5 — Mobile presentation layer (drawer/card surfaces, rect clamp)             | ✅ shipped                                                                                       |
+| 6 — WindowPanel decomposition                                                | ⏸ deferred                                                                                       |
+| 7 — Persistence hardening (typed defaultData, autosave, heavy snapshot)      | ⏸ deferred                                                                                       |
+| 8 — URL-sync completion + build-time pair check                              | ✅ shipped                                                                                       |
+| 9 — Dead code removal                                                        | ✅ shipped                                                                                       |
+| 10 — Tests (registry integrity, pointer math, persistence, mobile routing)   | ⏸ deferred                                                                                       |
+| 11 — Docs refresh (this file)                                                | ✅ in progress                                                                                   |
+| 12 — `SKILL.md` + guardrails (ESLint)                                        | 🔜 next                                                                                          |
+| 13 — Polish (undo/redo, theme tokens)                                        | ⏸ deferred                                                                                       |
 
 ---
 
@@ -493,21 +503,21 @@ A "Dock" button in the popout's `PopoutTopBar` returns the window to the parent 
 
 ### Browser support
 
-| Browser | Mode | Notes |
-|---|---|---|
-| Chrome 116+, Edge 116+, Opera | **Document Picture-in-Picture** | Frameless, always-on-top floating window. Single-PiP-per-origin enforced. |
-| Safari, Firefox, others | **`window.open` popup** | Universal fallback. Browser chrome visible (URL bar, tabs). |
-| Embedded WebView, no `window.open` | (none) | "Pop out" UI hidden entirely. |
+| Browser                            | Mode                            | Notes                                                                     |
+| ---------------------------------- | ------------------------------- | ------------------------------------------------------------------------- |
+| Chrome 116+, Edge 116+, Opera      | **Document Picture-in-Picture** | Frameless, always-on-top floating window. Single-PiP-per-origin enforced. |
+| Safari, Firefox, others            | **`window.open` popup**         | Universal fallback. Browser chrome visible (URL bar, tabs).               |
+| Embedded WebView, no `window.open` | (none)                          | "Pop out" UI hidden entirely.                                             |
 
 ### Single-PiP enforcement (multi-popout coexistence)
 
 Chromium allows only one Document PiP window per origin at a time, AND its `requestWindow()` API is destructive: calling it while a PiP is already open silently closes the existing one. To prevent windows from stomping on each other, the popout hook **transparently falls back to `window.open()` for second+ popouts**.
 
-| State | First popout | Second popout |
-|---|---|---|
-| DPiP supported, slot free | DPiP (frameless, always-on-top) | DPiP (frameless, always-on-top) |
-| DPiP supported, slot taken by another window | — | **`window.open()` popup** (browser chrome visible) |
-| DPiP unsupported (Safari, Firefox) | `window.open()` popup | `window.open()` popup |
+| State                                        | First popout                    | Second popout                                      |
+| -------------------------------------------- | ------------------------------- | -------------------------------------------------- |
+| DPiP supported, slot free                    | DPiP (frameless, always-on-top) | DPiP (frameless, always-on-top)                    |
+| DPiP supported, slot taken by another window | —                               | **`window.open()` popup** (browser chrome visible) |
+| DPiP unsupported (Safari, Firefox)           | `window.open()` popup           | `window.open()` popup                              |
 
 Both windows then coexist independently — neither affects the other. The first one keeps its glass chrome; subsequent ones get regular browser windows. The user can dock the DPiP window to free the slot, then pop a new one out as DPiP if desired.
 
@@ -536,10 +546,12 @@ features/window-panels/WindowPanel/
 ### Redux state
 
 `WindowEntry` gains:
+
 - `popoutMode: "pip" | "popup" | null` — orthogonal to `state` enum
 - `prePopoutRect: WindowRect | null` — saved rect for dock-back
 
 `WindowManagerState` gains:
+
 - `activePipWindowId: string | null` — single-PiP slot tracker
 - `popoutCandidateId: string | null` — drag-out visual feedback
 
@@ -573,6 +585,7 @@ The window otherwise restores docked at its `prePopoutRect` from the persistence
 ### Mobile
 
 Hard-disabled. Mobile uses a fully separate render path (drawer/card/fullscreen takeover), so popout cannot be triggered:
+
 - "Pop out" menu entry hidden via `!isMobile` gate
 - Drag-out detection skipped (`onTriggerPopout` is `undefined` on mobile)
 
@@ -585,6 +598,7 @@ Tooltips, popovers, dropdowns, dialogs, alert dialogs, and selects (the 6 wrappe
 ### Threshold tuning
 
 Defaults in `popoutDragDetector.DEFAULT_DRAG_OUT_CONFIG`:
+
 - `outsideThreshold: 80` px past viewport edge
 - `dwellMs: 250` ms held outside before triggering
 

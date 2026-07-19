@@ -75,7 +75,16 @@ Two per-surface settings primitives, both resolved `manifest/DB default → glob
 
 ## Full-screen admin editor — `/administration/surfaces/[...name]`
 
-[`admin-detail/SurfaceAdminDetailPage.tsx`](./admin-detail/SurfaceAdminDetailPage.tsx) (Wave 4). Catch-all route (slash-safe via `surfaceAdminHref` in `utils/surface-hierarchy.ts`). Edits identity (active/description/rename/url_pattern/executor/parent), shows the parent/child tree (`buildChildrenByParent` / `getAncestorChain` — reads the DB mirror), declared values, roles + prefs, config namespaces, bound agents, and tools. The 5-panel per-agent shell (`/agents/[id]/surfaces`, `admin/`) and the batch editor (`admin/batch/SurfaceBindingsBatchEditor.tsx`) write through the same associations-backed thunks.
+[`admin-detail/SurfaceAdminDetailPage.tsx`](./admin-detail/SurfaceAdminDetailPage.tsx) (Wave 4). Catch-all route (slash-safe via `surfaceAdminHref` in `utils/surface-hierarchy.ts`) and reusable embedded body for `surfaceContextInspector`. Edits identity (active/description/rename/url_pattern/executor/parent), shows the parent/child tree (`buildChildrenByParent` / `getAncestorChain` — reads the DB mirror), authored-vs-resolved manifest provenance, declared values, roles + prefs, config namespaces, bound agents, and tools. Platform-global config namespace JSON is editable here through the namespace handler's canonical validation; manifest declarations and evidence sources remain code-owned. The 5-panel per-agent shell (`/agents/[id]/surfaces`, `admin/`) and the batch editor (`admin/batch/SurfaceBindingsBatchEditor.tsx`) write through the same associations-backed thunks.
+
+## Header Surface Context windows
+
+The universal Agents header dropdown exposes two ephemeral WindowPanels for the current route/runtime surface:
+
+- **Surface Context** (`surfaceContextWindow`) is available to every user. It samples the matching `SurfaceRuntimeProvider.getScope()` while open, labels live/snapshot/unavailable state, and presents declared values beside their exact current values plus any undeclared runtime keys.
+- **Surface Context Admin** (`surfaceContextInspector`) is gated by Redux `selectIsAdmin` both in the dropdown and inside the window. Its Live Values view uses the same runtime sampling; Manifest & Settings embeds the canonical admin editor and exposes code-owned provenance plus every DB-owned editable surface setting.
+
+Sampling is intentionally view-only and ephemeral: it reads the provider callback every 400 ms while a panel is open and never copies surface data into Redux or changes the agent execution scope.
 
 ## Architecture
 
@@ -166,6 +175,7 @@ After the user-requested "go all in" pass, the page picks up:
 
 ## Change Log
 
+- **2026-07-19 — Live Surface Context windows in universal Agents chrome.** Added the user-facing `surfaceContextWindow` for searchable, exact live values and upgraded the Redux-admin-gated `surfaceContextInspector` with live runtime sampling plus embedded manifest/settings administration. Admins can now see authored vs resolved manifest provenance/evidence and edit handler-validated global namespace config without leaving the surface.
 - **2026-07-17 — Document Evidence System surface contract.**
   `SurfaceManifest.evidenceSources` now declares when a surface already knows a
   `processed_document_id`. `launchAgentExecution` resolves those declarations

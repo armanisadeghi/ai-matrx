@@ -59,20 +59,22 @@ The permanent root is `/marketing`. Site-owned routes live beneath the site
 shell at `/marketing/sites/[siteId]`; cross-site agency workspaces remain at
 the Marketing root.
 
-The implemented first vertical includes:
+Implemented routes include:
 
 - `/marketing/sites` and `/marketing/sites/new`
 - `/marketing/sites/[siteId]`
-- site children: `pages` and `crawls`
+- site children: `pages`, `crawls`, `analysis`, `findings`, `links`,
+  `screenshots`, `integrations`, `cost`, `access`, and `settings`
 - page children: detail and immutable `snapshots`
-- crawl start at `crawls/new`, crawl detail, durable `urls`, and durable `logs`
+- crawl start at `crawls/new`, crawl detail, durable `urls`, `logs`,
+  `snapshots`, and `links`
+- workspace operations: `batches`, batch detail, and `cost`
 
 The remaining approved route contract includes:
 
-- site children: `analysis`, `findings`, `links`, `screenshots`,
-  `integrations`, `cost`, `access`, and `settings`
-- crawl children: `snapshots`, `findings`, and `links`
-- cross-site: `analysis`, `findings`, `connections`, `batches`, and `cost`
+- verified OAuth credential authority, connection health, and metric sync
+- crawl child: `findings`
+- cross-site: `analysis`, `findings`, and `connections`
 - shared catalog: `analysis/items` and `analysis/providers`
 
 The complete canonical tree is documented in
@@ -148,7 +150,7 @@ instead of desktop tab strips.
 
 ## 8. Delivery status and sequence
 
-Completed foundation and first vertical:
+Completed foundation and product verticals:
 
 1. Verified the certified schema, Data API exposure, grants, RLS, generated
    types, and integrity rules.
@@ -157,13 +159,18 @@ Completed foundation and first vertical:
 3. Added controlled Supabase mode to the canonical Matrx table.
 4. Built the `/marketing` shell, site portfolio, site creation, site shell,
    canonical pages, snapshots, crawls, and direct live crawl workspace.
+5. Built site analysis/findings, link and screenshot inspection, access grants,
+   settings, site/workspace cost reporting, and batch monitoring/detail.
+6. Built secret-free site integration reference configuration for GSC, GA4,
+   PageSpeed, and extensible providers. References are not treated as verified
+   connections.
 
 Remaining approved sequence:
 
-1. Add analysis, findings, links, screenshots, batches, and cost workspaces.
-2. Add GSC/GA4 and other integration bindings and metric views.
+1. Add GSC/GA4 and other integration bindings and metric views.
+2. Seed and expose the analysis item/provider catalog and cross-site queues.
 3. Add CMS bindings, tasks, proposed changes, and publishing workflows.
-4. Run type checking, focused tests, database advisors, browser testing, and an
+4. Continue type checking, focused tests, database advisors, browser testing, and an
    adversarial architecture/UX pass after each vertical.
 
 ## 9. Explicit non-goals

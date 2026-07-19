@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** shared official primitive (`components/official/`)
-**Last updated:** `2026-07-11`
+**Last updated:** `2026-07-18`
 
 ---
 
@@ -24,6 +24,12 @@ tables (AI Models, relationships, …) can cut over to one contract.
 ## Invariants
 
 - **Every column filters by default** (`filter: "auto"`). Opt out with `filter: false`.
+- **Controlled mode delegates query execution, not rendering.** Pass
+  `query={{ mode: "controlled", state, totalItems, onStateChange }}`; the table
+  emits page/page-size/search/filter/sort changes while the feature owns the
+  direct database query and returns only the current rows.
+- **Controlled search feedback is immediate.** Consumers may debounce the query
+  state, but must pass the immediate display state back to the table.
 - **Select filters are type-to-search.** Active filters show a clear **X**; toolbar has **Clear all**.
 - **Row click → `SidePanelSurface`** (desktop: `MatrxDynamicPanelHost`; mobile: Drawer). Never blocking `Sheet` / split-pane.
 - **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel.
@@ -100,3 +106,5 @@ Do not drop these when replacing `AiModelTable`:
 - `2026-07-11` — WindowPanel View/Edit tabs; `MatrxUuidCell` (short/hover/copy/FK open/forbidden); `cellKind` + auto UUID; `window.onOpen` / `renderEdit`; AiModelTable UuidCell → MatrxUuidCell.
 - `2026-07-11` — Searchable selects; clear-all; `anyOf`; Copy; deferred inline edit.
 - `2026-07-11` — Initial primitive. Relationships first consumer.
+- `2026-07-18` — Added controlled direct-query mode, server-sized pagination,
+  fetching feedback, and `onRowOpen` cursor semantics for Marketing datasets.

@@ -21,8 +21,10 @@ const OVERLAY_ID = "surfaceContextInspector" as const;
 export interface OpenSurfaceContextInspectorOptions {
   surfaceName: string | null;
   /** The live resolved ApplicationScope the menu acts on. */
-  scope: Record<string, unknown>;
+  scope?: Record<string, unknown>;
   isEditable: boolean;
+  /** Prefer the matching page runtime over the supplied snapshot. */
+  preferRuntime?: boolean;
 }
 
 export interface SurfaceContextInspectorHandle {
@@ -40,8 +42,9 @@ export function useOpenSurfaceContextInspector() {
           overlayId: OVERLAY_ID,
           data: {
             surfaceName: opts.surfaceName,
-            scope: opts.scope,
+            scope: opts.scope ?? {},
             isEditable: opts.isEditable,
+            preferRuntime: opts.preferRuntime === true,
           },
         }),
       );
@@ -63,6 +66,12 @@ export function SurfaceContextInspectorController(
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.surfaceName, props.scope, props.isEditable]);
+  }, [
+    open,
+    props.surfaceName,
+    props.scope,
+    props.isEditable,
+    props.preferRuntime,
+  ]);
   return null;
 }
