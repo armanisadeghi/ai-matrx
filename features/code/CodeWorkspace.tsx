@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { FolderTree, MessageCircle, History, SquareTerminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 // Side effect: register builtin library-source adapters (prompt_apps, aga_apps, tool_ui, html_pages).
 import "./library-sources/registerBuiltinLibrarySources";
@@ -10,6 +11,13 @@ import type { FilesystemAdapter } from "./adapters/FilesystemAdapter";
 import type { ProcessAdapter } from "./adapters/ProcessAdapter";
 import { CodeWorkspaceProvider } from "./CodeWorkspaceProvider";
 import { WorkspaceLayout } from "./layout/WorkspaceLayout";
+import { EditorArea } from "./editor/EditorArea";
+import { SidePanelRouter } from "./views/SidePanelRouter";
+import { BottomPanel } from "./terminal/BottomPanel";
+import {
+  MobilePanelShell,
+  type MobileShellPanel,
+} from "@/features/shell/components/header/templates/MobilePanelShell";
 import { useOpenCodeFileFromUrl } from "./hooks/useOpenCodeFileFromUrl";
 import { useTabRealtimeWatcher } from "./hooks/useTabRealtimeWatcher";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -75,17 +83,82 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       <SandboxHeartbeatBridge />
       <TabRealtimeBridge />
       <div className={cn("flex h-full w-full min-h-0", className)}>
-        <WorkspaceLayout
-          rightSlot={rightSlot}
-          farRightSlot={farRightSlot}
-          showStatusBar={showStatusBar}
-          defaultSideSize={defaultSideSize}
-          showActivityBar={showActivityBar}
+        <MobilePanelShell
+          desktop={
+            <WorkspaceLayout
+              rightSlot={rightSlot}
+              farRightSlot={farRightSlot}
+              showStatusBar={showStatusBar}
+              defaultSideSize={defaultSideSize}
+              showActivityBar={showActivityBar}
+            />
+          }
+          main={<EditorArea rightSlotAvailable={false} rightmost />}
+          panels={buildMobilePanels(rightSlot, farRightSlot)}
         />
       </div>
     </CodeWorkspaceProvider>
   );
 };
+
+/**
+ * Mobile drawer panels for the /code workspace. The activity-view switcher
+ * (Explorer/Search/Git/Run/Extensions/Sandboxes/Library) already lives in
+ * the shell's mobile hamburger menu via `CodeSidebarMenu` (route-menu
+ * registry), so this list only needs the panels that have no other mobile
+ * entry point: the resolved side-panel content itself, chat, chat history,
+ * and the terminal (which stays mounted so a running session survives the
+ * drawer opening and closing).
+ */
+function buildMobilePanels(
+  rightSlot: React.ReactNode,
+  farRightSlot: React.ReactNode,
+): MobileShellPanel[] {
+  const decoratedRightSlot = React.isValidElement(rightSlot)
+    ? React.cloneElement(rightSlot as React.ReactElement<{ rightmost?: boolean }>, {
+        rightmost: true,
+      })
+    : rightSlot;
+  const decoratedFarRightSlot = React.isValidElement(farRightSlot)
+    ? React.cloneElement(
+        farRightSlot as React.ReactElement<{ rightmost?: boolean }>,
+        { rightmost: true },
+      )
+    : farRightSlot;
+
+  const panels: MobileShellPanel[] = [
+    {
+      id: "files",
+      label: "Files",
+      icon: FolderTree,
+      content: <SidePanelRouter />,
+    },
+  ];
+  if (rightSlot) {
+    panels.push({
+      id: "chat",
+      label: "Chat",
+      icon: MessageCircle,
+      content: decoratedRightSlot,
+    });
+  }
+  if (farRightSlot) {
+    panels.push({
+      id: "history",
+      label: "History",
+      icon: History,
+      content: decoratedFarRightSlot,
+    });
+  }
+  panels.push({
+    id: "terminal",
+    label: "Terminal",
+    icon: SquareTerminal,
+    content: <BottomPanel />,
+    alwaysMount: true,
+  });
+  return panels;
+}
 
 export default CodeWorkspace;
 
