@@ -150,7 +150,7 @@ interface DocumentChipRowProps {
     fileId: string | null,
     displayTitle: string,
     policy: VariableResourceContextConfig,
-  ) => Promise<void>;
+  ) => Promise<boolean>;
 }
 
 function DocumentChipRow({
@@ -265,7 +265,7 @@ export function AttachedDocumentChips({
   ) => {
     if (!fileId) {
       toast.error("This legacy document attachment has no source file ID");
-      return;
+      return false;
     }
     const attachResult = await links.attach(
       "file",
@@ -280,7 +280,7 @@ export function AttachedDocumentChips({
         error: attachResult.error,
       });
       toast.error(`Couldn't update document context: ${attachResult.error}`);
-      return;
+      return false;
     }
     if (edgeKind === "processed_document") {
       const detachResult = await links.detach(
@@ -298,6 +298,7 @@ export function AttachedDocumentChips({
         );
       }
     }
+    return true;
   };
 
   return (

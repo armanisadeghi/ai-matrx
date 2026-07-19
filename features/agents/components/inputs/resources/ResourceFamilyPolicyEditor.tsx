@@ -30,6 +30,7 @@ interface ResourceFamilyPolicyEditorProps {
   onChange?: (value: VariableResourceContextConfig) => void;
   compact?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
 export function ResourceFamilyPolicyEditor({
@@ -38,10 +39,11 @@ export function ResourceFamilyPolicyEditor({
   onChange,
   compact = false,
   className,
+  disabled = false,
 }: ResourceFamilyPolicyEditorProps) {
   const family = useFileResourceFamily(fileId);
   const policy = normalizeResourceFamilyPolicy(value);
-  const readonly = !onChange;
+  const readonly = disabled || !onChange;
   const promotions = policy.promote ?? [];
   const promotable = family.data?.representations.filter((item) => item.promotable) ?? [];
   const nextPromotion = promotable.find(

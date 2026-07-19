@@ -23,7 +23,7 @@ interface AttachedDocumentChipProps {
   resourcePolicy?: VariableResourceContextConfig;
   onOpen: () => void;
   onRemove: () => void;
-  onPolicyChange: (policy: VariableResourceContextConfig) => Promise<void>;
+  onPolicyChange: (policy: VariableResourceContextConfig) => Promise<boolean>;
 }
 
 function policyLabel(policy: VariableResourceContextConfig | undefined): string {
@@ -46,25 +46,26 @@ export function AttachedDocumentChip({
   const [saving, setSaving] = useState(false);
   const theme = resolveResourceAttachmentTileTheme("processed_document");
 
-  const commitDraft = async () => {
+  const commitDraft = async (): Promise<boolean> => {
     if (
       draftPolicy &&
       JSON.stringify(draftPolicy) !== JSON.stringify(resourcePolicy)
     ) {
       setSaving(true);
       try {
-        await onPolicyChange(draftPolicy);
+        return await onPolicyChange(draftPolicy);
       } finally {
         setSaving(false);
       }
     }
+    return true;
   };
   const handleOpenChange = async (next: boolean) => {
     if (saving) return;
     if (next) {
       setDraftPolicy(resourcePolicy);
     } else {
-      await commitDraft();
+      if (!(await commitDraft())) return;
     }
     setOpen(next);
   };
@@ -78,7 +79,7 @@ export function AttachedDocumentChip({
   const openDetails = async (event: React.SyntheticEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    await commitDraft();
+    if (!(await commitDraft())) return;
     onOpen();
     setOpen(false);
   };
@@ -155,6 +156,7 @@ export function AttachedDocumentChip({
             fileId={fileId}
             value={draftPolicy}
             onChange={setDraftPolicy}
+            disabled={saving}
             compact
           />
           <div className="my-2 border-t border-border" />

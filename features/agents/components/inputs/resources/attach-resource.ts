@@ -33,6 +33,7 @@ import {
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import {
   addAssociation,
+  loadAssociations,
   type AssociationWriteResult,
 } from "@/features/scopes/redux/thunks/associations";
 import {
@@ -230,13 +231,23 @@ export function useAttachResource(
     if (blockType === "document") {
       const fileId = extractFileId(resource.data);
       if (fileId) {
+        const cacheKey = `conversation:${conversationId}`;
+        if (getState().scopesTree.associationsByKey[cacheKey]?.status !== "ready") {
+          await dispatch(
+            loadAssociations({ type: "conversation", id: conversationId }),
+          );
+        }
+        if (getState().scopesTree.associationsByKey[cacheKey]?.status !== "ready") {
+          toast.error("Couldn't verify existing document attachment metadata");
+          return false;
+        }
         const label = documentAttachLabelFromState(
           getState(),
           fileId,
           resourcePreviewLabel,
         );
         const existingMetadata = getState().scopesTree.associationsByKey[
-          `conversation:${conversationId}`
+          cacheKey
         ]?.edges.find(
           (edge) =>
             edge.direction === "incoming" &&
