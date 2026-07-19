@@ -25,7 +25,6 @@ type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
 import { supabase } from "@/utils/supabase/client";
 import {
   filesDb,
-  FILES_TABLE_COLUMNS,
   FILE_VERSIONS_TABLE_COLUMNS,
 } from "@/features/files/filesDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
@@ -48,7 +47,6 @@ import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   apiFileRecordToCloudFile,
-  dbRowToCloudFile,
   dbRowToCloudFilePermission,
   dbRowToCloudFileVersion,
   dbRowToCloudFolder,
@@ -377,54 +375,14 @@ export const loadFolderContents = createAsyncThunk<
   // Virtual folders use their adapter's `list()` via `loadVirtualChildren`
   // — `cld_*` tables don't know about them and would 22P02 on the synthetic id.
   if (folderId.startsWith("vfs:")) return;
-  const [filesRes, foldersRes] = await Promise.all([
-    filesDb(supabase)
-      .from("files")
-      .select(FILES_TABLE_COLUMNS)
-      .eq("parent_folder_id", folderId)
-      .is("deleted_at", null),
-    filesDb(supabase)
-      .from("folders")
-      .select("*")
-      .eq("parent_id", folderId)
-      .is("deleted_at", null),
-  ]);
-  if (filesRes.error) throw filesRes.error;
-  if (foldersRes.error) throw foldersRes.error;
-
-  // Drop backend-owned variant rows. Unlike `get_user_file_tree`
-  // which excludes them server-side (migration 012), this codepath
-  // queries `cld_files` / `cld_folders` directly so we filter on the
-  // wire. See `isHiddenFromUserTree` in `utils/folder-conventions.ts`.
-  const visibleFiles = (filesRes.data ?? []).filter(
-    (r) => !isHiddenFromUserTree(r.file_path),
-  );
-  const visibleFolders = (foldersRes.data ?? []).filter(
-    (r) => !isHiddenFromUserTree(r.folder_path),
-  );
-
-  dispatch(upsertFiles(visibleFiles.map(dbRowToCloudFile)));
-  dispatch(upsertFolders(visibleFolders.map(dbRowToCloudFolder)));
-
-  for (const f of visibleFiles) {
-    dispatch(
-      attachChildToFolder({
-        parentFolderId: folderId,
-        kind: "file",
-        id: f.id,
-      }),
-    );
-  }
-  for (const f of visibleFolders) {
-    dispatch(
-      attachChildToFolder({
-        parentFolderId: folderId,
-        kind: "folder",
-        id: f.id,
-      }),
-    );
-  }
-
+  // RLS intentionally permits contextual reads for files conveyed through a
+  // shared conversation, so a raw table enumeration here leaks those rows into
+  // the global Files UI. Refresh through the discoverability-gated tree RPC —
+  // one canonical list contract for roots and nested folders alike.
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user?.id) throw new Error("Cannot load folder contents without a user");
+  await dispatch(loadUserFileTree({ userId: data.user.id })).unwrap();
   dispatch(markFolderFullyLoaded({ folderId }));
 });
 
