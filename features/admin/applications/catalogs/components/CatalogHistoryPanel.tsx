@@ -102,7 +102,7 @@ export function CatalogHistoryPanel({
 
   const whoLabel = useCallback(
     (changedBy: string | null): string => {
-      if (!changedBy) return "\u2014";
+      if (!changedBy) return "—";
       return adminEmails[changedBy] ?? changedBy.slice(0, 8);
     },
     [adminEmails],
@@ -199,8 +199,8 @@ export function CatalogHistoryPanel({
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
         {entries === null
-          ? "Loading version history\u2026"
-          : `${entries.length} snapshot${entries.length === 1 ? "" : "s"} \u2014 open a row to diff it against the CURRENT live entry.`}
+          ? "Loading version history…"
+          : `${entries.length} snapshot${entries.length === 1 ? "" : "s"} — open a row to diff it against the CURRENT live entry.`}
       </p>
 
       <MatrxDataTable
@@ -216,13 +216,13 @@ export function CatalogHistoryPanel({
         }}
         toolbar={{
           search: true,
-          searchPlaceholder: "Search operation, who\u2026",
+          searchPlaceholder: "Search operation, who…",
         }}
         detail={{
           title: (row) =>
             format(new Date(row.changed_at), "yyyy-MM-dd HH:mm:ss"),
           description: (row) =>
-            `${row.op} \u00b7 schema v${row.schema_version} \u00b7 ${row.is_active ? "active" : "inactive"} \u00b7 ${whoLabel(row.changed_by)}`,
+            `${row.op} · schema v${row.schema_version} · ${row.is_active ? "active" : "inactive"} · ${whoLabel(row.changed_by)}`,
           defaultWidth: 720,
           render: (row) => (
             <div className="p-2">

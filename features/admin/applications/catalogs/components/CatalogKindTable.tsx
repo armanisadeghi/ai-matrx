@@ -211,7 +211,7 @@ export function CatalogKindTable({
         );
         if (error) {
           if (isConflictError(error)) {
-            failures.push(`${row.key}: changed since load \u2014 re-apply`);
+            failures.push(`${row.key}: changed since load — re-apply`);
           } else {
             failures.push(`${row.key}: ${rpcErrorMessage(error)}`);
           }
@@ -257,7 +257,7 @@ export function CatalogKindTable({
               {name}
             </span>
           ) : (
-            <span className="text-muted-foreground">\u2014</span>
+            <span className="text-muted-foreground">—</span>
           );
         },
         width: 220,
@@ -281,7 +281,7 @@ export function CatalogKindTable({
         filter: "select",
         cell: (row) => (
           <span className="font-mono text-xs">
-            {row.min_app_version ?? "\u2014"}
+            {row.min_app_version ?? "—"}
           </span>
         ),
         width: 110,
@@ -343,7 +343,7 @@ export function CatalogKindTable({
               {adminEmails[row.updated_by] ?? row.updated_by.slice(0, 8)}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">\u2014</span>
+            <span className="text-xs text-muted-foreground">—</span>
           ),
         width: 200,
       },
@@ -390,7 +390,7 @@ export function CatalogKindTable({
           }}
           toolbar={{
             search: true,
-            searchPlaceholder: "Search key, name\u2026",
+            searchPlaceholder: "Search key, name…",
             actions: (
               <div className="flex items-center gap-2">
                 <Button type="button" size="sm" onClick={onAddFromLink}>

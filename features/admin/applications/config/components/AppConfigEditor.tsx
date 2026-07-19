@@ -88,7 +88,7 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
     const app = appSlug.trim();
     if (!APP_SLUG_REGEX.test(app)) {
       errors.app =
-        "App slug must be lowercase kebab-case, 2-63 chars, starting with a letter or digit";
+        "Application slug must be lowercase kebab-case, 2-63 chars, starting with a letter or digit";
     }
 
     const parsedSchemaVersion = Number(schemaVersion.trim());
@@ -292,7 +292,7 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor="app-config-slug">App</Label>
+          <Label htmlFor="app-config-slug">Application</Label>
           <Input
             id="app-config-slug"
             value={appSlug}
@@ -423,10 +423,10 @@ export function AppConfigEditor({ row, onBack, onSaved }: AppConfigEditorProps) 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> All apps
+            <ArrowLeft className="mr-1.5 h-4 w-4" /> All applications
           </Button>
           <h2 className="font-mono text-base font-semibold">
-            {isNew ? "New app config" : appSlug}
+            {isNew ? "New application configuration" : appSlug}
           </h2>
           {row ? (
             <span

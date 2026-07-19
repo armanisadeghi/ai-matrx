@@ -121,7 +121,7 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
   ).sort((a, b) => a.localeCompare(b));
 
   // One row per kind: the registry order, plus any unregistered kinds present
-  // in the data (forward compat \u2014 never hide real rows).
+  // in the data (forward compat — never hide real rows).
   const kindRows = useMemo(
     () =>
       [...CATALOG_KINDS.map((k) => k.slug), ...extraKinds].map((slug) => {
@@ -176,7 +176,7 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
           className="block max-w-2xl truncate text-xs text-muted-foreground"
           title={row.description}
         >
-          {row.description || "\u2014"}
+          {row.description || "—"}
         </span>
       ),
     },
@@ -289,7 +289,7 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
         <div>
           <h1 className="text-base font-semibold">Catalogs</h1>
           <p className="text-xs text-muted-foreground">
-            DB-backed catalogs for shipped clients \u2014 models, LoRAs, presets,
+            DB-backed catalogs for shipped clients — models, LoRAs, presets,
             prompts, voices. Active entries are read by every installed copy in
             the field. New entries start inactive.
           </p>
@@ -309,7 +309,7 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
           }}
           toolbar={{
             search: true,
-            searchPlaceholder: "Search kind, slug\u2026",
+            searchPlaceholder: "Search kind, slug…",
             leading: (
               <Select value={app} onValueChange={setApp}>
                 <SelectTrigger
@@ -348,7 +348,7 @@ export function CatalogsClient({ initialRows }: CatalogsClientProps) {
             rowDescription: "One catalog kind with its entry counts.",
             listDescription: "Catalog kinds currently visible.",
             humanRow: (row) =>
-              `${row.label} (${row.slug}) \u2014 ${row.total} entries, ${row.active} active, ${row.inactive} inactive`,
+              `${row.label} (${row.slug}) — ${row.total} entries, ${row.active} active, ${row.inactive} inactive`,
             rowAttributes: (row) => ({
               slug: row.slug,
               total: row.total,

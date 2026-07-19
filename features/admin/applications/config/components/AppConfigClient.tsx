@@ -124,7 +124,7 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
               {adminEmails[row.updated_by] ?? row.updated_by.slice(0, 8)}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">\u2014</span>
+            <span className="text-xs text-muted-foreground">—</span>
           ),
         width: 220,
       },
@@ -155,7 +155,7 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
         <div>
           <h1 className="text-base font-semibold">Configuration</h1>
           <p className="text-xs text-muted-foreground">
-            Remote runtime configuration for shipped clients \u2014 one row per
+            Remote runtime configuration for shipped clients — one row per
             application, read by every installed copy in the field.
           </p>
         </div>
@@ -171,11 +171,11 @@ export function AppConfigClient({ initialRows }: AppConfigClientProps) {
             icon: <MonitorCog className="h-5 w-5" />,
             title: "No configuration rows",
             description:
-              "Create one with New application \u2014 clients fall back to built-in defaults until then.",
+              "Create one with New application — clients fall back to built-in defaults until then.",
           }}
           toolbar={{
             search: true,
-            searchPlaceholder: "Search application, version\u2026",
+            searchPlaceholder: "Search application, version…",
             actions: (
               <Button
                 type="button"
