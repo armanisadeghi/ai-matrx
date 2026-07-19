@@ -27,7 +27,9 @@ import {
 } from "./resource-picker-menu-items";
 
 interface ResourcePickerMenuProps {
-  onResourceSelected(resource: unknown): void;
+  onResourceSelected(
+    resource: unknown,
+  ): boolean | void | Promise<boolean | void>;
   onClose: () => void;
   /** Required for Tools / Skills / Settings in-place pickers. */
   conversationId?: string;
@@ -68,6 +70,11 @@ export function ResourcePickerMenu({
     attachmentCapabilities,
     { conversationId, allowedViewIds },
   );
+  const selectOne = async (resource: unknown) => {
+    const selected = await onResourceSelected(resource);
+    if (selected !== false) onClose();
+    return selected;
+  };
 
   // Show specific resource picker based on selection
   if (activeView) {
@@ -75,11 +82,21 @@ export function ResourcePickerMenu({
       return (
         <UploadResourcePicker
           onBack={() => setActiveView(null)}
-          onSelect={(files) => {
-            // Handle multiple files
-            files.forEach((file) => {
-              onResourceSelected({ type: "file", data: file });
-            });
+          onSelect={async (files) => {
+            // Preserve selection order and wait for every durable edge before
+            // any host is allowed to dismiss the picker.
+            let completed = true;
+            for (const file of files) {
+              const selected = await onResourceSelected({
+                type: "file",
+                data: file,
+              });
+              if (selected === false) {
+                completed = false;
+                break;
+              }
+            }
+            if (completed) onClose();
           }}
         />
       );
@@ -89,8 +106,8 @@ export function ResourcePickerMenu({
       return (
         <FilesResourcePicker
           onBack={() => setActiveView(null)}
-          onSelect={(selection) => {
-            onResourceSelected({ type: "file", data: selection });
+          onSelect={async (selection) => {
+            await selectOne({ type: "file", data: selection });
           }}
         />
       );
@@ -101,7 +118,7 @@ export function ResourcePickerMenu({
         <NotesResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(note) => {
-            onResourceSelected({ type: "note", data: note });
+            void selectOne({ type: "note", data: note });
           }}
         />
       );
@@ -112,7 +129,7 @@ export function ResourcePickerMenu({
         <TasksResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(selection) => {
-            onResourceSelected(selection);
+            void selectOne(selection);
           }}
         />
       );
@@ -123,7 +140,7 @@ export function ResourcePickerMenu({
         <WorkbooksResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(workbook) => {
-            onResourceSelected({
+            void selectOne({
               type: "workbook",
               data: { id: workbook.id, name: workbook.workbook_name },
             });
@@ -137,7 +154,7 @@ export function ResourcePickerMenu({
         <DocumentsResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(document) => {
-            onResourceSelected({
+            void selectOne({
               type: "document",
               data: { id: document.id, title: document.document_name },
             });
@@ -151,7 +168,7 @@ export function ResourcePickerMenu({
         <TablesResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(reference) => {
-            onResourceSelected({ type: "table", data: reference });
+            void selectOne({ type: "table", data: reference });
           }}
         />
       );
@@ -162,7 +179,7 @@ export function ResourcePickerMenu({
         <WebpageResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(content) => {
-            onResourceSelected({ type: "webpage", data: content });
+            void selectOne({ type: "webpage", data: content });
           }}
           onSwitchTo={(type, url) => switchToView(type, url)}
           initialUrl={currentUrl}
@@ -175,7 +192,7 @@ export function ResourcePickerMenu({
         <YouTubeResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(video) => {
-            onResourceSelected({ type: "youtube", data: video });
+            void selectOne({ type: "youtube", data: video });
           }}
           initialUrl={currentUrl}
         />
@@ -187,7 +204,7 @@ export function ResourcePickerMenu({
         <ImageUrlResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(imageData) => {
-            onResourceSelected({ type: "image_url", data: imageData });
+            void selectOne({ type: "image_url", data: imageData });
           }}
           onSwitchTo={(type, url) => switchToView(type, url)}
           initialUrl={currentUrl}
@@ -200,7 +217,7 @@ export function ResourcePickerMenu({
         <FileUrlResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(fileData) => {
-            onResourceSelected({ type: "file_url", data: fileData });
+            void selectOne({ type: "file_url", data: fileData });
           }}
           onSwitchTo={(type, url) => switchToView(type, url)}
           initialUrl={currentUrl}
@@ -221,7 +238,7 @@ export function ResourcePickerMenu({
           conversationId={conversationId}
           onBack={() => setActiveView(null)}
           onSelect={(audioData) => {
-            onResourceSelected(audioData);
+            void selectOne(audioData);
           }}
         />
       );
@@ -231,7 +248,7 @@ export function ResourcePickerMenu({
       return (
         <ContextValuesResourcePicker
           onBack={() => setActiveView(null)}
-          onSelect={onResourceSelected}
+          onSelect={(resource) => void selectOne(resource)}
         />
       );
     }

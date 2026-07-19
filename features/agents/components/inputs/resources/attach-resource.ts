@@ -160,8 +160,15 @@ function attachBinary(
 
 // ─── Document association edges (durable, persist across turns/reloads) ──────
 
-function edgeMetadata(fileId: string | null): Json {
-  const meta: AttachedDocumentMetadata = { file_id: fileId };
+function edgeMetadata(fileId: string | null, existing?: Json): Json {
+  const previous =
+    existing && typeof existing === "object" && !Array.isArray(existing)
+      ? (existing as Record<string, Json | undefined>)
+      : {};
+  const meta: AttachedDocumentMetadata = {
+    ...(previous as AttachedDocumentMetadata),
+    file_id: fileId,
+  };
   return meta as Json;
 }
 
@@ -174,6 +181,7 @@ async function attachDocumentEdge(
   sourceId: string,
   fileId: string | null,
   label: string,
+  existingMetadata?: Json,
 ): Promise<AssociationWriteResult> {
   const orgId = resolveConversationOrgId(getState(), conversationId);
   if (!orgId) {
@@ -187,7 +195,7 @@ async function attachDocumentEdge(
       targetId: conversationId,
       orgId,
       label,
-      metadata: edgeMetadata(fileId),
+      metadata: edgeMetadata(fileId, existingMetadata),
     }),
   );
 }
@@ -227,6 +235,14 @@ export function useAttachResource(
           fileId,
           resourcePreviewLabel,
         );
+        const existingMetadata = getState().scopesTree.associationsByKey[
+          `conversation:${conversationId}`
+        ]?.edges.find(
+          (edge) =>
+            edge.direction === "incoming" &&
+            edge.otherType === "file" &&
+            edge.otherId === fileId,
+        )?.metadata;
         const result = await attachDocumentEdge(
           dispatch,
           getState,
@@ -235,6 +251,7 @@ export function useAttachResource(
           fileId,
           fileId,
           label,
+          existingMetadata,
         );
         if (!result.ok) {
           console.error("[attached-document] attach failed", {

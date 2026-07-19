@@ -1,7 +1,7 @@
 "use client";
 
 import { createElement, useState } from "react";
-import { ChevronDown, ExternalLink, FileText, X } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -23,7 +23,7 @@ interface AttachedDocumentChipProps {
   resourcePolicy?: VariableResourceContextConfig;
   onOpen: () => void;
   onRemove: () => void;
-  onPolicyChange: (policy: VariableResourceContextConfig) => void;
+  onPolicyChange: (policy: VariableResourceContextConfig) => Promise<void>;
 }
 
 function policyLabel(policy: VariableResourceContextConfig | undefined): string {
@@ -43,21 +43,28 @@ export function AttachedDocumentChip({
 }: AttachedDocumentChipProps) {
   const [open, setOpen] = useState(false);
   const [draftPolicy, setDraftPolicy] = useState(resourcePolicy);
+  const [saving, setSaving] = useState(false);
   const theme = resolveResourceAttachmentTileTheme("processed_document");
 
-  const commitDraft = () => {
+  const commitDraft = async () => {
     if (
       draftPolicy &&
       JSON.stringify(draftPolicy) !== JSON.stringify(resourcePolicy)
     ) {
-      onPolicyChange(draftPolicy);
+      setSaving(true);
+      try {
+        await onPolicyChange(draftPolicy);
+      } finally {
+        setSaving(false);
+      }
     }
   };
-  const handleOpenChange = (next: boolean) => {
+  const handleOpenChange = async (next: boolean) => {
+    if (saving) return;
     if (next) {
       setDraftPolicy(resourcePolicy);
     } else {
-      commitDraft();
+      await commitDraft();
     }
     setOpen(next);
   };
@@ -66,19 +73,23 @@ export function AttachedDocumentChip({
   const stopRemove = (event: React.SyntheticEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    onRemove();
+    if (!saving) onRemove();
   };
-  const openDetails = (event: React.SyntheticEvent) => {
+  const openDetails = async (event: React.SyntheticEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    commitDraft();
+    await commitDraft();
     onOpen();
     setOpen(false);
   };
 
   return (
     <span className="group relative inline-flex shrink-0">
-      <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
+      <Popover
+        open={open}
+        onOpenChange={(next) => void handleOpenChange(next)}
+        modal
+      >
         <div
           className={cn(
             "inline-flex h-6 min-w-0 items-stretch overflow-hidden rounded-full border border-border",
@@ -147,9 +158,15 @@ export function AttachedDocumentChip({
             compact
           />
           <div className="my-2 border-t border-border" />
+          {saving ? (
+            <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving context…
+            </div>
+          ) : null}
           <button
             type="button"
-            onClick={openDetails}
+            onClick={(event) => void openDetails(event)}
+            disabled={saving}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
           >
             <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -161,6 +178,7 @@ export function AttachedDocumentChip({
       <button
         type="button"
         onClick={stopRemove}
+        disabled={saving}
         aria-label={`Remove ${title}`}
         className={cn(
           "absolute -right-1 -top-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full",

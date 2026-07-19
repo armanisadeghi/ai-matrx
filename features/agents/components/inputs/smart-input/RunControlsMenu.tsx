@@ -91,7 +91,7 @@ export function RunControlsMenu({
 
   const attachResource = useAttachResource(conversationId);
   const handleResourceSelected = async (resource: Resource) => {
-    if (await attachResource(resource)) setOpen(false);
+    return attachResource(resource);
   };
 
   const handleOpenChange = (next: boolean) => {

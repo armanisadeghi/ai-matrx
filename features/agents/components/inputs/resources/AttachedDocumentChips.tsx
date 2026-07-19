@@ -150,7 +150,7 @@ interface DocumentChipRowProps {
     fileId: string | null,
     displayTitle: string,
     policy: VariableResourceContextConfig,
-  ) => void;
+  ) => Promise<void>;
 }
 
 function DocumentChipRow({

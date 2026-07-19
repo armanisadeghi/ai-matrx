@@ -47,6 +47,9 @@ export function ResourceFamilyPolicyEditor({
   const nextPromotion = promotable.find(
     (item) => !promotions.some((promotion) => promotion.representation === item.key),
   );
+  const unavailableExclusions = (policy.exclude ?? []).filter(
+    (key) => !family.data?.representations.some((item) => item.key === key),
+  );
 
   const emit = (next: VariableResourceContextConfig) => onChange?.(next);
 
@@ -101,6 +104,29 @@ export function ResourceFamilyPolicyEditor({
                 </label>
               );
             })}
+            {unavailableExclusions.map((key) => (
+              <label key={key} className="flex items-start gap-2 text-xs">
+                <Checkbox
+                  checked={false}
+                  disabled={readonly}
+                  onCheckedChange={(checked) =>
+                    emit(
+                      setFamilyRepresentationEnabled(
+                        policy,
+                        key,
+                        checked === true,
+                      ),
+                    )
+                  }
+                />
+                <span className="min-w-0">
+                  <span className="block font-medium">{key}</span>
+                  <span className="text-muted-foreground">
+                    Configured exclusion · currently unavailable
+                  </span>
+                </span>
+              </label>
+            ))}
           </div>
 
           <div className="space-y-1.5">
@@ -144,11 +170,21 @@ export function ResourceFamilyPolicyEditor({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {promotable.map((item) => (
+                      {promotable
+                        .filter(
+                          (item) =>
+                            item.key === promotion.representation ||
+                            !promotions.some(
+                              (other, otherIndex) =>
+                                otherIndex !== index &&
+                                other.representation === item.key,
+                            ),
+                        )
+                        .map((item) => (
                         <SelectItem key={item.key} value={item.key}>
                           {item.label} ({item.count})
                         </SelectItem>
-                      ))}
+                        ))}
                       {!promotable.some(
                         (item) => item.key === promotion.representation,
                       ) ? (

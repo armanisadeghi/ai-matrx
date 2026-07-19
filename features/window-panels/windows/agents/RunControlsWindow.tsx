@@ -56,9 +56,8 @@ function RunControlsWindowInner({
 
   const attachResource = useAttachResource(conversationId);
   const close = () => dispatch(closeOverlay({ overlayId: OVERLAY_ID }));
-  const handleResourceSelected = (resource: Resource) => {
-    attachResource(resource);
-    close();
+  const handleResourceSelected = async (resource: Resource) => {
+    return attachResource(resource);
   };
 
   // Mobile: never a draggable window — iOS-style bottom sheet with the same

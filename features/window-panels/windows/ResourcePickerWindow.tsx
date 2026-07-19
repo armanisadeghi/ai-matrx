@@ -14,7 +14,9 @@ interface ResourcePickerWindowProps {
   // ad-hoc `{ type, data }` shapes with no shared union type declared.
   // Fixing this honestly means introducing a `ResourceSelection`
   // discriminated union there first; tracked as a decision brief.
-  onResourceSelected: (resource: any) => void;
+  onResourceSelected: (
+    resource: any,
+  ) => boolean | void | Promise<boolean | void>;
   attachmentCapabilities?: {
     supportsImageUrls?: boolean;
     supportsFileUrls?: boolean;
@@ -58,10 +60,7 @@ export function ResourcePickerWindow({
       overlayId="resourcePickerWindow"
     >
       <ResourcePickerMenu
-        onResourceSelected={(resource) => {
-          onResourceSelected(resource);
-          onClose();
-        }}
+        onResourceSelected={onResourceSelected}
         onClose={onClose}
         attachmentCapabilities={attachmentCapabilities}
         onSettingsClick={onSettingsClick}
