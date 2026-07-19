@@ -1442,7 +1442,8 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   font-weight: 500;
 }
 
-/* Admin accordion caret (mobile) — flips when its <details> is open. */
+/* Mobile accordion caret — flips when its <details> is open. */
+details[open] > summary .shell-mobile-nav-caret,
 details[open] > summary .shell-mobile-admin-caret {
   transform: rotate(180deg);
 }

@@ -18,11 +18,17 @@ import { RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { selectAgentModelId } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
   setOverrides,
   resetOverride,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import { selectIsManualExecutionMode } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+
+const MANUAL_MODE_MODEL_HINT =
+  "Model is edited in the builder panel during test runs";
 
 /**
  * Shared genuine-delta model-override state. `model` is never removed, so
@@ -76,23 +82,31 @@ export function QuickRunModelSelect({
   conversationId: string;
   className?: string;
 }) {
-  const {
-    baseModel,
-    effectiveModel,
-    isOverridden,
-    handleChange,
-    handleReset,
-  } = useModelOverride(conversationId);
+  const isManualMode = useAppSelector(
+    selectIsManualExecutionMode(conversationId),
+  );
+  const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
+  const agentModelId = useAppSelector((state) =>
+    agentId ? selectAgentModelId(state, agentId) : null,
+  );
+  const { baseModel, effectiveModel, isOverridden, handleChange, handleReset } =
+    useModelOverride(conversationId);
+
+  const displayModelId = isManualMode
+    ? (agentModelId ?? effectiveModel ?? baseModel ?? null)
+    : (effectiveModel ?? baseModel ?? null);
 
   return (
     <div className={cn("flex min-w-0 items-center gap-1", className)}>
       <ModelListDropdown
-        value={effectiveModel ?? baseModel ?? null}
+        value={displayModelId}
         onValueChange={handleChange}
         inputModalities={[]}
         outputModalities={["text"]}
+        disabled={isManualMode}
+        disabledTitle={MANUAL_MODE_MODEL_HINT}
       />
-      {isOverridden && (
+      {isOverridden && !isManualMode && (
         <button
           type="button"
           onClick={handleReset}
@@ -108,13 +122,8 @@ export function QuickRunModelSelect({
 }
 
 export function RunModelPicker({ conversationId }: { conversationId: string }) {
-  const {
-    baseModel,
-    effectiveModel,
-    isOverridden,
-    handleChange,
-    handleReset,
-  } = useModelOverride(conversationId);
+  const { baseModel, effectiveModel, isOverridden, handleChange, handleReset } =
+    useModelOverride(conversationId);
 
   return (
     <div className="flex flex-col gap-2 px-3 py-3">

@@ -169,6 +169,9 @@ interface ModelListDropdownProps {
    */
   onOfferingPinChange?: (offeringId: string | undefined) => void;
   className?: string;
+  /** When true, renders the current value read-only — no picker opens. */
+  disabled?: boolean;
+  disabledTitle?: string;
 }
 
 // ── Small presentational bits ────────────────────────────────────────────────
@@ -1302,6 +1305,8 @@ export function ModelListDropdown({
   pinnedOfferingId,
   onOfferingPinChange,
   className,
+  disabled = false,
+  disabledTitle,
 }: ModelListDropdownProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
@@ -1609,8 +1614,12 @@ export function ModelListDropdown({
   const trigger = (
     <button
       type="button"
+      disabled={disabled}
+      title={disabled ? disabledTitle : undefined}
+      aria-disabled={disabled || undefined}
       className={cn(
         "inline-flex h-7 items-center gap-1 rounded-md bg-transparent px-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground",
+        disabled && "cursor-not-allowed opacity-50 hover:text-foreground/80",
         className,
       )}
     >
@@ -1794,6 +1803,10 @@ export function ModelListDropdown({
       </div>
     </div>
   );
+
+  if (disabled) {
+    return trigger;
+  }
 
   // ── Mobile ──
   if (isMobile) {

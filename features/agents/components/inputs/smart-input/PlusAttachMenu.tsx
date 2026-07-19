@@ -50,7 +50,12 @@ import { useSandboxBindingBlocked } from "@/features/agents/components/inputs/sm
 import { useOpenContextPreviewPanel } from "@/features/overlays/openers/contextPreviewPanel";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";
+import { selectIsManualExecutionMode } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { cn } from "@/lib/utils";
 import type { Resource } from "@/features/agents/resources/types";
+
+const MANUAL_MODE_SETTINGS_HINT =
+  "Per-run settings are edited in the builder panel during test runs";
 
 interface PlusAttachMenuProps {
   conversationId: string;
@@ -188,6 +193,9 @@ export function PlusAttachMenu({
   const shouldShowAutoClearToggle = useAppSelector(
     selectShouldShowAutoClearToggle(conversationId),
   );
+  const isManualMode = useAppSelector(
+    selectIsManualExecutionMode(conversationId),
+  );
 
   const openRunControlsWindow = useOpenRunControlsWindow();
   const attachResource = useAttachResource(conversationId);
@@ -231,13 +239,20 @@ export function PlusAttachMenu({
 
           <button
             type="button"
+            disabled={isManualMode}
+            title={isManualMode ? MANUAL_MODE_SETTINGS_HINT : undefined}
             onClick={() => {
+              if (isManualMode) return;
               setOpen(false);
               // No initialTab — the window's default (Quickset) is the
               // canonical landing tab for every caller.
               openRunControlsWindow({ conversationId });
             }}
-            className="flex w-full items-center gap-2 border-t border-border px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            className={cn(
+              "flex w-full items-center gap-2 border-t border-border px-2 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
+              isManualMode &&
+                "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
+            )}
           >
             <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
             Advanced Settings Window

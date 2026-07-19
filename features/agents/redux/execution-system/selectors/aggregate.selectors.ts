@@ -205,6 +205,17 @@ export const selectApiEndpointMode =
     "agent";
 
 /**
+ * Agent Builder / manual execution — reads the live agent definition at submit
+ * time and never seeds the per-conversation override layer. Use this to gate
+ * Smart Input affordances that only apply to agent-mode runs (model override,
+ * RunConfigOverrides, Advanced Settings window, …).
+ */
+export const selectIsManualExecutionMode =
+  (conversationId: string) =>
+  (state: RootState): boolean =>
+    selectApiEndpointMode(conversationId)(state) === "manual";
+
+/**
  * The requestId for the most recent request on this instance.
  * A primitive — safe to use directly with useAppSelector.
  * Returns undefined so components can guard with `if (!requestId)`.

@@ -1208,13 +1208,10 @@
   }
   .matrx-glass-thin-border:hover  { @apply bg-glass-hover; }
   .matrx-glass-thin-border:active { @apply bg-glass-active; }
-
-  /* Segmented controls (RouteModeNav, mode pills): glass chrome only — children
-     carry their own hover/active. Pairing matrx-glass-thin-border on the shell
-     highlights the entire group on any item hover. */
-  .matrx-glass-thin-border-shell {
-    @apply bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass;
-    border: var(--matrx-glass-border-width-thin) solid var(--matrx-glass-border-color);
+  /* Segmented pills (RouteModeNav): direct child segments own hover — don't lift the shell. */
+  .matrx-glass-thin-border:has(> a:hover),
+  .matrx-glass-thin-border:has(> a:active) {
+    @apply bg-glass;
   }
 
   .matrx-glass-card {

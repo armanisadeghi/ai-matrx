@@ -11,23 +11,25 @@
 // NavActiveSync keeps .shell-root[data-pathname] live after client navigation.
 
 import {
-  NAV_WINDOW_PANEL_ICON,
   navItemsForViewer,
-  partitionNavChildren,
   primaryNavItems,
   settingsItem,
 } from "../../constants/nav-data";
 import MobileSheetNavLink from "./MobileSheetNavLink";
+import MobileNavGroup from "./MobileNavGroup";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 import MobileSheetHamburgerToggle from "./MobileSheetHamburgerToggle";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
 
 interface MobileSideSheetProps {
   isAuthenticated: boolean;
+  /** SSR pathname — drives which nav group starts expanded. */
+  pathname: string;
 }
 
 export default function MobileSideSheet({
   isAuthenticated,
+  pathname,
 }: MobileSideSheetProps) {
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   return (
@@ -57,9 +59,8 @@ export default function MobileSideSheet({
           {/* Route menu switch + content — client island */}
           <MobileRouteMenuSlot />
 
-          {/* Standard nav — always server-rendered. Groups render the parent
-              plus an inline, indented set of children (mobile stacks the tree
-              vertically rather than hiding it behind a collapse). */}
+          {/* Standard nav — groups collapse by default; only the active route's
+              group starts expanded (see MobileNavGroup). */}
           <div className="shell-mobile-main-nav">
             {visibleItems.map((item) => {
               if (!item.children || item.children.length === 0) {
@@ -73,146 +74,19 @@ export default function MobileSideSheet({
                   />
                 );
               }
-              // Same standard as desktop: destinations up top, create actions
-              // collected at the bottom below a divider. Mobile has no overlay
-              // surface, so actions navigate to their graceful `href` fallback.
-              const { sections, panels, actions } = partitionNavChildren(
-                item.children,
-              );
               return (
-                <div
+                <MobileNavGroup
                   key={item.label}
-                  className="shell-mobile-nav-group"
-                  data-nav-group={item.href}
-                >
-                  <MobileSheetNavLink
-                    href={item.href}
-                    iconName={item.iconName}
-                    label={item.label}
-                  />
-                  <div className="shell-mobile-nav-children">
-                    {sections.map((section) => (
-                      <div key={section.label ?? section.items[0]?.href}>
-                        {section.label ? (
-                          <div className="shell-mobile-section-label">
-                            {section.label}
-                          </div>
-                        ) : null}
-                        {section.items.map((child) => (
-                          <MobileSheetNavLink
-                            key={child.href}
-                            href={child.href}
-                            iconName={child.iconName}
-                            label={child.label}
-                            isChild
-                          />
-                        ))}
-                      </div>
-                    ))}
-                    {panels.length > 0 ? (
-                      <>
-                        {sections.length > 0 ? (
-                          <div className="shell-mobile-section-divider" />
-                        ) : null}
-                        {panels.map((child) => (
-                          <MobileSheetNavLink
-                            key={child.panelAction ?? child.href}
-                            href={child.href}
-                            iconName={NAV_WINDOW_PANEL_ICON}
-                            label={child.label}
-                            isChild
-                          />
-                        ))}
-                      </>
-                    ) : null}
-                    {actions.length > 0 ? (
-                      <>
-                        {sections.length > 0 || panels.length > 0 ? (
-                          <div className="shell-mobile-section-divider" />
-                        ) : null}
-                        {actions.map((child) => (
-                          <MobileSheetNavLink
-                            key={child.action ?? child.href}
-                            href={child.href}
-                            iconName={child.iconName}
-                            label={child.label}
-                            isChild
-                          />
-                        ))}
-                      </>
-                    ) : null}
-                  </div>
-                </div>
+                  item={item}
+                  initialPathname={pathname}
+                />
               );
             })}
 
             {/* Settings */}
             <div className="shell-mobile-section-divider" />
             {settingsItem.children && settingsItem.children.length > 0 ? (
-              (() => {
-                const { sections, panels, actions } = partitionNavChildren(
-                  settingsItem.children,
-                );
-                return (
-                  <div
-                    className="shell-mobile-nav-group"
-                    data-nav-group={settingsItem.href}
-                  >
-                    <MobileSheetNavLink
-                      href={settingsItem.href}
-                      iconName={settingsItem.iconName}
-                      label={settingsItem.label}
-                    />
-                    <div className="shell-mobile-nav-children">
-                      {sections.map((section) => (
-                        <div key={section.label ?? section.items[0]?.href}>
-                          {section.items.map((child) => (
-                            <MobileSheetNavLink
-                              key={child.href}
-                              href={child.href}
-                              iconName={child.iconName}
-                              label={child.label}
-                              isChild
-                            />
-                          ))}
-                        </div>
-                      ))}
-                      {panels.length > 0 ? (
-                        <>
-                          {sections.length > 0 ? (
-                            <div className="shell-mobile-section-divider" />
-                          ) : null}
-                          {panels.map((child) => (
-                            <MobileSheetNavLink
-                              key={child.panelAction ?? child.href}
-                              href={child.href}
-                              iconName={NAV_WINDOW_PANEL_ICON}
-                              label={child.label}
-                              isChild
-                            />
-                          ))}
-                        </>
-                      ) : null}
-                      {actions.length > 0 ? (
-                        <>
-                          {sections.length > 0 || panels.length > 0 ? (
-                            <div className="shell-mobile-section-divider" />
-                          ) : null}
-                          {actions.map((child) => (
-                            <MobileSheetNavLink
-                              key={child.action ?? child.href}
-                              href={child.href}
-                              iconName={child.iconName}
-                              label={child.label}
-                              isChild
-                            />
-                          ))}
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })()
+              <MobileNavGroup item={settingsItem} initialPathname={pathname} />
             ) : (
               <MobileSheetNavLink
                 href={settingsItem.href}

@@ -114,7 +114,10 @@ export default async function AppLayout({
 
         <main className="shell-main">{children}</main>
 
-        <MobileSideSheet isAuthenticated={isAuthenticated} />
+        <MobileSideSheet
+          isAuthenticated={isAuthenticated}
+          pathname={pathname}
+        />
       </div>
 
       <GlassPortal>

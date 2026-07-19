@@ -229,6 +229,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-19` — PlusAttachMenu manual-mode gate: `selectIsManualExecutionMode` disables the model picker (shows live builder model read-only) and Advanced Settings Window on Agent Builder test runs; agent-mode runs unchanged.
 - `2026-07-18` — Unified file-family controls across Agent Builder defaults,
   runtime media variables, and durable chat attachments. The shared dynamic
   inventory supports suppression and up to three bounded inline promotions;

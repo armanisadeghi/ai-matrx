@@ -69,7 +69,10 @@ export default function AppShell({
 
         <main className="shell-main">{children}</main>
 
-        <MobileSideSheet isAuthenticated={isAuthenticated} />
+        <MobileSideSheet
+          isAuthenticated={isAuthenticated}
+          pathname={pathname}
+        />
       </div>
 
       <GlassPortal>
