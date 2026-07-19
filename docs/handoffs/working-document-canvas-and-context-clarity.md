@@ -2,7 +2,7 @@
 
 **Owner:** (unassigned — pick up here)
 **Status:** active · multiple pieces shipped, one investigation open, vision partially built
-**Last updated:** 2026-07-17
+**Last updated:** 2026-07-18
 
 This is the working document → Canvas → surfaces → context-clarity arc. A concurrent
 agent has been HEAVILY refactoring the same area (doc canonicalization: the
@@ -64,25 +64,12 @@ doc → confirm `binding.kind` (it should be `cx_working_document`); if it's `no
 the hydration in the association-open path. Building agent-edit history headlessly is
 fiddly (the default chat agent won't always ctx_patch the working doc).
 
-## OPEN #2 — "What the agent sees" follow-ups (server-truth panel SHIPPED 2026-07-17)
+## OPEN #2 — "What the agent sees" → moved to its own handoff
 
-**2026-07-17: `AgentSeesSheet` is DELETED, replaced by the server-truth
-`contextPreviewPanel`** (non-blocking `SidePanelSurface`, opened from the composer's
-merged `ContextLensBar`). Its Resolved tab renders aidream `POST /ai/context/preview`
-(new endpoint, aidream `76934c9b9`) — the EXACT injected context block + tiered
-variables from the run code path (`resolve_agent_context_block` / `build_agent_context`
-/ `resolve_scope_bindings`). This CLOSES the old "personal-org fallback" and
-"conversation-tagged scopes" follow-ups (the server resolves effective org + the
-conversation-tag union itself). The old client-side view survives as the "Attached this
-turn" tab (`features/agents/components/context-preview/AttachedContextSection.tsx`).
-
-**Remaining follow-ups:**
-- **Itemize the always-sent legs** in the Attached tab: attachments/resource
-  payloads (files/images/code — `resourcePayloads` in `execute-instance.thunk.ts` ~L140-152),
-  `request.variables`, observational memory (~L202-229), and injected tool defs. These are
-  often the BIGGEST thing the agent sees.
-- **aidream prod deploy** — `/ai/context/preview` is committed on aidream main but not
-  deployed; the panel's Resolved tab errors loudly against prod until it ships.
+The context lens + server-truth preview arc now lives in
+`docs/handoffs/context-preview-system.md` (endpoint deployed, panel shipped,
+remaining verification + Attached-tab work tracked there). Nothing of it
+remains in this doc.
 
 ## Vision — what's next (roadmap, in priority order)
 
@@ -98,9 +85,7 @@ turn" tab (`features/agents/components/context-preview/AttachedContextSection.ts
    `ManagedWriteViolation: cx_conversation managed_writes='strict'` (filed feedback
    `ce7e53a3`; fix = wrap the meta-agent/run cx_conversation write in `async with Session()`).
    The app's own agent-run path works — only the MCP path is broken.
-4. **Make the "What the agent sees" panel actionable** — add per-item remove (X) so users
-   can control, not just see, what's sent (reuse the rail's `removeContextEntry` /
-   `setConversationDocumentEnabledThunk`).
+(Panel actionability moved to `docs/handoffs/context-preview-system.md`.)
 
 ## Blockers needing Arman
 
