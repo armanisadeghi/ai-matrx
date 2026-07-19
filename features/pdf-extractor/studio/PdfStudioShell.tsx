@@ -687,6 +687,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       active_scope_text: fullText,
       filename: activeDoc.name,
       file_id: fileId,
+      source_missing: activeDoc.sourceMissing === true,
       processed_document_id: activeDoc.id,
       total_pages: pages.length || activeDoc.totalPages || 0,
       current_page: activePage ?? 0,

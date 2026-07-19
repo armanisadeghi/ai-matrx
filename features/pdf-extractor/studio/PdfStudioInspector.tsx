@@ -372,6 +372,7 @@ function AiActionsPanel({
       active_scope_text: activeScopeText,
       filename: doc.name,
       file_id: fileId,
+      source_missing: doc.sourceMissing === true,
       processed_document_id: doc.id,
       total_pages: pages.length || doc.totalPages || 0,
       current_page: activePage ?? 0,

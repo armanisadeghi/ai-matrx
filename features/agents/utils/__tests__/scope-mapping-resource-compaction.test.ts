@@ -60,6 +60,27 @@ describe("resource-family scope compaction", () => {
     ]);
   });
 
+  it("keeps fallbacks when the canonical source row is known missing", () => {
+    const result = mapScopeToInstanceWithSurface(
+      {
+        file_id: "11111111-1111-4111-8111-111111111111",
+        source_missing: true,
+        processed_document_id: "22222222-2222-4222-8222-222222222222",
+        full_document_text: "fallback",
+      },
+      null,
+      null,
+      [],
+      [],
+    );
+    expect(result.contextEntries.map((entry) => entry.key)).toEqual([
+      "file_id",
+      "source_missing",
+      "processed_document_id",
+      "full_document_text",
+    ]);
+  });
+
   it("does not duplicate a file mapped into a media variable", () => {
     const result = mapScopeToInstanceWithSurface(
       { file_id: "11111111-1111-4111-8111-111111111111" },
