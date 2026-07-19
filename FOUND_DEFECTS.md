@@ -13,10 +13,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D62 — CLAUDE.md says "React Compiler is on"; next.config.js sets reactCompiler: false (2026-07-18)
-
-Doc/config contradiction, verified live: `next.config.js:121` has `reactCompiler: false` while CLAUDE.md's core invariants state "React Compiler is on — no manual useMemo/useCallback/React.memo". Every agent following the doc is writing unmemoized render paths on the assumption the compiler contains them — with the flag off, that assumption is dead (the content-ir repaint seam had to add an explicit justified `useMemo` in `BlockRenderer.tsx` because of this). Owner call needed: either turn the compiler on (and validate) or fix CLAUDE.md and ratify the manual-memo policy. Do not flip the config as a side effect of another task.
-
 ### D61 — /chat streams warn "state update on a component that hasn't mounted yet" (2026-07-18)
 
 Observed twice during a live `/chat` stream that rendered a `db_kind_component` (wine_tasting verification runs): React error "Can't perform a React state update on a component that hasn't mounted yet… side-effect in your render function". Source unattributed — plausible suspects are a render-time side-effect in the db-component compile path (`getOrCompileDbKindComponent` is called during render and its cache captures errors into a module store) or pre-existing chat-page code; no `[content-ir]` scream accompanied it and rendering was correct. Needs a React-owner pass to attribute (component stack via dev overlay) and move the offending side-effect into an effect. Not user-visible; filed so it doesn't vanish into a chat log.
@@ -84,6 +80,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ## RESOLVED
 
 One line per fix — title, date, pointer. History lives in git.
+
+- **D62** — React Compiler re-enabled (`reactCompiler: true`) with A/B build proof: core-profile build 10.6min off / 12.0min on (+13%), 3,669 chunks carry compiled components, built app boots clean — CLAUDE.md doctrine is true again. (`next.config.js`, 2026-07-18)
 
 - **D41-audio** — Batch STT/TTS now uses authenticated aidream catalog aliases with typed responses, retry/filter/metering and durable media; duplicate Next/provider routes and retired voice demos were removed or fail-closed, and real TTS/STT smokes pass. (`features/audio/FEATURE.md`, 2026-07-15)
 - **D36** — Dynamic-route soft 404s are fixed in production: the existence checks run before streamed content commits. Re-verified all four affected families on `www.aimatrx.com`: bogus identifiers return 404 and real identifiers return 200. (`3cb3a011f`, `d3214f473`, 2026-07-15 verification)

@@ -115,10 +115,11 @@ const nextConfig = {
     },
 
     
-    // TEMP: disabled to measure build-time impact. React Compiler adds a per-component
-    // analysis pass that scales super-linearly with the codebase. Re-enable once we've
-    // baselined compile time with it off.
-    reactCompiler: false,
+    // ON by ruling (2026-07-18, D62): the platform doctrine (CLAUDE.md "no manual
+    // useMemo/useCallback") and all agent-written code since 2026-02 assume the compiler.
+    // A/B build benchmark (MATRX_PROFILE=core): off 10.6min / on 12.0min (+13%) —
+    // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
+    reactCompiler: true,
     experimental: {
         serverActions: {
             bodySizeLimit: "10mb",
