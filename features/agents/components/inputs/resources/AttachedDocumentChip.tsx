@@ -42,7 +42,25 @@ export function AttachedDocumentChip({
   onPolicyChange,
 }: AttachedDocumentChipProps) {
   const [open, setOpen] = useState(false);
+  const [draftPolicy, setDraftPolicy] = useState(resourcePolicy);
   const theme = resolveResourceAttachmentTileTheme("processed_document");
+
+  const commitDraft = () => {
+    if (
+      draftPolicy &&
+      JSON.stringify(draftPolicy) !== JSON.stringify(resourcePolicy)
+    ) {
+      onPolicyChange(draftPolicy);
+    }
+  };
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setDraftPolicy(resourcePolicy);
+    } else {
+      commitDraft();
+    }
+    setOpen(next);
+  };
 
   const stopBubble = (event: React.SyntheticEvent) => event.stopPropagation();
   const stopRemove = (event: React.SyntheticEvent) => {
@@ -53,13 +71,14 @@ export function AttachedDocumentChip({
   const openDetails = (event: React.SyntheticEvent) => {
     event.preventDefault();
     event.stopPropagation();
+    commitDraft();
     onOpen();
     setOpen(false);
   };
 
   return (
     <span className="group relative inline-flex shrink-0">
-      <Popover open={open} onOpenChange={setOpen} modal={false}>
+      <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
         <div
           className={cn(
             "inline-flex h-6 min-w-0 items-stretch overflow-hidden rounded-full border border-border",
@@ -89,7 +108,8 @@ export function AttachedDocumentChip({
               </div>
               <div className="font-medium text-popover-foreground">{title}</div>
               <div className="mt-0.5 text-[10px] text-muted-foreground/80">
-                {policyLabel(resourcePolicy)} · click the right side to configure
+                {policyLabel(resourcePolicy)}
+                {fileId ? " · click the right side to configure" : ""}
               </div>
             </TooltipContent>
           </Tooltip>
@@ -100,6 +120,7 @@ export function AttachedDocumentChip({
               type="button"
               onClick={stopBubble}
               onPointerDown={stopBubble}
+              disabled={!fileId}
               aria-label={`Resource family policy: ${policyLabel(resourcePolicy)}`}
               className={cn(
                 "inline-flex shrink-0 items-center gap-0.5 px-1.5",
@@ -121,8 +142,8 @@ export function AttachedDocumentChip({
         >
           <ResourceFamilyPolicyEditor
             fileId={fileId}
-            value={resourcePolicy}
-            onChange={onPolicyChange}
+            value={draftPolicy}
+            onChange={setDraftPolicy}
             compact
           />
           <div className="my-2 border-t border-border" />
