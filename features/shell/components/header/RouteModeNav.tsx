@@ -16,9 +16,9 @@
 //                                       skipped)
 //   menu  → single dropdown trigger   (not even icons fit)
 //
-// It measures the BOUNDED center cell from RouteHeader (`1fr min-w-0`) via a
-// ResizeObserver and picks the densest variant that fits, so it can never spill
-// into the left/right regions.
+// It measures the BOUNDED center slot from RouteHeader (viewport-centered,
+// width = total − 2×max(left, right)) via a ResizeObserver and picks the
+// densest variant that fits, so it can never spill into the left/right regions.
 //
 // cmd/ctrl+click on any item opens that sub-route in a new tab (Link + href),
 // per the repo navigation-feedback rule.
@@ -62,7 +62,9 @@ function resolveActive(
     .sort((a, b) => b.href.length - a.href.length)[0];
 }
 
-const PILL =
+const PILL_SHELL =
+  "matrx-glass-thin-border-shell flex items-center gap-0 rounded-full p-0.5 whitespace-nowrap";
+const PILL_SINGLE =
   "matrx-glass-thin-border flex items-center gap-0 rounded-full p-0.5 whitespace-nowrap";
 const ITEM =
   "flex items-center justify-center gap-1 py-0.5 px-2.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
@@ -123,7 +125,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
           ITEM,
           isActive
             ? "bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
-            : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
+            : "text-[var(--shell-nav-text)] hover:bg-[var(--matrx-glass-bg-hover)] hover:text-[var(--shell-nav-text-hover)]",
         )}
       >
         {Icon && <Icon />}
@@ -144,11 +146,11 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
         aria-hidden
         className="pointer-events-none invisible absolute left-0 top-0"
       >
-        <div ref={fullRef} className={PILL}>
+        <div ref={fullRef} className={PILL_SHELL}>
           {items.map((i) => renderItem(i, true))}
         </div>
         {canIcons && (
-          <div ref={iconsRef} className={PILL}>
+          <div ref={iconsRef} className={PILL_SHELL}>
             {items.map((i) => renderItem(i, false))}
           </div>
         )}
@@ -160,7 +162,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className={cn(PILL, "px-1")}
+              className={cn(PILL_SINGLE, "px-1")}
               aria-label="Switch view"
             >
               <span
@@ -206,7 +208,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <div className={PILL}>
+        <div className={PILL_SHELL}>
           {items.map((i) => renderItem(i, variant === "full"))}
         </div>
       )}
