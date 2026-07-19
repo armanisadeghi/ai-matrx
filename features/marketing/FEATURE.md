@@ -31,7 +31,7 @@ Agency-scale website operations built around stable site and page identity. The 
 - `features/marketing/data/analysis-service.ts` and `analysis-hooks.ts` — isolated direct-Supabase priority, finding, and result reads.
 - `features/marketing/data/inspection-*` and `operations-*` — isolated direct-Supabase media, link, batch, and cost reads.
 - `features/marketing/crawler/direct-client.ts` — direct authenticated scraper commands and transient NDJSON only.
-- Persisted Marketing reads never use Next.js, Python history routes, or AI Dream intermediaries. The Google OAuth start/callback/disconnect routes are command-only control-plane boundaries because client secrets and refresh tokens cannot run in the browser.
+- Persisted Marketing reads never use Next.js, Python history routes, or AI Dream intermediaries. Google authorization reuses the canonical `GoogleAPIProvider` and Google Identity Services popup; its one-time code exchange and disconnect routes are command-only control-plane boundaries because client secrets and refresh tokens cannot run in the browser.
 
 ## Data model
 
@@ -61,7 +61,7 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 7. Inspect evidence: site/crawl link workspaces and the screenshot gallery read records directly from Supabase; screenshot media resolves through the canonical Files renderer using direct Supabase Storage URLs.
 8. Share and configure: `/access` calls canonical IAM grant/list/revoke RPCs for the `web_site` root; `/settings` uses version-checked direct Supabase updates.
 9. Monitor execution: batch and cost workspaces page through `web.batch_*` and the canonical cost views; runtime cost is attributed only through `link_kind='web_batch_item'` and the batch item id.
-10. Configure integrations: `/marketing/connections` connects a reusable personal or organization Google account through the authorization-code flow and discovers its Search Console and GA4 resources. The browser reads connection metadata and resource choices directly from Supabase. A site's `/integrations` workspace binds only the selected connection/resource references; PageSpeed uses the application's API key and does not require user OAuth.
+10. Configure integrations: `/marketing/connections` and each site's `/integrations` route use the existing Google Identity Services provider in popup authorization-code mode to connect a reusable personal or organization account without a redirect callback. The command endpoint exchanges the one-time code, encrypts the refresh token, and discovers Search Console and GA4 resources. The browser reads connection metadata and resource choices directly from Supabase. A site's workspace binds only the selected connection/resource references; PageSpeed uses the application's API key and does not require user OAuth.
 
 ## Invariants & gotchas
 
@@ -107,3 +107,4 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 - 2026-07-19 — Codex: added a user-facing live crawl event presenter that keeps exception, ORM query/argument, stack, and ANSI details out of the primary feed.
 - 2026-07-19 — Codex: added production Google OAuth with encrypted reusable personal/org connections, automatic Search Console and GA4 discovery, direct-Supabase connection/resource reads, site property selectors, and app-managed PageSpeed configuration.
 - 2026-07-19 — Codex: made site creation navigate immediately into a visual homepage-capture workspace, rendered the selected durable screenshot on the overview, and added direct Google authorization from each site's Integrations page with matching-property preselection.
+- 2026-07-19 — Codex: replaced the unused parallel Google redirect flow with the codebase's canonical Google Identity Services provider, using its popup code model for personal/org connections and durable offline synchronization without a new callback URI.

@@ -43,9 +43,6 @@ export interface GoogleConnectionInventory {
   resources: GoogleConnectionResource[];
 }
 
-export interface GoogleOAuthCompleteMessage {
-  type: "marketing_google_oauth_complete";
-  ok: boolean;
-  connectionId?: string;
-  error?: string;
+export interface GoogleConnectionResult {
+  connectionId: string;
 }

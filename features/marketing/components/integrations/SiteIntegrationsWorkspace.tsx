@@ -52,7 +52,10 @@ import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
+import { MARKETING_GOOGLE_SCOPES } from "@/features/marketing/google/types";
 import type { MarketingSite } from "@/features/marketing/types";
+import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
+import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
 const authorityLabels: Record<CredentialAuthority, string> = {
   user_secret: "Personal vault credential",
@@ -98,7 +101,9 @@ const builtIns: Array<{
 export function SiteIntegrationsWorkspace() {
   const { site } = useMarketingSite();
   return (
-    <SiteIntegrationsEditor key={`${site.id}:${site.version}`} site={site} />
+    <LazyGoogleAPIProvider scopes={[...MARKETING_GOOGLE_SCOPES]}>
+      <SiteIntegrationsEditor key={`${site.id}:${site.version}`} site={site} />
+    </LazyGoogleAPIProvider>
   );
 }
 
@@ -106,6 +111,10 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const queryClient = useQueryClient();
   const googleInventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
+  const google = useGoogleAPI();
+  const [googleConnectionOwner, setGoogleConnectionOwner] = useState<
+    "organization" | "user" | null
+  >(null);
   const initial = useMemo(
     () => parseSiteIntegrations(site.integrations),
     [site],
@@ -165,13 +174,17 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const startGoogleConnection = async (
     owner: "organization" | "user" = "organization",
   ) => {
+    setGoogleConnectionOwner(owner);
     try {
+      const code = await google.requestAuthorizationCode([
+        ...MARKETING_GOOGLE_SCOPES,
+      ]);
       const result = await connectGoogle.mutateAsync({
+        code,
         owner:
           owner === "organization"
             ? { type: "organization", organizationId: site.organization_id }
             : { type: "user" },
-        returnPath: `/marketing/sites/${site.id}/integrations`,
       });
       const refreshed = await googleInventory.refetch();
       const connectionId = result.connectionId;
@@ -239,6 +252,8 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             ? error.message
             : "Google authorization failed.",
       });
+    } finally {
+      setGoogleConnectionOwner(null);
     }
   };
 
@@ -290,10 +305,14 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             <Button
               size="sm"
               className="h-8 gap-1.5"
-              disabled={connectGoogle.isPending}
+              disabled={
+                googleConnectionOwner !== null ||
+                google.isInitializing ||
+                !google.isGoogleLoaded
+              }
               onClick={() => void startGoogleConnection("organization")}
             >
-              {connectGoogle.isPending ? (
+              {googleConnectionOwner === "organization" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <KeyRound className="h-3.5 w-3.5" />
@@ -304,9 +323,16 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               size="sm"
               variant="outline"
               className="h-8"
-              disabled={connectGoogle.isPending}
+              disabled={
+                googleConnectionOwner !== null ||
+                google.isInitializing ||
+                !google.isGoogleLoaded
+              }
               onClick={() => void startGoogleConnection("user")}
             >
+              {googleConnectionOwner === "user" ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : null}
               Connect personally
             </Button>
           </div>

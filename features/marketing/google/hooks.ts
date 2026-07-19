@@ -24,12 +24,12 @@ export function useConnectGoogle() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
+      code,
       owner,
-      returnPath,
     }: {
+      code: string;
       owner: GoogleConnectionOwner;
-      returnPath: string;
-    }) => connectGoogle(owner, returnPath),
+    }) => connectGoogle(code, owner),
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: googleConnectionKeys.inventory,

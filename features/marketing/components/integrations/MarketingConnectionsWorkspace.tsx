@@ -35,15 +35,32 @@ import {
   useDisconnectGoogle,
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
-import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
+import {
+  MARKETING_GOOGLE_SCOPES,
+  type GoogleConnectionSummary,
+} from "@/features/marketing/google/types";
+import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
+import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
 export function MarketingConnectionsWorkspace() {
+  return (
+    <LazyGoogleAPIProvider scopes={[...MARKETING_GOOGLE_SCOPES]}>
+      <MarketingConnectionsContent />
+    </LazyGoogleAPIProvider>
+  );
+}
+
+function MarketingConnectionsContent() {
   const sites = useSiteOptions();
   const organizations = useActiveOrganizationPicker();
   const inventory = useGoogleConnectionInventory();
   const connect = useConnectGoogle();
   const disconnect = useDisconnectGoogle();
+  const google = useGoogleAPI();
   const [siteId, setSiteId] = useState("");
+  const [connectingOwner, setConnectingOwner] = useState<
+    "user" | "organization" | null
+  >(null);
   const selectedSite = sites.data?.find((site) => site.id === siteId);
   const resourcesByConnection = new Map<string, number>();
   for (const resource of inventory.data?.resources ?? []) {
@@ -54,8 +71,13 @@ export function MarketingConnectionsWorkspace() {
   }
 
   const startConnection = async (owner: "user" | "organization") => {
+    setConnectingOwner(owner);
     try {
+      const code = await google.requestAuthorizationCode([
+        ...MARKETING_GOOGLE_SCOPES,
+      ]);
       await connect.mutateAsync({
+        code,
         owner:
           owner === "organization" && organizations.activeOrgId
             ? {
@@ -63,13 +85,14 @@ export function MarketingConnectionsWorkspace() {
                 organizationId: organizations.activeOrgId,
               }
             : { type: "user" },
-        returnPath: "/marketing/connections",
       });
       toast.success("Google account connected and properties discovered.");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to connect Google.",
       );
+    } finally {
+      setConnectingOwner(null);
     }
   };
 
@@ -137,7 +160,12 @@ export function MarketingConnectionsWorkspace() {
                 title="Personal connection"
                 description="Authorize Google once for Search Console and Analytics. Offline access supports scheduled synchronization."
                 action="Connect personal Google"
-                busy={connect.isPending}
+                busy={connectingOwner === "user"}
+                disabled={
+                  connectingOwner !== null ||
+                  google.isInitializing ||
+                  !google.isGoogleLoaded
+                }
                 onAction={() => startConnection("user")}
               />
               <ConnectionScope
@@ -153,8 +181,13 @@ export function MarketingConnectionsWorkspace() {
                     ? "Connect organization Google"
                     : "Choose an organization"
                 }
-                busy={connect.isPending}
-                disabled={!organizations.activeOrgId}
+                busy={connectingOwner === "organization"}
+                disabled={
+                  !organizations.activeOrgId ||
+                  connectingOwner !== null ||
+                  google.isInitializing ||
+                  !google.isGoogleLoaded
+                }
                 onAction={() => startConnection("organization")}
               />
             </div>

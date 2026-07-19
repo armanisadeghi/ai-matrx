@@ -25,6 +25,7 @@ declare global {
     google: {
       accounts: {
         oauth2: {
+          initCodeClient: (config: CodeClientConfig) => CodeClient;
           initTokenClient: (config: TokenClientConfig) => TokenClient;
           revoke: (token: string, callback: () => void) => void;
         };
@@ -40,6 +41,26 @@ interface TokenClientConfig {
   scope: string;
   callback: (response: TokenResponse) => void;
   error_callback?: (error: ErrorResponse) => void;
+}
+
+interface CodeClientConfig {
+  client_id: string;
+  scope: string;
+  ux_mode: "popup";
+  select_account: boolean;
+  callback: (response: CodeResponse) => void;
+  error_callback?: (error: ErrorResponse) => void;
+}
+
+interface CodeClient {
+  requestCode: () => void;
+}
+
+interface CodeResponse {
+  code?: string;
+  scope?: string;
+  error?: string;
+  error_description?: string;
 }
 
 interface TokenClient {
@@ -67,6 +88,7 @@ interface GoogleAPIContextType {
   error: string | null;
   token: string | null;
   signIn: (scopesToRequest: string[]) => Promise<boolean>;
+  requestAuthorizationCode: (scopesToRequest: string[]) => Promise<string>;
   signOut: () => Promise<void>;
   getGrantedScopes: () => string[];
   requestScopes: (scopes: string[]) => Promise<boolean>;
@@ -301,6 +323,55 @@ export default function GoogleAPIProvider({
     });
   };
 
+  const requestAuthorizationCode = async (
+    scopesToRequest: string[],
+  ): Promise<string> => {
+    if (!isGoogleLoaded || !window.google?.accounts?.oauth2) {
+      throw new Error("Google authorization is still loading.");
+    }
+    if (!clientId) {
+      throw new Error("Google client ID is not configured.");
+    }
+    if (authInProgress) {
+      throw new Error("A Google authorization window is already open.");
+    }
+
+    resetError();
+    setAuthInProgress(true);
+    return new Promise<string>((resolve, reject) => {
+      const client = window.google.accounts.oauth2.initCodeClient({
+        client_id: clientId,
+        scope: (scopesToRequest.length ? scopesToRequest : allScopes).join(" "),
+        ux_mode: "popup",
+        select_account: true,
+        callback: (response: CodeResponse) => {
+          setAuthInProgress(false);
+          if (response.code) {
+            resolve(response.code);
+            return;
+          }
+          const message =
+            response.error_description ||
+            response.error ||
+            "Google did not return an authorization code.";
+          setError(message);
+          reject(new Error(message));
+        },
+        error_callback: (response: ErrorResponse) => {
+          setAuthInProgress(false);
+          const message =
+            response.type === "popup_closed"
+              ? "Google authorization was closed before it finished."
+              : response.message ||
+                `Google authorization failed: ${response.type}`;
+          if (response.type !== "popup_closed") setError(message);
+          reject(new Error(message));
+        },
+      });
+      client.requestCode();
+    });
+  };
+
   const signOut = async () => {
     if (!isGoogleLoaded || !window.google?.accounts) {
       setError("Google auth not initialized.");
@@ -394,6 +465,7 @@ export default function GoogleAPIProvider({
         error,
         token,
         signIn,
+        requestAuthorizationCode,
         signOut,
         getGrantedScopes,
         requestScopes,

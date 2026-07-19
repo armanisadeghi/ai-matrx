@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
-import {
-  callbackUri,
-  GOOGLE_OAUTH_COOKIE,
-  googleAuthorizationUrl,
-  newOAuthState,
-  safeReturnPath,
-  signOAuthState,
-} from "@/features/marketing/google/server";
+import { exchangeAndStoreGoogleConnection } from "@/features/marketing/google/connection-server";
 
-interface StartBody {
+interface ExchangeBody {
+  code?: unknown;
   ownerType?: unknown;
   organizationId?: unknown;
-  returnPath?: unknown;
+  redirectUri?: unknown;
 }
 
 export async function POST(request: NextRequest) {
   try {
+    if (request.headers.get("x-requested-with") !== "XmlHttpRequest") {
+      return NextResponse.json(
+        { error: "Google authorization request could not be verified." },
+        { status: 400 },
+      );
+    }
     const supabase = await createClient();
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
@@ -27,14 +27,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = (await request.json()) as StartBody;
+    const body = (await request.json()) as ExchangeBody;
+    if (typeof body.code !== "string" || !body.code.trim()) {
+      return NextResponse.json(
+        { error: "Google did not return an authorization code." },
+        { status: 400 },
+      );
+    }
+    const requestOrigin = request.headers.get("origin");
+    if (
+      typeof body.redirectUri !== "string" ||
+      !requestOrigin ||
+      body.redirectUri !== requestOrigin
+    ) {
+      return NextResponse.json(
+        { error: "Google authorization origin could not be verified." },
+        { status: 400 },
+      );
+    }
+
     const ownerType =
       body.ownerType === "organization" ? "organization" : "user";
     const organizationId =
       ownerType === "organization" && typeof body.organizationId === "string"
         ? body.organizationId
         : null;
-
     if (ownerType === "organization") {
       if (!organizationId) {
         return NextResponse.json(
@@ -42,8 +59,7 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      const admin = createAdminClient();
-      const membership = await admin
+      const membership = await createAdminClient()
         .schema("iam")
         .from("memberships")
         .select("id")
@@ -64,34 +80,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const oauth = newOAuthState();
-    const state = signOAuthState({
-      state: oauth.state,
-      codeVerifier: oauth.verifier,
+    const connectionId = await exchangeAndStoreGoogleConnection({
+      code: body.code,
+      redirectUri: body.redirectUri,
       userId: data.user.id,
       ownerType,
       organizationId,
-      returnPath: safeReturnPath(body.returnPath),
-      createdAt: Date.now(),
     });
-    const authorizationUrl = googleAuthorizationUrl({
-      state: oauth.state,
-      challenge: oauth.challenge,
-      redirectUri: callbackUri(request.nextUrl.origin),
-    });
-
-    const response = NextResponse.json({ authorizationUrl });
-    response.cookies.set(GOOGLE_OAUTH_COOKIE, state, {
-      httpOnly: true,
-      secure: request.nextUrl.protocol === "https:",
-      sameSite: "lax",
-      path: "/api/marketing/google/oauth",
-      maxAge: 10 * 60,
-    });
-    return response;
+    return NextResponse.json({ connectionId });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Unable to start Google OAuth.";
+      error instanceof Error ? error.message : "Unable to connect Google.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

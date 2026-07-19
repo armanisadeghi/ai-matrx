@@ -4,7 +4,7 @@ import type {
   GoogleConnectionSummary,
   GoogleConnectionInventory,
   GoogleConnectionOwner,
-  GoogleOAuthCompleteMessage,
+  GoogleConnectionResult,
 } from "@/features/marketing/google/types";
 
 const CONNECTION_SELECT =
@@ -113,68 +113,31 @@ async function responseError(
 }
 
 export async function connectGoogle(
+  code: string,
   owner: GoogleConnectionOwner,
-  returnPath: string,
-): Promise<GoogleOAuthCompleteMessage> {
-  const popup = window.open(
-    "about:blank",
-    "ai-matrx-google-oauth",
-    "popup,width=560,height=720",
-  );
-  if (!popup) throw new Error("Allow popups to connect your Google account.");
-  popup.document.title = "Connecting Google";
-  popup.document.body.textContent = "Preparing Google authorization…";
-
-  try {
-    const response = await fetch("/api/marketing/google/oauth/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ownerType: owner.type,
-        organizationId:
-          owner.type === "organization" ? owner.organizationId : null,
-        returnPath,
-      }),
-    });
-    if (!response.ok)
-      throw await responseError(response, "Unable to start Google OAuth.");
-    const body = (await response.json()) as { authorizationUrl?: unknown };
-    if (typeof body.authorizationUrl !== "string") {
-      throw new Error("Google authorization URL was not returned.");
-    }
-    popup.location.href = body.authorizationUrl;
-
-    return await new Promise<GoogleOAuthCompleteMessage>((resolve, reject) => {
-      const timeout = window.setTimeout(
-        () => finish(new Error("Google authorization timed out.")),
-        10 * 60 * 1000,
-      );
-      const closed = window.setInterval(() => {
-        if (popup.closed)
-          finish(new Error("Google authorization window was closed."));
-      }, 500);
-      const onMessage = (event: MessageEvent<unknown>) => {
-        if (event.origin !== window.location.origin) return;
-        const message = event.data as Partial<GoogleOAuthCompleteMessage>;
-        if (message.type !== "marketing_google_oauth_complete") return;
-        if (message.ok)
-          finish(undefined, message as GoogleOAuthCompleteMessage);
-        else finish(new Error(message.error || "Google authorization failed."));
-      };
-      const finish = (error?: Error, message?: GoogleOAuthCompleteMessage) => {
-        window.clearTimeout(timeout);
-        window.clearInterval(closed);
-        window.removeEventListener("message", onMessage);
-        if (!popup.closed) popup.close();
-        if (error) reject(error);
-        else resolve(message as GoogleOAuthCompleteMessage);
-      };
-      window.addEventListener("message", onMessage);
-    });
-  } catch (error) {
-    if (!popup.closed) popup.close();
-    throw error;
+): Promise<GoogleConnectionResult> {
+  const response = await fetch("/api/marketing/google/oauth/exchange", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XmlHttpRequest",
+    },
+    body: JSON.stringify({
+      code,
+      ownerType: owner.type,
+      organizationId:
+        owner.type === "organization" ? owner.organizationId : null,
+      redirectUri: window.location.origin,
+    }),
+  });
+  if (!response.ok) {
+    throw await responseError(response, "Unable to connect Google.");
   }
+  const body = (await response.json()) as { connectionId?: unknown };
+  if (typeof body.connectionId !== "string") {
+    throw new Error("Google connected without returning a connection ID.");
+  }
+  return { connectionId: body.connectionId };
 }
 
 export async function disconnectGoogle(connectionId: string): Promise<void> {
