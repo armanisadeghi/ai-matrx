@@ -134,6 +134,12 @@ FE source of truth:
 > "Type → payload field" above (`image`/`audio`/`video`/`document`). Only the
 > attach-by-reference path moved onto associations.
 
+Media-variable family policy is request-scoped separately from the bare
+variable value: Redux stores overrides by conversation + variable name and the
+request emits `variable_resource_context[name] = { promote, exclude }`. The
+variable itself remains the canonical `file_id`, so provider media substitution
+and agent-to-agent callers keep one stable identity shape.
+
 ### Pending backend support (FE emits these now)
 
 | `type` | Payload field | Entity |
