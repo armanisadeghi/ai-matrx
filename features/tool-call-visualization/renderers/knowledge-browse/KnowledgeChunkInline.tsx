@@ -18,10 +18,10 @@ import { useOpenCitation } from "@/features/rag/components/source-inspector/useO
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 
 /**
- * Inline renderer for `rag_get_chunk` — the FULL text of one retrieved chunk
+ * Inline renderer for `knowledge_browse(action="chunk")` — the FULL text of one retrieved chunk
  * as a readable passage card (source name, pages, token count), with the
  * parent chunk's context behind one quiet toggle and a click-through to the
- * source inspector. Same visual family as the `rag_search` source cards.
+ * source inspector. Same visual family as the `knowledge_search` source cards.
  */
 
 interface ParsedChunk {
@@ -81,7 +81,7 @@ function formatPages(pages: number[]): string | null {
   return `Pages ${sorted[0]}–${sorted[sorted.length - 1]}`;
 }
 
-export function RagChunkInline({
+export function KnowledgeChunkInline({
   entry,
   onOpenOverlay,
   onOpenWindowPanel,

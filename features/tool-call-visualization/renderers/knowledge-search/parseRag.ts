@@ -3,7 +3,7 @@ import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 
 /**
- * Parse + normalize the `rag_search` tool result, and map a source_kind to its
+ * Parse + normalize the `knowledge_search` tool result, and map a source_kind to its
  * glossy glyph. Output shape (aidream): { query, hits[], total_candidates,
  * embedding_model, reranker_model, latency_ms }. Persisted hits carry
  * vector_rank/lexical_rank/rerank_score/metadata; streamed hits carry

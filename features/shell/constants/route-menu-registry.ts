@@ -12,6 +12,8 @@
 // Menu component receives:  { expanded: boolean }
 // Header component receives: { expanded: boolean }
 
+import { AGENT_RUN_PATH_PATTERN } from "@/features/agents/components/shell/agent-run-route";
+
 export interface RouteMenuEntry {
   pathPattern: RegExp;
   iconName: string;
@@ -26,7 +28,7 @@ export interface RouteMenuEntry {
 
 export const routeMenuRegistry: RouteMenuEntry[] = [
   {
-    pathPattern: /^\/agents\/[^/]+\/run/,
+    pathPattern: AGENT_RUN_PATH_PATTERN,
     iconName: "Webhook",
     label: "Agent Runs",
     importFn: () =>

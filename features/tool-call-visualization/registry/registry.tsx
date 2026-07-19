@@ -79,12 +79,12 @@ import { DictionaryOverlay } from "../renderers/dictionary/DictionaryOverlay";
 import { ResearchInline } from "../renderers/research/ResearchInline";
 import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
-import { RagSearchInline } from "../renderers/rag-search/RagSearchInline";
-import { RagSearchOverlay } from "../renderers/rag-search/RagSearchOverlay";
+import { KnowledgeSearchInline } from "../renderers/knowledge-search/KnowledgeSearchInline";
+import { KnowledgeSearchOverlay } from "../renderers/knowledge-search/KnowledgeSearchOverlay";
 import { DocumentSearchInline } from "../renderers/document-search/DocumentSearchInline";
-import { RagListSourcesInline } from "../renderers/rag-list-sources/RagListSourcesInline";
-import { RagChunkInline } from "../renderers/rag-get-chunk/RagChunkInline";
+import { KnowledgeBrowseInline } from "../renderers/knowledge-browse/KnowledgeBrowseInline";
 import { DocumentContentInline } from "../renderers/document-content/DocumentContentInline";
+import { resolveDocumentContentView } from "../renderers/document-content/documentContentView";
 import { RandomWheelInline } from "../renderers/random-wheel";
 import { NoteToolInline } from "../renderers/note/NoteToolInline";
 import { NoteToolOverlay } from "../renderers/note/NoteToolOverlay";
@@ -783,17 +783,17 @@ export const toolRendererRegistry: ToolRegistry = {
     getHeaderExtras: scrapeHeaderExtras,
   },
 
-  rag_search: {
-    toolName: "rag_search",
-    displayName: "RAG Search",
+  knowledge_search: {
+    toolName: "knowledge_search",
+    displayName: "Knowledge Search",
     phaseLabels: {
       running: "Searching indexed content",
       complete: "Searched indexed content",
-      errorPrefix: "RAG search failed",
+      errorPrefix: "Knowledge search failed",
     },
-    resultsLabel: "RAG Hits",
-    InlineComponent: RagSearchInline,
-    OverlayComponent: RagSearchOverlay,
+    resultsLabel: "Knowledge Hits",
+    InlineComponent: KnowledgeSearchInline,
+    OverlayComponent: KnowledgeSearchOverlay,
     chrome: "card",
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) => {
@@ -848,44 +848,80 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
-  rag_list_sources: {
-    toolName: "rag_list_sources",
-    displayName: "Indexed Sources",
+  // ONE action-dispatched tool (2026-07-18 knowledge-family consolidation).
+  // It absorbed rag_list_sources / rag_list_data_stores / rag_get_data_store /
+  // rag_get_chunk / knowledge_navigate. The registry maps ONE renderer per tool
+  // name, so the per-action split lives inside `KnowledgeBrowseInline` — each
+  // action still draws its original purpose-built card.
+  knowledge_browse: {
+    toolName: "knowledge_browse",
+    displayName: "Browse Knowledge",
     phaseLabels: {
-      running: "Listing indexed sources",
-      complete: "Listed indexed sources",
-      errorPrefix: "Couldn't list indexed sources",
+      running: "Browsing indexed knowledge",
+      complete: "Browsed indexed knowledge",
+      errorPrefix: "Couldn't browse indexed knowledge",
     },
-    resultsLabel: "Sources",
-    InlineComponent: RagListSourcesInline,
-    OverlayComponent: RagListSourcesInline,
+    resultsLabel: "Knowledge",
+    InlineComponent: KnowledgeBrowseInline,
+    OverlayComponent: KnowledgeBrowseInline,
     chrome: "card",
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) => {
       const result = resultAsObject(entry);
-      const sources = Array.isArray(result?.sources)
-        ? (result.sources as unknown[])
-        : null;
-      if (!sources) return null;
-      return `${sources.length} ${sources.length === 1 ? "source" : "sources"}`;
-    },
-  },
+      const action = getArg<string>(entry, "action");
 
-  rag_get_chunk: {
-    toolName: "rag_get_chunk",
-    displayName: "Passage",
-    phaseLabels: {
-      running: "Reading the passage",
-      complete: "Read the passage",
-      errorPrefix: "Couldn't read the passage",
-    },
-    resultsLabel: "Passage",
-    InlineComponent: RagChunkInline,
-    OverlayComponent: RagChunkInline,
-    chrome: "card",
-    keepExpandedOnStream: true,
-    getHeaderSubtitle: (entry) => {
-      const result = resultAsObject(entry);
+      if (action === "sources" || Array.isArray(result?.sources)) {
+        const sources = Array.isArray(result?.sources)
+          ? (result.sources as unknown[])
+          : null;
+        if (!sources) return null;
+        return `${sources.length} ${sources.length === 1 ? "source" : "sources"}`;
+      }
+
+      if (action === "stores" || Array.isArray(result?.data_stores)) {
+        const stores = Array.isArray(result?.data_stores)
+          ? (result.data_stores as unknown[])
+          : null;
+        if (!stores) return null;
+        return `${stores.length} ${stores.length === 1 ? "store" : "stores"}`;
+      }
+
+      if (action === "store") {
+        const name = typeof result?.name === "string" ? result.name : null;
+        const total =
+          typeof result?.total_members === "number"
+            ? (result.total_members as number)
+            : null;
+        const parts: string[] = [];
+        if (name) parts.push(name);
+        if (total != null)
+          parts.push(`${total} ${total === 1 ? "member" : "members"}`);
+        return parts.length ? parts.join(" · ") : null;
+      }
+
+      if (action === "entity") {
+        const entity =
+          result?.entity && typeof result.entity === "object"
+            ? (result.entity as Record<string, unknown>)
+            : null;
+        const name =
+          (typeof entity?.name === "string" && entity.name) ||
+          getArg<string>(entry, "entity") ||
+          null;
+        const mentions =
+          typeof result?.total_mentions === "number"
+            ? (result.total_mentions as number)
+            : null;
+        const parts: string[] = [];
+        if (name) parts.push(name);
+        if (mentions != null)
+          parts.push(
+            `${mentions.toLocaleString()} ${mentions === 1 ? "mention" : "mentions"}`,
+          );
+        return parts.length ? parts.join(" · ") : null;
+      }
+
+      // chunk (the remaining action) — pages + token count.
       const tokens =
         typeof result?.token_count === "number"
           ? (result.token_count as number)
@@ -921,14 +957,10 @@ export const toolRendererRegistry: ToolRegistry = {
     getHeaderSubtitle: (entry) => {
       const result = resultAsObject(entry);
       const name = typeof result?.name === "string" ? result.name : null;
-      const rep =
-        (typeof result?.representation === "string" &&
-          result.representation) ||
-        getArg<string>(entry, "representation") ||
-        null;
+      const view = resolveDocumentContentView(entry);
       const parts: string[] = [];
       if (name) parts.push(name);
-      if (rep) parts.push(rep.replaceAll("_", " "));
+      if (view) parts.push(view.replaceAll("_", " "));
       return parts.length ? parts.join(" · ") : null;
     },
   },

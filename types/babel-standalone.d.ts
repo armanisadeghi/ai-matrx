@@ -6,9 +6,13 @@
 // TemplatePreviewRendererImpl.tsx, compileToolRenderer.ts,
 // compileEmitRenderer.ts, compile-core.ts).
 declare module "@babel/standalone" {
+  export type BabelPlugin = (...args: unknown[]) => unknown;
+
   export interface TransformOptions {
     presets?: Array<string | [string, Record<string, unknown>]>;
-    plugins?: Array<string | [string, Record<string, unknown>]>;
+    plugins?: Array<
+      string | BabelPlugin | [string | BabelPlugin, Record<string, unknown>]
+    >;
     filename?: string;
     sourceType?: "script" | "module" | "unambiguous";
     [key: string]: unknown;

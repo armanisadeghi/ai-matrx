@@ -33,6 +33,26 @@ export interface CompileSlotResult {
   error: string | null;
 }
 
+interface RemovableImportPath {
+  remove(): void;
+}
+
+/**
+ * Runtime imports are supplied by the allowlisted scope, not by the module
+ * loader. Remove import declarations at the AST boundary so multiline,
+ * aliased, type-only, and side-effect imports all follow the same rule.
+ */
+function stripImportDeclarationsPlugin() {
+  return {
+    name: "strip-sandbox-import-declarations",
+    visitor: {
+      ImportDeclaration(path: RemovableImportPath) {
+        path.remove();
+      },
+    },
+  };
+}
+
 export function compileSlotComponent({
   code,
   allowedImports,
@@ -42,15 +62,9 @@ export function compileSlotComponent({
   }
 
   try {
-    // Strip user-authored `import` lines. Imports come from the allow-listed
-    // scope — declaring them in source is a habit but not honoured here.
-    const stripped = code.replace(
-      /import\s+.*?from\s+['"].*?['"];?\s*/g,
-      "",
-    );
-
-    const babelResult = transform(stripped, {
+    const babelResult = transform(code, {
       presets: ["react", "typescript"],
+      plugins: [stripImportDeclarationsPlugin],
       filename: "slot.tsx",
     });
 

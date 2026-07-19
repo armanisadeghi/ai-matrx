@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** 1 (sub-feature of `features/agents/`)
-**Last updated:** `2026-04-22`
+**Last updated:** `2026-07-18`
 
 > Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This doc drills into the Runner surface specifically.
 
@@ -17,7 +17,8 @@ The Runner is the test track for an already-saved agent definition. It is **the 
 ## Entry point
 
 **Route**
-- `app/(authenticated)/agents/[id]/run/page.tsx`
+- `app/(core)/agents/[id]/run/page.tsx`
+- `app/(admin)/administration/system-agents/agents/[id]/run/page.tsx` — system-agent admin runner; reuses the same header, shell route menu, and execution surface with admin-aware links
 
 **API endpoints**
 - First turn: `POST /ai/agents/{id}` — `apiEndpointMode: "agent"`, `origin: "manual"` or `"test"`
@@ -117,6 +118,7 @@ These are overlays on the same runtime Chat uses — no separate code path, just
 
 ## Change log
 
+- `2026-07-18` — codex: Added full shell parity for the system-agent admin runner, including the route-aware run-history sidebar and admin-preserving history links.
 - `2026-04-22` — claude: initial doc. Extracted from `agent-system-mental-model.md` §3 and related.
 
 ---

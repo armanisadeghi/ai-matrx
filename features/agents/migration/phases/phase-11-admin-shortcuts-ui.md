@@ -37,6 +37,7 @@ No bugs discovered in the shared components during this phase.
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-18 | codex | Restored system-agent runner parity: the admin `/agents/[id]/run` route now mounts the shared run header, activates the shell's Agent Runs menu on desktop/mobile, and keeps history links inside the admin route tree. |
 | 2026-07-18 | codex | Reconciled the `Agents: System` admin catalog with `/administration/system-agents`: the category card now opens the umbrella hub, the hub links all 11 catalog entries (including All Shortcuts and all three create flows), and the all-routes directory keeps the complete system-agent route family together. |
 | 2026-04-21 | claude | Created `app/(authenticated)/(admin-auth)/administration/agent-shortcuts/layout.tsx` + `AgentShortcutsLayoutClient.tsx` (tabbed admin nav, mirrors prompt-builtins pattern). |
 | 2026-04-21 | claude | Created `app/.../agent-shortcuts/page.tsx` — dashboard with stat cards and tile navigation to the three CRUD surfaces. |

@@ -15,14 +15,14 @@ import type { ConversationListItem } from "@/features/agents/redux/conversation-
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import {
+  buildAgentRunUrl,
+  resolveAgentRunRoute,
+  type AgentRunRoute,
+} from "./agent-run-route";
 
 interface AgentRunSidebarMenuProps {
   expanded: boolean;
-}
-
-function extractAgentId(pathname: string): string | null {
-  const match = pathname.match(/^\/agents\/([^/]+)\/run/);
-  return match?.[1] ?? null;
 }
 
 function formatRelativeDate(iso: string | null): string {
@@ -65,7 +65,8 @@ export default function AgentRunSidebarMenu({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const agentId = extractAgentId(pathname);
+  const runRoute = resolveAgentRunRoute(pathname);
+  const agentId = runRoute?.agentId ?? null;
   const conversationIdFromUrl = searchParams.get("conversationId") ?? undefined;
 
   const canonicalAgentId = useAppSelector((state) => {
@@ -102,11 +103,11 @@ export default function AgentRunSidebarMenu({
   );
 
   const handleConversationSelect = (convId: string) => {
-    if (!agentId) return;
-    router.push(`/agents/${agentId}/run?conversationId=${convId}`);
+    if (!runRoute) return;
+    router.push(buildAgentRunUrl(runRoute, convId));
   };
 
-  if (!agentId) return null;
+  if (!runRoute) return null;
 
   // Collapsed: version number badges
   if (!expanded) {
@@ -177,7 +178,7 @@ export default function AgentRunSidebarMenu({
             key={version}
             version={version}
             items={items}
-            agentId={agentId}
+            runRoute={runRoute}
             activeConversationId={conversationIdFromUrl}
             onSelect={handleConversationSelect}
           />
@@ -190,13 +191,13 @@ export default function AgentRunSidebarMenu({
 function VersionGroup({
   version,
   items,
-  agentId,
+  runRoute,
   activeConversationId,
   onSelect,
 }: {
   version: number;
   items: ConversationListItem[];
-  agentId: string;
+  runRoute: AgentRunRoute;
   activeConversationId: string | undefined;
   onSelect: (convId: string) => void;
 }) {
@@ -240,7 +241,7 @@ function VersionGroup({
             <ConversationRow
               key={conv.conversationId}
               conv={conv}
-              agentId={agentId}
+              runRoute={runRoute}
               isActive={conv.conversationId === activeConversationId}
               onSelect={() => onSelect(conv.conversationId)}
             />
@@ -253,19 +254,19 @@ function VersionGroup({
 
 function ConversationRow({
   conv,
-  agentId,
+  runRoute,
   isActive,
   onSelect,
 }: {
   conv: ConversationListItem;
-  agentId: string;
+  runRoute: AgentRunRoute;
   isActive: boolean;
   onSelect: () => void;
 }) {
   const dispatch = useAppDispatch();
   const title = conv.title?.trim() || "Untitled";
   // Runner-route href — new tab + copy link land on the runner, not /chat.
-  const href = `/agents/${agentId}/run?conversationId=${conv.conversationId}`;
+  const href = buildAgentRunUrl(runRoute, conv.conversationId);
 
   return (
     <ItemRow
@@ -286,7 +287,7 @@ function ConversationRow({
           excludeFromKg: conv.excludeFromKg ?? false,
           isOwner: true,
           href,
-          surfaceKey: `agent-run:${agentId}`,
+          surfaceKey: `agent-run:${runRoute.agentId}`,
           dispatch,
         })
       }

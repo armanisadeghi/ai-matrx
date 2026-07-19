@@ -8,7 +8,7 @@ import type { RagHitView } from "@/features/rag/components/hit-card/types";
 import { hrefForNormalized, type NormalizedHit } from "./parseRag";
 
 /**
- * One `rag_search` hit as a SOURCE card. A thin adapter that maps the tool's
+ * One `knowledge_search` hit as a SOURCE card. A thin adapter that maps the tool's
  * `NormalizedHit` onto the canonical `RagHitView` and renders the ONE
  * `RagHitCard` (compact variant) shared with /rag/search + the omnibox — so the
  * chat card never drifts from the rest. Name resolution (Redux file map) and

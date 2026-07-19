@@ -7,10 +7,10 @@ import { canonicalNormalizedSourceName, RagSourceCard } from "./RagSourceCard";
 import { parseRag } from "./parseRag";
 
 /**
- * Overlay renderer for `rag_search` — every source for the query, full list, as
+ * Overlay renderer for `knowledge_search` — every source for the query, full list, as
  * source cards (hover → full-chunk peek).
  */
-export function RagSearchOverlay({ entry }: ToolRendererProps) {
+export function KnowledgeSearchOverlay({ entry }: ToolRendererProps) {
   const data = useMemo(() => parseRag(entry), [entry]);
 
   if (!data.hits.length) {

@@ -93,7 +93,8 @@ Find every place an agent is used and detect when a usage no longer matches the 
 **Routes**
 
 - `app/(authenticated)/agents/[id]/build/page.tsx` — Builder
-- `app/(authenticated)/agents/[id]/run/page.tsx` — Runner
+- `app/(core)/agents/[id]/run/page.tsx` — Runner
+- `app/(admin)/administration/system-agents/agents/[id]/run/page.tsx` — System-agent admin runner; shares the runner shell/sidebar with admin-aware navigation
 - `app/(authenticated)/chat/...` — Chat (🚧 not yet built; legacy at `features/cx-conversation/` + `features/cx-chat/`, deprecated stub at `app/(authenticated)/deprecated/chat/`)
 - `app/(authenticated)/ai/agents/[id]/connections` — tool/integration config
 - `app/(authenticated)/ai/shortcuts/` — shortcut admin
@@ -228,6 +229,7 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-18` — Restored system-agent admin runner parity with the user runner: shared PageHeader controls, desktop/mobile Large Route sidebar activation, and admin-preserving run-history URLs.
 - `2026-07-18` — Added direct typed APIs and `/demos/agent-assignments` for secure single-variable random assignment plus durable paired, independent-random, and Cartesian agent batches with progress, resume, cancellation, and Content IR-backed contracts.
 - `2026-07-17` — Made conversation provenance release-safe: `SourceFeature` now has an exhaustive runtime registry, stored unknowns cross one loud branded boundary instead of `as never`, and `release.sh` blocks on a repository-wide literal `source_app` / `source_feature` audit.
 - `2026-07-17` — Replaced the oversized Agent Resources association browser with the Variables-style compact row, canonical resource picker, batch-add mode, and Stored Files chips/details; confirmed the manager has one Builder mount point.

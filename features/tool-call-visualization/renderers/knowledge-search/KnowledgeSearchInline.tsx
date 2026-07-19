@@ -9,7 +9,7 @@ import { canonicalNormalizedSourceName, RagSourceCard } from "./RagSourceCard";
 import { parseRag } from "./parseRag";
 
 /**
- * Inline renderer for `rag_search` — the answer's SOURCES as a polished entity
+ * Inline renderer for `knowledge_search` — the answer's SOURCES as a polished entity
  * card. The user needs to confirm where an answer came from, so each hit is a
  * source card (hover → full-chunk peek). Card chrome: while searching the shell
  * shows the slim glossy "Searching indexed content" line; on completion this
@@ -17,7 +17,7 @@ import { parseRag } from "./parseRag";
  */
 const MAX_INLINE = 6;
 
-export function RagSearchInline({
+export function KnowledgeSearchInline({
   entry,
   onOpenOverlay,
   expanded,

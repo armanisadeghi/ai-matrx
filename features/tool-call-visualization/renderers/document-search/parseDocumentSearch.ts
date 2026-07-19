@@ -1,13 +1,13 @@
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, resultAsObject } from "../_shared";
-import type { NormalizedHit } from "../rag-search/parseRag";
+import type { NormalizedHit } from "../knowledge-search/parseRag";
 
 /**
  * Parse + normalize the `document_search` tool result onto the SAME
- * `NormalizedHit` shape `rag_search` uses, so both tools render through the
+ * `NormalizedHit` shape `knowledge_search` uses, so both tools render through the
  * one canonical `RagSourceCard` / `RagHitCard` stack and never drift.
  *
- * Wire shape (aidream): { scope, action, scanned_document_ids, by_page: [
+ * Wire shape (aidream): { scope, mode, scanned_document_ids, by_page: [
  *   { document_id, page_number, semantic: [{ snippet, score, chunk_id,
  *     page_numbers, derivation_kind, ... }], string: [...] } ], note }.
  * Hits are flattened across pages, deduped by chunk_id (a chunk can match on

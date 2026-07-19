@@ -95,5 +95,6 @@ Build `/p/[slug]` for agents with feature parity to the prompt-apps system: Babe
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-18 | codex | Hardened the shared Agent Apps Babel compiler: AST-level import removal now covers multiline/type-only/side-effect imports; regression-tested and live-verified through the DB kind-component consumers (`employee_card`, `employee_roster`). |
 | 2026-07-15 | codex (D31) | Hardened the two surviving legacy-named app RPCs against the canonical `app.definition` model: public execution payloads now require public visibility or viewer/owner/service access; version pinning requires editor/owner/service access and is no longer anon-callable. Fixed the stale `output_format` column reference while preserving the response key as `null`. |
 | 2026-04-21 | claude (phase-08) | Initial ship: 7 migrations, 24 feature files, 5 API routes, dual-path `/p/[slug]`. Status: code-complete-pending-DB. |

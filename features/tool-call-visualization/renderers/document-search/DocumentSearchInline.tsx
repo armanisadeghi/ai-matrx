@@ -8,12 +8,12 @@ import { EntityCard } from "../_shared-entity/EntityCard";
 import {
   canonicalNormalizedSourceName,
   RagSourceCard,
-} from "../rag-search/RagSourceCard";
+} from "../knowledge-search/RagSourceCard";
 import { parseDocumentSearch } from "./parseDocumentSearch";
 
 /**
  * Inline renderer for `document_search` — the SAME visual grammar as
- * `rag_search` (the two tools do nearly identical retrieval): a polished
+ * `knowledge_search` (the two tools do nearly identical retrieval): a polished
  * entity card whose body is a linear list of source hit cards (snippet,
  * page, relevance, click → viewer). Never a raw JSON dump, never a
  * click-to-reveal-another-click chain.

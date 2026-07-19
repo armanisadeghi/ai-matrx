@@ -56,6 +56,8 @@ interface KindInstanceRenderProps {
   showRoutingNote?: boolean;
 }
 
+type RoutingStatus = "checking" | "routable" | "unroutable";
+
 export default function KindInstanceRender({
   kind,
   value,
@@ -63,30 +65,42 @@ export default function KindInstanceRender({
 }: KindInstanceRenderProps) {
   // Routing must be judged with the WARM tiers in (user kind definitions +
   // `kind_component` resolver rows — including source='db' user components).
-  // Kick both warms and re-render once they land; then refresh-on-view
-  // (rate-limited + deduped) so an EDITED db component renders fresh here —
-  // server edits never push to open clients, this call is the contract.
-  const [, setWarmTick] = useState(0);
+  // Keep the note in an explicit three-state lifecycle: a cold registry is
+  // "checking", not proof that a component is missing. This prevents the
+  // false warning from flashing or sticking while BlockRenderer independently
+  // upgrades to a newly arrived db component.
+  const [routingStatus, setRoutingStatus] = useState<RoutingStatus>(() =>
+    kindIsRoutable(kind) ? "routable" : "checking",
+  );
+
   useEffect(() => {
     let cancelled = false;
-    const rerender = () => {
-      if (!cancelled) setWarmTick((t) => t + 1);
+    let warmed = false;
+    const syncRoutingStatus = () => {
+      if (cancelled) return;
+      setRoutingStatus(
+        kindIsRoutable(kind) ? "routable" : warmed ? "unroutable" : "checking",
+      );
     };
-    const unsubscribe = componentRegistry.subscribe(rerender);
+
+    const unsubscribe = componentRegistry.subscribe(syncRoutingStatus);
+    syncRoutingStatus();
+
     void Promise.allSettled([
       kindRegistry.ensureWarm(),
       componentRegistry.ensureWarm(),
-    ]).then(() => {
-      rerender();
-      void componentRegistry.refreshKindComponents();
+    ]).then(async () => {
+      warmed = true;
+      syncRoutingStatus();
+      await componentRegistry.refreshKindComponents();
+      syncRoutingStatus();
     });
+
     return () => {
       cancelled = true;
       unsubscribe();
     };
-  }, []);
-
-  const routable = kindIsRoutable(kind);
+  }, [kind]);
 
   const block: RenderBlock | null = isRecordValue(value)
     ? {
@@ -101,7 +115,7 @@ export default function KindInstanceRender({
 
   return (
     <div className="space-y-3">
-      {showRoutingNote && !routable && (
+      {showRoutingNote && routingStatus === "unroutable" && (
         <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
           <Info className="h-3.5 w-3.5 shrink-0" />
           This shape has no custom component yet, so it renders through the

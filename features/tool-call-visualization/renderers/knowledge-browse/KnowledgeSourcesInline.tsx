@@ -22,8 +22,8 @@ import { useOpenCitation } from "@/features/rag/components/source-inspector/useO
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 
 /**
- * Inline renderer for `rag_list_sources` — the user's indexed knowledge as a
- * polished source list (the same visual grammar as `rag_search`): one row per
+ * Inline renderer for `knowledge_browse(action="sources")` — the user's indexed knowledge as a
+ * polished source list (the same visual grammar as `knowledge_search`): one row per
  * source with a resolved name, chunk coverage, section-kind chips, and a
  * click-through to the source inspector. Never a raw id/JSON table.
  */
@@ -187,7 +187,7 @@ function SourceRow({ source }: { source: ParsedSource }) {
   );
 }
 
-export function RagListSourcesInline({
+export function KnowledgeSourcesInline({
   entry,
   onOpenOverlay,
   onOpenWindowPanel,
