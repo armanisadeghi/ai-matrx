@@ -516,10 +516,15 @@ The full set: `js, mjs, cjs, jsx, ts, tsx, py, rb (+ Rakefile/Gemfile/Vagrantfil
 
 ## OFFICE — NOT PREVIEWABLE
 
+> **The "server-side render" these rows ask for now EXISTS.** aidream ships an Office codec
+> (docx/pptx/xlsx → markdown, + LibreOffice → PDF page-1 thumbnails) and an `office` agent tool.
+> Nothing here consumes it yet. Work order:
+> [`docs/handoffs/office-documents.md`](../../../../docs/handoffs/office-documents.md).
+
 | Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
 |---|---|---|---|---|---|---|---|---|
-| `doc, docx` (Word) | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — Download only. Needs `mammoth.js` (docx → HTML) or server-side render. |
-| `ppt, pptx` (PowerPoint) | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — Download only. Needs server-side slide render. |
+| `doc, docx` (Word) | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — Download only. Server-side markdown extract is now available (see note above). |
+| `ppt, pptx` (PowerPoint) | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — Download only. Server-side slide render + page-1 thumb now available (see note above). |
 | `epub` | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview`. Needs an EPUB reader (`epub.js`). |
 
 ---
