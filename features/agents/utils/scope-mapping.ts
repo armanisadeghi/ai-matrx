@@ -217,10 +217,41 @@ export function mapScopeToInstanceWithSurface(
 
   // Context entries: replace any legacy entries whose key matches a surface entry.
   const surfaceKeys = new Set(surface.contextEntries.map((e) => e.key));
-  const contextEntries: InstanceContextEntry[] = [
+  let contextEntries: InstanceContextEntry[] = [
     ...legacy.contextEntries.filter((e) => !surfaceKeys.has(e.key)),
     ...surface.contextEntries,
   ];
+
+  // A canonical file_id replaces overlapping full-document payload aliases.
+  // Keep explicitly mapped values and declared agent slots, plus the active
+  // slice for non-full scopes; remove only redundant ad-hoc fallthrough.
+  const hasFileReference =
+    typeof applicationScope.file_id === "string" &&
+    applicationScope.file_id.trim().length > 0;
+  if (hasFileReference) {
+    const explicitlyMappedSources = new Set([
+      ...Object.keys(scopeMappings ?? {}),
+      ...Object.keys(contextMappings ?? {}),
+      ...Object.keys(surfaceValueMappings ?? {}),
+    ]);
+    const declaredSlots = new Set((contextSlots ?? []).map((slot) => slot.key));
+    const redundantKeys = new Set([
+      "full_document_text",
+      "content",
+      "selection",
+      "processed_document_id",
+      ...(applicationScope.scope_kind === "full" ? ["active_scope_text"] : []),
+    ]);
+    contextEntries = contextEntries.filter(
+      (entry) =>
+        entry.value !== "" &&
+        !(
+          redundantKeys.has(entry.key) &&
+          !explicitlyMappedSources.has(entry.key) &&
+          !declaredSlots.has(entry.key)
+        ),
+    );
+  }
 
   return {
     variableValues,

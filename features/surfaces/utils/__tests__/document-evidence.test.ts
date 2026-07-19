@@ -4,10 +4,20 @@ const DOCUMENT_ID = "660e8400-e29b-41d4-a716-446655440000";
 const FILE_ID = "550e8400-e29b-41d4-a716-446655440000";
 
 describe("withSurfaceDocumentEvidence", () => {
+  it("uses a canonical file reference without duplicating a processed source", () => {
+    const input = {
+      file_id: FILE_ID,
+      processed_document_id: DOCUMENT_ID,
+    };
+
+    expect(withSurfaceDocumentEvidence("matrx-user/pdf-extractor", input)).toBe(
+      input,
+    );
+  });
+
   it("injects the canonical lazy processed-document source", () => {
     const scope = withSurfaceDocumentEvidence("matrx-user/pdf-extractor", {
       processed_document_id: DOCUMENT_ID,
-      file_id: FILE_ID,
       filename: "evidence.pdf",
       context: { existing: "kept" },
     });
@@ -21,7 +31,6 @@ describe("withSurfaceDocumentEvidence", () => {
           extra: {
             attached_as: "surface",
             surface_name: "matrx-user/pdf-extractor",
-            file_id: FILE_ID,
           },
         },
         type: "json",

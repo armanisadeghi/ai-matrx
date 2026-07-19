@@ -103,10 +103,9 @@ processed document) is **NOT** a `content[]` block and is **NO LONGER** a
 per-turn `request.context` pointer. It is a **durable `platform.associations`
 edge** to the conversation, so an attachment **persists across turns and reloads**:
 
-- **Edge:** `processed_document → conversation` (default when the file has a
-  processed document) **or** `file → conversation` (the raw file). Both endpoint
-  pairs are registered + active with `container_side=target`; direction is
-  little→big (source = `file`/`processed_document`, target = `conversation`).
+- **Edge:** canonical `file → conversation`, registered with
+  `container_side=target`. Legacy `processed_document → conversation` edges are
+  still read and migrate to a file edge when their policy is edited.
 - **The FE's only jobs:** create the edge on attach, remove it on detach, render
   the chip from the edge list. It ships **nothing** in `request.context` for
   attachments.
@@ -116,18 +115,17 @@ edge** to the conversation, so an attachment **persists across turns and reloads
   aidream change — the old lazy `request.context` pointer was removed here.
 
 FE source of truth:
-- **Attach:** `attach-resource.ts` → `useAttachResource` (creates the edge via
-  the `addAssociation` thunk). Default = `processed_document` when the file has
-  one, else `file`; a cold cache attaches `file` instantly then upgrades to
-  `processed_document` once the probe resolves.
-- **Render + detach + representation:** `AttachedDocumentChips.tsx` reads the
+- **Attach:** `attach-resource.ts` → `useAttachResource` creates and awaits the
+  canonical file edge via `addAssociation`; family discovery happens on the
+  backend and no client-side processed-document probe or upgrade is needed.
+- **Render + detach + policy:** `AttachedDocumentChips.tsx` reads the
   conversation's incoming edges via `useContainerLinks({ containerType:
   "conversation" })` (`linksFor("processed_document")` + `linksFor("file")`),
-  renders `ResourceAttachmentTile` + `DocumentRepresentationPill`, and
-  detaches / re-attaches to change representation or switch to the raw file.
+  renders the shared dynamic family policy editor, and detaches or re-attaches
+  to persist bounded promotions and exclusions.
 - **Edge metadata** (`platform.associations.metadata`) carries
-  `{ representation?: "clean" | "raw", file_id?: string }`. `assoc_add` REPLACES
-  metadata on conflict, so a representation change is an idempotent re-attach.
+  `{ file_id, resource_policy?: { promote, exclude } }`. `assoc_add` REPLACES
+  metadata on conflict, so every writer preserves the complete existing object.
 - **Shared vocabulary:** `attached-documents.ts` (tokens, metadata shape, the
   URL-proof label cleaner, org resolver).
 

@@ -6,17 +6,17 @@ import { useFile } from "@/features/files";
 /**
  * attached-documents — the shared vocabulary for a document attached to a chat.
  *
- * An attached document is a DURABLE `platform.associations` edge from the file
- * (or its processed document) to the conversation — `file → conversation` or
- * `processed_document → conversation`, both registered + active with
- * `container_side=target`. It PERSISTS across turns and reloads: the chip renders
+ * A new attachment is a DURABLE `file → conversation`
+ * `platform.associations` edge. Legacy `processed_document → conversation`
+ * edges remain readable and migrate to the canonical file edge when edited.
+ * It PERSISTS across turns and reloads: the chip renders
  * from the conversation's incoming edges (via `useContainerLinks`), and the
  * backend reads those edges at call time and injects the context itself. The FE's
  * only jobs are: create the edge on attach, remove it on detach, render the chip.
  *
  * This module holds the shared bits both the ATTACH path
  * (`attach-resource.ts`) and the CHIP render (`AttachedDocumentChips.tsx`) need:
- * the two source tokens, the edge-metadata shape, a URL-proof label cleaner, and
+ * the canonical and legacy source tokens, edge-metadata shape, a URL-proof label cleaner, and
  * the org resolver. Writes go through `associationsService` / the association
  * thunks / `useContainerLinks` — never a bespoke edge write.
  */
@@ -28,10 +28,8 @@ import type { Json } from "@/types/database.types";
 import { normalizeResourceFamilyPolicy } from "@/features/agents/components/inputs/resources/resource-family-policy";
 
 /**
- * The two entity tokens a stored file can be attached under. `processed_document`
- * (default when the file has one) leads with the extracted/cleaned text; `file`
- * leads with the raw file. The backend resolver handles both — the difference is
- * only what it leads with. Ordered default-first for stable chip render order.
+ * Canonical `file` plus the legacy `processed_document` token retained for
+ * rendering and migrating old edges. New writes always use `file`.
  */
 export const ATTACHED_DOCUMENT_TOKENS = ["processed_document", "file"] as const;
 

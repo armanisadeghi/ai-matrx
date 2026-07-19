@@ -46,6 +46,9 @@ export function withSurfaceDocumentEvidence(
     const fileId = declaration.fileIdValue
       ? nonEmptyString(applicationScope[declaration.fileIdValue])
       : null;
+    // A file id already means the complete readable family. Adding a second
+    // processed-document source duplicates the same descriptor and tools.
+    if (fileId) continue;
     const label = declaration.labelValue
       ? nonEmptyString(applicationScope[declaration.labelValue])
       : null;
@@ -61,7 +64,6 @@ export function withSurfaceDocumentEvidence(
         extra: {
           attached_as: "surface",
           surface_name: surfaceName,
-          ...(fileId ? { file_id: fileId } : {}),
         },
       },
       type: "json",
