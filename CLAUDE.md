@@ -366,7 +366,7 @@ How a row becomes visible platform-wide — ownership, `iam.permissions`, `iam.m
 
 ## Cross-Repo — matrx-extend
 
-Chrome extension bridge for cross-surface workflows. Real bridge ships in Phase 2.
+Chrome extension bridge for cross-surface workflows. The Phase 2 bridge has shipped (`chrome.runtime.sendMessage` + Supabase Broadcast substrates — see the header of `features/surfaces/data/surface-candidates.ts`).
 
 - Connection map: [docs/MATRX_EXTEND_CONNECTION.md](./docs/MATRX_EXTEND_CONNECTION.md)
 - Skill: `connect-matrx-extend`
@@ -375,7 +375,6 @@ Chrome extension bridge for cross-surface workflows. Real bridge ships in Phase 
 
 Pre-existing dead references that *look* like extension scaffolding but are not — do not touch in unrelated PRs:
 
-- `features/surfaces/data/surface-candidates.ts:24` — `chrome-extension` in `client_name` union, no surface declared
 - `utils/errorContext.ts:10` — defensive stack-frame filter
 
 ---
