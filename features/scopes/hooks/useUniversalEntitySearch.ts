@@ -17,7 +17,7 @@ import {
 } from "@/features/scopes/service/associationCandidates";
 import { fetchEntityTitles } from "@/features/scopes/service/entityTitles";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
-import { listableTokens } from "@/features/scopes/registry/entityRegistry";
+import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
@@ -68,7 +68,7 @@ export function useUniversalEntitySearch(
       setLoading(true);
       const activeTokens = tokensKey
         ? (tokensKey.split(",") as EntityTypeToken[])
-        : listableTokens();
+        : curatedTokens();
 
       let next: UniversalCandidate[] = [];
       if (trimmed) {

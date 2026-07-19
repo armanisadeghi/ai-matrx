@@ -33,7 +33,7 @@ import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import {
   getContentRoleMeta,
-  listableTokens,
+  curatedTokens,
   tryGetEntityInfo,
   type ContentRole,
   type EntityInfo,
@@ -99,7 +99,7 @@ export function useContainerLinksAdapter(
     orgId: container?.orgId ?? null,
   });
   const rows: ContainerResourceRow[] = container
-    ? listableTokens().flatMap((token) =>
+    ? curatedTokens().flatMap((token) =>
         links.linksFor(token).map((l) => ({
           key: l.edgeId,
           token: l.token,
@@ -208,7 +208,7 @@ export function AssociationList(props: AssociationListProps) {
   // role → token → rows, in registry role order.
   const grouped = groupRows(visibleRows);
   const isLoading = adapter.status === "loading" || adapter.status === "idle";
-  const attachableTokens = tokenFilter ?? listableTokens();
+  const attachableTokens = tokenFilter ?? curatedTokens();
 
   return (
     <div className={cn("flex flex-col gap-2 text-foreground", props.className)}>

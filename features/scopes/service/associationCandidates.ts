@@ -20,7 +20,7 @@
 import { supabase } from "@/utils/supabase/client";
 import {
   getEntityInfo,
-  listableTokens,
+  curatedTokens,
 } from "@/features/scopes/registry/entityRegistry";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
@@ -30,12 +30,9 @@ export interface CandidateRecord {
 }
 
 /**
- * BRIDGE: `reference_search_candidates` is written to the DB via
- * `migrations/reference_categories_and_candidate_search.sql` but may not be
- * applied yet, so it is absent from the generated RPC types. This narrow
- * wrapper types the call against its real signature; once the function is
- * live and `pnpm db-types` has run, replace with a plain `supabase.rpc(...)`
- * call and delete this.
+ * The universal candidate reader RPC (`public.reference_search_candidates`,
+ * from `migrations/reference_categories_and_candidate_search.sql`) — shared
+ * by candidate search here and title resolution in `entityTitles.ts`.
  */
 export async function callReferenceSearchCandidates(args: {
   p_token: string;
@@ -46,18 +43,12 @@ export async function callReferenceSearchCandidates(args: {
   | { data: Array<{ id: string; title: string | null }>; error: null }
   | { data: null; error: { message: string } }
 > {
-  const rpc = (supabase.rpc as unknown as (
-    fn: string,
-    params: Record<string, unknown>,
-  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>).bind(
-    supabase,
+  const { data, error } = await supabase.rpc(
+    "reference_search_candidates",
+    args,
   );
-  const { data, error } = await rpc("reference_search_candidates", args);
   if (error) return { data: null, error };
-  return {
-    data: (data ?? []) as Array<{ id: string; title: string | null }>,
-    error: null,
-  };
+  return { data: data ?? [], error: null };
 }
 
 export interface ListCandidatesArgs {
@@ -226,7 +217,7 @@ export async function searchCandidatesAcrossTokens(
     perTokenLimit = 5,
     concurrency = 6,
   } = args;
-  const list = tokens ?? listableTokens();
+  const list = tokens ?? curatedTokens();
   if (list.length === 0) return [];
 
   const out: UniversalCandidate[] = [];

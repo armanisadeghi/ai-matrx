@@ -51,7 +51,7 @@ import type {
 import {
   CONTENT_ROLES,
   getContentRoleMeta,
-  listableTokens,
+  curatedTokens,
   tryGetEntityInfo,
   type ContentRole,
   type EntityInfo,
@@ -162,7 +162,7 @@ export function WarRoomResourcesList({
   const attachedKeys = new Set(
     rows.map((r) => attachedKey(r.token, r.resourceId)),
   );
-  const attachableTokens = tokenFilter ?? listableTokens();
+  const attachableTokens = tokenFilter ?? curatedTokens();
   const grouped = groupRows(visibleRows);
   const isLoading = adapter.status === "loading" || adapter.status === "idle";
   const detachLabel =

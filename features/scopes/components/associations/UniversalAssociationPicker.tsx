@@ -18,7 +18,7 @@ import { cn } from "@/utils/cn";
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import {
   getEntityInfo,
-  listableTokens,
+  curatedTokens,
 } from "@/features/scopes/registry/entityRegistry";
 import { TokenCandidateList } from "./AssociationPickerSheet";
 import type { UniversalCandidate } from "@/features/scopes/service/associationCandidates";
@@ -51,7 +51,7 @@ export function UniversalAssociationPicker(
   props: UniversalAssociationPickerProps,
 ) {
   const { attachedKeys, onAttach, onDetach, ownerId, className } = props;
-  const tokens = props.tokens ?? listableTokens();
+  const tokens = props.tokens ?? curatedTokens();
   const [query, setQuery] = useState("");
   const [browseToken, setBrowseToken] = useState<EntityTypeToken | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);

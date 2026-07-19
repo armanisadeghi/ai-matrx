@@ -31640,6 +31640,18 @@ export type Database = {
           sort_order: number
         }[]
       }
+      reference_search_candidates: {
+        Args: {
+          p_ids?: string[]
+          p_limit?: number
+          p_search?: string
+          p_token: string
+        }
+        Returns: {
+          id: string
+          title: string
+        }[]
+      }
       remove_sharing: {
         Args: { permission_id: string; user_id?: string }
         Returns: boolean

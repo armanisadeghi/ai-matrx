@@ -9,7 +9,7 @@
 //   </PrimaryEntityProvider>
 //
 // By default it lists EVERY token the registry can list candidates for (the
-// `listableTokens()` set), GROUPED BY CONTENT ROLE (Utilities / Sources /
+// `curatedTokens()` set), GROUPED BY CONTENT ROLE (Utilities / Sources /
 // Outputs / Sources & Outputs / Workspaces) with the same categorical accent
 // colors the org resource tiles use — one visual language for "what kind of
 // thing is this" across every surface. Roles and their accents come from the
@@ -28,7 +28,7 @@ import { AssociationCard } from "@/features/scopes/components/associations/Assoc
 import {
   CONTENT_ROLES,
   getEntityInfo,
-  listableTokens,
+  curatedTokens,
 } from "@/features/scopes/registry/entityRegistry";
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
@@ -43,7 +43,7 @@ export function AssociationCardGrid({
   tokens,
   className,
 }: AssociationCardGridProps) {
-  const list = tokens ?? listableTokens();
+  const list = tokens ?? curatedTokens();
 
   return (
     <div className={cn("space-y-5", className)}>

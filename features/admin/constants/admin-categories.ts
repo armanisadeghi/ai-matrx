@@ -318,13 +318,13 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "Agents: System",
+    name: "Agents",
     landingPath: "/administration/system-agents",
     iconName: "Zap",
     iconColor: "text-rose-600",
     features: [
       {
-        title: "Agents: System — Dashboard",
+        title: "Agents Dashboard",
         description:
           "Hub for every global-scope agent surface: builtin agents, shortcuts, categories, content blocks, and system agent apps.",
         iconName: "Zap",
@@ -332,7 +332,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — List",
+        title: "Agents List",
         description:
           "Browse, build, and run builtin (global) agents. Includes agents converted from user definitions.",
         iconName: "Bot",
@@ -340,7 +340,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — Shortcuts",
+        title: "Agents Shortcuts",
         description:
           "Browse and edit global agent shortcuts, enabled contexts, and agent bindings.",
         iconName: "Zap",
@@ -348,7 +348,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — Categories",
+        title: "Agents Categories",
         description:
           "Placement hierarchy, icons, and enabled contexts for agent shortcut groups.",
         iconName: "Zap",
@@ -356,7 +356,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — Content Blocks",
+        title: "Agents Content Blocks",
         description:
           "Reusable insertable blocks surfaced under agent shortcut categories.",
         iconName: "Zap",
@@ -364,7 +364,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — Apps",
+        title: "Agents Apps",
         description:
           "Global-scope agent apps available to every user. Distinct from moderation of user-published apps.",
         iconName: "Bot",
@@ -372,7 +372,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — Lineage",
+        title: "Agents Lineage",
         description:
           "See what each system agent gives rise to — derived agents, shortcuts, and apps.",
         iconName: "GitBranch",
@@ -380,7 +380,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — New Agent",
+        title: "New Agent",
         description:
           "Create a new global-scope system agent (wizard entry point).",
         iconName: "Plus",
@@ -388,7 +388,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — New Agent (Manual)",
+        title: "New Agent Manual",
         description:
           "Create a system agent manually without the guided wizard.",
         iconName: "Pencil",
@@ -396,14 +396,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agents: System — New App",
+        title: "New App",
         description: "Create a new global-scope system agent app.",
         iconName: "Plus",
         link: "/administration/system-agents/apps/new",
         isNew: true,
       },
       {
-        title: "Agents: System — All Shortcuts",
+        title: "All Shortcuts",
         description:
           "Flat list of every global agent shortcut across categories.",
         iconName: "List",

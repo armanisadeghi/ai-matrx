@@ -484,6 +484,26 @@ export function tryGetEntityInfoByTable(
  * `listCandidates` override. A pickable token with neither is a config
  * defect — it is excluded and screamed about, never silently shown broken.
  */
+/**
+ * Tokens with a hand-curated FE overlay (real icon, href, content role) —
+ * the DEFAULT set for association card grids, resource sections, and attach
+ * pickers, where rendering all ~118 pickable registry types would be noise.
+ * The reference "Allowed types" chooser deliberately uses the OPEN
+ * `listableTokens()` set instead — do not swap the two.
+ */
+export function curatedTokens(): EntityTypeToken[] {
+  return (Object.keys(ENTITY_OVERLAY) as EntityTypeToken[]).filter((t) => {
+    const meta = ENTITY_TYPE_METADATA[t];
+    const o = ENTITY_OVERLAY[t];
+    return (
+      meta !== undefined &&
+      (meta.titleColumn != null ||
+        o?.titleColumn != null ||
+        o?.listCandidates !== undefined)
+    );
+  });
+}
+
 export function listableTokens(): EntityTypeToken[] {
   return (Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]).filter(
     (t) => {
