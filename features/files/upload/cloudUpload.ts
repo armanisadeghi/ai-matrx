@@ -128,9 +128,9 @@ export interface CloudUploadSuccess {
   shareUrl?: string;
   /**
    * The PUBLIC DIRECT URL for the file bytes — points at Python's
-   * `{BACKEND}/share/{token}/download` endpoint, which 302-redirects to a freshly
-   * signed S3 URL each time it's hit. Embed in `<img src>`, `<a href
-   * download>`, Slack/Notion unfurls, OG images. No Next.js hop.
+   * `{BACKEND}/share/{token}` endpoint, which serves inline-safe bytes (and may
+   * 302-redirect public files to their permanent CDN URL). Embed it in
+   * `<img src>`, Slack/Notion unfurls, or OG images. No Next.js hop.
    *
    * Populated whenever `shareUrl` is — they always go in pairs because
    * both are derived from the same share token.
@@ -179,7 +179,7 @@ function resolveFilePath(file: File, options: CloudUploadOptions): string {
 
 /**
  * Build the public DIRECT-FILE URL for a share token — points at Python's
- * `/share/{token}/download` byte endpoint. No Next.js hop. Embed in
+ * `/share/{token}` byte endpoint. No Next.js hop. Embed in
  * `<img src>`, `<video src>`, downloads, Slack unfurls, etc.
  */
 function buildDirectShareUrl(token: string): string {

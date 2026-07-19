@@ -164,19 +164,19 @@ function FileRenderer({ result, token }: { result: ResolvedShareToken; token: st
       // raw tag on this anonymous page where InlineMediaRef (authed re-mint)
       // does not apply.
       <img
-        src={urls.download}
+        src={urls.public}
         alt={name}
         className="max-h-[70vh] w-auto max-w-full rounded-lg border border-border"
       />
     );
   } else if (mime.startsWith("video/")) {
-    preview = <video src={urls.download} controls className="max-h-[70vh] w-full rounded-lg border border-border" />;
+    preview = <video src={urls.public} controls className="max-h-[70vh] w-full rounded-lg border border-border" />;
   } else if (mime.startsWith("audio/")) {
-    preview = <audio src={urls.download} controls className="w-full" />;
+    preview = <audio src={urls.public} controls className="w-full" />;
   } else if (mime === "application/pdf") {
     preview = (
       <iframe
-        src={urls.download}
+        src={urls.public}
         title={name}
         className="h-[70vh] w-full rounded-lg border border-border bg-card"
       />

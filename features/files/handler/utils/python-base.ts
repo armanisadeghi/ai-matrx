@@ -20,7 +20,7 @@
  *
  * Tokens are CANONICAL share-link tokens (`platform.share_links`), minted via
  * `createShareLink` in `@/utils/permissions/shareLinks` — the landing page is
- * `/s/{token}` and the byte endpoint is Python's `/share/{token}/download`.
+ * `/s/{token}` and the clean byte endpoint is Python's `/share/{token}`.
  */
 
 import { resolveFilesBaseUrl } from "@/lib/python-client";
@@ -36,16 +36,16 @@ export function pythonBaseUrl(): string {
 
 export interface ShareUrls {
   /**
-   * Bytes endpoint with `inline` Content-Disposition (the default).
+   * Canonical clean public URL with `inline` Content-Disposition (the default).
    * Works as `<img src>`, `<video src>`, `<audio src>`, PDF preview, or a
-   * raw download link a recipient can paste anywhere.
+   * normal browser link a recipient can paste anywhere.
    *
    * Image / video / audio / PDF render inline. Dangerous types
    * (HTML, SVG, JS) are forced to `attachment` server-side.
    */
-  download: string;
+  public: string;
   /**
-   * Same bytes endpoint with `?inline=false` — forces
+   * Explicit download endpoint with `?inline=false` — forces
    * `Content-Disposition: attachment` so the browser triggers a
    * download dialog instead of rendering inline. Use for "Save As…"
    * style affordances on images / PDFs.
@@ -71,7 +71,7 @@ export function shareUrls(
   const backend = pythonBaseUrl();
   const base = `${backend}/share/${t}`;
   return {
-    download: `${base}/download`,
+    public: base,
     attachment: `${base}/download?inline=false`,
     page: opts?.appOrigin
       ? `${opts.appOrigin.replace(/\/$/, "")}/s/${t}`
@@ -80,12 +80,12 @@ export function shareUrls(
 }
 
 /**
- * Python's public byte-streaming share endpoint. Convenience wrapper
- * around `shareUrls(token).download` for callers that just want the
+ * Python's clean public byte-streaming share endpoint. Convenience wrapper
+ * around `shareUrls(token).public` for callers that just want the
  * single canonical embeddable URL.
  */
 export function pythonShareUrl(token: string): string {
-  return shareUrls(token).download;
+  return shareUrls(token).public;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ export interface FileUrls {
  * Build every URL variant for a cld_files file id in one call. Cheap
  * — just string concatenation. Note: the resulting URLs require an
  * Authorization header on `fetch()` — they're not publicly resolvable
- * the way `shareUrls(...).download` is.
+ * the way `shareUrls(...).public` is.
  */
 export function fileUrls(fileId: string): FileUrls {
   const id = encodeURIComponent(fileId);
@@ -161,7 +161,7 @@ export function tokenFromShareUrl(url: string): string | null {
  * in the database. The intent is what the user clicks when they want to
  * SEE the file (not download it):
  *
- *   - Our `/share/{token}/download` (or bare `/share/{token}`) URLs → the
+ *   - Our bare `/share/{token}` (or legacy `/share/{token}/download`) URLs → the
  *     canonical FE landing page at `${origin}/s/{token}` (metadata + preview
  *     + download button). This is what an admin wants when they click a
  *     screenshot in the feedback dialog.

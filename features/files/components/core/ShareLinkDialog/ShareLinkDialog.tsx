@@ -126,7 +126,7 @@ export function ShareLinkDialogBody({
   );
 
   /**
-   * Direct-file URL — Python's public `/share/{token}/download` byte
+   * Direct-file URL — Python's clean public `/share/{token}` byte
    * endpoint. The browser → Python → S3 chain has no Next.js hop;
    * embeddable into `<img src>`, `<video>`, raw downloads, Notion, Slack,
    * etc. Files only — folders have no bytes.

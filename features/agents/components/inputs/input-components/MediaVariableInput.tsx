@@ -121,6 +121,7 @@ function readValue(value: unknown): string {
     // it to a transient URL or an empty field.
     if (typeof o.file_id === "string") return o.file_id;
     if (typeof o.fileId === "string") return o.fileId;
+    if (typeof o.resource_id === "string") return o.resource_id;
     if (typeof o.url === "string") return o.url;
   }
   return "";
@@ -260,7 +261,7 @@ export function MediaVariableInput({
               {documentState.status === "loading"
                 ? "Checking processed document…"
                 : documentState.status === "found"
-                  ? "Processed document detected — clean/raw text, RAG, pages, and derivations become available to the agent automatically."
+                  ? "Processed document detected — existing clean/raw text, RAG, pages, and derivations are discoverable by the agent automatically."
                   : documentState.status === "absent"
                     ? "Original file selected. Process it for RAG to add clean/raw text, search, pages, and derivations."
                     : documentState.status === "unavailable"

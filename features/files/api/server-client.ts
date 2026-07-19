@@ -293,7 +293,7 @@ export interface ServerUploadAndShareResult {
   /** Canonical share landing page — `${appOrigin}/s/{token}`. HTML, not bytes. */
   shareUrl: string;
   /**
-   * Python's public byte endpoint — `{backend}/share/{token}/download`.
+   * Python's clean public byte endpoint — `{backend}/share/{token}`.
    * The URL to persist anywhere the raw bytes are consumed (`<img src>`,
    * favicons, unfurls).
    */
@@ -337,7 +337,7 @@ export async function uploadAndShare(
   }
 
   const shareUrl = `${args.appOrigin.replace(/\/$/, "")}/s/${link.token}`;
-  const directUrl = `${resolveBaseUrl(ctx)}/share/${encodeURIComponent(link.token)}/download`;
+  const directUrl = `${resolveBaseUrl(ctx)}/share/${encodeURIComponent(link.token)}`;
 
   return {
     fileId: uploaded.file_id,

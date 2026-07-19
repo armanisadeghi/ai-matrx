@@ -17,7 +17,7 @@ export default function PasteImageHandlerDisplay({
   if (!component) return null;
 
   // The `url` we store + render into <img src> is the EMBEDDABLE direct
-  // URL (`{BACKEND}/share/<token>/download`, served by Python). The
+  // URL (`{BACKEND}/share/<token>`, served by Python). The
   // `pageUrl` (`/s/<token>`) is the HTML landing page on this app —
   // useful as a clickable link, but NOT for <img src>. Showing both
   // helps anyone copy/pasting this code see the difference.

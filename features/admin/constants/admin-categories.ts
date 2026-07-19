@@ -34,12 +34,24 @@ export interface AdminCategory {
   iconName: string;
   /** Tailwind text-color class used for the dashboard category tile. */
   iconColor?: string;
+  /** Canonical parent page opened from the category card. */
+  landingPath?: string;
   features: AdminToolLink[];
+}
+
+export function getAdminCategoryLandingPath(
+  category: Pick<AdminCategory, "name" | "landingPath">,
+): string {
+  return (
+    category.landingPath ??
+    `/administration?category=${encodeURIComponent(category.name)}`
+  );
 }
 
 export const adminCategoriesData: AdminCategory[] = [
   {
     name: "CX Conversations",
+    landingPath: "/administration/cx-dashboard",
     iconName: "MessageSquare",
     iconColor: "text-cyan-600",
     features: [
@@ -117,6 +129,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Scheduling",
+    landingPath: "/administration/scheduling",
     iconName: "CalendarClock",
     iconColor: "text-blue-600",
     features: [
@@ -173,6 +186,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Research System",
+    landingPath: "/administration/research-system",
     iconName: "Search",
     iconColor: "text-emerald-600",
     features: [
@@ -234,6 +248,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "AI Models",
+    landingPath: "/administration/ai-models",
     iconName: "Brain",
     iconColor: "text-violet-600",
     features: [
@@ -304,6 +319,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Agents: System",
+    landingPath: "/administration/system-agents",
     iconName: "Zap",
     iconColor: "text-rose-600",
     features: [
@@ -398,6 +414,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Agent Apps",
+    landingPath: "/administration/agent-apps",
     iconName: "Boxes",
     iconColor: "text-indigo-600",
     features: [
@@ -448,6 +465,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Agent Skills",
+    landingPath: "/administration/skills",
     iconName: "Brain",
     iconColor: "text-amber-600",
     features: [
@@ -600,6 +618,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Surfaces",
+    landingPath: "/administration/surfaces",
     iconName: "Layout",
     iconColor: "text-lime-600",
     features: [
@@ -684,6 +703,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Users & Access",
+    landingPath: "/administration/users",
     iconName: "Users",
     iconColor: "text-sky-600",
     features: [
@@ -752,6 +772,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Feedback",
+    landingPath: "/administration/feedback",
     iconName: "MessageSquare",
     iconColor: "text-orange-600",
     features: [
@@ -829,6 +850,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Sharing & Access",
+    landingPath: "/administration/relationships/sharing",
     iconName: "Share2",
     iconColor: "text-sky-600",
     features: [
@@ -844,6 +866,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Database",
+    landingPath: "/administration/database",
     iconName: "Database",
     iconColor: "text-blue-600",
     features: [
@@ -1005,6 +1028,7 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Reports",
+    landingPath: "/administration/reports",
     iconName: "BarChart2",
     iconColor: "text-violet-600",
     features: [

@@ -9,7 +9,7 @@
  *
  *   • Copy public link    — Truly permanent. Either the file's CDN URL
  *                           (when visibility="public") or a freshly
- *                           created no-expiry share-link `/share/{token}/download`.
+ *                           created no-expiry share-link `/share/{token}`.
  *                           Will still work in a week, a month, a year.
  *   • Copy temporary link — The current 1-hour signed URL with an
  *                           explicit "expires soon" label. Honest.
@@ -275,7 +275,7 @@ function MatrxQuickActions({
    *   1. File is already `visibility="public"` AND has a permanent CDN URL
    *      — that URL is itself public and never expires.
    *   2. Otherwise — create (or reuse) a no-expiry read-only share link
-   *      and use its Python `/share/{token}/download` URL.
+   *      and use its clean Python `/share/{token}` URL.
    */
   const handleCopyPublic = useCallback(async () => {
     if (publicBusy) return;

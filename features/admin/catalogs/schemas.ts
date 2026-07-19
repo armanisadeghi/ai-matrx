@@ -97,6 +97,23 @@ export const whisperModelSchema = loose({
 });
 
 /** Twin of `ImageGenModelPayload` (`ImageGenModel` dataclass). */
+export const alternativeTextEncoderSchema = loose({
+  encoder_id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  repo_id: z.string(),
+  format: z.enum(["transformers", "gguf", "state_dict"]),
+  files: z.array(z.string()),
+  revision: z.string().regex(/^[0-9a-f]{40}$/),
+  subfolder: z.string().nullable().optional(),
+  weight_name: z.string().nullable().optional(),
+  requires_hf_token: z.boolean().optional(),
+  license: z.string().optional(),
+  unverified: z.boolean().optional(),
+  download_size_gb: z.number().optional(),
+  source_url: z.string().nullable().optional(),
+});
+
 export const imageGenModelSchema = loose({
   model_id: z.string(),
   name: z.string(),
@@ -122,6 +139,7 @@ export const imageGenModelSchema = loose({
   tags: z.array(z.string()).optional(),
   format: z.string().optional(),
   weight_name: z.string().nullable().optional(),
+  text_encoders: z.array(alternativeTextEncoderSchema).optional(),
 });
 
 /** Twin of `VideoGenModelPayload` (`VideoGenModel` dataclass). */
@@ -159,7 +177,15 @@ export const loraSchema = loose({
   name: z.string(),
   description: z.string(),
   weight_name: z.string(),
-  base_family: z.enum(["sdxl", "sd15", "flux", "flux2", "qwen", "z-image", "unknown"]),
+  base_family: z.enum([
+    "sdxl",
+    "sd15",
+    "flux",
+    "flux2",
+    "qwen",
+    "z-image",
+    "unknown",
+  ]),
   license: z.string(),
   source: z.enum(["hf", "civitai"]),
   unverified: z.boolean().optional(),
@@ -291,7 +317,8 @@ export const CATALOG_KINDS: readonly CatalogKindDef[] = [
   {
     slug: "llm_model",
     label: "Local LLM models",
-    description: "GGUF models for the local llama.cpp engine (HF URLs, quants, RAM requirements).",
+    description:
+      "GGUF models for the local llama.cpp engine (HF URLs, quants, RAM requirements).",
     schema: llmModelSchema,
     hasArtifact: true,
   },
@@ -305,28 +332,32 @@ export const CATALOG_KINDS: readonly CatalogKindDef[] = [
   {
     slug: "image_gen_model",
     label: "Image-gen models",
-    description: "Diffusers image generation models (pipeline family, VRAM/RAM, ratings, defaults).",
+    description:
+      "Diffusers image generation models (pipeline family, VRAM/RAM, ratings, defaults).",
     schema: imageGenModelSchema,
     hasArtifact: true,
   },
   {
     slug: "video_gen_model",
     label: "Video-gen models",
-    description: "Local video generation models (T2V/I2V pipelines and defaults).",
+    description:
+      "Local video generation models (T2V/I2V pipelines and defaults).",
     schema: videoGenModelSchema,
     hasArtifact: true,
   },
   {
     slug: "lora",
     label: "LoRAs",
-    description: "Curated image-gen LoRA weights (Civitai/HF refs, base family, weights).",
+    description:
+      "Curated image-gen LoRA weights (Civitai/HF refs, base family, weights).",
     schema: loraSchema,
     hasArtifact: true,
   },
   {
     slug: "workflow_preset",
     label: "Workflow presets",
-    description: "Preconfigured image-gen workflows — prompt templates, steps, guidance, sizes.",
+    description:
+      "Preconfigured image-gen workflows — prompt templates, steps, guidance, sizes.",
     schema: workflowPresetSchema,
     hasArtifact: false,
   },
@@ -340,7 +371,8 @@ export const CATALOG_KINDS: readonly CatalogKindDef[] = [
   {
     slug: "tts_voice",
     label: "TTS voices",
-    description: "Kokoro TTS voice catalog (voice id, language, quality grade, traits).",
+    description:
+      "Kokoro TTS voice catalog (voice id, language, quality grade, traits).",
     schema: ttsVoiceSchema,
     hasArtifact: false,
   },
@@ -354,21 +386,24 @@ export const CATALOG_KINDS: readonly CatalogKindDef[] = [
   {
     slug: "tts_model_file",
     label: "TTS model files",
-    description: "Kokoro model artifacts (kokoro onnx + voices bin) — URL/size/sha live in the artifact columns.",
+    description:
+      "Kokoro model artifacts (kokoro onnx + voices bin) — URL/size/sha live in the artifact columns.",
     schema: ttsModelFileSchema,
     hasArtifact: true,
   },
   {
     slug: "ner_model",
     label: "NER models",
-    description: "Local NER / information-extraction models (GLiNER tiers, disk/RAM estimates).",
+    description:
+      "Local NER / information-extraction models (GLiNER tiers, disk/RAM estimates).",
     schema: nerModelSchema,
     hasArtifact: true,
   },
   {
     slug: "ner_pii_labels",
     label: "NER PII labels",
-    description: "The PII label set for local NER redaction — one row carrying the whole list.",
+    description:
+      "The PII label set for local NER redaction — one row carrying the whole list.",
     schema: nerPiiLabelsSchema,
     hasArtifact: false,
   },
@@ -382,7 +417,8 @@ export const CATALOG_KINDS: readonly CatalogKindDef[] = [
   {
     slug: "api_key_provider",
     label: "API-key providers",
-    description: "Provider key patterns for the desktop API-key vault (must match backend VALID_PROVIDERS).",
+    description:
+      "Provider key patterns for the desktop API-key vault (must match backend VALID_PROVIDERS).",
     schema: apiKeyProviderSchema,
     hasArtifact: false,
   },
@@ -405,7 +441,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /** Best-effort human name pulled out of a payload for list views. */
 export function payloadDisplayName(payload: unknown): string | null {
   if (!isPlainObject(payload)) return null;
-  for (const field of ["name", "display_name", "title", "voice_id", "model_id", "preset_id", "repo_id"]) {
+  for (const field of [
+    "name",
+    "display_name",
+    "title",
+    "voice_id",
+    "model_id",
+    "preset_id",
+    "repo_id",
+  ]) {
     const value = payload[field];
     if (typeof value === "string" && value.trim().length > 0) return value;
   }

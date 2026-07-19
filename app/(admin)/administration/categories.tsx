@@ -14,6 +14,7 @@ import { adminCategoriesData } from "@/features/admin/constants/admin-categories
 
 export const adminCategories = adminCategoriesData.map((category) => ({
   name: category.name,
+  landingPath: category.landingPath,
   iconColor: category.iconColor,
   icon: <IconResolver iconName={category.iconName} className="w-6 h-6" />,
   features: category.features.map((feature) => ({

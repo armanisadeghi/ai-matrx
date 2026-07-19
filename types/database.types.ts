@@ -29847,6 +29847,7 @@ export type Database = {
         }
       }
       get_feedback_summary: { Args: never; Returns: Json }
+      get_file_resource_family: { Args: { p_file_id: string }; Returns: Json }
       get_full_table: { Args: { ref: Json }; Returns: Json }
       get_inverse_fk_relationships: {
         Args: { p_table_name: string }

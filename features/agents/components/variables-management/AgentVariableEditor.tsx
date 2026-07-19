@@ -409,6 +409,7 @@ export function AgentVariableEditor({
       ) : (
         <CustomComponentConfigurator
           value={variable.customComponent}
+          resourceValue={variable.defaultValue}
           onChange={handleCustomComponentChange}
           readonly={readonly}
           allowAutomaticAssignment

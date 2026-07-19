@@ -132,9 +132,9 @@ export async function uploadInternal(
   // same round-trip as the upload. URL precedence is deliberate: a PUBLIC
   // file's `normalized.url` is the permanent CDN URL (set by fromCloudFile)
   // and must win over the signed-redirect `directUrl` — otherwise we hand
-  // out a 1h-expiring `/share/{token}/download` redirect as if it were a
-  // permanent public link (the reported bug). Only private/shared files,
-  // whose `normalized.url` is empty, fall through to the share-token URLs.
+  // out a share-token URL as if it were a permanent CDN URL. Only
+  // private/shared files, whose `normalized.url` is empty, fall through to
+  // the share-token URLs.
   if (result.shareToken) {
     const appShareUrl = opts.appOrigin
       ? `${opts.appOrigin.replace(/\/$/, "")}/s/${result.shareToken}`

@@ -30,6 +30,7 @@ Swap every consumer of the old `UnifiedContextMenu` to the new agent-native menu
 ## Change log
 | Date | Who | Change |
 |---|---|---|
+| 2026-07-18 | codex | Post-migration v3 follow-up: framework-managed bound/default agents now use the shared `flexible-panel` WindowPanel presentation in both desktop and mobile context menus. Shortcut entries retain their persisted display-mode definitions. |
 | 2026-07-15 | codex | Notes follow-up: added **New folder…** beside assignment in the live agent-native editor menu and external v3 sidebar menu, both using Notes' shared create-and-move flow. No legacy prompt surface was extended. |
 | 2026-07-14 | codex | Follow-up D47 fix on the live Notes integration: removed orphaned `note-detail-*` remote rich-document publishing from `NotesView`. Preview/split actions render inline again while the agent-native context menu and Phase 5 wiring remain unchanged. |
 | 2026-04-20 | initial plan | Phase created. |

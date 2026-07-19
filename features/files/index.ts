@@ -74,6 +74,14 @@ export {
 export { getAssetForFile, addAssetVariants } from "@/features/files/api/assets";
 export { useFileDocument } from "@/features/files/hooks/useFileDocument";
 export { useSharing } from "@/features/files/hooks/useSharing";
+export { useFileResourceFamily } from "@/features/files/hooks/useFileResourceFamily";
+export {
+  getFileResourceFamily,
+  normalizeFileResourceId,
+  parseFileResourceFamilyInventory,
+  type FileFamilyRepresentation,
+  type FileResourceFamilyInventory,
+} from "@/features/files/api/resource-family";
 
 // Tree / picker-adjacent hooks (read-side; not part of the canonical 5).
 export { useCloudTree } from "@/features/files/hooks/useCloudTree";

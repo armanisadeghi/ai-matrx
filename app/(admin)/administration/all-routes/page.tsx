@@ -1,15 +1,17 @@
 import { join } from "path";
-import { List } from "lucide-react";
-import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
+import { scanRoutes } from "@/utils/route-discovery";
+import { AdminRoutesDirectory } from "@/features/admin/components/AdminRoutesDirectory";
 
 export default async function AllRoutesPage() {
+  const routes = await scanRoutes(
+    join(process.cwd(), "app", "(admin)", "administration"),
+  );
+
   return (
-    <RouteIndexPage
-      directory={join(process.cwd(), "app", "(admin)", "administration")}
-      basePath="/administration"
-      title="All Administration Routes"
-      description="Auto-generated index of every page under /administration"
-      icon={List}
-    />
+    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
+      <div className="mx-auto max-w-7xl px-4 py-5">
+        <AdminRoutesDirectory routes={routes.sort()} />
+      </div>
+    </div>
   );
 }

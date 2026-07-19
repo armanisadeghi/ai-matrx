@@ -23,7 +23,7 @@ type SaveToOption = "public" | "private";
 
 /**
  * Shape passed to `onImagePasted`. `url` is the embeddable direct-file
- * URL (Python's `/share/{token}/download` endpoint) — drop into `<img src>`,
+ * URL (Python's `/share/{token}` endpoint) — drop into `<img src>`,
  * `<video>`, `<a href>`, etc.
  *
  * `pageUrl` is the optional HTML landing page (`/s/<token>`) for

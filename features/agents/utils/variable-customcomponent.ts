@@ -14,6 +14,7 @@ import type {
   StructuredListBinding,
   VariableComponentType,
   VariableCustomComponent,
+  VariableResourceContextConfig,
 } from "@/features/agents/types/agent-definition.types";
 import { getComponentTypeMeta } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
 
@@ -120,6 +121,8 @@ export interface BuildCustomComponentInput {
   structuredList?: StructuredListBinding;
   /** Whether this variable accepts the server-side random auto-assignment marker. */
   randomAssignment?: boolean;
+  /** Context presentation policy for media/file variables. */
+  resourceContext?: VariableResourceContextConfig;
 }
 
 /**
@@ -191,10 +194,19 @@ export function buildCustomComponent(
   }
 
   if (
+    input.resourceContext &&
+    ((input.resourceContext.promote?.length ?? 0) > 0 ||
+      (input.resourceContext.exclude?.length ?? 0) > 0)
+  ) {
+    cc.resource_context = input.resourceContext;
+  }
+
+  if (
     type === "textarea" &&
     !cc.stash &&
     !cc.structured_list &&
-    !cc.assignment
+    !cc.assignment &&
+    !cc.resource_context
   )
     return undefined;
   return cc;
@@ -207,10 +219,11 @@ export function buildCustomComponent(
 export function extractEffectiveValues(
   cc: VariableCustomComponent | undefined,
 ): Required<
-  Omit<BuildCustomComponentInput, "type" | "structuredList">
+  Omit<BuildCustomComponentInput, "type" | "structuredList" | "resourceContext">
 > & {
   type: VariableComponentType;
   structuredList: StructuredListBinding | undefined;
+  resourceContext: VariableResourceContextConfig | undefined;
 } {
   return {
     type: cc?.type ?? "textarea",
@@ -222,6 +235,7 @@ export function extractEffectiveValues(
     step: readStep(cc),
     structuredList: readStructuredList(cc),
     randomAssignment: cc?.assignment?.random === true,
+    resourceContext: cc?.resource_context,
   };
 }
 
@@ -249,7 +263,8 @@ export function normalizeCustomComponent(
     !next.stash &&
     !next.structured_list &&
     !next.picklist &&
-    !next.assignment
+    !next.assignment &&
+    !next.resource_context
   )
     return undefined;
   return next;

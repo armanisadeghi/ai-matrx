@@ -17,6 +17,7 @@ import {
   isRouteCataloged,
   normalizeCatalogLink,
 } from "@/features/admin/utils/admin-route-catalog";
+import { getAdminCategoryLandingPath } from "@/features/admin/constants/admin-categories";
 
 type AdminFeature = (typeof adminCategories)[number]["features"][number];
 type AdminCategory = (typeof adminCategories)[number];
@@ -67,8 +68,8 @@ function filterFeaturesBySearch(
   );
 }
 
-function categoryHref(name: string) {
-  return `/administration?category=${encodeURIComponent(name)}`;
+function categoryHref(category: AdminCategory) {
+  return getAdminCategoryLandingPath(category);
 }
 
 interface AdminDashboardClientProps {
@@ -195,9 +196,9 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
       (c) => c.name === selectedCategory,
     );
     return (
-      <div className="h-full w-full overflow-y-auto">
-        <div className="py-4 bg-neutral-100 dark:bg-neutral-900 w-full">
-          <div className="w-full px-4">
+      <div className="h-full w-full overflow-y-auto bg-textured">
+        <div className="w-full px-4 py-5">
+          <div className="mx-auto max-w-6xl">
             <Link
               href="/administration"
               className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4"
@@ -205,6 +206,27 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
               <IconChevronRight className="w-4 h-4 rotate-180" />
               All categories
             </Link>
+            {category ? (
+              <div className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${getCategoryBgClass(category.iconColor)}`}
+                >
+                  {category.icon}
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-xl font-semibold text-foreground">
+                    {category.name}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    {category.features.length} administration
+                    {category.features.length === 1 ? " utility" : " utilities"}
+                    {category.landingPath
+                      ? " with a dedicated management hub."
+                      : " grouped in one management hub."}
+                  </p>
+                </div>
+              </div>
+            ) : null}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {category?.features.map((feature, index) => (
                 <FeatureSectionLinkComponent
@@ -336,9 +358,11 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
                   className="bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-4 transform transition-all duration-200 hover:scale-105 hover:shadow-xl relative group"
                 >
                   <Link
-                    href={categoryHref(category.name)}
-                    className="flex items-center space-x-4 mb-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
+                    href={categoryHref(category)}
+                    aria-label={`Open ${category.name} administration hub`}
+                    className="absolute inset-0 z-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <div className="pointer-events-none relative z-10 mb-4 flex items-center space-x-4">
                     <div
                       className={`p-3 rounded-lg text-white ${getCategoryBgClass(category.iconColor)}`}
                     >
@@ -347,7 +371,7 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
                     <h3 className="text-xl font-semibold group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                       {category.name}
                     </h3>
-                  </Link>
+                  </div>
                   <div className="h-auto flex flex-col justify-between">
                     <div
                       className={`grid gap-x-3 gap-y-1 ${getPreviewFeatures(category.features).length >= 5 ? "grid-cols-2" : "grid-cols-1"}`}
@@ -356,7 +380,7 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
                         <Link
                           key={feature.title}
                           href={feature.link}
-                          className={`flex items-center h-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${feature.isNew ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-gray-600 dark:text-gray-300"} hover:text-blue-700 dark:hover:text-blue-500 transition-colors duration-200`}
+                          className={`relative z-10 flex items-center h-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${feature.isNew ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-gray-600 dark:text-gray-300"} hover:text-blue-700 dark:hover:text-blue-500 transition-colors duration-200`}
                         >
                           <div className="shrink-0 w-3.5 h-3.5 mr-1.5 [&>svg]:w-3.5 [&>svg]:h-3.5 [&>svg]:max-w-none opacity-80">
                             {feature.icon}
@@ -374,8 +398,8 @@ function AdminPageContent({ filesystemRoutes }: AdminDashboardClientProps) {
                     </div>
                     {category.features.length > 8 && (
                       <Link
-                        href={categoryHref(category.name)}
-                        className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200 mt-2 pl-7 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        href={`/administration?category=${encodeURIComponent(category.name)}`}
+                        className="relative z-10 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200 mt-2 pl-7 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <span>See all {category.features.length} features</span>
                         <IconChevronRight className="w-4 h-4 ml-1" />

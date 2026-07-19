@@ -9,7 +9,7 @@
  * presentation wrapper differs (a `<video>` has no "copy image" notion).
  *
  *   • Copy public link    — Permanent. CDN URL (visibility="public") or a
- *                           freshly created no-expiry `/share/{token}/download`.
+ *                           freshly created no-expiry `/share/{token}`.
  *   • Copy temporary link — The current signed URL, labelled "expires soon".
  *   • Manage all links →  — The full ShareLinkDialog (matrx files only).
  *

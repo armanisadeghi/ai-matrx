@@ -58,7 +58,7 @@ export interface FileActionHandlers {
    *      "public" and the Python backend has CDN enabled. Permanent, cache-
    *      accelerated, not revocable. Ideal for embedding in RSS feeds, OG
    *      images, podcasts, or anywhere that needs a stable URL.
-   *   2. **Share-token URL** — `{BACKEND}/share/<token>/download`. Used for
+   *   2. **Share-token URL** — `{BACKEND}/share/<token>`. Used for
    *      private/shared files (or public files where CDN isn't configured).
    *      Revocable from the Share dialog. Still works as `<img src>` or
    *      direct download with no Next.js hop.
@@ -238,7 +238,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       // Default path — return a persistent public URL backed by a share
       // token. Reuses an existing active read-only link when present;
       // otherwise creates one. The URL points at Python's public
-      // `{BACKEND}/share/<token>/download` endpoint so it works as an
+      // clean `{BACKEND}/share/<token>` endpoint so it works as an
       // `<img src>`, raw download, or anywhere else — no Next.js hop.
       let token: string | undefined;
 

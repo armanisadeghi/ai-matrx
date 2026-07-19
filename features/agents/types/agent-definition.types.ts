@@ -110,6 +110,18 @@ export interface AutoAssignValue {
   strategy: "random";
 }
 
+export interface VariableResourcePromotion {
+  representation: string;
+  max_chars?: number;
+}
+
+export interface VariableResourceContextConfig {
+  /** Bounded representations placed directly in model context. */
+  promote?: VariableResourcePromotion[];
+  /** Representations/capabilities hidden for this reference. Default is none. */
+  exclude?: string[];
+}
+
 // (Legacy `picklist_ref` envelope + `isPicklistRef` guard removed 2026-07-08 — every stored
 // value was backfilled to the canonical ```matrx reference fence; the ONLY wire value of a
 // picklist-bound variable is the fence from `referenceFence.ts#buildPicklistItemFence`.)
@@ -138,6 +150,12 @@ export interface VariableCustomComponent {
   picklist?: StructuredListBinding;
   /** Automatic-assignment strategies explicitly enabled by the agent author. */
   assignment?: VariableAssignmentConfig;
+  /**
+   * Agent-bound resource policy for image/audio/video/document values. Omitted
+   * means the file_id represents the complete existing resource family.
+   * This never requests generation; it controls context presentation only.
+   */
+  resource_context?: VariableResourceContextConfig;
   /**
    * Preserved config fragments for other component types.
    * Written when the user edits a field that isn't used by the current type

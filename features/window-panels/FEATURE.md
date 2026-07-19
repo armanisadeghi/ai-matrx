@@ -41,6 +41,7 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-07-18 — Context Menu v3 now uses `AgentFlexiblePanel` (`flexible-panel`) as the shared framework-owned presentation for surface-bound/default Agents across Notes and every other managed context-menu surface; shortcut-specific presentations remain untouched.
 - 2026-07-17 — Promoted the canonical Miller Columns context selector into `contextSwitcherWindow`: a 940×650 full Surface-A WindowPanel backed by `appContextSlice`, sharing its core with the new condensed popover face.
 - 2026-07-16 — Refined the chat `runControlsWindow` to open as a compact 480px panel inset 72px from the left edge. It now defaults to the shared-state Quickset tab while retaining the conversation workspace and the standard WindowPanel behavior.
 - 2026-07-16 — Added the `characterCounterWindow` as an ephemeral, mobile-fullscreen WindowPanel rendered through the canonical overlay controller.

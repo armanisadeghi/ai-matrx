@@ -19,6 +19,7 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -43,12 +44,18 @@ import {
 import { OptionsEditor } from "./OptionsEditor";
 import { StructuredListBindingEditor } from "./StructuredListBindingEditor";
 import { hasRandomOptionSource } from "@/features/agents/utils/auto-assignment";
+import {
+  normalizeFileResourceId,
+  useFileResourceFamily,
+} from "@/features/files";
 
 interface CustomComponentConfiguratorProps {
   /** Current custom component config (undefined = bare textarea). */
   value: VariableCustomComponent | undefined;
   /** Emits the rebuilt config (or undefined when it normalizes back to a bare textarea). */
   onChange: (next: VariableCustomComponent | undefined) => void;
+  /** Current saved file value, used only to discover its database family inventory. */
+  resourceValue?: unknown;
   readonly?: boolean;
   /** Agent-variable-only capability; context-item components do not own assignment policy. */
   allowAutomaticAssignment?: boolean;
@@ -57,6 +64,7 @@ interface CustomComponentConfiguratorProps {
 export function CustomComponentConfigurator({
   value,
   onChange,
+  resourceValue,
   readonly,
   allowAutomaticAssignment = false,
 }: CustomComponentConfiguratorProps) {
@@ -64,6 +72,15 @@ export function CustomComponentConfigurator({
   const meta = getComponentTypeMeta(componentType);
   const effective = extractEffectiveValues(value);
   const isPicklistBound = !!effective.structuredList?.listId;
+  const isResourceComponent = ["document", "image", "audio", "video"].includes(
+    componentType,
+  );
+  const promoted = effective.resourceContext?.promote?.[0];
+  const resourceId = normalizeFileResourceId(resourceValue);
+  const family = useFileResourceFamily(isResourceComponent ? resourceId : null);
+  const promotableRepresentations = family.data?.representations.filter(
+    (item) => item.promotable,
+  );
 
   const update = (fields: Partial<BuildCustomComponentInput>) => {
     const current = extractEffectiveValues(value);
@@ -86,6 +103,55 @@ export function CustomComponentConfigurator({
   ) => update({ structuredList });
   const handleRandomAssignmentChange = (randomAssignment: boolean) =>
     update({ randomAssignment });
+  const handlePromotionRepresentationChange = (representation: string) =>
+    update({
+      resourceContext: {
+        ...effective.resourceContext,
+        promote:
+          representation === "none"
+            ? []
+            : [
+                {
+                  representation,
+                  max_chars: promoted?.max_chars ?? 5000,
+                },
+              ],
+      },
+    });
+  const handlePromotionCharsChange = (maxChars: number) =>
+    update({
+      resourceContext: {
+        ...effective.resourceContext,
+        promote: promoted
+          ? [{ ...promoted, max_chars: Math.max(1, Math.min(10000, maxChars)) }]
+          : [],
+      },
+    });
+  const handleExclusionsChange = (raw: string) =>
+    update({
+      resourceContext: {
+        ...effective.resourceContext,
+        exclude: Array.from(
+          new Set(
+            raw
+              .split(",")
+              .map((item) => item.trim().toLowerCase())
+              .filter(Boolean),
+          ),
+        ),
+      },
+    });
+  const handleRepresentationEnabled = (representation: string, enabled: boolean) => {
+    const exclusions = new Set(effective.resourceContext?.exclude ?? []);
+    if (enabled) exclusions.delete(representation);
+    else exclusions.add(representation);
+    update({
+      resourceContext: {
+        ...effective.resourceContext,
+        exclude: Array.from(exclusions),
+      },
+    });
+  };
 
   return (
     <div className="space-y-3">
@@ -203,6 +269,126 @@ export function CustomComponentConfigurator({
             onCheckedChange={handleRandomAssignmentChange}
             disabled={readonly}
           />
+        </div>
+      )}
+
+      {isResourceComponent && (
+        <div className="space-y-3 border-t border-border/60 pt-3">
+          <div>
+            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Agent Context
+            </Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              By default the file ID exposes every existing enrichment on demand.
+              These settings only change presentation; they never generate RAG or
+              derivatives.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                Promote inline
+              </Label>
+              <Select
+                value={promoted?.representation ?? "none"}
+                onValueChange={handlePromotionRepresentationChange}
+                disabled={readonly}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nothing (on demand)</SelectItem>
+                  {(promotableRepresentations ?? []).map((item) => (
+                    <SelectItem key={item.key} value={item.key}>
+                      {item.label} ({item.count})
+                    </SelectItem>
+                  ))}
+                  {promoted &&
+                  !promotableRepresentations?.some(
+                    (item) => item.key === promoted.representation,
+                  ) ? (
+                    <SelectItem value={promoted.representation}>
+                      {promoted.representation} (configured)
+                    </SelectItem>
+                  ) : null}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                Maximum characters
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={10000}
+                value={promoted?.max_chars ?? 5000}
+                onChange={(event) =>
+                  handlePromotionCharsChange(Number(event.target.value) || 5000)
+                }
+                disabled={readonly || !promoted}
+              />
+            </div>
+          </div>
+          {family.loading ? (
+            <p className="text-xs text-muted-foreground">
+              Loading the selected file&apos;s resource family from Supabase…
+            </p>
+          ) : null}
+          {family.error ? (
+            <p className="text-xs text-destructive">{family.error}</p>
+          ) : null}
+          {family.data ? (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">
+                Available family resources
+              </Label>
+              <div className="grid gap-2 rounded-md border border-border/60 p-2 sm:grid-cols-2">
+                {family.data.representations.map((item) => {
+                  const enabled = !(effective.resourceContext?.exclude ?? []).includes(
+                    item.key,
+                  );
+                  return (
+                    <label
+                      key={item.key}
+                      className="flex items-start gap-2 text-xs"
+                    >
+                      <Checkbox
+                        checked={enabled}
+                        onCheckedChange={(checked) =>
+                          handleRepresentationEnabled(item.key, checked === true)
+                        }
+                        disabled={readonly}
+                      />
+                      <span className="min-w-0">
+                        <span className="block font-medium">{item.label}</span>
+                        <span className="text-muted-foreground">
+                          {item.count} · {item.category} · {item.fetch_tool}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Checked resources remain available on demand. Uncheck only to
+                suppress one for this variable.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                Suppress (comma-separated fallback)
+              </Label>
+              <Input
+                value={(effective.resourceContext?.exclude ?? []).join(", ")}
+                onChange={(event) => handleExclusionsChange(event.target.value)}
+                placeholder="Select a default file to load its family"
+                disabled={readonly}
+              />
+            </div>
+          )}
         </div>
       )}
 

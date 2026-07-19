@@ -139,6 +139,7 @@ import type {
   ExtraSectionAnchor,
   ContextMenuExtraItem,
 } from "../types";
+import { MANAGED_CONTEXT_MENU_AGENT_CONFIG } from "../managed-agent-launch";
 
 const DEFAULT_PLACEMENT_MODE: Record<PlacementKey, PlacementVisibility> = {
   "ai-action": "show",
@@ -584,14 +585,9 @@ export default function MenuContent(props: MenuContentProps) {
       await launchAgent(entry.agentId, {
         surfaceKey: `${sourceFeature}:bound-agent:${entry.agentId}`,
         sourceFeature,
-        // displayMode is the menu's only launch concern (render the agent in a
-        // modal). autoRun is deliberately NOT set here so it inherits the safe
-        // default (open-and-wait) — a mapped agent must never fire on render.
-        config: {
-          displayMode: "modal-full",
-          allowChat: true,
-          showVariablePanel: true,
-        },
+        // Managed entries share the WindowPanel default. autoRun is deliberately
+        // absent so the safe open-and-wait default remains authoritative.
+        config: MANAGED_CONTEXT_MENU_AGENT_CONFIG,
         runtime: {
           applicationScope: scope,
           originalText: actionText.text,

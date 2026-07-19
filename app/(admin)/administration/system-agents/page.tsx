@@ -10,6 +10,7 @@ import {
   Folder,
   GitBranch,
   Globe,
+  List,
   Loader2,
   RefreshCw,
   Zap,
@@ -66,6 +67,14 @@ const TILES: Tile[] = [
     count: (c) => c.shortcuts,
   },
   {
+    href: "/administration/system-agents/shortcuts/all",
+    label: "All Shortcuts",
+    description:
+      "Scan every global shortcut in one flat list across all categories.",
+    icon: List,
+    count: (c) => c.shortcuts,
+  },
+  {
     href: "/administration/system-agents/categories",
     label: "Categories",
     description:
@@ -91,6 +100,27 @@ const TILES: Tile[] = [
   },
 ];
 
+const QUICK_ACTIONS = [
+  {
+    href: "/administration/system-agents/agents/new",
+    label: "Create Agent",
+    description: "Start with the guided system-agent creation flow.",
+    icon: Brain,
+  },
+  {
+    href: "/administration/system-agents/agents/new/manual",
+    label: "Create Manually",
+    description: "Open the manual editor for a new system agent.",
+    icon: FileText,
+  },
+  {
+    href: "/administration/system-agents/apps/new",
+    label: "Create App",
+    description: "Build a new global app backed by a system agent.",
+    icon: AppWindow,
+  },
+] as const;
+
 export default function SystemAgentsDashboardPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -102,9 +132,9 @@ export default function SystemAgentsDashboardPage() {
 
   const builtinAgents = useAppSelector(selectBuiltinAgents);
   const [appCount, setAppCount] = useState<number | null>(null);
-  const [appsLoading, setAppsLoading] = useState(false);
+  const [appsLoading, setAppsLoading] = useState(true);
 
-  const loadAppCount = React.useCallback(async () => {
+  const refreshAppCount = async () => {
     setAppsLoading(true);
     try {
       const rows = await fetchAgentAppsAdmin({ scope: "global", limit: 500 });
@@ -114,12 +144,25 @@ export default function SystemAgentsDashboardPage() {
     } finally {
       setAppsLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     dispatch(fetchAgentsListFull());
-    void loadAppCount();
-  }, [dispatch, loadAppCount]);
+    let active = true;
+    fetchAgentAppsAdmin({ scope: "global", limit: 500 })
+      .then((rows) => {
+        if (active) setAppCount(rows.length);
+      })
+      .catch(() => {
+        if (active) setAppCount(null);
+      })
+      .finally(() => {
+        if (active) setAppsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [dispatch]);
 
   const counts: TileCounts = {
     agents: builtinAgents.length,
@@ -134,7 +177,7 @@ export default function SystemAgentsDashboardPage() {
   const handleRefresh = () => {
     refetch();
     dispatch(fetchAgentsListFull());
-    void loadAppCount();
+    void refreshAppCount();
   };
 
   const handleNavigate = (href: string) => {
@@ -272,6 +315,48 @@ export default function SystemAgentsDashboardPage() {
                 </button>
               );
             })}
+          </div>
+
+          <div className="space-y-2">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Create</h2>
+              <p className="text-xs text-muted-foreground">
+                Direct entry points for every creation route in the admin
+                catalog.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {QUICK_ACTIONS.map((action) => {
+                const Icon = action.icon;
+                const navigating = isPending && pendingHref === action.href;
+                return (
+                  <button
+                    key={action.href}
+                    type="button"
+                    onClick={() => handleNavigate(action.href)}
+                    disabled={isPending}
+                    className="group flex items-start gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                      {navigating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Icon className="h-4 w-4" />
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1 text-sm font-medium text-foreground group-hover:text-primary">
+                        {action.label}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                        {action.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <Card className="border-dashed">

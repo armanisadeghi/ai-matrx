@@ -112,13 +112,23 @@ so EVERY consumer — the right-click menu AND `ProTextarea`'s "…" menu — in
 defaults identically; a surface-bound agent is never shown twice. The "Agents"
 submenu renders even with no `surfaceName` (defaults still apply).
 
+## Managed agent launch defaults
+
+Agents in the framework-managed **Agents** section open in the
+`flexible-panel` display mode, rendered by `AgentFlexiblePanel` inside the
+draggable/resizable `WindowPanel`. Desktop and mobile renderers consume the
+same `MANAGED_CONTEXT_MENU_AGENT_CONFIG`, so every v3 context menu inherits the
+same presentation. This default applies only to surface-bound/default agents;
+shortcut entries keep their own persisted `displayMode` definitions.
+
 ## Launching an agent must NEVER force auto-run
 
 `autoRun` bypasses the user entirely — the request goes straight to the model with
 no chance to type or edit. So the menu **never sets `autoRun` when it launches an
-agent**; it passes only its real concern (`displayMode: "modal-full"`, so the agent
-renders in a modal) and lets `autoRun` inherit the safe default (open-and-wait). A
-mapped agent must open its input/variable panel and wait for the user to trigger.
+agent**; it passes only the shared managed presentation config
+(`displayMode: "flexible-panel"`) and lets `autoRun` inherit the safe default
+(open-and-wait). A mapped agent must open its input/variable panel and wait for
+the user to trigger.
 
 - **Mapped (surface-bound) agents** — `handleBoundAgentExecute` in both renderers.
   It omits `autoRun`; the launch thunk defaults it to `false`.
@@ -161,6 +171,7 @@ For a rollout, **invoke the `context-menu-v3` skill** — the per-surface recipe
 
 ## Change Log
 
+- `2026-07-18` — **Managed Agents now default to WindowPanel.** The shared desktop and mobile v3 launchers consume one `MANAGED_CONTEXT_MENU_AGENT_CONFIG` with `displayMode: "flexible-panel"`, so Notes and every other managed context menu open surface-bound/default agents in `AgentFlexiblePanel` instead of `AgentFullModal`. Shortcut-owned display-mode definitions remain authoritative; managed launches still omit `autoRun`.
 - `2026-07-15` — **Selection tracking scoped to the wrapped subtree (browser-freeze fix).** The shell's `selectionchange` handler ran unguarded in EVERY mounted instance: each serialized the full selected text (`selection.toString()` — O(document) on a triple-click of a large paste), stored it in its own state, and rendered its own `FloatingSelectionIcon` at identical coordinates. On /notes (editor + every sidebar row + folder headers) that meant dozens of stacked translucent FABs compounding into a black-shadowed blob AND N× O(document) main-thread work per selection event — a tab freezer. Now each instance holds a `selectionOwnerRef` (the asChild trigger child on desktop, the display:contents wrapper on mobile) and the handler gates ALL work on ownership: the selection's anchor node — or, for textarea/input selections (whose DOM Range stays parked on the host), the focused element — must be inside the wrapped subtree; non-owners clear cheaply with no serialization (unchanged-state bailout ⇒ zero re-renders). **Invariant: never remove the ownership gate; a document-global listener in a many-instance component must scope its work.** (v2 twin still has the unscoped listener — v2 is frozen; migrate consumers instead of patching it.)
 - `2026-07-15` — **Notes folder-create parity.** Both Notes v3 surfaces now keep creation beside assignment: the editor menu exposes **New folder…**, and the sidebar note right-click Move submenu lists existing destinations plus **New folder…**. Both delegate to the shared Notes create-and-move flow; no bespoke context-menu folder UI was added.
 - `2026-07-14` — **Floating selection trigger contrast fixed.** Replaced the default Tailwind `shadow-lg` / `hover:shadow-xl` styling on both v2 and v3 floating selection icons with the shared `context-menu-floating-icon` surface in `app/globals.css`: translucent primary fill, light highlight ring, backdrop blur, and theme-aware soft shadows so the trigger no longer renders a heavy black halo in light or dark mode.
