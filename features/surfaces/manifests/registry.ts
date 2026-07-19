@@ -249,6 +249,18 @@ export function getManifest(surfaceName: string): SurfaceManifest | undefined {
   return MANIFEST_INDEX.get(surfaceName);
 }
 
+/**
+ * Get the manifest exactly as it was authored, before inherited declarations
+ * and generic baseline values are applied. Admin tooling uses this to explain
+ * declaration provenance; runtime consumers should continue using
+ * `getManifest()`.
+ */
+export function getRawManifest(
+  surfaceName: string,
+): SurfaceManifest | undefined {
+  return RAW_INDEX.get(surfaceName);
+}
+
 /** All known manifests, in declaration order. */
 export function getAllManifests(): readonly SurfaceManifest[] {
   return ALL_MANIFESTS;

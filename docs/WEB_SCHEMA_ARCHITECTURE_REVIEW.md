@@ -1,6 +1,8 @@
 # `web` Schema — Route Crosswalk and Architecture Review
 
-**Status:** Approved architecture; implementation in progress.  
+**Status:** Approved architecture; database foundation and first frontend
+vertical implemented.
+
 **Schema authority:** `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md`  
 **Route authority:** `docs/MARKETING_SITE_ROUTE_ARCHITECTURE.md`
 
@@ -8,274 +10,259 @@
 
 ## 1. Overall assessment
 
-The live `web` model matches the product's central distinction exceptionally
-well:
+The live 17-table `web` model preserves the product's central distinctions:
 
 - `site` is the durable access and management root;
 - `page` is a crawl-independent URL identity with user intent but no content;
 - `crawl_session` is one execution;
+- `crawl_url` and `crawl_event` describe what happened during that execution;
 - `snapshot` is timestamped observed content;
+- `page_evidence` explains why a page remains in the canonical registry;
 - immutable results are separated from stateful findings;
 - links retain snapshot provenance;
 - provider batch units have a direct runtime-cost anchor.
 
-The one-hop component model is also the correct fit. It avoids duplicating
-permission or association rows across high-volume crawler data while allowing
-one site grant to cover the entire workspace.
+The one-hop component model remains the correct access design. It avoids
+duplicating permission or association rows across high-volume crawler data
+while allowing one site grant to cover the entire workspace.
 
-## 2. Route-to-database crosswalk
+## 2. Route-to-database and implementation crosswalk
 
-| Route | Primary authority | Supporting projections | Coverage |
-|---|---|---|---|
-| `/marketing/sites` | `web.site` | `v_site_score`, findings/crawl aggregates | Complete |
-| `/marketing/sites/new` | `web.site` | `web.screenshot` bootstrap | Complete foundation |
-| `/marketing/sites/[siteId]` | `web.site` | `v_site_score`, `v_priority_queue`, recent `crawl_session` | Complete |
-| `.../pages` | `web.page` | `v_page_score`, finding counts | Complete |
-| `.../pages/[pageId]` | `web.page` | latest `web.snapshot`, findings/results | Partial: tasks/CMS changes not modeled |
-| `.../pages/[pageId]/snapshots` | `web.snapshot` | `web.screenshot`, results | Complete |
-| `.../snapshots/[snapshotId]` | `web.snapshot` | screenshot, link edges, result payloads | Complete |
-| `.../crawls` | `web.crawl_session` | snapshot/result counts | Complete |
-| `.../crawls/[crawlId]` | `web.crawl_session` | snapshots, results, links | Complete summary |
-| `.../crawls/[crawlId]/urls` | — | — | Missing per-URL outcome ledger |
-| `.../crawls/[crawlId]/logs` | runtime/external, if present | — | Not defined in `web` |
-| `.../analysis` | `web.finding`, `web.analysis_result` | score/priority views | Complete |
-| `.../findings` | `web.finding` | `v_priority_queue` | Complete |
-| `.../findings/[findingId]` | `web.finding` | first/last results, payload instances | Partial: action history source must be confirmed |
-| `.../links` | `web.link_edge` | pages/snapshots | Complete evidence; current projection needs baseline rule |
-| `.../screenshots` | `web.screenshot` | snapshots, batches/results | Complete |
-| `.../integrations` | `web.site.integrations` | none described | Partial: binding/sync/metric history not modeled |
-| `.../cost` | runtime execution cost | `v_cost_by_*` | Complete if runtime link contract is honored |
-| `.../settings` | `web.site.settings` + typed site fields | — | Complete foundation |
-| `.../access` | IAM grant system on `web_site` | — | Complete |
-| `/marketing/analysis/items` | `web.analysis_item` | `content_ir.kind_definition` | Complete; 81 built-ins verified live |
-| `/marketing/analysis/providers` | `web.provider` | item defaults/site configs | Complete; 5 built-ins verified live |
-| `/marketing/batches` | `web.batch_job` | `web.batch_item` | Complete |
-| `/marketing/batches/[batchId]` | `web.batch_job`, `web.batch_item` | results/runtime cost | Complete |
-| `/marketing/cost` | runtime execution cost | `v_cost_by_*` | Complete if runtime link contract is honored |
+Database coverage and frontend implementation are intentionally reported in
+separate columns. A live authority does not imply that its approved route has
+shipped.
 
-## 3. Genuine gaps to resolve
+| Route                                | Primary authority/projection                                       | Database coverage                                                                    | Frontend status                                      |
+| ------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `/marketing`                         | Route shell                                                        | N/A                                                                                  | Implemented redirect                                 |
+| `/marketing/admin`                   | Marketing administration shell                                     | Foundation                                                                           | Implemented                                          |
+| `/marketing/sites`                   | `web.site`, `v_site_score`                                         | Live; dedicated portfolio trend/last-crawl/open-finding aggregate can still be added | Implemented first vertical                           |
+| `/marketing/sites/new`               | `web.site`, homepage `web.screenshot`                              | Live                                                                                 | Implemented, including direct asynchronous bootstrap |
+| `/marketing/sites/[siteId]`          | `web.site`, scores, findings, recent `crawl_session`               | Live                                                                                 | Implemented first vertical                           |
+| `.../pages`                          | `web.page`, `v_page_score`, findings                               | Live                                                                                 | Implemented first vertical                           |
+| `.../pages/[pageId]`                 | `web.page`, latest `web.snapshot`                                  | Core live; CMS/tasks remain future authorities                                       | Implemented core workspace                           |
+| `.../pages/[pageId]/snapshots`       | `web.snapshot`                                                     | Live                                                                                 | Implemented first vertical                           |
+| `.../snapshots/[snapshotId]`         | `web.snapshot`, screenshots, edges, results                        | Live                                                                                 | Implemented first vertical                           |
+| `.../crawls`                         | `web.crawl_session`                                                | Live                                                                                 | Implemented first vertical                           |
+| `.../crawls/new`                     | `crawl_session`, `crawl_url`, `crawl_event`; direct scraper stream | Live durable authorities                                                             | Implemented direct command/live workspace            |
+| `.../crawls/[crawlId]`               | `web.crawl_session`                                                | Live                                                                                 | Implemented first vertical                           |
+| `.../crawls/[crawlId]/urls`          | `web.crawl_url`                                                    | Live append-only ledger                                                              | Implemented first vertical                           |
+| `.../crawls/[crawlId]/logs`          | `web.crawl_event`                                                  | Live append-only event history                                                       | Implemented first vertical                           |
+| `.../crawls/[crawlId]/snapshots`     | `web.snapshot`                                                     | Live                                                                                 | Remaining approved route                             |
+| `.../crawls/[crawlId]/findings`      | `web.finding`, results                                             | Live core authority                                                                  | Remaining approved route                             |
+| `.../crawls/[crawlId]/links`         | `web.link_edge`                                                    | Live                                                                                 | Remaining approved route                             |
+| `.../analysis`                       | findings, results, score/priority views                            | Live                                                                                 | Remaining approved route                             |
+| `.../findings`                       | `web.finding`, `v_priority_queue`                                  | Live                                                                                 | Remaining approved route                             |
+| `.../findings/[findingId]`           | `web.finding`, result/payload pointers                             | Core live; separate action-history authority is not defined                          | Remaining approved route                             |
+| `.../links`                          | `web.link_edge`, pages, snapshots                                  | Evidence live; current-baseline projection policy remains                            | Remaining approved route                             |
+| `.../screenshots`                    | `web.screenshot`, snapshots, batches/results                       | Live                                                                                 | Remaining approved route                             |
+| `.../integrations`                   | `web.site.integrations`                                            | Partial; bindings/sync/metric facts remain future                                    | Remaining approved route                             |
+| `.../cost`                           | runtime execution cost, `v_cost_by_*`                              | Live if runtime link contract is honored                                             | Remaining approved route                             |
+| `.../settings`                       | `web.site.settings`, `web.crawl_schedule`                          | Live foundation                                                                      | Remaining approved route                             |
+| `.../access`                         | IAM grants on `web_site`                                           | Live                                                                                 | Remaining approved route                             |
+| `/marketing/analysis/items`          | `web.analysis_item`, output contracts                              | Live; 81 built-ins verified                                                          | Remaining approved route                             |
+| `/marketing/analysis/items/new`      | `web.analysis_item`, output contracts                              | Live                                                                                 | Remaining approved route                             |
+| `/marketing/analysis/items/[itemId]` | `web.analysis_item`, provider/output contracts                     | Live                                                                                 | Remaining approved route                             |
+| `/marketing/analysis/providers`      | `web.provider`, site configs                                       | Live; five built-ins verified                                                        | Remaining approved route                             |
+| `/marketing/analysis`                | findings, results, score/priority views                            | Live core authority                                                                  | Remaining approved route                             |
+| `/marketing/findings`                | `web.finding`, priority projection                                 | Live                                                                                 | Remaining approved route                             |
+| `/marketing/connections`             | Restricted credential authority plus future bindings               | Partial                                                                              | Remaining approved route                             |
+| `/marketing/batches`                 | `web.batch_job`, `web.batch_item`                                  | Live                                                                                 | Remaining approved route                             |
+| `/marketing/batches/[batchId]`       | batch job/items, results, runtime cost                             | Live                                                                                 | Remaining approved route                             |
+| `/marketing/cost`                    | runtime execution cost, `v_cost_by_*`                              | Live if runtime link contract is honored                                             | Remaining approved route                             |
 
-These are domain-completeness questions, not reasons to redesign the successful
-core.
+The crawl command and current live stream go directly between the browser and
+the scraper. Historical, list, detail, URL, event, analysis, and other product
+reads go directly from the browser to Supabase. There is no scraper, AI Dream,
+or Next.js product-data read API.
 
-### 3.1 Per-crawl URL outcome ledger
+## 3. Implemented authorities and remaining domain gaps
 
-`snapshot` represents captured content. It cannot represent every URL a crawl
-encountered: skipped, external, invalid, excluded, duplicate, redirect-only, or
-failed-before-capture.
+### 3.1 Crawl execution authorities are live
 
-If the product needs `/crawls/[crawlId]/urls`, exact coverage reporting, or an
-explainable reconciliation report, add a site component such as
-`web.crawl_url`:
+The previously proposed crawl foundations now exist:
 
-```text
-site_id
-session_id
-page_id nullable
-raw_url
-normalized_url
-url_hash
-parent_url / discovered_from_id
-classification
-outcome
-http_status
-final_url
-depth
-reason
-snapshot_id nullable
-discovered_at
-finished_at
-```
+- `web.crawl_url` is the append-only per-session URL outcome ledger. It covers
+  captured, skipped, excluded, external, invalid, duplicate, redirected,
+  failed, and cancelled URLs without promoting them automatically to `page`.
+- `web.crawl_event` is the append-only durable event/log stream keyed by crawl
+  session and sequence.
+- `web.page_evidence` is the mutable/upsert source-evidence plane for manual,
+  crawl, sitemap, GSC, GA4, and CMS knowledge.
+- `web.crawl_schedule` owns recurring scope, cadence, timezone, screenshot
+  policy, scheduler linkage, and a user-controlled `respect_robots` switch that
+  defaults to false.
 
-This remains distinct from both `page` and `snapshot`.
+These authorities are canonical site components with organization and
+cross-pointer validation. They are not roadmap gaps.
 
-### 3.2 Multi-source page evidence
+### 3.2 GSC, GA4, and integration history remain
 
-One `page.provenance` value cannot explain that the same URL is simultaneously
-known from a sitemap, historical crawl, manual entry, GSC, GA4, and CMS.
+`site.integrations jsonb` can hold safe configuration or references, but it is
+not sufficient for reusable credentials, sync attempts, raw import provenance,
+or queryable time-series metrics.
 
-If `provenance` means **first creation source**, document and ideally name it as
-such. For ongoing reconciliation, add an append/upsert evidence component such
-as `web.page_evidence`:
+The approved future boundary remains:
 
-```text
-site_id
-page_id
-source_type
-source_binding_id nullable
-external_key nullable
-first_seen_at
-last_seen_at
-present
-evidence jsonb
-```
-
-This is what lets the application explain why a page remains canonical when a
-particular crawl misses it.
-
-### 3.3 GSC, GA4, and integration history
-
-`site.integrations jsonb` can hold safe binding configuration or references, but
-it is not sufficient for reusable credentials, sync attempts, raw import
-provenance, or queryable time-series metrics.
-
-The ideal boundary is:
-
-- reusable secret-bearing connection in the canonical restricted credential
+- reusable secret-bearing connections in the canonical restricted credential
   subsystem;
-- `web.integration_binding` component for site → exact provider property;
-- `web.integration_sync` component for import lifecycle and diagnostics;
+- `web.integration_binding` for site → exact provider property;
+- `web.integration_sync` for import lifecycle and diagnostics;
 - a queryable page/site metrics fact plane, or a clearly documented existing
   authority outside `web`.
 
-The database owner should identify the intended home before the integration UI
-is designed.
+The database owner must identify the credential authority before integration UI
+implementation. The browser will still read resulting product data directly
+from Supabase.
 
-### 3.4 CMS, tasks, and scheduled changes
+### 3.3 CMS, tasks, and scheduled changes remain
 
-The proposed page workspace includes tasks, CMS bindings, desired changes, and
-scheduled publication. The current thirteen-table model does not yet provide
+The page workspace ultimately includes tasks, CMS bindings, desired changes,
+and scheduled publication. The current 17-table model does not yet provide
 those authorities.
 
-Likely future site components:
+Approved future components include:
 
 - `web.cms_binding` for site/page → external CMS identity;
 - `web.change_set` and `web.change_item` for desired/proposed/published state;
 - a typed task binding to the platform task system, or a web-owned task
-  component if platform associations are intentionally prohibited here.
+  component if platform associations remain intentionally prohibited here.
 
 Observed snapshot content must remain separate from all of them.
 
-### 3.5 Crawl schedules and durable run events
+### 3.4 Scheduling execution remains an integration concern
 
-`crawl_session.trigger='scheduled'` records how a run began, but no schedule
-definition is present. Likewise, no web-owned run-event/log table is described.
-Confirm whether canonical scheduler/runtime systems already own these records.
-If not, `web.crawl_schedule` and an append-only `web.crawl_event` are natural
-site components.
+`web.crawl_schedule` is the canonical schedule definition. The remaining work
+is to bind it to the selected scheduler/worker, define retry and missed-run
+behavior, and build the settings UI. `crawl_session.trigger='scheduled'` records
+how the resulting run began.
 
-## 4. Integrity contracts to confirm
+## 4. Live integrity contracts and remaining checks
 
-Canonical RLS answers who can access a row; it does not by itself prove that
-all denormalized IDs point to rows from the same site/item/subject. The write
-path should enforce the following with composite FKs or canonical validation
-functions/triggers:
+The implemented integrity migration enforces the high-value same-site and
+same-subject contracts, including:
 
-- `page.latest_snapshot_id` belongs to that exact page and site;
+- component `organization_id` matches the owning site;
+- `page.latest_snapshot_id` belongs to that exact page/site and is an accepted
+  capture;
 - `site.homepage_screenshot_id` belongs to that site and has homepage semantics;
-- `screenshot.page_id` and `snapshot_id` agree with `screenshot.site_id`;
-- `snapshot.page_id` and `session_id` both belong to `snapshot.site_id`;
-- `site_item_config.item_id/provider_id` are visible catalog records and the
-  provider emits the item's required output kind;
-- `analysis_result.subject_id/page_id/item_id/provider_id/batch_id/run_id` agree
-  with its denormalized site, taxonomy, and subject type;
-- finding first/last result pointers match its site, subject, and item;
-- `batch_item.site_id` matches its batch, and `result_id` matches its item,
-  provider, subject, and site;
-- internal `link_edge` source/target page IDs belong to its site and its
-  snapshot belongs to the same source page/site.
+- snapshot, screenshot, link-edge, result, finding, batch, crawl URL/event,
+  evidence, and schedule pointers remain within the correct site and subject;
+- finding/result denormalized taxonomy and subject pointers agree;
+- the active-finding uniqueness key includes `subject_type`;
+- `snapshot`, `analysis_result`, and `link_edge` are immutable;
+- `crawl_url` and `crawl_event` are append-only;
+- `batch_item` permits controlled lifecycle updates rather than arbitrary input
+  mutation.
 
-The highest-value check is the current-content pointer: a composite constraint
-or validation trigger should make it impossible for page A to point at a
-snapshot of page B, even when the caller can access both.
+Remaining checks span external or cross-subsystem contracts:
 
-## 5. Behavioral contracts to clarify
+- confirm every selected provider emits the analysis item's required output
+  kind before accepting a result;
+- execute a real batch item with `link_kind='web_batch_item'` and verify non-zero
+  cost rollups;
+- keep worker writes constrained to the canonical lifecycle transitions and
+  reconciliation policy.
 
-### Organization stamping on components
+## 5. Behavioral contracts
 
-For a site shared across organizations, a component's `organization_id` should
-normally remain the owning site's organization, not the active organization of
-the editor who creates it. Confirm that `web.conform(..., 'component',
-'site_id', ...)` copies or validates the parent site's organization during
-insert. This affects ownership reporting and cost-by-client accuracy.
+### Organization stamping
+
+Confirmed live: site components derive and validate the owning site's
+organization. A shared-site editor's active organization does not silently
+re-own child data.
 
 ### Reconciliation eligibility
 
-Only a complete, coverage-qualified crawl should create negative evidence.
+Only a complete, coverage-qualified crawl may create negative evidence.
 Partial/list-mode crawls, changed scope, authentication failures, outages, or
-excluded paths must not mark unrelated canonical pages missing. `missing` is a
-flag for investigation; `gone` requires the approved repeated-miss/HTTP policy.
+excluded paths must not mark unrelated canonical pages missing. `missing` is an
+investigation state; `gone` requires the approved repeated-miss/HTTP policy.
 
 ### Finding identity and suppression
 
-Confirm that the active-finding unique key includes `subject_type` as well as
-site, subject ID, and item. Define whether suppression persists through future
-failing results and how suppression/acknowledgement changes appear in lifecycle
-history.
+The live active-finding key includes `subject_type`, site, subject ID, and item.
+Product behavior must still define whether suppression persists through future
+failing results and how acknowledgement/suppression actions appear in history.
 
-### Result score constraints
+### Results and run identity
 
-Define score nullability for `error` as well as `n_a`, and enforce 1–100 for
-scored statuses. Define confidence bounds and the numeric severity mapping used
-by the priority view.
+Score/status constraints enforce the canonical 1–100 contract and nullable
+non-scored outcomes. `analysis_result.run_id` is nullable; when present, the
+live integrity contract validates it as a crawl-session reference. Independent
+analysis uses its batch/runtime identity without inventing a crawl.
 
-### `batch_item` mutability
+### Batch lifecycle
 
-The supplied convention calls `batch_item` immutable, but its status,
-`result_id`, external reference, and error naturally change during execution.
-The clean interpretation is:
+`batch_item` has immutable identity/input selection after submission and
+controlled status/result/error lifecycle updates. Retries create a distinct
+attempt in the runtime/batch design rather than rewriting submitted inputs.
 
-- immutable identity/input selection after submission;
-- controlled lifecycle updates for status/result/error;
-- retry attempts either append separately or are recorded in runtime.
+### Link resolution
 
-Document that interpretation, or split immutable inputs from attempts/events.
-
-### `analysis_result.run_id`
-
-Define whether `run_id` references a crawl session, an analysis run, or a
-runtime execution root. This is necessary for reproducible analysis and for
-`v_cost_by_run`, especially when analysis occurs independently of a crawl.
-
-### Link resolution immutability
-
-If `link_edge` is immutable, decide whether `target_page_id` is frozen at
-capture/reconciliation time or may be filled later when a previously unknown
-canonical page appears. A current graph can resolve by URL at query time while
-preserving historical edge immutability.
+`link_edge` is immutable, so `target_page_id` is capture/reconciliation-time
+evidence. A current graph may resolve an unmatched internal target by URL at
+query time or through a later observation without mutating historical edges.
 
 ### Site uniqueness and scope
 
-Unique `(organization_id, domain)` permits one site record per normalized domain
-inside an organization. Confirm whether `domain` means exact host and whether an
-organization must ever manage multiple path-scoped properties on the same host.
-If path-scoped duplicates are valid, uniqueness needs the normalized scope, not
-domain alone.
+Unique `(organization_id, domain)` currently means one managed normalized host
+per organization. If path-scoped properties on the same host become a product
+requirement, introduce a normalized scope identity deliberately rather than
+weakening canonical URL rules ad hoc.
 
 ## 6. Performance/index checklist
 
-The supplied contract does not enumerate indexes beyond unique constraints.
-Before high-volume UI work, confirm indexes matching the real filters and RLS
-paths, especially:
+Live migrations add the principal crawl-authority indexes. Continue validating
+query plans against actual table filters and RLS paths, especially:
 
 - every `site_id`, `page_id`, `session_id`, `snapshot_id`, `batch_id`, `item_id`,
   `provider_id`, and result/finding pointer FK;
-- `page (site_id, status, last_seen desc, id)` for active page tables;
+- `page (site_id, status, last_seen desc, id)`;
 - `crawl_session (site_id, started_at desc, id)`;
+- `crawl_url` by session/sequence, normalized URL/hash, outcome, page, and
+  snapshot;
+- `crawl_event` by session/sequence, time, level, phase, crawl URL, and page;
+- `page_evidence` by page/source identity and presence/check time;
+- `crawl_schedule` by site, enabled/next-run time, and scheduler task;
 - `snapshot (site_id, page_id, captured_at desc, id)` and
   `(site_id, session_id, captured_at, id)`;
 - `analysis_result (site_id, subject_type, subject_id, item_id, computed_at desc,
-  id)` plus run/batch lookup paths;
-- partial open-finding indexes matching `deleted_at is null`, `suppressed=false`,
-  and active statuses;
-- `link_edge (site_id, snapshot_id)`, source-page, target-page, and broken-link
-  lookup paths;
-- `batch_job (site_id, status, created_at, id)` and
-  `batch_item (batch_id, status, id)`;
+id)` plus run/batch lookup paths;
+- partial open-finding indexes matching `deleted_at is null`,
+  `suppressed=false`, and active statuses;
+- `link_edge` snapshot/source/target/broken-link lookup paths;
+- `batch_job` and `batch_item` status/order lookup paths;
 - `runtime.global_execution (link_kind, link_id)` for cost attribution.
 
-Deep/high-volume tables should use cursor/keyset pagination with a deterministic
-ID tie-breaker. JSONB fields need GIN or expression indexes only for keys the
-product actually filters; they should not be indexed indiscriminately.
+High-volume tables use deterministic cursor/keyset pagination where appropriate;
+bounded Supabase range pagination remains valid for shallower tables. JSONB
+fields receive GIN or expression indexes only for keys the product actually
+filters.
 
-## 7. Approved implementation order
+## 7. Delivery status and remaining order
 
-1. Validate the live built-in catalog and output contracts.
-2. Add the approved crawl-URL ledger and multi-source page evidence.
-3. Add the approved integration, metric, schedule, event, CMS, task, and change
-   authorities in foundation-first phases.
-4. Enforce cross-site pointer integrity and component organization stamping.
-5. Confirm cost runtime tagging with one real batch-item execution and non-zero
-   view results.
-6. Implement the frozen `/marketing` route contract with direct Supabase reads
-   and a direct scraper command/live-stream client.
+Completed:
+
+1. Verified 81 built-in analysis items, five providers, and output contracts.
+2. Added `crawl_url`, `crawl_event`, `page_evidence`, and `crawl_schedule`.
+3. Exposed `web` through the Data API with direct-client grants, RLS, and
+   generated types.
+4. Added organization, pointer, immutability, and lifecycle integrity rules.
+5. Implemented the first `/marketing` frontend vertical, including direct
+   Supabase reads and direct scraper command/current-stream handling.
+
+Remaining approved order:
+
+1. Verify cost attribution with a real execution and add any portfolio aggregate
+   views justified by measured queries.
+2. Build analysis, findings, links, screenshots, batch, cost, access, and
+   settings routes.
+3. Add integration bindings, sync history, typed metrics, and reusable
+   connection UI.
+4. Add CMS bindings, tasks, change sets/items, and publishing workflows.
+5. Complete schedule/worker integration and its management UI.
+6. Continue focused type, query-plan, browser, and adversarial UX validation per
+   vertical.
+
+No legacy crawler data is migrated.

@@ -62,7 +62,7 @@ export default function ContextItemsHubPage() {
 
   return (
     <div className="h-dvh overflow-y-auto bg-textured">
-      <div className="max-w-4xl mx-auto px-6 md:px-8 pt-12 pb-12">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-12">
         <ContextItemsHub
           orgId={org.id}
           orgSlugOrId={orgSlugOrId}

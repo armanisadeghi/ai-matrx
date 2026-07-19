@@ -600,6 +600,11 @@ const SurfaceContextInspectorWindow = lazyOverlay(
     import("@/features/window-panels/windows/admin/SurfaceContextInspectorWindow"),
   { ssr: false },
 );
+const SurfaceContextWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/surfaces/SurfaceContextWindow"),
+  { ssr: false },
+);
 const SurfaceAgentBindWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/surfaces/SurfaceAgentBindWindow").then(
@@ -1041,6 +1046,9 @@ export default function OverlayController() {
     surfaceContextInspector: useAppSelector((s) =>
       selectIsOverlayOpen(s, "surfaceContextInspector"),
     ),
+    surfaceContextWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "surfaceContextWindow"),
+    ),
     itemDetailWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "itemDetailWindow"),
     ),
@@ -1340,6 +1348,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     surfaceContextInspector: useAppSelector((s) =>
       selectOverlayData(s, "surfaceContextInspector"),
+    ) as Record<string, unknown> | null,
+    surfaceContextWindow: useAppSelector((s) =>
+      selectOverlayData(s, "surfaceContextWindow"),
     ) as Record<string, unknown> | null,
     itemDetailWindow: useAppSelector((s) =>
       selectOverlayData(s, "itemDetailWindow"),
@@ -4862,6 +4873,31 @@ export default function OverlayController() {
         );
       })}
 
+      {/* surfaceContextWindow */}
+      {(() => {
+        const isOpen = isOpenById.surfaceContextWindow;
+        const data = dataById.surfaceContextWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <SurfaceContextWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "surfaceContextWindow" }))
+            }
+            surfaceName={
+              typeof data?.surfaceName === "string" ? data.surfaceName : ""
+            }
+            surfaceLabel={
+              typeof data?.surfaceLabel === "string" ? data.surfaceLabel : null
+            }
+            isEditable={data?.isEditable === true}
+          />
+        );
+      })()}
+
       {/* surfaceContextInspector */}
       {(() => {
         const isOpen = isOpenById.surfaceContextInspector;
@@ -4883,6 +4919,7 @@ export default function OverlayController() {
                 : {}
             }
             isEditable={data?.isEditable === true}
+            preferRuntime={data?.preferRuntime === true}
           />
         );
       })()}

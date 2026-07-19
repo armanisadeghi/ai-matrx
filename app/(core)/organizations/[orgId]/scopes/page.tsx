@@ -78,7 +78,7 @@ export default function OrgScopesPage() {
 
   return (
     <div className="h-dvh overflow-y-auto bg-textured">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 pt-12 pb-12">
+      <div className="max-w-[1800px] mx-auto px-4 md:px-6 lg:px-8 pt-12 pb-12">
         <ScopesManager organization={organization} role={role} />
       </div>
     </div>

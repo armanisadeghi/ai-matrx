@@ -106,7 +106,7 @@ export default function OrgShortcutsDashboardPage() {
       </PageHeaderRightPortal>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4 pt-[calc(var(--shell-header-h)+1rem)] space-y-4 max-w-5xl mx-auto">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--shell-header-h)+1rem)] pb-4 space-y-4">
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
             <span className="whitespace-nowrap">Managing</span>
             <Badge variant="outline" className="text-[11px]">

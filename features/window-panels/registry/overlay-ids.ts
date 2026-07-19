@@ -148,6 +148,7 @@ export const OVERLAY_IDS = [
   "promptPreviewWindow",
   "scopeBatchImportWindow",
   "surfaceAgentBindWindow",
+  "surfaceContextWindow",
   "surfaceContextInspector",
   "streamDebug",
   "streamDebugHistoryWindow",

@@ -586,11 +586,33 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // Live declared-vs-supplied scope inspector from the context menu. Scope
   // snapshot is caller-owned and not restorable → ephemeral.
   {
+    slug: "surface-context-window",
+    overlayId: "surfaceContextWindow",
+    kind: "window",
+    label: "Surface Context",
+    defaultData: {
+      surfaceName: "",
+      surfaceLabel: null as string | null,
+      isEditable: false,
+    },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+    mobileSidebarAs: "drawer",
+    instanceMode: "singleton",
+  },
+
+  // ── Surface Context Admin ────────────────────────────────────────────────
+  {
     slug: "surface-context-inspector-window",
     overlayId: "surfaceContextInspector",
     kind: "window",
-    label: "Surface Context Values",
-    defaultData: { surfaceName: null, scope: {}, isEditable: false },
+    label: "Surface Context Admin",
+    defaultData: {
+      surfaceName: null,
+      scope: {},
+      isEditable: false,
+      preferRuntime: false,
+    },
     ephemeral: true,
     mobilePresentation: "drawer",
     mobileSidebarAs: "drawer",

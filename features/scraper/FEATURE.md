@@ -18,12 +18,12 @@ Four sibling pipelines that pull external data (web pages, PDFs, multi-stage res
 
 This doc covers four features as a single ingestion tier:
 
-| Feature | Directory | Role |
-|---|---|---|
-| Scraper | `features/scraper/` | Web scraping + keyword search + search-and-scrape |
-| PDF Extractor | `features/pdf-extractor/` | Multipart upload → text extraction → optional AI cleanup |
-| Research | `features/research/` | Multi-stage pipeline: search → scrape → analyze → synthesize → document |
-| Transcripts | `features/transcripts/` | Audio/video upload → Whisper transcription → segmented persistence |
+| Feature       | Directory                 | Role                                                                    |
+| ------------- | ------------------------- | ----------------------------------------------------------------------- |
+| Scraper       | `features/scraper/`       | Web scraping + keyword search + search-and-scrape                       |
+| PDF Extractor | `features/pdf-extractor/` | Multipart upload → text extraction → optional AI cleanup                |
+| Research      | `features/research/`      | Multi-stage pipeline: search → scrape → analyze → synthesize → document |
+| Transcripts   | `features/transcripts/`   | Audio/video upload → Whisper transcription → segmented persistence      |
 
 They are grouped here because they share invariants (NDJSON streaming, Python-backend offload, Supabase persistence, agent-consumable results). Each has its own UI and DB tables.
 
@@ -34,6 +34,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 **Purpose:** scrape one or more URLs, optionally first running a keyword web search. Returns rich per-URL payloads — markdown-rendered text, structured data, organized sections, images, links, metadata.
 
 **Entry points**
+
 - Routes: `app/(transitional)/scraper/` (`quick`, `search`, `search-and-scrape`; `[id]` redirects to `/scraper` — legacy socket task links retired)
 - Hook: `useScraperApi()` — `features/scraper/hooks/useScraperApi.ts`. Single hook for all scrape/search endpoints; buffers NDJSON, resolves when `end` arrives.
 - Agent analysis tabs (full scrape): `useScraperAgentAnalysis()` + `parts/agent-analysis/*` — Fact Checker and Keyword Analysis via `useRunAgent` (see `constants/analysis-agents.ts`).
@@ -42,6 +43,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 - **Agent surface (`matrx-user/scraper`):** `features/scraper/agent-context/buildScraperContextData.ts` (pure map of live workspace state → `createScraperScope`, emitting baselines `content`/`selection`/`context` + the manifest's custom values), `SCRAPER_CONTEXT_MENU_PROPS`, and `agent-context/scraperExtraSections.ts` (page-op menu items). Mounted in `parts/ScraperFloatingWorkspace.tsx`: `UnifiedAgentContextMenu` wraps the editable URL/keyword config region (inputs are `ProInput`) and the read-only `ScrapedResultDetailTabs` results region (`isEditable={false}`). Keyword inputs in `parts/ScraperKeywordSearchPanel.tsx` are `ProInput`. Manifest: `features/surfaces/manifests/scraper.manifest.ts`.
 
 **Endpoints (Python backend, declared in `lib/api/endpoints.ts`)**
+
 - `POST /scraper/quick-scrape`
 - `POST /scraper/search`
 - `POST /scraper/search-and-scrape`
@@ -49,6 +51,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 - `POST /scraper/mic-check`
 
 **Data model**
+
 - Scrapes themselves are **not** currently persisted to Supabase by the hook; result is held in component state and optionally fed into `rs_source` (research) or an agent context. Persistence is the caller's responsibility.
 - Raw result envelope typed as `ScraperResult` (`features/scraper/hooks/useScraperApi.ts`) and `QuickScrapeRequest` / `SearchResultItem` in `features/scraper/types/scraper-api.ts`.
 
@@ -59,6 +62,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 **Purpose:** upload one or many PDFs/images, stream per-file completion, persist extracted text to the backend DB, optionally run an AI cleanup pass.
 
 **Entry points**
+
 - Hook: `usePdfExtractor()` — `features/pdf-extractor/hooks/usePdfExtractor.ts`. Manages tabs, batch upload, NDJSON consumption, history, AI cleanup.
 - Component: `features/pdf-extractor/components/PdfExtractorWorkspace.tsx`
 - Demo route: `app/(public)/demos/api-tests/pdf-extract`
@@ -70,6 +74,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
   - `POST /utilities/pdf/clean-content/{doc_id}` — AI cleanup, NDJSON stream
 
 **Data model**
+
 - DB rows owned by the Python backend; read model is the `PdfDocument` type in `usePdfExtractor.ts` (`id`, `name`, `content`, `clean_content`, `source` cld_files signed URL, timestamps).
 - Raw files land in `cld_files` (AWS S3) asynchronously via the Python backend — `source` may be `null` briefly after extraction; re-fetch resolves it.
 
@@ -82,6 +87,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 **Purpose:** AI-powered research with human-in-the-loop curation. A topic owns keywords, sources, content, analyses, syntheses, tags, documents, media. The backend orchestrates search → scrape → analyze → synthesize → document generation; the frontend curates each step.
 
 **Entry points**
+
 - Routes: all under `app/(public)/p/research/` — `topics`, `topics/new`, `topics/[topicId]` and its sub-routes (`sources`, `keywords`, `analysis`, `document`, `tags`, `media`, `costs`, `settings`). Server Components fetch topic + overview counts before handing to a client store.
 - Service (client): `features/research/service.ts` — Supabase CRUD over `rs_*` tables.
 - Service (server): `features/research/service/server.ts` — server-side Supabase for layouts (`getTopicServer`, `getTopicOverviewServer`).
@@ -103,6 +109,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 **Purpose:** database-backed audio/video transcript store. Upload audio, transcribe with Groq Whisper Large V3 Turbo, persist segments (timecoded + speaker-labeled), edit, organize, export.
 
 **Entry points**
+
 - Route: `app/(a)/transcripts/` — public URL `/transcripts` (legacy `/transcripts` → permanent redirect in `next.config.js`).
 - Service: `features/transcripts/service/transcriptsService.ts` (CRUD + cld_files deletion), `service/audioStorageService.ts` (audio uploads via the universal file handler).
 - Context: `features/transcripts/context/TranscriptsContext.tsx` — optimistic updates, real-time subscription, `createTranscript`, `updateTranscript`, `deleteTranscript`, `copyTranscript`, `refreshTranscripts`.
@@ -110,6 +117,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 - Components: `TranscriptsLayout`, `TranscriptsHeader` (portal-injected), `TranscriptsSidebar`, `TranscriptViewer`, `CreateTranscriptModal` (Upload Only / Upload & Transcribe), `ImportTranscriptModal`, `RecordingInterface`, `RecordingPreview`, `DeleteTranscriptDialog`, `DraftIndicator`.
 
 **Data model (Supabase)**
+
 - Table `transcripts` (see `features/transcripts/migrations/create_transcripts_table.sql`): `id`, `user_id`, `title`, `description`, `segments` (JSONB), `metadata` (JSONB), `audio_file_path`, `video_file_path`, `source_type` (`audio`|`video`|`meeting`|`interview`|`other`), `tags[]`, `folder_name`, `is_deleted`, `is_draft`, `draft_saved_at`, timestamps.
 - Segment shape: `{ id, timecode, seconds, text, speaker? }`.
 - Storage: audio/video files in `cld_files` (AWS S3); `audio_file_path` / `video_file_path` are cld_files UUIDs referencing them.
@@ -131,6 +139,7 @@ Every pipeline starts with an authenticated `POST` (Supabase JWT via `useBackend
 All long-running pipelines emit NDJSON: one JSON object per line, event types `phase` | `info` | `data` | `error` | `end`. The scraper hook uses `consumeStream` from `@/lib/api/stream-parser` and the typed event helpers in `@/lib/api/types`. PDF and research pipelines follow the same contract (see each hook's inline reader). This is the **same contract** documented in `features/agents/docs/STREAMING_SYSTEM.md` — there is one streaming contract across the whole app.
 
 Per-pipeline `data` payloads:
+
 - **Scraper:** `{ type, metadata, results[] }` envelope, or flat result rows with `text_data` / `overview` / `url`. Normalized by `mapToScraperResult`.
 - **PDF:** one `data` event per file: `{ doc_id, filename, status: "done"|"error", error }`; `info.code = "pdf_page_progress"` for live progress.
 - **Research:** phase-scoped events (`searching` / `scraping` / `analyzing` / `synthesizing` / `generating`) with per-stage payloads written into `rs_*` tables by the Python side.
@@ -146,6 +155,7 @@ Per-pipeline `data` payloads:
 ### 4. Agent consumption
 
 Agents consume ingestion output through two paths:
+
 1. **Direct context injection.** A resource attached to an agent instance (see `instanceResources` in `features/agents/FEATURE.md`) may be a PDF doc id, a transcript id, or a scraped URL; the server resolves it into prompt content at turn assembly.
 2. **Tool calls.** Agents invoke scraping / research / PDF lookup as tool calls (MCP or native) that hit the same Python endpoints, then hand back `doc_id` / `topic_id` / scraped-result references to persist state across turns. Durable tool calls are the norm for long-running ingestion (see `features/agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`).
 
@@ -172,7 +182,7 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 - **Agent consumption:** [`features/agents/FEATURE.md`](../agents/FEATURE.md), [`features/agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`](../agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md)
 - **Tasks integration (transcripts):** [`features/tasks/FEATURE.md`](../tasks/FEATURE.md)
 - **PDF API surface:** [`features/pdf-extractor/API.md`](../pdf-extractor/API.md)
-- **Research reference:** [`features/research/README.md`](../research/README.md), [`app/(public)/p/research/RESEARCH_STREAMING_GUIDE.md`](../../app/(public)/p/research/RESEARCH_STREAMING_GUIDE.md)
+- **Research reference:** [`features/research/README.md`](../research/README.md), [`app/(public)/p/research/RESEARCH_STREAMING_GUIDE.md`](<../../app/(public)/p/research/RESEARCH_STREAMING_GUIDE.md>)
 - **Transcripts reference:** [`features/transcripts/README.md`](../transcripts/README.md)
 
 ---

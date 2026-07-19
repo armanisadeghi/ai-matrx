@@ -42,8 +42,9 @@ stream for progress and per-URL events.
 
 The live stream is transient presentation state. The scraper/worker writes
 durable output to the canonical `web` tables. Once persisted, the UI reads it
-from Supabase like every other product record. Reconnection and reload therefore
-never depend on replaying a Python response.
+from Supabase like every other product record. Reloads and historical recovery
+read durable rows from Supabase; the scraper exposes no product-data history or
+stream-replay API.
 
 ### Table pagination
 
@@ -58,14 +59,19 @@ The permanent root is `/marketing`. Site-owned routes live beneath the site
 shell at `/marketing/sites/[siteId]`; cross-site agency workspaces remain at
 the Marketing root.
 
-Initial route groups:
+The implemented first vertical includes:
 
 - `/marketing/sites` and `/marketing/sites/new`
 - `/marketing/sites/[siteId]`
-- site children: `pages`, `crawls`, `analysis`, `findings`, `links`,
-  `screenshots`, `integrations`, `cost`, `access`, and `settings`
+- site children: `pages` and `crawls`
 - page children: detail and immutable `snapshots`
-- crawl children: `urls`, `snapshots`, `findings`, `links`, and `logs`
+- crawl start at `crawls/new`, crawl detail, durable `urls`, and durable `logs`
+
+The remaining approved route contract includes:
+
+- site children: `analysis`, `findings`, `links`, `screenshots`,
+  `integrations`, `cost`, `access`, and `settings`
+- crawl children: `snapshots`, `findings`, and `links`
 - cross-site: `analysis`, `findings`, `connections`, `batches`, and `cost`
 - shared catalog: `analysis/items` and `analysis/providers`
 
@@ -74,13 +80,14 @@ The complete canonical tree is documented in
 
 ## 4. Database foundation
 
-The thirteen certified tables and nine views in `web` remain authoritative.
-New tables are added only for approved missing authorities and must use
+The seventeen certified tables and nine views in `web` remain authoritative.
+The crawl URL outcome ledger, crawl event history, page source evidence, and
+crawl schedule authorities are live as `web.crawl_url`, `web.crawl_event`,
+`web.page_evidence`, and `web.crawl_schedule`.
+
+Future tables are added only for approved missing authorities and must use
 `web.conform(...)` plus `iam.verify_canonical(...)`:
 
-- crawl URL outcome ledger and crawl event history;
-- page source evidence;
-- crawl schedule definitions;
 - integration bindings, sync history, and typed metrics;
 - CMS bindings, change sets/items, and task bindings.
 
@@ -108,21 +115,21 @@ has one direct Supabase access path with:
 - abort/stale-request protection;
 - optional Supabase Realtime invalidation when persisted rows change.
 
-The generated `Database` types must include schema `web`. Temporary handwritten
-row types are allowed only at a narrow boundary until regeneration is complete.
+The generated `Database` types include schema `web`. Feature-owned projection
+types may narrow generated rows, but must not redefine the canonical schema.
 
 ## 6. Direct scraper client
 
-`features/marketing/scraper/` owns the only crawler command client. It uses a
+`features/marketing/crawler/` owns the only Marketing crawler command client. It uses a
 dedicated public scraper base URL, never the AI Dream base URL, and attaches the
 current Supabase JWT. Its API boundary includes:
 
-- start crawl with site id, frozen options, and idempotency key;
-- cancel/pause/resume when supported by the crawler contract;
+- homepage bootstrap and start-crawl commands scoped by site id;
+- explicit cancellation while the original live stream is active;
 - canonical NDJSON parsing, heartbeats, terminal `error` and `end` handling;
 - typed live events for discovery, queue/fetch/render/capture/persist progress;
-- explicit reconnection/degraded state;
-- no historical GET/list/detail methods.
+- explicit degraded state; durable event gaps and reloads come from Supabase;
+- no historical or replay GET/POST methods.
 
 The live UI may merge transient stream events with Supabase-persisted rows, but
 persisted rows win whenever they overlap.
@@ -139,19 +146,24 @@ inspection and editing that should not replace the current route. Mobile avoids
 nested scrolling, uses drawers rather than dialogs, and stacks route sections
 instead of desktop tab strips.
 
-## 8. Initial delivery sequence
+## 8. Delivery status and sequence
 
-1. Verify the live certified schema, Data API exposure, grants, RLS, generated
-   types, and missing integrity rules.
-2. Add the approved missing database authorities with focused migrations and
-   verification queries.
-3. Add controlled Supabase mode to the canonical Matrx table.
-4. Build the `/marketing` shell, site portfolio, site creation, site shell,
-   canonical pages, snapshots, crawls, and live crawl workspace.
-5. Add analysis, findings, links, screenshots, batches, and cost workspaces.
-6. Add GSC/GA4 and other integration bindings and metric views.
-7. Add CMS bindings, tasks, proposed changes, and publishing workflows.
-8. Run type checking, focused tests, database advisors, browser testing, and an
+Completed foundation and first vertical:
+
+1. Verified the certified schema, Data API exposure, grants, RLS, generated
+   types, and integrity rules.
+2. Added the crawl URL, crawl event, page evidence, and crawl schedule
+   authorities.
+3. Added controlled Supabase mode to the canonical Matrx table.
+4. Built the `/marketing` shell, site portfolio, site creation, site shell,
+   canonical pages, snapshots, crawls, and direct live crawl workspace.
+
+Remaining approved sequence:
+
+1. Add analysis, findings, links, screenshots, batches, and cost workspaces.
+2. Add GSC/GA4 and other integration bindings and metric views.
+3. Add CMS bindings, tasks, proposed changes, and publishing workflows.
+4. Run type checking, focused tests, database advisors, browser testing, and an
    adversarial architecture/UX pass after each vertical.
 
 ## 9. Explicit non-goals

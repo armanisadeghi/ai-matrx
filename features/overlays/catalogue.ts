@@ -675,8 +675,13 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  surfaceContextWindow: {
+    label: "Surface Context",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   surfaceContextInspector: {
-    label: "Surface Context Values",
+    label: "Surface Context Admin",
     instanceMode: "singleton",
     isWindow: true,
   },

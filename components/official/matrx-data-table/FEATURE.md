@@ -65,14 +65,14 @@ tables (AI Models, relationships, …) can cut over to one contract.
 />
 ```
 
-| Feature | How |
-|---|---|
-| Filters | Per-column; searchable selects; clear-X; Clear all |
-| `anyOf` | OR-search across named columns |
-| Copy | Per-row + toolbar “this view” |
-| Inline edit | `editable` on col; string in-cell; else popover; Save/Cancel pill |
-| Window | Sidebar View / Edit tabs; Edit = `renderEdit` ?? `detail.render` |
-| UUID / FK | `MatrxUuidCell` via `cellKind` or auto-detect; `fk.onOpen` / `href` / `forbidden` |
+| Feature     | How                                                                               |
+| ----------- | --------------------------------------------------------------------------------- |
+| Filters     | Per-column; searchable selects; clear-X; Clear all                                |
+| `anyOf`     | OR-search across named columns                                                    |
+| Copy        | Per-row + toolbar “this view”                                                     |
+| Inline edit | `editable` on col; string in-cell; else popover; Save/Cancel pill                 |
+| Window      | Sidebar View / Edit tabs; Edit = `renderEdit` ?? `detail.render`                  |
+| UUID / FK   | `MatrxUuidCell` via `cellKind` or auto-detect; `fk.onOpen` / `href` / `forbidden` |
 
 ## AI Models cutover checklist (parity)
 
@@ -87,13 +87,13 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Reuse gate
 
-| Source | Took | Left behind |
-|---|---|---|
-| AiModelTable | sticky + filters + UuidCell → MatrxUuidCell | domain coupling, split-pane sidebar |
-| aidream UuidDisplay / IdField | short + copy + FK open semantics | `/database/…` routes, GlobalRecordSheet |
-| GenericDataTable | pagination, empty/loading | no sticky / filters / panels |
-| RunControlsWindow | WindowPanel sidebar tab pattern | — |
-| `CopyButtons` | agent envelope | — |
+| Source                        | Took                                        | Left behind                             |
+| ----------------------------- | ------------------------------------------- | --------------------------------------- |
+| AiModelTable                  | sticky + filters + UuidCell → MatrxUuidCell | domain coupling, split-pane sidebar     |
+| aidream UuidDisplay / IdField | short + copy + FK open semantics            | `/database/…` routes, GlobalRecordSheet |
+| GenericDataTable              | pagination, empty/loading                   | no sticky / filters / panels            |
+| RunControlsWindow             | WindowPanel sidebar tab pattern             | —                                       |
+| `CopyButtons`                 | agent envelope                              | —                                       |
 
 ## Change Log
 

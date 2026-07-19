@@ -1,21 +1,27 @@
 # `web` Schema — Canonical Contract
 
 **Project:** Matrx Main (`txzxabzwovsujtloxrus`)  
-**Schema:** `web`  
-**Status:** Live and canonical-certified, per the database-owner contract supplied
-for this project and a read-only live verification on 2026-07-18.  
-**Purpose:** Site crawler, marketing analysis, and future CMS operations.  
-**Implementation note:** The contract originated from the database owner. A
-read-only schema/catalog verification has since been performed; no database
-mutation was made during that verification.
+**Schema:** `web`
+
+**Status:** Live and canonical-certified; reconciled to the implemented schema on
+2026-07-19.
+
+**Purpose:** Site crawler, marketing analysis, and future CMS operations.
+
+**Implementation note:** The contract originated from the database owner and now
+includes the implemented crawl authority and integrity migrations.
 
 ## 1. Non-negotiable mental model
 
 ```text
 site
 ├── page                         stable canonical URL + user metadata
-│   └── snapshot                 immutable observed content from one crawl
+│   ├── snapshot                 immutable observed content from one crawl
+│   └── page_evidence            source-specific evidence for canonical status
 ├── crawl_session                one crawl event
+│   ├── crawl_url                immutable per-URL crawl outcome
+│   └── crawl_event              immutable durable run event
+├── crawl_schedule               recurring crawl definition
 ├── screenshot                   stored visual artifact metadata
 ├── site_item_config             enabled analysis definitions/providers
 ├── analysis_result              immutable normalized measurement event
@@ -33,6 +39,12 @@ shared catalogs
 - `page` is the authoritative site URL registry plus user-owned metadata. It
   never owns observed body content.
 - `crawl_session` is one crawl event.
+- `crawl_url` is one immutable URL outcome within that event; it is not a
+  canonical page.
+- `crawl_event` is one immutable durable execution/reconciliation event.
+- `page_evidence` records what each source currently says about a canonical
+  page.
+- `crawl_schedule` is the recurring execution definition, not a crawl result.
 - `snapshot` is one page capture from one crawl. Current page content is the
   snapshot addressed by `page.latest_snapshot_id`.
 - Results are immutable measurements. Findings are stateful problems derived
@@ -66,7 +78,7 @@ Exceptions:
   `39c38960-d30c-4840-b0c1-c9960de95582` with public visibility.
 - Custom catalog records are organization-owned.
 
-RLS is enabled on all thirteen tables. Anonymous users can read only public
+RLS is enabled on all seventeen tables. Anonymous users can read only public
 `web.site` rows. Authenticated component access resolves through the parent
 site. `service_role` bypasses RLS for trusted workers.
 
@@ -136,6 +148,27 @@ latest_snapshot_id
 Unique: `(site_id, url_hash)`. `latest_snapshot_id` is maintained by the
 application and defines the current accepted observed content.
 
+### `web.page_evidence` — token `web_page_evidence`
+
+Mutable, source-specific evidence supporting one canonical page's lifecycle.
+
+```text
+site_id
+page_id
+source_type                 manual | crawl | sitemap | gsc | ga4 | cms
+source_binding_id
+external_key
+is_present
+first_seen_at
+last_seen_at
+last_checked_at
+evidence jsonb
+```
+
+The active identity is unique across page, source type, optional source binding,
+and external key. Workers upsert this evidence; it must not be confused with an
+immutable snapshot or a crawl URL outcome.
+
 ### `web.crawl_session` — token `web_crawl_session`
 
 One crawl event.
@@ -149,6 +182,77 @@ stats jsonb
 started_at
 finished_at
 error
+```
+
+### `web.crawl_url` — token `web_crawl_url`
+
+Append-only record of one URL encountered during one crawl session.
+
+```text
+site_id
+session_id
+sequence
+raw_url
+normalized_url
+url_hash
+discovery_source            seed | link | sitemap | gsc | manual | redirect |
+                            canonical | other
+discovered_from_page_id
+classification              internal | external | asset | invalid | excluded
+outcome                     discovered | captured | redirected | skipped |
+                            excluded | failed | duplicate | cancelled
+is_in_scope
+depth
+http_status
+final_url
+reason_code
+reason
+page_id
+snapshot_id
+discovered_at
+completed_at
+```
+
+Unique: `(session_id, sequence)`. These rows describe the run's URL ledger, not
+the site's canonical page registry.
+
+### `web.crawl_event` — token `web_crawl_event`
+
+Append-only durable event emitted during crawl execution and reconciliation.
+
+```text
+site_id
+session_id
+sequence
+event_type
+phase
+level                       debug | info | warning | error
+message
+page_id
+crawl_url_id
+payload jsonb
+occurred_at
+```
+
+Unique: `(session_id, sequence)`.
+
+### `web.crawl_schedule` — token `web_crawl_schedule`
+
+Mutable recurring-crawl definition for one site.
+
+```text
+site_id
+name
+enabled
+cadence jsonb
+scope jsonb
+timezone
+respect_robots              defaults to false; user-controlled switch
+screenshot_policy jsonb
+scheduler_task_id
+next_run_at
+last_run_at
+last_session_id
 ```
 
 ### `web.snapshot` — token `web_snapshot`
@@ -356,7 +460,20 @@ error
 
 `batch_item.id` is the cost-link anchor.
 
-## 5. Views
+## 5. Live integrity and mutation contracts
+
+- Component organization IDs are derived from and validated against the owning
+  site.
+- Cross-pointers are validated for site, page, crawl session, snapshot,
+  screenshot, analysis, finding, link, batch, crawl URL/event, page evidence,
+  and schedule consistency.
+- `snapshot`, `analysis_result`, and `link_edge` are immutable.
+- `crawl_url` and `crawl_event` are append-only.
+- `batch_item` permits only its controlled execution lifecycle updates.
+- The active-finding uniqueness contract includes `subject_type` and permits one
+  unresolved finding per site, subject, and item.
+
+## 6. Views
 
 ```text
 web.v_latest_result
@@ -373,7 +490,7 @@ web.v_cost_by_client
 Scores are weighted 1–100 projections. Priority is based on open,
 non-suppressed findings using weight × severity × confidence.
 
-## 6. Cost attribution contract
+## 7. Cost attribution contract
 
 There is no separate web cost table. Executions are costed in
 `runtime.global_execution.cost`. Every task that executes one batch item must
@@ -388,21 +505,24 @@ Cost views resolve the linked execution's `root_execution_id` and sum the full
 execution subtree. If the runtime cannot set this link, the database owner must
 add a `runtime_root_execution_id` reference to `batch_item` instead.
 
-## 7. Reconciliation contract
+## 8. Reconciliation contract
 
-After a qualifying crawl completes:
+After a complete, coverage-qualified crawl:
 
-- new URL → create `page` with crawl provenance;
+- new eligible URL → create `page` with crawl provenance and crawl evidence;
 - seen canonical page → update `last_seen` and `http_status_last`, then point
-  `latest_snapshot_id` to the accepted snapshot;
-- known page not seen → mark `missing` as evidence, never delete immediately;
+  `latest_snapshot_id` to the accepted snapshot and upsert positive
+  `page_evidence`;
+- known page not seen → record negative crawl evidence and mark `missing` only
+  when the approved coverage policy qualifies the absence;
 - confirmed gone after the approved miss/HTTP policy → mark `gone` and
   soft-delete.
 
-Reconciliation must operate against `page`; it must never redefine a crawl's
-snapshot collection as the site's canonical page registry.
+Reconciliation consumes `crawl_url` and source-specific `page_evidence`, but
+operates against `page`; it must never redefine a crawl's URL or snapshot
+collection as the site's canonical page registry.
 
-## 8. Canonical creation and verification
+## 9. Canonical creation and verification
 
 New tables use:
 
@@ -422,7 +542,11 @@ Canonical tokens:
 ```text
 web_site
 web_page
+web_page_evidence
 web_crawl_session
+web_crawl_url
+web_crawl_event
+web_crawl_schedule
 web_snapshot
 web_screenshot
 web_analysis_item
@@ -435,7 +559,7 @@ web_batch_job
 web_batch_item
 ```
 
-## 9. Catalog status
+## 10. Catalog status
 
 Live verification on 2026-07-18 found 81 built-in `analysis_item` rows, five
 built-in `provider` rows, and valid `content_ir.kind_definition` references for

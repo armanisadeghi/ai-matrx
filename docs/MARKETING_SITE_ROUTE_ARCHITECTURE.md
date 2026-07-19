@@ -1,7 +1,9 @@
 # Marketing Site Platform — Route Architecture
 
-**Status:** Approved route contract  
-**Implementation status:** Authorized and in progress.  
+**Status:** Approved route contract
+
+**Implementation status:** First vertical implemented; approved expansion remains.
+
 **Companion:** `docs/MARKETING_SITE_PLATFORM_PLAN.md`
 
 **Database crosswalk:** `docs/WEB_SCHEMA_ARCHITECTURE_REVIEW.md`  
@@ -16,34 +18,36 @@ operational resource therefore lives under one site shell. Canonical analysis
 definitions, provider bindings, batch operations, and cross-site cost reporting
 live at the Marketing workspace level because they are shared across sites.
 
-Recommended permanent namespace:
+Permanent namespace:
 
 ```text
 /marketing
 ```
 
-This is preferable if the product is expected to grow into the full marketing
-operating system described in the platform plan. It leaves room for additional
-marketing resources without forcing them underneath a website-specific root.
+This leaves room for the full marketing operating system without forcing shared
+resources underneath a website-specific root.
 
-If the module is intentionally limited to managed websites, the same tree can be
-mounted at `/websites`. The resource hierarchy below is independent of that
-final namespace decision.
+## 2. Canonical route tree and implementation status
 
-## 2. Proposed route tree
-
-The product proposal, normalized under the recommended `/marketing` namespace:
+### Implemented first vertical
 
 ```text
+/marketing
+  Redirects to the managed-site portfolio.
+
+/marketing/admin
+  Marketing administration entry point.
+
 /marketing/sites
-  All managed sites: health score, trend, last crawl, open findings.
+  Managed-site portfolio with the current score projection. Trend, last-crawl,
+  and open-finding portfolio aggregates remain an approved enhancement.
 
 /marketing/sites/new
   Add a site to an organization. Creates the durable site first, then starts
   the asynchronous homepage metadata and screenshot bootstrap.
 
 /marketing/sites/[siteId]
-  Shared site layout: site identity, health score, trend, navigation, and
+  Shared site layout: site identity, current health projection, navigation, and
   site-scoped context/access resolution.
 
   /pages
@@ -51,8 +55,9 @@ The product proposal, normalized under the recommended `/marketing` namespace:
     evidence, lifecycle status, target keyword, and latest score projections.
 
   /pages/[pageId]
-    Stable page workspace: user metadata, desired metadata, tasks, scheduled
-    changes, current accepted content, page rollups, and findings.
+    Stable page workspace: user metadata, desired metadata, current accepted
+    content, page rollups, and findings. Tasks, CMS changes, and scheduling join
+    this route after their approved authorities are added.
 
   /pages/[pageId]/snapshots
     Timeline of immutable observations/captures for the canonical page.
@@ -64,9 +69,36 @@ The product proposal, normalized under the recommended `/marketing` namespace:
   /crawls
     Crawl sessions: time, scope, status, coverage, pages captured, and quality.
 
+  /crawls/new
+    Start a crawl directly against the scraper, show the current transient live
+    stream, and link to the durable session written to Supabase.
+
   /crawls/[crawlId]
     One crawl session with immutable configuration, progress, coverage, and
     reconciliation summary: new, known, missed, excluded, and suspected-gone.
+
+  /crawls/[crawlId]/urls
+    Durable per-URL outcomes for the session.
+
+  /crawls/[crawlId]/logs
+    Durable crawl events and errors for the session.
+```
+
+### Remaining approved route contract
+
+The following routes are approved but are not part of the implemented first
+vertical:
+
+```text
+/marketing/sites/[siteId]
+  /crawls/[crawlId]/snapshots
+    Captures produced by this run.
+
+  /crawls/[crawlId]/findings
+    Findings detected in this run.
+
+  /crawls/[crawlId]/links
+    Link edges observed specifically during this run.
 
   /analysis
     Site prioritization workspace: weight × severity × confidence queue,
@@ -132,20 +164,24 @@ The product proposal, normalized under the recommended `/marketing` namespace:
 
 /marketing/batches/[batchId]
   Batch manifest, selected inputs, items, results, per-item failures, costs,
-  and retry/replay controls.
+  and retry/re-run controls.
 
 /marketing/cost
   Cost rollup across all sites, organizations/clients, crawls, providers,
   analysis items, and batches.
 ```
 
-## 3. Recommended crawl-detail expansion
+## 3. Crawl route family
 
 One crawl can contain thousands of URL outcomes, observations, links, findings,
 and events. Its index route should remain a compact summary, with high-volume
 data in addressable child routes:
 
 ```text
+/marketing/sites/[siteId]/crawls/new
+  Crawl options, direct scraper command, current transient live stream, and a
+  link to the durable Supabase session. This route is implemented.
+
 /marketing/sites/[siteId]/crawls/[crawlId]
   Summary, immutable configuration, coverage, and reconciliation.
 
@@ -164,11 +200,13 @@ data in addressable child routes:
   Link edges observed specifically during this run.
 
 /marketing/sites/[siteId]/crawls/[crawlId]/logs
-  Durable run events, errors, worker attempts, and reconciliation history.
+  Durable run events, errors, and reconciliation history.
 ```
 
 This expansion preserves the core distinction between a site's permanent page
-registry and the set of URLs encountered by one crawl.
+registry and the set of URLs encountered by one crawl. `/crawls/new`, crawl
+detail, `urls`, and `logs` are implemented; `snapshots`, `findings`, and `links`
+remain approved expansion routes.
 
 ## 4. Route semantics
 
@@ -186,8 +224,7 @@ represents observed state at a point in time. “Current content” on the page
 workspace is a projection of the latest accepted successful snapshot, not
 content stored as the page's identity.
 
-The product-facing term may remain **snapshot** even if the database uses a more
-precise name such as `page_observation`.
+**Snapshot** is the canonical database, route, and user-facing term.
 
 ### Analysis and findings
 
@@ -232,7 +269,8 @@ cost ledger. They are not separate sources of truth.
 
 - `/marketing/sites` is the permanent site portfolio root.
 - Cross-organization sharing has the dedicated site `/access` route.
-- Cross-site analysis, findings, connections, batches, and cost workspaces ship
-  in the first release.
+- Cross-site analysis, findings, connections, batches, and cost workspaces remain
+  approved for the first release; they are not part of the implemented first
+  vertical.
 - `/marketing/batches` is the universal Marketing batch monitor.
 - `snapshot` is the canonical database, route, and user-facing term.

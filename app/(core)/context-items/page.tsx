@@ -24,7 +24,7 @@ export default function AllContextItemsPage() {
       </PageHeader>
       <div className="h-full overflow-hidden">
         <div className="h-full overflow-y-auto bg-textured">
-          <div className="max-w-4xl mx-auto p-6 md:p-8">
+          <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
             <AllContextItemsHub />
           </div>
         </div>

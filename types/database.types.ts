@@ -42108,6 +42108,1886 @@ export type Database = {
       [_ in never]: never
     }
   }
+  web: {
+    Tables: {
+      analysis_item: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          default_provider_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_builtin: boolean
+          key: string
+          kind_definition_id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          score_contract: Json
+          severity_map: Json
+          subcategory: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          weight: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          default_provider_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          key: string
+          kind_definition_id: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          score_contract?: Json
+          severity_map?: Json
+          subcategory: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          weight?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_provider_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_builtin?: boolean
+          key?: string
+          kind_definition_id?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          score_contract?: Json
+          severity_map?: Json
+          subcategory?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_item_default_provider_fk"
+            columns: ["default_provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_result: {
+        Row: {
+          batch_id: string | null
+          category: string
+          computed_at: string
+          confidence: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          issue_count: number
+          item_id: string
+          item_key: string
+          metadata: Json
+          organization_id: string
+          page_id: string | null
+          payload_instance_id: string | null
+          provider_id: string
+          provider_version: string | null
+          run_id: string | null
+          score: number | null
+          severity: string
+          site_id: string
+          status: string
+          subcategory: string
+          subject_id: string
+          subject_type: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          batch_id?: string | null
+          category: string
+          computed_at?: string
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          issue_count?: number
+          item_id: string
+          item_key: string
+          metadata?: Json
+          organization_id: string
+          page_id?: string | null
+          payload_instance_id?: string | null
+          provider_id: string
+          provider_version?: string | null
+          run_id?: string | null
+          score?: number | null
+          severity?: string
+          site_id: string
+          status: string
+          subcategory: string
+          subject_id: string
+          subject_type: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          batch_id?: string | null
+          category?: string
+          computed_at?: string
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          issue_count?: number
+          item_id?: string
+          item_key?: string
+          metadata?: Json
+          organization_id?: string
+          page_id?: string | null
+          payload_instance_id?: string | null
+          provider_id?: string
+          provider_version?: string | null
+          run_id?: string | null
+          score?: number | null
+          severity?: string
+          site_id?: string
+          status?: string
+          subcategory?: string
+          subject_id?: string
+          subject_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_result_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_batch_fk"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batch_job"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batch_item: {
+        Row: {
+          batch_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: string | null
+          external_ref: string | null
+          id: string
+          item_id: string
+          metadata: Json
+          organization_id: string
+          provider_id: string
+          result_id: string | null
+          site_id: string
+          status: string
+          subject_id: string
+          subject_type: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          external_ref?: string | null
+          id?: string
+          item_id: string
+          metadata?: Json
+          organization_id: string
+          provider_id: string
+          result_id?: string | null
+          site_id: string
+          status?: string
+          subject_id: string
+          subject_type: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          external_ref?: string | null
+          id?: string
+          item_id?: string
+          metadata?: Json
+          organization_id?: string
+          provider_id?: string
+          result_id?: string | null
+          site_id?: string
+          status?: string
+          subject_id?: string
+          subject_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_item_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batch_job"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_result"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "v_latest_result"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batch_job: {
+        Row: {
+          completed_at: string | null
+          counts: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: string | null
+          external_ref: string | null
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          provider_id: string
+          site_id: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          completed_at?: string | null
+          counts?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          external_ref?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          organization_id: string
+          provider_id: string
+          site_id: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          completed_at?: string | null
+          counts?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          external_ref?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          provider_id?: string
+          site_id?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_job_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_job_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crawl_event: {
+        Row: {
+          crawl_url_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          event_type: string
+          id: string
+          level: string
+          message: string | null
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          page_id: string | null
+          payload: Json
+          phase: string | null
+          sequence: number
+          session_id: string
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          crawl_url_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          event_type: string
+          id?: string
+          level?: string
+          message?: string | null
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          page_id?: string | null
+          payload?: Json
+          phase?: string | null
+          sequence: number
+          session_id: string
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          crawl_url_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          event_type?: string
+          id?: string
+          level?: string
+          message?: string | null
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          page_id?: string | null
+          payload?: Json
+          phase?: string | null
+          sequence?: number
+          session_id?: string
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_event_crawl_url_id_fkey"
+            columns: ["crawl_url_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_url"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_event_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_event_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_session"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_event_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crawl_schedule: {
+        Row: {
+          cadence: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          enabled: boolean
+          id: string
+          last_run_at: string | null
+          last_session_id: string | null
+          metadata: Json
+          name: string
+          next_run_at: string | null
+          organization_id: string
+          respect_robots: boolean
+          scheduler_task_id: string | null
+          scope: Json
+          screenshot_policy: Json
+          site_id: string
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          cadence?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          last_session_id?: string | null
+          metadata?: Json
+          name: string
+          next_run_at?: string | null
+          organization_id: string
+          respect_robots?: boolean
+          scheduler_task_id?: string | null
+          scope?: Json
+          screenshot_policy?: Json
+          site_id: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          cadence?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          last_session_id?: string | null
+          metadata?: Json
+          name?: string
+          next_run_at?: string | null
+          organization_id?: string
+          respect_robots?: boolean
+          scheduler_task_id?: string | null
+          scope?: Json
+          screenshot_policy?: Json
+          site_id?: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_schedule_last_session_id_fkey"
+            columns: ["last_session_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_session"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_schedule_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crawl_session: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          scope: Json
+          site_id: string
+          started_at: string | null
+          stats: Json
+          status: string
+          trigger: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          scope?: Json
+          site_id: string
+          started_at?: string | null
+          stats?: Json
+          status?: string
+          trigger?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          scope?: Json
+          site_id?: string
+          started_at?: string | null
+          stats?: Json
+          status?: string
+          trigger?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_session_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crawl_url: {
+        Row: {
+          classification: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          depth: number
+          discovered_at: string
+          discovered_from_page_id: string | null
+          discovery_source: string
+          final_url: string | null
+          http_status: number | null
+          id: string
+          is_in_scope: boolean
+          metadata: Json
+          normalized_url: string | null
+          organization_id: string
+          outcome: string
+          page_id: string | null
+          raw_url: string
+          reason: string | null
+          reason_code: string | null
+          sequence: number
+          session_id: string
+          site_id: string
+          snapshot_id: string | null
+          updated_at: string
+          updated_by: string | null
+          url_hash: string
+          version: number
+        }
+        Insert: {
+          classification: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: number
+          discovered_at?: string
+          discovered_from_page_id?: string | null
+          discovery_source?: string
+          final_url?: string | null
+          http_status?: number | null
+          id?: string
+          is_in_scope?: boolean
+          metadata?: Json
+          normalized_url?: string | null
+          organization_id: string
+          outcome: string
+          page_id?: string | null
+          raw_url: string
+          reason?: string | null
+          reason_code?: string | null
+          sequence: number
+          session_id: string
+          site_id: string
+          snapshot_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url_hash: string
+          version?: number
+        }
+        Update: {
+          classification?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: number
+          discovered_at?: string
+          discovered_from_page_id?: string | null
+          discovery_source?: string
+          final_url?: string | null
+          http_status?: number | null
+          id?: string
+          is_in_scope?: boolean
+          metadata?: Json
+          normalized_url?: string | null
+          organization_id?: string
+          outcome?: string
+          page_id?: string | null
+          raw_url?: string
+          reason?: string | null
+          reason_code?: string | null
+          sequence?: number
+          session_id?: string
+          site_id?: string
+          snapshot_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url_hash?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_url_discovered_from_page_id_fkey"
+            columns: ["discovered_from_page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_url_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_url_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_session"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_url_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_url_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "snapshot"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finding: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          first_detected_at: string
+          first_result_id: string | null
+          id: string
+          item_id: string
+          item_key: string
+          last_detected_at: string
+          last_result_id: string | null
+          metadata: Json
+          organization_id: string
+          page_id: string | null
+          resolved_at: string | null
+          severity: string
+          site_id: string
+          status: string
+          subcategory: string
+          subject_id: string
+          subject_type: string
+          suppressed: boolean
+          suppressed_reason: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          first_detected_at?: string
+          first_result_id?: string | null
+          id?: string
+          item_id: string
+          item_key: string
+          last_detected_at?: string
+          last_result_id?: string | null
+          metadata?: Json
+          organization_id: string
+          page_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          site_id: string
+          status?: string
+          subcategory: string
+          subject_id: string
+          subject_type: string
+          suppressed?: boolean
+          suppressed_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          first_detected_at?: string
+          first_result_id?: string | null
+          id?: string
+          item_id?: string
+          item_key?: string
+          last_detected_at?: string
+          last_result_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          page_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          site_id?: string
+          status?: string
+          subcategory?: string
+          subject_id?: string
+          subject_type?: string
+          suppressed?: boolean
+          suppressed_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finding_first_result_id_fkey"
+            columns: ["first_result_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_result"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_first_result_id_fkey"
+            columns: ["first_result_id"]
+            isOneToOne: false
+            referencedRelation: "v_latest_result"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_last_result_id_fkey"
+            columns: ["last_result_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_result"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_last_result_id_fkey"
+            columns: ["last_result_id"]
+            isOneToOne: false
+            referencedRelation: "v_latest_result"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_edge: {
+        Row: {
+          anchor_text: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          http_status: number | null
+          id: string
+          is_internal: boolean
+          metadata: Json
+          organization_id: string
+          position: number | null
+          rel: string | null
+          site_id: string
+          snapshot_id: string
+          source_page_id: string
+          target_page_id: string | null
+          target_url: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          anchor_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          http_status?: number | null
+          id?: string
+          is_internal: boolean
+          metadata?: Json
+          organization_id: string
+          position?: number | null
+          rel?: string | null
+          site_id: string
+          snapshot_id: string
+          source_page_id: string
+          target_page_id?: string | null
+          target_url: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          anchor_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          http_status?: number | null
+          id?: string
+          is_internal?: boolean
+          metadata?: Json
+          organization_id?: string
+          position?: number | null
+          rel?: string | null
+          site_id?: string
+          snapshot_id?: string
+          source_page_id?: string
+          target_page_id?: string | null
+          target_url?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_edge_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_edge_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "snapshot"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_edge_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_edge_target_page_id_fkey"
+            columns: ["target_page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          first_seen: string
+          http_status_last: number | null
+          id: string
+          last_seen: string
+          latest_snapshot_id: string | null
+          meta_description_desired: string | null
+          meta_title_desired: string | null
+          metadata: Json
+          organization_id: string
+          path: string | null
+          provenance: string
+          site_id: string
+          status: string
+          target_keyword: string | null
+          updated_at: string
+          updated_by: string | null
+          url: string
+          url_hash: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          first_seen?: string
+          http_status_last?: number | null
+          id?: string
+          last_seen?: string
+          latest_snapshot_id?: string | null
+          meta_description_desired?: string | null
+          meta_title_desired?: string | null
+          metadata?: Json
+          organization_id: string
+          path?: string | null
+          provenance: string
+          site_id: string
+          status?: string
+          target_keyword?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+          url_hash: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          first_seen?: string
+          http_status_last?: number | null
+          id?: string
+          last_seen?: string
+          latest_snapshot_id?: string | null
+          meta_description_desired?: string | null
+          meta_title_desired?: string | null
+          metadata?: Json
+          organization_id?: string
+          path?: string | null
+          provenance?: string
+          site_id?: string
+          status?: string
+          target_keyword?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+          url_hash?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_evidence: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          evidence: Json
+          external_key: string | null
+          first_seen_at: string
+          id: string
+          is_present: boolean
+          last_checked_at: string | null
+          last_seen_at: string
+          metadata: Json
+          organization_id: string
+          page_id: string
+          site_id: string
+          source_binding_id: string | null
+          source_type: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          evidence?: Json
+          external_key?: string | null
+          first_seen_at?: string
+          id?: string
+          is_present?: boolean
+          last_checked_at?: string | null
+          last_seen_at?: string
+          metadata?: Json
+          organization_id: string
+          page_id: string
+          site_id: string
+          source_binding_id?: string | null
+          source_type: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          evidence?: Json
+          external_key?: string | null
+          first_seen_at?: string
+          id?: string
+          is_present?: boolean
+          last_checked_at?: string | null
+          last_seen_at?: string
+          metadata?: Json
+          organization_id?: string
+          page_id?: string
+          site_id?: string
+          source_binding_id?: string | null
+          source_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_evidence_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_evidence_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_builtin: boolean
+          key: string
+          kind: string
+          label: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_builtin?: boolean
+          key: string
+          kind: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_builtin?: boolean
+          key?: string
+          kind?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      screenshot: {
+        Row: {
+          captured_at: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          height: number | null
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          page_id: string | null
+          site_id: string
+          snapshot_id: string | null
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          width: number | null
+        }
+        Insert: {
+          captured_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          height?: number | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id: string
+          page_id?: string | null
+          site_id: string
+          snapshot_id?: string | null
+          storage_bucket: string
+          storage_path: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          width?: number | null
+        }
+        Update: {
+          captured_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          height?: number | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          page_id?: string | null
+          site_id?: string
+          snapshot_id?: string | null
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screenshot_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screenshot_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screenshot_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "snapshot"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          domain: string
+          homepage_screenshot_id: string | null
+          id: string
+          integrations: Json
+          metadata: Json
+          name: string
+          organization_id: string
+          root_url: string
+          settings: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          domain: string
+          homepage_screenshot_id?: string | null
+          id?: string
+          integrations?: Json
+          metadata?: Json
+          name: string
+          organization_id: string
+          root_url: string
+          settings?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          domain?: string
+          homepage_screenshot_id?: string | null
+          id?: string
+          integrations?: Json
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          root_url?: string
+          settings?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_homepage_screenshot_fk"
+            columns: ["homepage_screenshot_id"]
+            isOneToOne: false
+            referencedRelation: "screenshot"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_item_config: {
+        Row: {
+          cadence: Json
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          enabled: boolean
+          id: string
+          item_id: string
+          metadata: Json
+          organization_id: string
+          provider_id: string
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          cadence?: Json
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          id?: string
+          item_id: string
+          metadata?: Json
+          organization_id: string
+          provider_id: string
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          cadence?: Json
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          id?: string
+          item_id?: string
+          metadata?: Json
+          organization_id?: string
+          provider_id?: string
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_item_config_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_item_config_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_item_config_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      snapshot: {
+        Row: {
+          body_ref: string | null
+          captured_at: string
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          extracted: Json
+          final_url: string | null
+          head_tags: Json
+          headings: Json
+          http_status: number | null
+          id: string
+          images: Json
+          links_summary: Json
+          metadata: Json
+          organization_id: string
+          page_id: string
+          perf: Json
+          session_id: string
+          site_id: string
+          structured_data: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          word_count: number | null
+        }
+        Insert: {
+          body_ref?: string | null
+          captured_at?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          extracted?: Json
+          final_url?: string | null
+          head_tags?: Json
+          headings?: Json
+          http_status?: number | null
+          id?: string
+          images?: Json
+          links_summary?: Json
+          metadata?: Json
+          organization_id: string
+          page_id: string
+          perf?: Json
+          session_id: string
+          site_id: string
+          structured_data?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          word_count?: number | null
+        }
+        Update: {
+          body_ref?: string | null
+          captured_at?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          extracted?: Json
+          final_url?: string | null
+          head_tags?: Json
+          headings?: Json
+          http_status?: number | null
+          id?: string
+          images?: Json
+          links_summary?: Json
+          metadata?: Json
+          organization_id?: string
+          page_id?: string
+          perf?: Json
+          session_id?: string
+          site_id?: string
+          structured_data?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snapshot_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "snapshot_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "crawl_session"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "snapshot_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      v_cost_by_client: {
+        Row: {
+          client_org_id: string | null
+          cost: number | null
+        }
+        Relationships: []
+      }
+      v_cost_by_item: {
+        Row: {
+          batch_id: string | null
+          batch_item_id: string | null
+          cost: number | null
+          organization_id: string | null
+          page_id: string | null
+          run_id: string | null
+          site_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batch_job"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_cost_by_page: {
+        Row: {
+          cost: number | null
+          page_id: string | null
+          site_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_cost_by_run: {
+        Row: {
+          cost: number | null
+          run_id: string | null
+          site_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_cost_by_site: {
+        Row: {
+          cost: number | null
+          site_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_item_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_latest_result: {
+        Row: {
+          batch_id: string | null
+          category: string | null
+          computed_at: string | null
+          confidence: number | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          id: string | null
+          issue_count: number | null
+          item_id: string | null
+          item_key: string | null
+          metadata: Json | null
+          organization_id: string | null
+          page_id: string | null
+          payload_instance_id: string | null
+          provider_id: string | null
+          provider_version: string | null
+          run_id: string | null
+          score: number | null
+          severity: string | null
+          site_id: string | null
+          status: string | null
+          subcategory: string | null
+          subject_id: string | null
+          subject_type: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_result_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_batch_fk"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batch_job"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_page_score: {
+        Row: {
+          fail_count: number | null
+          page_id: string | null
+          page_score: number | null
+          site_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_result_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_priority_queue: {
+        Row: {
+          category: string | null
+          item_id: string | null
+          item_key: string | null
+          page_id: string | null
+          priority: number | null
+          severity: string | null
+          site_id: string | null
+          subcategory: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finding_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "page"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_site_score: {
+        Row: {
+          scored_pages: number | null
+          site_id: string | null
+          site_score: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_result_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Functions: {
+      assert_component_site: {
+        Args: {
+          p_id: string
+          p_label: string
+          p_relation: unknown
+          p_site_id: string
+        }
+        Returns: undefined
+      }
+      conform: {
+        Args: {
+          p_label: string
+          p_parent_fk?: string
+          p_soft_del?: boolean
+          p_table: string
+          p_token: string
+          p_variant?: string
+          p_versioned?: boolean
+        }
+        Returns: undefined
+      }
+      cost_for_batch_item: {
+        Args: { p_batch_item_id: string; p_site_id: string }
+        Returns: number
+      }
+      create_site: {
+        Args: {
+          p_domain: string
+          p_integrations?: Json
+          p_name: string
+          p_organization_id: string
+          p_root_url: string
+          p_settings?: Json
+          p_visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          domain: string
+          homepage_screenshot_id: string | null
+          id: string
+          integrations: Json
+          metadata: Json
+          name: string
+          organization_id: string
+          root_url: string
+          settings: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "site"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   workbench: {
     Tables: {
       note_folders: {
@@ -45107,6 +46987,9 @@ export const Constants = {
     Enums: {},
   },
   users: {
+    Enums: {},
+  },
+  web: {
     Enums: {},
   },
   workbench: {

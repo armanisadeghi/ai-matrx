@@ -309,7 +309,7 @@ export default function OrganizationsPage() {
       />
       <div className="h-full overflow-y-auto bg-textured">
         <div
-          className="max-w-5xl mx-auto p-4 md:p-6 space-y-6"
+          className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 space-y-6"
           style={{ paddingTop: "calc(var(--shell-header-h) + 1rem)" }}
         >
           {/* Stats + search */}
@@ -386,7 +386,7 @@ export default function OrganizationsPage() {
                   <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                     Personal
                   </h2>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {personal.map((org) => (
                       <OrgCard
                         key={org.id}
@@ -403,7 +403,7 @@ export default function OrganizationsPage() {
                   <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                     Teams
                   </h2>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {teams.map((org) => (
                       <OrgCard
                         key={org.id}

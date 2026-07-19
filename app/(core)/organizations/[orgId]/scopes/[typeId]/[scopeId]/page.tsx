@@ -63,7 +63,7 @@ export default function ScopeDetailPage() {
 
   return (
     <div className="h-dvh overflow-y-auto bg-textured">
-      <div className="max-w-4xl mx-auto px-6 md:px-8 pt-12 pb-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-12">
         <ScopeDetailEditor
           orgId={org.id}
           orgSlugOrId={orgSlugOrId}

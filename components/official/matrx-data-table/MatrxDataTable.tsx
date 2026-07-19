@@ -210,44 +210,34 @@ export function MatrxDataTable<T>({
     return meta;
   }, [visibleColumns, data, controlledQuery]);
 
-  const processed = useMemo(
-    () => {
-      if (controlledQuery) return data;
-      return filterAndSortRows(
-        data,
-        visibleColumns,
-        columnFilters,
-        sort,
-        toolbar?.search === false ? "" : searchValue,
-        toolbar?.anyOf
-          ? { columnIds: toolbar.anyOf.columnIds, query: anyOfValue }
-          : undefined,
-      );
-    },
-    [
+  const processed = useMemo(() => {
+    if (controlledQuery) return data;
+    return filterAndSortRows(
       data,
       visibleColumns,
       columnFilters,
       sort,
-      searchValue,
-      toolbar,
-      anyOfValue,
-      controlledQuery,
-    ],
-  );
+      toolbar?.search === false ? "" : searchValue,
+      toolbar?.anyOf
+        ? { columnIds: toolbar.anyOf.columnIds, query: anyOfValue }
+        : undefined,
+    );
+  }, [
+    data,
+    visibleColumns,
+    columnFilters,
+    sort,
+    searchValue,
+    toolbar,
+    anyOfValue,
+    controlledQuery,
+  ]);
 
   useEffect(() => {
     if (controlledQuery) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Preserve the original local-mode contract: every query-shape change returns to page one, including externally controlled toolbar values.
     setInternalPage(1);
-  }, [
-    searchValue,
-    anyOfValue,
-    columnFilters,
-    sort,
-    pageSize,
-    controlledQuery,
-  ]);
+  }, [searchValue, anyOfValue, columnFilters, sort, pageSize, controlledQuery]);
 
   const totalItems = controlledQuery
     ? Math.max(0, controlledQuery.totalItems)
@@ -639,7 +629,8 @@ export function MatrxDataTable<T>({
                       // through it. The translucent tints (zebra/hover) would
                       // let it bleed, so they are desktop-only.
                       "border-b border-border/60 bg-card transition-colors",
-                      detailEnabled && "cursor-pointer sm:hover:bg-muted/50",
+                      (detailEnabled || Boolean(onRowOpen)) &&
+                        "cursor-pointer sm:hover:bg-muted/50",
                       isSelected && "bg-muted",
                       zebra &&
                         index % 2 === 1 &&
@@ -851,7 +842,13 @@ function renderCell<T>(
         }
         forbidden={forbidden}
         href={col.fk?.href?.(raw, row)}
-        onOpen={col.fk?.onOpen ? (id) => col.fk!.onOpen!(id, row) : undefined}
+        onOpen={
+          col.fk?.onOpen
+            ? (id) => {
+                col.fk?.onOpen?.(id, row);
+              }
+            : undefined
+        }
       />
     );
   }
