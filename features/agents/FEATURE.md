@@ -229,6 +229,10 @@ See `features/agents/redux/execution-system/` and `selectors/aggregate.selectors
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+- `2026-07-18` — Unified file-family controls across Agent Builder defaults,
+  runtime media variables, and durable chat attachments. The shared dynamic
+  inventory supports suppression and up to three bounded inline promotions;
+  stored chat files now always use canonical `file → conversation` edges.
 - `2026-07-18` — Restored system-agent admin runner parity with the user runner: shared PageHeader controls, desktop/mobile Large Route sidebar activation, and admin-preserving run-history URLs.
 - `2026-07-18` — Added direct typed APIs and `/demos/agent-assignments` for secure single-variable random assignment plus durable paired, independent-random, and Cartesian agent batches with progress, resume, cancellation, and Content IR-backed contracts.
 - `2026-07-17` — Made conversation provenance release-safe: `SourceFeature` now has an exhaustive runtime registry, stored unknowns cross one loud branded boundary instead of `as never`, and `release.sh` blocks on a repository-wide literal `source_app` / `source_feature` audit.

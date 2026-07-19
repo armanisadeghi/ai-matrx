@@ -161,6 +161,12 @@ is temporarily offline.
 
 ## Change log
 
+- `2026-07-18` — codex: durable document attachments now always persist the
+  canonical `file → conversation` reference and expose the shared dynamic
+  resource-family inventory instead of fixed File/Clean/Raw choices. Writes
+  are awaited before picker dismissal; legacy processed-document edges migrate
+  when edited, and per-edge promotion/suppression policy persists in metadata.
+
 - `2026-07-18` — codex: **cold-resumed Matrx Local calls survive an offline desktop.** `surfaceColdPendingCalls` now marks persisted calls as cold-resume origin; `local_*` calls stay paused/pending and start `watchDesktopDelegation` for online, offline, and presence-query-error outcomes instead of consuming an offline call with `unsupported_client_tool`. Unknown non-desktop tools retain their loud terminal error path. Focused coverage pins all four outcomes.
 - `2026-07-18` — claude: **composer pre-init keystroke capture — fast-typed text is never dropped.** Root cause of the "typed text silently lost right after opening chat" reports (same class as the 2026-07-17 draft-transfer race): the composer (`AgentTextarea`) is typeable the moment the client conversation UUID exists, but the `instanceUserInput` entry lands only after `createInstanceFull` resolves the launcher's async agent fetch — and `setUserInputText` silently dropped writes for missing entries, so keystrokes in that window vanished (controlled value stayed ""). Fix in the slice: `setUserInputText` now CREATES the entry on a missing-id write (loud `reportPreInitInputCapture` warn — see `input-draft-protection.ts`), and both init paths (`initInstanceUserInput`, `createInstanceFull`) preserve an existing live draft when they carry no explicit text (explicit text still wins, e.g. autoclear-split carries). Guard: `instance-user-input/__tests__/pre-init-capture.test.ts` (6 cases). The draft-transfer effect in `ChatRoomClient` keeps its entry-exists gate (single-use sessionStorage pop ordering).
 

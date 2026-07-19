@@ -93,7 +93,10 @@ Save each `doc_id` as you receive it. You can immediately use it to:
 - Fetch the full document: `GET /utilities/pdf/documents/{doc_id}`
 - Trigger AI cleaning: `POST /utilities/pdf/clean-content/{doc_id}`
 
-The `source` field (a cld_files signed URL) on the document may be `null` for a few seconds after extraction while the file uploads in the background. A follow-up `GET` a moment later will have it populated.
+`doc_id` identifies the processed-document record, not the stored binary file.
+The legacy `source` field is provenance only and is normally `null` because
+native storage locations are redacted. Never use it to render or download
+bytes; use the canonical file APIs with a `file_id` from a file-aware route.
 
 ---
 
@@ -120,7 +123,7 @@ Returns a paginated list of all extracted documents belonging to the authenticat
     "name":          "report.pdf",
     "content":       "Full extracted text...",
     "clean_content": null,
-    "source":        "https://...supabase.co/storage/v1/object/public/any-file/pdf-extractions/...",
+    "source":        null,
     "created_at":    "2026-04-10T12:00:00+00:00",
     "updated_at":    "2026-04-10T12:00:05+00:00"
   }
@@ -146,7 +149,7 @@ Fetch a single document by its ID. Returns `404` if it does not exist or belongs
   "name":          "report.pdf",
   "content":       "Full extracted text...",
   "clean_content": null,
-  "source":        "https://...supabase.co/storage/v1/object/public/...",
+  "source":        null,
   "created_at":    "2026-04-10T12:00:00+00:00",
   "updated_at":    "2026-04-10T12:00:05+00:00"
 }
@@ -224,7 +227,7 @@ GET /utilities/pdf/documents?limit=50&offset=0
 | `name`          | string            | Original filename                                   |
 | `content`       | string or null    | Raw extracted text                                  |
 | `clean_content` | string or null    | AI-cleaned version; null until cleaning is run      |
-| `source`        | string or null    | cld_files signed URL (AWS S3); may be null briefly after upload |
+| `source`        | string or null    | Legacy provenance only; native storage URIs are redacted. Never use for file bytes. |
 | `created_at`    | ISO 8601 string   | UTC timestamp                                       |
 | `updated_at`    | ISO 8601 string   | UTC timestamp; updated whenever clean_content changes |
 
