@@ -24,6 +24,10 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import {
+  URL_KEYS,
+  URL_KEY_LABELS,
+} from "@/features/admin/applications/config/schema";
 import { versionStanding } from "@/features/admin/applications/version";
 import type { AppConfigRow } from "@/features/admin/applications/config/types";
 import type { CatalogEntryRow } from "@/features/admin/applications/catalogs/types";
@@ -38,7 +42,6 @@ interface ApplicationsOverviewProps {
 }
 
 const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
-const URL_KEYS = ["server_url", "ws_url", "assets_url"] as const;
 
 function readConfigObject(config: unknown): Record<string, unknown> {
   return config && typeof config === "object" && !Array.isArray(config)
@@ -107,6 +110,7 @@ export function ApplicationsOverview({
       const configObj = readConfigObject(config?.config);
       const urls = URL_KEYS.map((key) => ({
         key,
+        label: URL_KEY_LABELS[key],
         value: typeof configObj[key] === "string" ? (configObj[key] as string) : null,
       }));
       const flags =
@@ -118,13 +122,12 @@ export function ApplicationsOverview({
       const activeFlags = Object.values(flags).filter(
         (v) => v === true,
       ).length;
-      const notice =
-        configObj.notice &&
+      // schema.ts contract: `notice: null` means no notice; any non-null
+      // notice object is live in the field.
+      const noticeLive =
+        Boolean(configObj.notice) &&
         typeof configObj.notice === "object" &&
-        !Array.isArray(configObj.notice)
-          ? (configObj.notice as Record<string, unknown>)
-          : null;
-      const noticeLive = Boolean(notice && notice.enabled === true);
+        !Array.isArray(configObj.notice);
 
       const appCatalog = catalogRows.filter((r) => r.app === app);
       const kinds = new Set(appCatalog.map((r) => r.kind));
@@ -266,8 +269,11 @@ export function ApplicationsOverview({
                         key={u.key}
                         className="flex items-baseline gap-2 text-xs"
                       >
-                        <span className="w-20 shrink-0 text-muted-foreground">
-                          {u.key}
+                        <span
+                          className="w-36 shrink-0 text-muted-foreground"
+                          title={u.key}
+                        >
+                          {u.label}
                         </span>
                         <code className="truncate">
                           {u.value ?? (
