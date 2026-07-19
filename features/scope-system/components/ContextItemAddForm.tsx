@@ -349,6 +349,10 @@ export function ContextItemAddForm({
               onDatasetTemplateChange={selectDatasetTemplate}
               disabled={busy}
               className="space-y-3"
+              // On a scope page the real "Value for this one" input below IS
+              // the live picker — a second preview would just duplicate it.
+              showPreview={!scopeId}
+              previewScopeId={scopeId ?? null}
             />
           )}
         </div>
