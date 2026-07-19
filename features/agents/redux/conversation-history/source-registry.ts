@@ -112,6 +112,7 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   "agent-app": { label: "Agent App", icon: Webhook },
   "prompt-app": { label: "Prompt App", icon: Webhook },
   "agent-comparison": { label: "Agent Comparison", icon: Webhook },
+  "agent-assignment-demo": { label: "Agent Assignment Demo", icon: Webhook },
 
   // Code
   "code-editor": { label: "Code", icon: Code2 },
@@ -295,6 +296,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "agent-app",
       "prompt-app",
       "agent-comparison",
+      "agent-assignment-demo",
     ],
   },
   {

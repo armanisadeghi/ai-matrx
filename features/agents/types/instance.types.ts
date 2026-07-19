@@ -95,6 +95,8 @@ export type SourceFeature =
   | "agent-runs-sidebar"
   /** Multi-agent side-by-side comparison page (`/agents/battle`). */
   | "agent-comparison"
+  /** Agent-assignment workflow lab used to exercise assignment chat runs. */
+  | "agent-assignment-demo"
 
   // ── Chat (`chat-*`, conversation chrome) ─────────────────────────────────
   | "chat-route"
