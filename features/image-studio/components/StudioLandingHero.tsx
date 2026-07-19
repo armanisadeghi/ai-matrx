@@ -8,99 +8,25 @@ import {
   Gauge,
   Layers,
   Palette,
-  Atom,
   Upload,
   Zap
 } from "lucide-react";
 import { PresetCategoryLegend } from "./PresetCatalog";
-import {
-  ALL_PRESETS,
-  PRESET_CATEGORIES,
-  RECOMMENDED_BUNDLES,
-} from "../presets";
+import { ALL_PRESETS, RECOMMENDED_BUNDLES } from "../presets";
 
 /**
- * Landing hero — pure Server Component. All HTML prerendered, zero JS ships
- * from this file.
+ * Landing content — pure Server Component. All HTML prerendered, zero JS
+ * ships from this file. No marketing hero: the tool/reference content
+ * starts at the top; navigation lives in the sidebar + shell header.
  */
 export function StudioLandingHero() {
   const presetCount = ALL_PRESETS.length;
-  const categoryCount = PRESET_CATEGORIES.length;
   const bundleCount = RECOMMENDED_BUNDLES.length;
 
   return (
     <div className="flex flex-col">
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border">
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent"
-        />
-        <div className="relative container mx-auto px-5 sm:px-6 md:px-10 py-4 md:py-16 max-w-[1400px]">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-2 md:mb-4">
-            <Atom className="h-3.5 w-3.5" />
-            <span className="uppercase tracking-wider">Image Studio</span>
-          </div>
-          <h1 className="max-w-3xl text-[1.65rem] font-bold leading-[1.08] tracking-tight md:text-5xl md:leading-tight">
-            Drop one image in.
-            <br />
-            <span className="text-primary">
-              Get {presetCount}+ platform-perfect sizes out.
-            </span>
-          </h1>
-          <p className="hidden sm:block text-base md:text-lg text-muted-foreground mt-4 max-w-2xl leading-relaxed">
-            Every social network, every favicon, every avatar size, every
-            e-commerce platform, every email client — generated, compressed, and
-            renamed for you. One upload, every size you&rsquo;ll ever need.
-          </p>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 md:mt-6 md:flex md:flex-wrap md:gap-3">
-            <Link
-              href="/images/convert"
-              className="col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-primary/90 md:col-auto md:min-h-[40px] md:justify-start md:px-5"
-            >
-              <Upload className="h-4 w-4" />
-              Start converting
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/images/presets"
-              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/50 md:justify-start md:px-5"
-            >
-              <Layers className="h-4 w-4" />
-              <span className="truncate md:hidden">All {presetCount} presets</span>
-              <span className="hidden md:inline">
-                Browse all {presetCount} presets
-              </span>
-            </Link>
-            <Link
-              href="/images/from-base64"
-              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/50 md:justify-start md:px-5"
-            >
-              <Braces className="h-4 w-4" />
-              Paste base64
-            </Link>
-            <Link
-              href="/images/library"
-              className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/50 md:justify-start md:px-5"
-            >
-              <CloudUpload className="h-4 w-4" />
-              My library
-            </Link>
-          </div>
-
-          {/* Stat row */}
-          <div className="mt-4 grid max-w-3xl grid-cols-2 gap-2 md:mt-10 md:grid-cols-4 md:gap-4">
-            <Stat value={`${presetCount}+`} label="Presets" />
-            <Stat value={categoryCount} label="Categories" />
-            <Stat value={bundleCount} label="One-click bundles" />
-            <Stat value="4" label="Output formats" />
-          </div>
-        </div>
-      </section>
-
       {/* Feature grid */}
-      <section className="container mx-auto px-5 sm:px-6 md:px-10 py-4 md:py-14 max-w-[1400px]">
+      <section className="container mx-auto px-5 sm:px-6 md:px-10 py-4 md:py-8 max-w-[1400px]">
         <h2 className="text-base md:text-2xl font-semibold tracking-tight mb-2 md:mb-6">
           Built for real workflows
         </h2>
@@ -109,11 +35,13 @@ export function StudioLandingHero() {
             icon={<Upload className="h-5 w-5" />}
             title="Batch upload"
             body="Drag &amp; drop many images at once. Paste from clipboard. Every file gets every selected preset — in parallel, on the server."
+            href="/images/convert"
           />
           <FeatureCard
             icon={<Zap className="h-5 w-5" />}
             title="Smart bundles"
             body={`One click applies a curated set: "Share Everywhere", "Complete Favicon Set", "Full Avatar Set", and ${bundleCount - 3} more.`}
+            href="/images/convert"
           />
           <FeatureCard
             icon={<Gauge className="h-5 w-5" />}
@@ -134,6 +62,7 @@ export function StudioLandingHero() {
             icon={<CloudUpload className="h-5 w-5" />}
             title="Save to your library"
             body="Push every variant to your Supabase storage in one click. Public URLs ready to paste into your app, copied straight from each tile."
+            href="/images/library"
           />
           <FeatureCard
             icon={<Braces className="h-5 w-5" />}
@@ -153,7 +82,8 @@ export function StudioLandingHero() {
                 The preset catalog
               </h2>
               <p className="text-sm text-muted-foreground mt-1 max-w-xl">
-                Every size that ships in the studio, grouped by purpose. Click{" "}
+                All {presetCount}+ sizes that ship in the studio, grouped by
+                purpose. Click{" "}
                 <Link
                   href="/images/presets"
                   className="underline text-primary"
@@ -206,19 +136,6 @@ export function StudioLandingHero() {
           />
         </ol>
       </section>
-    </div>
-  );
-}
-
-function Stat({ value, label }: { value: string | number; label: string }) {
-  return (
-    <div className="rounded-lg md:rounded-xl border border-border bg-card/60 backdrop-blur px-3 py-2 md:px-4 md:py-3">
-      <div className="text-xl font-bold tracking-tight md:text-3xl">
-        {value}
-      </div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground md:text-xs md:tracking-wider">
-        {label}
-      </div>
     </div>
   );
 }

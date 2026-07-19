@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Atom,
   Braces,
   Cloud,
   FileImage,
@@ -154,35 +153,7 @@ const STUDIO_TILES: Tile[] = [
 export function ImagesLandingHero() {
   return (
     <div className="h-full overflow-y-auto overscroll-contain">
-      <div className="space-y-3 px-3 pb-3 pt-10 md:hidden">
-        <section className="rounded-lg border border-primary/25 bg-card/85 p-5 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <ImageIcon className="h-7 w-7 text-primary" />
-          </div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            Images
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every image tool, one home.
-          </p>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Link
-              href="/images/manager"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors active:scale-[0.99]"
-            >
-              <ImageIcon className="h-4 w-4" />
-              Manager
-            </Link>
-            <Link
-              href="/images/studio"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors active:scale-[0.99]"
-            >
-              <Atom className="h-4 w-4" />
-              Studio
-            </Link>
-          </div>
-        </section>
-
+      <div className="space-y-3 px-3 pb-3 pt-3 md:hidden">
         <MobileTileSection
           title="Manager"
           landing="/images/manager"
@@ -194,43 +165,6 @@ export function ImagesLandingHero() {
           tiles={STUDIO_TILES}
         />
       </div>
-
-      <section className="relative hidden overflow-hidden border-b border-border md:block">
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent"
-        />
-        <div className="relative container mx-auto px-4 sm:px-6 md:px-10 py-5 md:py-14 max-w-[1400px]">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-3">
-            <ImageIcon className="h-3.5 w-3.5" />
-            <span className="uppercase tracking-wider">Images</span>
-          </div>
-          <h1 className="text-2xl md:text-5xl font-bold tracking-tight max-w-3xl">
-            Every image tool, one home.
-          </h1>
-          <p className="hidden sm:block text-base md:text-lg text-muted-foreground mt-3 max-w-2xl leading-relaxed">
-            Browse, upload, generate, edit, annotate, convert — pick a tool from
-            the sidebar or jump straight in below.
-          </p>
-          <div className="flex flex-wrap gap-2 md:gap-3 mt-4 md:mt-6">
-            <Link
-              href="/images/manager"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 md:px-5 py-2 text-sm font-medium shadow-sm hover:bg-primary/90 transition-colors"
-            >
-              <ImageIcon className="h-4 w-4" />
-              Open Manager
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/images/studio"
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-border px-4 md:px-5 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
-            >
-              <Atom className="h-4 w-4" />
-              Open Studio
-            </Link>
-          </div>
-        </div>
-      </section>
 
       <div className="hidden md:block">
         <TileSection title="Manager" landing="/images/manager" tiles={MANAGER_TILES} />
@@ -300,7 +234,7 @@ function TileSection({
   tiles: Tile[];
 }) {
   return (
-    <section className="container mx-auto px-3 sm:px-6 md:px-10 py-4 md:py-10 max-w-[1400px]">
+    <section className="container mx-auto px-3 sm:px-6 md:px-10 py-4 md:py-6 max-w-[1400px]">
       <div className="flex items-baseline justify-between gap-4 mb-4">
         <h2 className="text-lg md:text-2xl font-semibold tracking-tight">
           {title}
