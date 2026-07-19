@@ -102,8 +102,6 @@ import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
 import agentConsumersReducer from "@/features/agents/redux/agent-consumers/slice";
 import toolsReducer from "@/features/agents/redux/tools/tools.slice";
-import contextMenuCacheReducer from "./slices/contextMenuCacheSlice";
-import agentContextMenuCacheReducer from "./slices/agentContextMenuCacheSlice";
 import scopeTypesReducer from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import scopesReducer from "@/features/agent-context/redux/scope/scopesSlice";
 import scopeAssignmentsReducer from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
@@ -260,8 +258,6 @@ export const slimReducerMap = {
   customAppRuntime: customAppRuntimeSlice,
   customAppletRuntime: customAppletRuntimeSlice,
 
-  contextMenuCache: contextMenuCacheReducer,
-  agentContextMenuCache: agentContextMenuCacheReducer,
   agentCache: agentCacheReducer,
 
   messaging: messagingReducer,

@@ -648,25 +648,6 @@ const storageUriEradicationBan = [
     },
 ];
 
-// Bundle-splitting fence for the canonical agent context menu. The menu
-// (UnifiedAgentContextMenu) is heavy — MenuBody + the fetch hook + Radix +
-// every icon — and by design its data fetch is deferred to menu-open. A
-// STATIC value import drags the whole component into the importing route's
-// server/client chunk, defeating that design: it ballooned the production
-// build ~15 → 24 min when 5 surfaces regressed to static imports during the
-// v2 rollout. Import it via `next/dynamic({ ssr: false })` (single-tier, never
-// nested) instead. The selector matches ONLY a static value ImportSpecifier —
-// `import type {...}` and dynamic `import()` are intentionally unaffected.
-// See .claude/skills/surface-pro-rollout/SKILL.md.
-const canonicalMenuStaticImportBan = [
-    {
-        selector:
-            "ImportDeclaration[importKind!='type'][source.value='@/features/context-menu-v2/UnifiedAgentContextMenu'] > ImportSpecifier[importKind!='type'][imported.name='UnifiedAgentContextMenu']",
-        message:
-            "Do not statically import UnifiedAgentContextMenu — it balloons the route chunk (a static import ballooned the prod build 15→24min). Use next/dynamic({ ssr: false }): const UnifiedAgentContextMenu = dynamic(() => import('@/features/context-menu-v2/UnifiedAgentContextMenu').then((m) => ({ default: m.UnifiedAgentContextMenu })), { ssr: false }). `import type {...}` is fine. See .claude/skills/surface-pro-rollout/SKILL.md.",
-    },
-];
-
 // Bundle-splitting fence for the v3 context menu. v3's public API is the
 // LIGHTWEIGHT shell (EditableContextMenu / NonEditableContextMenu) — import
 // those statically. The heavy layer is `MenuContent` (MenuBody-class tree +
@@ -844,7 +825,6 @@ export default [
                 ...contentIrChokepointSyntaxRestrictions,
                 // Canonical context menu must be loaded via next/dynamic({ ssr: false }),
                 // never a static value import (it balloons the route chunk).
-                ...canonicalMenuStaticImportBan,
                 // v3 menu: MenuContent (heavy) must stay behind the shell's dynamic boundary.
                 ...contextMenuV3StaticImportBan,
                 // Heavy "*Impl" cores must be reached via their dynamic wrapper, never imported statically.
@@ -965,7 +945,6 @@ export default [
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
                 ...contentIrChokepointSyntaxRestrictions,
-                ...canonicalMenuStaticImportBan,
                 ...contextMenuV3StaticImportBan,
                 ...heavyImplStaticImportBan,
                 ...reactFlowStaticImportBan,
@@ -1221,7 +1200,6 @@ export default [
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
-                ...canonicalMenuStaticImportBan,
                 ...contextMenuV3StaticImportBan,
                 ...heavyImplStaticImportBan,
                 // appContextWriteSyntaxRestrictions intentionally omitted — these
@@ -1285,7 +1263,6 @@ export default [
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
-                ...canonicalMenuStaticImportBan,
                 ...contextMenuV3StaticImportBan,
                 ...heavyImplStaticImportBan,
                 ...reactFlowStaticImportBan,
@@ -1350,7 +1327,6 @@ export default [
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
                 ...contentIrChokepointSyntaxRestrictions,
-                ...canonicalMenuStaticImportBan,
                 ...contextMenuV3StaticImportBan,
                 ...heavyImplStaticImportBan,
                 ...reactFlowStaticImportBan,

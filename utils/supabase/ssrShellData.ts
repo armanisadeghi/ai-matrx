@@ -96,6 +96,6 @@ export async function getSSRShellData(
 }
 
 // getSSRAgentShellData was removed 2026-07-07 (D25 residual cleanup): its only
-// caller was the DeferredShellData preload into agentContextMenuCacheSlice,
-// which had no readers — the v2/v3 context menu fetches on open via
-// /api/agent-context-menu instead.
+// caller was the DeferredShellData preload into the (since-deleted)
+// agentContextMenuCacheSlice, which had no readers — the context menu fetches
+// on open via /api/agent-context-menu instead.

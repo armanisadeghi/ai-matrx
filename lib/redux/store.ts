@@ -162,13 +162,6 @@ export function resolveStoreBootstrapState(
     }),
   };
 
-  if (input.contextMenuCache !== undefined) {
-    out.contextMenuCache = input.contextMenuCache;
-  }
-  if (input.agentContextMenuCache !== undefined) {
-    out.agentContextMenuCache = input.agentContextMenuCache;
-  }
-
   return out;
 }
 

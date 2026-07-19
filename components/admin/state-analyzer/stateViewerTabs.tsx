@@ -134,7 +134,6 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "fieldBuilder",
   "customAppRuntime",
   "customAppletRuntime",
-  "contextMenuCache",
   "agentCache",
   "messaging",
   "adminPreferences",
@@ -656,16 +655,6 @@ export function getStateViewerTabs(
         <GenericSliceViewer
           sliceKey="customAppRuntime"
           state={completeState.customAppRuntime}
-        />
-      ),
-    },
-    {
-      id: "contextMenuCache",
-      label: "Context Menu Cache",
-      content: (
-        <GenericSliceViewer
-          sliceKey="contextMenuCache"
-          state={completeState.contextMenuCache}
         />
       ),
     },

@@ -7,9 +7,8 @@
 // selection bugs (notably on macOS, where opening the menu drops the visual
 // selection in textareas). Do NOT simplify without re-reading the v1 analysis.
 //
-// Lifted verbatim from `features/context-menu-v2/utils/selection-tracking.ts`
-// (frozen, slated for deletion) so v3 is self-contained. This is the canonical
-// home going forward.
+// Lifted verbatim from the (deleted) v2 menu's selection tracking so v3 is
+// self-contained. This is the canonical home.
 
 export interface CapturedSelection {
   text: string;

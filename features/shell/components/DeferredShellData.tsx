@@ -95,12 +95,10 @@ export default function DeferredShellData() {
           }
         }
 
-        // Context-menu preloads removed 2026-07-07 (D25 residual): the v1
-        // UnifiedContextMenu (contextMenuCache reader) was deleted with the
-        // prompts system, and the v2/v3 menu fetches on open via
-        // /api/agent-context-menu — neither cache slice has a reader. The
-        // slices themselves are kept (per D25 disposition); only the dead
-        // preload data flow is gone.
+        // Context-menu preloads removed 2026-07-07 (D25 residual); the menu
+        // fetches on open via /api/agent-context-menu. The reader-less cache
+        // slices (contextMenuCache / agentContextMenuCache) were deleted with
+        // context-menu-v2 on 2026-07-19.
 
         if (shellData.ai_models.length > 0) {
           dispatch(

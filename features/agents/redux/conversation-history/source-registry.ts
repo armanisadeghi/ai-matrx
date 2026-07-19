@@ -365,6 +365,12 @@ export const SURFACE_DEFAULTS: Record<string, SurfaceSourceDefault> = {
   // The cross-agent "AI Results" window is the browse-everything surface —
   // no default filter.
   "history-window": { includeFeatures: [] },
+  // The conversation picker (attach an existing chat to a war-room thread/room,
+  // a note, …). Defaults to EVERY conversation OUR app created — all of
+  // matrx-admin's surfaces (war-room chats, /chat, notes, code, …), not just
+  // the narrow chat-route feature — so a user can attach any of their own
+  // chats. The filter tree lets them widen to other apps.
+  "conversation-picker": { includeFeatures: [], includeApps: ["matrx-admin"] },
 };
 
 // ── Resolved filter shape (what the slice/thunk consume) ─────────────────────
@@ -502,5 +508,11 @@ export const FILTERABLE_SURFACES: FilterableSurfaceMeta[] = [
     label: "AI Results window",
     description:
       "The floating cross-agent history browser. Defaults to everything.",
+  },
+  {
+    id: "conversation-picker",
+    label: "Conversation picker",
+    description:
+      "Attach-an-existing-chat picker (war room, notes, …). Defaults to every chat your app created.",
   },
 ];

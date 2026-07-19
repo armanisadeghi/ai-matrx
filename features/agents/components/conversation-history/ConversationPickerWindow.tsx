@@ -15,10 +15,11 @@
  * WindowPanel close binding), so a callback selection is legal — it never goes
  * through the overlay Redux slice.
  *
- * Defaults to the user's real chats (`surfaceId="chat"`) — every visible
- * conversation is already RLS-scoped to the signed-in user — with the built-in
- * `ConversationSourceFilterTree` so the user can widen the filter to other
- * sources. Already-attached chats are marked and non-selectable.
+ * Defaults to every conversation OUR app created (`surfaceId="conversation-
+ * picker"` → `includeApps: ["matrx-admin"]`) — all of the app's surfaces
+ * (war-room chats, /chat, notes, code, …), not just the narrow chat-route
+ * feature, and already RLS-scoped to the signed-in user — with the built-in
+ * `ConversationSourceFilterTree` so the user can widen to other apps.
  */
 
 import { useCallback } from "react";
@@ -109,7 +110,7 @@ function ConversationPickerWindowInner({
         variant="consumer"
         scopeId={scopeId}
         agentIds={ALL_AGENTS}
-        surfaceId="chat"
+        surfaceId="conversation-picker"
         activeConversationId={activeConversationId ?? null}
         onOpenConversation={handleOpenConversation}
         openInPlace
