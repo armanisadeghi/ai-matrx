@@ -22,6 +22,10 @@ import {
 } from "@/features/matrx-envelope/referenceFence";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import { listableTokens } from "@/features/scopes/registry/entityRegistry";
+import {
+  ENTITY_TYPE_METADATA,
+  isEntityTypeToken,
+} from "@/types/generated/entity-types.generated";
 import { referenceFallbackLabel } from "@/features/matrx-envelope/referenceResolvers";
 
 /**
@@ -52,10 +56,14 @@ const REFERENCE_TYPE_LABELS: Record<string, string> = {
   data_store: "Data Store",
 };
 
-/** Human label for a reference type; falls back to a humanized token. */
+/**
+ * Human label for a reference type: explicit override map first, then the
+ * registry's DB label (`platform.entity_types.label`), then a humanized token.
+ */
 export function referenceTypeLabel(type: string): string {
   return (
     REFERENCE_TYPE_LABELS[type] ??
+    (isEntityTypeToken(type) ? ENTITY_TYPE_METADATA[type].label : undefined) ??
     type
       .replace(/[_-]+/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase())
@@ -74,9 +82,9 @@ export function referenceTypeLabel(type: string): string {
  * other surfaces, not authored here.
  */
 export const CONTEXT_REFERENCE_TYPE_OPTIONS: string[] = [
-  "url",
-  "scope",
-  ...listableTokens(),
+  // Set-dedupe: `scope`/`url` are synthetic picker types here; if the registry
+  // ever marks the same token reference_pickable, it must not appear twice.
+  ...new Set(["url", "scope", ...listableTokens()]),
 ].sort((a, b) => referenceTypeLabel(a).localeCompare(referenceTypeLabel(b)));
 
 /** The three item-definition columns that govern a `reference` cell. */
