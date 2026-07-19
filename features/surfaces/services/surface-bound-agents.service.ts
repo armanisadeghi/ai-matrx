@@ -81,6 +81,8 @@ type BindingRow = {
   surface_name: string;
   organization_id: string | null;
   user_id: string | null;
+  /** Tier-encoded edge role — the ONLY reliable tier signal for bucketing. */
+  role: string | null;
   agent: AgentRow | AgentRow[] | null;
   organization:
     { id: string; name: string } | { id: string; name: string }[] | null;
@@ -125,6 +127,7 @@ function toBindingRow(row: MenuSurfaceRow): BindingRow {
       ? row.organization_id
       : null,
     user_id: row.user_id,
+    role: row.role,
     agent: {
       id: row.agent_id,
       name: row.agent_name,
@@ -378,6 +381,15 @@ function bucketBindingRows(
     // One row → one section. (An agent can still appear in multiple sections
     // when it has *different* binding rows at different scope tiers.)
     if (agent.agent_type === "builtin") {
+      system.push(entry);
+      continue;
+    }
+
+    // A GLOBAL binding broadcasts to every viewer — it belongs in Public no
+    // matter who owns the agent. Without this, a super-admin's own agent
+    // bound at global tier fell through to the ownership check and showed
+    // under "Mine", contradicting the scope the binder chose.
+    if (row.role === "binding:global") {
       system.push(entry);
       continue;
     }

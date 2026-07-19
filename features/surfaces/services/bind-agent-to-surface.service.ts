@@ -224,6 +224,27 @@ export async function bindAgentToSurface(
     throw new Error(`Unknown surface: ${surfaceName}`);
   }
 
+  // GLOBAL binding + non-public agent = a broken promise: menu_surface
+  // inner-joins agent.card, so users outside the agent's visibility never
+  // receive the edge — the "global" binding is invisible to exactly the
+  // audience it claims. Scream so the binder finds out at bind time, not
+  // from a user report.
+  if (tierFromScope(scope) === "global") {
+    const sb = createClient();
+    const { data: card } = await sb
+      .schema("agent")
+      .from("card")
+      .select("card_visibility")
+      .eq("id", agentId)
+      .maybeSingle();
+    if (card && card.card_visibility !== "public") {
+      console.error(
+        "[bind-agent-to-surface] GLOBAL binding on a non-public agent — other users will NOT see it (agent.card visibility gates the menu_surface join). Make the agent public, or bind at a narrower tier.",
+        { agentId, surfaceName, cardVisibility: card.card_visibility },
+      );
+    }
+  }
+
   // Loose annotations only — the binding's real logic (value_mappings) is a
   // typed payload (Edge Payload System, kind `surface_binding`), validated by
   // the DB trigger against platform.edge_payload_kind on every write.
