@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { Eraser, PanelRight, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -35,11 +41,14 @@ import {
   buildViewAgentInput,
   buildViewHuman,
 } from "./tableCopy";
+import { nextQueryState, safeQueryPage } from "./query-control";
 import type {
   CellEditsMap,
+  ColumnFilterValue,
   ColumnFiltersState,
   MatrxColumnDef,
   MatrxDataTableProps,
+  MatrxDataTableQueryState,
   SortState,
 } from "./types";
 
@@ -56,6 +65,8 @@ export function MatrxDataTable<T>({
   columns,
   getRowId,
   isLoading = false,
+  isFetching = false,
+  query,
   toolbar,
   detail,
   window: windowConfig,
@@ -72,32 +83,102 @@ export function MatrxDataTable<T>({
   tableClassName,
   onRowOpen,
 }: MatrxDataTableProps<T>) {
+  const controlledQuery = query?.mode === "controlled" ? query : null;
+  const emitControlledQueryChange = useCallback(
+    (
+      patch: Partial<MatrxDataTableQueryState>,
+      options?: { resetPage?: boolean },
+    ) => {
+      if (!controlledQuery) return;
+      controlledQuery.onStateChange(
+        nextQueryState(controlledQuery.state, patch, options),
+      );
+    },
+    [controlledQuery],
+  );
+
   const [internalSearch, setInternalSearch] = useState("");
-  const searchControlled = toolbar?.searchValue !== undefined;
-  const searchValue = searchControlled
-    ? (toolbar?.searchValue ?? "")
-    : internalSearch;
+  const toolbarSearchControlled = toolbar?.searchValue !== undefined;
+  const searchValue = controlledQuery
+    ? controlledQuery.state.search
+    : toolbarSearchControlled
+      ? (toolbar?.searchValue ?? "")
+      : internalSearch;
   const setSearchValue = (v: string) => {
-    if (!searchControlled) setInternalSearch(v);
+    if (controlledQuery) {
+      emitControlledQueryChange({ search: v }, { resetPage: true });
+    } else if (!toolbarSearchControlled) {
+      setInternalSearch(v);
+    }
     toolbar?.onSearchChange?.(v);
   };
 
   const [internalAnyOf, setInternalAnyOf] = useState("");
-  const anyOfControlled = toolbar?.anyOf?.value !== undefined;
-  const anyOfValue = anyOfControlled
-    ? (toolbar?.anyOf?.value ?? "")
-    : internalAnyOf;
+  const toolbarAnyOfControlled = toolbar?.anyOf?.value !== undefined;
+  const anyOfValue = controlledQuery
+    ? controlledQuery.state.anyOf
+    : toolbarAnyOfControlled
+      ? (toolbar?.anyOf?.value ?? "")
+      : internalAnyOf;
   const setAnyOfValue = (v: string) => {
-    if (!anyOfControlled) setInternalAnyOf(v);
+    if (controlledQuery) {
+      emitControlledQueryChange({ anyOf: v }, { resetPage: true });
+    } else if (!toolbarAnyOfControlled) {
+      setInternalAnyOf(v);
+    }
     toolbar?.anyOf?.onChange?.(v);
   };
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>({});
-  const [sort, setSort] = useState<SortState | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(
+  const [internalColumnFilters, setInternalColumnFilters] =
+    useState<ColumnFiltersState>({});
+  const columnFilters = controlledQuery
+    ? controlledQuery.state.columnFilters
+    : internalColumnFilters;
+  const setColumnFilter = (id: string, next: ColumnFilterValue | undefined) => {
+    const nextFilters = { ...columnFilters, [id]: next };
+    if (controlledQuery) {
+      emitControlledQueryChange(
+        { columnFilters: nextFilters },
+        { resetPage: true },
+      );
+      return;
+    }
+    setInternalColumnFilters(nextFilters);
+  };
+
+  const [internalSort, setInternalSort] = useState<SortState | null>(null);
+  const sort = controlledQuery ? controlledQuery.state.sort : internalSort;
+  const setSort = (next: SortState | null) => {
+    if (controlledQuery) {
+      emitControlledQueryChange({ sort: next }, { resetPage: true });
+      return;
+    }
+    setInternalSort(next);
+  };
+
+  const [internalPage, setInternalPage] = useState(1);
+  const page = controlledQuery ? controlledQuery.state.page : internalPage;
+  const setPage = (next: number) => {
+    if (controlledQuery) {
+      emitControlledQueryChange({ page: next });
+      return;
+    }
+    setInternalPage(next);
+  };
+
+  const [internalPageSize, setInternalPageSize] = useState(
     defaultPageSize === 0 ? Math.max(data.length, 1) : defaultPageSize,
   );
+  const pageSize = controlledQuery
+    ? controlledQuery.state.pageSize
+    : internalPageSize;
+  const setPageSize = (next: number) => {
+    if (controlledQuery) {
+      emitControlledQueryChange({ pageSize: next }, { resetPage: true });
+      return;
+    }
+    setInternalPageSize(next);
+  };
 
   const [uncontrolledSelectedId, setUncontrolledSelectedId] = useState<
     string | null
@@ -130,18 +211,28 @@ export function MatrxDataTable<T>({
     >();
     for (const col of visibleColumns) {
       const id = columnId(col);
-      const kind = resolveFilterKind(col, data);
+      // Controlled pages cannot infer a stable filter contract or complete
+      // select vocabulary from one result page. `auto` therefore resolves
+      // deterministically to text (empty sample); select options must be
+      // supplied explicitly through `column.filterOptions`.
+      const kind = resolveFilterKind(col, controlledQuery ? [] : data);
       meta.set(id, {
         kind,
-        options: kind === "select" ? collectSelectOptions(col, data) : [],
+        options:
+          kind === "select"
+            ? controlledQuery
+              ? (col.filterOptions ?? [])
+              : collectSelectOptions(col, data)
+            : [],
       });
     }
     return meta;
-  }, [visibleColumns, data]);
+  }, [visibleColumns, data, controlledQuery]);
 
   const processed = useMemo(
-    () =>
-      filterAndSortRows(
+    () => {
+      if (controlledQuery) return data;
+      return filterAndSortRows(
         data,
         visibleColumns,
         columnFilters,
@@ -150,7 +241,8 @@ export function MatrxDataTable<T>({
         toolbar?.anyOf
           ? { columnIds: toolbar.anyOf.columnIds, query: anyOfValue }
           : undefined,
-      ),
+      );
+    },
     [
       data,
       visibleColumns,
@@ -160,23 +252,46 @@ export function MatrxDataTable<T>({
       toolbar?.search,
       toolbar?.anyOf,
       anyOfValue,
+      controlledQuery,
     ],
   );
 
   useEffect(() => {
-    setPage(1);
+    if (controlledQuery) return;
+    setInternalPage(1);
   }, [searchValue, anyOfValue, columnFilters, sort, pageSize]);
 
-  const totalItems = processed.length;
-  const effectivePageSize =
-    defaultPageSize === 0 ? Math.max(totalItems, 1) : pageSize;
+  const totalItems = controlledQuery
+    ? Math.max(0, controlledQuery.totalItems)
+    : processed.length;
+  const effectivePageSize = controlledQuery
+    ? Math.max(pageSize, 1)
+    : defaultPageSize === 0
+      ? Math.max(totalItems, 1)
+      : pageSize;
   const pageCount = Math.max(1, Math.ceil(totalItems / effectivePageSize));
-  const safePage = Math.min(page, pageCount);
+  const safePage = controlledQuery
+    ? safeQueryPage(page, totalItems, effectivePageSize)
+    : Math.min(page, pageCount);
   const paginated = useMemo(() => {
+    if (controlledQuery) return processed;
     if (defaultPageSize === 0) return processed;
     const start = (safePage - 1) * effectivePageSize;
     return processed.slice(start, start + effectivePageSize);
-  }, [processed, safePage, effectivePageSize, defaultPageSize]);
+  }, [
+    processed,
+    safePage,
+    effectivePageSize,
+    defaultPageSize,
+    controlledQuery,
+  ]);
+
+  // A deletion or narrower filter can leave a controlled URL on a page that
+  // no longer exists. Emit the clamped page once the new total arrives.
+  useEffect(() => {
+    if (!controlledQuery || controlledQuery.state.page === safePage) return;
+    emitControlledQueryChange({ page: safePage });
+  }, [controlledQuery, emitControlledQueryChange, safePage]);
 
   const selectedRow = useMemo(() => {
     if (!selectedId) return null;
