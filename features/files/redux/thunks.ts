@@ -351,6 +351,12 @@ export const loadUserFileTree = createAsyncThunk<
       rootFolderIds: tree.rootFolderIds,
       rootFileIds: tree.rootFileIds,
       childrenByFolderId: tree.childrenByFolderId,
+      // This RPC returns the complete discoverable tree, not one lazy level.
+      // Mark every real folder so navigation never re-downloads up to 100k
+      // rows merely because the user opened a different folder.
+      fullyLoadedFolderIds: Object.fromEntries(
+        folderIds.map((id) => [id, true] as const),
+      ),
     }),
   );
 });

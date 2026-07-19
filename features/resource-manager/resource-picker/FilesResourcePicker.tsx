@@ -495,9 +495,6 @@ export function FilesResourcePicker({
   const [fileFilter, setFileFilter] = useState<FileFilter>(initialFilter);
   const [fileSort, setFileSort] = useState<FileSort>("updated");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<CloudFileRecord[]>([]);
-  const [settledSearchQuery, setSettledSearchQuery] = useState("");
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [resolvedProcessedFiles, setResolvedProcessedFiles] = useState<
     CloudFileRecord[]
   >([]);
@@ -531,6 +528,9 @@ export function FilesResourcePicker({
   // batched files.files read for anything the tree hasn't hydrated).
   useEffect(() => {
     if (!isPdfExtractorFilter) {
+      // The source corpus is external async state; clear its cached projection
+      // when this optional mode is disabled.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResolvedProcessedFiles([]);
       setProcessedFilesLoading(false);
       return undefined;
@@ -601,49 +601,6 @@ export function FilesResourcePicker({
     studioDocs.loading,
   ]);
 
-  useEffect(() => {
-    // PDF Extractor search is client-side over the studio source set —
-    // never a broad cloud-files query that then MIME-filters.
-    if (!debouncedSearchQuery || isPdfExtractorFilter) {
-      return undefined;
-    }
-
-    const controller = new AbortController();
-
-    // Metadata only: Supabase RLS supplies the caller's accessible file rows.
-    // This intentionally avoids the Python /files search endpoint, which
-    // resolves URL/thumbnail data the picker has not asked to render.
-    const searchPattern = `%${debouncedSearchQuery.replace(/[%_,()]/g, "\\$&")}%`;
-    void (async () => {
-      try {
-        const { data, error } = await filesDb(supabase)
-          .from("files")
-          .select(FILES_TABLE_COLUMNS)
-          .is("deleted_at", null)
-          .or(
-            `file_name.ilike.${searchPattern},file_path.ilike.${searchPattern}`,
-          )
-          .order("updated_at", { ascending: false })
-          .range(0, SEARCH_RESULT_LIMIT - 1)
-          .abortSignal(controller.signal);
-        if (error) throw error;
-        setSearchResults(
-          (data ?? []).map((row) => dbRowToCloudFile(row) as CloudFileRecord),
-        );
-        setSearchError(null);
-        setSettledSearchQuery(debouncedSearchQuery);
-      } catch (error: unknown) {
-        if (controller.signal.aborted) return;
-        console.error("Cloud file search failed:", error);
-        setSearchResults([]);
-        setSearchError("Search failed. Please try again.");
-        setSettledSearchQuery(debouncedSearchQuery);
-      }
-    })();
-
-    return () => controller.abort();
-  }, [debouncedSearchQuery, isPdfExtractorFilter]);
-
   // Recent files — same rules as the files list Recents view.
   const recentFiles = useMemo(() => {
     const pool = allFiles.filter(
@@ -676,23 +633,24 @@ export function FilesResourcePicker({
     return sortFiles(pool, fileSort);
   }, [resolvedProcessedFiles, searchQuery, fileSort]);
 
-  const visibleSearchResults = useMemo(
-    () =>
-      sortFiles(
-        searchResults.filter((file) =>
+  const visibleSearchResults = useMemo(() => {
+    const query = debouncedSearchQuery.trim().toLowerCase();
+    return sortFiles(
+      allFiles
+        .filter(
+          (file) =>
+            !file.deletedAt &&
+            (file.fileName.toLowerCase().includes(query) ||
+              file.filePath.toLowerCase().includes(query)),
+        )
+        .filter((file) =>
           matchesFileFilter(file, fileFilter, processedFileIds),
         ),
-        fileSort,
-      ),
-    [searchResults, fileFilter, fileSort, processedFileIds],
-  );
+      fileSort,
+    ).slice(0, SEARCH_RESULT_LIMIT);
+  }, [allFiles, debouncedSearchQuery, fileFilter, fileSort, processedFileIds]);
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    // A repeated query after clearing the box must not show an old result set
-    // as if it were freshly searched.
-    setSettledSearchQuery("");
-  };
+  const handleSearchChange = (value: string) => setSearchQuery(value);
 
   // Root-level "buckets" are the top-level folders of the user's tree.
   const rootFolders = useMemo<CloudFolderRecord[]>(() => {
@@ -907,15 +865,10 @@ export function FilesResourcePicker({
             </div>
           )
         ) : isSearching ? (
-          searchQuery.trim() !== debouncedSearchQuery ||
-          debouncedSearchQuery !== settledSearchQuery ? (
+          searchQuery.trim() !== debouncedSearchQuery ? (
             <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Searching all cloud files…
-            </div>
-          ) : searchError ? (
-            <div className="py-8 text-center text-xs text-destructive">
-              {searchError}
             </div>
           ) : visibleSearchResults.length === 0 ? (
             <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
