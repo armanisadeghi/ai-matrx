@@ -43,6 +43,9 @@ export interface EntityTypeEditorState {
   rlsVariant: string;
   isActive: boolean;
   notes: string;
+  referencePickable: boolean;
+  titleColumn: string;
+  contentRole: string;
 }
 
 const TOKEN_PATTERN = /^[a-z][a-z0-9_]*$/;
@@ -53,6 +56,16 @@ export function isValidEntityToken(token: string): boolean {
 
 const VISIBILITY_NONE = "__none__";
 const VISIBILITY_OPTIONS = ["private", "internal", "link", "public"];
+
+const CONTENT_ROLE_NONE = "__none__";
+/** Mirrors the DB check constraint on platform.entity_types.content_role. */
+const CONTENT_ROLE_OPTIONS = [
+  ["utility", "Utility — agents/tools that act on knowledge"],
+  ["source", "Source — incoming knowledge"],
+  ["destination", "Output — knowledge the team produces"],
+  ["hybrid", "Source & Output — read and written"],
+  ["container", "Workspace — organizes other entities"],
+] as const;
 
 interface Props {
   editor: EntityTypeEditorState;
@@ -238,6 +251,74 @@ export function EntityTypeForm({
             />
           </div>
         ))}
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+        <span className="text-xs font-semibold">Reference picker</span>
+        <p className="text-[10px] text-muted-foreground">
+          Governs the &ldquo;Allowed types&rdquo; chooser on reference context
+          items (scope context fields). Changes are live for pickers on the
+          next page load — no type regeneration needed for the chooser itself.
+        </p>
+        <div className="flex items-center justify-between">
+          <span className="flex flex-col">
+            <span className="text-xs font-medium">Reference pickable</span>
+            <span className="text-[10px] text-muted-foreground">
+              Offer this type in reference &ldquo;Allowed types&rdquo; choosers.
+            </span>
+          </span>
+          <Switch
+            checked={editor.referencePickable}
+            onCheckedChange={(v) =>
+              onChange({ ...editor, referencePickable: v })
+            }
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium">Title column</span>
+            <Input
+              value={editor.titleColumn}
+              onChange={(e) =>
+                onChange({ ...editor, titleColumn: e.target.value })
+              }
+              placeholder="e.g. name / title / label"
+              className="h-8 font-mono"
+              style={{ fontSize: "16px" }}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Human-readable column pickers read for candidate titles. The
+              save is rejected if it doesn&apos;t exist on the table.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium">Content role</span>
+            <Select
+              value={editor.contentRole || CONTENT_ROLE_NONE}
+              onValueChange={(v) =>
+                onChange({
+                  ...editor,
+                  contentRole: v === CONTENT_ROLE_NONE ? "" : v,
+                })
+              }
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="(none)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={CONTENT_ROLE_NONE}>(none)</SelectItem>
+                {CONTENT_ROLE_OPTIONS.map(([v, hint]) => (
+                  <SelectItem key={v} value={v}>
+                    {hint}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">
+              Grouping bucket for two-tier pickers and resource surfaces.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">

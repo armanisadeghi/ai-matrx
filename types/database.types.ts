@@ -21683,6 +21683,7 @@ export type Database = {
         Row: {
           base_tier: number
           category: string | null
+          content_role: string | null
           default_auto_ingest: boolean
           default_members_can_add: boolean
           default_needs_approval: boolean
@@ -21696,15 +21697,18 @@ export type Database = {
           is_versioned: boolean
           label: string
           notes: string | null
+          reference_pickable: boolean
           rls_variant: string | null
           schema_name: string
           table_name: string
           table_ref: unknown
+          title_column: string | null
           token: string
         }
         Insert: {
           base_tier?: number
           category?: string | null
+          content_role?: string | null
           default_auto_ingest?: boolean
           default_members_can_add?: boolean
           default_needs_approval?: boolean
@@ -21720,15 +21724,18 @@ export type Database = {
           is_versioned?: boolean
           label: string
           notes?: string | null
+          reference_pickable?: boolean
           rls_variant?: string | null
           schema_name: string
           table_name: string
           table_ref?: unknown
+          title_column?: string | null
           token: string
         }
         Update: {
           base_tier?: number
           category?: string | null
+          content_role?: string | null
           default_auto_ingest?: boolean
           default_members_can_add?: boolean
           default_needs_approval?: boolean
@@ -21744,10 +21751,12 @@ export type Database = {
           is_versioned?: boolean
           label?: string
           notes?: string | null
+          reference_pickable?: boolean
           rls_variant?: string | null
           schema_name?: string
           table_name?: string
           table_ref?: unknown
+          title_column?: string | null
           token?: string
         }
         Relationships: []
@@ -26577,6 +26586,7 @@ export type Database = {
         Returns: {
           base_tier: number
           category: string
+          content_role: string
           default_auto_ingest: boolean
           default_members_can_add: boolean
           default_needs_approval: boolean
@@ -26590,10 +26600,12 @@ export type Database = {
           is_versioned: boolean
           label: string
           notes: string
+          reference_pickable: boolean
           rls_variant: string
           schema_name: string
           table_name: string
           table_ref: string
+          title_column: string
           token: string
         }[]
       }
@@ -26974,6 +26986,7 @@ export type Database = {
         Args: {
           p_base_tier?: number
           p_category?: string
+          p_content_role?: string
           p_default_auto_ingest?: boolean
           p_default_members_can_add?: boolean
           p_default_needs_approval?: boolean
@@ -26987,9 +27000,11 @@ export type Database = {
           p_is_versioned?: boolean
           p_label: string
           p_notes?: string
+          p_reference_pickable?: boolean
           p_rls_variant?: string
           p_schema_name: string
           p_table_name: string
+          p_title_column?: string
           p_token: string
         }
         Returns: undefined
@@ -28861,6 +28876,7 @@ export type Database = {
         Returns: {
           base_tier: number
           category: string
+          content_role: string
           default_scopeable: boolean
           has_soft_delete: boolean
           is_active: boolean
@@ -28869,8 +28885,10 @@ export type Database = {
           is_module: boolean
           is_versioned: boolean
           label: string
+          reference_pickable: boolean
           schema_name: string
           table_name: string
+          title_column: string
           token: string
         }[]
       }

@@ -51,6 +51,9 @@ export interface EntityTypeSourceRow {
   is_listed: boolean;
   default_scopeable: boolean;
   category: string | null;
+  reference_pickable: boolean;
+  title_column: string | null;
+  content_role: string | null;
 }
 
 export function loadSupabase() {
@@ -106,6 +109,9 @@ export function renderGeneratedSource(rows: EntityTypeSourceRow[]): string {
   const scopeable = rows.filter((r) => r.default_scopeable).map((r) => r.token);
   const listed = rows.filter((r) => r.is_listed).map((r) => r.token);
   const modules = rows.filter((r) => r.is_module).map((r) => r.token);
+  const referencePickable = rows
+    .filter((r) => r.reference_pickable)
+    .map((r) => r.token);
 
   const metaEntries = rows
     .map((r) => {
@@ -120,6 +126,9 @@ export function renderGeneratedSource(rows: EntityTypeSourceRow[]): string {
         `isListed: ${r.is_listed}`,
         `scopeable: ${r.default_scopeable}`,
         `category: ${r.category === null ? "null" : TS_STR(r.category)}`,
+        `referencePickable: ${r.reference_pickable}`,
+        `titleColumn: ${r.title_column === null ? "null" : TS_STR(r.title_column)}`,
+        `contentRole: ${r.content_role === null ? "null" : TS_STR(r.content_role)}`,
       ].join(", ");
       return `  ${TS_STR(r.token)}: { ${fields} },`;
     })
@@ -159,6 +168,12 @@ export interface EntityTypeMeta {
   /** Whether the registry marks this type scopeable by default. */
   readonly scopeable: boolean;
   readonly category: string | null;
+  /** Offered as an allowed type for reference context items. */
+  readonly referencePickable: boolean;
+  /** Human title column for generic candidate pickers (null = not generically listable). */
+  readonly titleColumn: string | null;
+  /** Knowledge-model bucket: utility | source | destination | hybrid | container. */
+  readonly contentRole: string | null;
 }
 
 /**
@@ -167,6 +182,10 @@ export interface EntityTypeMeta {
  */
 export type EntityTypeToken =
 ${unionLiteral(tokens)}
+
+/** Tokens flagged \`reference_pickable\` — offered in reference "Allowed types" choosers. */
+export type ReferencePickableEntityToken =
+${unionLiteral(referencePickable)}
 
 /** Tokens flagged \`is_component\` — child/detail rows, not standalone entities. */
 export type ComponentEntityToken =

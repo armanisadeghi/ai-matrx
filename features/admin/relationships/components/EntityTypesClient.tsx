@@ -56,6 +56,9 @@ const EMPTY_EDITOR: EntityTypeEditorState = {
   rlsVariant: "",
   isActive: true,
   notes: "",
+  referencePickable: false,
+  titleColumn: "",
+  contentRole: "",
 };
 
 function rowToEditor(row: EntityTypeRow): EntityTypeEditorState {
@@ -80,6 +83,9 @@ function rowToEditor(row: EntityTypeRow): EntityTypeEditorState {
     rlsVariant: row.rls_variant ?? "",
     isActive: row.is_active,
     notes: row.notes ?? "",
+    referencePickable: row.reference_pickable,
+    titleColumn: row.title_column ?? "",
+    contentRole: row.content_role ?? "",
   };
 }
 
@@ -201,6 +207,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
             r.is_component ? "component" : "",
             r.is_module ? "module" : "",
             r.default_scopeable ? "scopeable" : "",
+            r.reference_pickable ? "reference" : "",
           ]
             .filter(Boolean)
             .join(" "),
@@ -212,9 +219,30 @@ export function EntityTypesClient({ entityTypes }: Props) {
             <FlagPill on={row.is_component}>component</FlagPill>
             <FlagPill on={row.is_module}>module</FlagPill>
             <FlagPill on={row.default_scopeable}>scopeable</FlagPill>
+            <FlagPill on={row.reference_pickable}>reference</FlagPill>
           </div>
         ),
         width: 260,
+      },
+      {
+        id: "reference",
+        header: "Reference",
+        accessorFn: (r) =>
+          r.reference_pickable
+            ? `${r.title_column ?? ""} ${r.content_role ?? ""}`
+            : "",
+        cell: (row) =>
+          row.reference_pickable ? (
+            <span className="font-mono text-[11px]">
+              {row.title_column ?? "(candidate override)"}
+              {row.content_role ? (
+                <span className="text-muted-foreground"> · {row.content_role}</span>
+              ) : null}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 170,
       },
       {
         id: "notes",
@@ -290,6 +318,9 @@ export function EntityTypesClient({ entityTypes }: Props) {
         p_rls_variant: editor.rlsVariant || undefined,
         p_is_active: editor.isActive,
         p_notes: editor.notes || undefined,
+        p_reference_pickable: editor.referencePickable,
+        p_title_column: editor.titleColumn || undefined,
+        p_content_role: editor.contentRole || undefined,
       });
       if (error) throw error;
       toast.success(

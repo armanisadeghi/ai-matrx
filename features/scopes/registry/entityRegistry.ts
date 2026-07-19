@@ -152,6 +152,11 @@ export function getContentRoleMeta(role: ContentRole): ContentRoleMeta {
   return CONTENT_ROLES.find((r) => r.id === role) ?? CONTENT_ROLES[2];
 }
 
+/** Runtime guard for the DB's free-text `content_role` column. */
+export function isContentRole(value: string | null): value is ContentRole {
+  return value !== null && CONTENT_ROLES.some((r) => r.id === value);
+}
+
 /**
  * FE-only presentation + query hints for an entity token. The icon is the one
  * thing `platform.entity_types` structurally cannot hold; `titleColumn` is the
@@ -400,7 +405,9 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
   const meta = ENTITY_TYPE_METADATA[token];
   const overlay = ENTITY_OVERLAY[token];
   const labelPlural = overlay?.labelPlural ?? `${meta.label}s`;
-  const titleColumn = overlay?.titleColumn ?? null;
+  // DB registry first (admin-managed via /administration/relationships/
+  // entity-types), FE overlay as legacy fallback only.
+  const titleColumn = meta.titleColumn ?? overlay?.titleColumn ?? null;
   // `null` override means "this table has no such column"; `undefined` (the
   // common case) falls back to the convention.
   const ownerColumn =
@@ -424,7 +431,10 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
     hrefFor: overlay?.hrefFor ?? null,
     scopeable: meta.scopeable,
     category: meta.category,
-    contentRole: overlay?.contentRole ?? "destination",
+    contentRole:
+      isContentRole(meta.contentRole)
+        ? meta.contentRole
+        : (overlay?.contentRole ?? "destination"),
     listCandidates: overlay?.listCandidates ?? null,
     canListCandidates:
       titleColumn !== null || overlay?.listCandidates !== undefined,
@@ -465,10 +475,33 @@ export function tryGetEntityInfoByTable(
   return token ? getEntityInfo(token) : null;
 }
 
-/** Tokens that currently have a picker-ready overlay (candidates listable). */
+/**
+ * Tokens offered as reference "Allowed types" — DB-driven via
+ * `platform.entity_types.reference_pickable` (admin-managed at
+ * /administration/relationships/entity-types), no longer gated by the FE
+ * overlay. A pickable token still needs a way to list candidates: a
+ * `title_column` in the registry (or legacy overlay) or an FE
+ * `listCandidates` override. A pickable token with neither is a config
+ * defect — it is excluded and screamed about, never silently shown broken.
+ */
 export function listableTokens(): EntityTypeToken[] {
-  return (Object.keys(ENTITY_OVERLAY) as EntityTypeToken[]).filter((t) => {
-    const o = ENTITY_OVERLAY[t];
-    return o?.titleColumn != null || o?.listCandidates !== undefined;
-  });
+  return (Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]).filter(
+    (t) => {
+      const meta = ENTITY_TYPE_METADATA[t];
+      if (!meta.referencePickable) return false;
+      const o = ENTITY_OVERLAY[t];
+      const canList =
+        meta.titleColumn != null ||
+        o?.titleColumn != null ||
+        o?.listCandidates !== undefined;
+      if (!canList) {
+        console.error(
+          `[entityRegistry] "${t}" is reference_pickable in platform.entity_types ` +
+            `but has NO title_column and no FE candidate source — set its ` +
+            `title_column at /administration/relationships/entity-types.`,
+        );
+      }
+      return canList;
+    },
+  );
 }
