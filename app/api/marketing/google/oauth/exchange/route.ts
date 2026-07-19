@@ -59,17 +59,17 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      const membership = await createAdminClient()
-        .schema("iam")
-        .from("memberships")
-        .select("id")
-        .eq("organization_id", organizationId)
-        .eq("user_id", data.user.id)
-        .eq("status", "active")
-        .is("deleted_at", null)
-        .in("role", ["owner", "admin"])
-        .maybeSingle();
-      if (membership.error || !membership.data) {
+      // Use the database's canonical organization authority. Reading the raw
+      // memberships table is incorrect here because one user can have several
+      // project memberships inside the same organization.
+      const organizationAccess = await createAdminClient().rpc(
+        "is_org_admin_for",
+        {
+          p_user_id: data.user.id,
+          p_org_id: organizationId,
+        },
+      );
+      if (organizationAccess.error || organizationAccess.data !== true) {
         return NextResponse.json(
           {
             error:

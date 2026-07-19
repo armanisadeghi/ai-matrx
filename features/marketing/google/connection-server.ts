@@ -125,7 +125,11 @@ export async function exchangeAndStoreGoogleConnection(input: {
   ownerType: "user" | "organization";
   organizationId: string | null;
 }): Promise<string> {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim();
+  // Server runtimes use the private alias. Keep the public variable as a
+  // fallback so local/dev deployments only need the existing browser config.
+  const clientId =
+    process.env.GOOGLE_CLIENT_ID?.trim() ||
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
   if (!clientId || !clientSecret) {
     throw new Error("Google OAuth is not configured on this deployment.");
