@@ -5,6 +5,14 @@ import type {
   SortState,
 } from "./types";
 
+/**
+ * Sentinel select-filter values for "no value" / "any value" — every select
+ * filter offers them automatically when the column has empty cells, so any
+ * table can isolate rows missing a value (or having one) without extra config.
+ */
+export const SELECT_EMPTY_VALUE = "__empty__";
+export const SELECT_NOT_EMPTY_VALUE = "__not_empty__";
+
 export function columnId<T>(col: MatrxColumnDef<T>): string {
   if (col.id) return col.id;
   if (col.accessorKey) return String(col.accessorKey);
@@ -59,7 +67,10 @@ export function passesColumnFilter(
     }
     case "select": {
       if (!filter.value || filter.value === "__all__") return true;
-      return stringifyCellValue(value) === filter.value;
+      const s = stringifyCellValue(value);
+      if (filter.value === SELECT_EMPTY_VALUE) return s === "";
+      if (filter.value === SELECT_NOT_EMPTY_VALUE) return s !== "";
+      return s === filter.value;
     }
     case "boolean": {
       return Boolean(value) === filter.value;

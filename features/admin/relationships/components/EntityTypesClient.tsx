@@ -157,15 +157,28 @@ export function EntityTypesClient({ entityTypes }: Props) {
         width: 200,
       },
       {
-        id: "table",
-        header: "Schema.table",
-        accessorFn: (r) => `${r.schema_name}.${r.table_name}`,
+        id: "schema",
+        accessorKey: "schema_name",
+        header: "Schema",
+        filter: "select",
         cell: (row) => (
           <span className="font-mono text-[11px] text-muted-foreground">
-            {row.schema_name}.{row.table_name}
+            {row.schema_name}
           </span>
         ),
-        width: 200,
+        width: 110,
+      },
+      {
+        id: "table",
+        accessorKey: "table_name",
+        header: "Table",
+        filter: "select",
+        cell: (row) => (
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {row.table_name}
+          </span>
+        ),
+        width: 160,
       },
       {
         id: "label",

@@ -4,6 +4,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { EntityTypesClient } from "@/features/admin/relationships/components/EntityTypesClient";
+import { ChooserBucketsManager } from "@/features/admin/relationships/components/ChooserBucketsManager";
 
 export const metadata = {
   title: "Entity Types | Matrx Admin",
@@ -22,6 +23,7 @@ export default async function EntityTypesAdminPage() {
   return (
     <div className="h-full overflow-y-auto">
       <EntityTypesClient entityTypes={entityTypes ?? []} />
+      <ChooserBucketsManager />
     </div>
   );
 }
