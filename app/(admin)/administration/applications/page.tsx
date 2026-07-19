@@ -33,16 +33,12 @@ export default async function ApplicationsOverviewPage() {
     );
   }
 
-  // Render-stable clock for the client's 7-day activity window.
-  const nowMs = Date.now();
-
   return (
     <ApplicationsOverview
       configRows={configResult.data ?? []}
       catalogRows={catalogResult.data ?? []}
       instanceRows={instanceResult.data ?? []}
       instancesApp={DEFAULT_APPLICATION}
-      nowMs={nowMs}
     />
   );
 }

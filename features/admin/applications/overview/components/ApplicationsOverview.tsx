@@ -12,7 +12,7 @@
 // count in a destructive banner. A fleet running unsupported builds is an
 // operational fact that must never be a number you have to go looking for.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -35,9 +35,6 @@ interface ApplicationsOverviewProps {
   instanceRows: AppInstanceRow[];
   /** Application the installed fleet belongs to (app_instances is single-app). */
   instancesApp: string;
-  /** Render-stable "now" from the server page — keeps the 7-day activity
-   *  window deterministic and free of a hydration mismatch. */
-  nowMs: number;
 }
 
 const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -89,8 +86,10 @@ export function ApplicationsOverview({
   catalogRows,
   instanceRows,
   instancesApp,
-  nowMs,
 }: ApplicationsOverviewProps) {
+  // Clock captured once on mount (lazy initializer) — the 7-day activity
+  // window must not drift on every re-render.
+  const [nowMs] = useState(() => Date.now());
   // Every application we know about: one that has config, catalogs, or a fleet.
   const apps = useMemo(() => {
     const slugs = new Set<string>([

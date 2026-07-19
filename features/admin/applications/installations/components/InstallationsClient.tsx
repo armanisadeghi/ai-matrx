@@ -43,9 +43,6 @@ interface InstallationsClientProps {
   minSupportedVersion: string | null;
   /** The application these instances belong to (for labelling). */
   app: string;
-  /** Render-stable "now" from the server page — keeps the 7-day activity
-   *  window deterministic and free of a hydration mismatch. */
-  nowMs: number;
 }
 
 const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -113,9 +110,11 @@ export function InstallationsClient({
   initialRows,
   minSupportedVersion,
   app,
-  nowMs,
 }: InstallationsClientProps) {
   const { toast } = useToast();
+  // Clock captured once on mount (lazy initializer) — the 7-day activity
+  // window must not drift on every re-render.
+  const [nowMs] = useState(() => Date.now());
   const [rows, setRows] = useState<AppInstanceRow[]>(initialRows);
   const [refreshing, setRefreshing] = useState(false);
 
