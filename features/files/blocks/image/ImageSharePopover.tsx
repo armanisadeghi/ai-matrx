@@ -150,14 +150,22 @@ export function ImageSharePopover({
 // Body — quick actions + advanced link. Same for desktop/mobile.
 // ───────────────────────────────────────────────────────────────────────────────
 
-interface ShareQuickActionsBodyProps {
+export interface ShareQuickActionsBodyProps {
   block: UnifiedImageBlock;
   currentSrc: string | null;
   onAdvanced: () => void;
   onActionComplete: () => void;
 }
 
-function ShareQuickActionsBody({
+/**
+ * The bare share quick-actions list (public / temporary / manage). Exported
+ * so surfaces that already have their own container — e.g. the image
+ * options Drawer in {@link UnifiedImageBlockRenderer} — can render the exact
+ * same public-link logic inline instead of nesting a second popover. The
+ * caller owns the `ShareLinkDialog` (advanced) so it survives its container
+ * unmounting.
+ */
+export function ShareQuickActionsBody({
   block,
   currentSrc,
   onAdvanced,

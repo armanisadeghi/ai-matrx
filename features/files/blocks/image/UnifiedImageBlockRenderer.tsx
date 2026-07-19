@@ -69,7 +69,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ImageSharePopover } from "./ImageSharePopover";
+import { ImageSharePopover, ShareQuickActionsBody } from "./ImageSharePopover";
+import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useImageActions } from "./useImageActions";
 import { useUnifiedImageUrl } from "./useUnifiedImageUrl";
 import type { ImageVariantFormat } from "./utils/render-image-variant";
@@ -219,6 +220,10 @@ export const UnifiedImageBlockRenderer: React.FC<
   const [errorSrc, setErrorSrc] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Advanced "Manage all links" dialog opened from the mobile drawer's share
+  // section. Kept here (a sibling of the Drawer) so it stays mounted when the
+  // drawer closes — otherwise the dialog would unmount with the drawer body.
+  const [shareAdvancedOpen, setShareAdvancedOpen] = useState(false);
 
   const imageLoaded = src !== null && loadedSrc === src;
   const imgError = src !== null && errorSrc === src;
@@ -289,7 +294,7 @@ export const UnifiedImageBlockRenderer: React.FC<
   // big tappable buttons, Dropdown items are dense menu rows; trying
   // to merge them makes both worse.
   const drawerBody = (
-    <div className="px-4 pb-6 flex flex-col gap-0.5">
+    <div className="px-4 pb-6 flex flex-col gap-0.5 min-h-0 flex-1 overflow-y-auto overscroll-contain">
       {extraActions && extraActions.length > 0 ? (
         <>
           {extraActions.map((a) => (
@@ -305,6 +310,21 @@ export const UnifiedImageBlockRenderer: React.FC<
           <DrawerSep />
         </>
       ) : null}
+      {/* Share — the most-used action on a chat image. Renders the exact same
+          public-link surface as the desktop share popover (permanent CDN URL
+          or a freshly-minted no-expiry share link), so mobile is no longer
+          missing the "get public link" flow. */}
+      <DrawerSubheader>Share</DrawerSubheader>
+      <ShareQuickActionsBody
+        block={block}
+        currentSrc={src}
+        onAdvanced={() => {
+          setDrawerOpen(false);
+          setShareAdvancedOpen(true);
+        }}
+        onActionComplete={() => setDrawerOpen(false)}
+      />
+      <DrawerSep />
       <DrawerRow
         icon={<Expand />}
         label="View full size"
@@ -381,7 +401,11 @@ export const UnifiedImageBlockRenderer: React.FC<
   return (
     <>
       <ContextMenu>
-        <ContextMenuTrigger asChild>
+        {/* On touch, long-press must open ONLY the bottom-sheet drawer (via
+            `longPressHandlers`). Leaving the Radix context menu enabled makes
+            long-press race up a floating popover that isn't a proper drawer —
+            so disable the context-menu trigger on mobile. */}
+        <ContextMenuTrigger asChild disabled={isMobile}>
           <div
             className={
               dimsKnown
@@ -750,7 +774,7 @@ export const UnifiedImageBlockRenderer: React.FC<
 
       {/* Mobile drawer */}
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent>
+        <DrawerContent className="max-h-[85dvh]">
           <DrawerHeader className="pb-2">
             <DrawerTitle className="flex items-center gap-2 text-sm">
               <ImageIcon className="w-4 h-4 text-primary" />
@@ -760,6 +784,18 @@ export const UnifiedImageBlockRenderer: React.FC<
           {drawerBody}
         </DrawerContent>
       </Drawer>
+
+      {/* Advanced share-link management, opened from the drawer's Share
+          section. Sibling of the Drawer so it survives the drawer closing.
+          Only matrx-owned files have a cld_files row to attach links to. */}
+      {block.origin === "matrx" ? (
+        <ShareLinkDialog
+          open={shareAdvancedOpen}
+          onOpenChange={setShareAdvancedOpen}
+          resourceId={block.fileId}
+          resourceType="file"
+        />
+      ) : null}
 
       {/* Lightbox */}
       {isExpanded && src && (
