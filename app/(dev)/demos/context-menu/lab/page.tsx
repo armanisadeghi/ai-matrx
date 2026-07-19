@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * UnifiedAgentContextMenu — Full Diagnostic Lab
+ * Context Menu v3 — Full Diagnostic Lab
  *
  * Purpose: this page is a deliberately verbose harness for exercising
- * EVERY moving part of the v2 context menu. It is the most exhaustive
- * page in the testing suite — use it when "I should be seeing X and
- * I'm not." For multi-panel placement / context comparisons see the
- * Scenario Matrix at `/ssr/context-menu/scenarios`.
+ * EVERY moving part of the universal v3 context menu. It is the most
+ * exhaustive page in the testing suite — use it when "I should be seeing
+ * X and I'm not." For multi-panel placement / context comparisons see
+ * the Scenario Matrix at `/demos/context-menu/scenarios`.
  *
  * What it exposes (left → right, top → bottom):
  *   • Identity banner — who is logged in, agent-context org / project / task,
@@ -21,7 +21,7 @@
  *
  *   • Surface picker — select a SurfaceManifest (matrx-user/notes,
  *     matrx-user/code, or none). The selection is passed verbatim to
- *     `<UnifiedAgentContextMenu surfaceName={...}>` and propagates to
+ *     `<EditableContextMenu surfaceName={...}>` and propagates to
  *     `runtime.surfaceName` on every shortcut launch. The launch thunk
  *     uses it to look up `agent.definition_surface.value_mappings` for
  *     (agentId, surfaceName, caller scope) and applies them via
@@ -125,15 +125,7 @@ import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 import { DemoProTextarea } from "../_components/DemoProTextarea";
 
-// Heavy: the v2 menu pulls in dropdown + context-menu + selection capture +
-// floating icon. Keep the demo page's first paint tiny by lazy-loading it.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false, loading: () => <PaneFallback /> },
-);
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 // Heavy: CodeMirror + tree explorer + JSON tabs. Don't ship on first paint.
 const JsonInspector = dynamic(
@@ -998,7 +990,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                 )}
               </div>
 
-              <UnifiedAgentContextMenu
+              <EditableContextMenu
                 sourceFeature={labSourceFeature}
                 surfaceName={surfaceName || undefined}
                 getTextarea={() => textareaRef.current}
@@ -1006,7 +998,6 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                 onTextInsertBefore={(t) => setTextareaValue(t + textareaValue)}
                 onTextInsertAfter={(t) => setTextareaValue(textareaValue + t)}
                 onContentInserted={refreshSelection}
-                isEditable
                 placementMode={effectivePlacementMode}
                 extraSections={
                   surfaceName === "matrx-user/notes"
@@ -1032,7 +1023,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                   spellCheck={false}
                   className="w-full bg-background"
                 />
-              </UnifiedAgentContextMenu>
+              </EditableContextMenu>
             </div>
 
             {/* Live application scope preview */}
@@ -1110,7 +1101,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
 
             <JsonPanel
               title="Hook output (categoryGroups)"
-              subtitle="what UnifiedAgentContextMenu actually renders from"
+              subtitle="what the context menu actually renders from"
               badge={
                 hookOutput.loading ? (
                   <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />

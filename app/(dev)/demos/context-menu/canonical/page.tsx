@@ -11,13 +11,10 @@
  *     2. Editable    — generic EditableContextMenu textarea (Cut/Paste/Save).
  *     3. Read-only   — NonEditableContextMenu over display text + contentSource.
  *                      Right-click WITHOUT selecting → Copy + Export → Download
- *                      as Markdown act on the whole block. (The v2 page leaves
- *                      Copy dead here — see /demos/context-menu/canonical-v2.)
+ *                      as Markdown act on the whole block.
  *
  *   Row 2 — the EXACT menus we roll out to these surfaces:
  *     4. Agents · 5. Notes · 6. Code editor — production-target surface props.
- *
- * The v2 reference lives at /demos/context-menu/canonical-v2.
  */
 
 import { useRef, useState } from "react";
@@ -97,8 +94,7 @@ export default function CanonicalContextMenuV3Page() {
         <p className="text-[11px] text-muted-foreground">
           <b>Context Menu v3 — all panels are v3.</b> Row 1 = the menu with no
           surface direction (bare / editable / read-only). Row 2 = the exact
-          menus we roll out to agents, notes, and code. v2 reference:{" "}
-          <code>/demos/context-menu/canonical-v2</code>.
+          menus we roll out to agents, notes, and code.
         </p>
       </div>
 

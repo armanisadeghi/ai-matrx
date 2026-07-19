@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * UnifiedAgentContextMenu — Scenario Matrix
+ * Context Menu v3 — Scenario Matrix
  *
  * Five live panels, each pinning a different combination of:
  *   - addedContexts / excludedContexts
@@ -16,23 +16,14 @@
  *      (selection, text_before, text_after, content, context, custom keys)
  *
  * If shortcuts don't show up the way you expect, jump to the Diagnostic
- * Lab at /ssr/context-menu/lab — that page exposes the raw view output,
+ * Lab at /demos/context-menu/lab — that page exposes the raw view output,
  * Redux state, hook output, and a forced refresh of the unified menu.
  */
 
 import { useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { CodeEditorDemoPanel } from "../_components/CodeEditorDemoPanel";
-
-// Dynamic — never bundles into the initial chunk; hooks + menu body load
-// only when this page actually needs them.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export default function ContextMenuScenariosPage() {
   // ── Panel 2: Editable content editor — content-editor + general ─────────
@@ -94,13 +85,12 @@ export default function ContextMenuScenariosPage() {
               placements: all show
             </p>
           </header>
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             sourceFeature="context-menu-demo"
             getTextarea={() => contentRef.current}
             onTextReplace={(v) => setContentValue(v)}
             onTextInsertBefore={(t) => setContentValue(t + contentValue)}
             onTextInsertAfter={(t) => setContentValue(contentValue + t)}
-            isEditable
             addedContexts={["content-editor"]}
             contextData={{
               content: contentValue,
@@ -114,7 +104,7 @@ export default function ContextMenuScenariosPage() {
               onChange={(e) => setContentValue(e.target.value)}
               className="flex-1 min-h-[220px] w-full rounded-md border border-border bg-card p-3 text-[16px] outline-none focus:ring-2 focus:ring-primary"
             />
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
         </section>
 
         {/* ── 3 ── Read-only block */}
@@ -128,9 +118,8 @@ export default function ContextMenuScenariosPage() {
               <code>{`{ content-block: 'hide', quick-action: 'hide' }`}</code>
             </p>
           </header>
-          <UnifiedAgentContextMenu
+          <NonEditableContextMenu
             sourceFeature="context-menu-demo"
-            isEditable={false}
             addedContexts={["content-editor"]}
             placementMode={{
               "content-block": "hide",
@@ -145,7 +134,7 @@ export default function ContextMenuScenariosPage() {
             <div className="flex-1 min-h-[220px] w-full rounded-md border border-border bg-card p-3 text-[16px] leading-relaxed whitespace-pre-line">
               {readonlyValue}
             </div>
-          </UnifiedAgentContextMenu>
+          </NonEditableContextMenu>
         </section>
 
         {/* ── 4 ── Same filter via explicit addedContexts API */}
@@ -175,11 +164,10 @@ export default function ContextMenuScenariosPage() {
               Both submenus render but are greyed out.
             </p>
           </header>
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             sourceFeature="context-menu-demo"
             getTextarea={() => showcaseRef.current}
             onTextReplace={(v) => setShowcaseValue(v)}
-            isEditable
             addedContexts={["content-editor"]}
             placementMode={{
               "content-block": "disable",
@@ -197,7 +185,7 @@ export default function ContextMenuScenariosPage() {
               onChange={(e) => setShowcaseValue(e.target.value)}
               className="flex-1 min-h-[220px] w-full rounded-md border border-border bg-card p-3 text-[16px] outline-none focus:ring-2 focus:ring-primary"
             />
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
         </section>
 
         {/* ── 6 ── Expected behavior cheatsheet */}

@@ -140,13 +140,16 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
           </h3>
           <ul className="text-[12px] text-muted-foreground space-y-1 list-disc ml-5">
             <li>
-              Menu component:{" "}
-              <Code>features/context-menu-v2/UnifiedAgentContextMenu.tsx</Code>
+              Menu wrappers:{" "}
+              <Code>
+                features/context-menu-v3/EditableContextMenu.tsx /
+                NonEditableContextMenu.tsx
+              </Code>
             </li>
             <li>
               Data hook:{" "}
               <Code>
-                features/context-menu-v2/hooks/useUnifiedAgentContextMenu.ts
+                features/context-menu-v3/hooks/useUnifiedAgentContextMenu.ts
               </Code>
             </li>
             <li>
