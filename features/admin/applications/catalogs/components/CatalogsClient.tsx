@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/catalogs/components/CatalogsClient.tsx
+// features/admin/applications/catalogs/components/CatalogsClient.tsx
 //
 // /administration/catalogs — Remote Catalogs manager (the app-config sibling
 // for catalog-shaped data: models, LoRAs, presets, prompts, voices…).
@@ -24,18 +24,18 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
-import { AddFromLinkDialog } from "@/features/admin/catalogs/components/AddFromLinkDialog";
-import { CatalogEntryEditor } from "@/features/admin/catalogs/components/CatalogEntryEditor";
-import { CatalogKindTable } from "@/features/admin/catalogs/components/CatalogKindTable";
+import { AddFromLinkDialog } from "@/features/admin/applications/catalogs/components/AddFromLinkDialog";
+import { CatalogEntryEditor } from "@/features/admin/applications/catalogs/components/CatalogEntryEditor";
+import { CatalogKindTable } from "@/features/admin/applications/catalogs/components/CatalogKindTable";
 import {
   CATALOG_KINDS,
   DEFAULT_CATALOG_APP,
   kindLabel,
-} from "@/features/admin/catalogs/schemas";
+} from "@/features/admin/applications/catalogs/schemas";
 import type {
   CatalogEntryRow,
   EntryPrefill,
-} from "@/features/admin/catalogs/types";
+} from "@/features/admin/applications/catalogs/types";
 
 interface CatalogsClientProps {
   initialRows: CatalogEntryRow[];

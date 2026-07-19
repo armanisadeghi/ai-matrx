@@ -10,7 +10,7 @@
 // Cross-repo system-of-record: common-docs/remote-catalogs/FEATURE.md
 
 import { createClient } from "@/utils/supabase/server";
-import { CatalogsClient } from "@/features/admin/catalogs/components/CatalogsClient";
+import { CatalogsClient } from "@/features/admin/applications/catalogs/components/CatalogsClient";
 
 export const metadata = {
   title: "Remote Catalogs | Matrx Admin",

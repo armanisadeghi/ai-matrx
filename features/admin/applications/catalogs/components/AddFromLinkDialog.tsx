@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/catalogs/components/AddFromLinkDialog.tsx
+// features/admin/applications/catalogs/components/AddFromLinkDialog.tsx
 //
 // THE headline flow: paste any HuggingFace / Civitai / direct URL →
 // POST {aidream}/api/catalog-resolver/resolve (user's Supabase JWT bearer via
@@ -45,13 +45,13 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { formatBytes } from "@/features/admin/shared/UrlProbeField";
-import { resolveCatalogLink } from "@/features/admin/catalogs/resolver";
-import { CATALOG_KINDS, CATALOG_KEY_REGEX } from "@/features/admin/catalogs/schemas";
+import { resolveCatalogLink } from "@/features/admin/applications/catalogs/resolver";
+import { CATALOG_KINDS, CATALOG_KEY_REGEX } from "@/features/admin/applications/catalogs/schemas";
 import type {
   EntryPrefill,
   ResolveLinkResult,
   ResolvedFile,
-} from "@/features/admin/catalogs/types";
+} from "@/features/admin/applications/catalogs/types";
 
 const KIND_HINT_AUTO = "__auto__";
 

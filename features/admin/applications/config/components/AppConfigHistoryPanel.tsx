@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/app-config/components/AppConfigHistoryPanel.tsx
+// features/admin/applications/config/components/AppConfigHistoryPanel.tsx
 //
 // Version history for one app_config row. Reads public.app_config_history
 // (admin-read RLS) directly via supabase-js, renders each snapshot with an
@@ -17,12 +17,12 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DiffViewer } from "@/components/diff/DiffViewer";
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
-import { configSnapshotJson } from "@/features/admin/app-config/schema";
+import { configSnapshotJson } from "@/features/admin/applications/config/schema";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import type {
   AppConfigHistoryRow,
   AppConfigRow,
-} from "@/features/admin/app-config/types";
+} from "@/features/admin/applications/config/types";
 
 interface AppConfigHistoryPanelProps {
   app: string;

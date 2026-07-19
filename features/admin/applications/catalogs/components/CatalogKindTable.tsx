@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/catalogs/components/CatalogKindTable.tsx
+// features/admin/applications/catalogs/components/CatalogKindTable.tsx
 //
 // Entries for one (app, kind): key, name from payload, artifact size,
 // min_app_version, is_active toggle (confirm + live artifact probe via
@@ -36,16 +36,16 @@ import {
 } from "@/features/admin/shared/admin-rpc-errors";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import { formatBytes } from "@/features/admin/shared/UrlProbeField";
-import { probeArtifactUrl } from "@/features/admin/catalogs/resolver";
-import type { ArtifactProbeResult } from "@/features/admin/catalogs/resolver";
-import { upsertArgsFromRow, upsertCatalogEntry } from "@/features/admin/catalogs/rpc";
+import { probeArtifactUrl } from "@/features/admin/applications/catalogs/resolver";
+import type { ArtifactProbeResult } from "@/features/admin/applications/catalogs/resolver";
+import { upsertArgsFromRow, upsertCatalogEntry } from "@/features/admin/applications/catalogs/rpc";
 import {
   kindDef,
   kindLabel,
   payloadDisplayName,
   validatePayload,
-} from "@/features/admin/catalogs/schemas";
-import type { CatalogEntryRow } from "@/features/admin/catalogs/types";
+} from "@/features/admin/applications/catalogs/schemas";
+import type { CatalogEntryRow } from "@/features/admin/applications/catalogs/types";
 
 interface CatalogKindTableProps {
   app: string;

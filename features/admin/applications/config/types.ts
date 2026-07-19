@@ -1,4 +1,4 @@
-// features/admin/app-config/types.ts
+// features/admin/applications/config/types.ts
 //
 // App Config admin — typed rows for public.app_config / public.app_config_history.
 // All shapes derive from the generated Database types — never hand-mirrored.

@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/catalogs/components/CatalogHistoryPanel.tsx
+// features/admin/applications/catalogs/components/CatalogHistoryPanel.tsx
 //
 // Version history for one catalog entry (app, kind, key). Reads
 // public.catalog_entries_history (admin-read RLS) directly via supabase-js,
@@ -30,11 +30,11 @@ import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
 import {
   entrySnapshotJson,
   rowSnapshotJson,
-} from "@/features/admin/catalogs/schemas";
+} from "@/features/admin/applications/catalogs/schemas";
 import type {
   CatalogEntryHistoryRow,
   CatalogEntryRow,
-} from "@/features/admin/catalogs/types";
+} from "@/features/admin/applications/catalogs/types";
 
 interface CatalogHistoryPanelProps {
   app: string;

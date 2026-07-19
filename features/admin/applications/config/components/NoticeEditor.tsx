@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/app-config/components/NoticeEditor.tsx
+// features/admin/applications/config/components/NoticeEditor.tsx
 //
 // Operator-broadcast editor for AppConfigV1.notice — a one-shot message every
 // installed client shows once ({level, title, body, url?} | null). The
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import {
   NOTICE_LEVELS,
   type NoticeDraft,
-} from "@/features/admin/app-config/schema";
+} from "@/features/admin/applications/config/schema";
 
 interface NoticeEditorProps {
   notice: NoticeDraft;

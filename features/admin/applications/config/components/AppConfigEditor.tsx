@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/app-config/components/AppConfigEditor.tsx
+// features/admin/applications/config/components/AppConfigEditor.tsx
 //
 // Per-app editor for public.app_config. Typed fields for the AppConfigV1
 // keys (URLs + flags + notice), a raw-JSON section for forward-compat keys
@@ -23,9 +23,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import JsonFieldEditor from "@/features/ai-models/components/JsonFieldEditor";
-import { AppConfigHistoryPanel } from "@/features/admin/app-config/components/AppConfigHistoryPanel";
-import { FlagsEditor } from "@/features/admin/app-config/components/FlagsEditor";
-import { NoticeEditor } from "@/features/admin/app-config/components/NoticeEditor";
+import { AppConfigHistoryPanel } from "@/features/admin/applications/config/components/AppConfigHistoryPanel";
+import { FlagsEditor } from "@/features/admin/applications/config/components/FlagsEditor";
+import { NoticeEditor } from "@/features/admin/applications/config/components/NoticeEditor";
 import {
   isConflictError,
   rpcErrorMessage,
@@ -42,11 +42,11 @@ import {
   draftToConfig,
   zodIssuesToFieldErrors,
   type ConfigDraft,
-} from "@/features/admin/app-config/schema";
+} from "@/features/admin/applications/config/schema";
 import type {
   AppConfigHistoryRow,
   AppConfigRow,
-} from "@/features/admin/app-config/types";
+} from "@/features/admin/applications/config/types";
 
 interface AppConfigEditorProps {
   /** null = creating a new app row. */

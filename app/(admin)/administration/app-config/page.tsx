@@ -8,7 +8,7 @@
 // Cross-repo system-of-record: common-docs/app-config/FEATURE.md
 
 import { createClient } from "@/utils/supabase/server";
-import { AppConfigClient } from "@/features/admin/app-config/components/AppConfigClient";
+import { AppConfigClient } from "@/features/admin/applications/config/components/AppConfigClient";
 
 export const metadata = {
   title: "App Config | Matrx Admin",

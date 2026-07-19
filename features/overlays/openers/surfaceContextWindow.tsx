@@ -40,7 +40,9 @@ export function SurfaceContextWindowController(
   const open = useOpenSurfaceContextWindow();
   useEffect(() => {
     const handle = open(props);
-    return () => handle.close();
+    return () => {
+      handle.close();
+    };
   }, [open, props.isEditable, props.surfaceLabel, props.surfaceName]);
   return null;
 }

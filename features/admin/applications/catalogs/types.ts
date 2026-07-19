@@ -1,4 +1,4 @@
-// features/admin/catalogs/types.ts
+// features/admin/applications/catalogs/types.ts
 //
 // Remote Catalogs admin — typed rows for public.catalog_entries /
 // public.catalog_entries_history. All shapes derive from the generated

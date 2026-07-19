@@ -1,4 +1,4 @@
-// features/admin/app-config/schema.ts
+// features/admin/applications/config/schema.ts
 //
 // Client-side Zod schema mirroring AppConfigV1 (the payload contract in
 // common-docs/app-config/FEATURE.md) plus the parse/compose helpers the

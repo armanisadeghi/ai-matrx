@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/app-config/components/FlagsEditor.tsx
+// features/admin/applications/config/components/FlagsEditor.tsx
 //
 // Boolean feature-flag editor for AppConfigV1.flags: key → Switch rows with
 // add/remove. Non-boolean flag values (corrupt per schema v1) are surfaced

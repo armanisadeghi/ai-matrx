@@ -1,4 +1,4 @@
-// features/admin/catalogs/resolver.ts
+// features/admin/applications/catalogs/resolver.ts
 //
 // Client for the aidream link resolver:
 //   POST {base}/api/catalog-resolver/resolve  { url, kind_hint? }
@@ -15,7 +15,7 @@ import type {
   ResolveLinkResult,
   ResolvedFile,
   ResolverSuggestion,
-} from "@/features/admin/catalogs/types";
+} from "@/features/admin/applications/catalogs/types";
 
 export type ResolveOutcome =
   | { status: "ok"; result: ResolveLinkResult }

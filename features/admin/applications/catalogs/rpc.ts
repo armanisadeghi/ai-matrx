@@ -1,4 +1,4 @@
-// features/admin/catalogs/rpc.ts
+// features/admin/applications/catalogs/rpc.ts
 //
 // Thin typed helpers around the ONE sanctioned write path for
 // public.catalog_entries — the admin_upsert_catalog_entry SECURITY DEFINER
@@ -10,7 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import type {
   CatalogEntryRow,
   CatalogUpsertArgs,
-} from "@/features/admin/catalogs/types";
+} from "@/features/admin/applications/catalogs/types";
 
 /** Build full upsert args from a live row + field overrides. */
 export function upsertArgsFromRow(

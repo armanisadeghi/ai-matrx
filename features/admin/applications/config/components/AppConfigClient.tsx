@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/app-config/components/AppConfigClient.tsx
+// features/admin/applications/config/components/AppConfigClient.tsx
 //
 // /administration/app-config — remote runtime configuration for shipped
 // desktop clients (one public.app_config row per app; anon-readable,
@@ -17,9 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
-import { AppConfigEditor } from "@/features/admin/app-config/components/AppConfigEditor";
+import { AppConfigEditor } from "@/features/admin/applications/config/components/AppConfigEditor";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
-import type { AppConfigRow } from "@/features/admin/app-config/types";
+import type { AppConfigRow } from "@/features/admin/applications/config/types";
 
 interface AppConfigClientProps {
   initialRows: AppConfigRow[];

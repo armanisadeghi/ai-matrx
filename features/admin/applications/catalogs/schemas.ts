@@ -1,4 +1,4 @@
-// features/admin/catalogs/schemas.ts
+// features/admin/applications/catalogs/schemas.ts
 //
 // Per-kind Zod payload schemas for public.catalog_entries (matrx-local,
 // schema_version 1) — the TypeScript twins of the aidream Pydantic kind
@@ -10,7 +10,7 @@
 
 import { z } from "zod";
 
-import type { CatalogEntryRow } from "@/features/admin/catalogs/types";
+import type { CatalogEntryRow } from "@/features/admin/applications/catalogs/types";
 
 /** Same constraints as the DB CHECKs on catalog_entries. */
 export const CATALOG_APP_REGEX = /^[a-z0-9][a-z0-9-]{1,62}$/;

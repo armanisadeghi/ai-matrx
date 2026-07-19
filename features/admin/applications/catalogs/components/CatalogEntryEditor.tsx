@@ -1,6 +1,6 @@
 "use client";
 
-// features/admin/catalogs/components/CatalogEntryEditor.tsx
+// features/admin/applications/catalogs/components/CatalogEntryEditor.tsx
 //
 // Generic + kind-aware editor for one public.catalog_entries row.
 // Typed columns (key, schema_version, min_app_version, sort_order, notes,
@@ -61,9 +61,9 @@ import {
   UrlProbeField,
   formatBytes,
 } from "@/features/admin/shared/UrlProbeField";
-import { probeArtifactUrl } from "@/features/admin/catalogs/resolver";
-import type { ArtifactProbeResult } from "@/features/admin/catalogs/resolver";
-import { CatalogHistoryPanel } from "@/features/admin/catalogs/components/CatalogHistoryPanel";
+import { probeArtifactUrl } from "@/features/admin/applications/catalogs/resolver";
+import type { ArtifactProbeResult } from "@/features/admin/applications/catalogs/resolver";
+import { CatalogHistoryPanel } from "@/features/admin/applications/catalogs/components/CatalogHistoryPanel";
 import {
   CATALOG_KEY_REGEX,
   CATALOG_KINDS,
@@ -74,13 +74,13 @@ import {
   kindLabel,
   rowSnapshotJson,
   validatePayload,
-} from "@/features/admin/catalogs/schemas";
+} from "@/features/admin/applications/catalogs/schemas";
 import type {
   CatalogEntryHistoryRow,
   CatalogEntryRow,
   CatalogUpsertArgs,
   EntryPrefill,
-} from "@/features/admin/catalogs/types";
+} from "@/features/admin/applications/catalogs/types";
 import type { Json } from "@/types/database.types";
 
 interface CatalogEntryEditorProps {
