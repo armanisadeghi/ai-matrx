@@ -57,7 +57,7 @@ The right test is **"is this an M2M between two table-backed rows (both uuid FKs
 
 1. **research M2Ms** — register `research_tag` / `research_keyword` entities and migrate both (FE-only), or leave them as internal research-pipeline taxonomy?
 2. **`bundle_member`** — do the full coordinated FE+DB migration (incl. Python consumer coordination on the `tool_resolve_*` contract), produce a detailed plan only, or hold until the backend owner is looped in?
-3. **surface-binding payload shape** — `agent_surface` DID migrate to associations (2026-07-12; surfaces are uuid targets via `ui_surface.id`). The remaining question: `value_mappings` is a typed sub-schema (mapType/target/required/defaultValue/prompt) stored in untyped edge `metadata` — enhance `platform.associations` (typed payload column / registered edge-payload schemas / validation trigger), or accept metadata as-is? `ui_surface_agent_role` / `ui_surface_agent_pref` stay KEEP (definition/config tables, unchanged). |
+3. **~~surface-binding payload shape~~ — RESOLVED 2026-07-19: Edge Payload System shipped.** `platform.associations` gained `payload_kind`/`payload` validated by trigger against the `platform.edge_payload_kind` registry; `surface_binding` is the first kind. See `features/surfaces/FEATURE.md` §"Edge Payload System" and the adoption backlog in [`WORK-QUEUE.md`](./WORK-QUEUE.md) §E. `ui_surface_agent_role` / `ui_surface_agent_pref` stay KEEP (definition/config tables, unchanged).
 
 ---
 

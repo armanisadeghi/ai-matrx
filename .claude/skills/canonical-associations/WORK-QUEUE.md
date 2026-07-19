@@ -24,7 +24,7 @@ The prioritized, file-anchored backlog for the canonicalization campaign. One su
 | 1 | ☐ MIGRATE | `research.rs_source_tag` | **M2M** `source_id`↔`tag_id` (both uuid FK) + edge attrs `is_primary_source`,`confidence`,`assigned_by` | **MIGRATE.** `research_source` registered ✅; `tag` is a real table row but NOT YET registered → **register a `research_tag` entity (root fix), then migrate**. No DB functions reference it → FE-only (`features/research/service.ts` 535,606,617,631,651,769). Carry the 3 edge attrs as association metadata. |
 | 1 | ☐ MIGRATE | `research.rs_keyword_source` | **M2M** `keyword_id`↔`source_id` (both uuid FK) + edge attr `rank_for_keyword` | **MIGRATE.** Same shape: register a `research_keyword` entity, then migrate. No DB functions → FE-only (`features/research/service.ts` 270,678,787). Carry `rank_for_keyword` as metadata. |
 | 4 | ☐ | `reg.scope_association_suggestions` | staging table (own entity `scope_association_suggestion`) | **EVALUATE** — staging is its own registered entity; the **accepted** edge already becomes a scope tag via `scopesService`. Confirm the accept path — likely nothing to migrate (staging stays, accept already canonical). |
-| — | ☑ | `agent.agent_surface` | **MIGRATED 2026-07-12** — retired to `graveyard`; bindings are `platform.associations` edges (uuid surface targets, tier-encoded `role`, `value_mappings` in metadata) via `agent.menu_surface` | **DONE** — see `features/surfaces/FEATURE.md`. Open follow-up in STATUS.md §Open decisions 3: typed binding payload vs untyped edge metadata. |
+| — | ☑ | `agent.agent_surface` | **MIGRATED 2026-07-12** — retired to `graveyard`; bindings are `platform.associations` edges (uuid surface targets, tier-encoded `role`) via `agent.menu_surface` | **DONE** — and since 2026-07-19 `value_mappings` is a TYPED edge payload (`payload_kind='surface_binding'`, Edge Payload System — see §E below). |
 | — | ☐ | `ui.ui_surface_agent_role` | text-keyed (`surface_name`,`name`) **definition** row + single optional `default_agent_id` FK | **KEEP** — a surface-slot *definition* table, not a junction. |
 | — | ☐ | `ui.ui_surface_agent_pref` | agent_id (uuid) ↔ **(`surface_name`,`role_name`) TEXT slot** + `position`,`settings` jsonb, scope cols | **KEEP** — per-context agent→slot **preference/config**; the slot is a text config identifier, not an entity row. |
 | — | ☐ | `scheduler.sch_agent_task` | **entity table** (`prompt`,`variables`,`auth_mode`,…) with a single `agent_id` FK = **1:many** | **KEEP** — it's a first-class entity, not a junction. The lone `agent_id` is a plain FK. |
@@ -77,3 +77,26 @@ The prioritized, file-anchored backlog for the canonicalization campaign. One su
 2. `pnpm check:schema` + `pnpm check:dead-relations` green; touched files pass `pnpm type-check` (no NEW errors — the repo has a pre-existing strictness-wave baseline).
 3. The owning `FEATURE.md` + Change Log updated if behavior changed.
 4. Box ticked here.
+
+## E. Edge-payload adoption (Edge Payload System, live 2026-07-19)
+
+**The system:** real logic on an association edge lives in `payload` typed by `payload_kind`, schema-validated by `trg_validate_edge_payload` against the `platform.edge_payload_kind` registry (see `features/surfaces/FEATURE.md` §"Edge Payload System"). Recipe per adoption: (1) register the kind (migration: registry upsert with JSON Schema), (2) writer passes `payloadKind`/`payload` through `associationsService.add`, (3) backfill existing edges (`payload = <extract>`, `metadata = metadata - <keys>`), (4) readers move to `payload`. First adopter `surface_binding` is the worked example (`migrations/edge_payload_system_v1.sql`).
+
+Backlog from the 2026-07-19 two-agent scout sweep, ranked:
+
+| Pri | Status | Candidate | Payload shape | Notes |
+|---|---|---|---|---|
+| 1 | ☐ | War-room assignment edges (`features/war-room/service/associations.ts`) | `{is_active, position, pinned}` | assoc_add REPLACES metadata on conflict — partial writes silently corrupt tile state today. |
+| 1 | ☐ | `agent.shortcut` jsonb columns (validate-in-place, not an edge) | 8 blobs: `value_mappings`, `scope_mappings`, `context_mappings`, `llm_overrides`, … | Same registry+trigger pattern applied to a table; highest blast radius in the platform. |
+| 2 | ☐ | `tool.bundle_member` (row 1 above, BLOCKED) | `{local_alias, sort_order}` | The payload system is the UNBLOCK — typed payload makes the runtime-resolution attrs safe to carry on edges. Still coordinated FE+DB+Python. |
+| 2 | ☐ | Attached-document chat edges (`features/agents/components/inputs/resources/attached-documents.ts`) | `{representation, file_id, resource_policy}` | `resource_policy` is consumed by Python at call time — bad shape silently changes LLM context. |
+| 2 | ☐ | Research source→tag edges (`features/research/service.ts:53-70`) | `{is_primary_source, confidence, assigned_by}` | Regression: typed columns became untyped metadata during the rs_source_tag migration; writes currently drop 2 of 3 attrs. |
+| 3 | ☐ | Agent-set config + member edges (`features/agents/agent-sets/service/agentSetsService.ts`) | `AgentSetConfig` / `{gap, pos}` | `as Json` casts hide drift; malformed pos breaks builder canvas. |
+| 3 | ☐ | Working-document↔conversation edges (`cx-working-document.service.ts:377-401`) | `{enabled, doc_kind}` | Comment at :382 admits the replace-on-conflict hazard. |
+| 3 | ☐ | Shared `lineage` kind: flashcard + education provenance edges (`fcService.ts:296`, `recordSourceLineage.ts:63`) | `{processed_document_id\|targetKind, chunk_id, page\|href, detail}` | One kind, two writers; `as never` cast is the confession. |
+| 3 | ☐ | Education class-assignment edges (`edu_class_assign` RPC) | `{due_at}` | Server-written — proves the trigger guards RPC writes too. |
+| 4 | ☐ | Task↔message block attaches (`taskAssociationsSlice.ts:60-68`, D27) | `{block_index}` | Missing index degrades to whole-message attach silently. |
+| 4 | ☐ | `files.overrides` (validate-in-place) | already `override_kind` + `override_value` | Exact target shape, zero design work — cheap second adopter of the trigger pattern. |
+| 4 | ☐ | Enabler: `associationsService.add` metadata discipline | — | Once top kinds exist, callers stuffing structured logic into `metadata` should be flagged (lint or runtime warn). |
+
+**Boundary reminders:** nothing on the iam side (`membership_grant`, `data_store_grants`, `org_industries` if access-feeding); `content_ir.kind_edge` stays a real table (FK integrity + version pinning are load-bearing — the canonical counter-example).
