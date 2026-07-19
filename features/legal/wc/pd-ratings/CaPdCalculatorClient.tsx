@@ -11,10 +11,18 @@ import {
   ShieldCheck,
   Plus,
   ArrowRight,
+  MoreHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import {
+  BottomSheet,
+  BottomSheetHeader,
+  BottomSheetBody,
+} from "@/components/official/bottom-sheet/BottomSheet";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsAuthenticated,
@@ -131,41 +139,115 @@ export function CaPdCalculatorClient({
     markClean();
   }, [markClean]);
 
+  const [sheetOpen, setSheetOpen] = React.useState(false);
+
   if (!hydrated) {
     return <WorkspaceSkeleton />;
   }
 
   const showResumePanel =
     mode === "draft" && isAuthed && !hasContent && savedCases.length > 0;
+  const canReset = hasContent && mode === "draft";
+
+  const printAndSaveActions = (
+    <>
+      <PrintCaseButton
+        disabled={!canPrint}
+        draft={draft}
+        result={liveRating.result}
+        impairmentCatalog={impairmentCatalog?.impairments ?? null}
+        occupationLabel={occupationLabel}
+      />
+      <SaveCaseButton
+        draft={draft}
+        isDirty={isDirty}
+        onSaved={handleSaved}
+        onUpdated={handleUpdated}
+      />
+    </>
+  );
 
   return (
     <>
-      <PageHeader>
-        <Toolbar
-          mode={mode}
-          isAuthed={isAuthed}
-          applicantName={draft.claim.applicant_name}
-          canReset={hasContent && mode === "draft"}
-          onReset={resetDraft}
-          rightActions={
-            <>
-              <PrintCaseButton
-                disabled={!canPrint}
-                draft={draft}
-                result={liveRating.result}
-                impairmentCatalog={impairmentCatalog?.impairments ?? null}
-                occupationLabel={occupationLabel}
+      <PageHeader
+        desktop={
+          <Toolbar
+            mode={mode}
+            isAuthed={isAuthed}
+            applicantName={draft.claim.applicant_name}
+            canReset={canReset}
+            onReset={resetDraft}
+            rightActions={printAndSaveActions}
+          />
+        }
+        mobile={
+          <div className="grid grid-cols-[auto_1fr_auto] items-center w-full gap-2">
+            <div className="flex items-center min-w-0">
+              <ChevronLeftTapButton href="/legal/ca-wc" ariaLabel="Back to CA WC" />
+              <span className="truncate max-w-[45vw] text-sm font-medium text-foreground px-1.5">
+                PD Rating
+              </span>
+            </div>
+            <div />
+            <div className="flex items-center justify-end min-w-0">
+              <TapTargetButton
+                icon={<MoreHorizontal className="h-4 w-4" />}
+                ariaLabel="More"
+                onClick={() => setSheetOpen(true)}
               />
-              <SaveCaseButton
-                draft={draft}
-                isDirty={isDirty}
-                onSaved={handleSaved}
-                onUpdated={handleUpdated}
-              />
-            </>
+            </div>
+          </div>
+        }
+      />
+
+      <BottomSheet open={sheetOpen} onOpenChange={setSheetOpen} title="PD Rating options">
+        <BottomSheetHeader
+          title="PD Rating"
+          trailing={
+            <button
+              onClick={() => setSheetOpen(false)}
+              className="text-primary active:opacity-70 min-h-[44px] px-1 text-[15px]"
+            >
+              Done
+            </button>
           }
         />
-      </PageHeader>
+        <BottomSheetBody className="px-4 pb-4 space-y-2">
+          <p className="text-xs text-muted-foreground px-1 pb-1">
+            {mode === "draft"
+              ? "Draft · unsaved"
+              : draft.claim.applicant_name
+                ? `Saved · ${draft.claim.applicant_name}`
+                : "Saved case"}
+          </p>
+          {isAuthed && (
+            <Link
+              href="/legal/ca-wc/cases"
+              onClick={() => setSheetOpen(false)}
+              className="flex items-center gap-3 w-full min-h-[52px] px-3 rounded-lg active:bg-muted transition-colors"
+            >
+              <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-[15px]">My cases</span>
+            </Link>
+          )}
+          {canReset && (
+            <button
+              type="button"
+              onClick={() => {
+                setSheetOpen(false);
+                resetDraft();
+              }}
+              className="flex items-center gap-3 w-full min-h-[52px] px-3 rounded-lg active:bg-muted transition-colors text-left"
+            >
+              <RotateCcw className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-[15px]">Reset</span>
+            </button>
+          )}
+          <div className="flex items-center gap-2 px-3 py-2">
+            {printAndSaveActions}
+          </div>
+        </BottomSheetBody>
+      </BottomSheet>
 
       <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-4 pb-16 space-y-4 lg:space-y-6">
         {showResumePanel && (
