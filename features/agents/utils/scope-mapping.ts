@@ -77,37 +77,11 @@ export function mapScopeToInstance(
   const contextEntries: InstanceContextEntry[] = [];
   const mappedScopeKeys = new Set<string>();
 
-  const trace = typeof window !== "undefined";
-  const log = (msg: string, ...args: unknown[]) => {
-    if (trace)
-      console.log(
-        `%c[Shortcut]%c ${msg}`,
-        "color:#10b981;font-weight:bold",
-        "color:inherit",
-        ...args,
-      );
-  };
-
-  if (trace) {
-    console.groupCollapsed(
-      "%c[Shortcut] mapScopeToInstance",
-      "color:#10b981;font-weight:bold",
-    );
-    log("ui scope keys:", Object.keys(applicationScope));
-    log("scopeMappings (UI → variable or slot):", scopeMappings ?? "(none)");
-    log("contextMappings (UI → context slot):", contextMappings ?? "(none)");
-    log("agent knows variables:", [...variableNames]);
-    log("agent knows slots:", [...slotMap.keys()]);
-  }
-
   // ── Pass 1: scopeMappings (UI key → variable OR context key) ────────────
   if (scopeMappings) {
     for (const [sourceKey, targetName] of Object.entries(scopeMappings)) {
       const value = applicationScope[sourceKey];
       if (value === undefined) {
-        log(
-          `  ✗ "${sourceKey}" → "${targetName}": UI scope has no value — skipped`,
-        );
         continue;
       }
 
@@ -115,10 +89,6 @@ export function mapScopeToInstance(
 
       if (variableNames.has(targetName)) {
         variableValues[targetName] = value;
-        log(
-          `  ✓ "${sourceKey}" → variable "${targetName}" =`,
-          previewValue(value),
-        );
       } else {
         const slot = slotMap.get(targetName);
         contextEntries.push({
@@ -128,10 +98,6 @@ export function mapScopeToInstance(
           type: slot?.type ?? inferContextType(value),
           label: slot?.label ?? targetName,
         });
-        log(
-          `  ✓ "${sourceKey}" → context ${slot ? `slot "${targetName}"` : `ad-hoc "${targetName}"`} =`,
-          previewValue(value),
-        );
       }
     }
   }
@@ -140,16 +106,10 @@ export function mapScopeToInstance(
   if (contextMappings) {
     for (const [sourceKey, slotKey] of Object.entries(contextMappings)) {
       if (mappedScopeKeys.has(sourceKey)) {
-        log(
-          `  • contextMappings "${sourceKey}" skipped — already mapped by scopeMappings`,
-        );
         continue;
       }
       const value = applicationScope[sourceKey];
       if (value === undefined) {
-        log(
-          `  ✗ contextMappings "${sourceKey}" → slot "${slotKey}": UI scope has no value — skipped`,
-        );
         continue;
       }
 
@@ -163,10 +123,6 @@ export function mapScopeToInstance(
         type: slot?.type ?? inferContextType(value),
         label: slot?.label ?? slotKey,
       });
-      log(
-        `  ✓ "${sourceKey}" → context ${slot ? `slot "${slotKey}"` : `ad-hoc "${slotKey}"`} =`,
-        previewValue(value),
-      );
     }
   }
 
@@ -187,7 +143,6 @@ export function mapScopeToInstance(
           type: slot?.type ?? inferContextType(ctxVal),
           label: slot?.label ?? ctxKey,
         });
-        log(`  ◦ ad-hoc from context."${ctxKey}" →`, previewValue(ctxVal));
       }
       continue;
     }
@@ -200,28 +155,9 @@ export function mapScopeToInstance(
       type: slot?.type ?? inferContextType(value),
       label: slot?.label ?? key,
     });
-    log(`  ◦ ad-hoc "${key}" →`, previewValue(value));
-  }
-
-  if (trace) {
-    log(
-      "result:",
-      `${Object.keys(variableValues).length} variables, ${contextEntries.length} context entries`,
-    );
-    console.groupEnd();
   }
 
   return { variableValues, contextEntries };
-}
-
-function previewValue(v: unknown): string {
-  if (typeof v === "string") {
-    return `"${v.slice(0, 60)}"${v.length > 60 ? "…" : ""} (${v.length} chars)`;
-  }
-  if (v && typeof v === "object") {
-    return `<${Array.isArray(v) ? "array" : "object"} ${Object.keys(v as object).length} keys>`;
-  }
-  return String(v);
 }
 
 /**

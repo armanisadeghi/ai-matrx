@@ -633,7 +633,27 @@ function applyTestHeaders(
   return { ...headers, ...testOverrides.additionalHeaders };
 }
 
-/** Log request details when test overrides request it */
+const SENSITIVE_HEADER_NAME = /authorization|cookie|token|api[-_]?key/i;
+
+export function buildSafeRequestLog(
+  headers: Record<string, string>,
+  body: unknown,
+): { headers: Record<string, string>; body: Record<string, unknown> } {
+  const safeHeaders = Object.fromEntries(
+    Object.entries(headers).map(([name, value]) => [
+      name,
+      SENSITIVE_HEADER_NAME.test(name) ? "[REDACTED]" : value,
+    ]),
+  );
+  const bodyMetadata: Record<string, unknown> = Array.isArray(body)
+    ? { type: "array", itemCount: body.length }
+    : body && typeof body === "object"
+      ? { type: "object", keys: Object.keys(body as Record<string, unknown>) }
+      : { type: body === null ? "null" : typeof body };
+  return { headers: safeHeaders, body: bodyMetadata };
+}
+
+/** Log redacted request metadata when test overrides request it. */
 function maybeLogRequest(
   url: string,
   method: string,
@@ -642,9 +662,10 @@ function maybeLogRequest(
   testOverrides?: TestOverrides,
 ): void {
   if (!testOverrides?.logRequest) return;
+  const safe = buildSafeRequestLog(headers, body);
   console.group(`[callApi] ${method.toUpperCase()} ${url}`);
-  console.log("Headers:", headers);
-  console.log("Body:", body);
+  console.log("Headers:", safe.headers);
+  console.log("Body metadata:", safe.body);
   console.groupEnd();
 }
 
