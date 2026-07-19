@@ -81,7 +81,7 @@ interface PdfStudioInspectorProps {
 
 export function PdfStudioInspector({
   doc,
-  sourceMissing = false,
+  sourceMissing = true,
   pages,
   activePage,
   onRunShortcut,

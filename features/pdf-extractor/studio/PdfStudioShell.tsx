@@ -672,7 +672,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       : "";
     const sourceMissing =
       docsState.docs.find((summary) => summary.id === activeDoc.id)?.sourceMissing ??
-      false;
+      true;
     const fileId =
       !sourceMissing && activeDoc.sourceKind === "cld_file" && activeDoc.sourceId
         ? activeDoc.sourceId
@@ -926,7 +926,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
                   doc={activeDoc}
                   sourceMissing={
                     docsState.docs.find((summary) => summary.id === activeDoc.id)
-                      ?.sourceMissing ?? false
+                      ?.sourceMissing ?? true
                   }
                   pages={pages}
                   activePage={activePage}

@@ -524,7 +524,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                   doc={activeDoc}
                   sourceMissing={
                     docsState.docs.find((summary) => summary.id === activeDoc.id)
-                      ?.sourceMissing ?? false
+                      ?.sourceMissing ?? true
                   }
                   pages={pages}
                   activePage={activePage}
