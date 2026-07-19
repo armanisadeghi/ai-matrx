@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Inbox, Loader2, Save, Trash2 } from "lucide-react";
+import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -257,6 +259,8 @@ function BindingForm({
     return {};
   });
   const [busy, setBusy] = useState(false);
+  const [guardOpen, setGuardOpen] = useState(false);
+  const router = useRouter();
 
   // Auto-pick scope id when scope tier changes
   useEffect(() => {
@@ -321,6 +325,15 @@ function BindingForm({
       toast.error("This scope tier requires an ID");
       return;
     }
+    // Global tier: lineage/visibility awareness gate (auto-passes builtins).
+    if (scope === AGENT_SCOPES.GLOBAL) {
+      setGuardOpen(true);
+      return;
+    }
+    await doSave();
+  };
+
+  const doSave = async () => {
     setBusy(true);
     try {
       const saved = await dispatch(
@@ -415,6 +428,25 @@ function BindingForm({
           />
         </div>
       </div>
+
+      <GlobalBindAgentGuard
+        open={guardOpen}
+        agentId={agent.id}
+        onProceed={() => {
+          setGuardOpen(false);
+          void doSave();
+        }}
+        onUseSystemTwin={(twin) => {
+          setGuardOpen(false);
+          // Per-agent shell: don't silently bind a different agent — route to
+          // the system twin's surfaces page so the binder continues there.
+          toast.info(`Routing to system agent "${twin.name}"`);
+          router.push(
+            `/administration/system-agents/agents/${twin.id}/surfaces?surface=${encodeURIComponent(surfaceName)}`,
+          );
+        }}
+        onCancel={() => setGuardOpen(false)}
+      />
     </BindingFormLayout>
   );
 }

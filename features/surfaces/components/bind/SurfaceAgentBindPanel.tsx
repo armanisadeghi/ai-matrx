@@ -30,6 +30,7 @@ import {
   selectAgentExecutionPayload,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { SurfaceVariableBindingList } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
 import { loadSurfaceValues } from "@/features/surfaces/redux/thunks";
@@ -123,6 +124,7 @@ export function SurfaceAgentBindPanel({
   );
   const [mappings, setMappings] = useState<ValueMappingMap>({});
   const [busy, setBusy] = useState(false);
+  const [guardOpen, setGuardOpen] = useState(false);
   const [seededForAgent, setSeededForAgent] = useState<string | null>(null);
   const [assocBindings, setAssocBindings] = useState<
     Array<{
@@ -281,6 +283,17 @@ export function SurfaceAgentBindPanel({
       toast.error("This scope tier requires a selection");
       return;
     }
+    // Global tier: run the lineage/visibility awareness gate first. The guard
+    // auto-proceeds for builtin agents and otherwise routes the decision
+    // (use system twin / Linked Agent Sync / continue) back through doSave.
+    if (scope === AGENT_SCOPES.GLOBAL) {
+      setGuardOpen(true);
+      return;
+    }
+    await doSave(agentId);
+  };
+
+  const doSave = async (bindAgentId: string) => {
     setBusy(true);
     try {
       const bindScope = {
@@ -294,7 +307,7 @@ export function SurfaceAgentBindPanel({
       // only as assoc_add access key (tier still comes from bindScope).
       const accessOrgId = await ensureOrgId(bindScope.organizationId);
       const saved = await bindAgentToSurface({
-        agentId,
+        agentId: bindAgentId,
         surfaceName,
         scope: bindScope,
         valueMappings: mappings,
@@ -303,7 +316,7 @@ export function SurfaceAgentBindPanel({
       toast.success(`Bound to ${displaySurface}`);
       onBound?.({
         bindingId: saved.associationId,
-        agentId,
+        agentId: bindAgentId,
         surfaceName,
       });
     } catch (e) {
@@ -463,6 +476,23 @@ export function SurfaceAgentBindPanel({
           )}
         </Button>
       </div>
+
+      {agentId && (
+        <GlobalBindAgentGuard
+          open={guardOpen}
+          agentId={agentId}
+          onProceed={(id) => {
+            setGuardOpen(false);
+            void doSave(id);
+          }}
+          onUseSystemTwin={(twin) => {
+            setGuardOpen(false);
+            toast.info(`Binding system agent "${twin.name}" instead`);
+            void doSave(twin.id);
+          }}
+          onCancel={() => setGuardOpen(false)}
+        />
+      )}
     </div>
   );
 }
