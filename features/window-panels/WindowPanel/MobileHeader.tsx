@@ -2,7 +2,7 @@
 
 /**
  * MobileWindowHeader — slim chrome strip for the fullscreen mobile takeover
- * branch of WindowPanel. Close + minimize on the left, sidebar/main toggle
+ * branch of WindowPanel. Close on the left, sidebar/main toggle
  * (when a sidebar is present) in the center, actions on the right.
  *
  * Extracted from WindowPanel.tsx Phase 6 — purely presentational.
@@ -15,7 +15,8 @@ import { WINDOW_CHROME_ACTIONS } from "./chromeClasses";
 interface MobileWindowHeaderProps {
   title?: ReactNode;
   actionsRight?: ReactNode;
-  onMinimize: () => void;
+  /** Omitted until a mobile minimized tray surface is mounted. */
+  onMinimize?: () => void;
   onClose?: () => void;
   hasSidebar: boolean;
   activePaneMobile: "main" | "sidebar";
@@ -46,14 +47,19 @@ export function MobileWindowHeader({
             <X className="w-2.5 h-2.5 stroke-[3]" style={{ color: "#000" }} />
           </button>
         )}
-        <button
-          type="button"
-          className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center cursor-pointer"
-          onClick={onMinimize}
-          aria-label="Minimize"
-        >
-          <Minus className="w-2.5 h-2.5 stroke-[3]" style={{ color: "#000" }} />
-        </button>
+        {onMinimize && (
+          <button
+            type="button"
+            className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center cursor-pointer"
+            onClick={onMinimize}
+            aria-label="Minimize"
+          >
+            <Minus
+              className="w-2.5 h-2.5 stroke-[3]"
+              style={{ color: "#000" }}
+            />
+          </button>
+        )}
       </div>
 
       {/* Center: sidebar toggle or title */}

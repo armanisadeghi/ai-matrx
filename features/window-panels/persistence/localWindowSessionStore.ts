@@ -21,6 +21,8 @@ let leasedWorkspaceId: string | null = null;
 export interface LocalWindowWorkspaceRead {
   workspace: PersistedWindowWorkspace | null;
   source: "indexed-db" | "local-storage" | "miss" | "timeout";
+  /** Resolves the authoritative IDB fallback after a hydration-budget timeout. */
+  pendingWorkspace?: Promise<PersistedWindowWorkspace | null>;
 }
 
 function randomWorkspaceId(): string {
@@ -206,8 +208,7 @@ export async function loadLocalWindowWorkspace(
 
   let budgetTimer: ReturnType<typeof setTimeout> | undefined;
   const timeout = Symbol("idb-window-read-timeout");
-  const idbRecord = await Promise.race([
-    readSlice(
+  const idbRead = readSlice(
       identity.key,
       sliceName(workspaceId),
       WINDOW_WORKSPACE_SCHEMA_VERSION,
@@ -217,7 +218,9 @@ export async function loadLocalWindowWorkspace(
         error,
       );
       return null;
-    }),
+    });
+  const idbRecord = await Promise.race([
+    idbRead,
     new Promise<typeof timeout>((resolve) => {
       budgetTimer = setTimeout(() => resolve(timeout), IDB_READ_BUDGET_MS);
     }),
@@ -227,7 +230,11 @@ export async function loadLocalWindowWorkspace(
     console.warn(
       "[window-preservation] IndexedDB did not answer within the hydration budget; preserving the unknown cache without overwriting it.",
     );
-    return { workspace: null, source: "timeout" };
+    return {
+      workspace: null,
+      source: "timeout",
+      pendingWorkspace: idbRead.then((record) => readWorkspace(record?.body)),
+    };
   }
   const idbWorkspace = readWorkspace(idbRecord?.body);
 

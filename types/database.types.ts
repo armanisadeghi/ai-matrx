@@ -1,12 +1,10 @@
-// Original generated type (replaced by patch-db-types.sh):
-// export type Json =
-//   | string
-//   | number
-//   | boolean
-//   | null
-//   | { [key: string]: Json | undefined }
-//   | Json[]
-export type Json = unknown
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
@@ -43488,6 +43486,7 @@ export type Database = {
           updated_by: string | null
           url: string | null
           value: Json
+          value_hash: string | null
           version: number
         }
         Insert: {
@@ -43514,6 +43513,7 @@ export type Database = {
           updated_by?: string | null
           url?: string | null
           value?: Json
+          value_hash?: string | null
           version?: number
         }
         Update: {
@@ -43540,6 +43540,7 @@ export type Database = {
           updated_by?: string | null
           url?: string | null
           value?: Json
+          value_hash?: string | null
           version?: number
         }
         Relationships: [
