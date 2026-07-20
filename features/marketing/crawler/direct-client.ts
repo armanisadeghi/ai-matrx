@@ -127,6 +127,9 @@ export function crawlerErrorMessage(
   if (status === 401 || normalized.includes("sign in")) {
     return "Your session has expired. Sign in again, then retry.";
   }
+  if (status === 404) {
+    return "The scraper doesn’t support this command yet — the server-side deploy is pending. (404 from the scraper service.)";
+  }
   if (
     status === 403 ||
     normalized.includes("editor access") ||
@@ -144,7 +147,9 @@ export function crawlerErrorMessage(
   ) {
     return "The crawler is temporarily unavailable. Please retry in a moment.";
   }
-  return detail || "The crawler couldn’t complete this request. Please retry.";
+  return detail
+    ? `${detail} (HTTP ${status})`
+    : `The crawler couldn’t complete this request (HTTP ${status}). Please retry.`;
 }
 
 async function responseError(response: Response): Promise<Error> {
