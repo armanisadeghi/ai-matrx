@@ -13,7 +13,7 @@
 //                       label: agent.name, href: `/agents/${agent.id}` }} size="sm" />
 
 import { Star } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { usePinned, type FavoriteInput } from "./usePinned";
 

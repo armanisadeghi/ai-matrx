@@ -100,7 +100,7 @@ import { CloudImageList } from "@/components/image/cloud/CloudImageList";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
 import { CloudFileMetadataSheet } from "@/features/image-manager/components/CloudFileMetadataSheet";
 import { openFolderPicker } from "@/features/files";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 

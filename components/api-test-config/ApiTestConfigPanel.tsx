@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Loader2, Key, Check, X, Monitor, Globe, Pencil } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { clearStoredAdminToken } from '@/utils/api-test-auth';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import type { UseApiTestConfigReturn } from './useApiTestConfig';
 
 interface ApiTestConfigPanelProps {

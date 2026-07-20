@@ -43,7 +43,7 @@ import { openImageViewer } from "@/features/window-panels/windows/image/openImag
 import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
 import { useScreenshot } from "@/hooks/useScreenshot";
 import ImageCropperWithSelect from "@/components/official/image-cropper/ImageCropperWithSelect";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface ToolDescriptor {
   id: string;

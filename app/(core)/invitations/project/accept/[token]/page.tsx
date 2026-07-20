@@ -6,7 +6,7 @@ import { Check, X, AlertCircle, Loader2, Puzzle, Mail, UserPlus } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import { acceptProjectInvitation, getProject } from '@/features/projects/service';
 import { invitationsService } from '@/features/organizations/service/invitationsService';
 import { isScopesRpcErr } from '@/features/scopes/types';

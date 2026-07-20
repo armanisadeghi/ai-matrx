@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { sendChromeRpc, isChromeRpcAvailable } from "./chrome-rpc";
 import { DEFAULT_PAYLOADS, RPC_ACTIONS, type RpcAction } from "./constants";
 import { JsonViewer } from "./JsonViewer";

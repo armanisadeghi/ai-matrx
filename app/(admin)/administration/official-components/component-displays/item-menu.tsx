@@ -14,7 +14,7 @@ import {
   Eye,
   MoreHorizontal,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
 import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";

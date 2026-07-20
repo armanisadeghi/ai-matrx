@@ -34,7 +34,7 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export default function ComponentsPage() {
   const { siteId } = useParams() as { siteId: string };

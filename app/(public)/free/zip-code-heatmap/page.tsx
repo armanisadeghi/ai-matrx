@@ -17,7 +17,7 @@ import SaveHeatmapModal from "./components/SaveHeatmapModal";
 import type { ColorScaleOptions } from "./components/ColorScaleSelector";
 import type { ViewMode } from "./components/ViewModeSelector";
 import { aggregateByZip3 } from "./utils/dataAggregation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export interface ZipCodeData {
     zipCode: string;

@@ -27,7 +27,7 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { SERVER_PRESETS, CUSTOM_URL_VALUE } from "./servers";
 import type { UseServerConfigReturn, HealthStatus } from "./useServerConfig";
 

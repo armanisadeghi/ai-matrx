@@ -17,7 +17,7 @@ import React, {
 } from "react";
 import { Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useMarkdownAutosave } from "@/components/admin/markdown-tester/useMarkdownAutosave";

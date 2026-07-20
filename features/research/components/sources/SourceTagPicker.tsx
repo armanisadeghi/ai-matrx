@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { Plus, Check, Loader2, Sparkles, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useResearchTags, useSourceTags } from "../../hooks/useResearchState";

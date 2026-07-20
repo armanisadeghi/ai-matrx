@@ -19,7 +19,7 @@ import { MicrophoneButton } from "@/features/audio/components/MicrophoneButton";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
 import { RecordingIndicator } from "@/features/audio/components/RecordingIndicator";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export interface VoiceInputButtonProps {
   onTranscriptionComplete: (text: string) => void;

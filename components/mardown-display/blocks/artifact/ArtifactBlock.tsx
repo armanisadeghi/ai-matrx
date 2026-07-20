@@ -2,7 +2,7 @@
 
 import React, { Suspense, lazy, useMemo } from "react";
 import { Copy, Maximize2, Unlink } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { artifactContentToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import { useUnbindArtifact } from "@/features/canvas/materialization/useUnbindArtifact";

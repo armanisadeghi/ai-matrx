@@ -5,7 +5,7 @@ import { Search, SlidersHorizontal, Plus, X, Mic, Loader2 } from "lucide-react";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { Button } from "@/components/ui/button";
 import { TranscriptionResult } from "@/features/audio/types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileActionBarProps } from "./types";
 import { motion } from "motion/react";

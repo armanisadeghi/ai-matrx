@@ -11,7 +11,7 @@ import {
   Folder,
   FileText,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
 import { ItemRow } from "@/components/official/item/ItemRow";

@@ -40,7 +40,7 @@ import {
   Search,
   Download,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";

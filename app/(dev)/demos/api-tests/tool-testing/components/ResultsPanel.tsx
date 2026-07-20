@@ -38,7 +38,7 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { StreamEventTimeline } from "./StreamEventTimeline";
 import { SchemaValidator, validateAgainstSchema } from "./SchemaValidator";
 import { CostEstimateTable } from "./CostEstimateTable";

@@ -35,7 +35,7 @@ import {
   Tag,
   Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

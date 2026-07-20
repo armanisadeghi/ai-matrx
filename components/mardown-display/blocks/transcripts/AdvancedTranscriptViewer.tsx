@@ -62,7 +62,7 @@ import {
   buildTranscriptSegmentReferenceFence,
   transcriptSegmentIndexFromId,
 } from "@/features/matrx-envelope/compoundReference";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 

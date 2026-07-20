@@ -15,7 +15,7 @@ import {
   Loader2,
   type LucideIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { ONBOARDING_METADATA_KEY } from "@/utils/onboarding";
 

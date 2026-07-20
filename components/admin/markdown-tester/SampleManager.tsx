@@ -29,7 +29,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useMarkdownSamples } from "./useMarkdownSamples";
 import { detectRenderBlocks } from "./utils/detect-render-blocks";
 import { SampleEditor } from "./SampleEditor";

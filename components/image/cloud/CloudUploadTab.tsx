@@ -47,7 +47,7 @@ import {
 } from "@/components/image/cloud/resolveCloudFileUrl";
 import type { Visibility } from "@/features/files";
 import { Base64DecoderShell } from "@/features/image-studio/components/Base64DecoderShell";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 export interface CloudUploadTabProps {

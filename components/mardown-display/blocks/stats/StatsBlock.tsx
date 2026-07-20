@@ -11,7 +11,7 @@
 
 import React, { useMemo, useState } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Copy, TriangleAlert } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";

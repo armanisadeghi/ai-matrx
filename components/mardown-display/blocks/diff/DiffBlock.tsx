@@ -12,7 +12,7 @@
 import React, { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, Columns2, Copy, GitCompareArrows, Rows3, TriangleAlert } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";

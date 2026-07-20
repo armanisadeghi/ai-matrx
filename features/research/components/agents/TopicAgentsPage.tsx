@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Loader2, ShieldCheck, Workflow } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { useTopicContext } from "../../context/ResearchContext";

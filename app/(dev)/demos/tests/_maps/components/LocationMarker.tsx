@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import L from 'leaflet';
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface LocationMarkerProps {
   icon?: Icon;

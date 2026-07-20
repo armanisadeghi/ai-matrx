@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, MessageSquare, User, LayoutTemplate, Volume2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 interface Message {
     role: 'user' | 'assistant';

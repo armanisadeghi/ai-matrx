@@ -27,7 +27,7 @@ import {
   type ScreenCaptureResult,
   type CaptureMethod,
 } from "@/hooks/useScreenCapture";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const PANEL_CLASS = "capture-demo-panel";
 

@@ -44,7 +44,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { sandboxInstanceSummary } from "@/lib/sandbox/format";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
 import {

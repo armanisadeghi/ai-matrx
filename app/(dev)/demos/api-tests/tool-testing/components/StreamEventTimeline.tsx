@@ -23,7 +23,7 @@ import {
   Wifi,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type { ToolStreamEvent } from "@/features/tool-call-visualization/testing/types";
 

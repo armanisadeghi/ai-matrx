@@ -53,7 +53,7 @@ import {
   updateContentCurated,
   restoreOriginalContent,
 } from "../../service";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";

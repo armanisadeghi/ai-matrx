@@ -20,7 +20,7 @@ import {
   ShieldCheck,
   ShieldAlert,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectActiveServer,

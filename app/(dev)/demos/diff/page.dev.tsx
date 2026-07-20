@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { DiffViewer, type DiffEngine } from "@/components/diff/DiffViewer";
 import { DiffReview } from "@/components/diff/DiffReview";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";

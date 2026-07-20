@@ -18,7 +18,7 @@
 
 import React, { useCallback, useState } from "react";
 import { BookOpen, Loader2, Plus, Save, Unlink, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import type { Note } from "@/features/notes/types";

@@ -16,7 +16,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Copy, Download, Expand, Image as ImageIcon, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";

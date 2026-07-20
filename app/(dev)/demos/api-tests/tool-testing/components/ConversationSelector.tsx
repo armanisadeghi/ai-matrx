@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Loader2, Plus, ClipboardPaste, Check, AlertCircle, MessageSquare, Cookie } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 interface ConversationSelectorProps {
   conversationId: string | null;

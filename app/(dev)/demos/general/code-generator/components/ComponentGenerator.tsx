@@ -8,7 +8,7 @@ import AIAssistant from "./AIAssistant";
 import CodeEditor from "./CodeEditor";
 import ComponentManager from "./ComponentManager";
 import { parseSavedComponents, type SavedComponent } from "./types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 // Main application component that orchestrates everything
 const ComponentGenerator = () => {

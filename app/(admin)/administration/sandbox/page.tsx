@@ -42,7 +42,7 @@ import {
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { sandboxInstanceSummary } from "@/lib/sandbox/format";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type {
   SandboxInstance,
   SandboxStatus,

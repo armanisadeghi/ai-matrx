@@ -11,7 +11,7 @@ import {
   PlusTapButton,
 } from "@/components/icons/tap-buttons";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   consumeHtmlPagesListScroll,
   readHtmlPagesListReturn,

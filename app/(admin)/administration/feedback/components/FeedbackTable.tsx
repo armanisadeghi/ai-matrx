@@ -80,7 +80,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import FeedbackDetailDialog from "./FeedbackDetailDialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@/utils/search-scoring";
 

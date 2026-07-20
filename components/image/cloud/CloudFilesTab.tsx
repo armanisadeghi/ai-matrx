@@ -55,7 +55,7 @@ import {
 } from "@/components/image/cloud/resolveCloudFileUrl";
 import { buildCloudFilesBrowsePayload } from "@/components/image/cloud/cloudFilesBrowsePayload";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { CloudFilesBrowserTable } from "./CloudFilesBrowserTable";
 import { isCloudFileSelectable } from "./cloudFilesBrowserUtils";
 

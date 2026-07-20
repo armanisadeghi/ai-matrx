@@ -1,6 +1,6 @@
 "use client";
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { IndustryUpgrade } from "@/features/pricing/components/industry/IndustryUpgrade";
 import type { IndustryId } from "@/features/pricing/components/industry/industries";
 

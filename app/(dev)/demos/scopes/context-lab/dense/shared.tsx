@@ -14,7 +14,7 @@ export type {
   LazyStatus,
 } from "@/features/scopes/components/active-context/context-tree/shared";
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 /** Demo convention: console + toast, real path named — never a DB write. */
 export function fakeCreate(

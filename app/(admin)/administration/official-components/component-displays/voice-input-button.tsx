@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ComponentEntry } from '../parts/component-list';
 import { ComponentDisplayWrapper } from '../component-usage';
 import { VoiceInputButton } from '@/components/official/VoiceInputButton';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -17,7 +17,7 @@ export default function VoiceInputButtonDisplay({ component }: ComponentDisplayP
   
   // Example code with all available props and their default values
   const code = `import { VoiceInputButton } from '@/components/official/VoiceInputButton';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 <VoiceInputButton
   onTranscriptionComplete={(text) => {

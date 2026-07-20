@@ -17,7 +17,7 @@ import {
   type ReactNode,
 } from "react";
 import { Check, Copy, ExternalLink, PanelRight, ShieldOff } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Tooltip,
   TooltipContent,

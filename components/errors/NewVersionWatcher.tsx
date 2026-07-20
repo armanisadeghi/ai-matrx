@@ -19,7 +19,7 @@
 // boot script from ever reloading a live session.
 
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   APP_BOOTED_FLAG,
   STALE_CHUNK_EVENT,

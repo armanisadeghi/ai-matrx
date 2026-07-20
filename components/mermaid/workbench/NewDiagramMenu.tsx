@@ -13,7 +13,7 @@
 
 import React, { useRef } from "react";
 import { FileUp, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import {

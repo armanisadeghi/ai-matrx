@@ -7,7 +7,7 @@ import { BasicInput } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Key, Check, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { getStoredAdminToken, setStoredAdminToken, clearStoredAdminToken, hasStoredAdminToken } from '@/utils/api-test-auth';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import Link from 'next/link';
 
 export default function ApiTestSetupPage() {

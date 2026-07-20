@@ -14,7 +14,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useFileUpload, composeUploadFolderPath } from "@/features/files";
 import type { Visibility } from "@/features/files";
 

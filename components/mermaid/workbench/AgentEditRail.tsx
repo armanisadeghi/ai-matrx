@@ -10,7 +10,7 @@
 
 import React, { useState } from "react";
 import { Check, Loader2, MessageSquare, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { Button } from "@/components/ui/button";

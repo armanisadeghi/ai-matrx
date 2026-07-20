@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { useMarkdownSamples } from "./useMarkdownSamples";
 import { runV2Parser } from "./utils/run-v2-parser";

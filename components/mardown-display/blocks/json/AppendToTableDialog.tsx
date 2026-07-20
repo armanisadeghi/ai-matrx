@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, ExternalLink, AlertTriangle, ArrowRight } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { getTableDetails } from "@/utils/user-table-utls/table-utils";
 import type { TableField } from "@/utils/user-table-utls/table-utils";

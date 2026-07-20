@@ -4,7 +4,7 @@ import * as React from "react";
 import { Webhook, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   buildAgentPayload,
   type AgentPayloadInput,

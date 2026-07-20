@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, Check, RefreshCw } from 'lucide-react';
 import { Chrome } from '@/components/icons/brand-icons';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 /**
  * Extension Authentication Page

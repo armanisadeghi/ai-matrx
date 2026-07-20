@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ChangeEvent } from "react";
 import { ChevronRight, ChevronLeft, Check, User, Briefcase, GraduationCap, Award, Calendar } from 'lucide-react';
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const ResumeBuilder = () => {
   const [currentStep, setCurrentStep] = useState(0);

@@ -5,7 +5,7 @@ import { MicrophoneIconButton, MicVariant } from '@/features/audio/components/Mi
 import { VoiceTextarea } from '@/components/official/VoiceTextarea';
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { VoiceInputButton } from '@/components/official/VoiceInputButton';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

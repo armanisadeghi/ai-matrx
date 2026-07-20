@@ -54,7 +54,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { formatDistanceToNow } from "date-fns";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import type { ConnectionUser } from "@/features/messaging/hooks/useUserConnections";

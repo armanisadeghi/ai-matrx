@@ -11,7 +11,7 @@ import {
   Check,
   AlertTriangle,
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import type { SchemaValidationResult } from '@/features/tool-call-visualization/testing/types';
 
 const ajv = new Ajv({ allErrors: true, strict: false });

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { AutonomySelector } from "../init/AutonomySelector";
 import { StatusBadge } from "../shared/StatusBadge";
 import { updateTopic } from "../../service";

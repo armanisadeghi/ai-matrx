@@ -25,7 +25,7 @@ import { generatePresentationHTML } from "./presentation-html-generator";
 import { resolveDeckTheme } from "./presets";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import IconButton from "@/components/official/IconButton";
 
 interface PresentationExportMenuProps {

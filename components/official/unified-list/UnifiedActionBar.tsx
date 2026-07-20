@@ -5,7 +5,7 @@ import { Search, SlidersHorizontal, Plus, X, Mic } from "lucide-react";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { Button } from "@/components/ui/button";
 import { TranscriptionResult } from "@/features/audio/types";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { RecordingOverlay } from "@/features/audio/components/RecordingOverlay";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
 import { BaseListItem, UnifiedListLayoutConfig } from "./types";

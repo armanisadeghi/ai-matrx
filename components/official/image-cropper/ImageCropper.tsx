@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import { useFileUpload } from '@/features/files';
 
 // Default aspect ratio options

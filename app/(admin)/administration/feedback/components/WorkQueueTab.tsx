@@ -28,7 +28,7 @@ import {
     Eye,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import FeedbackDetailDialog from './FeedbackDetailDialog';
 
 const feedbackTypeIcons: Record<string, React.ReactNode> = {

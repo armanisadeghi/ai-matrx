@@ -13,7 +13,7 @@ import {
 } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import type { EditableContextMenuProps } from "@/features/context-menu-v3/types";
 import {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   getStoredAdminToken,
   setStoredAdminToken,

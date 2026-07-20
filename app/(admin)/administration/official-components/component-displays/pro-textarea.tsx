@@ -12,7 +12,7 @@ import {
 import { Field } from "@/components/official/Field";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;

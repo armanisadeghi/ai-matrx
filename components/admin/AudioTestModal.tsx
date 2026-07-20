@@ -22,7 +22,7 @@ import {
   Copy,
   CheckCircle2,
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 
 interface AudioTestModalProps {
   open: boolean;

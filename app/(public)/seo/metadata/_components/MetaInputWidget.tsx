@@ -9,7 +9,7 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { BasicInput } from "@/components/ui/input";
 import { BasicTextarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";

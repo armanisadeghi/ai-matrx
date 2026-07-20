@@ -14,7 +14,7 @@ import {
   Table2,
   Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createDatasetFromTable } from "@/features/data-tables/create-dataset-from-table";

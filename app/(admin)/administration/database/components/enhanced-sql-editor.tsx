@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 import { QueryHistoryButton } from "@/components/admin/query-history/query-history-button";
 import { saveQuery } from "@/components/admin/query-history/query-storage";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { CategoryNotesModal } from "@/features/notes/actions/CategoryNotesModal";
 import type { Note } from "@/features/notes/types";
 import { DEFAULT_DATABASE_SCHEMA } from "../config";

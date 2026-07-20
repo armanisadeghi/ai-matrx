@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import reactElementToJSXString from "react-element-to-jsx-string";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ButtonsCard } from "../ui/buttons-card";
 
 interface TailwindButtonEntry {

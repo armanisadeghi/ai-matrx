@@ -16,7 +16,7 @@
 
 import { Fragment, useState, type ReactNode } from "react";
 import { Slot } from "@radix-ui/react-slot";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {

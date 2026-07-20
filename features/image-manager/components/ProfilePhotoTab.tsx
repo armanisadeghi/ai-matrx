@@ -27,7 +27,7 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { CloudFolders } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
 

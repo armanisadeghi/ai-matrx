@@ -1,6 +1,6 @@
 "use client";
 
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { PricingLanding } from "@/features/pricing/components/PricingLanding";
 
 export function LandingPageClient() {

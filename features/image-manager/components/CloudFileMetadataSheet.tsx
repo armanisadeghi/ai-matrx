@@ -25,7 +25,7 @@ import {
   formatRelativeTime,
 } from "@/features/files";
 import type { CloudFileRecord } from "@/features/files";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export interface CloudFileMetadataSheetProps {
   file: CloudFileRecord | null;

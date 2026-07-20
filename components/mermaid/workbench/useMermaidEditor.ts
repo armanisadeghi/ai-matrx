@@ -8,7 +8,7 @@
  */
 
 import { useReducer } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { detectDiagramType, type MermaidDiagramType } from "../diagram-type";
 import "../adapters/register";

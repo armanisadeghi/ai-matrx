@@ -13,7 +13,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Database, Trash2, ArrowRightLeft, Info } from "lucide-react";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { useNoteIngestStatus } from "@/features/notes/hooks/useNoteIngestStatus";
