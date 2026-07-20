@@ -5,7 +5,7 @@
  *
  * Browse cloud files and pick one to attach as an AI resource reference.
  * Migrated in Phase 9: the internals now use the cloud-files system
- * (features/files/*) instead of supabase.storage — no more buckets, one
+ * (features/files/*) — one canonical file system and one access model with a
  * unified tree per user. The {onBack, onSelect} surface is unchanged so
  * every caller keeps working without edits.
  *

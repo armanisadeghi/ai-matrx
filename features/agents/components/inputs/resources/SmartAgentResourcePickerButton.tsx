@@ -32,7 +32,7 @@ const ResourcePickerWindow = dynamic(
 
 interface SmartAgentResourcePickerButtonProps {
   conversationId: string;
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   /** When true, opens as a floating WindowPanel instead of a popover. Default: false. */
   useWindowMode?: boolean;

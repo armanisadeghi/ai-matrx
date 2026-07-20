@@ -24,12 +24,11 @@ import { getCmsClient, verifySiteOwnership, verifyAssetOwnership } from "../_lib
 import { logCmsActivity } from "../_lib/activityLog";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 
-// Durable public hosts a library asset URL may live on (the assets pipeline
-// returns cdn.matrxserver.com; public Supabase storage is the other durable
-// public form). Anything else — an arbitrary external https URL — is refused so
+// Durable public hosts a library asset URL may live on. Anything else — an
+// arbitrary external https URL — is refused so
 // an owner can't register a tracking/phishing pixel as a site asset
 // (adversarial finding W2-B #3).
-const DURABLE_PUBLIC_URL_MARKERS = ["cdn.matrxserver.com", "/storage/v1/object/public/"] as const;
+const DURABLE_PUBLIC_URL_MARKERS = ["cdn.matrxserver.com"] as const;
 
 function isDurablePublicUrl(url: string): boolean {
   return DURABLE_PUBLIC_URL_MARKERS.some((m) => url.includes(m));
@@ -62,7 +61,6 @@ function isSignedExpiringUrl(url: string): boolean {
   const u = url.toLowerCase();
   if (/[?&]x-amz-signature=/.test(u)) return true;
   if (/[?&]x-goog-signature=/.test(u)) return true;
-  if (u.includes("/storage/v1/object/sign/")) return true;
   const query = u.includes("?") ? u.split("?")[1] : "";
   const keys = new Set(query.split("&").map((p) => p.split("=")[0]));
   if (keys.has("awsaccesskeyid") && keys.has("signature") && keys.has("expires")) return true;

@@ -4,7 +4,7 @@
  * The single public entry point. Every callsite that touches a file —
  * components, thunks, server routes, agent prep — uses one of these
  * three primitives. Direct construction of media blocks, direct calls
- * to `supabase.storage`, and direct uploads through `useFileUpload` are
+ * to direct object-store SDKs, and uploads through `useFileUpload` are
  * all banned (see `.eslintrc`).
  *
  *   fileHandler.use(source).as(target)         — read path

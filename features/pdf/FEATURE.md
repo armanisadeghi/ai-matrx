@@ -46,7 +46,7 @@ One physical PDF = `cld_files` row. Two derived families, now sharing identity:
 - `persist_output=true` switches binary endpoints to a JSON envelope — `usePdfClient.postPdfBlob` guards content-type so an envelope/error can't masquerade as a PDF.
 - Derivative ops NEVER mutate the source file; UIs must say so (ConfirmDialog + note pattern, see ManipulationPanel/PagesPanel).
 - In-place page ops (`rotate/exclude/include` via file_analysis router) are metadata-only on `file_pages`; callers refetch after success.
-- Uploads only via `fileHandler`; no `supabase.storage` here.
+- Uploads only via `fileHandler`; no `direct object-store SDK` here.
 - Backend preset/pattern/region ids are stable contract strings — never hardcode FE copies.
 
 ## Known gaps / roadmap (audit 2026-06-11, plan: `~/.claude/plans/feature-deep-dive-audit-rustling-hare.md`)

@@ -3,7 +3,7 @@
 // Audio storage for the transcripts feature. Goes through the universal
 // file handler — every audio recording becomes a `cld_files` row, with
 // the same RLS, signed-URL refresh, and lifecycle as any other file in
-// the app. Single system, no Supabase Storage buckets.
+// the app. Canonical Files is the only file system.
 
 import { fileHandler } from "@/features/files";
 import { RECORDING_LIMITS } from "../constants/recording";

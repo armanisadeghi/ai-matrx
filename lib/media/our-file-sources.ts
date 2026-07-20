@@ -4,7 +4,7 @@
 //
 // A model (or a tool, or pasted text) frequently hands us a bare link to a file
 // we generated and stored — most often an expiring signed S3 URL, but also a
-// public CDN URL, a Supabase public-bucket URL, or a share-link byte endpoint.
+// public CDN URL or a share-link byte endpoint.
 // When we recognize such a link we want to stop treating it as a dumb hyperlink
 // and instead promote it to a real, type-aware inline render (image / pdf /
 // audio / video / code / …) that routes through the universal file handler —
@@ -22,7 +22,7 @@
 // the most specific / identity-recoverable origins first. Keep the host markers
 // in sync with the ESLint media-durability guard in `eslint.config.mjs`.
 
-import type { FileSource } from "@/features/files/handler/types";
+import type { FileSource } from "@/features/files";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { isSignedUrl } from "@/lib/media/signed-url";
 import { extractFileIdFromUrl } from "@/features/files/blocks/image/helpers/extract-file-id-from-url";
@@ -96,7 +96,6 @@ const EXT_MIME: Record<string, string> = {
 export const OUR_FILE_URL_MARKERS = [
   "matrx-user-files.s3",
   "cdn.matrxserver",
-  "/storage/v1/object/public/",
   "/podcast-assets/",
   "/share/",
 ] as const;
@@ -153,21 +152,7 @@ const OUR_FILE_ORIGINS: OurFileOrigin[] = [
       return { kind: "public_cdn", url, mime: mime ?? undefined };
     },
   },
-  // 3. Supabase public bucket — `…supabase.co/storage/v1/object/public/<bucket>/…`.
-  //    Always durable; no recoverable cld_files id, so render from the URL.
-  {
-    label: "supabase-public",
-    test: (_url, parsed) =>
-      !!parsed &&
-      /\.supabase\.co$/i.test(parsed.hostname) &&
-      parsed.pathname.includes("/storage/v1/object/public/"),
-    toSource: (url, _parsed, mime) => ({
-      kind: "external_url",
-      url,
-      mime: mime ?? undefined,
-    }),
-  },
-  // 4. Share-link byte endpoint — `{backend}/share/{token}/download` (bare
+  // 3. Share-link byte endpoint — `{backend}/share/{token}/download` (bare
   //    `/share/{token}` also accepted for URLs minted before the canonical
   //    unification). The handler resolves bytes by token; lifetime is
   //    backend-managed.

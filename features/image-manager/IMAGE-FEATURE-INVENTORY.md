@@ -153,7 +153,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
 - **Image proxies**:
   - `app/api/proxy-image/route.ts` (older, no caching headers).
   - `app/api/image-proxy/route.ts` (Cache-Control + CORP for cross-origin embedding).
-- **Feedback screenshots** — admin views render `feedback.image_urls` directly. Old screenshots from the deleted Supabase Storage bucket are unrecoverable (per project doctrine: anything in Supabase has no value once the new system is wired). New uploads land in cld_files like everything else.
+- **Feedback screenshots** — admin views render `feedback.image_urls` directly. Test screenshots from the retired file path were intentionally discarded; new uploads use the canonical Files system.
 - **Screenshot capture** → `hooks/useScreenshot.ts` (wraps `useScreenCapture` → `html-to-image`), `hooks/useScreenCapture.ts`. Uses `utils/image/imageCompression.ts` + `generateThumbnail`. Used by feedback flow and AdminIndicator.
 - **Voice avatars** → `features/audio/voice/voiceImages.ts` + `ImageLoader.tsx` + `VoiceModal.tsx` — image collateral for voice picker; not a managed surface.
 - **`components/matrx/parallax-scroll/**`** — visual parallax of image URLs (used by `image-editing/gallery` legacy page).
@@ -220,7 +220,7 @@ Demo files for each live under `app/(authenticated)/(admin-auth)/administration/
   - `Images/Avatars`
   - `Images/Generated` (AI / studio outputs)
   - `Images/Uploads`, `Images/Uploads/Public`, `Images/Uploads/Private` (legacy aliases mapped from `ImageManager.saveTo`).
-- **No Supabase Storage anywhere** — every image upload routes through the universal file handler (`fileHandler.upload`, `useFileUpload`) which calls Python's `/files/upload`, or through the canonical `POST /assets` endpoint for preset-variant uploads. The `bucket`/`path` legacy props on `ImageManager` and `PasteImageHandler` are remapped to cloud-files folder paths.
+- **No deprecated file backend anywhere** — every image upload routes through the universal file handler (`fileHandler.upload`, `useFileUpload`) which calls Python's `/files/upload`, or through the canonical `POST /assets` endpoint for preset-variant uploads. The `bucket`/`path` legacy props on `ImageManager` and `PasteImageHandler` are remapped to cloud-files folder paths.
 - **CDN migration** → `scripts/migrate-public-assets-to-cdn.ts` + `lib/cdn-assets.ts` constants.
 - **Compression / utils** → `utils/image/imageCompression.ts` (canvas resize/quality + thumbnail).
 - **Hooks** → `hooks/images/{useImage,useImageDimensions,useDownloadImage,useUnsplashGallery,useUnsplashSearch}.ts`.
@@ -316,4 +316,3 @@ Demo files for each live under `app/(authenticated)/(admin-auth)/administration/
 | `features/files/FEATURE.md` change-log entry | DOCS | ✅ Shipped |
 | `features/image-studio/FEATURE.md` change-log entry | DOCS | ✅ Shipped |
 | Official-components catalog entries (route + new tabs) | DOCS | ✅ Shipped |
-

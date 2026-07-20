@@ -1,8 +1,8 @@
 # FEATURE.md — `file-handler`
 
-**Status:** `scaffolded`
+**Status:** `canonical`
 **Tier:** `1`
-**Last updated:** `2026-06-21`
+**Last updated:** `2026-07-20`
 
 ---
 
@@ -10,7 +10,7 @@
 
 The universal file handler. Every codepath that touches a file — owned `cld_files` row, blob from a paste, signed URL, base64, external URL, share link, just-uploaded result, mid-stream agent reference — funnels through ONE `FileSource → NormalizedFile → FileTarget` pipeline. The core logic for resolving, validating access, refreshing signed URLs, and emitting AI media blocks lives here exactly once.
 
-This feature is the **single source of resistance** for file flows: direct construction of media blocks, direct calls to `supabase.storage`, and direct calls to the cloud-files REST API are all banned outside this directory (ESLint enforced).
+This feature is the **single source of resistance** for file flows: direct construction of media blocks and direct object-store SDK calls are forbidden. Metadata reads go directly to Postgres through the authenticated client; bytes, signing, and processing go through the canonical Files service.
 
 ---
 
@@ -151,24 +151,7 @@ The following call sites still build their own attachments. Each becomes a small
 | `components/ui/file-upload/useFileUploadWithStorage.ts` | `useFileUpload` from this feature | done |
 | `components/ui/file-upload/usePasteImageUpload.ts` | `useFileUpload` + `{ kind: "file", file }` | done |
 
-The active `supabase.storage` call sites must be migrated to the handler before deletion — see "Obliteration plan" below.
-
----
-
-## Obliteration plan — Supabase Storage call sites
-
-The user's directive is single-system, no legacy. These call sites still use `supabase.storage` and need rewiring to the handler:
-
-1. `hooks/usePublicFileUpload.ts` (`public-chat-uploads`) — used by public chat. Migrate to handler's anonymous lane (Supabase issues an anonymous auth UUID; cloud-files works with that JWT). Then delete the file and the bucket.
-2. `features/transcripts/service/transcriptsService.ts` + `features/transcripts/service/audioStorageService.ts` (`user-private-assets`) — migrate to cloud-files folder `Transcripts/Recordings`.
-3. `features/transcripts/components/CreateTranscriptModal.tsx` — follows the service migration.
-4. `app/api/admin/feedback/images/route.ts` (dynamic buckets) — backfill old image URLs to `cld_files`, then delete the route's resign path.
-5. `app/api/prompt-apps/generate-favicon/route.ts` (`app-assets`) — write favicon to cloud-files; let the handler issue the URL.
-6. `lib/code-files/objectStore.ts` legacy path — already dual-mode; remove the `supabase.storage` branch once all `code_files.s3_bucket = "code-editor"` rows are migrated.
-7. `features/tasks/services/taskService.ts` legacy `attachments` bucket — already commented "left for backwards compat"; remove after backfill.
-8. `features/audio/services/audioFallbackUpload.ts` — comment says it was migrated; verify and remove any residue.
-
-These are tracked in `features/files/migration/INVENTORY.md`.
+The previous parallel object-store path is fully removed. Compatibility readers, bucket aliases, URL reconstruction, and direct SDK access are not supported.
 
 ---
 
@@ -188,7 +171,7 @@ These are tracked in `features/files/migration/INVENTORY.md`.
 2. `NormalizedFile.fileId` is set whenever known. Output adapters always prefer it over URLs. **`storage_uri`/`fileUri` is banned client-side** — identify by `fileId`; render via the server URL contract (`url`/`cdn_url`/`signed_url`/`download_url`); a `MediaRef`/media part carrying only a storage URI is treated as absent, never an error.
 3. The S3 bucket is touched only by the Python backend. The FE never sees an AWS SDK.
 4. Anonymous users (public chat) are authenticated to Supabase with an anonymous UUID — they use the same handler API. There is no second lane.
-5. New file flows must use the handler from day one. ESLint catches direct `supabase.storage` and direct media-block construction.
+5. New file flows must use the handler from day one. Direct object-store SDK calls and direct media-block construction are regressions.
 6. Every uploaded file carries scope (`organization_id / project_id / task_id`) in `metadata.scope` when the active context has them. The handler stamps this.
 
 ---
@@ -239,10 +222,10 @@ These are tracked in `features/files/migration/INVENTORY.md`.
 - **2026-05-07** — Direct-to-Python doctrine + obliteration round.
   - Removed the entire telemetry module and all `recordTelemetry` calls (Python owns telemetry).
   - All output URLs now point directly at Python (`{BACKEND}/files/{id}/download`, `{BACKEND}/share/{token}`). No Next.js hops.
-  - Deleted `hooks/usePublicFileUpload.ts` and the `public-chat-uploads` Supabase bucket — public chat now uses the universal handler with the user's anonymous Supabase auth UUID. Same code path as authenticated callers.
+  - Deleted `hooks/usePublicFileUpload.ts` and the `public-chat-uploads` deprecated bucket — public chat now uses the universal handler with the user's anonymous Supabase auth UUID. Same code path as authenticated callers.
   - Deleted Next.js routes: `app/api/admin/feedback/images`, `app/api/share/[token]/file`, `app/api/code-files/upload`, `app/api/code-files/download`. Their callers (FeedbackDetailDialog, FeedbackTable, ShareLinkDialog, cloudUpload, code-files virtual source, s3Service) now talk to Python directly.
   - Deleted `lib/code-files/objectStore.ts` (legacy server-side dual-mode path).
-  - Migrated `features/transcripts/service/audioStorageService.ts`, `transcriptsService.ts`, `CreateTranscriptModal.tsx` off the `user-private-assets` bucket. Audio recordings + uploads now land in `cld_files` under `Transcripts/Recordings` and `Transcripts/Uploads`. `audio_file_path` columns now hold cld_files UUIDs.
+  - Migrated `features/transcripts/service/audioStorageService.ts`, `transcriptsService.ts`, `CreateTranscriptModal.tsx` off the `private-assets` bucket. Audio recordings + uploads now land in `cld_files` under `Transcripts/Recordings` and `Transcripts/Uploads`. `audio_file_path` columns now hold cld_files UUIDs.
   - Deleted the legacy `attachments` bucket branch in `features/tasks/services/taskService.ts`. Task attachments are cloud-files only.
   - Rewrote `features/agents/redux/execution-system/instance-resources/resource-source.ts` to defer to handler primitives (`normalize`, `preferIdentityLocator`). The agent attachment lifecycle is now on the same single system as everything else.
 - **2026-05-07** — Phases 0–4 + 7 (partial) + 8 shipped. Handler core complete with input adapters (16), resolver (with hydration + access decision + signed-URL minting + expiry wheel + magic-byte sniffing), output adapters (11), upload path with org-scope routing, stream-event normalization, React hooks, error taxonomy, and ESLint guardrails.

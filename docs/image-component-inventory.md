@@ -124,8 +124,8 @@ These compose the layers above. Modifying lower layers flows up here automatical
 | `features/window-panels/windows/image/useOpenImageUploaderWindow.ts` | (opener hook) | Hook to open `ImageUploaderWindow` programmatically. | Active |
 | `features/resource-manager/resource-picker/UploadResourcePicker.tsx` | `useFileUpload` | Upload entry inside the agents resource picker (chat composer). | Active — chat-scoped |
 | `features/public-chat/components/resource-picker/PublicUploadResourcePicker.tsx` | `useFileUpload` | Guest variant of `UploadResourcePicker`. | Active — public-scoped |
-| `components/ui/file-upload/FileUploadWithStorage.tsx` | `useFileUploadWithStorage` | Generic dropzone using the **legacy** Supabase path. | ⚠️ Legacy |
-| `components/ui/file-upload/ImageUploadField.tsx` | `useFileUploadWithStorage` | Small inline upload field with preview. Uses the **legacy** path. | ⚠️ Legacy |
+| `components/ui/file-upload/FileUploadWithStorage.tsx` | `useFileUploadWithStorage` | Generic dropzone using the canonical file handler. | Active |
+| `components/ui/file-upload/ImageUploadField.tsx` | `useFileUploadWithStorage` | Small inline upload field with preview through the canonical file handler. | Active |
 | `features/image-manager/components/BrandedUploadTab.tsx` | `ImageAssetUploader` | Branded-upload tab in image-manager (social/cover/avatar/logo presets). | Active |
 | `features/image-manager/components/ProfilePhotoTab.tsx` | `ImageAssetUploader` (avatar preset) | Profile photo upload tab. | Active |
 | `features/podcasts/components/admin/AssetUploader.tsx` | `ImageAssetUploader` | Podcast-specific: composes `ImageAssetUploader` + a video uploader. | Active — podcast-scoped |
@@ -213,7 +213,7 @@ These compose the layers above. Modifying lower layers flows up here automatical
 | `app/(authenticated)/image-editing/**` | Disabled routes (depend on dead editor). |
 | `types/imageEditorTypes.ts` | Unused schema placeholder. |
 | `components/ui/file-upload/useFileUploadWithStorage.ts` | **DELETED.** Migrated; callers now import `useFileUpload` from `@/features/files`. |
-| `components/ui/file-upload/FileUploadWithStorage.tsx` | Dropzone component — rewritten to call the universal file handler internally; the legacy `bucket`/`path` props are translated via `composeLegacyFolderPath`. |
+| `components/ui/file-upload/FileUploadWithStorage.tsx` | Dropzone component backed by the universal file handler; `folderRoot` and `path` compose a canonical Files folder. |
 | `components/ui/file-upload/ImageUploadField.tsx` | Uses the legacy hook above. |
 | `components/matrx/parallax-scroll/**` | Only used by the dead `/image-editing/gallery` route. |
 | `components/matrx/image-gallery.tsx` | Demo component — verify if any live surface still imports it. |

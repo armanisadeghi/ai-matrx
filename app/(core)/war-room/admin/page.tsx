@@ -41,7 +41,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       url: "/war-room/[id]",
       label: "The room (cockpit)",
       description:
-        "Mission-control header (title + live meter + Stage⇄Grid + instrument projector + density dial + session context + Room Agent button) over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks. The 'Room Agent' button opens the TIER-2 per-room agent (RoomAgentPanel) in an inline non-modal WindowPanel; the shared MasterWatchLayer is mounted here too so messaging a thread pops a live-watch window in the room.",
+        "Mission-control header (title + live meter + Stage⇄Grid + instrument projector + density dial + ActiveContextLensChip + Room Agent button) over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks. The 'Room Agent' button opens the TIER-2 per-room agent (RoomAgentPanel) in an inline non-modal WindowPanel; the shared MasterWatchLayer is mounted here too so messaging a thread pops a live-watch window in the room.",
       filePath: "features/war-room/components/room/WarRoomShell.tsx",
       status: "Live",
     },
@@ -189,10 +189,10 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "candidate",
     },
     {
-      name: "WarRoomContextPicker + ThreadContextOverride + SessionContextButton",
+      name: "WarRoomContextPicker + ThreadContextOverride",
       filePath: "features/war-room/components/shared/WarRoomContextPicker.tsx",
       description:
-        "Controlled org+scope picker (composes EntityTargetPicker + EntityScopeTagger) and its session/tile hosts. Writes only to ctx_war_room_* rows — never global context.",
+        "Per-thread context override (ThreadContextOverride → WarRoomContextPicker). Writes only to war-room/thread records — never appContextSlice. Room header uses ActiveContextLensChip (same as /chat) for global working context.",
       tier: "internal",
     },
     {

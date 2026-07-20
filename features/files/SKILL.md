@@ -1,6 +1,6 @@
 ---
 name: cloud-files
-description: Use when modifying anything under features/files/, app/(a)/files/, app/(public)/share/, or any caller that uploads, downloads, lists, moves, renames, shares, or previews user files. Also use when a legacy supabase.storage.* call is being touched (deletion is the only allowed change).
+description: Use when modifying anything under features/files/, app/(a)/files/, app/(public)/share/, or any caller that uploads, downloads, lists, moves, renames, shares, or previews user files.
 ---
 
 # Cloud Files — Skill
@@ -12,8 +12,9 @@ This skill enforces the architecture established in [features/files/FEATURE.md](
 ## Non-negotiables
 
 - **Reads**: supabase-js (RLS) + RPC `cloud_get_user_file_tree`. No REST calls for reads unless the endpoint returns bytes.
-- **Writes**: REST at `${AIDREAM_API_URL}/files/*`. Always send `Authorization: Bearer ${jwt}` and `X-Request-Id: ${requestId}`.
-- **Never `supabase.storage.*` in new code.** Only legacy. Use [features/files/api/client.ts](api/client.ts).
+- **Metadata writes**: direct authenticated database calls through the canonical RPCs.
+- **File bytes, signing, and processing**: the Files service. Always send the caller JWT and request id.
+- **Never call an object-store SDK from the client.** Use the public surface in [features/files/index.ts](index.ts).
 - **All file state in the `cloudFiles` Redux slice.** No local `useState` for file data. No new Redux slices for files — extend the existing one.
 - **All types in [features/files/types.ts](types.ts).** Do not declare inline types or per-file type files. Import via [features/files/index.ts](index.ts).
 - **Identity is `fileId`.** Never cache by `file_path` — paths move with renames.
@@ -98,7 +99,7 @@ const link = await createShareLink(fileId, {
 
 ## Forbidden
 
-- `supabase.storage.from(...)` in new code.
+- Direct object-store SDK calls.
 - New Redux slices for files. Extend `cloudFiles`.
 - Local types declarations for `CloudFile`, `CloudFolder`, etc. Import from [features/files/index.ts](index.ts).
 - `window.alert / confirm / prompt`. Use [components/ui/alert-dialog](../../components/ui/alert-dialog.tsx).

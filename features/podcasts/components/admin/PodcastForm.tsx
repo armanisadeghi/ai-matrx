@@ -447,7 +447,7 @@ export function EpisodeForm({
           id="ep-audio"
           value={form.audio_url}
           onChange={(e) => set("audio_url", e.target.value)}
-          placeholder="https://…supabase.co/storage/v1/object/public/…"
+          placeholder="https://cdn.matrxserver.com/podcasts/cover.jpg"
           required
         />
       </div>

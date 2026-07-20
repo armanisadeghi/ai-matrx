@@ -53,7 +53,7 @@ These components are used in a production environment. DO NOT MAKE BREAKING CHNA
    - 🔄 Need to update main gallery components to support selection mode
 ✅ 4. Ensure that the state management for storing selected urls works across all implementations, including Unsplash, the normal viewer and all internal variations. Nonne of them should manage this 'selected imgage or selected images' internally and should only rely on the centralized state.
 ✅ 5. None should ever reset the state, unless there is a specific user action to do so.
-✅ 6. Create a wrapper using our reusable full screen component here: components\official\FullScreenOverlay.tsx that has separate tabs for 'public search' and 'user images' and a tab for 'cloud images'. Cloud images now go through the universal `cld_files` system (`features/files` / `fileHandler`); there are no Supabase Storage buckets in use anywhere.
+✅ 6. Create a wrapper using our reusable full screen component here: components\official\FullScreenOverlay.tsx that has separate tabs for 'public search' and 'user images' and a tab for 'cloud images'. Cloud images now go through the universal `cld_files` system (`features/files` / `fileHandler`); there are no deprecated file backend buckets in use anywhere.
 
 Overall:
 - ✅ Ensure everything is mobile friendly.

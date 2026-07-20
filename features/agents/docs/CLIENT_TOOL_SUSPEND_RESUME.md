@@ -342,7 +342,7 @@ any literal or template containing `/tool_results` outside
 `features/agents/api/submit-tool-results.ts`. See
 [`eslint.config.mjs`](../../../eslint.config.mjs) (search
 `toolResultsChokepointSyntaxRestrictions`). The rule mirrors the existing
-chokepoints for `supabase.storage` and `ctx_*` table writes — same shape,
+chokepoints for `direct object-store SDK` and `ctx_*` table writes — same shape,
 same allowlist pattern, same flat-config gotcha (`no-restricted-syntax`
 arrays replace, not merge, per-file).
 

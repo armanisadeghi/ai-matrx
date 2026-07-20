@@ -6,7 +6,7 @@
  * URL-based transcription API (Groq Developer Plan supports up to 100 MB via
  * URL), and then hard-deletes the temporary upload.
  *
- * Migrated from direct `supabase.storage` usage to the new cloud-files
+ * Routes audio through the canonical Files service.
  * system in Phase 8.
  *
  * Folder convention (from features/files/utils/folder-conventions.ts):

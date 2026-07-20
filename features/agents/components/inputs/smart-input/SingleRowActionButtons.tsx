@@ -36,7 +36,7 @@ import {
 
 interface SingleRowActionButtonsProps {
   conversationId: string;
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   showSendButton?: boolean;
   showVariableIcon?: boolean;

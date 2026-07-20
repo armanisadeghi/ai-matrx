@@ -434,7 +434,7 @@ export function MultiFileSmartCodeEditorWindow({
           <SmartAgentInput
             conversationId={conversationId}
             sendButtonVariant="default"
-            uploadBucket="userContent"
+            uploadRoot="userContent"
             uploadPath="code-editor-attachments"
             enablePasteImages={true}
             surfaceKey={SMART_CODE_EDITOR_SURFACE_KEY}

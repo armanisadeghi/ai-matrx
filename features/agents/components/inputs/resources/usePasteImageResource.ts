@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   useFileUpload,
-  composeLegacyFolderPath,
+  composeUploadFolderPath,
   fileIdToMediaRef,
 } from "@/features/files";
 import {
@@ -34,9 +34,9 @@ import {
 import { generateResourceId } from "@/features/agents/redux/execution-system/utils/ids";
 
 export interface UsePasteImageResourceOptions {
-  /** Legacy storage bucket hint forwarded to the file handler. */
-  uploadBucket?: string;
-  /** Legacy storage path hint forwarded to the file handler. */
+  /** Logical top-level Files folder. */
+  uploadRoot?: string;
+  /** Subfolder inside the upload root. */
   uploadPath?: string;
 }
 
@@ -51,7 +51,7 @@ export function usePasteImageResource(
 ): (file: File) => Promise<void> {
   const dispatch = useAppDispatch();
   const { upload } = useFileUpload();
-  const { uploadBucket, uploadPath } = options;
+  const { uploadRoot, uploadPath } = options;
 
   return useCallback(
     async (file: File) => {
@@ -59,8 +59,8 @@ export function usePasteImageResource(
         const normalized = await upload(
           { kind: "file", file },
           {
-            folderPath: composeLegacyFolderPath(
-              uploadBucket ?? "attachments",
+            folderPath: composeUploadFolderPath(
+              uploadRoot ?? "attachments",
               uploadPath,
             ),
             visibility: "private",
@@ -98,6 +98,6 @@ export function usePasteImageResource(
         toast.error(`Couldn't upload pasted image: ${reason}`);
       }
     },
-    [conversationId, dispatch, upload, uploadBucket, uploadPath],
+    [conversationId, dispatch, upload, uploadRoot, uploadPath],
   );
 }

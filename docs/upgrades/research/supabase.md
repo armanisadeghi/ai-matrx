@@ -24,18 +24,14 @@ The ~34 new TS errors are **not a bug** — they are a deliberate, correct type 
 
 | Version | Date | Type | Highlights (PRs) |
 |---|---|---|---|
-| 2.99.2 (start) | 2026-03-16 | fix | storage: don't rewrite signed URL for empty transform ([#2162](https://github.com/supabase/supabase-js/pull/2162)) |
 | 2.100.0 | 2026-03-23 | feat | realtime: use phoenix's js lib inside realtime-js ([#2119](https://github.com/supabase/supabase-js/pull/2119)) |
 | 2.100.1 | 2026-03-26 | fix | **postgrest: type safety for `eq()`/`neq()` column names** ([#2175](https://github.com/supabase/supabase-js/pull/2175)); `maybeSingle` Accept-header fix ([#2182](https://github.com/supabase/supabase-js/pull/2182)) |
 | 2.101.0 | 2026-03-30 | feat | realtime: `copyBindings`; block `postgres_changes` listener after join ([#2201](https://github.com/supabase/supabase-js/pull/2201)) |
-| **2.102.0** | **2026-04-07** | **fix ⚠️** | **postgrest: reject excess properties in insert/update/upsert ([#2186](https://github.com/supabase/supabase-js/pull/2186)) — THE breaking type change.** Also: automatic retries for transient errors ([#2072](https://github.com/supabase/supabase-js/pull/2072)); `success` discriminator on PostgREST response types ([#2198](https://github.com/supabase/supabase-js/pull/2198)); export `PostgrestFilterBuilder`/`StorageApiError` ([#2222](https://github.com/supabase/supabase-js/pull/2222)) |
-| 2.103.0 | 2026-04-09 | feat | **postgrest: `stripNulls()` method** ([#2189](https://github.com/supabase/supabase-js/pull/2189)); storage `cacheNonce` for download ([#2234](https://github.com/supabase/supabase-js/pull/2234)) |
-| 2.103.1–2.103.3 | 2026-04-15/16 | fix | `toJSON` on Auth/Storage errors; bigint rpc; `createSignedUrls` null type |
-| 2.104.0/2.104.1 | 2026-04-20/23 | feat/fix | storage header-normalization util; auth `PASSWORD_RECOVERY` for PKCE recovery ([#2272](https://github.com/supabase/supabase-js/pull/2272)) |
+| **2.102.0** | **2026-04-07** | **fix ⚠️** | **postgrest: reject excess properties in insert/update/upsert ([#2186](https://github.com/supabase/supabase-js/pull/2186)) — THE breaking type change.** Also: automatic retries for transient errors ([#2072](https://github.com/supabase/supabase-js/pull/2072)); `success` discriminator on PostgREST response types ([#2198](https://github.com/supabase/supabase-js/pull/2198)); export `PostgrestFilterBuilder` ([#2222](https://github.com/supabase/supabase-js/pull/2222)) |
 | 2.105.0 | 2026-04-27 | feat | **auth: passkey support (WebAuthn register/auth/manage)** ([#2283](https://github.com/supabase/supabase-js/pull/2283)); realtime deferred disconnect |
 | 2.105.2 | 2026-05-04 | fix | **postgrest: unify insert/upsert signatures** ([#2315](https://github.com/supabase/supabase-js/pull/2315)); widen enum-like unions with `(string & {})` ([#2303](https://github.com/supabase/supabase-js/pull/2303)) |
 | 2.105.4 | 2026-05-08 | fix | realtime: guard `sessionStorage` in restricted-storage browsers ([#2339](https://github.com/supabase/supabase-js/pull/2339)) |
-| 2.106.0 | 2026-05-18 | feat | W3C/OpenTelemetry trace-context propagation ([#2163](https://github.com/supabase/supabase-js/pull/2163)); `StreamDownloadBuilder` implements Promise |
+| 2.106.0 | 2026-05-18 | feat | W3C/OpenTelemetry trace-context propagation ([#2163](https://github.com/supabase/supabase-js/pull/2163)) |
 | 2.106.1/2.106.2 | 2026-05-20/25 | fix | auth: encode client-id in oauth requests; restore signup user response; **RN Hermes export condition** ([#2393](https://github.com/supabase/supabase-js/pull/2393)) |
 | **2.107.0** | **2026-06-02** | **feat ⚠️** | **auth: remove `navigator.locks`-based mutex; introduce commit guard + `dispose()`** ([#2392](https://github.com/supabase/supabase-js/pull/2392)); realtime binary `httpSend`; **`X-Client-Info` → structured metadata** ([#2359](https://github.com/supabase/supabase-js/pull/2359)); `getClaims` returns `AuthInvalidJwtError` for expired JWT ([#2395](https://github.com/supabase/supabase-js/pull/2395)) |
 | 2.108.0 | 2026-06-08 | feat | auth: `resend()` consistent confirmation flow ([#2144](https://github.com/supabase/supabase-js/pull/2144)); postgrest: request headers as plain object for RN/custom-fetch ([#2414](https://github.com/supabase/supabase-js/pull/2414)) |
@@ -54,7 +50,7 @@ Source: [ssr CHANGELOG.md](https://github.com/supabase/ssr/blob/main/CHANGELOG.m
 | 0.11.0 | 2026-06-05 | **`cookies: add clearAuthCookiesAtScopes` migration helper** ([#240](https://github.com/supabase/ssr/issues/240)) |
 | **0.12.0 (target)** | **2026-06-09** | **`cookies.encode` option for minimal cookie sizes** ([#126](https://github.com/supabase/ssr/issues/126)); **`setAll` now receives cache headers (`Cache-Control`/`Expires`/`Pragma`) to prevent CDN caching of auth responses** ([#176](https://github.com/supabase/ssr/issues/176)); bump `cookie` dep to 1.0.2 ([#113](https://github.com/supabase/ssr/issues/113)); improved base64url chunk handling ([#90](https://github.com/supabase/ssr/issues/90)) |
 
-> **Co-bump rule:** `@supabase/ssr` peer-depends on `@supabase/supabase-js`. The two must be bumped together — `ssr` re-exports the same auth/storage cookie machinery that `supabase-js`'s auth changes (notably the 2.107.0 lock removal) touch. Do not bump one without the other.
+> **Co-bump rule:** `@supabase/ssr` peer-depends on `@supabase/supabase-js`. The two must be bumped together because they share the same authentication session machinery. Do not bump one without the other.
 
 ---
 

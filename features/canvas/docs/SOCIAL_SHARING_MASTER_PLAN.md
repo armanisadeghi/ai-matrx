@@ -597,7 +597,7 @@ const XP_REWARDS = {
 - Zustand (client state)
 
 ### Backend
-- Supabase (database, auth, storage)
+- Supabase (database and auth) plus the canonical S3-backed file system
 - PostgreSQL (main database)
 - Redis (caching, rate limiting)
 - Edge Functions (API routes)
@@ -653,4 +653,3 @@ const XP_REWARDS = {
 ---
 
 This is the complete vision. Now let's build it! 🚀
-

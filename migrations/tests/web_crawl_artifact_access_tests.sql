@@ -19,7 +19,6 @@ declare
   v_file_name text := 'crawl-access-test-' || gen_random_uuid()::text || '.html';
   v_count_before integer;
   v_rejected boolean;
-  v_wrong_org_id uuid;
 begin
   select s.* into v_site
   from web.site s
@@ -88,14 +87,6 @@ begin
     ),
     v_site.organization_id,
     's3://access-test/transaction-only'
-  );
-
-  insert into platform.associations (
-    source_type, source_id, target_type, target_id, organization_id,
-    role, metadata, created_by
-  ) values (
-    'file', v_file_id, 'web_site', v_site.id, v_site.organization_id,
-    'crawl_artifact', '{}'::jsonb, v_site.created_by
   );
 
   insert into web.crawl_session (
@@ -169,7 +160,7 @@ begin
   end if;
   if files.has_access_for(v_site.created_by, v_file_id, 'editor')
      or files.has_access_for(v_site.created_by, v_file_id, 'admin') then
-    raise exception 'viewer-only crawl association must not convey editor/admin';
+    raise exception 'crawl artifact relationship must not convey editor/admin';
   end if;
   if files.has_access_for(v_private_org_member, v_file_id, 'viewer') then
     raise exception 'ordinary org membership must not open a private-site artifact';
@@ -283,8 +274,7 @@ begin
   end if;
   perform public.count_user_files(v_external_user, false, false);
 
-  -- Browser callers cannot fabricate a NULL/alternate-role edge or remove the
-  -- canonical edge, even through SECURITY DEFINER association RPCs.
+  -- Explicit-user predicates remain caller-bound for browser callers.
   perform set_config(
     'request.jwt.claims',
     jsonb_build_object('role', 'authenticated', 'sub', v_private_org_member)::text,
@@ -297,71 +287,13 @@ begin
      ) then
     raise exception 'authenticated caller impersonated another user in Files predicate';
   end if;
-  v_rejected := false;
-  begin
-    insert into platform.associations (
-      source_type, source_id, target_type, target_id, organization_id,
-      role, metadata, created_by
-    ) values (
-      'file', v_orphan_file_id, 'web_site', v_site.id, v_site.organization_id,
-      null, '{}'::jsonb, v_private_org_member
-    );
-  exception when insufficient_privilege then
-    v_rejected := true;
-  end;
-  if not v_rejected then
-    raise exception 'authenticated caller fabricated file -> web_site edge';
-  end if;
-
-  v_rejected := false;
-  begin
-    delete from platform.associations
-    where source_type = 'file' and source_id = v_file_id
-      and target_type = 'web_site';
-  exception when insufficient_privilege then
-    v_rejected := true;
-  end;
-  if not v_rejected then
-    raise exception 'authenticated caller removed crawl artifact edge';
-  end if;
   perform set_config('request.jwt.claims', '{}'::jsonb::text, true);
 
-  -- Even a trusted maintenance connection cannot detach a referenced edge.
-  v_rejected := false;
-  begin
-    delete from platform.associations
-    where source_type = 'file' and source_id = v_file_id
-      and target_type = 'web_site';
-  exception when object_not_in_prerequisite_state then
-    v_rejected := true;
-  end;
-  if not v_rejected then
-    raise exception 'referenced crawl artifact edge was mutable';
-  end if;
-
-  -- Cross-tenant/noncanonical service writes are rejected independently of
-  -- caller-level RPC restrictions.
-  select f.organization_id into v_wrong_org_id
-  from files.files f
-  where f.organization_id <> v_site.organization_id
-  limit 1;
-  if v_wrong_org_id is null then
-    raise exception 'association tenant test requires another organization';
-  end if;
-  v_rejected := false;
-  begin
-    insert into platform.associations (
-      source_type, source_id, target_type, target_id, organization_id,
-      role, metadata, created_by
-    ) values (
-      'file', v_orphan_file_id, 'web_site', v_site.id, v_wrong_org_id,
-      'crawl_artifact', '{}'::jsonb, v_site.created_by
-    );
-  exception when check_violation then
-    v_rejected := true;
-  end;
-  if not v_rejected then
-    raise exception 'cross-tenant crawl artifact association was accepted';
+  if exists (
+    select 1 from platform.associations
+    where source_type = 'file' and target_type = 'web_site'
+  ) then
+    raise exception 'crawler artifacts must not use platform associations';
   end if;
 end
 $$;
@@ -397,8 +329,6 @@ begin
   if has_function_privilege(
        'anon', 'files.has_access_for(uuid,uuid,public.permission_level)', 'execute'
      ) or has_function_privilege(
-       'anon', 'files.has_web_site_edge(uuid)', 'execute'
-     ) or has_function_privilege(
        'anon', 'files.is_crawl_artifact(uuid)', 'execute'
      ) or has_function_privilege(
        'anon', 'files.is_discoverable_for(uuid,uuid,public.permission_level)', 'execute'
@@ -408,8 +338,6 @@ begin
     raise exception 'anonymous role can execute an explicit-user artifact predicate';
   end if;
   if has_function_privilege(
-       'authenticated', 'files.has_web_site_edge(uuid)', 'execute'
-     ) or has_function_privilege(
        'authenticated', 'files.is_crawl_artifact(uuid)', 'execute'
      ) or has_function_privilege(
        'authenticated',

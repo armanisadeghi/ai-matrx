@@ -499,7 +499,7 @@
             }
           ],
           "default": null,
-          "description": "Native cloud URI: s3://bucket/key, gs://..., supabase://...",
+          "description": "Native cloud URI: s3://bucket/key, gs://..., azure://...",
           "title": "File Uri"
         },
         "mime_type": {

@@ -25836,7 +25836,7 @@ export interface components {
             url?: string | null;
             /**
              * File Uri
-             * @description Native cloud URI: s3://bucket/key, gs://..., supabase://...
+             * @description Native cloud URI: s3://bucket/key or gs://...
              */
             file_uri?: string | null;
             /**
@@ -27261,9 +27261,7 @@ export interface components {
              *       "include_page_metadata": false,
              *       "include_block_metadata": false,
              *       "include_word_metadata": false,
-             *       "include_chunk_metadata": false,
-             *       "upload_result_to_supabase": false,
-             *       "supabase_bucket": "extracted_documents"
+             *       "include_chunk_metadata": false
              *     }
              */
             options?: components["schemas"]["PdfPipelineOptions"];
@@ -27399,16 +27397,6 @@ export interface components {
             include_chunk_metadata?: boolean;
             /** Upload Result To */
             upload_result_to?: string | null;
-            /**
-             * Upload Result To Supabase
-             * @default false
-             */
-            upload_result_to_supabase?: boolean;
-            /**
-             * Supabase Bucket
-             * @default extracted_documents
-             */
-            supabase_bucket?: string;
         };
         /**
          * PdfRedactionPatternCatalog
@@ -27455,9 +27443,7 @@ export interface components {
              *       "include_page_metadata": false,
              *       "include_block_metadata": false,
              *       "include_word_metadata": false,
-             *       "include_chunk_metadata": false,
-             *       "upload_result_to_supabase": false,
-             *       "supabase_bucket": "extracted_documents"
+             *       "include_chunk_metadata": false
              *     }
              */
             options?: components["schemas"]["PdfPipelineOptions"];

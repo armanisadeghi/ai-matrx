@@ -9,20 +9,20 @@
 // rapid-fire while never changing the staged thread.
 //
 // Two targets (segmented, like QuickAddThread's flavor picker):
-//   • Room   (default) — create a NEW task-flavored sibling thread holding the
-//     task. The staged thread is untouched; "Create" stays put, "Create & open"
-//     stages the new thread.
-//   • Thread — add the task INTO the current staged thread: as a SUBTASK when it
-//     already has a task, else as the thread's anchor task. Never stages away.
+//   • New thread (default) — create a NEW task-flavored sibling thread holding
+//     the task. "Create" stays put, "Create & open" stages the new thread.
+//   • Existing thread — add the task INTO any thread already in this room: as a
+//     SUBTASK when it already has a task, else as the thread's anchor task.
+//     Never stages away. Prefills the staged thread when one is active.
 //
-// Reuses the real writers — `createTile` + `createThreadTask` (new thread),
-// `createSubtaskThunk` / `createThreadTask` (current thread) — so Redux + every
+// Reuses the real writers — `createThread` + `createThreadTask` (new thread),
+// `createSubtaskThunk` / `createThreadTask` (existing thread) — so Redux + every
 // surface update live; nothing is reimplemented.
 
 import { useRef, useState } from "react";
 import { Loader2, Check, ArrowRight, ListChecks, ListPlus } from "lucide-react";
 import { toast } from "sonner";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   createThread,
   createThreadTask,
@@ -31,8 +31,13 @@ import {
   createSubtaskThunk,
   updateTaskFieldThunk,
 } from "@/features/tasks/redux/thunks";
-import { selectThreadTaskId } from "@/features/war-room/redux/selectors";
+import {
+  selectThreadIdsForRoom,
+  selectThreadTaskId,
+} from "@/features/war-room/redux/selectors";
 import { ProInput } from "@/components/official/ProInput";
+import { XTapButton } from "@/components/icons/tap-buttons";
+import { WarRoomRoomThreadPicker } from "../shared/WarRoomRoomThreadPicker";
 import { cn } from "@/lib/utils";
 
 export type QuickAddTaskTarget = "room" | "thread";
@@ -40,7 +45,7 @@ export type QuickAddTaskTarget = "room" | "thread";
 export function QuickAddTask({
   sessionId,
   nextPosition,
-  /** The currently-staged thread — the "Thread" target. Omit to force Room-only. */
+  /** Prefill for "Existing thread" when a thread is staged. */
   stagedThreadId,
   /** Promote a freshly-created task thread to the Stage ("Create and Open"). */
   onOpen,
@@ -54,41 +59,55 @@ export function QuickAddTask({
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  const roomThreadIds = useAppSelector(selectThreadIdsForRoom(sessionId));
 
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   // Room is the default target — the new capability is "capture into the room
-  // without leaving the thread". Thread is only offered when one is staged.
+  // without leaving the thread". Existing thread is offered when the room has
+  // at least one thread to attach to.
   const [target, setTarget] = useState<QuickAddTaskTarget>("room");
+  const [targetThreadId, setTargetThreadId] = useState<string | null>(null);
 
   const titleRef = useRef<HTMLInputElement>(null);
-  const canTargetThread = !!stagedThreadId;
+  const canTargetExisting = roomThreadIds.length > 0;
   const effectiveTarget: QuickAddTaskTarget =
-    target === "thread" && canTargetThread ? "thread" : "room";
+    target === "thread" && canTargetExisting ? "thread" : "room";
 
   function open() {
     setEditing(true);
+    setTargetThreadId(
+      stagedThreadId && roomThreadIds.includes(stagedThreadId)
+        ? stagedThreadId
+        : (roomThreadIds[0] ?? null),
+    );
     requestAnimationFrame(() => titleRef.current?.focus());
   }
 
   function collapse() {
     setEditing(false);
     setTitle("");
+    setTarget("room");
+    setTargetThreadId(null);
   }
 
   /**
-   * Create the task. mode 'open' stages the new thread (Room target only — a
-   * Thread-target add never stages away, so it always behaves as 'stay').
+   * Create the task. mode 'open' stages the new thread (Room target only — an
+   * Existing-thread add never stages away, so it always behaves as 'stay').
    */
   async function create(mode: "stay" | "open") {
     const trimmed = title.trim();
     if (!trimmed || busy) return;
     setBusy(true);
     try {
-      if (effectiveTarget === "thread" && stagedThreadId) {
-        // Add to the staged thread: subtask of its task, else its anchor task.
-        const existingTaskId = selectThreadTaskId(stagedThreadId)(
+      if (effectiveTarget === "thread") {
+        if (!targetThreadId) {
+          toast.error("Choose a thread for this task first");
+          return;
+        }
+        // Add to the chosen room thread: subtask of its task, else its anchor.
+        const existingTaskId = selectThreadTaskId(targetThreadId)(
           store.getState(),
         );
         if (existingTaskId) {
@@ -99,7 +118,7 @@ export function QuickAddTask({
             }),
           ).unwrap();
         } else {
-          const newTaskId = await dispatch(createThreadTask(stagedThreadId));
+          const newTaskId = await dispatch(createThreadTask(targetThreadId));
           if (typeof newTaskId === "string" && newTaskId) {
             await dispatch(
               updateTaskFieldThunk({
@@ -180,7 +199,7 @@ export function QuickAddTask({
           <ListPlus className="size-3.5" />
         </span>
         <span className="text-[13px] font-medium text-muted-foreground group-hover/qt:text-success">
-          Quick task
+          Add quick task
         </span>
       </button>
     );
@@ -189,8 +208,8 @@ export function QuickAddTask({
   // ── Inline composer ────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2.5 shadow-sm">
-      {/* Target selector — only useful when a thread is staged. */}
-      {canTargetThread ? (
+      {/* Target selector — only useful when the room already has threads. */}
+      {canTargetExisting ? (
         <div
           role="group"
           aria-label="Add task to"
@@ -198,7 +217,7 @@ export function QuickAddTask({
         >
           {[
             { value: "room" as const, label: "New thread" },
-            { value: "thread" as const, label: "This thread" },
+            { value: "thread" as const, label: "Existing thread" },
           ].map((opt) => {
             const active = effectiveTarget === opt.value;
             return (
@@ -223,6 +242,15 @@ export function QuickAddTask({
         </div>
       ) : null}
 
+      {effectiveTarget === "thread" ? (
+        <WarRoomRoomThreadPicker
+          roomId={sessionId}
+          value={targetThreadId}
+          onSelect={(id) => setTargetThreadId(id)}
+          placeholder="Choose a thread…"
+        />
+      ) : null}
+
       <ProInput
         ref={titleRef}
         type="text"
@@ -232,7 +260,7 @@ export function QuickAddTask({
         disabled={busy}
         placeholder={
           effectiveTarget === "thread"
-            ? "Add a task to this thread…"
+            ? "Add a task to the selected thread…"
             : "Capture a task as a new thread…"
         }
         aria-label="New task name"
@@ -248,7 +276,13 @@ export function QuickAddTask({
         className="border-0 bg-transparent font-medium shadow-none"
       />
 
-      <div className="flex items-center justify-end gap-1.5">
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-0.5">
+        <XTapButton
+          variant="transparent"
+          label="Cancel"
+          onClick={collapse}
+          disabled={busy}
+        />
         {effectiveTarget === "room" ? (
           <button
             type="button"
@@ -270,7 +304,11 @@ export function QuickAddTask({
           type="button"
           onClick={() => void create("stay")}
           disabled={busy}
-          title="Create (Enter) — stay on this thread for the next task"
+          title={
+            effectiveTarget === "thread"
+              ? "Create (Enter) — stay here for the next task"
+              : "Create (Enter) — stay for the next task"
+          }
           className={cn(
             "inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[12px] font-semibold text-primary-foreground transition-all",
             "hover:bg-primary/90",

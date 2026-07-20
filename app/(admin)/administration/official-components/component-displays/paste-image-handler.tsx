@@ -58,7 +58,7 @@ function MyComponent() {
 
   return (
     <PasteImageHandler
-      bucket="userContent"                    // Supabase storage bucket (default: "userContent")
+      folderRoot="userContent"                    // logical Files folder root (default: "userContent")
       path="pasted-images"                    // Path within bucket (optional)
       onImagePasted={handleImagePasted}       // Callback with uploaded image result (optional)
       targetElement={null}                    // Specific element to listen on (optional)
@@ -76,7 +76,7 @@ function MyComponent() {
 // How it works:
 // 1. User copies an image to clipboard (from screenshot tool, image editor, etc.)
 // 2. User focuses on the component area and presses Ctrl+V / Cmd+V
-// 3. Image is automatically uploaded to Supabase storage
+// 3. Image is uploaded through canonical Files
 // 4. onImagePasted callback provides the public URL
 // 5. Perfect for quick image uploads without file dialogs!`;
 
@@ -84,11 +84,11 @@ function MyComponent() {
     <ComponentDisplayWrapper
       component={component}
       code={code}
-      description="Invisible wrapper component that enables clipboard paste functionality for images. Automatically detects pasted images, uploads them to Supabase storage, and returns the public URL. Perfect for quick screenshots and image uploads without file dialogs."
+      description="Invisible wrapper component that enables clipboard paste functionality for images. It detects pasted images, uploads them through canonical Files, and returns a durable URL."
     >
       <div className="w-full max-w-2xl space-y-4">
         <PasteImageHandler
-          bucket="userContent"
+          folderRoot="userContent"
           path="demo-pasted-images"
           onImagePasted={handleImagePasted}
           disabled={false}

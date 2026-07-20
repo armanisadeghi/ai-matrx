@@ -238,10 +238,10 @@ via `?cloudFileId=` query params.
 4. On Save, the blob is wrapped as a `File` and pushed through the universal file handler (`fileHandler.upload(...)` with `createShareLink: true` → `cloudUpload` under the hood — the same primitive every other feature uses), which:
    - Creates the canonical folder hierarchy `Images/Generated/{folder}` server-side.
    - Persists the file as a versioned cloud asset.
-   - Returns a permanent `shareUrl` (NOT a signed Supabase URL — these don't expire) safe to paste into apps, notes, or DB columns.
+   - Returns a permanent CDN/share `shareUrl` that is safe to paste into apps, notes, or DB columns.
 5. The UI surfaces the share URL with copy / open / "open in Files" affordances.
 
-**Why the decode is browser-only**: base64 is already a browser-native format (`<img src="data:...">` works directly), the cloud upload primitive does the cloud-document creation server-side, and skipping the server hop for the decode itself avoids re-uploading the same bytes through a Python endpoint just to have Python re-upload them to Supabase. The only network call is the existing share-link upload pipeline.
+**Why the decode is browser-only**: base64 is already a browser-native format (`<img src="data:...">` works directly), while the cloud upload primitive performs canonical file creation server-side. The only network call is the existing Files upload/share pipeline.
 
 ## Known follow-ups
 

@@ -94,7 +94,7 @@ const STUDIO_STEPS = [
     number: "01",
     title: "Press record (or paste, or import)",
     description:
-      "Start a session and hit Record. Or paste a chunk of text. Or import an audio file or a Supabase URL — Whisper segments come back stamped on the same timeline.",
+      "Start a session and hit Record. Or paste a chunk of text. Or import an audio file or supported file link — Whisper segments come back stamped on the same timeline.",
   },
   {
     number: "02",

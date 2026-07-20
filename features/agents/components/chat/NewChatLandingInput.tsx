@@ -41,7 +41,7 @@ interface NewChatLandingInputProps {
    *  one conversation and stay in sync. */
   conversationId: string;
   surfaceKey: string;
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   enablePasteImages?: boolean;
 }
@@ -71,7 +71,7 @@ const MAX_TEXTAREA_HEIGHT = 220; // px — beyond this the textarea scrolls
 export function NewChatLandingInput({
   conversationId,
   surfaceKey,
-  uploadBucket = "userContent",
+  uploadRoot = "userContent",
   uploadPath = "agent-attachments",
   enablePasteImages = true,
 }: NewChatLandingInputProps) {
@@ -98,7 +98,7 @@ export function NewChatLandingInput({
 
   // Canonical paste→upload→attach flow, shared by every composer.
   const handlePasteImage = usePasteImageResource(conversationId, {
-    uploadBucket,
+    uploadRoot,
     uploadPath,
   });
 

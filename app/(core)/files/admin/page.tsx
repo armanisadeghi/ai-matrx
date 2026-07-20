@@ -131,7 +131,7 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
       name: "fileHandler",
       filePath: "features/files/handler/handler.ts",
       description:
-        "THE single entry point for every file flow (upload, display, attach, durable URLs). Never call Files.uploadFile or supabase.storage directly.",
+        "THE single entry point for every file flow (upload, display, attach, durable URLs). Never call a storage SDK directly.",
       status: "Live",
       tier: "internal",
     },

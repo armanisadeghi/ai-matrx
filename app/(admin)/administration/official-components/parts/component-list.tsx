@@ -575,7 +575,7 @@ export const componentList: ComponentEntry[] = [
     name: "File Upload with Storage",
     path: "components/ui/file-upload/FileUploadWithStorage.tsx",
     description:
-      "Full-featured file upload with automatic Supabase storage integration and public URLs",
+      "Full-featured upload through canonical Files with durable URLs",
     categories: ["inputs", "media", "utilities"],
     tags: [
       "file",
@@ -593,7 +593,7 @@ export const componentList: ComponentEntry[] = [
     name: "Image Upload Field",
     path: "components/ui/file-upload/ImageUploadField.tsx",
     description:
-      "Specialized image upload field with preview, validation, and Supabase storage integration",
+      "Specialized image upload field with preview, validation, and canonical Files integration",
     categories: ["inputs", "media"],
     tags: [
       "image",

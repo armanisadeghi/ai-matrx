@@ -9,7 +9,7 @@
  *
  * Every callsite that touches a file MUST go through this feature. Direct
  * construction of ImageBlock/AudioBlock/VideoBlock/DocumentBlock literals,
- * direct Supabase Storage calls, and ad-hoc useState-based signed-URL
+ * direct object-store SDK calls and ad-hoc useState-based signed-URL
  * timers are all banned by ESLint (see .eslintrc).
  */
 

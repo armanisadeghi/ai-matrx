@@ -61,7 +61,7 @@ export function StudioLandingHero() {
           <FeatureCard
             icon={<CloudUpload className="h-5 w-5" />}
             title="Save to your library"
-            body="Push every variant to your Supabase storage in one click. Public URLs ready to paste into your app, copied straight from each tile."
+            body="Save every variant to canonical Files in one click. Durable public URLs are ready to copy from each tile."
             href="/images/library"
           />
           <FeatureCard

@@ -15,7 +15,7 @@ interface FileUploadDialogToggleButtonProps extends Omit<React.ComponentProps<ty
     dialogDescription: React.ReactNode;
     onFilesUploaded: (files: Array<{ url: string; type: string; details?: EnhancedFileDetails }>) => void;
     fileTypes?: string[];
-    bucket: string;
+    folderRoot: string;
     path: string;
     cancelLabel?: string;
     successButtonLabel?: string;
@@ -28,7 +28,7 @@ const FileUploadDialogToggleButton: React.FC<FileUploadDialogToggleButtonProps> 
     dialogDescription,
     onFilesUploaded,
     fileTypes = [],
-    bucket,
+    folderRoot,
     path,
     cancelLabel = "Cancel",
     successButtonLabel = "Continue",
@@ -86,7 +86,7 @@ const FileUploadDialogToggleButton: React.FC<FileUploadDialogToggleButtonProps> 
 
                     <div className="py-4">
                         <FileUploadWithStorage
-                            bucket={bucket}
+                            folderRoot={folderRoot}
                             path={path}
                             onUploadComplete={handleUploadComplete}
                             onUploadStatusChange={handleUploadStatusChange}

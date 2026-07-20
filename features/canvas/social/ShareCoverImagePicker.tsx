@@ -5,7 +5,7 @@
  *
  * Compact cover-image picker for the CanvasShareSheet. Lets the user:
  *   1. Pick one of the curated PRESET_COVERS
- *   2. Upload their own image (stored in the user-public-assets bucket)
+ *   2. Upload their own image through the canonical Files service
  *   3. Remove the currently selected cover
  *
  * The selected URL is an absolute public HTTPS URL suitable for use as an

@@ -14,13 +14,7 @@
 // "Create" stays put for rapid adds; "Create & open" stages the new thread.
 
 import { useRef, useState } from "react";
-import {
-  Plus,
-  LayoutGrid,
-  ListChecks,
-  FolderInput,
-  FolderKanban,
-} from "lucide-react";
+import { Plus, LayoutGrid, ListChecks, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -40,7 +34,6 @@ import {
 } from "@/components/icons/tap-buttons";
 import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
 import { WarRoomTaskPicker } from "../shared/WarRoomTaskPicker";
-import { ImportThreadDialog } from "../room/ImportThreadDialog";
 
 /** How the collapsed trigger reads — matches the two NewThread shells. */
 export type QuickAddVariant = "card" | "rail";
@@ -75,7 +68,6 @@ export function QuickAddThread({
   const [busy, setBusy] = useState(false);
 
   const [flavor, setFlavor] = useState<ThreadPickerOption>("canvas");
-  const [importOpen, setImportOpen] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
@@ -235,7 +227,7 @@ export function QuickAddThread({
             <Plus className="size-3.5" />
           </span>
           <span className="text-[13px] font-medium text-muted-foreground group-hover/new:text-primary">
-            New thread
+            Add thread
           </span>
         </button>
       );
@@ -254,7 +246,7 @@ export function QuickAddThread({
         <span className="grid place-items-center size-10 rounded-full bg-muted/60 text-muted-foreground transition-colors group-hover/new:text-primary">
           <Plus className="size-5" />
         </span>
-        <span className="text-xs font-medium">New thread</span>
+        <span className="text-xs font-medium">Add thread</span>
       </button>
     );
   }
@@ -348,24 +340,6 @@ export function QuickAddThread({
         aria-label="New thread description"
         enableTextStats={false}
         wrapperClassName="w-full"
-      />
-
-      {/* Association-only sibling of "create": bring an EXISTING thread in
-          (unassigned or from another room) — Move or Add, nothing but edges. */}
-      <button
-        type="button"
-        onClick={() => setImportOpen(true)}
-        disabled={busy}
-        className="flex items-center gap-1.5 self-start rounded-sm px-1 py-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <FolderInput className="size-3" />
-        Import an existing thread…
-      </button>
-
-      <ImportThreadDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        roomId={sessionId}
       />
 
       <div className="flex min-w-0 flex-wrap items-center justify-end">

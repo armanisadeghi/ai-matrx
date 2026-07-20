@@ -132,7 +132,7 @@ export type ContentItem =
  * Resource types that can be attached to messages.
  * Aligned with features/prompts/types/resources.ts for full cross-route parity.
  *
- * - 'file'       — Uploaded file (to Supabase storage)
+ * - 'file'       — Uploaded canonical file
  * - 'image_link' — Direct image URL (alias for image_url, kept for backward compat)
  * - 'image_url'  — Direct image URL (canonical name, matches prompts system)
  * - 'file_link'  — Direct file URL (alias for file_url, kept for backward compat)

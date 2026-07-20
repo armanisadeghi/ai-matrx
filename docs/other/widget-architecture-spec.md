@@ -374,7 +374,7 @@ GET    /api/widgets/{hash}/meta — Optional: metadata (created_at, size, etc.)
 | **S3** | Already in stack, durable, cheap | Latency without CDN |
 | **S3 + CloudFront** | Fast globally, cache-friendly | Slightly more setup |
 | **Cloudflare KV** | Edge-native, sub-10ms, simple | Separate from main infra |
-| **Supabase Storage** | Already in stack | Not ideal for serving HTML |
+| **deprecated file backend** | Already in stack | Not ideal for serving HTML |
 | **Redis / Valkey** | Ultra-fast, good for hot cache | Need persistence layer behind it |
 
 **Recommendation:** S3 as the durable store + a CDN or edge cache in front. Content-addressed means infinite cache TTL — the hash never changes for the same content.

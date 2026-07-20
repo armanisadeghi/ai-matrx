@@ -104,7 +104,7 @@ resources underneath a website-specific root.
     Current site link inspection workspace.
 
   /screenshots
-    Site-wide screenshot gallery backed directly by Supabase records/storage.
+    Site-wide screenshot gallery backed by file UUIDs in Postgres and bytes in S3.
 
   /integrations
     Reference-only bindings to GSC, GA4, PageSpeed, and extensible providers.

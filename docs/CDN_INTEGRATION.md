@@ -224,7 +224,7 @@ hasn't picked visibility explicitly:
   `"private"`.
 - **`useFileUploadWithStorage(bucket, path)`** (legacy compat) — the
   bucket name resolves to a default visibility:
-  `user-public-assets` → `"public"`, anything else → `"private"`.
+  `shared-assets` → `"public"`, anything else → `"private"`.
   `uploadToPublicUserAssets` / `uploadToPrivateUserAssets` are
   explicit and ignore the bucket-derived default.
 

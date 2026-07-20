@@ -570,7 +570,7 @@ export const getFileDetailsByUrl = (url: string, metadata?: StorageMetadata, loc
             cleanFileName = url.split("/").pop() || "";
         }
 
-        // Check for Supabase signed URL pattern
+        // Check for expired signed URL pattern
         const renderImageSignPattern = /render\/image\/sign/;
         // Also keep the existing signed URL pattern check
         const signedUrlPattern = /storage\/v1\/object\/sign/;

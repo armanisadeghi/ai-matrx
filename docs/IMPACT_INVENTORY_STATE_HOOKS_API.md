@@ -433,7 +433,7 @@ no-restricted-imports:
 
 no-restricted-syntax:
   - selector: "CallExpression[callee.object.property.name='storage'][callee.object.object.name='supabase']"
-    message: "supabase.storage is banned. Use the fileHandler upload/resolve."
+    message: "direct object-store SDK is banned. Use the fileHandler upload/resolve."
   - selector: "CallExpression[callee.property.name='getPublicUrl']"
     message: "Use useFile(ref).url instead."
   - selector: "CallExpression[callee.name='fetch'][arguments.0.value=/^\\/(api\\/)?(files|assets|share|api\\/pdf|api\\/images)\\//]"

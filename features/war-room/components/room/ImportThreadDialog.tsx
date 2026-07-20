@@ -2,9 +2,10 @@
 
 // features/war-room/components/room/ImportThreadDialog.tsx
 //
-// "Bring an existing thread into THIS room" — the association-only sibling of
-// the New-thread composer. Lists every one of the user's threads that is NOT
-// already in this room, grouped Unassigned / by current room, searchable.
+// "Bring an existing thread into THIS room" — association-only import opened
+// from the Stage rail's Import thread action. Lists every one of the user's
+// threads that is NOT already in this room, grouped Unassigned / by current
+// room, searchable.
 // Picking one offers the two membership verbs:
 //   Move here — re-point its `thread → war_room` membership edge(s)
 //   Add here  — write a second membership edge (lives in both rooms)
@@ -12,7 +13,13 @@
 // no clones, no copies (`attachExistingThreadToRoom`).
 
 import { useEffect, useState } from "react";
-import { ArrowRight, FolderInput, Loader2, MessageSquare, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  FolderInput,
+  Loader2,
+  MessageSquare,
+  Plus,
+} from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -150,9 +157,11 @@ export function ImportThreadDialog({
         )}
       </CommandList>
 
-      {/* Verb step — Move vs Add for room-homed threads; Add for orphans. */}
-      {picked ? (
-        <div className="flex items-center gap-2 border-t border-border p-2">
+      {/* Verb step — Move vs Add for room-homed threads; Add for orphans.
+          Cancel is always available so the dialog matches Add thread / Add
+          quick task (explicit dismiss, not only Escape / click-outside). */}
+      <div className="flex items-center gap-2 border-t border-border p-2">
+        {picked ? (
           <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
             <b className="text-foreground">
               {picked.thread.title?.trim() || "Untitled thread"}
@@ -161,56 +170,70 @@ export function ImportThreadDialog({
               ? ` — in ${picked.roomIds.map(roomTitle).join(", ")}`
               : " — unassigned"}
           </span>
-          {picked.roomIds.length > 0 ? (
-            <>
-              <Button
-                size="sm"
-                variant="default"
-                disabled={!!busy}
-                onClick={() => void run("move")}
-                className="h-7 gap-1 px-2 text-xs"
-              >
-                {busy === "move" ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ArrowRight className="size-3.5" />
-                )}
-                Move here
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!!busy}
-                onClick={() => void run("add")}
-                className="h-7 gap-1 px-2 text-xs"
-                title="Keep it in its current room too"
-              >
-                {busy === "add" ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Plus className="size-3.5" />
-                )}
-                Add here
-              </Button>
-            </>
-          ) : (
+        ) : (
+          <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+            Pick a thread to import into this room
+          </span>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!!busy}
+          onClick={() => handleOpenChange(false)}
+          className="h-7 px-2 text-xs"
+        >
+          Cancel
+        </Button>
+        {picked && picked.roomIds.length > 0 ? (
+          <>
             <Button
               size="sm"
               variant="default"
               disabled={!!busy}
+              onClick={() => void run("move")}
+              className="h-7 gap-1 px-2 text-xs"
+            >
+              {busy === "move" ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <ArrowRight className="size-3.5" />
+              )}
+              Move here
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!!busy}
               onClick={() => void run("add")}
               className="h-7 gap-1 px-2 text-xs"
+              title="Keep it in its current room too"
             >
               {busy === "add" ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (
-                <FolderInput className="size-3.5" />
+                <Plus className="size-3.5" />
               )}
-              Add to this room
+              Add here
             </Button>
-          )}
-        </div>
-      ) : null}
+          </>
+        ) : null}
+        {picked && picked.roomIds.length === 0 ? (
+          <Button
+            size="sm"
+            variant="default"
+            disabled={!!busy}
+            onClick={() => void run("add")}
+            className="h-7 gap-1 px-2 text-xs"
+          >
+            {busy === "add" ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <FolderInput className="size-3.5" />
+            )}
+            Add to this room
+          </Button>
+        ) : null}
+      </div>
     </CommandDialog>
   );
 }

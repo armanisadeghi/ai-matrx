@@ -344,7 +344,7 @@ Note: plan §6.3 explicitly says "3 of 4 `features/image-manager/components/*Tab
 | features/public-chat/components/ChatInputWithControls.tsx | 698 | uses `useFileUpload` from `features/file-handler` for anonymous-user uploads | MODIFY | import-path update; preserves anonymous lane (same anon Supabase UUID) |
 | features/public-chat/components/resource-picker/PublicUploadResourcePicker.tsx | 404 | `useFileUpload` + DIRECT `fetch('/api/pdf/compress')` for PDF compression | MODIFY | import-path update; PDF compress → `POST /assets/pdf-compress` |
 | features/resource-manager/resource-picker/UploadResourcePicker.tsx | 429 | `useFileUpload` + DIRECT `fetch('/api/pdf/compress')` | MODIFY | same as above |
-| features/resource-manager/resource-picker/FilesResourcePicker.tsx | 384 | uses `supabase.storage` DIRECTLY (last live caller, banned per plan §6.4) | MODIFY | rewire to `useFile`/`useFileMutation` read+write through cloud-files |
+| features/resource-manager/resource-picker/FilesResourcePicker.tsx | 384 | uses `direct object-store SDK` DIRECTLY (last live caller, banned per plan §6.4) | MODIFY | rewire to `useFile`/`useFileMutation` read+write through cloud-files |
 
 ---
 
@@ -462,7 +462,7 @@ Test pages confirmed read-only or out-of-scope:
 |---|---|---|---|---|
 | lib/api/endpoints.ts | n/a | endpoint registry — has `media.upload`, `media.detail`, `media.patch`, `media.addVariants`, `media.presets`, `media.uploadPodcastVideo` | MODIFY | regenerate; combined-op endpoints get added |
 | types/python-generated/api-types.ts | n/a | OpenAPI-generated types | MODIFY | regenerated on every BE release |
-| scripts/migrate-public-assets-to-cdn.ts | n/a | one-off CDN migration script (still references `/files/upload` and supabase.storage) | KEEP | a one-off script; will be retired separately. Not on the runtime write path. |
+| scripts/migrate-public-assets-to-cdn.ts | n/a | one-off CDN migration script (still references `/files/upload` and direct object-store SDK) | KEEP | a one-off script; will be retired separately. Not on the runtime write path. |
 
 ---
 
@@ -487,7 +487,7 @@ Test pages confirmed read-only or out-of-scope:
 - **Dual upload paths in `ImageAssetUploader` and `ImageCropper`** (asset vs file) collapse to one — the `pipeline` prop deletes.
 - **`/files/bulk-delete` + `/files/bulk-move` thunks** (`bulkDeleteFiles`, `bulkMoveFiles`, `bulkMoveFolders`) collapse to a single `useFileMutation.bulk({ ids, op })` (A.3).
 - **`rename + move` and `share + permissions + variants` bundles** that today take 2-4 round-trips collapse to one combined `PATCH /files/{id}` or one `POST /assets` (A.1/A.2). Every menu/dialog that composes these moves to a single mutation call.
-- **Last live `supabase.storage` site** (`FilesResourcePicker.tsx`) eliminates — ESLint ban applies globally outside `features/files/`/`features/file-handler/`.
+- **Last live `direct object-store SDK` site** (`FilesResourcePicker.tsx`) eliminates — ESLint ban applies globally outside `features/files/`/`features/file-handler/`.
 - **Sharp deletion + `/api/images/studio/process` and `/api/pdf/compress` route deletions** mean Image Studio and PDF compression go fully direct-to-Python.
 
 ---
@@ -573,7 +573,7 @@ await patch({ name: "x", folder: "/Y", share: {...}, permissions: [...] });
 
 5. **`features/research/hooks/useResearchApi.ts uploadFile`** uploads to a research-specific Python endpoint (`endpoints(topicId).sources.upload`), not cloud-files. Confirm this stays out of scope and continues to use its own endpoint, OR migrates to write through `useFileUpload({ folder: "Research/${topicId}/Sources" })` and the research backend reads from cloud-files instead.
 
-6. **`scripts/migrate-public-assets-to-cdn.ts`** is a one-off CDN migration script that references `/files/upload` and `supabase.storage`. Keep as-is (KEEP), or retire/move out of `scripts/` to avoid confusing ESLint? Recommendation: keep, mark with an `// eslint-disable` block, retire after next CDN milestone.
+6. **`scripts/migrate-public-assets-to-cdn.ts`** is a one-off CDN migration script that references `/files/upload` and `direct object-store SDK`. Keep as-is (KEEP), or retire/move out of `scripts/` to avoid confusing ESLint? Recommendation: keep, mark with an `// eslint-disable` block, retire after next CDN milestone.
 
 7. **`features/whatsapp-clone/`** still uses `uploadFileWithProgress` directly. It's not part of the migration matrix in `features/file-handler/FEATURE.md` migration plan — confirm it's intended as a production feature (rather than a sample/demo). If demo: move under `/demos/` and skip migration; if production: required MODIFY.
 

@@ -10,7 +10,7 @@
 
 ## 1. Plan summary
 
-The plan was a rip-and-replace of ~150-200 files of file handling — `features/file-handler/` + `features/files/` plus ~285+ scattered call sites — into ONE directory (`features/files/`) with ONE chokepoint, ONE upload primitive, ONE inline render component (`<InlineMediaRef>`), ONE 3-tier byte cache (memory LRU → IndexedDB → Service Worker → network), and ONE generated-from-OpenAPI type surface. Goal: kill every supabase.storage bypass, every ad-hoc `<img src={file.publicUrl ?? signedUrl}>`, every parallel upload pipeline, every per-route realtime mount, and every Next.js-side image/PDF/file route — then lock the chokepoint with ESLint at error severity so new bypasses can't be added. The cache layer was the FE-only piece the backend team could not provide; the rest aligned with their `matrx-utils v1.1.0` PR.
+The plan was a rip-and-replace of ~150-200 files of file handling — `features/file-handler/` + `features/files/` plus ~285+ scattered call sites — into ONE directory (`features/files/`) with ONE chokepoint, ONE upload primitive, ONE inline render component (`<InlineMediaRef>`), ONE 3-tier byte cache (memory LRU → IndexedDB → Service Worker → network), and ONE generated-from-OpenAPI type surface. Goal: kill every direct object-store SDK bypass, every ad-hoc `<img src={file.publicUrl ?? signedUrl}>`, every parallel upload pipeline, every per-route realtime mount, and every Next.js-side image/PDF/file route — then lock the chokepoint with ESLint at error severity so new bypasses can't be added. The cache layer was the FE-only piece the backend team could not provide; the rest aligned with their `matrx-utils v1.1.0` PR.
 
 ---
 
@@ -97,7 +97,7 @@ Approx. lines removed: ~750+ (`useAiImageUrl` 252 + `useFileUploadWithStorage` ~
 - Tier 3 (`types`, `utils/*`) — **NOT added**
 - Tier 4 (`handler/*`, `components/*`, `redux/*`) — **NOT added**
 
-Plus the legacy `supabase.storage.from(...)` + `getPublicUrl` member-call selectors are still in place from the obliteration round, and the legacy Supabase env-var key ban is unchanged.
+Plus the legacy `direct object-store SDK.from(...)` + `getPublicUrl` member-call selectors are still in place from the obliteration round, and the legacy Supabase env-var key ban is unchanged.
 
 **Bundle / perf wins:**
 

@@ -92,7 +92,7 @@ export function InputButton({
 
 interface InputActionButtonsProps {
   conversationId: string;
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   showSendButton?: boolean;
   showSubmitOnEnterToggle?: boolean;

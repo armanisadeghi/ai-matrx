@@ -179,7 +179,7 @@ If a picker is silently changing the sidebar's active context, **it's a bug — 
 Every file flow (`<img>`, AI media blocks, downloads, uploads, share links, mid-stream agent file references, RAG ingest, OG previews) funnels through `@/features/files` / `fileHandler`. Read [`features/files/handler/FEATURE.md`](./features/files/handler/FEATURE.md) before touching any code that loads, displays, uploads, or attaches a file.
 
 1. Use `fileHandler` (`@/features/files/handler/handler`) and `useFileSrc`. Never hand-construct `ImageBlock | AudioBlock | VideoBlock | DocumentBlock`. Never call `Files.uploadFile` from outside the handler.
-2. No `supabase.storage` outside `features/files/handler/**` and `features/files/**`. ESLint enforces.
+2. No direct object-store SDK calls. Every file operation goes through `features/files/**`; ESLint enforces the boundary.
 3. Files travel browser ↔ Python directly. No Next.js file routes, no proxy hops.
 4. Single internal representation: `NormalizedFile`. Don't fork a second shape.
 5. The handler self-resolves user / org / project from Redux. Callsites pass the file only.

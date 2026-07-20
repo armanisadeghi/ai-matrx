@@ -27,7 +27,7 @@ import type { VariablesPanelStyle } from "@/features/agents/types/instance.types
 interface SmartAgentInputSingleRowProps {
   conversationId: string | null | undefined;
   sendButtonVariant?: "default" | "blue";
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   enablePasteImages?: boolean;
   showSendButton?: boolean;
@@ -41,7 +41,7 @@ interface SmartAgentInputSingleRowProps {
 export function SmartAgentInputSingleRow({
   conversationId,
   sendButtonVariant = "default",
-  uploadBucket = "userContent",
+  uploadRoot = "userContent",
   uploadPath = "agent-attachments",
   enablePasteImages = true,
   showSendButton = true,
@@ -96,7 +96,7 @@ export function SmartAgentInputSingleRow({
           <AgentTextarea
             conversationId={conversationId}
             compact
-            uploadBucket={uploadBucket}
+            uploadRoot={uploadRoot}
             uploadPath={uploadPath}
             enablePasteImages={enablePasteImages}
             surfaceKey={surfaceKey}
@@ -108,7 +108,7 @@ export function SmartAgentInputSingleRow({
         {/* Action buttons pinned to the right */}
         <SingleRowActionButtons
           conversationId={conversationId}
-          uploadBucket={uploadBucket}
+          uploadRoot={uploadRoot}
           uploadPath={uploadPath}
           showSendButton={showSendButton}
           showVariableIcon={showVariableIcon}

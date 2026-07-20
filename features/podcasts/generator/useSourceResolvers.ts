@@ -116,7 +116,7 @@ export function useSourceResolvers(): UseSourceResolvers {
   const resolveAudioFile = useCallback(
     async (file: File, onStatus?: (status: string) => void) => {
       // Durable upload through the universal file handler (doctrine: never
-      // touch supabase.storage directly; uploads only via @/features/files).
+      // call an object-store SDK directly; uploads only via @/features/files).
       onStatus?.("Uploading audio…");
       let fileId: string | null = null;
       try {

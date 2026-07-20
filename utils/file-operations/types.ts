@@ -231,7 +231,7 @@ export const isStructureWithContents = (value: unknown): value is StructureWithC
 export interface BucketStructureContent {
     path: string;
     type: string | 'FOLDER'
-    // Supabase storage list rows also carry these; the tree builder
+    // Some external list rows also carry these; the tree builder
     // propagates them onto file nodes when present.
     id?: string;
     updated_at?: string;

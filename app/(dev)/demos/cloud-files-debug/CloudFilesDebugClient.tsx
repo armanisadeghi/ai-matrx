@@ -343,7 +343,7 @@ export function CloudFilesDebugClient() {
           ts,
           durationMs,
           method: "RPC",
-          url: "supabase://rpc/get_user_file_tree",
+          url: "rpc://get_user_file_tree",
           requestId: "—",
           status: error ? "error" : "success",
           httpStatus: null,

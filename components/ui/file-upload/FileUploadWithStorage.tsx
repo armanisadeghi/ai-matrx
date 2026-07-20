@@ -10,7 +10,7 @@ import {
   getFileDetailsByUrl,
   type EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
-import { composeLegacyFolderPath } from "@/features/files";
+import { composeUploadFolderPath } from "@/features/files";
 import type { Visibility } from "@/features/files";
 import type { NormalizedFile } from "@/features/files";
 import type { StorageMetadata } from "@/utils/file-operations/types";
@@ -21,7 +21,7 @@ export type { UploadedFileResult } from "./types";
 type SaveToOption = "public" | "private";
 
 type FileUploadWithStorageProps = {
-  bucket?: string;
+  folderRoot?: string;
   path?: string;
   saveTo?: SaveToOption;
   onUploadComplete?: (results: UploadedFileResult[]) => void;
@@ -31,10 +31,6 @@ type FileUploadWithStorageProps = {
   maxHeight?: string;
   initialFiles?: UploadedFileResult[]; // Add initialFiles prop
 };
-
-// Legacy bucket-name → cloud-files folder path mapping shared with paste
-// handlers and chat-input components. See features/files/handler/utils/legacy-bucket-map.ts.
-const composeFolderPath = composeLegacyFolderPath;
 
 function classifyFileType(mimeType: string): string {
   if (!mimeType) return "unknown";
@@ -58,7 +54,7 @@ function synthesizeMetadata(file: File): StorageMetadata {
   } as StorageMetadata;
 }
 
-function normalizedToLegacyResult(
+function normalizedToUploadResult(
   normalized: NormalizedFile,
   file: File,
 ): UploadedFileResult {
@@ -89,7 +85,7 @@ function normalizedToLegacyResult(
 }
 
 export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
-  bucket = "userContent",
+  folderRoot = "userContent",
   path,
   saveTo,
   onUploadComplete,
@@ -106,13 +102,13 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
   const folderPath = useMemo(() => {
     if (saveTo === "public") return "Shared Assets";
     if (saveTo === "private") return "Private Assets";
-    return composeFolderPath(bucket, path);
-  }, [saveTo, bucket, path]);
+    return composeUploadFolderPath(folderRoot, path);
+  }, [saveTo, folderRoot, path]);
 
   const visibility: Visibility = useMemo(() => {
     if (saveTo) return saveTo;
-    return bucket === "user-public-assets" ? "public" : "private";
-  }, [saveTo, bucket]);
+    return "private";
+  }, [saveTo]);
 
   useEffect(() => {
     if (onUploadStatusChange) {
@@ -143,16 +139,15 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
                 shareLinkPermissionLevel: "viewer",
                 metadata: {
                   origin: "FileUploadWithStorage",
-                  legacy_bucket: bucket,
+                  upload_root: folderRoot,
                   requested_visibility: visibility,
                 },
               },
             );
-            results.push(normalizedToLegacyResult(normalized, file));
+            results.push(normalizedToUploadResult(normalized, file));
           } catch (err) {
             const message = err instanceof Error ? err.message : "Upload failed";
             lastErrorRef.current = message;
-            // eslint-disable-next-line no-console
             console.error("FileUploadWithStorage upload failed:", message);
           }
         }
@@ -165,14 +160,13 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
         }
       } catch (error) {
         const reason = error instanceof Error ? error.message : "Upload failed";
-        // eslint-disable-next-line no-console
         console.error("Error in handleFilesChange:", error);
         toast.error(`Upload failed: ${reason}`);
       } finally {
         setUploadingFiles([]);
       }
     },
-    [upload, folderPath, visibility, bucket, onUploadComplete],
+    [upload, folderPath, visibility, folderRoot, onUploadComplete],
   );
 
   // Progress animation variants
@@ -191,7 +185,7 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
   const isActivelyUploading = isLoading && uploadingFiles.length > 0;
 
   // Determine whether to use mini or regular progress indicator
-  const ProgressIndicator = () => (
+  const progressIndicator = (
     <div className={`mt-${useMiniUploader ? "3" : "6"}`}>
       <div className="mb-2 flex items-center gap-2">
         <svg
@@ -226,21 +220,12 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
         className={`bg-white dark:bg-neutral-800 rounded-lg shadow-sm ${useMiniUploader ? "p-2" : "p-4"}`}
       >
         <div className="w-full h-3 bg-gray-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-          {(() => {
-            try {
-              return (
-                <motion.div
-                  className="h-full bg-blue-500"
-                  initial={{ width: "0%" }}
-                  animate="progress"
-                  variants={progressVariants}
-                />
-              );
-            } catch (error) {
-              console.error("🔧 Error rendering motion.div:", error);
-              return <div className="h-full bg-blue-500 w-1/2"></div>;
-            }
-          })()}
+          <motion.div
+            className="h-full bg-blue-500"
+            initial={{ width: "0%" }}
+            animate="progress"
+            variants={progressVariants}
+          />
         </div>
       </div>
     </div>
@@ -266,7 +251,7 @@ export const FileUploadWithStorage: React.FC<FileUploadWithStorageProps> = ({
       )}
 
       {/* Progress indicator */}
-      {isActivelyUploading && <ProgressIndicator />}
+      {isActivelyUploading && progressIndicator}
     </div>
   );
 };

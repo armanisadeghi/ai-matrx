@@ -11,7 +11,7 @@
  *      from a parent.
  *   2. Each file becomes a switchable tab in the sidebar — the user
  *      chooses which to work on rather than being walked through them.
- *   3. Results are uploaded directly to a user-picked Supabase cloud
+ *   3. Results are uploaded directly to a user-picked S3-backed Files
  *      folder via the cloud-files pipeline; there's no `onComplete`
  *      callback because the window is opened from the sidebar with no
  *      parent to call back to.

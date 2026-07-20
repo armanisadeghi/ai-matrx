@@ -11,7 +11,7 @@ Scope: whole repo at `/Users/armanisadeghi/code/matrx-frontend`, excluding
 - IRRELEVANT (false positives): 18
 
 The system is in remarkably good shape. There are NO live callers of the
-deleted hooks, NO live `supabase.storage` calls, NO live references to the
+deleted hooks, NO live `direct object-store SDK` calls, NO live references to the
 deleted API routes, and NO live imports from the old `@/features/file-handler`
 path. The remaining LIVE items are: stale path strings inside doc-comments
 that an agent might follow, one stale `ImagePreset` type alias, and the
@@ -35,7 +35,7 @@ them will write broken imports.
 |---|---|---|
 | `CLAUDE.md` | 150 | `...funnels through \`features/file-handler\`. Read [\`features/file-handler/FEATURE.md\`](./features/file-handler/FEATURE.md)...` |
 | `CLAUDE.md` | 154 | `\`import { fileHandler } from "@/features/file-handler/handler"\`` |
-| `CLAUDE.md` | 155 | `**No \`supabase.storage\` anywhere outside \`features/file-handler/**\` and \`features/files/**\`...` |
+| `CLAUDE.md` | 155 | `**No \`direct object-store SDK\` anywhere outside \`features/file-handler/**\` and \`features/files/**\`...` |
 | `CLAUDE.md` | 160 | `If a file shape isn't in the existing \`FileSource\` union, add it to \`features/file-handler/types.ts\`` |
 | `CLAUDE.md` | 198 | `\| Universal file handler ... \| \`features/file-handler/FEATURE.md\` \|` |
 | `features/files/UPLOAD_TROUBLESHOOTING.md` | 10 | `\`features/file-handler\`. There is one upload primitive — anything else is wrong.` |
@@ -202,29 +202,28 @@ demoted to internal. Confirm and then strip from the barrel.)
 
 | File | Line | Match |
 |---|---|---|
-| `features/files/SKILL.md` | 16 | `**Never \`supabase.storage.*\` in new code.** Only legacy. Use [features/files/api/client.ts](api/client.ts).` (broken link — file moved to `lib/python-client.ts`) |
+| `features/files/SKILL.md` | 16 | `**Never \`direct object-store SDK.*\` in new code.** Only legacy. Use [features/files/api/client.ts](api/client.ts).` (broken link — file moved to `lib/python-client.ts`) |
 | `features/files/for_python/REQUESTS.md` | 677 | `**FE side:** Both headers added to [features/files/api/client.ts](../api/client.ts)` (broken link) |
 | `features/image-studio/api/python.ts` | 12 | `* The auth/header pattern is identical to features/files/api/client.ts` |
 | `lib/python-client.ts` | 8 | `* Cloud-files originally owned this module under \`features/files/api/client\`;` (historical breadcrumb — fine to keep) |
 
-### `supabase.storage` mentions (all in comments, all describing migration)
+### `direct object-store SDK` mentions (all in comments, all describing migration)
 
 | File | Line | Match |
 |---|---|---|
-| `features/resource-manager/resource-picker/FilesResourcePicker.tsx` | 8 | `(features/files/*) instead of supabase.storage — no more buckets, one` |
-| `features/audio/services/audioFallbackUpload.ts` | 9 | `Migrated from direct \`supabase.storage\` usage to the new cloud-files` |
-| `features/files/handler/handler.ts` | 7 | `to \`supabase.storage\`, and direct uploads through \`useFileUpload\` are` |
+| `features/resource-manager/resource-picker/FilesResourcePicker.tsx` | 8 | `(features/files/*) instead of direct object-store SDK — no more buckets, one` |
+| `features/audio/services/audioFallbackUpload.ts` | 9 | `Migrated from direct \`direct object-store SDK\` usage to the new cloud-files` |
+| `features/files/handler/handler.ts` | 7 | `to \`direct object-store SDK\`, and direct uploads through \`useFileUpload\` are` |
 
 ### Legacy bucket names (comments / migration docs)
 
 | File | Line | Match |
 |---|---|---|
-| `features/canvas/social/ShareCoverImagePicker.tsx` | 8 | `2. Upload their own image (stored in the user-public-assets bucket)` (stale — uploads no longer go there) |
+| `features/canvas/social/ShareCoverImagePicker.tsx` | 8 | `2. Upload their own image (stored in the shared-assets bucket)` (stale — uploads no longer go there) |
 | `features/files/handler/FEATURE.md` | 150 | `\`hooks/usePublicFileUpload.ts\` (\`public-chat-uploads\`)...` |
-| `features/files/handler/FEATURE.md` | 151 | `(\`user-private-assets\`) — migrate to cloud-files folder \`Transcripts/Recordings\`.` |
-| `features/files/handler/FEATURE.md` | 189 | `Deleted \`hooks/usePublicFileUpload.ts\` and the \`public-chat-uploads\` Supabase bucket...` |
-| `features/files/handler/FEATURE.md` | 192 | `Migrated \`features/transcripts/service/audioStorageService.ts\`...off the \`user-private-assets\` bucket.` |
-| `features/files/FEATURE.md` | 341 | `\`utils/supabase/{StorageManager,bucket-manager,file-store}.ts\`...` |
+| `features/files/handler/FEATURE.md` | 151 | `(\`private-assets\`) — migrate to cloud-files folder \`Transcripts/Recordings\`.` |
+| `features/files/handler/FEATURE.md` | 189 | `Deleted \`hooks/usePublicFileUpload.ts\` and the \`public-chat-uploads\` deprecated bucket...` |
+| `features/files/handler/FEATURE.md` | 192 | `Migrated \`features/transcripts/service/audioStorageService.ts\`...off the \`private-assets\` bucket.` |
 | `features/files/FEATURE.md` | 342 | `(historical Phase 11 deletion list)` |
 
 ### `Api.Server.uploadAndShare` mentions in docs
@@ -278,19 +277,19 @@ to delete the block entirely.
   `agents/redux/execution-system/messages`, `prompts/utils/prompt-json-generator`,
   `prompts/hooks/usePromptExecution`, `agent-apps/sample-code/templates`,
   `prompt-apps/sample-code/templates` — these are database `user_content` JSONB
-  columns / local variables, not the legacy Supabase bucket.
+  columns / local variables, not the legacy deprecated bucket.
 - `userContent` as a **prop default** on input components
   (`PromptInputContainer`, `SmartAgentInput`, `ConversationInput`, etc.) — this
-  is the `uploadBucket` *default value* threaded down to `PasteImageHandler` /
+  is the `uploadRoot` *default value* threaded down to `PasteImageHandler` /
   `FileUploadWithStorage`, which (per the live code in those components)
-  is now correctly mapped via `mapLegacyBucket()` to a cld_files folder.
+  is now routed through `composeUploadFolderPath()` to a canonical Files folder.
   Not a bug.
 - `'code-editor'` as a **context-filter string** in
   `features/code-editor/components/CodeEditorContextMenu.tsx`,
   `features/prompt-builtins/utils/menuHierarchy.ts`,
   `features/context-menu-v2/UnifiedAgentContextMenu.tsx`,
   `app/(dev)/demos/context-menu-v2/page.tsx` — this is the shortcut-system
-  context filter, not the deleted Supabase bucket.
+  context filter, not the deleted deprecated bucket.
 - `'attachments'` as a **toggle option id** in
   `app/(authenticated)/(admin-auth)/administration/official-components/to-be-added/toggle-menu-demo/page.tsx`
   — unrelated demo.
@@ -353,7 +352,7 @@ to delete the block entirely.
     — repoint to `lib/python-client.ts`.
 12. **COMMENT — delete the commented-out provider list at
     `app/Providers.tsx:80-83`.** Trivial cleanup.
-13. **COMMENT — fix stale "user-public-assets bucket" comment at
+13. **COMMENT — fix stale "shared-assets bucket" comment at
     `features/canvas/social/ShareCoverImagePicker.tsx:8`.**
 
 After batches 1–4 the codebase is functionally clean. Batches 5–13 are

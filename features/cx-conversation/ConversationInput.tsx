@@ -75,7 +75,7 @@ import { selectActiveChatAgent } from "./_legacy-stubs";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { ResourceChips } from "@/features/agents/resources/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
+import { useFileUpload, composeUploadFolderPath } from "@/features/files";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -108,7 +108,7 @@ export interface ConversationInputProps {
 
   // ── Configuration ──────────────────────────────────────────────────────────
   variableMode?: "guided" | "classic";
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   sendButtonVariant?: "gray" | "blue" | "default";
   seamless?: boolean; // borderless style for embedded layouts
@@ -174,7 +174,7 @@ export function ConversationInput({
   showSubmitOnEnterToggle = false,
   showAutoClearToggle = false,
   variableMode = "guided",
-  uploadBucket = "userContent",
+  uploadRoot = "userContent",
   uploadPath = "prompt-attachments",
   sendButtonVariant = "blue",
   seamless = false,
@@ -317,7 +317,7 @@ export function ConversationInput({
   const handleFilesSelected = useCallback(
     async (files: FileList | File[]) => {
       const filesArray = Array.from(files);
-      const folderPath = composeLegacyFolderPath(uploadBucket, uploadPath);
+      const folderPath = composeUploadFolderPath(uploadRoot, uploadPath);
       for (const file of filesArray) {
         try {
           const normalized = await upload(
@@ -351,7 +351,7 @@ export function ConversationInput({
         }
       }
     },
-    [dispatch, sessionId, upload, uploadBucket, uploadPath],
+    [dispatch, sessionId, upload, uploadRoot, uploadPath],
   );
 
   const handleResourceSelected = useCallback(

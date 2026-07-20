@@ -13338,7 +13338,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      has_web_site_edge: { Args: { p_file_id: string }; Returns: boolean }
       is_crawl_artifact: { Args: { p_file_id: string }; Returns: boolean }
       is_discoverable_for: {
         Args: {

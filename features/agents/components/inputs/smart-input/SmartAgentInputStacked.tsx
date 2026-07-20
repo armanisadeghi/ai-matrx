@@ -34,7 +34,7 @@ interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   enablePasteImages?: boolean;
   compact?: boolean;
@@ -50,7 +50,7 @@ export function SmartAgentInputStacked({
   conversationId,
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
-  uploadBucket = "userContent",
+  uploadRoot = "userContent",
   uploadPath = "agent-attachments",
   enablePasteImages = true,
   compact = false,
@@ -173,7 +173,7 @@ export function SmartAgentInputStacked({
       <AgentTextarea
         conversationId={conversationId}
         compact={compact}
-        uploadBucket={uploadBucket}
+        uploadRoot={uploadRoot}
         uploadPath={uploadPath}
         enablePasteImages={enablePasteImages}
         surfaceKey={surfaceKey}
@@ -183,7 +183,7 @@ export function SmartAgentInputStacked({
       {/* Toolbar — always pinned at the bottom */}
       <InputActionButtons
         conversationId={conversationId}
-        uploadBucket={uploadBucket}
+        uploadRoot={uploadRoot}
         uploadPath={uploadPath}
         showSendButton={showSendButton}
         showSubmitOnEnterToggle={showSubmitOnEnterToggle}

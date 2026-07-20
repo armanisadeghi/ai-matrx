@@ -76,7 +76,7 @@ const DEFAULT_FIT: ImageFit = "cover";
 const DEFAULT_POSITION: ImagePosition = "center";
 
 export interface UseImageStudioOptions {
-  /** Default folder path inside the Supabase bucket when saving. */
+  /** Default folder path in canonical Files when saving. */
   defaultFolder?: string;
 }
 

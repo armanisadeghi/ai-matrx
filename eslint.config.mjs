@@ -19,11 +19,6 @@ const windowPanelsImportRestriction = {
             message:
                 "Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct imports break bundle splitting. See .claude/skills/overlay-system/SKILL.md.",
         },
-        {
-            group: ['*supabase*storage*', '*storage*Bucket*'],
-            message:
-                'Direct Supabase Storage usage is banned. All file flows go through @/features/files (which talks to the Python backend). See docs/FILE_HANDLING_CONSOLIDATION_PLAN.md.',
-        },
         // Phase 0 of the file-handling consolidation: external callers must
         // import the public surface from `@/features/files` (the locked
         // public index), never from internal subdirectories. Phase 1 will
@@ -214,7 +209,7 @@ const BANNED_LUCIDE_ICON_RE = /^(Wand2?|Sparkles?|Bot)$/;
 // value is unknown — that's the DB-edge guard's job), but a hardcoded storage
 // URL in a raw tag is an unambiguous, catchable regression. See FOUND_DEFECTS D1.
 const OUR_STORAGE_HOST_RE =
-    /matrx-user-files\.s3|cdn\.matrxserver|\.supabase\.co\/storage|\/podcast-assets\//i;
+    /matrx-user-files\.s3|cdn\.matrxserver|\/podcast-assets\//i;
 
 const matrxLintPlugin = {
     rules: {
@@ -539,24 +534,21 @@ const toolResultsChokepointSyntaxRestrictions = [
     },
 ];
 
-// All file flows must funnel through @/features/files. ESLint cannot
-// fully prevent direct supabase.storage member access (no AST rule for that
-// without a custom plugin), but `no-restricted-syntax` catches the canonical
-// `supabase.storage.from(...)` shape and the `getPublicUrl` / `createSignedUrl`
-// member calls. Combined with the runtime guardrail in
-// utils/supabase/client.ts, new violations are caught immediately.
-const fileHandlerSyntaxRestrictions = [
+// File bytes must flow through @/features/files. Reject the characteristic
+// direct object-store call shapes without naming or depending on a retired
+// provider-specific API.
+const directObjectStoreSyntaxRestrictions = [
     {
         selector:
-            "MemberExpression[object.name=/^(supabase|client|createClient)$/][property.name='storage']",
+            "CallExpression[callee.object.object.property.name='storage'][callee.object.property.name='from']",
         message:
-            'Direct supabase.storage usage is banned. Use the universal file handler (@/features/files) instead.',
+            'Direct object-store clients are banned. Use the universal file handler (@/features/files).',
     },
     {
         selector:
-            "CallExpression[callee.property.name='getPublicUrl'][callee.object.callee.property.name='from']",
+            "CallExpression[callee.property.name=/^(getPublicUrl|createSignedUrl)$/]",
         message:
-            'Direct supabase Storage getPublicUrl is banned. Use the universal file handler — it picks the right URL automatically.',
+            'Direct object-store URL creation is banned. Use the universal file handler (@/features/files).',
     },
 ];
 
@@ -811,10 +803,10 @@ export default [
                 // Legacy Supabase API key env vars are hard-banned — no exceptions.
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
+                ...directObjectStoreSyntaxRestrictions,
                 // File-handler rules retain their original "warn-like" intent by
                 // virtue of having actionable messages; eslint severity is shared
                 // across the array, so we keep them in the same rule slot.
-                ...fileHandlerSyntaxRestrictions,
                 // features/scopes chokepoint — only scopesService.ts may touch ctx_* tables.
                 ...scopesChokepointSyntaxRestrictions,
                 // appContextSlice writes — only Surface A (active-context/**) may import the write actions.
@@ -857,7 +849,7 @@ export default [
                 'error',
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
-                ...fileHandlerSyntaxRestrictions,
+                ...directObjectStoreSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
@@ -879,13 +871,13 @@ export default [
     {
         files: ['features/files/**/*'],
         rules: {
-            // The files feature owns the supabase.storage / cloud-files
-            // internals. It still must NOT use legacy Supabase API key
+            // The files feature owns cloud-files internals. It still must NOT use legacy Supabase API key
             // env vars, nor write the global active context (Surface A only).
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
+                ...directObjectStoreSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
             ],
         },
@@ -909,7 +901,7 @@ export default [
                 'error',
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
-                ...fileHandlerSyntaxRestrictions,
+                ...directObjectStoreSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
@@ -940,7 +932,7 @@ export default [
                 'error',
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
-                ...fileHandlerSyntaxRestrictions,
+                ...directObjectStoreSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
@@ -1062,7 +1054,7 @@ export default [
                 'error',
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
-                ...fileHandlerSyntaxRestrictions,
+                ...directObjectStoreSyntaxRestrictions,
                 // scopesChokepointSyntaxRestrictions intentionally omitted.
                 ...toolResultsChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
@@ -1088,7 +1080,7 @@ export default [
                 'error',
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
-                ...fileHandlerSyntaxRestrictions,
+                ...directObjectStoreSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 // toolResultsChokepointSyntaxRestrictions intentionally omitted.
@@ -1197,7 +1189,7 @@ export default [
                 'error',
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
-                ...fileHandlerSyntaxRestrictions,
+                ...directObjectStoreSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
                 ...contextMenuV3StaticImportBan,
@@ -1259,7 +1251,7 @@ export default [
                 'error',
                 ...legacySupabaseKeyBan,
                 ...storageUriEradicationBan,
-                ...fileHandlerSyntaxRestrictions,
+                ...directObjectStoreSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
@@ -1322,7 +1314,6 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
-                ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,

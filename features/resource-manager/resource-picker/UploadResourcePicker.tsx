@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
+import { useFileUpload, composeUploadFolderPath } from "@/features/files";
 import { compressPdfMultipart, materializeAssetResult } from "@/features/files/api/assets";
 import { getFileDetailsByUrl, EnhancedFileDetails } from "@/utils/file-operations/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -34,7 +34,7 @@ interface UploadResourcePickerProps {
     onSelect: (files: UploadedFile[]) => void;
 }
 
-function classifyForLegacy(mimeType: string): string {
+function classifyUploadType(mimeType: string): string {
     if (!mimeType) return "unknown";
     const t = mimeType.toLowerCase();
     if (t.startsWith("image/")) return "image";
@@ -189,7 +189,7 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
 
         const results: UploadedFile[] = [];
         let firstError: string | null = null;
-        const folderPath = composeLegacyFolderPath(
+        const folderPath = composeUploadFolderPath(
             "userContent",
             "prompt-attachments",
         );
@@ -212,7 +212,7 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
                 results.push({
                     fileId: normalized.fileId,
                     url,
-                    type: classifyForLegacy(file.type),
+                    type: classifyUploadType(file.type),
                     mime_type: normalized.meta.mime ?? file.type,
                     details: getFileDetailsByUrl(
                         url,

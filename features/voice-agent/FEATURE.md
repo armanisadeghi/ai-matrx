@@ -145,7 +145,7 @@ xAI's realtime agent **supports custom client-side `function` tools** (and `file
 - **Interruption is synchronous.** All audio source stops + the `response.cancel` send happen in the same microtask as the `speech_started` handler. No async gaps.
 - **Amplitude → visualizer flows through refs + rAF + `useMotionValue`, never React state.** One re-render per frame would be catastrophic.
 - **`metadata.voice.turn_id` is the idempotency key.** Do NOT change its semantics; persistence relies on it for retry safety.
-- **Raw audio NEVER goes to Supabase Storage.** The contract is text-transcript only.
+- **Raw audio NEVER goes to deprecated file backend.** The contract is text-transcript only.
 - **The intro route has ZERO settings UI.** New configurability goes to the playground. The intro is the proof-of-craft surface.
 - **`/api/voice-agent/token` is `POST` only.** Never a `GET` — keeps it out of any prefetch / cache path.
 - **AudioWorklet processor file lives at `public/pcm-processor-worklet.js`.** Must be plain JS (no TS), served from the static origin so `audioWorklet.addModule('/pcm-processor-worklet.js')` resolves.

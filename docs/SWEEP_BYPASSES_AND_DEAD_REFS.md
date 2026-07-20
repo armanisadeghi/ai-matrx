@@ -14,10 +14,10 @@ Patterns hunted (ripgrep across the full tree, excluding `node_modules`, `.next`
 
 1. `// eslint-disable.*no-img-element` — bypasses of the canonical inline-render rule.
 2. `// eslint-disable.*no-restricted-imports` — bypasses of the file-handler import ring-fence.
-3. `// eslint-disable.*no-restricted-syntax` — bypasses of the `supabase.storage` ban.
+3. `// eslint-disable.*no-restricted-syntax` — bypasses of the `direct object-store SDK` ban.
 4. `// @ts-ignore` / `// @ts-expect-error` in any file matching `image|file|upload|pdf|media|asset|thumb|preview` — hiding type drift near file handling.
 5. Direct `<img src=` in `features/`, `app/`, `components/` outside `components/ui/**` design-system primitives.
-6. Direct `supabase.storage.from(...)` outside `features/files/handler/**` and `features/files/**`.
+6. Direct `direct object-store SDK.from(...)` outside `features/files/handler/**` and `features/files/**`.
 7. Imports of long-deleted hooks (`useSignedUrl`, `useAiImageUrl`, `useFileUploadWithStorage`, `useGuardedFileUpload`, `usePasteImageUpload`, `resolveRenderableImageUrl`).
 8. Imports from the abandoned `@/features/file-handler/...` path.
 
@@ -30,7 +30,7 @@ Patterns hunted (ripgrep across the full tree, excluding `node_modules`, `.next`
 | `eslint-disable @next/next/no-img-element` | 40 disables across 35 files |
 | `eslint-disable no-restricted-imports` | **0** |
 | `eslint-disable no-restricted-syntax` | **0** |
-| `supabase.storage.from(...)` outside `features/files/**` | **0** |
+| `direct object-store SDK.from(...)` outside `features/files/**` | **0** |
 | Live imports of `useSignedUrl`/`useAiImageUrl`/`useFileUploadWithStorage`/`useGuardedFileUpload`/`usePasteImageUpload`/`resolveRenderableImageUrl` | **0** |
 | Live imports from `@/features/file-handler/...` | **0** |
 | `@ts-ignore`/`@ts-expect-error` near file handling that hides real type drift | **0** (the lone hit, `webkitdirectory` on a folder-upload input, is a legitimate non-standard-attribute escape hatch) |
@@ -137,9 +137,9 @@ The doc files (`docs/SWEEP_LEFTOVER_REFERENCES.md`, `features/files/UPLOAD_TROUB
 
 ---
 
-## 6. `supabase.storage` audit
+## 6. `direct object-store SDK` audit
 
-**Zero live `supabase.storage.from(...)` callsites** outside `features/files/handler/**` and `features/files/**`. The `no-restricted-syntax` rule in `eslint.config.mjs:152+` would catch any new ones. The pattern is fully contained.
+**Zero live `direct object-store SDK.from(...)` callsites** outside `features/files/handler/**` and `features/files/**`. The `no-restricted-syntax` rule in `eslint.config.mjs:152+` would catch any new ones. The pattern is fully contained.
 
 ---
 

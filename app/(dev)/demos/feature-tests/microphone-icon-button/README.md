@@ -22,7 +22,7 @@ Real-time streaming transcription via Groq Whisper. All recordings are chunked i
 ```
 Browser: MediaRecorder → 10s chunks (~160KB) → /api/audio/transcribe → Groq Whisper
          ↓                                      ↓ (on failure)
-     IndexedDB safety store              Supabase upload → /api/audio/transcribe-url (up to 100MB)
+     IndexedDB safety store              Files upload → /api/audio/transcribe-url (up to 100MB)
          ↓ (on crash)
      AudioRecoveryProvider → Toast → Modal (play/download/re-transcribe)
 ```

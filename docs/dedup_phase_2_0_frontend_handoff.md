@@ -249,7 +249,7 @@ const res = await fetch("/dedup/processed-documents/extract", {
     mime_type: "application/pdf",
     total_pages: 87,
     source_hash: sha256OfExtractedText,
-    storage_uri: `supabase://files/${fileId}`,
+    storage_uri: `invalid://files/${fileId}`,
     content: rawExtractedText,
     structured_json: { pages: [...] },  // optional
     organization_id: orgId,              // optional; falls back to ctx.organization_id

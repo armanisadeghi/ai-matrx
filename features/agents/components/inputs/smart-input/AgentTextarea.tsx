@@ -51,7 +51,7 @@ interface AgentTextareaProps {
   compact?: boolean;
   /** Render as a single-line input-like textarea (no expand toggle, minimal height) */
   singleRow?: boolean;
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   enablePasteImages?: boolean;
   surfaceKey?: string;
@@ -69,7 +69,7 @@ export function AgentTextarea({
   conversationId,
   compact = false,
   singleRow = false,
-  uploadBucket = "userContent",
+  uploadRoot = "userContent",
   uploadPath = "agent-attachments",
   enablePasteImages = true,
   surfaceKey,
@@ -150,7 +150,7 @@ export function AgentTextarea({
   // ── Paste image ─────────────────────────────────────────────────────────────
   // Canonical paste→upload→attach flow, shared by every composer.
   const handlePasteImage = usePasteImageResource(conversationId, {
-    uploadBucket,
+    uploadRoot,
     uploadPath,
   });
 

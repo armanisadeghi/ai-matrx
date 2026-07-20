@@ -56,7 +56,7 @@ Layout/sidebar shell: `app/(a)/images/layout.tsx` + `app/(a)/images/_components/
 
 No new tables. Reads from:
 
-- **`cloud_files`** (Supabase, owned by `features/files/`) — every upload lands here, every "Your Cloud" / "All Files" listing reads from here.
+- **`files.files` metadata + S3 bytes** (owned by `features/files/`) — every upload lands here, and every "Your Cloud" / "All Files" listing reads its metadata directly from Postgres.
 - **Supabase `auth.users.user_metadata`** — `Profile Photo` tab writes `avatar_url` and `picture` via `supabase.auth.updateUser`.
 
 Key types:

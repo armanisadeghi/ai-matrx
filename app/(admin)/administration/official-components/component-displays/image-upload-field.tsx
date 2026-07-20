@@ -54,7 +54,7 @@ function MyComponent() {
     <ComponentDisplayWrapper
       component={component}
       code={code}
-      description="Specialized image upload component with preview, validation, and Supabase storage integration. Features a clean UI with hover effects, clear button, and upload progress indicator. Perfect for banner images, profile pictures, and other single-image uploads."
+      description="Specialized image upload component with preview, validation, and canonical Files integration. Features a clean UI with hover effects, clear button, and upload progress indicator. Perfect for banner images, profile pictures, and other single-image uploads."
     >
       <div className="w-full max-w-2xl space-y-6">
         <div>
@@ -100,4 +100,3 @@ function MyComponent() {
     </ComponentDisplayWrapper>
   );
 }
-

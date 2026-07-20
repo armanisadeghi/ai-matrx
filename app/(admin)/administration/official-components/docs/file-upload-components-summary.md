@@ -47,9 +47,9 @@ Compact file upload component featuring:
 **File:** `component-displays/file-upload-with-storage.tsx`
 **Component ID:** `file-upload-with-storage`
 
-Full-featured upload with Supabase integration featuring:
-- Automatic upload to Supabase storage
-- Public and private bucket support
+Full-featured upload through the canonical Files system featuring:
+- Automatic upload to the S3-backed file service
+- Public and private visibility support
 - Animated progress indicators
 - Returns public URLs for uploaded files
 - File metadata and details
@@ -57,7 +57,7 @@ Full-featured upload with Supabase integration featuring:
 - Upload status callbacks
 
 **Key Props:**
-- `bucket`: Supabase storage bucket
+- `bucket`: deprecated file backend bucket
 - `path`: Path within bucket
 - `saveTo`: "public" | "private" | undefined
 - `onUploadComplete`: Callback with uploaded file results
@@ -81,7 +81,7 @@ Specialized image upload component featuring:
 - Live preview with hover effects
 - Clear/remove button
 - Upload progress indicator
-- Supabase storage integration
+- deprecated file backend integration
 - Returns public URL
 - Professional form-field design
 
@@ -108,7 +108,7 @@ Specialized image upload component featuring:
 Invisible wrapper for clipboard paste functionality featuring:
 - Automatic clipboard detection
 - Image validation
-- Upload to Supabase storage
+- Upload to deprecated file backend
 - Returns public URL
 - Processing status callbacks
 - No file dialog needed
@@ -153,7 +153,7 @@ All components have been registered in `component-list.tsx` with:
 - `utilities` - Storage and helper functionality
 
 **Common Tags:**
-- file, upload, drag, drop, storage, supabase
+- file, upload, drag, drop, storage, S3
 - image, preview, validation
 - paste, clipboard, screenshot
 - public, private, url, progress
@@ -220,4 +220,3 @@ Users can now:
 **Components Created:** 5
 **Lines of Demo Code:** ~600+
 **All Linter Checks:** Passed
-

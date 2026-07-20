@@ -63,7 +63,7 @@ The backend plan covers and in several places exceeds the v1 of this doc. We ado
 | 15 | **`<InlineMediaRef ref size fit fallback onClick onDownload/>`** component. Replaces every ad-hoc `<img src={file.publicUrl ?? ...}>`. | New idea. Bigger leverage than `<FilePreview>` alone. v1 missed this. Adopt and treat as one of the THREE canonical components alongside `<FilePreview>` and `<FileUploadDropzone>`. |
 | 16 | **OpenAPI type generation pipeline.** `Asset`, `AssetVariant`, `AssetPreset`, `MediaRef`, every request/response regenerated. `pnpm gen:types && git diff --exit-code` CI gate. Hand-authored Asset types deleted. | New idea, eliminates drift. Adopt. |
 | 17 | **Single `<CloudFilesRealtimeProvider>` mount in `app/Providers.tsx`.** Four per-route mounts deleted. | New. v1 didn't catch this. Adopt. |
-| 18 | **ESLint ban on manual MediaRef literals** outside `features/files/redux/converters.ts`. The four builders (`cloudFileToMediaRef`, `fileIdToMediaRef`, `urlToMediaRef`, `fileUriToMediaRef`) become the only sanctioned construction path. | Adopt — same posture as `supabase.storage` ban. |
+| 18 | **ESLint ban on manual MediaRef literals** outside `features/files/redux/converters.ts`. The four builders (`cloudFileToMediaRef`, `fileIdToMediaRef`, `urlToMediaRef`, `fileUriToMediaRef`) become the only sanctioned construction path. | Adopt — same posture as `direct object-store SDK` ban. |
 | 19 | **Internal FE splits bundled in the same PR.** `FilePreview.tsx` 404-line switch → registry pattern. `FileTable.tsx` 851 lines → TanStack Table. `PageShell.tsx` 920 lines → per-section components. `thunks.ts` 1790 lines → split by domain. `types.ts` 1300 lines → `domain.ts/api.ts/ui.ts`. | New. v1 didn't address. Adopt — same PR. |
 | 20 | **285+ explicit `useFileSrc` callsite migrations to `useFile(ref, { target: "render" }).url`.** No alias. | Adopt. |
 | 21 | **Critical bug fixed: non-atomic `increment_share_link_use` → `cld_consume_share_link(TEXT)` RPC** ([db.py:568](packages/matrx-utils/matrx_utils/file_handling/cloud_sync/db.py#L568)). | Bundled. Adopt. |
@@ -615,7 +615,7 @@ no-restricted-imports:
   - features/files/cache/*            (internal)
 
 no-restricted-syntax:
-  - supabase.storage.from(...)        (banned globally)
+  - direct object-store SDK.from(...)        (banned globally)
   - getPublicUrl                      (banned globally)
   - fetch('/files/...'), fetch('/assets/...'), fetch('/share/...'), fetch('/api/files/...'), fetch('/api/share/...')
   - Manual ImageBlock/AudioBlock/VideoBlock/DocumentBlock literals outside features/files/
@@ -720,7 +720,7 @@ After PR 3 lands, run the FE dev server and click through:
 | 11 | Upload a logo SVG with `preset="logo"` | Master persists as SVG; raster fallbacks rendered. Asset envelope returns both `urls.svg` and `urls.variants.logo_lg/md/sm`. |
 | 12 | Attach existing file to new chat (MediaRef-only) | Server reads bytes; FE makes one POST with `MediaRef { file_id }`, no bytes re-uploaded. |
 | 13 | Run `pnpm gen:types && git diff --exit-code` | Exit 0. |
-| 14 | Run `pnpm lint` | No `useFileSrc` / `useSignedUrl` / `useFileAsset` / manual MediaRef literals / `supabase.storage` / banned fetch patterns. |
+| 14 | Run `pnpm lint` | No `useFileSrc` / `useSignedUrl` / `useFileAsset` / manual MediaRef literals / `direct object-store SDK` / banned fetch patterns. |
 | 15 | Admin `/administration/blob-cache` | Shows live L1/L2 stats, hit/miss counters, SW status, BroadcastChannel inspector. |
 
 ---
@@ -785,7 +785,7 @@ import { cloudFileToMediaRef, fileIdToMediaRef, urlToMediaRef, fileUriToMediaRef
 
 ### Forbidden everywhere outside `features/files/`
 
-- `supabase.storage.*`, `getPublicUrl`
+- `direct object-store SDK.*`, `getPublicUrl`
 - Direct `fetch` of `/files/`, `/assets/`, `/share/`, `/api/files/`, `/api/share/`, `/api/images/`, `/api/pdf/`
 - Imports from `features/files/api/*`, `features/files/state/*`, `features/files/client/*`, `features/files/resolver/*`, `features/files/cache/*`
 - Manual `<img src="...signed-url...">` construction

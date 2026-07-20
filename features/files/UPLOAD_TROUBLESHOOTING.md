@@ -75,7 +75,7 @@ session JWT — see `features/files/api/server-client.ts`.
 
 ## What's forbidden
 
-- **`supabase.storage.from(...).upload(...)`** — banned. ESLint catches the
+- **`direct object-store SDK.from(...).upload(...)`** — banned. ESLint catches the
   call shape; the handler is the only valid path.
 - **`fetch("/api/files/...")`, `fetch("/api/share/...")`, etc.** — Next.js
   has no file routes. Files go directly browser ↔ Python.

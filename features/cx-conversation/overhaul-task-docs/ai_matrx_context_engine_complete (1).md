@@ -116,7 +116,7 @@ These are the things users create and work with. Every one now has optional FK c
 | 1 | **Conversations** | `cx_conversation` | org, ws, proj, task | The primary vessel for all AI interaction |
 | 2 | **Artifacts** | `canvas_items` | org, ws, proj + `conversation_id` → cx_conversation | Generated outputs (SVGs, HTML, code, diagrams). Also has social layer via `shared_canvas_items` |
 | 3 | **Notes** | `notes` | org, ws, proj, task | User text, documentation, anything. Has `note_versions` for history |
-| 4 | **Files** | `user_files` | org, ws, proj, task | Binary assets in S3/Supabase storage |
+| 4 | **Files** | `user_files` | org, ws, proj, task | Binary assets in S3/deprecated file backend |
 | 5 | **Data** | `user_tables` | org, ws, proj, task | Tabular data with `table_fields` (schema) and `table_data` (rows) |
 | 6 | **Knowledge** | `rs_topic` → `rs_source` → `rs_content` | `rs_topic.project_id` (pre-existing) | Research content, uploaded docs, analyses, syntheses |
 | 7 | **Transcripts** | `transcripts` | org, ws, proj, task | Audio/video to text with segments and timestamps |

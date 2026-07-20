@@ -61,7 +61,7 @@ import {
   renameSession,
 } from "@/features/war-room/redux/thunks";
 import { EditableTitle } from "../shared/EditableTitle";
-import { SessionContextButton } from "./SessionContextButton";
+import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { RoomProjectButton } from "./RoomProjectButton";
 import { RoomResourcesButton } from "./RoomResourcesButton";
 import { RoomProjectCopyForAiButton } from "./RoomProjectCopyForAiButton";
@@ -244,7 +244,9 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
             <RoomProjectCopyForAiButton sessionId={sessionId} />
             <RoomResourcesButton sessionId={sessionId} />
             <RoomProjectButton sessionId={sessionId} />
-            <SessionContextButton sessionId={sessionId} />
+            {/* Same working-context control as /chat — writes appContextSlice
+                (Surface A). Per-thread overrides stay on ThreadContextOverride. */}
+            <ActiveContextLensChip align="end" className="shrink-0" />
             <button
               type="button"
               onClick={() => setRoomAgentOpen((v) => !v)}

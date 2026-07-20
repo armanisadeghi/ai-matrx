@@ -7,7 +7,7 @@
 
 ## Summary
 
-- **L0 bypass call sites today (post-2026-05-07 obliteration round):** ~30 total — mostly clustered in `components/image/cloud/**`, `features/rag/components/**`, `features/pdf-extractor/**`, `features/transcripts/service/audioStorageService.ts`, `features/agents/hooks/useAiImageUrl.ts`, `components/official/ImageAssetUploader.tsx`, `components/mardown-display/blocks/images/ImageOutputBlock.tsx`. **Zero remaining `supabase.storage.*` and zero remaining `getPublicUrl`/`createSignedUrl` callsites** in source (only doc comments and worktrees survive — and worktrees are out of scope).
+- **L0 bypass call sites today (post-2026-05-07 obliteration round):** ~30 total — mostly clustered in `components/image/cloud/**`, `features/rag/components/**`, `features/pdf-extractor/**`, `features/transcripts/service/audioStorageService.ts`, `features/agents/hooks/useAiImageUrl.ts`, `components/official/ImageAssetUploader.tsx`, `components/mardown-display/blocks/images/ImageOutputBlock.tsx`. **Zero remaining `direct object-store SDK.*` and zero remaining `getPublicUrl`/`createSignedUrl` callsites** in source (only doc comments and worktrees survive — and worktrees are out of scope).
 - **Migrate-to targets after consolidation:** 5 hooks (`useFile`, `useFileSrc`, `useFileBlob`, `useFileUpload`, `useFileMutation`) + 1 facade (`fileHandler`) + 3 components (`<InlineMediaRef>`, `<FilePreview>`, `<FileUploadDropzone>`).
 - **Cross-cutting patterns identified for collapse:** 11 (see Part 2). The biggest collapses are **avatar rendering** (≥14 ad-hoc `<AvatarImage src=…>` callsites across 13 files), **applet/app/podcast cover images** (≥15 callsites in `features/applet/**` + `features/podcasts/**`), **org logo rendering** (5 callsites in `features/organizations/**`), and **paste-image handlers** (3 parallel implementations).
 
@@ -15,7 +15,7 @@
 
 ## Part 1 — Every L0 bypass (the migration target list)
 
-### supabase.storage.* call sites
+### direct object-store SDK.* call sites
 
 **Zero in source.** The obliteration round on 2026-05-07 (Change Log) deleted every direct call.
 
@@ -413,7 +413,7 @@ All 20+ files listed in §2.6 above. The canonical `<FileUploadDropzone>` alread
 ## Part 4 — Anti-patterns to enforce against (ESLint)
 
 The current `eslint.config.mjs` already locks down:
-- `supabase.storage.from(...)` (`fileHandlerSyntaxRestrictions`)
+- `direct object-store SDK.from(...)` (`fileHandlerSyntaxRestrictions`)
 - `getPublicUrl` on a `from(...)` chain
 - Legacy Supabase env-var key names
 

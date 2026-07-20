@@ -25,6 +25,7 @@ import { StageThread } from "./StageThread";
 import { ParkedThreadChip } from "./ParkedThreadChip";
 import { NewThread } from "../thread/NewThread";
 import { QuickAddThread } from "../thread/QuickAddThread";
+import { QuickImportThread } from "../thread/QuickImportThread";
 import { QuickAddTask } from "../thread/QuickAddTask";
 import { useRoomView, resolveStagedId } from "./roomViewContext";
 import { ThreadSortable, SortableThread } from "./threadDrag";
@@ -111,10 +112,8 @@ export function StageView({ sessionId }: { sessionId: string }) {
             </ThreadSortable>
           )}
 
-          {/* Quick-add: spin up a new thread without leaving the staged one.
-              Create (default) keeps you here on the staged thread and re-arms
-              for the next add; Create & open stages the fresh thread. Hidden
-              while searching (it's not a thread to filter). */}
+          {/* Top-level rail actions: Add thread · Import thread · Add quick task.
+              Hidden while searching (these aren't threads to filter). */}
           {!searching ? (
             <>
               <QuickAddThread
@@ -123,8 +122,7 @@ export function StageView({ sessionId }: { sessionId: string }) {
                 variant="rail"
                 onOpen={(threadId) => stageThread(threadId)}
               />
-              {/* Capture a task into the room (or into the staged thread)
-                  without leaving the thread you're on (Feature 67a282c8). */}
+              <QuickImportThread sessionId={sessionId} variant="rail" />
               <QuickAddTask
                 sessionId={sessionId}
                 nextPosition={allIds.length}

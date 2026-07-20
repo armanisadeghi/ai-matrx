@@ -91,17 +91,7 @@ Remediation: <https://supabase.com/docs/guides/database/database-linter?lint=002
 
 ---
 
-## D. Public storage buckets allow listing — 15 (WARN)
-
-Broad SELECT policy lets clients enumerate every object name (contents already public). Tighten so URLs
-resolve but listing is blocked: `Any File`, `Audio`, `Code`, `Documents`, `Images`, `Notes`,
-`Spreadsheets`, `Videos`, `any-file`, `app-assets`, `code-editor`, `podcast-assets`,
-`public-chat-uploads`, `temp-files`, `user-public-assets`.
-Remediation: <https://supabase.com/docs/guides/database/database-linter?lint=0025_public_bucket_allows_listing>
-
----
-
-## E. Auth config toggles — 2 (WARN) · **30-SECOND QUICK WINS (Supabase dashboard)**
+## D. Auth config toggles — 2 (WARN) · **30-SECOND QUICK WINS (Supabase dashboard)**
 
 - **Leaked-password protection is OFF** → enable HaveIBeenPwned check.
   <https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection>

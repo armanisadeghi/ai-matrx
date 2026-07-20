@@ -147,8 +147,7 @@ const SHARE_TOKEN_RE = /\/share\/([0-9a-f-]{8,})(?:\/download)?(?:[/?#]|$)/i;
 
 /**
  * Extract the share token from any URL we recognize. Returns `null` for
- * URLs that aren't ours (legacy Supabase-Storage public URLs, opaque
- * external URLs, etc.).
+ * URLs that aren't ours (opaque external and third-party URLs).
  */
 export function tokenFromShareUrl(url: string): string | null {
   if (!url) return null;
@@ -165,7 +164,7 @@ export function tokenFromShareUrl(url: string): string | null {
  *     canonical FE landing page at `${origin}/s/{token}` (metadata + preview
  *     + download button). This is what an admin wants when they click a
  *     screenshot in the feedback dialog.
- *   - Anything else (legacy Supabase-Storage URLs, external URLs) →
+ *   - Anything else (external URLs) →
  *     returned unchanged. Browsers render image bytes inline regardless,
  *     and we have no viewer page for them anyway.
  */

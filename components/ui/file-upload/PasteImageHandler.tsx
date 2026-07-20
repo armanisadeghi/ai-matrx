@@ -4,11 +4,10 @@
  * Attach a clipboard-paste listener to a target element and upload any
  * pasted image through the universal handler. The previous
  * `usePasteImageUpload` hook was deleted in Phase 1 of the file-handling
- * consolidation; its paste-event + bucket-mapping logic now lives in this
+ * consolidation; its paste-event and folder-routing logic now live in this
  * component (which is its only consumer in real code, plus an admin demo).
  *
- * The bucket / path / saveTo prop trio is preserved verbatim so call sites
- * keep working without edits. Internally every paste routes through
+ * The root / path / visibility inputs route every paste through
  * `useFileUpload().upload` from `@/features/files/handler`.
  */
 
@@ -16,7 +15,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
+import { useFileUpload, composeUploadFolderPath } from "@/features/files";
 import type { Visibility } from "@/features/files";
 
 type SaveToOption = "public" | "private";
@@ -38,9 +37,9 @@ export interface PasteImageUploadResult {
 }
 
 type PasteImageHandlerProps = {
-  /** Legacy bucket name; mapped to a top-level cld_files folder. */
-  bucket?: string;
-  /** Sub-folder under the bucket-mapped top-level folder. */
+  /** Logical top-level Files folder. */
+  folderRoot?: string;
+  /** Sub-folder under the top-level folder. */
   path?: string;
   /** Override visibility. Default: "public" if `saveTo === 'public'`, else "private". */
   saveTo?: SaveToOption;
@@ -65,7 +64,7 @@ function classifyFileType(mimeType: string): string {
 }
 
 export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
-  bucket = "userContent",
+  folderRoot = "userContent",
   path,
   saveTo,
   onImagePasted,
@@ -104,15 +103,13 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
       const items = event.clipboardData?.items;
       if (!items) return;
 
-      const folderPath = composeLegacyFolderPath(bucket, path);
+      const folderPath = composeUploadFolderPath(folderRoot, path);
       const visibility: Visibility =
         saveTo === "public"
           ? "public"
           : saveTo === "private"
             ? "private"
-            : bucket === "user-public-assets"
-              ? "public"
-              : "private";
+            : "private";
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
@@ -156,7 +153,6 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
         } catch (error) {
           const reason =
             error instanceof Error ? error.message : "Upload failed";
-          // eslint-disable-next-line no-console
           console.error("Error processing pasted image:", error);
           if (onError) onError(reason);
           else toast.error(`Couldn't upload pasted image: ${reason}`);
@@ -167,7 +163,7 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
     },
     [
       disabled,
-      bucket,
+      folderRoot,
       path,
       saveTo,
       upload,

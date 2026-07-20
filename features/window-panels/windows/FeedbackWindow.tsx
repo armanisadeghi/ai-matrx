@@ -980,7 +980,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         </p>
 
         <FileUploadWithStorage
-          bucket="userContent"
+          folderRoot="userContent"
           path="feedback-images"
           saveTo="public"
           onUploadComplete={handleUploadComplete}

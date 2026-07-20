@@ -247,7 +247,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "audio_file_path",
     label: "Audio file path",
     description:
-      "Supabase storage path of the source audio file (`audio_file_path` column). Empty when the transcript has no associated audio (e.g. pasted text source) or no transcript is open. Tool calls that need the original audio can use this to fetch a signed URL.",
+      "Canonical Files UUID for the source audio (`audio_file_path` column). Empty when the transcript has no associated audio or no transcript is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 100,

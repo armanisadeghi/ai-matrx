@@ -44,7 +44,7 @@ function MyComponent() {
 
   return (
     <FileUploadWithStorage
-      bucket="userContent"                    // Supabase storage bucket (default: "userContent")
+      folderRoot="userContent"                    // logical Files folder root (default: "userContent")
       path="uploads"                          // Path within bucket (optional)
       saveTo="public"                         // "public" | "private" | undefined
       onUploadComplete={handleUploadComplete} // Callback with uploaded file results
@@ -75,7 +75,7 @@ function MyComponent() {
     <ComponentDisplayWrapper
       component={component}
       code={code}
-      description="Full-featured file upload component with automatic Supabase storage integration. Includes animated progress indicators, multiple upload support, and returns public URLs for uploaded files. Supports both public and private storage buckets."
+      description="Full-featured upload component backed by canonical Files. Includes animated progress indicators, multiple upload support, and durable URLs with public or private visibility."
     >
       <div className="w-full max-w-2xl space-y-4">
         <div>
@@ -83,7 +83,7 @@ function MyComponent() {
             Standard Upload (Multiple Files)
           </h3>
           <FileUploadWithStorage
-            bucket="userContent"
+            folderRoot="userContent"
             path="demo-uploads"
             saveTo="public"
             onUploadComplete={handleUploadComplete}
@@ -99,7 +99,7 @@ function MyComponent() {
             Mini Upload (Single File)
           </h3>
           <FileUploadWithStorage
-            bucket="userContent"
+            folderRoot="userContent"
             path="demo-uploads"
             saveTo="public"
             onUploadComplete={handleUploadComplete}
@@ -141,4 +141,3 @@ function MyComponent() {
     </ComponentDisplayWrapper>
   );
 }
-

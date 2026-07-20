@@ -75,8 +75,8 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 - Finding detail evidence is scoped by `site_id + subject_type + subject_id + item_id`; a same-item result from another subject must never appear.
 - `crawl_event.sequence` defaults ascending; every sort adds `id` as a deterministic tie-breaker.
 - Snapshot body and screenshot fields are direct UUID FKs to `files.files`. The browser never sees a bucket/path/native URI and never constructs a storage URL; private bytes and signed URLs resolve through the canonical Files pipeline in AI Dream.
-- `body_ref`, `markdown_ref`, `storage_bucket`, `storage_path`, `supabase://`, and `user-public-assets` are forbidden crawler contracts. There is no compatibility reader because all pre-cutover crawl data was disposable and wiped.
-- Crawl artifact access fails closed: immutable metadata/direct web FKs classify the file, the database requires an exact tenant-matched `crawl_artifact` edge plus current site-viewer access, and the complete `file -> web_site` association pair is backend-managed. Missing, forged, cross-tenant, or removed edges never fall back to file ownership.
+- `body_ref`, `markdown_ref`, `storage_bucket`, and `storage_path` are forbidden crawler contracts. There is no compatibility reader because all pre-cutover crawl data was disposable and wiped.
+- Crawl artifact access fails closed: immutable metadata plus the direct snapshot/screenshot file FK classify the file, and the database requires an exact tenant match plus current site-viewer access. No `platform.associations` row exists for this relationship. Missing, forged, cross-tenant, or soft-deleted references never fall back to file ownership.
 - No legacy crawler data is migrated or read.
 - Google OAuth credentials are encrypted at rest in `users.integration_connections`; authenticated browser roles cannot select the credential columns. Site JSON contains only connection/resource references, never tokens or client secrets.
 - OAuth API routes exchange/revoke credentials only. Connection lists, discovered resources, site bindings, and all crawler/analysis history are read directly from Supabase under RLS.
@@ -100,7 +100,7 @@ The site/page/crawl foundation, direct live-crawl controls, analysis/finding wor
 
 ## Change log
 
-- 2026-07-20 — Codex: cut Marketing artifacts over to canonical Files UUIDs, added complete per-snapshot body/markdown/screenshot rendering, and removed all Supabase Storage URL construction and legacy crawler reference fields.
+- 2026-07-20 — Codex: cut Marketing artifacts over to canonical Files UUIDs, added complete per-snapshot body/markdown/screenshot rendering, and removed all parallel file-backend URL construction and legacy crawler reference fields.
 - 2026-07-18 — Codex: added the first production vertical with direct Supabase portfolio, site creation/shell, pages/snapshots, crawl sessions, URL ledger, durable event log, and admin map.
 - 2026-07-18 — Codex: connected site bootstrap and crawl start/cancel/live progress directly to the standalone scraper; no persisted-data proxy or replay endpoint was added.
 - 2026-07-18 — Codex: added site-scoped priority analysis, the finding lifecycle register, and immutable result evidence detail with URL-controlled direct-Supabase tables.

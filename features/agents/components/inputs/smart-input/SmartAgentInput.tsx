@@ -25,7 +25,7 @@ interface SmartAgentInputProps {
   singleRowTextarea?: boolean;
   sendButtonVariant?: "default" | "blue";
   showSubmitOnEnterToggle?: boolean;
-  uploadBucket?: string;
+  uploadRoot?: string;
   uploadPath?: string;
   enablePasteImages?: boolean;
   compact?: boolean;
@@ -42,7 +42,7 @@ export function SmartAgentInput({
   singleRowTextarea = false,
   sendButtonVariant = "default",
   showSubmitOnEnterToggle = true,
-  uploadBucket = "userContent",
+  uploadRoot = "userContent",
   uploadPath = "agent-attachments",
   enablePasteImages = true,
   compact = false,
@@ -58,7 +58,7 @@ export function SmartAgentInput({
       <SmartAgentInputSingleRow
         conversationId={conversationId}
         sendButtonVariant={sendButtonVariant}
-        uploadBucket={uploadBucket}
+        uploadRoot={uploadRoot}
         uploadPath={uploadPath}
         enablePasteImages={enablePasteImages}
         showSendButton={showSendButton}
@@ -76,7 +76,7 @@ export function SmartAgentInput({
       conversationId={conversationId}
       sendButtonVariant={sendButtonVariant}
       showSubmitOnEnterToggle={showSubmitOnEnterToggle}
-      uploadBucket={uploadBucket}
+      uploadRoot={uploadRoot}
       uploadPath={uploadPath}
       enablePasteImages={enablePasteImages}
       compact={compact}

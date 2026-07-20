@@ -54,7 +54,7 @@ and is correctly cited where it still appears — those are not stale.
 - `features/conversation/CONVERSATION_SYSTEM.md` — hook table row updated.
 - `features/cx-conversation/DEPENDENCIES.md` — file-upload dep updated.
 - `components/image/ImageManager.tsx` — `legacyPropsToFolderPath` JSDoc no
-  longer cites the deleted shim; references `mapLegacyBucket()` instead.
+  routes folder inputs through `composeUploadFolderPath()`.
 
 ## Intentionally NOT touched
 

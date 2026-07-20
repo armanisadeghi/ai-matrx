@@ -160,7 +160,7 @@ export interface SchemaProposalRenderBlock {
 
 /**
  * A reference to one of OUR OWN files (a cld_files-backed signed S3 URL, a
- * public CDN URL, a Supabase public-bucket URL, or a share-link byte endpoint)
+ * public CDN URL or a share-link byte endpoint)
  * found as a plain markdown link / bare URL in streamed/persisted text. Unlike
  * `image`/`audio`/`video` blocks this carries NO declared type — the renderer
  * recovers a `file_id` (or other `FileSource`) via `recognizeOurFileUrl`,

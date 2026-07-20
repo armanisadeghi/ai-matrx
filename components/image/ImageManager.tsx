@@ -96,7 +96,7 @@ function aliasTabId(id: string): string {
  * Map the legacy `saveTo` / `bucket` / `path` props onto a cloud-files
  * folder path. This keeps every existing caller working without code
  * changes — the path scheme matches the legacy-bucket → cld_files
- * folder mapping (`mapLegacyBucket()` in the upload layer).
+ * canonical Files folder routing in the upload layer.
  */
 function legacyPropsToFolderPath(
   saveTo: "public" | "private" | undefined,

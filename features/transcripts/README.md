@@ -306,7 +306,7 @@ The system seamlessly integrates with the existing `AdvancedTranscriptViewer` co
 - Real-time subscriptions are lightweight
 
 ### Storage Integration
-- Audio/video bytes go through `service/audioStorageService.ts` → the universal file handler (`cld_files`) — never `supabase.storage`
+- Audio/video bytes go through `service/audioStorageService.ts` → the universal file handler (`cld_files`) — never `direct object-store SDK`
 - `audio_file_path` / `video_file_path` hold `cld_files` UUIDs, not bucket paths
 - Playback URLs are minted (and auto-refreshed) from the UUID via `useFileSrc` / `getSignedUrl` — never persist a signed URL
 

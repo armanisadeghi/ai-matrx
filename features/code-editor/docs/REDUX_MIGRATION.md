@@ -72,7 +72,7 @@ return {
   resources={resources}
   onResourcesChange={setResources}
   enablePasteImages={true}
-  uploadBucket="userContent"
+  uploadRoot="userContent"
   uploadPath="code-editor-attachments"
 />
 
@@ -81,7 +81,7 @@ return {
   runId={runId}
   placeholder="Describe the changes you want to make..."
   sendButtonVariant="default"
-  uploadBucket="userContent"
+  uploadRoot="userContent"
   uploadPath="code-editor-attachments"
   enablePasteImages={true}
 />

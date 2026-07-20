@@ -18,16 +18,12 @@ function runtimeFiles(directory: string): string[] {
   });
 }
 
-test("Marketing has no Supabase Storage crawler compatibility lane", () => {
+test("Marketing uses canonical Files UUIDs without crawler compatibility lanes", () => {
   const forbidden = [
-    "user-public-assets",
-    "supabase://",
     "body_ref",
     "markdown_ref",
     "storage_bucket",
     "storage_path",
-    "/storage/v1/object",
-    "getPublicUrl(",
   ];
   const violations = MARKETING_ROOTS.flatMap(runtimeFiles).flatMap((path) => {
     const source = readFileSync(path, "utf8");
@@ -39,31 +35,18 @@ test("Marketing has no Supabase Storage crawler compatibility lane", () => {
   expect(violations).toEqual([]);
 });
 
-test("crawler artifact migrations replay in a safe lexical order", () => {
+test("the direct Files relationship migration supersedes association access", () => {
   const migrationRoot = join(process.cwd(), "migrations");
   const names = readdirSync(migrationRoot)
     .filter((name) => name.startsWith("web_crawl_artifact"))
     .filter((name) => name.endsWith(".sql"))
     .sort();
-  const position = (name: string) => {
-    const index = names.indexOf(name);
-    expect(index).toBeGreaterThanOrEqual(0);
-    return index;
-  };
-
-  expect(position("web_crawl_artifact_00_bootstrap.sql")).toBeLessThan(
-    position("web_crawl_artifact_access_finalize.sql"),
-  );
-  expect(position("web_crawl_artifacts_files_only.sql")).toBeLessThan(
-    position("web_crawl_artifacts_replay_bridge.sql"),
-  );
-  expect(position("web_crawl_artifacts_replay_bridge.sql")).toBeLessThan(
-    position("web_crawl_artifacts_use_files.sql"),
-  );
-  expect(position("web_crawl_artifacts_use_files.sql")).toBeLessThan(
-    position("web_crawl_artifacts_zz_canonical_finalize.sql"),
-  );
-  expect(names.at(-1)).toBe(
-    "web_crawl_artifacts_zz_canonical_finalize.sql",
-  );
+  const finalName = names.at(-1);
+  expect(finalName).toBe("web_crawl_artifacts_zzz_direct_file_access.sql");
+  if (!finalName) throw new Error("Crawler artifact migration is missing");
+  const finalSql = readFileSync(join(migrationRoot, finalName), "utf8");
+  expect(finalSql).toContain("from web.snapshot");
+  expect(finalSql).toContain("from web.screenshot");
+  expect(finalSql).toContain("delete from platform.associations");
+  expect(finalSql).not.toContain("join platform.associations");
 });

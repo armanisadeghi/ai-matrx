@@ -187,13 +187,13 @@ Single config file: `eslint.config.mjs` (flat config; legacy `.eslintrc.json` is
 
 ### Already in place (relevant to this rebuild)
 
-1. **`no-restricted-imports` — `windowPanelsImportRestriction.patterns`** — covers a `'*supabase*storage*'` / `'*storage*Bucket*'` glob group pointing users at `features/file-handler`. After the merge, this message must point at `features/files` (MODIFY message string).
+1. **`no-restricted-imports`** — blocks direct object-store client imports and points users at `features/files`.
 2. **`no-restricted-syntax` — `fileHandlerSyntaxRestrictions`** — already bans:
-   - `supabase.storage` member access on `(supabase|client|createClient)` (regex selector)
+   - `direct object-store SDK` member access on `(supabase|client|createClient)` (regex selector)
    - `supabase.from(...).getPublicUrl(...)` call shape
 3. **`no-restricted-syntax` — `legacySupabaseKeyBan`** — env-var ban; unrelated to files, keep as-is.
 4. **`no-restricted-globals` / `no-restricted-properties`** — bans `confirm`/`alert`/`prompt` — keep.
-5. **File-handler / files override block** — `features/file-handler/**` and `features/files/**` get the `legacySupabaseKeyBan` only; the `fileHandlerSyntaxRestrictions` are exempted there (correct — internals own `supabase.storage`). After merge, the `features/file-handler/**` glob must be dropped (directory ceases to exist).
+5. **File-handler / files override block** — `features/file-handler/**` and `features/files/**` get the `legacySupabaseKeyBan` only; the `fileHandlerSyntaxRestrictions` are exempted there (correct — internals own `direct object-store SDK`). After merge, the `features/file-handler/**` glob must be dropped (directory ceases to exist).
 6. **`no-barrel-files/no-barrel-files`: `'warn'`** — keep.
 
 ### To add (Phase 0) — every rule in plan §6.4
