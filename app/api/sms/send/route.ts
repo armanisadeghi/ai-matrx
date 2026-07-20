@@ -107,8 +107,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      msg: 'SMS sent',
-      data: { sid: result.sid, conversationId: convId },
+      msg: 'SMS accepted by Twilio; delivery is pending',
+      data: {
+        sid: result.sid,
+        conversationId: convId,
+        status: result.status || 'queued',
+      },
     });
   } catch (err) {
     console.error('Error in SMS send route:', err);

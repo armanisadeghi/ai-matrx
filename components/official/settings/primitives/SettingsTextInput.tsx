@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SettingsRow } from "../SettingsRow";
 import type { SettingsCommonProps, SettingsControlSize } from "../types";
 
@@ -52,11 +52,12 @@ export function SettingsTextInput({
     `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
   const [draft, setDraft] = useState(value);
+  const [lastCommittedValue, setLastCommittedValue] = useState(value);
 
-  useEffect(() => {
-    if (!commitOnBlur) return;
+  if (commitOnBlur && value !== lastCommittedValue) {
+    setLastCommittedValue(value);
     setDraft(value);
-  }, [value, commitOnBlur]);
+  }
 
   const effective = commitOnBlur ? draft : value;
   const effectiveWidth = stacked ? "full" : width;
@@ -81,7 +82,9 @@ export function SettingsTextInput({
           else onValueChange(e.target.value);
         }}
         onBlur={() => {
-          if (commitOnBlur && draft !== value) onValueChange(draft);
+          if (commitOnBlur && draft !== value) {
+            onValueChange(draft);
+          }
         }}
         onKeyDown={(e) => {
           if (commitOnBlur && e.key === "Enter")

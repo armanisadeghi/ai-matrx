@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bell, BellOff, Monitor, Volume2 } from "lucide-react";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
@@ -16,6 +16,7 @@ import {
   getNotificationPermission,
 } from "@/features/messaging/utils/notificationSound";
 import { SmsEnrollmentSettingsSection } from "@/features/sms/components/SmsEnrollmentSettingsSection";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 
 type PermissionStatus = "granted" | "denied" | "default" | "unsupported";
 
@@ -39,14 +40,15 @@ export default function MessagingTab() {
 
   // Permission state is a browser concern, not a Redux concern — it lives in
   // local state. Re-check on mount and after any permission mutation.
-  const [permission, setPermission] = useState<PermissionStatus>("default");
-  useEffect(() => {
-    setPermission(getNotificationPermission());
-  }, []);
+  const isMounted = useIsMounted();
+  const [permissionOverride, setPermissionOverride] =
+    useState<PermissionStatus | null>(null);
+  const permission =
+    permissionOverride ?? (isMounted ? getNotificationPermission() : "unsupported");
 
   const handleEnableDesktop = async () => {
     const granted = await requestNotificationPermission();
-    setPermission(getNotificationPermission());
+    setPermissionOverride(getNotificationPermission());
     if (granted) setDesktopEnabled(true);
   };
 

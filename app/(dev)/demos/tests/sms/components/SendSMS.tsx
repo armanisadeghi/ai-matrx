@@ -10,12 +10,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 
+interface SendSmsResponseData {
+  sid?: string;
+  conversationId?: string;
+  status?: string;
+}
+
+interface SendSmsResultState {
+  success: boolean;
+  message: string;
+  data?: SendSmsResponseData;
+}
+
 export default function SendSMS() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [message, setMessage] = useState('');
   const [conversationType, setConversationType] = useState('notification');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string; data?: any } | null>(null);
+  const [result, setResult] = useState<SendSmsResultState | null>(null);
 
   const handleSend = async () => {
     if (!phoneNumber || !message) {
@@ -42,7 +54,7 @@ export default function SendSMS() {
       if (response.ok) {
         setResult({
           success: true,
-          message: data.msg || 'SMS sent successfully!',
+          message: data.msg || 'SMS accepted by Twilio; delivery is pending',
           data: data.data,
         });
         setMessage('');
@@ -149,10 +161,11 @@ export default function SendSMS() {
                 <div className="font-medium">{result.message}</div>
                 {result.success && (
                   <div className="mt-2 text-sm">
-                    <p>✅ Message sent to Twilio successfully!</p>
+                    <p>Twilio accepted the request. This does not confirm delivery.</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Check the Webhook Logs tab to see delivery status.
-                      If status shows "undelivered" with error 30034, your A2P campaign needs approval.
+                      Check the Webhook Logs tab for the final delivery status. An
+                      “undelivered” status with error 30034 means the sending number's
+                      A2P campaign is not registered or approved.
                     </p>
                   </div>
                 )}

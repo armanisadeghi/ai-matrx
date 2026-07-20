@@ -20,6 +20,7 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - `app/(authenticated)/settings-primitives/page.tsx` — primitive gallery (every control, every state).
 - `app/(authenticated)/settings-tree-demo/page.tsx` — tree + drawer-nav demo with a fake 20-node tree.
 - `app/(authenticated)/settings-hooks-demo/page.tsx` — `useSetting` across 3 slices.
+- `/user-settings/communication/messaging` — production SMS enrollment and opt-out, composed into the existing Messaging tab.
 
 **Overlay ids** (dispatched via `openOverlay(...)`)
 - `userPreferencesWindow` — canonical. Every caller should use this one.
@@ -133,6 +134,18 @@ Path:
 
 Exit: The local admin override persists in Redux with the other admin overrides and is never surfaced as a normal user preference.
 
+### 6. Verified SMS enrollment
+
+Trigger: A signed-in user opens **Communication → Messaging → Text messages**.
+
+Path:
+- `SmsEnrollmentSettingsSection` composes only official settings primitives and delegates the workflow to `useSmsEnrollment`.
+- The user enters a mobile number and affirmatively accepts the versioned SMS disclosure; the checkbox is unchecked by default.
+- `/api/sms/verify` starts Twilio Verify, validates the OTP, writes the exact consent contract to `communication.sms_consent`, and only then enables `communication.sms_notification_preferences`.
+- The same section exposes a web-form opt-out; replying STOP remains the carrier-compatible alternate path.
+
+Exit: The verified number renders as enabled, or the user returns to the unenrolled state after opt-out.
+
 ---
 
 ## Invariants & gotchas
@@ -184,6 +197,8 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 ---
 
 ## Change log
+
+- `2026-07-20` — Added verified SMS enrollment and opt-out to the production Messaging tab using the shared SMS workflow and official settings primitives.
 
 - `2026-07-15` — Updated the TTS preference choices/default to the catalog-backed Groq voice set; the speech request seam now discards retired persisted PlayAI values and falls back to the server-owned default.
 
